@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Comprehensive Market Sentiment Dashboard</title>
+  <title>Comprehensive Public Sentiment Dashboard</title>
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
@@ -16,7 +16,7 @@
 
     .top-area {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .logo-box {
@@ -42,6 +42,21 @@
       margin: 20px 0 8px 0;
       font-size: 32px;
       letter-spacing: 0.5px;
+    }
+
+    .intro {
+      max-width: 1100px;
+      margin: 0 auto 24px auto;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 14px;
+      padding: 18px 22px;
+      line-height: 1.55;
+      color: #c9d1d9;
+    }
+
+    .intro b {
+      color: #ffffff;
     }
 
     .filters {
@@ -160,19 +175,12 @@
       margin-bottom: 18px;
     }
 
-    .health-legend {
-      margin-bottom: 12px;
-      color: #8b949e;
-      font-size: 13px;
-    }
-
     .health-dot {
       display: inline-block;
       width: 12px;
       height: 12px;
       border-radius: 50%;
       vertical-align: middle;
-      margin-right: 6px;
     }
 
     .health-green {
@@ -206,20 +214,25 @@
       <img src="logo.png" alt="Ha-Lion Logo" class="logo">
     </div>
 
-    <h1>Comprehensive Market Sentiment Dashboard</h1>
+    <h1>Comprehensive Public Sentiment Dashboard</h1>
+  </div>
+
+  <div class="intro">
+    <b>What this is:</b> a free public-sentiment dashboard that scans major financial news and market sources for tone, themes, and instrument-specific headlines.
+    <br>
+    <b>Sources:</b> Reuters, CNBC, Yahoo Finance, Investing.com, AP, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch, Benzinga, TheStreet, Seeking Alpha, CoinDesk, and Kitco.
+    <br>
+    <b>Why it matters:</b> every trade should consider technical analysis, fundamental analysis, and public sentiment. Sentiment does not replace price action, but it helps show what the market is focused on.
   </div>
 
   <div class="filters">
     <select id="marketFilter">
       <option value="all">All Markets</option>
-      <option value="stocks">Stocks / Equities</option>
       <option value="indexes">Indexes / Futures</option>
       <option value="bonds">Bonds / Rates</option>
       <option value="forex">Forex / Currencies</option>
       <option value="crypto">Crypto</option>
       <option value="commodities">Commodities</option>
-      <option value="oil">Oil / Energy</option>
-      <option value="gold">Gold / Metals</option>
       <option value="macro">Macro / Fed / Inflation</option>
     </select>
 
@@ -229,7 +242,7 @@
   </div>
 
   <div class="card">
-    <h2>Market Summary</h2>
+    <h2>Public Sentiment Summary</h2>
     <div class="filter-summary" id="filter_summary">Loading filtered summary...</div>
     <div class="summary-box">
       <div class="overall-vote" id="overall_vote">Loading...</div>
@@ -239,13 +252,6 @@
 
   <div class="card">
     <h2>Source Votes</h2>
-    <div class="health-legend">
-      <span class="health-dot health-green"></span> Good
-      &nbsp;&nbsp;
-      <span class="health-dot health-orange"></span> Needs attention
-      &nbsp;&nbsp;
-      <span class="health-dot health-red"></span> Problem
-    </div>
     <div class="count-note" id="source_count"></div>
     <table>
       <thead>
@@ -253,7 +259,7 @@
           <th>Source</th>
           <th>Vote</th>
           <th>Impact</th>
-          <th>Health</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="sources"></tbody>
@@ -267,7 +273,7 @@
   </div>
 
   <div class="footer-note">
-    Powered by Ha-Lion Market Sentiment Engine
+    Powered by Ha-Lion Public Sentiment Engine
   </div>
 
   <script>
@@ -276,16 +282,6 @@
     const instrumentMap = {
       all: [
         ["all", "All Instruments"]
-      ],
-      stocks: [
-        ["all", "All Stocks"],
-        ["AAPL / Apple", "AAPL / Apple"],
-        ["MSFT / Microsoft", "MSFT / Microsoft"],
-        ["NVDA / Nvidia", "NVDA / Nvidia"],
-        ["TSLA / Tesla", "TSLA / Tesla"],
-        ["AMZN / Amazon", "AMZN / Amazon"],
-        ["META / Meta", "META / Meta"],
-        ["GOOGL / Alphabet", "GOOGL / Alphabet"]
       ],
       indexes: [
         ["all", "All Indexes / Futures"],
@@ -330,17 +326,6 @@
         ["Copper", "Copper"],
         ["Crude Oil", "Crude Oil"],
         ["Natural Gas", "Natural Gas"]
-      ],
-      oil: [
-        ["all", "All Oil / Energy"],
-        ["Crude Oil", "Crude Oil"],
-        ["Natural Gas", "Natural Gas"]
-      ],
-      gold: [
-        ["all", "All Gold / Metals"],
-        ["Gold", "Gold"],
-        ["Silver", "Silver"],
-        ["Copper", "Copper"]
       ],
       macro: [
         ["all", "All Macro"],
@@ -453,13 +438,13 @@
       const filteredSummary = calculateFilteredSummary(filteredHeadlines);
 
       document.getElementById("filter_summary").innerHTML =
-        '<b>Filtered Sentiment: <span class="' + voteClass(filteredSummary.vote) + '">' +
+        '<b>Selected Public Sentiment: <span class="' + voteClass(filteredSummary.vote) + '">' +
         filteredSummary.vote + '</span></b><br>' + filteredSummary.text;
 
       const overallVote = dashboardData.overall_vote || "Neutral";
 
       document.getElementById("overall_vote").innerHTML =
-        'Overall Market Sentiment: <span class="' + voteClass(overallVote) + '">' + overallVote + '</span>';
+        'Overall Public Sentiment: <span class="' + voteClass(overallVote) + '">' + overallVote + '</span>';
 
       document.getElementById("summary").innerHTML =
         dashboardData.summary.map(item => "<p>" + item + "</p>").join("");
