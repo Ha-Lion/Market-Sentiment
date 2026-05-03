@@ -67,7 +67,7 @@
       margin: 0;
       font-family: "Segoe UI", Inter, Arial, sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(210,153,34,0.13), transparent 32rem),
+        radial-gradient(circle at top left, rgba(210,153,34,0.13), transparent 34rem),
         radial-gradient(circle at top right, rgba(88,166,255,0.10), transparent 36rem),
         var(--bg);
       color: var(--text);
@@ -91,7 +91,7 @@
       align-items: center;
       gap: 18px;
       padding: 14px 28px;
-      background: rgba(7,10,16,0.94);
+      background: rgba(7,10,16,0.95);
       border-bottom: 1px solid var(--line);
       backdrop-filter: blur(10px);
     }
@@ -252,9 +252,21 @@
 
     .score-label-top {
       color: var(--muted);
-      font-weight: 800;
+      font-weight: 850;
       font-size: 14px;
       margin-bottom: 10px;
+    }
+
+    .scope-pill {
+      display: inline-flex;
+      margin-bottom: 10px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(88,166,255,0.10);
+      border: 1px solid rgba(88,166,255,0.25);
+      color: #9dcbff;
+      font-size: 12px;
+      font-weight: 850;
     }
 
     .score-ring {
@@ -296,7 +308,7 @@
       color: var(--muted);
       line-height: 1.55;
       font-size: 13px;
-      max-width: 360px;
+      max-width: 380px;
       margin: 0 auto;
     }
 
@@ -496,7 +508,7 @@
 
     .bar-row {
       display: grid;
-      grid-template-columns: 190px minmax(0,1fr) 60px;
+      grid-template-columns: 190px minmax(0,1fr) 75px;
       gap: 12px;
       align-items: center;
       margin: 13px 0;
@@ -531,14 +543,15 @@
       text-align: right;
     }
 
-    .compare-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 14px;
+    .table-wrap {
+      overflow-x: auto;
     }
 
-    .compare-table th,
-    .compare-table td,
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
     table th,
     table td {
       border-bottom: 1px solid var(--line);
@@ -547,21 +560,15 @@
       vertical-align: top;
     }
 
-    .compare-table th,
     table th {
       color: #fff;
       font-weight: 850;
       font-size: 13px;
     }
 
-    .compare-table td,
     table td {
       color: var(--soft);
       font-size: 14px;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
     }
 
     .tag {
@@ -781,26 +788,28 @@
         <div class="badge">AI-built public market sentiment dashboard</div>
         <h1>Free Global Market Public Sentiment Dashboard</h1>
         <p><b>PublicSentimentDash</b> helps traders, investors, and market watchers quickly read public financial narrative across indexes, futures, bonds, forex, crypto, commodities, and macro themes.</p>
-        <p>The dashboard scans public financial sources, organizes headlines by market and instrument, scores public tone, highlights market focus, adds technical direction, and now lets you compare up to three instruments side by side.</p>
+        <p>The main score is a <b>global all-markets score</b>. It is not U.S.-only. It summarizes all configured dashboard sources and all detected markets in the latest scan.</p>
 
         <div class="hero-points">
           <div class="hero-point">
-            <strong>0–100 score</strong>
-            <span>Instant public sentiment reading based on source votes and headline tone.</span>
+            <strong>Global 0–100 score</strong>
+            <span>Fast all-markets public sentiment reading from source votes and headline tone.</span>
           </div>
           <div class="hero-point">
             <strong>Instrument compare</strong>
-            <span>Compare up to 3 instruments by sentiment, headline count, and technical direction.</span>
+            <span>Compare up to 3 instruments by public sentiment and headline count.</span>
           </div>
           <div class="hero-point">
-            <strong>Trust layer</strong>
-            <span>Shows source count, headline count, update time, and scan coverage.</span>
+            <strong>Technical direction</strong>
+            <span>Shown as Daily / Weekly / Monthly trend text, not as a confusing fake score.</span>
           </div>
         </div>
       </div>
 
-      <aside class="score-panel" aria-label="Public sentiment score">
-        <div class="score-label-top">Current Public Sentiment Score</div>
+      <aside class="score-panel" aria-label="Global all-markets public sentiment score">
+        <div class="scope-pill">Scope: Global / All Markets</div>
+        <div class="score-label-top">Global All-Markets Public Sentiment Score</div>
+
         <div class="score-ring" id="scoreRing">
           <div class="score-inner">
             <div>
@@ -809,7 +818,9 @@
             </div>
           </div>
         </div>
+
         <p class="score-desc" id="scoreDescription">Loading latest dashboard data...</p>
+
         <div class="score-scale">
           <div class="scale-bar"></div>
           <div class="scale-labels">
@@ -823,15 +834,15 @@
 
     <section class="grid-3" aria-label="Dashboard status metrics">
       <div class="metric">
-        <div class="metric-title">Last Updated</div>
-        <div class="metric-value" id="lastUpdated">Loading</div>
-        <div class="metric-note">New data is published from the private sentiment engine.</div>
+        <div class="metric-title">Market Scope</div>
+        <div class="metric-value">Global</div>
+        <div class="metric-note">Indexes, bonds, forex, crypto, commodities, and macro themes.</div>
       </div>
 
       <div class="metric">
-        <div class="metric-title">Sources Working</div>
-        <div class="metric-value" id="sourcesWorking">--</div>
-        <div class="metric-note">Readable public source count from the latest scan.</div>
+        <div class="metric-title">Last Updated</div>
+        <div class="metric-value" id="lastUpdated">Loading</div>
+        <div class="metric-note">New data is published from the private sentiment engine.</div>
       </div>
 
       <div class="metric">
@@ -857,7 +868,7 @@
 
     <section class="card">
       <h2>Interactive Instrument Comparison</h2>
-      <p>Select up to 3 instruments and compare them by public sentiment score, headline count, and technical direction.</p>
+      <p>Select up to 3 instruments. The comparison uses public sentiment and headline count. Technical direction is shown separately as Daily / Weekly / Monthly trend text.</p>
 
       <div class="compare-panel">
         <div class="compare-controls">
@@ -868,7 +879,6 @@
           <select id="compareMetric" aria-label="Comparison metric">
             <option value="sentiment">Public Sentiment Score</option>
             <option value="headlines">Relevant Headline Count</option>
-            <option value="technical">Technical Direction Score</option>
           </select>
         </div>
 
@@ -925,7 +935,7 @@
             </select>
           </div>
 
-          <div class="count-note" id="filterSummary" style="margin-top:12px;">
+          <div class="summary-line" id="filterSummary" style="margin-top:12px;">
             Loading filtered summary...
           </div>
         </div>
@@ -968,18 +978,23 @@
         <h2>How to Read This Dashboard</h2>
 
         <details open>
-          <summary>What does the 0–100 public sentiment score mean?</summary>
-          <p>The score converts public source votes and headline tone into a fast reading. Lower scores lean bearish, mid-range scores are mixed or neutral, and higher scores lean bullish.</p>
+          <summary>What does the global public sentiment score mean?</summary>
+          <p>The global score converts all configured source votes and headline tone into a 0–100 all-markets reading. It is not limited to the United States.</p>
+        </details>
+
+        <details>
+          <summary>What does the filtered score mean?</summary>
+          <p>The filtered score only uses headlines matching the selected market or instrument. For example, selecting Gold shows sentiment based on Gold-related headlines only.</p>
+        </details>
+
+        <details>
+          <summary>What does technical direction mean?</summary>
+          <p>Technical direction is a price-trend reading from technical_data.json. It is shown as Daily, Weekly, and Monthly direction. It is not turned into a 0–100 score.</p>
         </details>
 
         <details>
           <summary>Is this a trade signal?</summary>
-          <p>No. This is a public narrative and sentiment tool. Always confirm with price action, technical analysis, macro data, risk controls, and your own judgment.</p>
-        </details>
-
-        <details>
-          <summary>What does the comparison tool measure?</summary>
-          <p>It compares selected instruments using headline sentiment, relevant headline count, and technical direction data when available.</p>
+          <p>No. This is a public narrative and sentiment tool. Always confirm with price action, macro data, risk controls, and your own judgment.</p>
         </details>
       </div>
 
@@ -1136,29 +1151,9 @@
     function voteToScore(vote) {
       const v = String(vote || "").toLowerCase();
 
-      if (v.includes("bullish") && !v.includes("bearish")) {
-        return 100;
-      }
-
-      if (v.includes("bearish") && !v.includes("bullish")) {
-        return 0;
-      }
-
-      if (v.includes("mixed")) {
-        return 55;
-      }
-
-      return 50;
-    }
-
-    function directionToScore(direction) {
-      const d = String(direction || "").toLowerCase();
-
-      if (d === "bullish") return 100;
-      if (d === "mixed/bullish") return 70;
-      if (d === "neutral") return 50;
-      if (d === "mixed/bearish") return 30;
-      if (d === "bearish") return 0;
+      if (v.includes("bullish") && !v.includes("bearish")) return 100;
+      if (v.includes("bearish") && !v.includes("bullish")) return 0;
+      if (v.includes("mixed")) return 55;
 
       return 50;
     }
@@ -1188,26 +1183,19 @@
       (data.sources || []).forEach(source => {
         const vote = String(source.vote || "Neutral");
 
-        if (vote.includes("Bullish")) {
-          counts.Bullish++;
-        } else if (vote.includes("Bearish")) {
-          counts.Bearish++;
-        } else if (vote.includes("Mixed")) {
-          counts.Mixed++;
-        } else {
-          counts.Neutral++;
-        }
+        if (vote.includes("Bullish")) counts.Bullish++;
+        else if (vote.includes("Bearish")) counts.Bearish++;
+        else if (vote.includes("Mixed")) counts.Mixed++;
+        else counts.Neutral++;
       });
 
       return counts;
     }
 
-    function calculateOverallScore(data) {
+    function calculateGlobalScore(data) {
       const sources = Array.isArray(data.sources) ? data.sources : [];
 
-      if (!sources.length) {
-        return 50;
-      }
+      if (!sources.length) return 50;
 
       let totalWeight = 0;
       let weightedScore = 0;
@@ -1218,15 +1206,20 @@
         totalWeight += weight;
       });
 
-      if (!totalWeight) {
-        return 50;
-      }
+      if (!totalWeight) return 50;
 
       return Math.round(weightedScore / totalWeight);
     }
 
+    function calculateHeadlineScore(headlines) {
+      if (!headlines || !headlines.length) return null;
+
+      const total = headlines.reduce((sum, item) => sum + voteToScore(item.vote), 0);
+      return Math.round(total / headlines.length);
+    }
+
     function renderScore(data) {
-      const score = calculateOverallScore(data);
+      const score = calculateGlobalScore(data);
       const label = scoreLabel(score);
 
       const ring = document.getElementById("scoreRing");
@@ -1236,13 +1229,12 @@
       document.getElementById("sentimentScore").textContent = score;
       document.getElementById("sentimentWord").textContent = label;
       document.getElementById("sentimentWord").className = "score-word " + normalizeVoteClass(label);
+
       document.getElementById("scoreDescription").textContent =
-        "A 0–100 reading based on the latest public source votes and headline tone. Higher means more bullish public narrative; lower means more bearish public narrative.";
+        "This is the global all-markets public sentiment score. It includes all configured dashboard markets and public sources, not only U.S. markets.";
 
       const trust = data.trust_layer || {};
       document.getElementById("lastUpdated").textContent = data.updated_ny || "N/A";
-      document.getElementById("sourcesWorking").textContent =
-        `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
       document.getElementById("relevantHeadlines").textContent =
         trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
     }
@@ -1256,11 +1248,12 @@
     }
 
     function renderSummary(data) {
-      const overall = data.overall_vote || scoreLabel(calculateOverallScore(data));
+      const overall = data.overall_vote || scoreLabel(calculateGlobalScore(data));
       const items = Array.isArray(data.summary) ? data.summary : [];
 
       document.getElementById("summary").innerHTML =
-        `<div class="summary-line"><b>Overall public sentiment:</b> <span class="${normalizeVoteClass(overall)}">${escapeHTML(overall)}</span></div>` +
+        `<div class="summary-line"><b>Overall global public sentiment:</b> <span class="${normalizeVoteClass(overall)}">${escapeHTML(overall)}</span></div>` +
+        `<div class="summary-line"><b>Scope:</b> Global all-markets view across indexes, bonds, forex, crypto, commodities, and macro themes.</div>` +
         (items.length
           ? items.map(item => `<div class="summary-line">${escapeHTML(item)}</div>`).join("")
           : "");
@@ -1383,8 +1376,8 @@
       document.getElementById("compareInstrument3").innerHTML = blank + options;
 
       document.getElementById("compareInstrument1").value = "S&P 500 / ES";
-      document.getElementById("compareInstrument2").value = "Nasdaq / NQ";
-      document.getElementById("compareInstrument3").value = "Gold";
+      document.getElementById("compareInstrument2").value = "Gold";
+      document.getElementById("compareInstrument3").value = "Bitcoin / BTC";
     }
 
     function filteredHeadlines() {
@@ -1408,12 +1401,19 @@
       const market = document.getElementById("marketFilter").value;
       const instrument = document.getElementById("instrumentFilter").value;
       const headlines = filteredHeadlines();
+      const score = calculateHeadlineScore(headlines);
 
-      const label =
+      const scopeLabel =
         `${market === "all" ? "All Markets" : marketLabels[market]} / ${instrument === "all" ? "All Instruments" : instrument}`;
 
-      document.getElementById("filterSummary").textContent =
-        `${label}: ${headlines.length} relevant headline(s) in the latest scan.`;
+      const scoreText = score === null
+        ? "No filtered sentiment score available yet."
+        : `Filtered Public Sentiment Score: ${score}/100 — ${scoreLabel(score)}`;
+
+      document.getElementById("filterSummary").innerHTML =
+        `<b>Selected Scope:</b> ${escapeHTML(scopeLabel)}<br>` +
+        `<b>${escapeHTML(scoreText)}</b><br>` +
+        `${headlines.length} relevant headline(s) matched this filter.`;
 
       renderTechnical(instrument);
       renderHeadlines(headlines);
@@ -1423,14 +1423,14 @@
       const box = document.getElementById("technicalBox");
 
       if (!instrument || instrument === "all") {
-        box.innerHTML = `<div class="tech-title">Technical Direction</div>Select a specific instrument.`;
+        box.innerHTML = `<div class="tech-title">Technical Direction</div>Select a specific instrument to see Daily / Weekly / Monthly technical direction.`;
         return;
       }
 
       const tech = technicalData && technicalData.technical ? technicalData.technical[instrument] : null;
 
       if (!tech) {
-        box.innerHTML = `<div class="tech-title">Technical Direction</div>No technical data available for <b>${escapeHTML(instrument)}</b>.`;
+        box.innerHTML = `<div class="tech-title">Technical Direction — ${escapeHTML(instrument)}</div>No technical data available for this instrument.`;
         return;
       }
 
@@ -1447,7 +1447,7 @@
         ${row("Daily", tech.daily)}
         ${row("Weekly", tech.weekly)}
         ${row("Monthly", tech.monthly)}
-        <div class="mini-meta" style="margin-top:8px;">Based on price vs moving averages and recent slope when available.</div>
+        <div class="mini-meta" style="margin-top:8px;">Technical direction is shown as trend text. It is not part of the 0–100 public sentiment score.</div>
       `;
     }
 
@@ -1504,27 +1504,7 @@
 
     function instrumentSentimentScore(instrument) {
       const headlines = headlinesForInstrument(instrument);
-
-      if (!headlines.length) {
-        return 50;
-      }
-
-      const total = headlines.reduce((sum, item) => sum + voteToScore(item.vote), 0);
-      return Math.round(total / headlines.length);
-    }
-
-    function instrumentTechnicalScore(instrument) {
-      const tech = technicalData && technicalData.technical ? technicalData.technical[instrument] : null;
-
-      if (!tech) {
-        return 50;
-      }
-
-      const daily = directionToScore(tech.daily?.direction);
-      const weekly = directionToScore(tech.weekly?.direction);
-      const monthly = directionToScore(tech.monthly?.direction);
-
-      return Math.round((daily + weekly + monthly) / 3);
+      return calculateHeadlineScore(headlines);
     }
 
     function instrumentVoteBreakdown(instrument) {
@@ -1540,15 +1520,10 @@
       headlines.forEach(item => {
         const vote = String(item.vote || "Neutral");
 
-        if (vote.includes("Bullish")) {
-          counts.Bullish++;
-        } else if (vote.includes("Bearish")) {
-          counts.Bearish++;
-        } else if (vote.includes("Mixed")) {
-          counts.Mixed++;
-        } else {
-          counts.Neutral++;
-        }
+        if (vote.includes("Bullish")) counts.Bullish++;
+        else if (vote.includes("Bearish")) counts.Bearish++;
+        else if (vote.includes("Mixed")) counts.Mixed++;
+        else counts.Neutral++;
       });
 
       return counts;
@@ -1569,10 +1544,6 @@
         return headlinesForInstrument(instrument).length;
       }
 
-      if (metric === "technical") {
-        return instrumentTechnicalScore(instrument);
-      }
-
       return instrumentSentimentScore(instrument);
     }
 
@@ -1590,29 +1561,36 @@
         return;
       }
 
-      const rawValues = instruments.map(instrument => compareMetricValue(instrument, metric));
+      const rawValues = instruments.map(instrument => {
+        const value = compareMetricValue(instrument, metric);
+        return value === null ? 0 : value;
+      });
+
       const maxValue = metric === "headlines"
         ? Math.max(...rawValues, 1)
         : 100;
 
       const metricTitle = metric === "headlines"
         ? "Relevant Headline Count"
-        : metric === "technical"
-          ? "Technical Direction Score"
-          : "Public Sentiment Score";
+        : "Public Sentiment Score";
 
       chart.innerHTML = `
         <div class="mini-title">${escapeHTML(metricTitle)}</div>
         ${instruments.map(instrument => {
           const value = compareMetricValue(instrument, metric);
-          const width = Math.max(4, Math.round((value / maxValue) * 100));
-          const displayValue = metric === "headlines" ? value : `${value}/100`;
+          const numericValue = value === null ? 0 : value;
+          const width = Math.max(4, Math.round((numericValue / maxValue) * 100));
+          const displayValue = value === null
+            ? "N/A"
+            : metric === "headlines"
+              ? value
+              : `${value}/100`;
 
           return `
             <div class="bar-row">
               <div class="bar-name">${escapeHTML(instrument)}</div>
               <div class="bar-track">
-                <div class="bar-fill" style="width:${width}%; background:${metric === "headlines" ? "linear-gradient(90deg, var(--blue), var(--gold))" : `linear-gradient(90deg, var(--gold), ${scoreColor(value)})`};"></div>
+                <div class="bar-fill" style="width:${width}%; background:${metric === "headlines" ? "linear-gradient(90deg, var(--blue), var(--gold))" : `linear-gradient(90deg, var(--gold), ${scoreColor(numericValue)})`};"></div>
               </div>
               <div class="bar-value">${escapeHTML(displayValue)}</div>
             </div>
@@ -1623,10 +1601,13 @@
       cards.innerHTML = instruments.map(instrument => {
         const headlines = headlinesForInstrument(instrument);
         const sentimentScore = instrumentSentimentScore(instrument);
-        const technicalScore = instrumentTechnicalScore(instrument);
         const breakdown = instrumentVoteBreakdown(instrument);
         const tech = technicalData && technicalData.technical ? technicalData.technical[instrument] : null;
         const latestHeadline = headlines[0];
+
+        const sentimentText = sentimentScore === null
+          ? "N/A"
+          : `${scoreLabel(sentimentScore)} (${sentimentScore}/100)`;
 
         return `
           <div class="mini-card">
@@ -1634,13 +1615,9 @@
 
             <div class="mini-meta">
               Public Sentiment:
-              <span class="${normalizeVoteClass(scoreLabel(sentimentScore))}">
-                ${escapeHTML(scoreLabel(sentimentScore))} (${sentimentScore}/100)
+              <span class="${normalizeVoteClass(sentimentScore === null ? "Neutral" : scoreLabel(sentimentScore))}">
+                ${escapeHTML(sentimentText)}
               </span>
-            </div>
-
-            <div class="mini-meta">
-              Technical Score: ${technicalScore}/100
             </div>
 
             <div class="mini-meta">
@@ -1652,7 +1629,7 @@
             </div>
 
             <div class="mini-headline">
-              <b>Technical:</b><br>
+              <b>Technical Direction:</b><br>
               Daily: <span class="${normalizeVoteClass(tech?.daily?.direction)}">${escapeHTML(tech?.daily?.direction || "N/A")}</span><br>
               Weekly: <span class="${normalizeVoteClass(tech?.weekly?.direction)}">${escapeHTML(tech?.weekly?.direction || "N/A")}</span><br>
               Monthly: <span class="${normalizeVoteClass(tech?.monthly?.direction)}">${escapeHTML(tech?.monthly?.direction || "N/A")}</span>
