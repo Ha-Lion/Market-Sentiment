@@ -1,2 +1,46 @@
-<h1>Market Sentiment Dashboard</h1>
-<p>Dashboard setup started.</p>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Market Sentiment Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0d1117; color:#e6edf3; margin:30px; }
+    .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px; }
+    h1 { color:#58a6ff; }
+    .good { color:#3fb950; font-weight:bold; }
+    .small { color:#8b949e; }
+  </style>
+</head>
+<body>
+  <h1>Market Sentiment Dashboard</h1>
+
+  <div class="card">
+    <h2>System Status</h2>
+    <p id="status">Loading...</p>
+    <p class="small" id="updated"></p>
+  </div>
+
+  <div class="card">
+    <h2>Market Summary</h2>
+    <p>Real market sentiment scan will appear here after we connect the scraper.</p>
+  </div>
+
+  <div class="card">
+    <h2>Source Votes</h2>
+    <p>Reuters, CNBC, Yahoo Finance, Investing.com, AP, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch.</p>
+  </div>
+
+  <script>
+    fetch("status.json?t=" + Date.now())
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById("status").innerHTML =
+          "<span class='good'>" + data.status + "</span>";
+        document.getElementById("updated").innerText =
+          "Last update: " + data.updated;
+      })
+      .catch(() => {
+        document.getElementById("status").innerText = "Could not load status.json";
+      });
+  </script>
+</body>
+</html>
