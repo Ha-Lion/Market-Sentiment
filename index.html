@@ -7,44 +7,68 @@
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Inter, Helvetica, Arial, sans-serif;
       background: #05070b;
       color: #e6edf3;
       margin: 0;
-      padding: 28px;
+      padding: 0;
     }
 
-    .top-area {
-      text-align: center;
-      margin-bottom: 24px;
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 1px solid #1f2937;
+      background: #070a10;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
-    .logo-box {
-      display: inline-block;
-      background: #05070b;
-      padding: 8px;
-      border-radius: 22px;
-      box-shadow: 0 0 40px rgba(218, 165, 32, 0.25);
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
     .logo {
-      width: 175px;
-      height: 175px;
+      width: 58px;
+      height: 58px;
       object-fit: contain;
-      display: block;
-      border-radius: 20px;
+      border-radius: 10px;
       background: #05070b;
+      box-shadow: 0 0 16px rgba(218, 165, 32, 0.2);
     }
 
-    h1 {
-      color: #58a6ff;
-      text-align: center;
-      margin: 20px 0 8px 0;
-      font-size: 32px;
+    .site-title {
+      color: #e6edf3;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: 0.2px;
+    }
+
+    .feedback-btn {
+      color: #05070b;
+      background: #d29922;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .feedback-btn:hover {
+      background: #f0b72f;
+      text-decoration: none;
+    }
+
+    .page {
+      padding: 28px;
     }
 
     .intro {
-      max-width: 1100px;
+      max-width: 1180px;
       margin: 0 auto 24px auto;
       background: #0d1117;
       border: 1px solid #30363d;
@@ -90,13 +114,13 @@
       border: 1px solid #30363d;
       border-radius: 12px;
       padding: 12px 16px;
-      min-width: 300px;
+      min-width: 310px;
       font-size: 14px;
       line-height: 1.55;
     }
 
     .tech-title {
-      font-weight: bold;
+      font-weight: 700;
       color: #ffffff;
       margin-bottom: 4px;
     }
@@ -109,6 +133,11 @@
       margin-bottom: 20px;
     }
 
+    h2 {
+      margin-top: 0;
+      letter-spacing: 0.2px;
+    }
+
     .summary-box p {
       margin: 0 0 12px 0;
       line-height: 1.5;
@@ -116,32 +145,32 @@
 
     .overall-vote {
       font-size: 18px;
-      font-weight: bold;
+      font-weight: 700;
       margin-bottom: 12px;
     }
 
     .Bullish {
       color: #3fb950;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     .Bearish {
       color: #f85149;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     .Mixed,
     .MixedBullish,
     .MixedBearish {
       color: #d29922;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     .Neutral,
     .MixedNeutral,
     .NA {
       color: #8b949e;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     table {
@@ -158,6 +187,7 @@
 
     th {
       color: #ffffff;
+      font-weight: 700;
     }
 
     a {
@@ -177,7 +207,7 @@
     }
 
     .headline-source {
-      font-weight: bold;
+      font-weight: 700;
       color: #e6edf3;
     }
 
@@ -229,84 +259,109 @@
       color: #8b949e;
       font-size: 13px;
       margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 700px) {
+      .header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .site-title {
+        font-size: 18px;
+      }
+
+      .page {
+        padding: 18px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="top-area">
-    <div class="logo-box">
+  <div class="header">
+    <div class="brand">
       <img src="logo.png" alt="Ha-Lion Logo" class="logo">
+      <div class="site-title">Comprehensive Public Sentiment Dashboard</div>
     </div>
 
-    <h1>Comprehensive Public Sentiment Dashboard</h1>
+    <a class="feedback-btn" target="_blank"
+       href="https://github.com/Ha-Lion/Market-Sentiment/issues/new?title=Dashboard%20Feedback&body=Please%20write%20your%20feedback%20here%3A%0A%0A">
+      Share Feedback
+    </a>
   </div>
 
-  <div class="intro">
-    <b>What this is:</b> a free public-sentiment dashboard that scans major financial news and market sources for tone, themes, and instrument-specific headlines.
-    <br>
-    <b>Sources:</b> Reuters, CNBC, Yahoo Finance, Investing.com, AP, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch, Benzinga, TheStreet, Seeking Alpha, CoinDesk, and Kitco.
-    <br>
-    <b>Why it matters:</b> every trade should consider technical analysis, fundamental analysis, and public sentiment. Sentiment does not replace price action, but it helps show what the market is focused on.
-  </div>
+  <div class="page">
 
-  <div class="filters-row">
-    <div class="filters">
-      <select id="marketFilter">
-        <option value="all">All Markets</option>
-        <option value="indexes">Indexes / Futures</option>
-        <option value="bonds">Bonds / Rates</option>
-        <option value="forex">Forex / Currencies</option>
-        <option value="crypto">Crypto</option>
-        <option value="commodities">Commodities</option>
-        <option value="macro">Macro / Fed / Inflation</option>
-      </select>
-
-      <select id="instrumentFilter">
-        <option value="all">All Instruments</option>
-      </select>
+    <div class="intro">
+      <b>What this is:</b> a free public-sentiment dashboard that scans major financial news and market sources for tone, themes, and instrument-specific headlines.
+      <br>
+      <b>Sources:</b> Reuters, CNBC, Yahoo Finance, Investing.com, AP, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch, Benzinga, TheStreet, Seeking Alpha, CoinDesk, and Kitco.
+      <br>
+      <b>Why it matters:</b> every trade should consider technical analysis, fundamental analysis, and public sentiment. Sentiment does not replace price action, but it helps show what the market is focused on.
     </div>
 
-    <div class="tech-box" id="technicalBox">
-      <div class="tech-title">Technical Direction</div>
-      Select a specific instrument.
+    <div class="filters-row">
+      <div class="filters">
+        <select id="marketFilter">
+          <option value="all">All Markets</option>
+          <option value="indexes">Indexes / Futures</option>
+          <option value="bonds">Bonds / Rates</option>
+          <option value="forex">Forex / Currencies</option>
+          <option value="crypto">Crypto</option>
+          <option value="commodities">Commodities</option>
+          <option value="macro">Macro / Fed / Inflation</option>
+        </select>
+
+        <select id="instrumentFilter">
+          <option value="all">All Instruments</option>
+        </select>
+      </div>
+
+      <div class="tech-box" id="technicalBox">
+        <div class="tech-title">Technical Direction</div>
+        Select a specific instrument.
+      </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Public Sentiment Summary</h2>
-    <div class="filter-summary" id="filter_summary">Loading filtered summary...</div>
-    <div class="summary-box">
-      <div class="overall-vote" id="overall_vote">Loading...</div>
-      <div id="summary">Loading...</div>
+    <div class="card">
+      <h2>Public Sentiment Summary</h2>
+      <div class="filter-summary" id="filter_summary">Loading filtered summary...</div>
+      <div class="summary-box">
+        <div class="overall-vote" id="overall_vote">Loading...</div>
+        <div id="summary">Loading...</div>
+      </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Source Votes</h2>
-    <div class="count-note" id="source_count"></div>
-    <table>
-      <thead>
-        <tr>
-          <th>Source</th>
-          <th>Vote</th>
-          <th>Impact</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="sources"></tbody>
-    </table>
-  </div>
+    <div class="card">
+      <h2>Source Votes</h2>
+      <div class="count-note" id="source_count"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Vote</th>
+            <th>Impact</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sources"></tbody>
+      </table>
+    </div>
 
-  <div class="card">
-    <h2>Top Headlines</h2>
-    <div class="count-note" id="headline_count"></div>
-    <div id="headlines">Loading...</div>
-  </div>
+    <div class="card">
+      <h2>Top Headlines</h2>
+      <div class="count-note" id="headline_count"></div>
+      <div id="headlines">Loading...</div>
+    </div>
 
-  <div class="footer-note">
-    Powered by Ha-Lion Public Sentiment Engine
+    <div class="footer-note">
+      Powered by Ha-Lion Public Sentiment Engine
+    </div>
+
   </div>
 
   <script>
@@ -321,7 +376,13 @@
         ["Nasdaq / NQ", "Nasdaq / NQ"],
         ["Dow / YM", "Dow / YM"],
         ["Russell / RTY", "Russell / RTY"],
-        ["VIX", "VIX / Volatility"]
+        ["VIX", "VIX / Volatility"],
+        ["DAX", "DAX"],
+        ["FTSE 100", "FTSE 100"],
+        ["Nikkei 225", "Nikkei 225"],
+        ["Hang Seng", "Hang Seng"],
+        ["Euro Stoxx 50", "Euro Stoxx 50"],
+        ["CAC 40", "CAC 40"]
       ],
       bonds: [
         ["all", "All Bonds / Rates"],
@@ -338,7 +399,20 @@
         ["CHF / USDCHF", "CHF / USDCHF"],
         ["CAD / USDCAD", "CAD / USDCAD"],
         ["AUD / AUDUSD", "AUD / AUDUSD"],
-        ["NZD / NZDUSD", "NZD / NZDUSD"]
+        ["NZD / NZDUSD", "NZD / NZDUSD"],
+        ["EURJPY", "EURJPY"],
+        ["EURGBP", "EURGBP"],
+        ["GBPJPY", "GBPJPY"],
+        ["AUDJPY", "AUDJPY"],
+        ["CADJPY", "CADJPY"],
+        ["EURCHF", "EURCHF"],
+        ["EURCAD", "EURCAD"],
+        ["AUDCAD", "AUDCAD"],
+        ["AUDNZD", "AUDNZD"],
+        ["NZDJPY", "NZDJPY"],
+        ["USDTRY", "USDTRY"],
+        ["USDMXN", "USDMXN"],
+        ["USDZAR", "USDZAR"]
       ],
       crypto: [
         ["all", "All Crypto"],
