@@ -35,8 +35,8 @@
     }
 
     .logo {
-      width: 80px;
-      height: 80px;
+      width: 82px;
+      height: 82px;
       object-fit: contain;
       border-radius: 12px;
       background: transparent;
@@ -88,6 +88,25 @@
       line-height: 1.7;
       color: #c9d1d9;
       font-size: 15px;
+      position: relative;
+    }
+
+    .intro-badge {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(210, 153, 34, 0.12);
+      border: 1px solid rgba(210, 153, 34, 0.35);
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: #f6d78b;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
     }
 
     .intro-title {
@@ -95,6 +114,7 @@
       font-weight: 700;
       color: #ffffff;
       margin-bottom: 10px;
+      padding-right: 310px;
     }
 
     .intro b {
@@ -117,7 +137,7 @@
     .filters-row {
       display: flex;
       gap: 16px;
-      justify-content: center;
+      justify-content: space-between;
       flex-wrap: wrap;
       margin-bottom: 0;
       align-items: stretch;
@@ -128,6 +148,7 @@
       gap: 14px;
       flex-wrap: wrap;
       align-items: center;
+      flex: 1 1 560px;
     }
 
     select {
@@ -136,25 +157,35 @@
       border: 1px solid #30363d;
       border-radius: 10px;
       padding: 12px 16px;
-      min-width: 260px;
+      min-width: 280px;
       font-size: 15px;
       outline: none;
+      flex: 1 1 270px;
     }
 
     .tech-box {
       background: #0d1117;
       border: 1px solid #30363d;
       border-radius: 12px;
-      padding: 12px 16px;
-      min-width: 310px;
-      font-size: 14px;
-      line-height: 1.55;
+      padding: 16px 20px;
+      min-width: 430px;
+      max-width: 560px;
+      font-size: 15px;
+      line-height: 1.65;
+      flex: 1 1 430px;
     }
 
     .tech-title {
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .tech-small {
+      color: #8b949e;
+      font-size: 12px;
+      margin-top: 6px;
+      line-height: 1.45;
     }
 
     .summary-box p,
@@ -336,12 +367,33 @@
       }
 
       .logo {
-        width: 68px;
-        height: 68px;
+        width: 70px;
+        height: 70px;
       }
 
       .page {
         padding: 18px;
+      }
+
+      .intro-title {
+        padding-right: 0;
+      }
+
+      .intro-badge {
+        position: static;
+        display: inline-flex;
+        margin-bottom: 14px;
+      }
+
+      .tech-box,
+      .filters {
+        flex: 1 1 100%;
+        min-width: 100%;
+        max-width: 100%;
+      }
+
+      select {
+        min-width: 100%;
       }
     }
   </style>
@@ -367,6 +419,7 @@
   <div class="page">
 
     <div class="intro">
+      <div class="intro-badge">✨ Constantly learning &amp; improving</div>
       <div class="intro-title">AI-Built Public Sentiment Intelligence for Global Markets</div>
       <div>
         This website is an <b>AI-built public sentiment dashboard</b> designed to help traders and investors quickly understand what major financial media and public market sources are emphasizing across <b>indexes, futures, bonds, forex, crypto, commodities, and macro themes</b>.
@@ -621,6 +674,7 @@
         if (h.vote === "Bullish") bullish++;
         else if (h.vote === "Bearish") bearish++;
         else neutral++;
+
         if (h.impact === "High") high++;
       });
 
@@ -660,11 +714,22 @@
         return;
       }
 
+      const daily = item.daily || {};
+      const weekly = item.weekly || {};
+      const monthly = item.monthly || {};
+
       box.innerHTML = `
         <div class="tech-title">Technical Direction: ${instrument}</div>
-        Daily: <span class="${voteClass(item.daily.direction)}">${item.daily.direction}</span><br>
-        Weekly: <span class="${voteClass(item.weekly.direction)}">${item.weekly.direction}</span><br>
-        Monthly: <span class="${voteClass(item.monthly.direction)}">${item.monthly.direction}</span>
+        Daily: <span class="${voteClass(daily.direction)}">${daily.direction || "N/A"}</span>
+        ${daily.score !== undefined ? ` | Score: ${daily.score}` : ""}<br>
+        Weekly: <span class="${voteClass(weekly.direction)}">${weekly.direction || "N/A"}</span>
+        ${weekly.score !== undefined ? ` | Score: ${weekly.score}` : ""}<br>
+        Monthly: <span class="${voteClass(monthly.direction)}">${monthly.direction || "N/A"}</span>
+        ${monthly.score !== undefined ? ` | Score: ${monthly.score}` : ""}
+        <div class="tech-small">
+          Source: ${item.label || item.symbol || "N/A"} ${item.symbol ? "(" + item.symbol + ")" : ""}<br>
+          Method: SMA20, SMA50, SMA20/SMA50 trend, 10-candle slope, RSI14.
+        </div>
       `;
     }
 
@@ -677,6 +742,7 @@
 
       topMarkets.forEach(x => {
         const firstHeadline = (x.headlines && x.headlines.length) ? x.headlines[0] : null;
+
         html += `
           <div class="stat-box">
             <div class="stat-title">Top Market</div>
@@ -690,6 +756,7 @@
 
       topInstruments.forEach(x => {
         const firstHeadline = (x.headlines && x.headlines.length) ? x.headlines[0] : null;
+
         html += `
           <div class="stat-box">
             <div class="stat-title">Top Instrument</div>
@@ -707,6 +774,7 @@
 
     function renderTrustLayer() {
       const trust = dashboardData.trust_layer || {};
+
       const items = [
         ["Sources Working", (trust.sources_working || 0) + " / " + (trust.sources_configured || 0)],
         ["Raw Headlines", trust.raw_headlines_collected || 0],
@@ -741,6 +809,7 @@
 
     function renderDailySummary() {
       const items = dashboardData.daily_summary || [];
+
       document.getElementById("daily_summary").innerHTML =
         items.length
           ? items.map(item => `<li>${item}</li>`).join("")
@@ -769,7 +838,7 @@
         'Overall Public Sentiment: <span class="' + voteClass(overallVote) + '">' + overallVote + '</span>';
 
       document.getElementById("summary").innerHTML =
-        dashboardData.summary.map(item => "<p>" + item + "</p>").join("");
+        (dashboardData.summary || []).map(item => "<p>" + item + "</p>").join("");
 
       renderDailySummary();
       renderMarketFocus();
@@ -777,11 +846,10 @@
       renderTrustLayer();
 
       const activeSources = new Set(filteredHeadlines.map(item => item.source));
-
-      let filteredSources = dashboardData.sources;
+      let filteredSources = dashboardData.sources || [];
 
       if (market !== "all" || instrument !== "all") {
-        filteredSources = dashboardData.sources.filter(source =>
+        filteredSources = filteredSources.filter(source =>
           activeSources.has(source.name)
         );
       }
@@ -852,6 +920,7 @@
 
       if (instrument) {
         const instrumentSelect = document.getElementById("instrumentFilter");
+
         for (const option of instrumentSelect.options) {
           if (option.value === instrument) {
             instrumentSelect.value = instrument;
