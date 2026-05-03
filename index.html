@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Comprehensive Public Sentiment Dashboard</title>
+  <meta name="description" content="Free public sentiment dashboard for indexes, futures, forex, crypto, commodities, bonds, Fed, inflation, gold, oil, and major market themes.">
+  <meta name="keywords" content="public sentiment dashboard, market sentiment, forex sentiment, crypto sentiment, S&P 500 sentiment, gold sentiment, oil sentiment, financial news sentiment">
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
@@ -98,15 +100,27 @@
       align-items: center;
     }
 
-    select {
+    select, button {
       background: #161b22;
       color: #e6edf3;
       border: 1px solid #30363d;
       border-radius: 10px;
       padding: 12px 16px;
-      min-width: 260px;
       font-size: 15px;
       outline: none;
+    }
+
+    select {
+      min-width: 260px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 650;
+    }
+
+    button:hover {
+      border-color: #58a6ff;
     }
 
     .tech-box {
@@ -171,6 +185,31 @@
     .NA {
       color: #8b949e;
       font-weight: 700;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .stat-title {
+      color: #8b949e;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 750;
+      color: #ffffff;
     }
 
     table {
@@ -262,6 +301,12 @@
       margin-bottom: 20px;
     }
 
+    .legal {
+      color: #8b949e;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
     @media (max-width: 700px) {
       .header {
         flex-direction: column;
@@ -319,6 +364,9 @@
         <select id="instrumentFilter">
           <option value="all">All Instruments</option>
         </select>
+
+        <button onclick="downloadCSV()">Export CSV</button>
+        <button onclick="downloadJSON()">Export JSON</button>
       </div>
 
       <div class="tech-box" id="technicalBox">
@@ -334,6 +382,11 @@
         <div class="overall-vote" id="overall_vote">Loading...</div>
         <div id="summary">Loading...</div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Market Focus Today</h2>
+      <div class="stat-grid" id="market_focus">Loading...</div>
     </div>
 
     <div class="card">
@@ -358,6 +411,20 @@
       <div id="headlines">Loading...</div>
     </div>
 
+    <div class="card">
+      <h2>About</h2>
+      <p>
+        This dashboard is designed for traders, investors, and market watchers who want a quick view of what major public financial sources are currently emphasizing. It combines headline scanning, source voting, instrument filters, and a simple technical-direction layer.
+      </p>
+      <p>
+        Public sentiment is not the same as fundamental analysis. Sentiment reflects the public tone and focus of market commentary. Fundamentals are based on economic data, earnings, valuations, interest rates, balance sheets, and supply-demand conditions.
+      </p>
+    </div>
+
+    <div class="card legal">
+      <b>Disclaimer:</b> This website is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset. Market sentiment and technical direction can be incomplete, delayed, inaccurate, or misinterpreted. Always verify information independently and consult a licensed financial professional before making financial decisions.
+    </div>
+
     <div class="footer-note">
       Powered by Ha-Lion Public Sentiment Engine
     </div>
@@ -367,6 +434,7 @@
   <script>
     let dashboardData = null;
     let technicalData = null;
+    let currentFilteredHeadlines = [];
 
     const instrumentMap = {
       all: [["all", "All Instruments"]],
@@ -552,6 +620,37 @@
       `;
     }
 
+    function renderMarketFocus() {
+      const focus = dashboardData.top_market_focus || {};
+      const topMarkets = focus.top_markets || [];
+      const topInstruments = focus.top_instruments || [];
+
+      let html = "";
+
+      topMarkets.slice(0, 4).forEach(x => {
+        html += `
+          <div class="stat-box">
+            <div class="stat-title">Top Market</div>
+            <div class="stat-value">${x.name}</div>
+            <div class="count-note">${x.count} headline mentions</div>
+          </div>
+        `;
+      });
+
+      topInstruments.slice(0, 4).forEach(x => {
+        html += `
+          <div class="stat-box">
+            <div class="stat-title">Top Instrument</div>
+            <div class="stat-value">${x.name}</div>
+            <div class="count-note">${x.count} headline mentions</div>
+          </div>
+        `;
+      });
+
+      document.getElementById("market_focus").innerHTML =
+        html || "<p>No market focus data available yet.</p>";
+    }
+
     function renderDashboard() {
       if (!dashboardData) return;
 
@@ -561,6 +660,8 @@
       const filteredHeadlines = dashboardData.top_headlines.filter(item =>
         headlineMatches(item, market, instrument)
       );
+
+      currentFilteredHeadlines = filteredHeadlines;
 
       const filteredSummary = calculateFilteredSummary(filteredHeadlines);
 
@@ -575,6 +676,8 @@
 
       document.getElementById("summary").innerHTML =
         dashboardData.summary.map(item => "<p>" + item + "</p>").join("");
+
+      renderMarketFocus();
 
       const activeSources = new Set(filteredHeadlines.map(item => item.source));
 
@@ -615,6 +718,7 @@
                 <div class="headline-tags">
                   Vote: <span class="${voteClass(item.vote)}">${item.vote}</span>
                   | Impact: ${item.impact}
+                  | Relevance: ${item.relevance_level || "Medium"}
                   | Markets: ${(item.markets || []).join(", ")}
                   | Instruments: ${(item.instruments || []).join(", ")}
                 </div>
@@ -623,6 +727,46 @@
           : "<p>No headlines matched this filter in the latest scan.</p>";
 
       renderTechnicalBox();
+    }
+
+    function downloadJSON() {
+      const dataStr = JSON.stringify(currentFilteredHeadlines, null, 2);
+      const blob = new Blob([dataStr], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "public_sentiment_headlines.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadCSV() {
+      const rows = [["source", "title", "vote", "impact", "relevance", "markets", "instruments", "link"]];
+
+      currentFilteredHeadlines.forEach(h => {
+        rows.push([
+          h.source || "",
+          h.title || "",
+          h.vote || "",
+          h.impact || "",
+          h.relevance_level || "",
+          (h.markets || []).join("; "),
+          (h.instruments || []).join("; "),
+          h.link || ""
+        ]);
+      });
+
+      const csv = rows.map(row =>
+        row.map(value => '"' + String(value).replace(/"/g, '""') + '"').join(",")
+      ).join("\n");
+
+      const blob = new Blob([csv], {type: "text/csv"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "public_sentiment_headlines.csv";
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     document.getElementById("marketFilter").addEventListener("change", () => {
