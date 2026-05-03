@@ -1,11 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Comprehensive Public Sentiment Dashboard</title>
-  <meta name="description" content="AI-built public sentiment dashboard for indexes, futures, forex, crypto, commodities, bonds, Fed, inflation, gold, oil, and major market themes.">
-  <meta name="keywords" content="public sentiment dashboard, AI market dashboard, forex sentiment, crypto sentiment, S&P 500 sentiment, gold sentiment, oil sentiment, financial news sentiment">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PublicSentimentDash — Free Global Market Public Sentiment Dashboard</title>
+  <meta name="description" content="Free AI-built global market public sentiment dashboard tracking financial media tone across indexes, futures, bonds, forex, crypto, commodities, Fed, inflation, gold, oil, and macro themes.">
+  <meta name="keywords" content="public sentiment dashboard, market sentiment dashboard, financial news sentiment, AI market dashboard, forex sentiment, crypto sentiment, stock market sentiment, S&P 500 sentiment, gold sentiment, oil sentiment, global market sentiment">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/">
   <link rel="icon" type="image/png" href="logo.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PublicSentimentDash — Free Global Market Public Sentiment Dashboard">
+  <meta property="og:description" content="Track public financial media sentiment across global markets, forex, crypto, commodities, bonds, Fed, inflation, gold, oil, and major themes.">
+  <meta property="og:url" content="https://publicsentimentdash.com/">
+  <meta property="og:image" content="https://publicsentimentdash.com/logo.png">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PublicSentimentDash — Free Global Market Public Sentiment Dashboard">
+  <meta name="twitter:description" content="Free AI-built dashboard for global market public sentiment, technical direction, top headlines, source votes, and market focus.">
+  <meta name="twitter:image" content="https://publicsentimentdash.com/logo.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "PublicSentimentDash",
+    "url": "https://publicsentimentdash.com/",
+    "description": "Free AI-built global market public sentiment dashboard tracking financial media tone across indexes, futures, bonds, forex, crypto, commodities, Fed, inflation, gold, oil, and macro themes.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Ha-Lion Public Sentiment Engine"
+    }
+  }
+  </script>
 
   <style>
     body {
@@ -129,9 +157,18 @@
       margin-bottom: 20px;
     }
 
-    h2 {
+    h1, h2 {
       margin-top: 0;
       letter-spacing: 0.2px;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 21px;
     }
 
     .filters-row {
@@ -403,8 +440,8 @@
 
   <div class="header">
     <div class="brand">
-      <img src="logo.png" alt="Ha-Lion Logo" class="logo">
-      <div class="site-title">Comprehensive Public Sentiment Dashboard</div>
+      <img src="logo.png" alt="PublicSentimentDash Ha-Lion Logo" class="logo">
+      <div class="site-title">PublicSentimentDash</div>
     </div>
 
     <div class="header-actions">
@@ -420,17 +457,17 @@
 
     <div class="intro">
       <div class="intro-badge">✨ Constantly learning &amp; improving</div>
-      <div class="intro-title">AI-Built Public Sentiment Intelligence for Global Markets</div>
+      <h1 class="intro-title">Free Global Market Public Sentiment Dashboard</h1>
       <div>
-        This website is an <b>AI-built public sentiment dashboard</b> designed to help traders and investors quickly understand what major financial media and public market sources are emphasizing across <b>indexes, futures, bonds, forex, crypto, commodities, and macro themes</b>.
+        <b>PublicSentimentDash</b> is an <b>AI-built public sentiment dashboard</b> designed to help traders and investors quickly understand what major financial media and public market sources are emphasizing across <b>indexes, futures, bonds, forex, crypto, commodities, and macro themes</b>.
       </div>
       <br>
       <div>
-        The dashboard continuously scans well-known sources such as <b>Reuters, CNBC, Yahoo Finance, Investing.com, Associated Press, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch, Benzinga, TheStreet, Seeking Alpha, CoinDesk, and Kitco</b>, then organizes those headlines into a cleaner public-sentiment view.
+        The dashboard continuously scans well-known financial sources, then organizes headlines into a cleaner public-sentiment view with source votes, top market focus, relevant headlines, and technical direction.
       </div>
       <br>
       <div>
-        In practice, traders typically look at three major layers: <b>technical analysis</b>, <b>fundamental analysis</b>, and <b>public sentiment</b>. This dashboard focuses on the public-sentiment layer and helps show what markets and instruments are attracting the most attention, what tone dominates the headlines, and where public narrative may be shifting.
+        Traders typically look at three major layers: <b>technical analysis</b>, <b>fundamental analysis</b>, and <b>public sentiment</b>. This dashboard focuses on the public-sentiment layer and helps show where public narrative may be shifting.
       </div>
     </div>
 
@@ -520,6 +557,9 @@
       </p>
       <p>
         Public sentiment is not the same as fundamental analysis. Sentiment reflects tone, attention, and public narrative. Fundamentals reflect economic data, earnings, rates, valuations, balance sheets, and broader macro conditions.
+      </p>
+      <p>
+        Technical direction is calculated separately using price-based trend checks such as SMA20, SMA50, SMA20/SMA50 trend, 10-candle slope, and RSI14 where data is available.
       </p>
     </div>
 
@@ -669,6 +709,7 @@
       let bearish = 0;
       let neutral = 0;
       let high = 0;
+      let direct = 0;
 
       headlines.forEach(h => {
         if (h.vote === "Bullish") bullish++;
@@ -676,6 +717,7 @@
         else neutral++;
 
         if (h.impact === "High") high++;
+        if (h.relevance_type === "Directly Relevant") direct++;
       });
 
       let vote = "Neutral";
@@ -694,7 +736,7 @@
 
       return {
         vote: vote,
-        text: tone + " Filtered headlines show " + bullish + " bullish, " + bearish + " bearish, and " + neutral + " neutral readings. " + high + " matching headlines are high impact."
+        text: tone + " Filtered headlines show " + bullish + " bullish, " + bearish + " bearish, and " + neutral + " neutral readings. " + direct + " are directly relevant and " + high + " are high impact."
       };
     }
 
@@ -779,7 +821,8 @@
         ["Sources Working", (trust.sources_working || 0) + " / " + (trust.sources_configured || 0)],
         ["Raw Headlines", trust.raw_headlines_collected || 0],
         ["Relevant Matches", trust.relevant_headlines || 0],
-        ["Min Relevance", trust.minimum_relevance_score || "N/A"],
+        ["Direct Matches", trust.direct_headlines || 0],
+        ["Indirect Matches", trust.indirect_headlines || 0],
         ["Last Update", trust.updated_ny || dashboardData.updated_ny || "N/A"]
       ];
 
@@ -822,7 +865,7 @@
       const market = document.getElementById("marketFilter").value;
       const instrument = document.getElementById("instrumentFilter").value;
 
-      const filteredHeadlines = dashboardData.top_headlines.filter(item =>
+      const filteredHeadlines = (dashboardData.top_headlines || []).filter(item =>
         headlineMatches(item, market, instrument)
       );
 
@@ -883,9 +926,11 @@
                 <div class="headline-tags">
                   Vote: <span class="${voteClass(item.vote)}">${item.vote}</span>
                   | Impact: ${item.impact}
-                  | Relevance: ${item.relevance_level || "Medium"}
+                  | Relevance: ${item.relevance_type || item.relevance_level || "Medium"}
+                  | Score: ${item.relevance_score || "N/A"}
                   | Markets: ${(item.markets || []).join(", ")}
                   | Instruments: ${(item.instruments || []).join(", ")}
+                  ${item.relevance_reason ? `| Reason: ${item.relevance_reason}` : ""}
                 </div>
               </div>
             `).join("")
@@ -897,7 +942,7 @@
     function shareDashboard() {
       const market = document.getElementById("marketFilter").value;
       const instrument = document.getElementById("instrumentFilter").value;
-      const title = "Comprehensive Public Sentiment Dashboard";
+      const title = "PublicSentimentDash — Free Global Market Public Sentiment Dashboard";
       const text = "Free AI-built public sentiment dashboard for indexes, forex, crypto, commodities, bonds, and macro themes.";
       const url = window.location.href.split("?")[0] + "?market=" + encodeURIComponent(market) + "&instrument=" + encodeURIComponent(instrument);
 
