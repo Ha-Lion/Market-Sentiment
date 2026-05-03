@@ -2,52 +2,90 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Market Sentiment Dashboard</title>
+  <title>Ha-Lion Market Sentiment Dashboard</title>
   <link rel="icon" type="image/png" href="logo.png">
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #0d1117;
+      background: #05070b;
       color: #e6edf3;
-      margin: 30px;
+      margin: 0;
+      padding: 28px;
     }
 
-    .logo-wrap {
+    .top-area {
       text-align: center;
-      margin-bottom: 18px;
+      margin-bottom: 28px;
+    }
+
+    .logo-box {
+      display: inline-block;
+      background: #05070b;
+      padding: 6px;
+      border-radius: 18px;
+      box-shadow: 0 0 35px rgba(218, 165, 32, 0.25);
     }
 
     .logo {
-      width: 170px;
-      height: 170px;
+      width: 165px;
+      height: 165px;
       object-fit: contain;
-      display: inline-block;
+      display: block;
+      border-radius: 16px;
+      background: #05070b;
     }
 
     h1 {
       color: #58a6ff;
       text-align: center;
-      margin-top: 0;
-      margin-bottom: 10px;
+      margin: 20px 0 8px 0;
+      font-size: 32px;
     }
 
     .updated {
       color: #8b949e;
       text-align: center;
-      margin-bottom: 25px;
-      font-size: 16px;
+      margin-bottom: 22px;
+      font-size: 15px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    select {
+      background: #161b22;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 12px 16px;
+      min-width: 240px;
+      font-size: 15px;
+      outline: none;
     }
 
     .card {
       background: #161b22;
       border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 14px;
+      padding: 22px;
       margin-bottom: 20px;
     }
 
-    .small {
-      color: #8b949e;
+    .summary-box p {
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+
+    .overall-vote {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
     }
 
     .Bullish {
@@ -65,7 +103,8 @@
       font-weight: bold;
     }
 
-    .Neutral {
+    .Neutral,
+    .MixedNeutral {
       color: #8b949e;
       font-weight: bold;
     }
@@ -95,25 +134,20 @@
       text-decoration: underline;
     }
 
-    .summary-box p {
-      margin: 0 0 12px 0;
-      line-height: 1.5;
-    }
-
-    .overall-vote {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 12px;
-    }
-
     .headline-item {
-      margin-bottom: 12px;
-      line-height: 1.5;
+      margin-bottom: 13px;
+      line-height: 1.45;
     }
 
     .headline-source {
       font-weight: bold;
       color: #e6edf3;
+    }
+
+    .count-note {
+      color: #8b949e;
+      font-size: 14px;
+      margin-bottom: 14px;
     }
 
     .footer-note {
@@ -124,13 +158,34 @@
     }
   </style>
 </head>
+
 <body>
-  <div class="logo-wrap">
-    <img src="logo.png" alt="Ha-Lion Logo" class="logo">
+
+  <div class="top-area">
+    <div class="logo-box">
+      <img src="logo.png" alt="Ha-Lion Logo" class="logo">
+    </div>
+
+    <h1>Ha-Lion Market Sentiment Dashboard</h1>
+    <div class="updated" id="updated">Loading...</div>
   </div>
 
-  <h1>Market Sentiment Dashboard</h1>
-  <div class="updated" id="updated">Loading...</div>
+  <div class="filters">
+    <select id="marketFilter">
+      <option value="all">All Markets</option>
+      <option value="indexes">Indexes / Futures</option>
+      <option value="forex">Forex / Currencies</option>
+      <option value="crypto">Crypto</option>
+      <option value="commodities">Commodities</option>
+      <option value="oil">Oil / Energy</option>
+      <option value="gold">Gold / Metals</option>
+      <option value="macro">Macro / Fed / Inflation</option>
+    </select>
+
+    <select id="instrumentFilter">
+      <option value="all">All Instruments</option>
+    </select>
+  </div>
 
   <div class="card">
     <h2>Market Summary</h2>
@@ -142,6 +197,7 @@
 
   <div class="card">
     <h2>Source Votes</h2>
+    <div class="count-note" id="source_count"></div>
     <table>
       <thead>
         <tr>
@@ -157,6 +213,7 @@
 
   <div class="card">
     <h2>Top Headlines</h2>
+    <div class="count-note" id="headline_count"></div>
     <div id="headlines">Loading...</div>
   </div>
 
@@ -165,36 +222,192 @@
   </div>
 
   <script>
+    let dashboardData = null;
+
+    const instrumentMap = {
+      all: [
+        ["all", "All Instruments"]
+      ],
+      indexes: [
+        ["all", "All Indexes / Futures"],
+        ["s&p 500|spx|es futures|s&p futures", "S&P 500 / ES"],
+        ["nasdaq|nq futures|nasdaq futures", "Nasdaq / NQ"],
+        ["dow|ym futures|dow futures", "Dow / YM"],
+        ["russell|rty futures|russell 2000", "Russell / RTY"],
+        ["vix|volatility", "VIX / Volatility"]
+      ],
+      forex: [
+        ["all", "All Forex"],
+        ["dxy|dollar index|us dollar", "US Dollar / DXY"],
+        ["eurusd|euro", "EUR / EURUSD"],
+        ["gbpusd|pound", "GBP / GBPUSD"],
+        ["usdjpy|yen", "JPY / USDJPY"],
+        ["usdchf|franc", "CHF / USDCHF"],
+        ["audusd|aussie", "AUD / AUDUSD"],
+        ["nzdusd|kiwi", "NZD / NZDUSD"],
+        ["usdcad|canadian dollar", "CAD / USDCAD"]
+      ],
+      crypto: [
+        ["all", "All Crypto"],
+        ["bitcoin|btc", "Bitcoin / BTC"],
+        ["ethereum|eth", "Ethereum / ETH"],
+        ["crypto|cryptocurrency|digital assets", "General Crypto"],
+        ["stablecoin", "Stablecoins"],
+        ["bitcoin etf|crypto etf", "Crypto ETFs"]
+      ],
+      commodities: [
+        ["all", "All Commodities"],
+        ["gold|xau", "Gold"],
+        ["silver|xag", "Silver"],
+        ["copper", "Copper"],
+        ["crude oil|wti|brent|oil", "Crude Oil"],
+        ["natural gas|nat gas", "Natural Gas"]
+      ],
+      oil: [
+        ["all", "All Oil / Energy"],
+        ["crude oil|wti|brent|oil prices", "Crude Oil"],
+        ["natural gas|nat gas", "Natural Gas"],
+        ["opec|oil inventories|eia", "OPEC / Inventories"]
+      ],
+      gold: [
+        ["all", "All Gold / Metals"],
+        ["gold|xau", "Gold"],
+        ["silver|xag", "Silver"],
+        ["copper", "Copper"],
+        ["metals|precious metals", "Metals"]
+      ],
+      macro: [
+        ["all", "All Macro"],
+        ["fed|federal reserve|fomc|powell", "Fed / FOMC"],
+        ["cpi|inflation", "CPI / Inflation"],
+        ["ppi", "PPI"],
+        ["nfp|jobs report|unemployment", "Jobs / NFP"],
+        ["gdp", "GDP"],
+        ["treasury yields|10-year yield|yields", "Treasury Yields"],
+        ["tariffs|geopolitical|war", "Geopolitical / Tariffs"]
+      ]
+    };
+
+    function getText(item) {
+      return (
+        (item.title || "") + " " +
+        (item.source || "") + " " +
+        (item.description || "") + " " +
+        (item.published || "")
+      ).toLowerCase();
+    }
+
+    function matchesFilter(item, market, instrument) {
+      if (market === "all" && instrument === "all") return true;
+
+      const text = getText(item);
+
+      let marketKeywords = "";
+      if (market !== "all") {
+        marketKeywords = instrumentMap[market]
+          .filter(x => x[0] !== "all")
+          .map(x => x[0])
+          .join("|");
+      }
+
+      if (instrument !== "all") {
+        return new RegExp(instrument, "i").test(text);
+      }
+
+      if (market !== "all") {
+        return new RegExp(marketKeywords, "i").test(text);
+      }
+
+      return true;
+    }
+
+    function populateInstrumentDropdown() {
+      const market = document.getElementById("marketFilter").value;
+      const instrumentSelect = document.getElementById("instrumentFilter");
+
+      instrumentSelect.innerHTML = "";
+
+      const list = instrumentMap[market] || instrumentMap.all;
+
+      list.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item[0];
+        option.textContent = item[1];
+        instrumentSelect.appendChild(option);
+      });
+    }
+
+    function renderDashboard() {
+      if (!dashboardData) return;
+
+      const market = document.getElementById("marketFilter").value;
+      const instrument = document.getElementById("instrumentFilter").value;
+
+      document.getElementById("updated").innerText =
+        "Last update: " + dashboardData.updated_utc;
+
+      const overallVote = dashboardData.overall_vote || "Neutral";
+      const safeClass = overallVote.replace("/", "").replace(" ", "");
+
+      document.getElementById("overall_vote").innerHTML =
+        'Overall Sentiment: <span class="' + safeClass + '">' + overallVote + '</span>';
+
+      document.getElementById("summary").innerHTML =
+        dashboardData.summary.map(item => "<p>" + item + "</p>").join("");
+
+      const filteredHeadlines = dashboardData.top_headlines.filter(item =>
+        matchesFilter(item, market, instrument)
+      );
+
+      const activeSources = new Set(filteredHeadlines.map(item => item.source));
+
+      let filteredSources = dashboardData.sources;
+      if (market !== "all" || instrument !== "all") {
+        filteredSources = dashboardData.sources.filter(source =>
+          activeSources.has(source.name)
+        );
+      }
+
+      document.getElementById("source_count").innerText =
+        "Showing " + filteredSources.length + " source(s).";
+
+      document.getElementById("sources").innerHTML =
+        filteredSources.map(source => `
+          <tr>
+            <td><a href="${source.url}" target="_blank">${source.name}</a></td>
+            <td class="${source.vote}">${source.vote}</td>
+            <td>${source.impact}</td>
+            <td>${source.status}</td>
+          </tr>
+        `).join("");
+
+      document.getElementById("headline_count").innerText =
+        "Showing " + filteredHeadlines.length + " headline(s).";
+
+      document.getElementById("headlines").innerHTML =
+        filteredHeadlines.length
+          ? filteredHeadlines.map(item => `
+              <div class="headline-item">
+                <span class="headline-source">${item.source}:</span>
+                <a href="${item.link}" target="_blank">${item.title}</a>
+              </div>
+            `).join("")
+          : "<p>No headlines matched this filter in the latest scan.</p>";
+    }
+
+    document.getElementById("marketFilter").addEventListener("change", () => {
+      populateInstrumentDropdown();
+      renderDashboard();
+    });
+
+    document.getElementById("instrumentFilter").addEventListener("change", renderDashboard);
+
     fetch("dashboard_data.json?t=" + Date.now())
       .then(response => response.json())
       .then(data => {
-        document.getElementById("updated").innerText =
-          "Last update: " + data.updated_utc;
-
-        const overallVote = data.overall_vote || "Neutral";
-        document.getElementById("overall_vote").innerHTML =
-          'Overall Sentiment: <span class="' + overallVote.replace("/", "") + '">' + overallVote + '</span>';
-
-        document.getElementById("summary").innerHTML =
-          data.summary.map(item => "<p>" + item + "</p>").join("");
-
-        document.getElementById("sources").innerHTML =
-          data.sources.map(source => `
-            <tr>
-              <td><a href="${source.url}" target="_blank">${source.name}</a></td>
-              <td class="${source.vote}">${source.vote}</td>
-              <td>${source.impact}</td>
-              <td>${source.status}</td>
-            </tr>
-          `).join("");
-
-        document.getElementById("headlines").innerHTML =
-          data.top_headlines.map(item => `
-            <div class="headline-item">
-              <span class="headline-source">${item.source}:</span>
-              <a href="${item.link}" target="_blank">${item.title}</a>
-            </div>
-          `).join("");
+        dashboardData = data;
+        populateInstrumentDropdown();
+        renderDashboard();
       })
       .catch(error => {
         document.getElementById("updated").innerText = "Could not load dashboard data";
