@@ -22,17 +22,17 @@
     .logo-box {
       display: inline-block;
       background: #05070b;
-      padding: 6px;
-      border-radius: 18px;
-      box-shadow: 0 0 35px rgba(218, 165, 32, 0.25);
+      padding: 8px;
+      border-radius: 22px;
+      box-shadow: 0 0 40px rgba(218, 165, 32, 0.25);
     }
 
     .logo {
-      width: 165px;
-      height: 165px;
+      width: 175px;
+      height: 175px;
       object-fit: contain;
       display: block;
-      border-radius: 16px;
+      border-radius: 20px;
       background: #05070b;
     }
 
@@ -41,6 +41,7 @@
       text-align: center;
       margin: 20px 0 8px 0;
       font-size: 32px;
+      letter-spacing: 1px;
     }
 
     .updated {
@@ -64,7 +65,7 @@
       border: 1px solid #30363d;
       border-radius: 10px;
       padding: 12px 16px;
-      min-width: 240px;
+      min-width: 260px;
       font-size: 15px;
       outline: none;
     }
@@ -135,8 +136,10 @@
     }
 
     .headline-item {
-      margin-bottom: 13px;
+      margin-bottom: 15px;
       line-height: 1.45;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #30363d;
     }
 
     .headline-source {
@@ -144,10 +147,24 @@
       color: #e6edf3;
     }
 
+    .headline-tags {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
     .count-note {
       color: #8b949e;
       font-size: 14px;
       margin-bottom: 14px;
+    }
+
+    .filter-summary {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 18px;
     }
 
     .footer-note {
@@ -189,6 +206,7 @@
 
   <div class="card">
     <h2>Market Summary</h2>
+    <div class="filter-summary" id="filter_summary">Loading filtered summary...</div>
     <div class="summary-box">
       <div class="overall-vote" id="overall_vote">Loading...</div>
       <div id="summary">Loading...</div>
@@ -230,95 +248,62 @@
       ],
       indexes: [
         ["all", "All Indexes / Futures"],
-        ["s&p 500|spx|es futures|s&p futures", "S&P 500 / ES"],
-        ["nasdaq|nq futures|nasdaq futures", "Nasdaq / NQ"],
-        ["dow|ym futures|dow futures", "Dow / YM"],
-        ["russell|rty futures|russell 2000", "Russell / RTY"],
-        ["vix|volatility", "VIX / Volatility"]
+        ["S&P 500 / ES", "S&P 500 / ES"],
+        ["Nasdaq / NQ", "Nasdaq / NQ"],
+        ["Dow / YM", "Dow / YM"],
+        ["Russell / RTY", "Russell / RTY"],
+        ["VIX", "VIX / Volatility"]
       ],
       forex: [
         ["all", "All Forex"],
-        ["dxy|dollar index|us dollar", "US Dollar / DXY"],
-        ["eurusd|euro", "EUR / EURUSD"],
-        ["gbpusd|pound", "GBP / GBPUSD"],
-        ["usdjpy|yen", "JPY / USDJPY"],
-        ["usdchf|franc", "CHF / USDCHF"],
-        ["audusd|aussie", "AUD / AUDUSD"],
-        ["nzdusd|kiwi", "NZD / NZDUSD"],
-        ["usdcad|canadian dollar", "CAD / USDCAD"]
+        ["US Dollar / DXY", "US Dollar / DXY"],
+        ["EUR / EURUSD", "EUR / EURUSD"],
+        ["GBP / GBPUSD", "GBP / GBPUSD"],
+        ["JPY / USDJPY", "JPY / USDJPY"],
+        ["CHF / USDCHF", "CHF / USDCHF"],
+        ["CAD / USDCAD", "CAD / USDCAD"],
+        ["AUD / AUDUSD", "AUD / AUDUSD"],
+        ["NZD / NZDUSD", "NZD / NZDUSD"]
       ],
       crypto: [
         ["all", "All Crypto"],
-        ["bitcoin|btc", "Bitcoin / BTC"],
-        ["ethereum|eth", "Ethereum / ETH"],
-        ["crypto|cryptocurrency|digital assets", "General Crypto"],
-        ["stablecoin", "Stablecoins"],
-        ["bitcoin etf|crypto etf", "Crypto ETFs"]
+        ["Bitcoin / BTC", "Bitcoin / BTC"],
+        ["Ethereum / ETH", "Ethereum / ETH"],
+        ["General Crypto", "General Crypto"]
       ],
       commodities: [
         ["all", "All Commodities"],
-        ["gold|xau", "Gold"],
-        ["silver|xag", "Silver"],
-        ["copper", "Copper"],
-        ["crude oil|wti|brent|oil", "Crude Oil"],
-        ["natural gas|nat gas", "Natural Gas"]
+        ["Gold", "Gold"],
+        ["Silver", "Silver"],
+        ["Copper", "Copper"],
+        ["Crude Oil", "Crude Oil"],
+        ["Natural Gas", "Natural Gas"]
       ],
       oil: [
         ["all", "All Oil / Energy"],
-        ["crude oil|wti|brent|oil prices", "Crude Oil"],
-        ["natural gas|nat gas", "Natural Gas"],
-        ["opec|oil inventories|eia", "OPEC / Inventories"]
+        ["Crude Oil", "Crude Oil"],
+        ["Natural Gas", "Natural Gas"]
       ],
       gold: [
         ["all", "All Gold / Metals"],
-        ["gold|xau", "Gold"],
-        ["silver|xag", "Silver"],
-        ["copper", "Copper"],
-        ["metals|precious metals", "Metals"]
+        ["Gold", "Gold"],
+        ["Silver", "Silver"],
+        ["Copper", "Copper"]
       ],
       macro: [
         ["all", "All Macro"],
-        ["fed|federal reserve|fomc|powell", "Fed / FOMC"],
-        ["cpi|inflation", "CPI / Inflation"],
-        ["ppi", "PPI"],
-        ["nfp|jobs report|unemployment", "Jobs / NFP"],
-        ["gdp", "GDP"],
-        ["treasury yields|10-year yield|yields", "Treasury Yields"],
-        ["tariffs|geopolitical|war", "Geopolitical / Tariffs"]
+        ["Fed / FOMC", "Fed / FOMC"],
+        ["CPI / Inflation", "CPI / Inflation"],
+        ["PPI", "PPI"],
+        ["Jobs / NFP", "Jobs / NFP"],
+        ["GDP", "GDP"],
+        ["Treasury Yields", "Treasury Yields"],
+        ["Geopolitical / Tariffs", "Geopolitical / Tariffs"]
       ]
     };
 
-    function getText(item) {
-      return (
-        (item.title || "") + " " +
-        (item.source || "") + " " +
-        (item.description || "") + " " +
-        (item.published || "")
-      ).toLowerCase();
-    }
-
-    function matchesFilter(item, market, instrument) {
-      if (market === "all" && instrument === "all") return true;
-
-      const text = getText(item);
-
-      let marketKeywords = "";
-      if (market !== "all") {
-        marketKeywords = instrumentMap[market]
-          .filter(x => x[0] !== "all")
-          .map(x => x[0])
-          .join("|");
-      }
-
-      if (instrument !== "all") {
-        return new RegExp(instrument, "i").test(text);
-      }
-
-      if (market !== "all") {
-        return new RegExp(marketKeywords, "i").test(text);
-      }
-
-      return true;
+    function voteClass(vote) {
+      return (vote || "Neutral").replace("/", "").replace(" ", "");
     }
 
     function populateInstrumentDropdown() {
@@ -337,6 +322,64 @@
       });
     }
 
+    function headlineMatches(item, market, instrument) {
+      if (market === "all" && instrument === "all") return true;
+
+      const markets = item.markets || [];
+      const instruments = item.instruments || [];
+
+      if (instrument !== "all") {
+        return instruments.includes(instrument);
+      }
+
+      if (market !== "all") {
+        return markets.includes(market);
+      }
+
+      return true;
+    }
+
+    function calculateFilteredSummary(headlines) {
+      if (!headlines.length) {
+        return {
+          vote: "Neutral",
+          text: "No matching headlines were found for this selected market or instrument in the latest scan."
+        };
+      }
+
+      let bullish = 0;
+      let bearish = 0;
+      let neutral = 0;
+      let high = 0;
+
+      headlines.forEach(h => {
+        if (h.vote === "Bullish") bullish++;
+        else if (h.vote === "Bearish") bearish++;
+        else neutral++;
+
+        if (h.impact === "High") high++;
+      });
+
+      let vote = "Neutral";
+      let tone = "The selected area is mixed to neutral.";
+
+      if (bullish > bearish) {
+        vote = "Bullish";
+        tone = "The selected area is leaning bullish.";
+      } else if (bearish > bullish) {
+        vote = "Bearish";
+        tone = "The selected area is leaning bearish.";
+      } else if (bullish > 0 && bearish > 0) {
+        vote = "Mixed";
+        tone = "The selected area is mixed.";
+      }
+
+      return {
+        vote: vote,
+        text: tone + " Filtered headlines show " + bullish + " bullish, " + bearish + " bearish, and " + neutral + " neutral readings. " + high + " matching headlines are high impact."
+      };
+    }
+
     function renderDashboard() {
       if (!dashboardData) return;
 
@@ -344,24 +387,30 @@
       const instrument = document.getElementById("instrumentFilter").value;
 
       document.getElementById("updated").innerText =
-        "Last update: " + dashboardData.updated_utc;
+        "Last update: " + (dashboardData.updated_ny || dashboardData.updated_utc);
+
+      const filteredHeadlines = dashboardData.top_headlines.filter(item =>
+        headlineMatches(item, market, instrument)
+      );
+
+      const filteredSummary = calculateFilteredSummary(filteredHeadlines);
+
+      document.getElementById("filter_summary").innerHTML =
+        '<b>Filtered Sentiment: <span class="' + voteClass(filteredSummary.vote) + '">' +
+        filteredSummary.vote + '</span></b><br>' + filteredSummary.text;
 
       const overallVote = dashboardData.overall_vote || "Neutral";
-      const safeClass = overallVote.replace("/", "").replace(" ", "");
 
       document.getElementById("overall_vote").innerHTML =
-        'Overall Sentiment: <span class="' + safeClass + '">' + overallVote + '</span>';
+        'Overall Market Sentiment: <span class="' + voteClass(overallVote) + '">' + overallVote + '</span>';
 
       document.getElementById("summary").innerHTML =
         dashboardData.summary.map(item => "<p>" + item + "</p>").join("");
 
-      const filteredHeadlines = dashboardData.top_headlines.filter(item =>
-        matchesFilter(item, market, instrument)
-      );
-
       const activeSources = new Set(filteredHeadlines.map(item => item.source));
 
       let filteredSources = dashboardData.sources;
+
       if (market !== "all" || instrument !== "all") {
         filteredSources = dashboardData.sources.filter(source =>
           activeSources.has(source.name)
@@ -372,14 +421,16 @@
         "Showing " + filteredSources.length + " source(s).";
 
       document.getElementById("sources").innerHTML =
-        filteredSources.map(source => `
-          <tr>
-            <td><a href="${source.url}" target="_blank">${source.name}</a></td>
-            <td class="${source.vote}">${source.vote}</td>
-            <td>${source.impact}</td>
-            <td>${source.status}</td>
-          </tr>
-        `).join("");
+        filteredSources.length
+          ? filteredSources.map(source => `
+              <tr>
+                <td><a href="${source.url}" target="_blank">${source.name}</a></td>
+                <td class="${voteClass(source.vote)}">${source.vote}</td>
+                <td>${source.impact}</td>
+                <td>${source.status}</td>
+              </tr>
+            `).join("")
+          : "<tr><td colspan='4'>No sources matched this filter.</td></tr>";
 
       document.getElementById("headline_count").innerText =
         "Showing " + filteredHeadlines.length + " headline(s).";
@@ -390,6 +441,12 @@
               <div class="headline-item">
                 <span class="headline-source">${item.source}:</span>
                 <a href="${item.link}" target="_blank">${item.title}</a>
+                <div class="headline-tags">
+                  Vote: <span class="${voteClass(item.vote)}">${item.vote}</span>
+                  | Impact: ${item.impact}
+                  | Markets: ${(item.markets || []).join(", ")}
+                  | Instruments: ${(item.instruments || []).join(", ")}
+                </div>
               </div>
             `).join("")
           : "<p>No headlines matched this filter in the latest scan.</p>";
