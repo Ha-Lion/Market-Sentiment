@@ -1,28 +1,143 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Market Sentiment Dashboard</title>
+  <link rel="icon" type="image/png" href="logo.png">
   <style>
-    body { font-family: Arial, sans-serif; background:#0d1117; color:#e6edf3; margin:30px; }
-    h1 { color:#58a6ff; }
-    .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px; }
-    .small { color:#8b949e; }
-    .Bullish { color:#3fb950; font-weight:bold; }
-    .Bearish { color:#f85149; font-weight:bold; }
-    .Mixed { color:#d29922; font-weight:bold; }
-    .Neutral { color:#8b949e; font-weight:bold; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { border-bottom:1px solid #30363d; padding:10px; text-align:left; }
-    a { color:#58a6ff; text-decoration:none; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      margin: 30px;
+    }
+
+    .logo-wrap {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .logo {
+      width: 170px;
+      height: 170px;
+      object-fit: contain;
+      display: inline-block;
+    }
+
+    h1 {
+      color: #58a6ff;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .updated {
+      color: #8b949e;
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 16px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .small {
+      color: #8b949e;
+    }
+
+    .Bullish {
+      color: #3fb950;
+      font-weight: bold;
+    }
+
+    .Bearish {
+      color: #f85149;
+      font-weight: bold;
+    }
+
+    .Mixed {
+      color: #d29922;
+      font-weight: bold;
+    }
+
+    .Neutral {
+      color: #8b949e;
+      font-weight: bold;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border-bottom: 1px solid #30363d;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #ffffff;
+    }
+
+    a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .summary-box p {
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+
+    .overall-vote {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .headline-item {
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .headline-source {
+      font-weight: bold;
+      color: #e6edf3;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #8b949e;
+      font-size: 13px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
+  <div class="logo-wrap">
+    <img src="logo.png" alt="Ha-Lion Logo" class="logo">
+  </div>
+
   <h1>Market Sentiment Dashboard</h1>
-  <p class="small" id="updated">Loading...</p>
+  <div class="updated" id="updated">Loading...</div>
 
   <div class="card">
     <h2>Market Summary</h2>
-    <div id="summary">Loading...</div>
+    <div class="summary-box">
+      <div class="overall-vote" id="overall_vote">Loading...</div>
+      <div id="summary">Loading...</div>
+    </div>
   </div>
 
   <div class="card">
@@ -45,32 +160,49 @@
     <div id="headlines">Loading...</div>
   </div>
 
+  <div class="footer-note">
+    Powered by Ha-Lion Market Sentiment Engine
+  </div>
+
   <script>
     fetch("dashboard_data.json?t=" + Date.now())
-      .then(r => r.json())
+      .then(response => response.json())
       .then(data => {
-        document.getElementById("updated").innerText = "Last update: " + data.updated_utc;
+        document.getElementById("updated").innerText =
+          "Last update: " + data.updated_utc;
+
+        const overallVote = data.overall_vote || "Neutral";
+        document.getElementById("overall_vote").innerHTML =
+          'Overall Sentiment: <span class="' + overallVote.replace("/", "") + '">' + overallVote + '</span>';
 
         document.getElementById("summary").innerHTML =
-          data.summary.map(s => "<p>" + s + "</p>").join("");
+          data.summary.map(item => "<p>" + item + "</p>").join("");
 
         document.getElementById("sources").innerHTML =
-          data.sources.map(s => `
+          data.sources.map(source => `
             <tr>
-              <td><a href="${s.url}" target="_blank">${s.name}</a></td>
-              <td class="${s.vote}">${s.vote}</td>
-              <td>${s.impact}</td>
-              <td>${s.status}</td>
+              <td><a href="${source.url}" target="_blank">${source.name}</a></td>
+              <td class="${source.vote}">${source.vote}</td>
+              <td>${source.impact}</td>
+              <td>${source.status}</td>
             </tr>
           `).join("");
 
         document.getElementById("headlines").innerHTML =
-          data.top_headlines.map(h => `
-            <p><b>${h.source}:</b> <a href="${h.link}" target="_blank">${h.title}</a></p>
+          data.top_headlines.map(item => `
+            <div class="headline-item">
+              <span class="headline-source">${item.source}:</span>
+              <a href="${item.link}" target="_blank">${item.title}</a>
+            </div>
           `).join("");
       })
-      .catch(err => {
-        document.getElementById("summary").innerText = "Could not load dashboard_data.json";
+      .catch(error => {
+        document.getElementById("updated").innerText = "Could not load dashboard data";
+        document.getElementById("overall_vote").innerText = "Error loading overall sentiment";
+        document.getElementById("summary").innerText = "Could not load summary";
+        document.getElementById("sources").innerHTML =
+          "<tr><td colspan='4'>Could not load source votes</td></tr>";
+        document.getElementById("headlines").innerText = "Could not load headlines";
       });
   </script>
 </body>
