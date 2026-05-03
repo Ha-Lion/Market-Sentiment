@@ -1,798 +1,757 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Comprehensive Public Sentiment Dashboard</title>
-  <meta name="description" content="Free public sentiment dashboard for indexes, futures, forex, crypto, commodities, bonds, Fed, inflation, gold, oil, and major market themes.">
-  <meta name="keywords" content="public sentiment dashboard, market sentiment, forex sentiment, crypto sentiment, S&P 500 sentiment, gold sentiment, oil sentiment, financial news sentiment">
-  <link rel="icon" type="image/png" href="logo.png">
-
-  <style>
-    body {
-      font-family: "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-      background: #05070b;
-      color: #e6edf3;
-      margin: 0;
-      padding: 0;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 28px;
-      border-bottom: 1px solid #1f2937;
-      background: #070a10;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .logo {
-      width: 58px;
-      height: 58px;
-      object-fit: contain;
-      border-radius: 10px;
-      background: #05070b;
-      box-shadow: 0 0 16px rgba(218, 165, 32, 0.2);
-    }
-
-    .site-title {
-      color: #e6edf3;
-      font-size: 20px;
-      font-weight: 650;
-      letter-spacing: 0.2px;
-    }
-
-    .feedback-btn {
-      color: #05070b;
-      background: #d29922;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .feedback-btn:hover {
-      background: #f0b72f;
-      text-decoration: none;
-    }
-
-    .page {
-      padding: 28px;
-    }
-
-    .intro {
-      max-width: 1180px;
-      margin: 0 auto 24px auto;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 14px;
-      padding: 18px 22px;
-      line-height: 1.55;
-      color: #c9d1d9;
-    }
-
-    .intro b {
-      color: #ffffff;
-    }
-
-    .filters-row {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-      align-items: stretch;
-    }
-
-    .filters {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    select, button {
-      background: #161b22;
-      color: #e6edf3;
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 15px;
-      outline: none;
-    }
-
-    select {
-      min-width: 260px;
-    }
-
-    button {
-      cursor: pointer;
-      font-weight: 650;
-    }
-
-    button:hover {
-      border-color: #58a6ff;
-    }
-
-    .tech-box {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 12px 16px;
-      min-width: 310px;
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    .tech-title {
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 4px;
-    }
-
-    .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 14px;
-      padding: 22px;
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      margin-top: 0;
-      letter-spacing: 0.2px;
-    }
-
-    .summary-box p {
-      margin: 0 0 12px 0;
-      line-height: 1.5;
-    }
-
-    .overall-vote {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .Bullish {
-      color: #3fb950;
-      font-weight: 700;
-    }
-
-    .Bearish {
-      color: #f85149;
-      font-weight: 700;
-    }
-
-    .Mixed,
-    .MixedBullish,
-    .MixedBearish {
-      color: #d29922;
-      font-weight: 700;
-    }
-
-    .Neutral,
-    .MixedNeutral,
-    .NA {
-      color: #8b949e;
-      font-weight: 700;
-    }
-
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-    }
-
-    .stat-box {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 14px;
-    }
-
-    .stat-title {
-      color: #8b949e;
-      font-size: 13px;
-      margin-bottom: 6px;
-    }
-
-    .stat-value {
-      font-size: 20px;
-      font-weight: 750;
-      color: #ffffff;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      border-bottom: 1px solid #30363d;
-      padding: 10px;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    th {
-      color: #ffffff;
-      font-weight: 700;
-    }
-
-    a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .headline-item {
-      margin-bottom: 15px;
-      line-height: 1.45;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #30363d;
-    }
-
-    .headline-source {
-      font-weight: 700;
-      color: #e6edf3;
-    }
-
-    .headline-tags {
-      margin-top: 4px;
-      font-size: 12px;
-      color: #8b949e;
-    }
-
-    .count-note {
-      color: #8b949e;
-      font-size: 14px;
-      margin-bottom: 14px;
-    }
-
-    .filter-summary {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 18px;
-    }
-
-    .health-dot {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      vertical-align: middle;
-    }
-
-    .health-green {
-      background: #3fb950;
-      box-shadow: 0 0 8px rgba(63,185,80,0.5);
-    }
-
-    .health-orange {
-      background: #d29922;
-      box-shadow: 0 0 8px rgba(210,153,34,0.5);
-    }
-
-    .health-red {
-      background: #f85149;
-      box-shadow: 0 0 8px rgba(248,81,73,0.5);
-    }
-
-    .footer-note {
-      text-align: center;
-      color: #8b949e;
-      font-size: 13px;
-      margin-top: 20px;
-      margin-bottom: 20px;
-    }
-
-    .legal {
-      color: #8b949e;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 700px) {
-      .header {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
-      }
-
-      .site-title {
-        font-size: 18px;
-      }
-
-      .page {
-        padding: 18px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="header">
-    <div class="brand">
-      <img src="logo.png" alt="Ha-Lion Logo" class="logo">
-      <div class="site-title">Comprehensive Public Sentiment Dashboard</div>
-    </div>
-
-    <a class="feedback-btn" target="_blank"
-       href="https://github.com/Ha-Lion/Market-Sentiment/issues/new?title=Dashboard%20Feedback&body=Please%20write%20your%20feedback%20here%3A%0A%0A">
-      Share Feedback
-    </a>
-  </div>
-
-  <div class="page">
-
-    <div class="intro">
-      <b>What this is:</b> a free public-sentiment dashboard that scans major financial news and market sources for tone, themes, and instrument-specific headlines.
-      <br>
-      <b>Sources:</b> Reuters, CNBC, Yahoo Finance, Investing.com, AP, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch, Benzinga, TheStreet, Seeking Alpha, CoinDesk, and Kitco.
-      <br>
-      <b>Why it matters:</b> every trade should consider technical analysis, fundamental analysis, and public sentiment. Sentiment does not replace price action, but it helps show what the market is focused on.
-    </div>
-
-    <div class="filters-row">
-      <div class="filters">
-        <select id="marketFilter">
-          <option value="all">All Markets</option>
-          <option value="indexes">Indexes / Futures</option>
-          <option value="bonds">Bonds / Rates</option>
-          <option value="forex">Forex / Currencies</option>
-          <option value="crypto">Crypto</option>
-          <option value="commodities">Commodities</option>
-          <option value="macro">Macro / Fed / Inflation</option>
-        </select>
-
-        <select id="instrumentFilter">
-          <option value="all">All Instruments</option>
-        </select>
-
-        <button onclick="downloadCSV()">Export CSV</button>
-        <button onclick="downloadJSON()">Export JSON</button>
-      </div>
-
-      <div class="tech-box" id="technicalBox">
-        <div class="tech-title">Technical Direction</div>
-        Select a specific instrument.
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Public Sentiment Summary</h2>
-      <div class="filter-summary" id="filter_summary">Loading filtered summary...</div>
-      <div class="summary-box">
-        <div class="overall-vote" id="overall_vote">Loading...</div>
-        <div id="summary">Loading...</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Market Focus Today</h2>
-      <div class="stat-grid" id="market_focus">Loading...</div>
-    </div>
-
-    <div class="card">
-      <h2>Source Votes</h2>
-      <div class="count-note" id="source_count"></div>
-      <table>
-        <thead>
-          <tr>
-            <th>Source</th>
-            <th>Vote</th>
-            <th>Impact</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="sources"></tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>Top Headlines</h2>
-      <div class="count-note" id="headline_count"></div>
-      <div id="headlines">Loading...</div>
-    </div>
-
-    <div class="card">
-      <h2>About</h2>
-      <p>
-        This dashboard is designed for traders, investors, and market watchers who want a quick view of what major public financial sources are currently emphasizing. It combines headline scanning, source voting, instrument filters, and a simple technical-direction layer.
-      </p>
-      <p>
-        Public sentiment is not the same as fundamental analysis. Sentiment reflects the public tone and focus of market commentary. Fundamentals are based on economic data, earnings, valuations, interest rates, balance sheets, and supply-demand conditions.
-      </p>
-    </div>
-
-    <div class="card legal">
-      <b>Disclaimer:</b> This website is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset. Market sentiment and technical direction can be incomplete, delayed, inaccurate, or misinterpreted. Always verify information independently and consult a licensed financial professional before making financial decisions.
-    </div>
-
-    <div class="footer-note">
-      Powered by Ha-Lion Public Sentiment Engine
-    </div>
-
-  </div>
-
-  <script>
-    let dashboardData = null;
-    let technicalData = null;
-    let currentFilteredHeadlines = [];
-
-    const instrumentMap = {
-      all: [["all", "All Instruments"]],
-      indexes: [
-        ["all", "All Indexes / Futures"],
-        ["S&P 500 / ES", "S&P 500 / ES"],
-        ["Nasdaq / NQ", "Nasdaq / NQ"],
-        ["Dow / YM", "Dow / YM"],
-        ["Russell / RTY", "Russell / RTY"],
-        ["VIX", "VIX / Volatility"],
-        ["DAX", "DAX"],
-        ["FTSE 100", "FTSE 100"],
-        ["Nikkei 225", "Nikkei 225"],
-        ["Hang Seng", "Hang Seng"],
-        ["Euro Stoxx 50", "Euro Stoxx 50"],
-        ["CAC 40", "CAC 40"]
-      ],
-      bonds: [
-        ["all", "All Bonds / Rates"],
-        ["US 10Y Treasury", "US 10Y Treasury"],
-        ["US 2Y Treasury", "US 2Y Treasury"],
-        ["Treasury Yields", "Treasury Yields"]
-      ],
-      forex: [
-        ["all", "All Forex"],
-        ["US Dollar / DXY", "US Dollar / DXY"],
-        ["EUR / EURUSD", "EUR / EURUSD"],
-        ["GBP / GBPUSD", "GBP / GBPUSD"],
-        ["JPY / USDJPY", "JPY / USDJPY"],
-        ["CHF / USDCHF", "CHF / USDCHF"],
-        ["CAD / USDCAD", "CAD / USDCAD"],
-        ["AUD / AUDUSD", "AUD / AUDUSD"],
-        ["NZD / NZDUSD", "NZD / NZDUSD"],
-        ["EURJPY", "EURJPY"],
-        ["EURGBP", "EURGBP"],
-        ["GBPJPY", "GBPJPY"],
-        ["AUDJPY", "AUDJPY"],
-        ["CADJPY", "CADJPY"],
-        ["EURCHF", "EURCHF"],
-        ["EURCAD", "EURCAD"],
-        ["AUDCAD", "AUDCAD"],
-        ["AUDNZD", "AUDNZD"],
-        ["NZDJPY", "NZDJPY"],
-        ["USDTRY", "USDTRY"],
-        ["USDMXN", "USDMXN"],
-        ["USDZAR", "USDZAR"]
-      ],
-      crypto: [
-        ["all", "All Crypto"],
-        ["Bitcoin / BTC", "Bitcoin / BTC"],
-        ["Ethereum / ETH", "Ethereum / ETH"],
-        ["Solana / SOL", "Solana / SOL"],
-        ["XRP", "XRP"],
-        ["BNB", "BNB"],
-        ["Cardano / ADA", "Cardano / ADA"],
-        ["Dogecoin / DOGE", "Dogecoin / DOGE"],
-        ["General Crypto", "General Crypto"]
-      ],
-      commodities: [
-        ["all", "All Commodities"],
-        ["Gold", "Gold"],
-        ["Silver", "Silver"],
-        ["Copper", "Copper"],
-        ["Crude Oil", "Crude Oil"],
-        ["Natural Gas", "Natural Gas"]
-      ],
-      macro: [
-        ["all", "All Macro"],
-        ["Fed / FOMC", "Fed / FOMC"],
-        ["CPI / Inflation", "CPI / Inflation"],
-        ["PPI", "PPI"],
-        ["Jobs / NFP", "Jobs / NFP"],
-        ["GDP", "GDP"],
-        ["Treasury Yields", "Treasury Yields"],
-        ["Geopolitical / Tariffs", "Geopolitical / Tariffs"]
-      ]
-    };
-
-    function voteClass(vote) {
-      return (vote || "Neutral").replace(/[\/\s]/g, "").replace("N/A", "NA");
-    }
-
-    function getHealthClass(status) {
-      const s = (status || "").toLowerCase();
-      if (s.includes("ok")) return "health-green";
-      if (s.includes("empty")) return "health-orange";
-      return "health-red";
-    }
-
-    function populateInstrumentDropdown() {
-      const market = document.getElementById("marketFilter").value;
-      const instrumentSelect = document.getElementById("instrumentFilter");
-      instrumentSelect.innerHTML = "";
-
-      const list = instrumentMap[market] || instrumentMap.all;
-
-      list.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item[0];
-        option.textContent = item[1];
-        instrumentSelect.appendChild(option);
-      });
-    }
-
-    function headlineMatches(item, market, instrument) {
-      if (market === "all" && instrument === "all") return true;
-
-      const markets = item.markets || [];
-      const instruments = item.instruments || [];
-
-      if (instrument !== "all") {
-        return instruments.includes(instrument);
-      }
-
-      if (market !== "all") {
-        return markets.includes(market);
-      }
-
-      return true;
-    }
-
-    function calculateFilteredSummary(headlines) {
-      if (!headlines.length) {
+import json
+import re
+import html
+import requests
+import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from urllib.parse import urlparse, quote_plus
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; HaLionPublicSentimentDashboard/1.0)"
+}
+
+TIMEOUT = 20
+NY_TZ = ZoneInfo("America/New_York")
+MAX_HEADLINES_PER_QUERY = 12
+MAX_HEADLINES_TOTAL = 320
+MIN_RELEVANCE_SCORE = 3
+HISTORY_FILE = "dashboard_history.json"
+
+SEARCH_TOPICS = {
+    "indexes": [
+        "S&P 500 OR SPX OR ES futures OR stock futures",
+        "Nasdaq OR NQ futures OR Nasdaq futures",
+        "Dow Jones OR YM futures",
+        "Russell 2000 OR RTY futures",
+        "VIX OR volatility index",
+        "DAX OR German stocks",
+        "FTSE 100 OR UK stocks",
+        "Nikkei 225 OR Japan stocks",
+        "Hang Seng OR Hong Kong stocks",
+        "Euro Stoxx 50 OR European stocks",
+        "CAC 40 OR France stocks"
+    ],
+    "bonds": [
+        "Treasury yields OR 10-year yield OR 2-year yield OR bonds",
+        "rates OR bond market OR Treasury auction"
+    ],
+    "forex": [
+        "EUR/USD OR EURUSD OR euro dollar forex",
+        "GBP/USD OR GBPUSD OR sterling dollar forex",
+        "USD/JPY OR USDJPY OR dollar yen forex",
+        "USD/CHF OR USDCHF OR dollar franc forex",
+        "USD/CAD OR USDCAD OR dollar Canadian forex",
+        "AUD/USD OR AUDUSD OR Aussie dollar forex",
+        "NZD/USD OR NZDUSD OR kiwi dollar forex",
+        "EURJPY OR euro yen forex",
+        "EURGBP OR euro sterling forex",
+        "GBPJPY OR pound yen forex",
+        "AUDJPY OR Aussie yen forex",
+        "CADJPY OR Canadian yen forex",
+        "EURCHF OR euro franc forex",
+        "EURCAD OR euro Canadian dollar forex",
+        "AUDCAD OR Aussie Canadian dollar forex",
+        "AUDNZD OR Aussie kiwi forex",
+        "NZDJPY OR kiwi yen forex",
+        "USDTRY OR Turkish lira forex",
+        "USDMXN OR Mexican peso forex",
+        "USDZAR OR South African rand forex",
+        "US dollar OR DXY OR dollar index forex"
+    ],
+    "crypto": [
+        "Bitcoin OR BTC",
+        "Ethereum OR ETH",
+        "Solana OR SOL",
+        "XRP OR Ripple",
+        "BNB OR Binance coin",
+        "Cardano OR ADA",
+        "Dogecoin OR DOGE",
+        "crypto market OR cryptocurrency"
+    ],
+    "commodities": [
+        "gold OR XAU",
+        "silver OR XAG",
+        "copper",
+        "crude oil OR WTI OR Brent",
+        "natural gas OR nat gas"
+    ],
+    "macro": [
+        "Federal Reserve OR Fed OR FOMC OR Powell",
+        "CPI OR inflation",
+        "PPI OR producer prices",
+        "NFP OR jobs report OR unemployment",
+        "GDP OR recession",
+        "tariffs OR geopolitical OR war"
+    ]
+}
+
+ALL_MARKET_QUERY = (
+    "markets OR futures OR S&P 500 OR Nasdaq OR bonds OR yields OR forex OR dollar "
+    "OR crypto OR bitcoin OR oil OR gold OR Fed OR inflation"
+)
+
+
+def load_json(path, default=None):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default if default is not None else {}
+
+
+def save_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def clean_text(text):
+    text = html.unescape(text or "")
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def domain_from_url(url):
+    netloc = urlparse(url).netloc.lower()
+    return netloc.replace("www.", "")
+
+
+def normalize_link(base_url, link):
+    if not link:
+        return base_url
+    if link.startswith("http"):
+        return link
+    if link.startswith("/"):
+        parsed = urlparse(base_url)
+        return f"{parsed.scheme}://{parsed.netloc}{link}"
+    return link
+
+
+def google_news_rss_url(source, query):
+    domain = domain_from_url(source["url"])
+    q = quote_plus(f"site:{domain} {query}")
+    return f"https://news.google.com/rss/search?q={q}&hl=en-US&gl=US&ceid=US:en"
+
+
+def fetch_rss_query(source, query):
+    url = google_news_rss_url(source, query)
+
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+
+        if r.status_code != 200:
+            return [], f"RSS HTTP {r.status_code}"
+
+        root = ET.fromstring(r.content)
+        items = []
+
+        for item in root.findall(".//item"):
+            title = clean_text(item.findtext("title"))
+            link = clean_text(item.findtext("link"))
+            pub_date = clean_text(item.findtext("pubDate"))
+            desc = clean_text(item.findtext("description"))
+
+            if len(title) < 15:
+                continue
+
+            items.append({
+                "title": title[:320],
+                "link": link,
+                "published": pub_date,
+                "description": desc[:450]
+            })
+
+            if len(items) >= MAX_HEADLINES_PER_QUERY:
+                break
+
+        return items, "RSS OK" if items else "RSS EMPTY"
+
+    except Exception as e:
+        return [], f"RSS ERROR: {str(e)[:90]}"
+
+
+def fetch_direct(source):
+    try:
+        r = requests.get(source["url"], headers=HEADERS, timeout=TIMEOUT)
+
+        if r.status_code != 200:
+            return [], f"HTTP {r.status_code}"
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        for tag in soup(["script", "style", "noscript"]):
+            tag.decompose()
+
+        items = []
+        seen = set()
+
+        for tag in soup.find_all(["h1", "h2", "h3", "a"]):
+            title = clean_text(tag.get_text())
+
+            if len(title) < 25:
+                continue
+
+            key = title.lower()
+
+            if key in seen:
+                continue
+
+            seen.add(key)
+            link = normalize_link(source["url"], tag.get("href", ""))
+
+            items.append({
+                "title": title[:320],
+                "link": link,
+                "published": "",
+                "description": ""
+            })
+
+            if len(items) >= 25:
+                break
+
+        return items, "DIRECT OK" if items else "DIRECT EMPTY"
+
+    except Exception as e:
+        return [], f"DIRECT ERROR: {str(e)[:90]}"
+
+
+def fetch_source(source):
+    all_items = []
+    seen = set()
+    queries = [ALL_MARKET_QUERY]
+
+    for topic_queries in SEARCH_TOPICS.values():
+        queries.extend(topic_queries)
+
+    for query in queries:
+        items, status = fetch_rss_query(source, query)
+
+        for item in items:
+            key = item["title"].lower()
+            if key not in seen:
+                seen.add(key)
+                all_items.append(item)
+
+        if len(all_items) >= 100:
+            break
+
+    if all_items:
         return {
-          vote: "Neutral",
-          text: "No matching headlines were found for this selected market or instrument in the latest scan."
-        };
-      }
+            "name": source["name"],
+            "url": source["url"],
+            "status": "RSS OK",
+            "items": all_items,
+            "method": "RSS"
+        }
 
-      let bullish = 0;
-      let bearish = 0;
-      let neutral = 0;
-      let high = 0;
+    direct_items, direct_status = fetch_direct(source)
 
-      headlines.forEach(h => {
-        if (h.vote === "Bullish") bullish++;
-        else if (h.vote === "Bearish") bearish++;
-        else neutral++;
-        if (h.impact === "High") high++;
-      });
-
-      let vote = "Neutral";
-      let tone = "The selected area is mixed to neutral.";
-
-      if (bullish > bearish) {
-        vote = "Bullish";
-        tone = "The selected area is leaning bullish.";
-      } else if (bearish > bullish) {
-        vote = "Bearish";
-        tone = "The selected area is leaning bearish.";
-      } else if (bullish > 0 && bearish > 0) {
-        vote = "Mixed";
-        tone = "The selected area is mixed.";
-      }
-
-      return {
-        vote: vote,
-        text: tone + " Filtered headlines show " + bullish + " bullish, " + bearish + " bearish, and " + neutral + " neutral readings. " + high + " matching headlines are high impact."
-      };
+    return {
+        "name": source["name"],
+        "url": source["url"],
+        "status": direct_status,
+        "items": direct_items,
+        "method": "DIRECT" if direct_items else "FAILED"
     }
 
-    function renderTechnicalBox() {
-      const instrument = document.getElementById("instrumentFilter").value;
-      const box = document.getElementById("technicalBox");
 
-      if (!technicalData || !technicalData.technical || instrument === "all") {
-        box.innerHTML = '<div class="tech-title">Technical Direction</div>Select a specific instrument.';
-        return;
-      }
+def count_keywords(text, words):
+    text_lower = text.lower()
+    count = 0
+    hits = []
 
-      const item = technicalData.technical[instrument];
+    for word in words:
+        word_lower = word.lower()
+        matches = text_lower.count(word_lower)
 
-      if (!item) {
-        box.innerHTML = '<div class="tech-title">Technical Direction</div>No technical data available for this instrument.';
-        return;
-      }
+        if matches:
+            count += matches
+            hits.append(word)
 
-      box.innerHTML = `
-        <div class="tech-title">Technical Direction: ${instrument}</div>
-        Daily: <span class="${voteClass(item.daily.direction)}">${item.daily.direction}</span><br>
-        Weekly: <span class="${voteClass(item.weekly.direction)}">${item.weekly.direction}</span><br>
-        Monthly: <span class="${voteClass(item.monthly.direction)}">${item.monthly.direction}</span>
-      `;
+    return count, hits
+
+
+def source_sentiment(text, keywords):
+    bullish, _ = count_keywords(text, keywords.get("bullish", []))
+    bearish, _ = count_keywords(text, keywords.get("bearish", []))
+    high, _ = count_keywords(text, keywords.get("high_impact", []))
+
+    score = bullish - bearish
+
+    if high >= 4:
+        impact = "High"
+    elif high >= 1:
+        impact = "Medium"
+    else:
+        impact = "Normal"
+
+    if score >= 2:
+        vote = "Bullish"
+    elif score <= -2:
+        vote = "Bearish"
+    elif bullish > 0 and bearish > 0:
+        vote = "Mixed"
+    else:
+        vote = "Neutral"
+
+    return {
+        "vote": vote,
+        "impact": impact,
+        "score": score,
+        "bullish_count": bullish,
+        "bearish_count": bearish,
+        "high_impact_count": high
     }
 
-    function renderMarketFocus() {
-      const focus = dashboardData.top_market_focus || {};
-      const topMarkets = focus.top_markets || [];
-      const topInstruments = focus.top_instruments || [];
 
-      let html = "";
+def has_any(text, patterns):
+    for pattern in patterns:
+        if re.search(pattern, text, re.IGNORECASE):
+            return True
+    return False
 
-      topMarkets.slice(0, 4).forEach(x => {
-        html += `
-          <div class="stat-box">
-            <div class="stat-title">Top Market</div>
-            <div class="stat-value">${x.name}</div>
-            <div class="count-note">${x.count} headline mentions</div>
-          </div>
-        `;
-      });
 
-      topInstruments.slice(0, 4).forEach(x => {
-        html += `
-          <div class="stat-box">
-            <div class="stat-title">Top Instrument</div>
-            <div class="stat-value">${x.name}</div>
-            <div class="count-note">${x.count} headline mentions</div>
-          </div>
-        `;
-      });
+def detect_markets_for_headline(text):
+    t = " " + text.lower() + " "
+    markets = []
 
-      document.getElementById("market_focus").innerHTML =
-        html || "<p>No market focus data available yet.</p>";
+    groups = {
+        "indexes": [
+            r"\bs&p\b", r"\bspx\b", r"\bs&p 500\b", r"\bsp 500\b", r"\bes futures\b",
+            r"\bnasdaq\b", r"\bnq futures\b", r"\bdow\b", r"\bym futures\b",
+            r"\brussell\b", r"\brty futures\b", r"\bvix\b", r"\bstock futures\b",
+            r"\bequity futures\b", r"\bwall street\b", r"\bdax\b", r"\bftse\b",
+            r"\bnikkei\b", r"\bhang seng\b", r"\beuro stoxx\b", r"\bcac 40\b"
+        ],
+        "bonds": [
+            r"\bbond\b", r"\bbonds\b", r"\btreasury\b", r"\btreasuries\b",
+            r"\byield\b", r"\byields\b", r"\b10-year\b", r"\b2-year\b",
+            r"\brates\b", r"\bauction\b"
+        ],
+        "forex": [
+            r"\bforex\b", r"\bcurrency\b", r"\bcurrencies\b", r"\bdxy\b",
+            r"\beur/usd\b", r"\beurusd\b", r"\bgbp/usd\b", r"\bgbpusd\b",
+            r"\busd/jpy\b", r"\busdjpy\b", r"\busd/chf\b", r"\busdchf\b",
+            r"\busd/cad\b", r"\busdcad\b", r"\baud/usd\b", r"\baudusd\b",
+            r"\bnzd/usd\b", r"\bnzdusd\b", r"\beurjpy\b", r"\beurgbp\b",
+            r"\bgbpjpy\b", r"\baudjpy\b", r"\bcadjpy\b", r"\beurchf\b",
+            r"\beurcad\b", r"\baudcad\b", r"\baudnzd\b", r"\bnzdjpy\b",
+            r"\busdtry\b", r"\busdmxn\b", r"\busdzar\b"
+        ],
+        "crypto": [
+            r"\bcrypto\b", r"\bcryptocurrency\b", r"\bbitcoin\b", r"\bbtc\b",
+            r"\bethereum\b", r"\beth\b", r"\bsolana\b", r"\bsol\b",
+            r"\bxrp\b", r"\bripple\b", r"\bbnb\b", r"\bcardano\b",
+            r"\bada\b", r"\bdogecoin\b", r"\bdoge\b", r"\bdigital asset\b",
+            r"\bstablecoin\b"
+        ],
+        "commodities": [
+            r"\bcommodity\b", r"\bcommodities\b", r"\bgold\b", r"\bsilver\b",
+            r"\bcopper\b", r"\bcrude\b", r"\boil\b", r"\bwti\b", r"\bbrent\b",
+            r"\bnatural gas\b", r"\bnat gas\b"
+        ],
+        "macro": [
+            r"\bfed\b", r"\bfederal reserve\b", r"\bfomc\b", r"\bpowell\b",
+            r"\binflation\b", r"\bcpi\b", r"\bppi\b", r"\bnfp\b",
+            r"\bjobs report\b", r"\bunemployment\b", r"\bgdp\b",
+            r"\btariff\b", r"\btariffs\b", r"\bgeopolitical\b",
+            r"\bwar\b", r"\brecession\b"
+        ]
     }
 
-    function renderDashboard() {
-      if (!dashboardData) return;
+    for market, patterns in groups.items():
+        if has_any(t, patterns):
+            markets.append(market)
 
-      const market = document.getElementById("marketFilter").value;
-      const instrument = document.getElementById("instrumentFilter").value;
+    if not markets:
+        markets.append("general")
 
-      const filteredHeadlines = dashboardData.top_headlines.filter(item =>
-        headlineMatches(item, market, instrument)
-      );
+    return sorted(list(set(markets)))
 
-      currentFilteredHeadlines = filteredHeadlines;
 
-      const filteredSummary = calculateFilteredSummary(filteredHeadlines);
+def detect_instruments_for_headline(text):
+    t = " " + text.lower() + " "
+    instruments = []
 
-      document.getElementById("filter_summary").innerHTML =
-        '<b>Selected Public Sentiment: <span class="' + voteClass(filteredSummary.vote) + '">' +
-        filteredSummary.vote + '</span></b><br>' + filteredSummary.text;
+    groups = {
+        "S&P 500 / ES": [r"\bs&p\b", r"\bspx\b", r"\bs&p 500\b", r"\bsp 500\b", r"\bes futures\b", r"\bs&p futures\b"],
+        "Nasdaq / NQ": [r"\bnasdaq\b", r"\bnq futures\b", r"\bnasdaq futures\b"],
+        "Dow / YM": [r"\bdow\b", r"\bym futures\b", r"\bdow futures\b"],
+        "Russell / RTY": [r"\brussell\b", r"\brty futures\b", r"\brussell 2000\b"],
+        "VIX": [r"\bvix\b", r"\bvolatility index\b"],
+        "DAX": [r"\bdax\b"],
+        "FTSE 100": [r"\bftse\b", r"\bftse 100\b"],
+        "Nikkei 225": [r"\bnikkei\b", r"\bnikkei 225\b"],
+        "Hang Seng": [r"\bhang seng\b"],
+        "Euro Stoxx 50": [r"\beuro stoxx\b", r"\beuro stoxx 50\b"],
+        "CAC 40": [r"\bcac 40\b"],
 
-      const overallVote = dashboardData.overall_vote || "Neutral";
+        "US 10Y Treasury": [r"\b10-year treasury\b", r"\b10 year treasury\b", r"\b10-year yield\b", r"\b10 year yield\b"],
+        "US 2Y Treasury": [r"\b2-year treasury\b", r"\b2 year treasury\b", r"\b2-year yield\b", r"\b2 year yield\b"],
+        "Treasury Yields": [r"\btreasury yields\b", r"\bbond yields\b", r"\byields\b"],
 
-      document.getElementById("overall_vote").innerHTML =
-        'Overall Public Sentiment: <span class="' + voteClass(overallVote) + '">' + overallVote + '</span>';
+        "US Dollar / DXY": [r"\bdxy\b", r"\bdollar index\b", r"\bus dollar\b"],
+        "EUR / EURUSD": [r"\beur/usd\b", r"\beurusd\b", r"\beuro dollar\b", r"\beuro-dollar\b"],
+        "GBP / GBPUSD": [r"\bgbp/usd\b", r"\bgbpusd\b", r"\bsterling dollar\b", r"\bpound dollar\b"],
+        "JPY / USDJPY": [r"\busd/jpy\b", r"\busdjpy\b", r"\bdollar yen\b"],
+        "CHF / USDCHF": [r"\busd/chf\b", r"\busdchf\b", r"\bdollar franc\b", r"\bswiss franc\b"],
+        "CAD / USDCAD": [r"\busd/cad\b", r"\busdcad\b", r"\bcanadian dollar\b", r"\bloonie\b"],
+        "AUD / AUDUSD": [r"\baud/usd\b", r"\baudusd\b", r"\baussie dollar\b", r"\baustralian dollar\b"],
+        "NZD / NZDUSD": [r"\bnzd/usd\b", r"\bnzdusd\b", r"\bkiwi dollar\b", r"\bnew zealand dollar\b"],
+        "EURJPY": [r"\beurjpy\b", r"\beur/jpy\b", r"\beuro yen\b"],
+        "EURGBP": [r"\beurgbp\b", r"\beur/gbp\b", r"\beuro sterling\b"],
+        "GBPJPY": [r"\bgbpjpy\b", r"\bgbp/jpy\b", r"\bpound yen\b"],
+        "AUDJPY": [r"\baudjpy\b", r"\baud/jpy\b", r"\baussie yen\b"],
+        "CADJPY": [r"\bcadjpy\b", r"\bcad/jpy\b", r"\bcanadian yen\b"],
+        "EURCHF": [r"\beurchf\b", r"\beur/chf\b", r"\beuro franc\b"],
+        "EURCAD": [r"\beurcad\b", r"\beur/cad\b", r"\beuro canadian\b"],
+        "AUDCAD": [r"\baudcad\b", r"\baud/cad\b", r"\baussie canadian\b"],
+        "AUDNZD": [r"\baudnzd\b", r"\baud/nzd\b", r"\baussie kiwi\b"],
+        "NZDJPY": [r"\bnzdjpy\b", r"\bnzd/jpy\b", r"\bkiwi yen\b"],
+        "USDTRY": [r"\busdtry\b", r"\busd/try\b", r"\bturkish lira\b"],
+        "USDMXN": [r"\busdmxn\b", r"\busd/mxn\b", r"\bmexican peso\b"],
+        "USDZAR": [r"\busdzar\b", r"\busd/zar\b", r"\bsouth african rand\b"],
 
-      document.getElementById("summary").innerHTML =
-        dashboardData.summary.map(item => "<p>" + item + "</p>").join("");
+        "Bitcoin / BTC": [r"\bbitcoin\b", r"\bbtc\b"],
+        "Ethereum / ETH": [r"\bethereum\b", r"\beth\b"],
+        "Solana / SOL": [r"\bsolana\b", r"\bsol\b"],
+        "XRP": [r"\bxrp\b", r"\bripple\b"],
+        "BNB": [r"\bbnb\b", r"\bbinance coin\b"],
+        "Cardano / ADA": [r"\bcardano\b", r"\bada\b"],
+        "Dogecoin / DOGE": [r"\bdogecoin\b", r"\bdoge\b"],
+        "General Crypto": [r"\bcrypto\b", r"\bcryptocurrency\b", r"\bdigital asset\b"],
 
-      renderMarketFocus();
+        "Gold": [r"\bgold\b", r"\bxau\b"],
+        "Silver": [r"\bsilver\b", r"\bxag\b"],
+        "Copper": [r"\bcopper\b"],
+        "Crude Oil": [r"\bcrude\b", r"\boil\b", r"\bwti\b", r"\bbrent\b"],
+        "Natural Gas": [r"\bnatural gas\b", r"\bnat gas\b"],
 
-      const activeSources = new Set(filteredHeadlines.map(item => item.source));
-
-      let filteredSources = dashboardData.sources;
-
-      if (market !== "all" || instrument !== "all") {
-        filteredSources = dashboardData.sources.filter(source =>
-          activeSources.has(source.name)
-        );
-      }
-
-      document.getElementById("source_count").innerText =
-        "Showing " + filteredSources.length + " source(s).";
-
-      document.getElementById("sources").innerHTML =
-        filteredSources.length
-          ? filteredSources.map(source => `
-              <tr>
-                <td><a href="${source.url}" target="_blank">${source.name}</a></td>
-                <td class="${voteClass(source.vote)}">${source.vote}</td>
-                <td>${source.impact}</td>
-                <td title="${source.status}">
-                  <span class="health-dot ${getHealthClass(source.status)}"></span>
-                </td>
-              </tr>
-            `).join("")
-          : "<tr><td colspan='4'>No sources matched this filter.</td></tr>";
-
-      document.getElementById("headline_count").innerText =
-        "Showing " + filteredHeadlines.length + " headline(s).";
-
-      document.getElementById("headlines").innerHTML =
-        filteredHeadlines.length
-          ? filteredHeadlines.map(item => `
-              <div class="headline-item">
-                <span class="headline-source">${item.source}:</span>
-                <a href="${item.link}" target="_blank">${item.title}</a>
-                <div class="headline-tags">
-                  Vote: <span class="${voteClass(item.vote)}">${item.vote}</span>
-                  | Impact: ${item.impact}
-                  | Relevance: ${item.relevance_level || "Medium"}
-                  | Markets: ${(item.markets || []).join(", ")}
-                  | Instruments: ${(item.instruments || []).join(", ")}
-                </div>
-              </div>
-            `).join("")
-          : "<p>No headlines matched this filter in the latest scan.</p>";
-
-      renderTechnicalBox();
+        "Fed / FOMC": [r"\bfed\b", r"\bfederal reserve\b", r"\bfomc\b", r"\bpowell\b"],
+        "CPI / Inflation": [r"\bcpi\b", r"\binflation\b"],
+        "PPI": [r"\bppi\b"],
+        "Jobs / NFP": [r"\bnfp\b", r"\bjobs report\b", r"\bunemployment\b", r"\bpayrolls\b"],
+        "GDP": [r"\bgdp\b"],
+        "Geopolitical / Tariffs": [r"\bwar\b", r"\bgeopolitical\b", r"\btariff\b", r"\btariffs\b"]
     }
 
-    function downloadJSON() {
-      const dataStr = JSON.stringify(currentFilteredHeadlines, null, 2);
-      const blob = new Blob([dataStr], {type: "application/json"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "public_sentiment_headlines.json";
-      a.click();
-      URL.revokeObjectURL(url);
+    for name, patterns in groups.items():
+        if has_any(t, patterns):
+            instruments.append(name)
+
+    if not instruments:
+        instruments.append("General Market")
+
+    return sorted(list(set(instruments)))
+
+
+def headline_score(text, keywords):
+    bullish, _ = count_keywords(text, keywords.get("bullish", []))
+    bearish, _ = count_keywords(text, keywords.get("bearish", []))
+    high, _ = count_keywords(text, keywords.get("high_impact", []))
+
+    score = bullish - bearish
+
+    if score >= 1:
+        vote = "Bullish"
+    elif score <= -1:
+        vote = "Bearish"
+    else:
+        vote = "Neutral"
+
+    impact = "High" if high >= 1 else "Normal"
+
+    return vote, impact, score
+
+
+def relevance_score(markets, instruments, vote, impact):
+    score = 0
+
+    if markets and "general" not in markets:
+        score += 2
+
+    useful_instruments = [x for x in instruments if x != "General Market"]
+
+    if useful_instruments:
+        score += 4
+
+    if vote != "Neutral":
+        score += 1
+
+    if impact == "High":
+        score += 1
+
+    if score >= 6:
+        level = "High"
+    elif score >= 3:
+        level = "Medium"
+    else:
+        level = "Low"
+
+    return score, level
+
+
+def make_market_focus(headlines):
+    market_counts = {}
+    instrument_counts = {}
+    focus_sentiment = {}
+
+    for h in headlines:
+        for m in h.get("markets", []):
+            if m == "general":
+                continue
+
+            market_counts[m] = market_counts.get(m, 0) + 1
+
+            focus_sentiment.setdefault(m, {
+                "Bullish": 0,
+                "Bearish": 0,
+                "Neutral": 0,
+                "Mixed": 0,
+                "headlines": []
+            })
+
+            vote = h.get("vote", "Neutral")
+            focus_sentiment[m][vote] = focus_sentiment[m].get(vote, 0) + 1
+
+            if len(focus_sentiment[m]["headlines"]) < 3:
+                focus_sentiment[m]["headlines"].append({
+                    "source": h["source"],
+                    "title": h["title"],
+                    "link": h["link"]
+                })
+
+        for i in h.get("instruments", []):
+            if i != "General Market":
+                instrument_counts[i] = instrument_counts.get(i, 0) + 1
+
+    top_markets = sorted(market_counts.items(), key=lambda x: x[1], reverse=True)[:6]
+    top_instruments = sorted(instrument_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+
+    market_cards = []
+
+    for name, count in top_markets:
+        sent = focus_sentiment.get(name, {})
+        bullish = sent.get("Bullish", 0)
+        bearish = sent.get("Bearish", 0)
+        mixed = sent.get("Mixed", 0)
+        neutral = sent.get("Neutral", 0)
+
+        if bullish > bearish:
+            vote = "Bullish"
+        elif bearish > bullish:
+            vote = "Bearish"
+        elif bullish > 0 and bearish > 0:
+            vote = "Mixed"
+        else:
+            vote = "Neutral"
+
+        market_cards.append({
+            "name": name,
+            "count": count,
+            "vote": vote,
+            "bullish": bullish,
+            "bearish": bearish,
+            "mixed": mixed,
+            "neutral": neutral,
+            "headlines": sent.get("headlines", [])
+        })
+
+    return {
+        "top_markets": market_cards,
+        "top_instruments": [{"name": k, "count": v} for k, v in top_instruments]
     }
 
-    function downloadCSV() {
-      const rows = [["source", "title", "vote", "impact", "relevance", "markets", "instruments", "link"]];
 
-      currentFilteredHeadlines.forEach(h => {
-        rows.push([
-          h.source || "",
-          h.title || "",
-          h.vote || "",
-          h.impact || "",
-          h.relevance_level || "",
-          (h.markets || []).join("; "),
-          (h.instruments || []).join("; "),
-          h.link || ""
-        ]);
-      });
+def make_daily_summary(headlines, overall_vote):
+    if not headlines:
+        return [
+            "No high-relevance headlines were found in the latest scan.",
+            "Check back after the next hourly update."
+        ]
 
-      const csv = rows.map(row =>
-        row.map(value => '"' + String(value).replace(/"/g, '""') + '"').join(",")
-      ).join("\n");
+    focus = make_market_focus(headlines)
+    top_markets = focus.get("top_markets", [])[:3]
+    top_instruments = focus.get("top_instruments", [])[:3]
+    high = sum(1 for h in headlines if h.get("impact") == "High")
 
-      const blob = new Blob([csv], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "public_sentiment_headlines.csv";
-      a.click();
-      URL.revokeObjectURL(url);
+    bullets = []
+    bullets.append(f"Overall public sentiment is currently {overall_vote}.")
+
+    if top_markets:
+        bullets.append(
+            "Most discussed areas: " +
+            ", ".join([f"{x['name']} ({x['vote']})" for x in top_markets]) +
+            "."
+        )
+
+    if top_instruments:
+        bullets.append(
+            "Most mentioned instruments: " +
+            ", ".join([x["name"] for x in top_instruments]) +
+            "."
+        )
+
+    bullets.append(f"{high} high-impact headlines were detected in the latest scan.")
+    bullets.append("Use this as a fast public-sentiment check, then confirm with technical and fundamental analysis.")
+
+    return bullets
+
+
+def update_history(existing_history, current_record):
+    history = existing_history if isinstance(existing_history, list) else []
+    history.append(current_record)
+    history = history[-5:]
+    return history
+
+
+def make_summary(results):
+    bullish = sum(1 for r in results if r["vote"] == "Bullish")
+    bearish = sum(1 for r in results if r["vote"] == "Bearish")
+    mixed = sum(1 for r in results if r["vote"] == "Mixed")
+    neutral = sum(1 for r in results if r["vote"] == "Neutral")
+    high_impact = sum(1 for r in results if r["impact"] == "High")
+    working = sum(1 for r in results if "OK" in r["status"])
+
+    weighted_score = sum(r["score"] * r.get("weight", 1) for r in results)
+
+    if weighted_score >= 10:
+        overall = "Bullish"
+        tone = "The overall public sentiment is leaning bullish."
+    elif weighted_score <= -10:
+        overall = "Bearish"
+        tone = "The overall public sentiment is leaning bearish."
+    else:
+        overall = "Mixed/Neutral"
+        tone = "The overall public sentiment is mixed to neutral."
+
+    return overall, [
+        tone,
+        f"Source votes show {bullish} bullish, {bearish} bearish, {mixed} mixed, and {neutral} neutral readings.",
+        f"{high_impact} sources currently show high-impact macro or market keywords.",
+        f"{working} of {len(results)} configured sources returned readable public data in this scan.",
+        "This dashboard measures public sentiment, not a trade signal. Confirm with technical and fundamental analysis before acting."
+    ], {
+        "bullish": bullish,
+        "bearish": bearish,
+        "mixed": mixed,
+        "neutral": neutral,
+        "high_impact": high_impact,
+        "working": working,
+        "weighted_score": weighted_score
     }
 
-    document.getElementById("marketFilter").addEventListener("change", () => {
-      populateInstrumentDropdown();
-      renderDashboard();
-    });
 
-    document.getElementById("instrumentFilter").addEventListener("change", renderDashboard);
+def main():
+    sources = load_json("sources.json", [])
+    keywords = load_json("keywords.json", {})
 
-    Promise.all([
-      fetch("dashboard_data.json?t=" + Date.now()).then(r => r.json()),
-      fetch("technical_data.json?t=" + Date.now()).then(r => r.json()).catch(() => null)
-    ])
-      .then(([sentiment, technical]) => {
-        dashboardData = sentiment;
-        technicalData = technical;
-        populateInstrumentDropdown();
-        renderDashboard();
-      })
-      .catch(error => {
-        document.getElementById("overall_vote").innerText = "Error loading overall sentiment";
-        document.getElementById("summary").innerText = "Could not load summary";
-        document.getElementById("sources").innerHTML =
-          "<tr><td colspan='4'>Could not load source votes</td></tr>";
-        document.getElementById("headlines").innerText = "Could not load headlines";
-      });
-  </script>
-</body>
-</html>
+    source_results = []
+    top_headlines = []
+    seen_headlines = set()
+    total_raw_headlines = 0
+
+    for source in sources:
+        fetched = fetch_source(source)
+        total_raw_headlines += len(fetched["items"])
+
+        combined_text = " ".join(
+            f"{x.get('title', '')} {x.get('description', '')}" for x in fetched["items"]
+        )
+
+        sentiment = source_sentiment(combined_text, keywords)
+
+        result = {
+            "name": fetched["name"],
+            "url": fetched["url"],
+            "status": fetched["status"],
+            "method": fetched["method"],
+            "weight": source.get("weight", 1),
+            "headline_count": len(fetched["items"]),
+            **sentiment
+        }
+
+        source_results.append(result)
+
+        for item in fetched["items"]:
+            title_key = item["title"].lower().strip()
+
+            if title_key in seen_headlines:
+                continue
+
+            seen_headlines.add(title_key)
+
+            text = f"{item.get('title', '')} {item.get('description', '')}"
+            markets = detect_markets_for_headline(text)
+            instruments = detect_instruments_for_headline(text)
+            hvote, himpact, hscore = headline_score(text, keywords)
+            rscore, rlevel = relevance_score(markets, instruments, hvote, himpact)
+
+            if rscore < MIN_RELEVANCE_SCORE:
+                continue
+
+            top_headlines.append({
+                "source": fetched["name"],
+                "title": item["title"],
+                "link": item["link"],
+                "published": item.get("published", ""),
+                "description": item.get("description", ""),
+                "markets": markets,
+                "instruments": instruments,
+                "vote": hvote,
+                "impact": himpact,
+                "score": hscore,
+                "relevance_score": rscore,
+                "relevance_level": rlevel
+            })
+
+    overall_vote, summary, vote_counts = make_summary(source_results)
+
+    now_utc = datetime.now(timezone.utc)
+    now_ny = now_utc.astimezone(NY_TZ)
+    relevant_headlines = top_headlines[:MAX_HEADLINES_TOTAL]
+    focus = make_market_focus(relevant_headlines)
+
+    current_history_record = {
+        "updated_ny": now_ny.strftime("%Y-%m-%d %I:%M:%S %p NY Time"),
+        "overall_vote": overall_vote,
+        "weighted_score": vote_counts["weighted_score"],
+        "relevant_headlines": len(relevant_headlines),
+        "top_markets": focus.get("top_markets", [])[:3],
+        "top_instruments": focus.get("top_instruments", [])[:3]
+    }
+
+    history = update_history(load_json(HISTORY_FILE, []), current_history_record)
+
+    data = {
+        "updated_utc": now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "updated_ny": now_ny.strftime("%Y-%m-%d %I:%M:%S %p NY Time"),
+        "overall_vote": overall_vote,
+        "summary": summary,
+        "daily_summary": make_daily_summary(relevant_headlines, overall_vote),
+        "sources": source_results,
+        "top_market_focus": focus,
+        "trust_layer": {
+            "sources_configured": len(source_results),
+            "sources_working": sum(1 for r in source_results if "OK" in r["status"]),
+            "raw_headlines_collected": total_raw_headlines,
+            "relevant_headlines": len(relevant_headlines),
+            "minimum_relevance_score": MIN_RELEVANCE_SCORE,
+            "updated_ny": now_ny.strftime("%Y-%m-%d %I:%M:%S %p NY Time")
+        },
+        "sentiment_history": history,
+        "top_headlines": relevant_headlines
+    }
+
+    save_json("dashboard_data.json", data)
+    save_json(HISTORY_FILE, history)
+    save_json("status.json", {
+        "status": "private engine connected",
+        "updated": data["updated_ny"]
+    })
+
+
+if __name__ == "__main__":
+    main()
