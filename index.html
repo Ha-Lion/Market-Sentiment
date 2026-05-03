@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Ha-Lion Market Sentiment Dashboard</title>
+  <title>Comprehensive Market Sentiment Dashboard</title>
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
@@ -41,14 +41,7 @@
       text-align: center;
       margin: 20px 0 8px 0;
       font-size: 32px;
-      letter-spacing: 1px;
-    }
-
-    .updated {
-      color: #8b949e;
-      text-align: center;
-      margin-bottom: 22px;
-      font-size: 15px;
+      letter-spacing: 0.5px;
     }
 
     .filters {
@@ -167,6 +160,36 @@
       margin-bottom: 18px;
     }
 
+    .health-legend {
+      margin-bottom: 12px;
+      color: #8b949e;
+      font-size: 13px;
+    }
+
+    .health-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    .health-green {
+      background: #3fb950;
+      box-shadow: 0 0 8px rgba(63,185,80,0.5);
+    }
+
+    .health-orange {
+      background: #d29922;
+      box-shadow: 0 0 8px rgba(210,153,34,0.5);
+    }
+
+    .health-red {
+      background: #f85149;
+      box-shadow: 0 0 8px rgba(248,81,73,0.5);
+    }
+
     .footer-note {
       text-align: center;
       color: #8b949e;
@@ -183,14 +206,15 @@
       <img src="logo.png" alt="Ha-Lion Logo" class="logo">
     </div>
 
-    <h1>Ha-Lion Market Sentiment Dashboard</h1>
-    <div class="updated" id="updated">Loading...</div>
+    <h1>Comprehensive Market Sentiment Dashboard</h1>
   </div>
 
   <div class="filters">
     <select id="marketFilter">
       <option value="all">All Markets</option>
+      <option value="stocks">Stocks / Equities</option>
       <option value="indexes">Indexes / Futures</option>
+      <option value="bonds">Bonds / Rates</option>
       <option value="forex">Forex / Currencies</option>
       <option value="crypto">Crypto</option>
       <option value="commodities">Commodities</option>
@@ -215,6 +239,13 @@
 
   <div class="card">
     <h2>Source Votes</h2>
+    <div class="health-legend">
+      <span class="health-dot health-green"></span> Good
+      &nbsp;&nbsp;
+      <span class="health-dot health-orange"></span> Needs attention
+      &nbsp;&nbsp;
+      <span class="health-dot health-red"></span> Problem
+    </div>
     <div class="count-note" id="source_count"></div>
     <table>
       <thead>
@@ -222,7 +253,7 @@
           <th>Source</th>
           <th>Vote</th>
           <th>Impact</th>
-          <th>Status</th>
+          <th>Health</th>
         </tr>
       </thead>
       <tbody id="sources"></tbody>
@@ -246,6 +277,16 @@
       all: [
         ["all", "All Instruments"]
       ],
+      stocks: [
+        ["all", "All Stocks"],
+        ["AAPL / Apple", "AAPL / Apple"],
+        ["MSFT / Microsoft", "MSFT / Microsoft"],
+        ["NVDA / Nvidia", "NVDA / Nvidia"],
+        ["TSLA / Tesla", "TSLA / Tesla"],
+        ["AMZN / Amazon", "AMZN / Amazon"],
+        ["META / Meta", "META / Meta"],
+        ["GOOGL / Alphabet", "GOOGL / Alphabet"]
+      ],
       indexes: [
         ["all", "All Indexes / Futures"],
         ["S&P 500 / ES", "S&P 500 / ES"],
@@ -253,6 +294,12 @@
         ["Dow / YM", "Dow / YM"],
         ["Russell / RTY", "Russell / RTY"],
         ["VIX", "VIX / Volatility"]
+      ],
+      bonds: [
+        ["all", "All Bonds / Rates"],
+        ["US 10Y Treasury", "US 10Y Treasury"],
+        ["US 2Y Treasury", "US 2Y Treasury"],
+        ["Treasury Yields", "Treasury Yields"]
       ],
       forex: [
         ["all", "All Forex"],
@@ -269,6 +316,11 @@
         ["all", "All Crypto"],
         ["Bitcoin / BTC", "Bitcoin / BTC"],
         ["Ethereum / ETH", "Ethereum / ETH"],
+        ["Solana / SOL", "Solana / SOL"],
+        ["XRP", "XRP"],
+        ["BNB", "BNB"],
+        ["Cardano / ADA", "Cardano / ADA"],
+        ["Dogecoin / DOGE", "Dogecoin / DOGE"],
         ["General Crypto", "General Crypto"]
       ],
       commodities: [
@@ -303,7 +355,15 @@
     };
 
     function voteClass(vote) {
-      return (vote || "Neutral").replace("/", "").replace(" ", "");
+      return (vote || "Neutral").replace(/[\/\s]/g, "");
+    }
+
+    function getHealthClass(status) {
+      const s = (status || "").toLowerCase();
+
+      if (s.includes("ok")) return "health-green";
+      if (s.includes("empty")) return "health-orange";
+      return "health-red";
     }
 
     function populateInstrumentDropdown() {
@@ -386,9 +446,6 @@
       const market = document.getElementById("marketFilter").value;
       const instrument = document.getElementById("instrumentFilter").value;
 
-      document.getElementById("updated").innerText =
-        "Last update: " + (dashboardData.updated_ny || dashboardData.updated_utc);
-
       const filteredHeadlines = dashboardData.top_headlines.filter(item =>
         headlineMatches(item, market, instrument)
       );
@@ -427,7 +484,9 @@
                 <td><a href="${source.url}" target="_blank">${source.name}</a></td>
                 <td class="${voteClass(source.vote)}">${source.vote}</td>
                 <td>${source.impact}</td>
-                <td>${source.status}</td>
+                <td title="${source.status}">
+                  <span class="health-dot ${getHealthClass(source.status)}"></span>
+                </td>
               </tr>
             `).join("")
           : "<tr><td colspan='4'>No sources matched this filter.</td></tr>";
@@ -467,7 +526,6 @@
         renderDashboard();
       })
       .catch(error => {
-        document.getElementById("updated").innerText = "Could not load dashboard data";
         document.getElementById("overall_vote").innerText = "Error loading overall sentiment";
         document.getElementById("summary").innerText = "Could not load summary";
         document.getElementById("sources").innerHTML =
