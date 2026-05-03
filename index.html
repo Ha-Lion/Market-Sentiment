@@ -41,7 +41,6 @@
       text-align: center;
       margin: 20px 0 8px 0;
       font-size: 32px;
-      letter-spacing: 0.5px;
     }
 
     .intro {
@@ -59,12 +58,20 @@
       color: #ffffff;
     }
 
-    .filters {
+    .filters-row {
       display: flex;
-      gap: 14px;
+      gap: 16px;
       justify-content: center;
       flex-wrap: wrap;
       margin-bottom: 24px;
+      align-items: stretch;
+    }
+
+    .filters {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
     select {
@@ -76,6 +83,22 @@
       min-width: 260px;
       font-size: 15px;
       outline: none;
+    }
+
+    .tech-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 12px 16px;
+      min-width: 300px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .tech-title {
+      font-weight: bold;
+      color: #ffffff;
+      margin-bottom: 4px;
     }
 
     .card {
@@ -107,13 +130,16 @@
       font-weight: bold;
     }
 
-    .Mixed {
+    .Mixed,
+    .MixedBullish,
+    .MixedBearish {
       color: #d29922;
       font-weight: bold;
     }
 
     .Neutral,
-    .MixedNeutral {
+    .MixedNeutral,
+    .NA {
       color: #8b949e;
       font-weight: bold;
     }
@@ -225,20 +251,27 @@
     <b>Why it matters:</b> every trade should consider technical analysis, fundamental analysis, and public sentiment. Sentiment does not replace price action, but it helps show what the market is focused on.
   </div>
 
-  <div class="filters">
-    <select id="marketFilter">
-      <option value="all">All Markets</option>
-      <option value="indexes">Indexes / Futures</option>
-      <option value="bonds">Bonds / Rates</option>
-      <option value="forex">Forex / Currencies</option>
-      <option value="crypto">Crypto</option>
-      <option value="commodities">Commodities</option>
-      <option value="macro">Macro / Fed / Inflation</option>
-    </select>
+  <div class="filters-row">
+    <div class="filters">
+      <select id="marketFilter">
+        <option value="all">All Markets</option>
+        <option value="indexes">Indexes / Futures</option>
+        <option value="bonds">Bonds / Rates</option>
+        <option value="forex">Forex / Currencies</option>
+        <option value="crypto">Crypto</option>
+        <option value="commodities">Commodities</option>
+        <option value="macro">Macro / Fed / Inflation</option>
+      </select>
 
-    <select id="instrumentFilter">
-      <option value="all">All Instruments</option>
-    </select>
+      <select id="instrumentFilter">
+        <option value="all">All Instruments</option>
+      </select>
+    </div>
+
+    <div class="tech-box" id="technicalBox">
+      <div class="tech-title">Technical Direction</div>
+      Select a specific instrument.
+    </div>
   </div>
 
   <div class="card">
@@ -278,11 +311,10 @@
 
   <script>
     let dashboardData = null;
+    let technicalData = null;
 
     const instrumentMap = {
-      all: [
-        ["all", "All Instruments"]
-      ],
+      all: [["all", "All Instruments"]],
       indexes: [
         ["all", "All Indexes / Futures"],
         ["S&P 500 / ES", "S&P 500 / ES"],
@@ -340,12 +372,11 @@
     };
 
     function voteClass(vote) {
-      return (vote || "Neutral").replace(/[\/\s]/g, "");
+      return (vote || "Neutral").replace(/[\/\s]/g, "").replace("N/A", "NA");
     }
 
     function getHealthClass(status) {
       const s = (status || "").toLowerCase();
-
       if (s.includes("ok")) return "health-green";
       if (s.includes("empty")) return "health-orange";
       return "health-red";
@@ -354,7 +385,6 @@
     function populateInstrumentDropdown() {
       const market = document.getElementById("marketFilter").value;
       const instrumentSelect = document.getElementById("instrumentFilter");
-
       instrumentSelect.innerHTML = "";
 
       const list = instrumentMap[market] || instrumentMap.all;
@@ -401,7 +431,6 @@
         if (h.vote === "Bullish") bullish++;
         else if (h.vote === "Bearish") bearish++;
         else neutral++;
-
         if (h.impact === "High") high++;
       });
 
@@ -423,6 +452,30 @@
         vote: vote,
         text: tone + " Filtered headlines show " + bullish + " bullish, " + bearish + " bearish, and " + neutral + " neutral readings. " + high + " matching headlines are high impact."
       };
+    }
+
+    function renderTechnicalBox() {
+      const instrument = document.getElementById("instrumentFilter").value;
+      const box = document.getElementById("technicalBox");
+
+      if (!technicalData || !technicalData.technical || instrument === "all") {
+        box.innerHTML = '<div class="tech-title">Technical Direction</div>Select a specific instrument.';
+        return;
+      }
+
+      const item = technicalData.technical[instrument];
+
+      if (!item) {
+        box.innerHTML = '<div class="tech-title">Technical Direction</div>No technical data available for this instrument.';
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="tech-title">Technical Direction: ${instrument}</div>
+        Daily: <span class="${voteClass(item.daily.direction)}">${item.daily.direction}</span><br>
+        Weekly: <span class="${voteClass(item.weekly.direction)}">${item.weekly.direction}</span><br>
+        Monthly: <span class="${voteClass(item.monthly.direction)}">${item.monthly.direction}</span>
+      `;
     }
 
     function renderDashboard() {
@@ -494,6 +547,8 @@
               </div>
             `).join("")
           : "<p>No headlines matched this filter in the latest scan.</p>";
+
+      renderTechnicalBox();
     }
 
     document.getElementById("marketFilter").addEventListener("change", () => {
@@ -503,10 +558,13 @@
 
     document.getElementById("instrumentFilter").addEventListener("change", renderDashboard);
 
-    fetch("dashboard_data.json?t=" + Date.now())
-      .then(response => response.json())
-      .then(data => {
-        dashboardData = data;
+    Promise.all([
+      fetch("dashboard_data.json?t=" + Date.now()).then(r => r.json()),
+      fetch("technical_data.json?t=" + Date.now()).then(r => r.json()).catch(() => null)
+    ])
+      .then(([sentiment, technical]) => {
+        dashboardData = sentiment;
+        technicalData = technical;
         populateInstrumentDropdown();
         renderDashboard();
       })
