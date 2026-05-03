@@ -4,42 +4,73 @@
   <title>Market Sentiment Dashboard</title>
   <style>
     body { font-family: Arial, sans-serif; background:#0d1117; color:#e6edf3; margin:30px; }
-    .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px; }
     h1 { color:#58a6ff; }
-    .good { color:#3fb950; font-weight:bold; }
+    .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px; }
     .small { color:#8b949e; }
+    .Bullish { color:#3fb950; font-weight:bold; }
+    .Bearish { color:#f85149; font-weight:bold; }
+    .Mixed { color:#d29922; font-weight:bold; }
+    .Neutral { color:#8b949e; font-weight:bold; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-bottom:1px solid #30363d; padding:10px; text-align:left; }
+    a { color:#58a6ff; text-decoration:none; }
   </style>
 </head>
 <body>
   <h1>Market Sentiment Dashboard</h1>
-
-  <div class="card">
-    <h2>System Status</h2>
-    <p id="status">Loading...</p>
-    <p class="small" id="updated"></p>
-  </div>
+  <p class="small" id="updated">Loading...</p>
 
   <div class="card">
     <h2>Market Summary</h2>
-    <p>Real market sentiment scan will appear here after we connect the scraper.</p>
+    <div id="summary">Loading...</div>
   </div>
 
   <div class="card">
     <h2>Source Votes</h2>
-    <p>Reuters, CNBC, Yahoo Finance, Investing.com, AP, Trading Economics, Nasdaq, Fox Business, Business Insider, Axios, Fortune, OilPrice, FXStreet, MarketWatch.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Vote</th>
+          <th>Impact</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="sources"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Top Headlines</h2>
+    <div id="headlines">Loading...</div>
   </div>
 
   <script>
-    fetch("status.json?t=" + Date.now())
+    fetch("dashboard_data.json?t=" + Date.now())
       .then(r => r.json())
       .then(data => {
-        document.getElementById("status").innerHTML =
-          "<span class='good'>" + data.status + "</span>";
-        document.getElementById("updated").innerText =
-          "Last update: " + data.updated;
+        document.getElementById("updated").innerText = "Last update: " + data.updated_utc;
+
+        document.getElementById("summary").innerHTML =
+          data.summary.map(s => "<p>" + s + "</p>").join("");
+
+        document.getElementById("sources").innerHTML =
+          data.sources.map(s => `
+            <tr>
+              <td><a href="${s.url}" target="_blank">${s.name}</a></td>
+              <td class="${s.vote}">${s.vote}</td>
+              <td>${s.impact}</td>
+              <td>${s.status}</td>
+            </tr>
+          `).join("");
+
+        document.getElementById("headlines").innerHTML =
+          data.top_headlines.map(h => `
+            <p><b>${h.source}:</b> <a href="${h.link}" target="_blank">${h.title}</a></p>
+          `).join("");
       })
-      .catch(() => {
-        document.getElementById("status").innerText = "Could not load status.json";
+      .catch(err => {
+        document.getElementById("summary").innerText = "Could not load dashboard_data.json";
       });
   </script>
 </body>
