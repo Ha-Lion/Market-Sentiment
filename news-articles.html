@@ -31,12 +31,6 @@
       outline:none;
     }
 
-    input[type="text"]:focus,
-    select:focus {
-      border-color:rgba(210,153,34,0.65);
-      box-shadow:0 0 0 3px rgba(210,153,34,0.10);
-    }
-
     input[type="text"] {
       min-width:320px;
       flex:1 1 320px;
@@ -55,7 +49,7 @@
       color:#05070b;
       font-weight:900;
       font-size:14px;
-      transition:background 0.18s ease, transform 0.18s ease;
+      transition:0.18s ease;
     }
 
     .btn:hover {
@@ -102,7 +96,7 @@
       border-radius:999px;
       background:rgba(88,166,255,0.08);
       border:1px solid rgba(88,166,255,0.15);
-      transition:background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+      transition:0.18s ease;
     }
 
     .source-summary-link:hover {
@@ -141,7 +135,7 @@
       border:1px solid var(--line);
       border-radius:18px;
       box-shadow:0 12px 30px rgba(0,0,0,0.18);
-      transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      transition:0.18s ease;
       color:var(--text);
     }
 
@@ -272,7 +266,7 @@
       font-weight:900;
       cursor:pointer;
       box-shadow:0 0 22px rgba(210,153,34,0.18);
-      transition:transform 0.18s ease, background 0.18s ease;
+      transition:0.18s ease;
     }
 
     .page-up:hover {
@@ -328,9 +322,7 @@
     <section class="panel">
       <div class="page-chip">News & Articles</div>
       <h1>News & Articles</h1>
-      <p>
-        Search the published news feed by keyword, market, instrument, and source. Results update instantly as you type or change filters.
-      </p>
+      <p>Search the published news feed by keyword, market, instrument, and source. Results update instantly as you type or change filters.</p>
 
       <div class="controls">
         <input type="text" id="searchBox" placeholder="Search keywords, headlines, markets, instruments, or sources...">
@@ -404,72 +396,12 @@
     };
 
     const instrumentGroups = {
-      indexes:[
-        "S&P 500 / ES",
-        "Nasdaq / NQ",
-        "Dow / YM",
-        "Russell / RTY",
-        "VIX",
-        "DAX",
-        "FTSE 100",
-        "Nikkei 225",
-        "Hang Seng",
-        "Euro Stoxx 50",
-        "CAC 40"
-      ],
-      bonds:[
-        "US 10Y Treasury",
-        "US 2Y Treasury",
-        "Treasury Yields"
-      ],
-      forex:[
-        "US Dollar / DXY",
-        "EUR / EURUSD",
-        "GBP / GBPUSD",
-        "JPY / USDJPY",
-        "CHF / USDCHF",
-        "CAD / USDCAD",
-        "AUD / AUDUSD",
-        "NZD / NZDUSD",
-        "EURJPY",
-        "EURGBP",
-        "GBPJPY",
-        "AUDJPY",
-        "CADJPY",
-        "EURCHF",
-        "EURCAD",
-        "AUDCAD",
-        "AUDNZD",
-        "NZDJPY",
-        "USDTRY",
-        "USDMXN",
-        "USDZAR"
-      ],
-      crypto:[
-        "Bitcoin / BTC",
-        "Ethereum / ETH",
-        "Solana / SOL",
-        "XRP",
-        "BNB",
-        "Cardano / ADA",
-        "Dogecoin / DOGE",
-        "General Crypto"
-      ],
-      commodities:[
-        "Gold",
-        "Silver",
-        "Copper",
-        "Crude Oil",
-        "Natural Gas"
-      ],
-      macro:[
-        "Fed / FOMC",
-        "CPI / Inflation",
-        "PPI",
-        "Jobs / NFP",
-        "GDP",
-        "Geopolitical / Tariffs"
-      ]
+      indexes:["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX","DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40"],
+      bonds:["US 10Y Treasury","US 2Y Treasury","Treasury Yields"],
+      forex:["US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF","CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY","AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY","USDTRY","USDMXN","USDZAR"],
+      crypto:["Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA","Dogecoin / DOGE","General Crypto"],
+      commodities:["Gold","Silver","Copper","Crude Oil","Natural Gas"],
+      macro:["Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","GDP","Geopolitical / Tariffs"]
     };
 
     function allInstruments() {
@@ -626,7 +558,6 @@
       if (!dashboardData) return;
 
       const headlines = filteredHeadlines();
-
       renderSourceSummary(headlines);
 
       document.getElementById("resultsCount").textContent =
