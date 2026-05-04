@@ -2,6 +2,7 @@ const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
 const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
+const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
 
 const PSD_VOTE_INSTRUMENTS = [
   "S&P 500 / ES",
@@ -119,6 +120,9 @@ function psdInjectStructuredData(){
         "name": "Public Sentiment Dash",
         "url": PSD_SITE_URL + "/",
         "logo": PSD_SITE_URL + "/logo.png",
+        "sameAs": [
+          PSD_X_PROFILE_URL
+        ],
         "description": "AI-assisted public market sentiment dashboard for stocks, forex, crypto, commodities, bonds, macro headlines, and financial news."
       },
       {
@@ -256,6 +260,136 @@ function psdFixNavigation(){
 
   const social = nav.querySelector(".social-links");
   if(social) nav.appendChild(social);
+}
+
+function psdEnhanceSocialLinks(){
+  const socials = document.querySelectorAll(".social-links");
+
+  socials.forEach(social => {
+    const xPill = Array.from(social.querySelectorAll(".social-pill")).find(el =>
+      el.textContent.trim().toLowerCase() === "x"
+    );
+
+    if(xPill && xPill.tagName.toLowerCase() !== "a"){
+      const a = document.createElement("a");
+      a.className = xPill.className;
+      a.textContent = "X";
+      a.href = PSD_X_PROFILE_URL;
+      a.target = "_blank";
+      a.rel = "noopener";
+      xPill.replaceWith(a);
+    }else if(xPill){
+      xPill.href = PSD_X_PROFILE_URL;
+      xPill.target = "_blank";
+      xPill.rel = "noopener";
+    }
+  });
+}
+
+function psdCreateShareButtons(){
+  if(document.getElementById("psdShareBox")) return;
+
+  const main = document.querySelector("main.page");
+  if(!main) return;
+
+  const currentUrl = psdCanonicalURL();
+  const title = document.title.replace(" — Public Sentiment Dash", "").replace(" - Public Sentiment Dash", "");
+  const xShareText = `${title}\n\nPublic Sentiment Dash\n${currentUrl}`;
+  const xShareUrl = `https://x.com/intent/post?text=${encodeURIComponent(xShareText)}`;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .psd-share-box{
+      max-width:1120px;
+      margin:0 auto 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(17,24,33,.92),rgba(13,18,27,.92));
+    }
+    .psd-share-text{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+    }
+    .psd-share-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .psd-share-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid var(--line);
+      background:#111821;
+      color:#fff;
+      border-radius:999px;
+      padding:9px 13px;
+      font-size:13px;
+      font-weight:600;
+      text-decoration:none;
+      cursor:pointer;
+      transition:.18s ease;
+      white-space:nowrap;
+    }
+    .psd-share-btn:hover{
+      border-color:rgba(210,153,34,.55);
+      transform:translateY(-1px);
+    }
+    .psd-share-x{
+      background:rgba(88,166,255,.10);
+      border-color:rgba(88,166,255,.25);
+    }
+    @media(max-width:720px){
+      .psd-share-box{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const box = document.createElement("section");
+  box.id = "psdShareBox";
+  box.className = "psd-share-box";
+
+  box.innerHTML = `
+    <div class="psd-share-text">
+      Like this dashboard? Share it and help more traders discover it.
+    </div>
+    <div class="psd-share-actions">
+      <a class="psd-share-btn psd-share-x" href="${psdEscape(xShareUrl)}" target="_blank" rel="noopener">Share on X</a>
+      <a class="psd-share-btn" href="${psdEscape(PSD_X_PROFILE_URL)}" target="_blank" rel="noopener">Follow on X</a>
+      <button class="psd-share-btn" type="button" id="psdCopyLinkBtn">Copy Link</button>
+    </div>
+  `;
+
+  const firstPanel = main.querySelector(".panel.hero") || main.querySelector(".panel");
+  if(firstPanel && firstPanel.nextSibling){
+    main.insertBefore(box, firstPanel.nextSibling);
+  }else{
+    main.insertBefore(box, main.firstChild);
+  }
+
+  const copyBtn = document.getElementById("psdCopyLinkBtn");
+  if(copyBtn){
+    copyBtn.addEventListener("click", async () => {
+      try{
+        await navigator.clipboard.writeText(currentUrl);
+        copyBtn.textContent = "Copied";
+        psdTrack("copy_share_link", { page_url: currentUrl });
+        setTimeout(() => copyBtn.textContent = "Copy Link", 1200);
+      }catch(e){
+        copyBtn.textContent = "Copy Failed";
+        setTimeout(() => copyBtn.textContent = "Copy Link", 1200);
+      }
+    });
+  }
 }
 
 function psdFallbackFromElement(el){
@@ -483,7 +617,9 @@ function psdInit(){
   psdInjectStructuredData();
   psdAddHomeLabel();
   psdFixNavigation();
+  psdEnhanceSocialLinks();
   psdCreateVoteWidget();
+  psdCreateShareButtons();
   psdApplyUserSentiment();
   psdLoadUserSentiment();
 
@@ -501,6 +637,7 @@ if(document.readyState === "loading"){
 window.addEventListener("load", () => {
   psdAddHomeLabel();
   psdFixNavigation();
+  psdEnhanceSocialLinks();
   psdApplyUserSentiment();
 });
 
