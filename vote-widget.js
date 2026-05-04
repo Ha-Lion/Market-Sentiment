@@ -1,5 +1,6 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
 const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdl_7955Ej6tK01awQ_DljLC6sv";
+const PSD_GA4_ID = "G-BZMQQZ2SVC";
 
 const PSD_VOTE_INSTRUMENTS = [
   "S&P 500 / ES",
@@ -59,6 +60,34 @@ const PSD_VOTE_INSTRUMENTS = [
 ];
 
 window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
+
+function psdLoadGA4(){
+  if(!PSD_GA4_ID || window.PSD_GA4_LOADED) return;
+
+  window.PSD_GA4_LOADED = true;
+  window.dataLayer = window.dataLayer || [];
+
+  window.gtag = function(){
+    window.dataLayer.push(arguments);
+  };
+
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(PSD_GA4_ID);
+  document.head.appendChild(script);
+
+  window.gtag("js", new Date());
+  window.gtag("config", PSD_GA4_ID, {
+    page_title: document.title,
+    page_path: window.location.pathname
+  });
+}
+
+function psdTrack(eventName, params){
+  if(typeof window.gtag === "function"){
+    window.gtag("event", eventName, params || {});
+  }
+}
 
 function psdEscape(value){
   return String(value ?? "")
@@ -189,6 +218,7 @@ function psdFallbackFromElement(el){
   }
 
   const newsCard = el.closest(".news-card");
+
   if(newsCard){
     const tech = newsCard.querySelector(".tech-chip");
     const text = tech ? tech.textContent.toLowerCase() : "";
@@ -285,6 +315,12 @@ async function psdSubmitVote(instrument, vote){
     window.PSD_USER_SENTIMENT[instrument] = result.user_sentiment || "N/A";
     psdApplyUserSentiment();
 
+    psdTrack("instrument_vote", {
+      instrument: instrument,
+      vote: vote,
+      result_sentiment: result.user_sentiment || "N/A"
+    });
+
     status.textContent = "Vote saved.";
     status.className = "psd-vote-status success";
 
@@ -344,6 +380,7 @@ function psdCreateVoteWidget(){
 
   tab.addEventListener("click", () => {
     panel.classList.toggle("open");
+    psdTrack("vote_widget_toggle", { open: panel.classList.contains("open") });
   });
 
   cancel.addEventListener("click", () => {
@@ -365,6 +402,7 @@ function psdCreateVoteWidget(){
 }
 
 function psdInit(){
+  psdLoadGA4();
   psdAddHomeLabel();
   psdFixNavigation();
   psdCreateVoteWidget();
