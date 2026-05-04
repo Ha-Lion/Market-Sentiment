@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Public Sentiment Dash — Home</title>
   <meta name="description" content="Free global market public sentiment dashboard tracking financial headlines, market focus, source votes, user sentiment, and public narrative across major assets.">
   <meta name="robots" content="index, follow">
@@ -11,96 +12,582 @@
   <link rel="stylesheet" href="site.css">
 
   <style>
-    .home-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}
-    .instrument-rail{position:sticky;top:126px;padding:14px;overflow:hidden}
-    .instrument-rail .page-chip{font-size:11px;padding:7px 10px;margin-bottom:10px}
-    .instrument-rail h2{font-size:17px;margin-bottom:6px;font-weight:600}
-    .rail-waterfall{height:650px;overflow:hidden;position:relative;margin-top:12px;border-radius:16px}
-    .rail-waterfall:before,.rail-waterfall:after{content:"";position:absolute;left:0;right:0;height:42px;z-index:2;pointer-events:none}
-    .rail-waterfall:before{top:0;background:linear-gradient(to bottom,rgba(13,17,23,1),rgba(13,17,23,0))}
-    .rail-waterfall:after{bottom:0;background:linear-gradient(to top,rgba(13,17,23,1),rgba(13,17,23,0))}
-    .rail-track{display:grid;gap:8px;animation:railScroll 46s linear infinite}
-    .rail-waterfall:hover .rail-track{animation-play-state:paused}
-    @keyframes railScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
-    .rail-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 9px;border:1px solid var(--line);border-radius:13px;background:rgba(17,24,33,.72);transition:.18s ease;color:var(--text)}
-    .rail-item:hover{transform:translateX(3px);border-color:rgba(210,153,34,.46);background:rgba(210,153,34,.08)}
-    .rail-icon{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;animation:railPulse 2.2s ease-in-out infinite}
-    .rail-name{font-size:12px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rail-sub{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rail-state{font-size:10px;font-weight:500;color:var(--muted);white-space:nowrap}
-    .direction-up .rail-icon{color:var(--green);background:rgba(63,185,80,.12);box-shadow:0 0 12px rgba(63,185,80,.25)}
-    .direction-down .rail-icon{color:var(--red);background:rgba(248,81,73,.12);box-shadow:0 0 12px rgba(248,81,73,.25)}
-    .direction-neutral .rail-icon{color:var(--gold);background:rgba(210,153,34,.12);box-shadow:0 0 12px rgba(210,153,34,.25)}
-    @keyframes railPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    .home-layout{
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
 
-    .hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);gap:18px;margin-bottom:18px}
-    .hero-copy{padding:26px}
-    .hero-points{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
-    .hero-point{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-    .hero-point strong{display:block;color:#fff;margin-bottom:6px;font-weight:600}
-    .hero-point span{color:var(--muted);font-size:13px;line-height:1.45}
-    .score-panel{padding:24px;text-align:center;display:grid;place-items:center}
-    .scope-pill{display:inline-flex;margin-bottom:8px;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.20);color:#a5cfff;font-size:12px;font-weight:500}
-    .score-label{color:var(--muted);font-size:14px;font-weight:500;margin-bottom:8px}
-    .score-ring{--score:50;--accent:var(--gold);width:230px;height:230px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--score) * 1%), #26313f 0);display:grid;place-items:center;margin:8px auto 16px;box-shadow:0 0 32px rgba(210,153,34,.12)}
-    .score-inner{width:170px;height:170px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center}
-    .score-number{font-size:50px;line-height:1;font-weight:700}
-    .score-word{margin-top:8px;font-size:18px;font-weight:600}
-    .score-desc{max-width:370px;color:var(--muted);font-size:13px;line-height:1.55;margin:0 auto}
-    .scale{width:100%;margin-top:16px}
-    .scale-bar{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--red),var(--orange),var(--gold),var(--green))}
-    .scale-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px}
-    .metric{padding:18px}
-    .metric-title{color:var(--muted);font-size:13px;font-weight:500;margin-bottom:8px}
-    .metric-value{color:#fff;font-size:26px;font-weight:600}
-    .metric-note{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.45}
-    .section{padding:22px;margin-bottom:18px}
-    .sources-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:stretch}
-    .sources-pill{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.35);color:#f4d17d;font-size:12px;font-weight:500;margin-bottom:12px}
-    .sources-waterfall{position:relative;overflow:hidden;min-height:430px;height:430px;border:1px solid var(--line);border-radius:18px;background:radial-gradient(circle at top right, rgba(210,153,34,.10), transparent 15rem), linear-gradient(180deg,#101826,#0d131d);padding:14px}
-    .sources-waterfall::before,.sources-waterfall::after{content:"";position:absolute;left:0;right:0;height:48px;z-index:2;pointer-events:none}
-    .sources-waterfall::before{top:0;background:linear-gradient(to bottom, rgba(13,17,23,1), rgba(13,17,23,0))}
-    .sources-waterfall::after{bottom:0;background:linear-gradient(to top, rgba(13,17,23,1), rgba(13,17,23,0))}
-    .waterfall-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;height:100%}
-    .waterfall-column{overflow:hidden;height:100%;position:relative}
-    .waterfall-track{display:flex;flex-direction:column;gap:10px;will-change:transform}
-    .waterfall-column.column-1 .waterfall-track{animation:scrollUp 28s linear infinite}
-    .waterfall-column.column-2 .waterfall-track{animation:scrollDown 32s linear infinite}
-    .waterfall-column.column-3 .waterfall-track{animation:scrollUp 36s linear infinite}
-    @keyframes scrollUp{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
-    @keyframes scrollDown{0%{transform:translateY(-50%)}100%{transform:translateY(0)}}
-    .source-chip{display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 12px;border-radius:14px;background:rgba(17,24,33,.92);border:1px solid rgba(210,153,34,.14);color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16);transition:.18s ease}
-    .source-chip:hover{transform:translateY(-2px);border-color:rgba(210,153,34,.48);background:rgba(210,153,34,.08)}
-    .source-chip img{width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0}
-    .source-chip-name{font-size:14px;font-weight:500;line-height:1.3;color:#e6edf3}
-    .source-chip:hover .source-chip-name{color:#ffd780;text-shadow:0 0 10px rgba(210,153,34,.45)}
-    .source-chip-status{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(63,185,80,.5);flex-shrink:0}
-    .summary-lines{display:grid;gap:10px}
-    .summary-line{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--soft);line-height:1.55}
-    .focus-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));grid-auto-rows:1fr;gap:12px;margin-top:12px}
-    .mini-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;height:100%}
-    .focus-card{min-height:140px;cursor:pointer}
-    .mini-title{color:#fff;font-weight:600;margin-bottom:8px}
-    .mini-meta{color:var(--muted);font-size:13px;line-height:1.45}
-    .mini-headline{margin-top:10px;font-size:12px;line-height:1.45;color:var(--soft)}
-    .focus-open{margin-top:12px;color:#fff;font-size:12px;font-weight:500}
-    .action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:14px}
-    .action-card{padding:20px;color:var(--text)}
-    .action-label{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d;font-size:11px;font-weight:500;margin-bottom:12px}
-    .action-card h3{margin:0 0 8px;color:#fff;font-size:22px;font-weight:600}
-    .action-card p{margin:0 0 14px}
-    .action-cta{color:#fff;font-weight:500;font-size:14px}
-    .action-card:hover .action-cta{color:#ffd780;text-shadow:0 0 10px rgba(210,153,34,.55)}
+    .instrument-rail{
+      position:sticky;
+      top:126px;
+      padding:14px;
+      overflow:hidden;
+    }
+
+    .instrument-rail .page-chip{
+      font-size:11px;
+      padding:7px 10px;
+      margin-bottom:10px;
+    }
+
+    .instrument-rail h2{
+      font-size:17px;
+      margin-bottom:6px;
+      font-weight:600;
+    }
+
+    .rail-waterfall{
+      height:650px;
+      overflow:hidden;
+      position:relative;
+      margin-top:12px;
+      border-radius:16px;
+    }
+
+    .rail-waterfall:before,.rail-waterfall:after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      height:42px;
+      z-index:2;
+      pointer-events:none;
+    }
+
+    .rail-waterfall:before{
+      top:0;
+      background:linear-gradient(to bottom,rgba(13,17,23,1),rgba(13,17,23,0));
+    }
+
+    .rail-waterfall:after{
+      bottom:0;
+      background:linear-gradient(to top,rgba(13,17,23,1),rgba(13,17,23,0));
+    }
+
+    .rail-track{
+      display:grid;
+      gap:8px;
+      animation:railScroll 46s linear infinite;
+    }
+
+    .rail-waterfall:hover .rail-track{
+      animation-play-state:paused;
+    }
+
+    @keyframes railScroll{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(-50%)}
+    }
+
+    .rail-item{
+      display:grid;
+      grid-template-columns:28px minmax(0,1fr) auto;
+      gap:8px;
+      align-items:center;
+      padding:8px 9px;
+      border:1px solid var(--line);
+      border-radius:13px;
+      background:rgba(17,24,33,.72);
+      transition:.18s ease;
+      color:var(--text);
+    }
+
+    .rail-item:hover{
+      transform:translateX(3px);
+      border-color:rgba(210,153,34,.46);
+      background:rgba(210,153,34,.08);
+    }
+
+    .rail-icon{
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      font-size:14px;
+      font-weight:600;
+      animation:railPulse 2.2s ease-in-out infinite;
+    }
+
+    .rail-name{
+      font-size:12px;
+      font-weight:500;
+      color:#fff;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .rail-sub{
+      font-size:10px;
+      color:var(--muted);
+      margin-top:2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .rail-state{
+      font-size:10px;
+      font-weight:500;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .direction-up .rail-icon{
+      color:var(--green);
+      background:rgba(63,185,80,.12);
+      box-shadow:0 0 12px rgba(63,185,80,.25);
+    }
+
+    .direction-down .rail-icon{
+      color:var(--red);
+      background:rgba(248,81,73,.12);
+      box-shadow:0 0 12px rgba(248,81,73,.25);
+    }
+
+    .direction-neutral .rail-icon{
+      color:var(--gold);
+      background:rgba(210,153,34,.12);
+      box-shadow:0 0 12px rgba(210,153,34,.25);
+    }
+
+    @keyframes railPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.08)}
+    }
+
+    .hero{
+      display:grid;
+      grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .hero-copy{
+      padding:26px;
+    }
+
+    .hero-points{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .hero-point{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .hero-point strong{
+      display:block;
+      color:#fff;
+      margin-bottom:6px;
+      font-weight:600;
+    }
+
+    .hero-point span{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .score-panel{
+      padding:24px;
+      text-align:center;
+      display:grid;
+      place-items:center;
+    }
+
+    .scope-pill{
+      display:inline-flex;
+      margin-bottom:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(88,166,255,.10);
+      border:1px solid rgba(88,166,255,.20);
+      color:#a5cfff;
+      font-size:12px;
+      font-weight:500;
+    }
+
+    .score-label{
+      color:var(--muted);
+      font-size:14px;
+      font-weight:500;
+      margin-bottom:8px;
+    }
+
+    .score-ring{
+      --score:50;
+      --accent:var(--gold);
+      width:230px;
+      height:230px;
+      border-radius:50%;
+      background:conic-gradient(var(--accent) calc(var(--score) * 1%), #26313f 0);
+      display:grid;
+      place-items:center;
+      margin:8px auto 16px;
+      box-shadow:0 0 32px rgba(210,153,34,.12);
+    }
+
+    .score-inner{
+      width:170px;
+      height:170px;
+      border-radius:50%;
+      background:var(--panel);
+      border:1px solid var(--line);
+      display:grid;
+      place-items:center;
+    }
+
+    .score-number{
+      font-size:50px;
+      line-height:1;
+      font-weight:700;
+    }
+
+    .score-word{
+      margin-top:8px;
+      font-size:18px;
+      font-weight:600;
+    }
+
+    .score-desc{
+      max-width:370px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+      margin:0 auto;
+    }
+
+    .scale{
+      width:100%;
+      margin-top:16px;
+    }
+
+    .scale-bar{
+      height:10px;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--red),var(--orange),var(--gold),var(--green));
+    }
+
+    .scale-labels{
+      display:flex;
+      justify-content:space-between;
+      color:var(--muted);
+      font-size:11px;
+      margin-top:6px;
+    }
+
+    .metric{
+      padding:18px;
+    }
+
+    .metric-title{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:500;
+      margin-bottom:8px;
+    }
+
+    .metric-value{
+      color:#fff;
+      font-size:26px;
+      font-weight:600;
+    }
+
+    .metric-note{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .section{
+      padding:22px;
+      margin-bottom:18px;
+    }
+
+    .sources-layout{
+      display:grid;
+      grid-template-columns:300px minmax(0,1fr);
+      gap:18px;
+      align-items:stretch;
+    }
+
+    .sources-pill{
+      display:inline-flex;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.35);
+      color:#f4d17d;
+      font-size:12px;
+      font-weight:500;
+      margin-bottom:12px;
+    }
+
+    .sources-waterfall{
+      position:relative;
+      overflow:hidden;
+      min-height:430px;
+      height:430px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.10), transparent 15rem), linear-gradient(180deg,#101826,#0d131d);
+      padding:14px;
+    }
+
+    .sources-waterfall::before,.sources-waterfall::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      height:48px;
+      z-index:2;
+      pointer-events:none;
+    }
+
+    .sources-waterfall::before{
+      top:0;
+      background:linear-gradient(to bottom, rgba(13,17,23,1), rgba(13,17,23,0));
+    }
+
+    .sources-waterfall::after{
+      bottom:0;
+      background:linear-gradient(to top, rgba(13,17,23,1), rgba(13,17,23,0));
+    }
+
+    .waterfall-grid{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      height:100%;
+    }
+
+    .waterfall-column{
+      overflow:hidden;
+      height:100%;
+      position:relative;
+    }
+
+    .waterfall-track{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      will-change:transform;
+    }
+
+    .waterfall-column.column-1 .waterfall-track{
+      animation:scrollUp 28s linear infinite;
+    }
+
+    .waterfall-column.column-2 .waterfall-track{
+      animation:scrollDown 32s linear infinite;
+    }
+
+    .waterfall-column.column-3 .waterfall-track{
+      animation:scrollUp 36s linear infinite;
+    }
+
+    @keyframes scrollUp{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(-50%)}
+    }
+
+    @keyframes scrollDown{
+      0%{transform:translateY(-50%)}
+      100%{transform:translateY(0)}
+    }
+
+    .source-chip{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:52px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(17,24,33,.92);
+      border:1px solid rgba(210,153,34,.14);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(0,0,0,.16);
+      transition:.18s ease;
+    }
+
+    .source-chip:hover{
+      transform:translateY(-2px);
+      border-color:rgba(210,153,34,.48);
+      background:rgba(210,153,34,.08);
+    }
+
+    .source-chip img{
+      width:24px;
+      height:24px;
+      border-radius:6px;
+      object-fit:cover;
+      flex-shrink:0;
+    }
+
+    .source-chip-name{
+      font-size:14px;
+      font-weight:500;
+      line-height:1.3;
+      color:#e6edf3;
+    }
+
+    .source-chip:hover .source-chip-name{
+      color:#ffd780;
+      text-shadow:0 0 10px rgba(210,153,34,.45);
+    }
+
+    .source-chip-status{
+      margin-left:auto;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 10px rgba(63,185,80,.5);
+      flex-shrink:0;
+    }
+
+    .summary-lines{
+      display:grid;
+      gap:10px;
+    }
+
+    .summary-line{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      color:var(--soft);
+      line-height:1.55;
+    }
+
+    .focus-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+      grid-auto-rows:1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+
+    .mini-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      height:100%;
+    }
+
+    .focus-card{
+      min-height:140px;
+      cursor:pointer;
+    }
+
+    .mini-title{
+      color:#fff;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+
+    .mini-meta{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .mini-headline{
+      margin-top:10px;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--soft);
+    }
+
+    .focus-open{
+      margin-top:12px;
+      color:#fff;
+      font-size:12px;
+      font-weight:500;
+    }
+
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+      margin-top:14px;
+    }
+
+    .action-card{
+      padding:20px;
+      color:var(--text);
+    }
+
+    .action-label{
+      display:inline-flex;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.25);
+      color:#f4d17d;
+      font-size:11px;
+      font-weight:500;
+      margin-bottom:12px;
+    }
+
+    .action-card h3{
+      margin:0 0 8px;
+      color:#fff;
+      font-size:22px;
+      font-weight:600;
+    }
+
+    .action-card p{
+      margin:0 0 14px;
+    }
+
+    .action-cta{
+      color:#fff;
+      font-weight:500;
+      font-size:14px;
+    }
+
+    .action-card:hover .action-cta{
+      color:#ffd780;
+      text-shadow:0 0 10px rgba(210,153,34,.55);
+    }
 
     @media(max-width:1180px){
-      .home-layout,.hero,.sources-layout,.hero-points,.action-grid{grid-template-columns:1fr}
-      .instrument-rail{position:relative;top:auto}
-      .rail-waterfall{height:420px}
+      .home-layout,.hero,.sources-layout,.hero-points,.action-grid{
+        grid-template-columns:1fr;
+      }
+
+      .instrument-rail{
+        position:relative;
+        top:auto;
+      }
+
+      .rail-waterfall{
+        height:420px;
+      }
     }
 
     @media(max-width:860px){
-      .waterfall-grid{grid-template-columns:1fr}
-      .waterfall-column.column-2,.waterfall-column.column-3{display:none}
+      .waterfall-grid{
+        grid-template-columns:1fr;
+      }
+
+      .waterfall-column.column-2,.waterfall-column.column-3{
+        display:none;
+      }
     }
   </style>
 </head>
@@ -120,13 +607,13 @@
     </div>
 
     <nav class="nav">
-      <a href="index.html" class="active">Home</a>
       <a href="dashboard.html">Interactive Dashboard</a>
       <a href="news-articles.html">News & Articles</a>
-      <a href="about.html">About</a>
-      <a href="how-it-works.html">How it works</a>
       <a href="market-sentiment.html">Guides</a>
       <a href="contact.html">Get in Touch</a>
+      <a href="how-it-works.html">Dashboard Works</a>
+      <a href="about.html">About</a>
+
       <div class="social-links">
         <span class="social-label">Follow us</span>
         <span class="social-pill">X</span>
@@ -156,15 +643,27 @@
             <p>The main score is a <b>global all-markets Public Sentiment Index</b>. It reflects the latest published sentiment across the full dashboard universe.</p>
 
             <div class="hero-points">
-              <div class="hero-point"><strong>Global PSI</strong><span>Fast all-markets public sentiment reading from the latest published scan.</span></div>
-              <div class="hero-point"><strong>User Sentiment</strong><span>Anonymous daily bullish or bearish voting by instrument.</span></div>
-              <div class="hero-point"><strong>Interactive Pages</strong><span>Use the dashboard and news pages for deeper filtering and browsing.</span></div>
+              <div class="hero-point">
+                <strong>Global PSI</strong>
+                <span>Fast all-markets public sentiment reading from the latest published scan.</span>
+              </div>
+
+              <div class="hero-point">
+                <strong>User Sentiment</strong>
+                <span>Anonymous daily bullish or bearish voting by instrument.</span>
+              </div>
+
+              <div class="hero-point">
+                <strong>Interactive Pages</strong>
+                <span>Use the dashboard and news pages for deeper filtering and browsing.</span>
+              </div>
             </div>
           </div>
 
           <aside class="panel score-panel">
             <div class="scope-pill">Scope: Global / All Markets</div>
             <div class="score-label">Current Global Public Sentiment Index</div>
+
             <div class="score-ring" id="scoreRing">
               <div class="score-inner">
                 <div>
@@ -173,10 +672,16 @@
                 </div>
               </div>
             </div>
+
             <div class="score-desc" id="scoreDesc">Loading latest dashboard data...</div>
+
             <div class="scale">
               <div class="scale-bar"></div>
-              <div class="scale-labels"><span>0 Bearish</span><span>50 Neutral</span><span>100 Bullish</span></div>
+              <div class="scale-labels">
+                <span>0 Bearish</span>
+                <span>50 Neutral</span>
+                <span>100 Bullish</span>
+              </div>
             </div>
           </aside>
         </section>
@@ -263,287 +768,14 @@
       </div>
     </div>
 
-    <script>
-      let dashboardData = null;
-      let technicalData = null;
-
-      const TOP_INSTRUMENTS = [
-        {name:"S&P 500 / ES",label:"S&P 500",url:"https://www.spglobal.com/spdji/en/indices/equity/sp-500/"},
-        {name:"Nasdaq / NQ",label:"Nasdaq",url:"https://www.nasdaq.com/market-activity/index/ndx"},
-        {name:"Dow / YM",label:"Dow Jones",url:"https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/"},
-        {name:"Russell / RTY",label:"Russell 2000",url:"https://www.lseg.com/en/ftse-russell/indices/russell-us"},
-        {name:"VIX",label:"VIX",url:"https://www.cboe.com/tradable_products/vix/"},
-        {name:"DAX",label:"DAX",url:"https://www.dax-indices.com/"},
-        {name:"FTSE 100",label:"FTSE 100",url:"https://www.lseg.com/en/ftse-russell/indices/uk"},
-        {name:"Nikkei 225",label:"Nikkei 225",url:"https://indexes.nikkei.co.jp/en/nkave"},
-        {name:"Hang Seng",label:"Hang Seng",url:"https://www.hsi.com.hk/"},
-        {name:"Euro Stoxx 50",label:"Euro Stoxx",url:"https://www.stoxx.com/index-details?symbol=sx5e"},
-        {name:"US 10Y Treasury",label:"US 10Y",url:"https://home.treasury.gov/"},
-        {name:"US 2Y Treasury",label:"US 2Y",url:"https://home.treasury.gov/"},
-        {name:"US Dollar / DXY",label:"DXY",url:"https://www.ice.com/products/194/US-Dollar-Index-Futures"},
-        {name:"EUR / EURUSD",label:"EUR/USD",url:"https://www.ecb.europa.eu/"},
-        {name:"GBP / GBPUSD",label:"GBP/USD",url:"https://www.bankofengland.co.uk/"},
-        {name:"JPY / USDJPY",label:"USD/JPY",url:"https://www.boj.or.jp/en/"},
-        {name:"CAD / USDCAD",label:"USD/CAD",url:"https://www.bankofcanada.ca/"},
-        {name:"AUD / AUDUSD",label:"AUD/USD",url:"https://www.rba.gov.au/"},
-        {name:"Bitcoin / BTC",label:"Bitcoin",url:"https://bitcoin.org/"},
-        {name:"Ethereum / ETH",label:"Ethereum",url:"https://ethereum.org/"},
-        {name:"Solana / SOL",label:"Solana",url:"https://solana.com/"},
-        {name:"Gold",label:"Gold",url:"https://www.cmegroup.com/markets/metals/precious/gold.html"},
-        {name:"Silver",label:"Silver",url:"https://www.cmegroup.com/markets/metals/precious/silver.html"},
-        {name:"Crude Oil",label:"Crude Oil",url:"https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html"},
-        {name:"Natural Gas",label:"Natural Gas",url:"https://www.cmegroup.com/markets/energy/natural-gas/natural-gas.html"}
-      ];
-
-      function escapeHTML(value){
-        return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-      }
-
-      function normalizeClass(value){
-        const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
-        return clean || "Neutral";
-      }
-
-      function normalize(text){
-        return String(text || "").toLowerCase().replace(/[^a-z0-9]/g,"");
-      }
-
-      function userSentimentFor(instrument){
-        return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
-      }
-
-      function voteToScore(vote){
-        const v = String(vote || "").toLowerCase();
-        if(v.includes("bullish") && !v.includes("bearish")) return 100;
-        if(v.includes("bearish") && !v.includes("bullish")) return 0;
-        if(v.includes("mixed")) return 55;
-        return 50;
-      }
-
-      function scoreLabel(score){
-        if(score >= 70) return "Bullish";
-        if(score <= 30) return "Bearish";
-        if(score >= 56) return "Mixed/Bullish";
-        if(score <= 44) return "Mixed/Bearish";
-        return "Mixed/Neutral";
-      }
-
-      function scoreColor(score){
-        if(score >= 70) return "var(--green)";
-        if(score <= 30) return "var(--red)";
-        return "var(--gold)";
-      }
-
-      function calculateGlobalScore(data){
-        const sources = Array.isArray(data.sources) ? data.sources : [];
-        if(!sources.length) return 50;
-
-        let totalWeight = 0;
-        let weightedScore = 0;
-
-        sources.forEach(source => {
-          const weight = Number(source.weight || 1);
-          weightedScore += voteToScore(source.vote) * weight;
-          totalWeight += weight;
-        });
-
-        return totalWeight ? Math.round(weightedScore / totalWeight) : 50;
-      }
-
-      function renderScore(data){
-        const score = calculateGlobalScore(data);
-        const label = scoreLabel(score);
-        const ring = document.getElementById("scoreRing");
-
-        ring.style.setProperty("--score", score);
-        ring.style.setProperty("--accent", scoreColor(score));
-
-        document.getElementById("scoreNumber").textContent = score;
-        document.getElementById("scoreWord").textContent = label;
-        document.getElementById("scoreWord").className = "score-word " + normalizeClass(label);
-        document.getElementById("scoreDesc").textContent = "PSI = Public Sentiment Index. 0 is very bearish, 50 is mixed or neutral, and 100 is very bullish.";
-      }
-
-      function renderStats(data){
-        const trust = data.trust_layer || {};
-        document.getElementById("lastUpdated").textContent = data.updated_ny || "N/A";
-        document.getElementById("relevantHeadlines").textContent = trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
-        document.getElementById("sourcesWorking").textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
-      }
-
-      function renderDailySummary(data){
-        const items = Array.isArray(data.daily_summary) ? data.daily_summary : [];
-
-        document.getElementById("dailySummary").innerHTML = items.length
-          ? items.map(item => `<div class="summary-line">${escapeHTML(item)}</div>`).join("")
-          : `<div class="summary-line">No daily summary available yet.</div>`;
-      }
-
-      function focusCard(item, type){
-        const headline = Array.isArray(item.headlines) && item.headlines[0] ? item.headlines[0] : null;
-
-        return `<div class="mini-card dynamic-card focus-card" onclick="window.location.href='dashboard.html'">
-          <div class="mini-title">${escapeHTML(item.name || "Unknown")}</div>
-          <div class="mini-meta">${escapeHTML(type)} • ${escapeHTML(item.count ?? 0)} mentions • <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span></div>
-          ${headline ? `<div class="mini-headline">${escapeHTML(headline.title || "")}</div>` : ""}
-          <div class="focus-open">Open dashboard →</div>
-        </div>`;
-      }
-
-      function renderMarketFocus(data){
-        const focus = data.top_market_focus || {};
-        const markets = Array.isArray(focus.top_markets) ? focus.top_markets : [];
-        const instruments = Array.isArray(focus.top_instruments) ? focus.top_instruments : [];
-        const cards = [];
-
-        markets.slice(0,4).forEach(item => cards.push({item,type:"Market"}));
-        instruments.slice(0,4).forEach(item => cards.push({item,type:"Instrument"}));
-
-        document.getElementById("marketFocus").innerHTML = cards.length
-          ? cards.map(card => focusCard(card.item, card.type)).join("")
-          : `<div class="mini-card dynamic-card focus-card">No market focus data available.</div>`;
-      }
-
-      function domainFromURL(url){
-        try{return new URL(url).hostname.replace(/^www\./,"");}
-        catch(e){return "";}
-      }
-
-      function chunkIntoColumns(items, columnCount){
-        const cols = Array.from({length:columnCount},()=>[]);
-        items.forEach((item,index)=>cols[index%columnCount].push(item));
-        return cols;
-      }
-
-      function sourceChip(source){
-        const domain = domainFromURL(source.url || "");
-        const favicon = domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
-
-        return `<a class="source-chip" href="${escapeHTML(source.url || "#")}" target="_blank" rel="noopener">
-          ${favicon ? `<img src="${favicon}" alt="${escapeHTML(source.name || "Source")} logo" loading="lazy">` : ""}
-          <span class="source-chip-name">${escapeHTML(source.name || "Source")}</span>
-          <span class="source-chip-status"></span>
-        </a>`;
-      }
-
-      function renderSourcesWaterfall(data){
-        const sources = Array.isArray(data.sources) ? data.sources.filter(s => s.name && s.url) : [];
-        const fallback = document.getElementById("sourcesWaterfall");
-
-        if(!sources.length){
-          fallback.innerHTML = `<div class="muted">Source list unavailable.</div>`;
-          return;
-        }
-
-        const cols = chunkIntoColumns(sources, 3);
-        const columns = fallback.querySelectorAll(".waterfall-track");
-
-        columns.forEach((track,index)=>{
-          const list = cols[index] && cols[index].length ? cols[index] : sources;
-          track.innerHTML = [...list,...list].map(sourceChip).join("");
-        });
-      }
-
-      function extractTechLabel(entry, period){
-        const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
-
-        if(raw === null || raw === undefined) return "Neutral";
-        if(typeof raw === "string" || typeof raw === "number") return String(raw);
-
-        return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "Neutral";
-      }
-
-      function getTechnicalForInstrument(name){
-        if(!technicalData) return "Neutral";
-
-        const techRoot = technicalData.technical || technicalData;
-        let entry = null;
-
-        if(Array.isArray(techRoot)){
-          entry = techRoot.find(item => normalize(item?.instrument || item?.name || item?.symbol || "") === normalize(name));
-        } else if(typeof techRoot === "object"){
-          const found = Object.entries(techRoot).find(([key, value]) => {
-            const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
-            return possible.includes(normalize(name));
-          });
-          entry = found ? found[1] : null;
-        }
-
-        return entry ? extractTechLabel(entry, "daily") : "Neutral";
-      }
-
-      function directionType(direction){
-        const d = String(direction || "").toLowerCase();
-
-        if(d.includes("bullish") && !d.includes("bearish")) return "up";
-        if(d.includes("bearish") && !d.includes("bullish")) return "down";
-
-        return "neutral";
-      }
-
-      function renderTopInstruments(){
-        const rail = document.getElementById("topInstrumentsRail");
-
-        const rows = TOP_INSTRUMENTS.map(item => {
-          const direction = getTechnicalForInstrument(item.name);
-          const type = directionType(direction);
-          const icon = type === "up" ? "↗" : type === "down" ? "↘" : "•";
-          const label = type === "up" ? "Up" : type === "down" ? "Down" : "Neutral";
-          const userValue = userSentimentFor(item.name);
-
-          return `<a class="rail-item direction-${type}" href="${escapeHTML(item.url)}" target="_blank" rel="noopener">
-            <span class="rail-icon">${icon}</span>
-            <span>
-              <span class="rail-name">${escapeHTML(item.label)}</span>
-              <span class="rail-sub">User: <span data-user-sentiment="${escapeHTML(item.name)}" class="psd-user-sentiment-value ${normalizeClass(userValue)}">${escapeHTML(userValue)}</span></span>
-            </span>
-            <span class="rail-state">${label}</span>
-          </a>`;
-        }).join("");
-
-        rail.innerHTML = rows + rows;
-
-        if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
-      }
-
-      async function loadPage(){
-        try{
-          const [dashboardRes, technicalRes] = await Promise.all([
-            fetch("dashboard_data.json", {cache:"no-store"}),
-            fetch("technical_data.json", {cache:"no-store"}).catch(() => null)
-          ]);
-
-          dashboardData = await dashboardRes.json();
-          technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
-
-          renderTopInstruments();
-          renderScore(dashboardData);
-          renderStats(dashboardData);
-          renderDailySummary(dashboardData);
-          renderMarketFocus(dashboardData);
-          renderSourcesWaterfall(dashboardData);
-        }catch(error){
-          console.error(error);
-          renderTopInstruments();
-          document.getElementById("dailySummary").innerHTML = `<div class="summary-line">Dashboard data could not be loaded right now.</div>`;
-          document.getElementById("marketFocus").innerHTML = `<div class="mini-card dynamic-card focus-card">Dashboard data could not be loaded right now.</div>`;
-          document.getElementById("sourcesWaterfall").innerHTML = `<div class="muted">Source list could not be loaded right now.</div>`;
-        }
-      }
-
-      window.addEventListener("psdUserSentimentReady", renderTopInstruments);
-      loadPage();
-    </script>
-
     <footer class="footer">
       <div class="footer-links">
-        <a href="index.html" class="active">Home</a>
         <a href="dashboard.html">Interactive Dashboard</a>
         <a href="news-articles.html">News & Articles</a>
-        <a href="about.html">About</a>
-        <a href="how-it-works.html">How it works</a>
         <a href="market-sentiment.html">Guides</a>
         <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">Dashboard Works</a>
+        <a href="about.html">About</a>
       </div>
 
       <div class="legal">
@@ -553,6 +785,297 @@
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
+
+  <script>
+    let dashboardData = null;
+    let technicalData = null;
+
+    const TOP_INSTRUMENTS = [
+      {name:"S&P 500 / ES",label:"S&P 500",url:"https://www.spglobal.com/spdji/en/indices/equity/sp-500/"},
+      {name:"Nasdaq / NQ",label:"Nasdaq",url:"https://www.nasdaq.com/market-activity/index/ndx"},
+      {name:"Dow / YM",label:"Dow Jones",url:"https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/"},
+      {name:"Russell / RTY",label:"Russell 2000",url:"https://www.lseg.com/en/ftse-russell/indices/russell-us"},
+      {name:"VIX",label:"VIX",url:"https://www.cboe.com/tradable_products/vix/"},
+      {name:"DAX",label:"DAX",url:"https://www.dax-indices.com/"},
+      {name:"FTSE 100",label:"FTSE 100",url:"https://www.lseg.com/en/ftse-russell/indices/uk"},
+      {name:"Nikkei 225",label:"Nikkei 225",url:"https://indexes.nikkei.co.jp/en/nkave"},
+      {name:"Hang Seng",label:"Hang Seng",url:"https://www.hsi.com.hk/"},
+      {name:"Euro Stoxx 50",label:"Euro Stoxx",url:"https://www.stoxx.com/index-details?symbol=sx5e"},
+      {name:"US 10Y Treasury",label:"US 10Y",url:"https://home.treasury.gov/"},
+      {name:"US 2Y Treasury",label:"US 2Y",url:"https://home.treasury.gov/"},
+      {name:"US Dollar / DXY",label:"DXY",url:"https://www.ice.com/products/194/US-Dollar-Index-Futures"},
+      {name:"EUR / EURUSD",label:"EUR/USD",url:"https://www.ecb.europa.eu/"},
+      {name:"GBP / GBPUSD",label:"GBP/USD",url:"https://www.bankofengland.co.uk/"},
+      {name:"JPY / USDJPY",label:"USD/JPY",url:"https://www.boj.or.jp/en/"},
+      {name:"CAD / USDCAD",label:"USD/CAD",url:"https://www.bankofcanada.ca/"},
+      {name:"AUD / AUDUSD",label:"AUD/USD",url:"https://www.rba.gov.au/"},
+      {name:"Bitcoin / BTC",label:"Bitcoin",url:"https://bitcoin.org/"},
+      {name:"Ethereum / ETH",label:"Ethereum",url:"https://ethereum.org/"},
+      {name:"Solana / SOL",label:"Solana",url:"https://solana.com/"},
+      {name:"Gold",label:"Gold",url:"https://www.cmegroup.com/markets/metals/precious/gold.html"},
+      {name:"Silver",label:"Silver",url:"https://www.cmegroup.com/markets/metals/precious/silver.html"},
+      {name:"Crude Oil",label:"Crude Oil",url:"https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html"},
+      {name:"Natural Gas",label:"Natural Gas",url:"https://www.cmegroup.com/markets/energy/natural-gas/natural-gas.html"}
+    ];
+
+    function escapeHTML(value){
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function normalizeClass(value){
+      const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
+      return clean || "Neutral";
+    }
+
+    function normalize(text){
+      return String(text || "").toLowerCase().replace(/[^a-z0-9]/g,"");
+    }
+
+    function userSentimentFor(instrument){
+      return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
+    }
+
+    function voteToScore(vote){
+      const v = String(vote || "").toLowerCase();
+
+      if(v.includes("bullish") && !v.includes("bearish")) return 100;
+      if(v.includes("bearish") && !v.includes("bullish")) return 0;
+      if(v.includes("mixed")) return 55;
+
+      return 50;
+    }
+
+    function scoreLabel(score){
+      if(score >= 70) return "Bullish";
+      if(score <= 30) return "Bearish";
+      if(score >= 56) return "Mixed/Bullish";
+      if(score <= 44) return "Mixed/Bearish";
+
+      return "Mixed/Neutral";
+    }
+
+    function scoreColor(score){
+      if(score >= 70) return "var(--green)";
+      if(score <= 30) return "var(--red)";
+
+      return "var(--gold)";
+    }
+
+    function calculateGlobalScore(data){
+      const sources = Array.isArray(data.sources) ? data.sources : [];
+
+      if(!sources.length) return 50;
+
+      let totalWeight = 0;
+      let weightedScore = 0;
+
+      sources.forEach(source => {
+        const weight = Number(source.weight || 1);
+        weightedScore += voteToScore(source.vote) * weight;
+        totalWeight += weight;
+      });
+
+      return totalWeight ? Math.round(weightedScore / totalWeight) : 50;
+    }
+
+    function renderScore(data){
+      const score = calculateGlobalScore(data);
+      const label = scoreLabel(score);
+      const ring = document.getElementById("scoreRing");
+
+      ring.style.setProperty("--score", score);
+      ring.style.setProperty("--accent", scoreColor(score));
+
+      document.getElementById("scoreNumber").textContent = score;
+      document.getElementById("scoreWord").textContent = label;
+      document.getElementById("scoreWord").className = "score-word " + normalizeClass(label);
+      document.getElementById("scoreDesc").textContent = "PSI = Public Sentiment Index. 0 is very bearish, 50 is mixed or neutral, and 100 is very bullish.";
+    }
+
+    function renderStats(data){
+      const trust = data.trust_layer || {};
+
+      document.getElementById("lastUpdated").textContent = data.updated_ny || "N/A";
+      document.getElementById("relevantHeadlines").textContent = trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
+      document.getElementById("sourcesWorking").textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
+    }
+
+    function renderDailySummary(data){
+      const items = Array.isArray(data.daily_summary) ? data.daily_summary : [];
+
+      document.getElementById("dailySummary").innerHTML = items.length
+        ? items.map(item => `<div class="summary-line">${escapeHTML(item)}</div>`).join("")
+        : `<div class="summary-line">No daily summary available yet.</div>`;
+    }
+
+    function focusCard(item, type){
+      const headline = Array.isArray(item.headlines) && item.headlines[0] ? item.headlines[0] : null;
+
+      return `<div class="mini-card dynamic-card focus-card" onclick="window.location.href='dashboard.html'">
+        <div class="mini-title">${escapeHTML(item.name || "Unknown")}</div>
+        <div class="mini-meta">${escapeHTML(type)} • ${escapeHTML(item.count ?? 0)} mentions • <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span></div>
+        ${headline ? `<div class="mini-headline">${escapeHTML(headline.title || "")}</div>` : ""}
+        <div class="focus-open">Open dashboard →</div>
+      </div>`;
+    }
+
+    function renderMarketFocus(data){
+      const focus = data.top_market_focus || {};
+      const markets = Array.isArray(focus.top_markets) ? focus.top_markets : [];
+      const instruments = Array.isArray(focus.top_instruments) ? focus.top_instruments : [];
+      const cards = [];
+
+      markets.slice(0,4).forEach(item => cards.push({item,type:"Market"}));
+      instruments.slice(0,4).forEach(item => cards.push({item,type:"Instrument"}));
+
+      document.getElementById("marketFocus").innerHTML = cards.length
+        ? cards.map(card => focusCard(card.item, card.type)).join("")
+        : `<div class="mini-card dynamic-card focus-card">No market focus data available.</div>`;
+    }
+
+    function domainFromURL(url){
+      try{
+        return new URL(url).hostname.replace(/^www\./,"");
+      }catch(e){
+        return "";
+      }
+    }
+
+    function chunkIntoColumns(items, columnCount){
+      const cols = Array.from({length:columnCount},()=>[]);
+
+      items.forEach((item,index)=>{
+        cols[index%columnCount].push(item);
+      });
+
+      return cols;
+    }
+
+    function sourceChip(source){
+      const domain = domainFromURL(source.url || "");
+      const favicon = domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
+
+      return `<a class="source-chip" href="${escapeHTML(source.url || "#")}" target="_blank" rel="noopener">
+        ${favicon ? `<img src="${favicon}" alt="${escapeHTML(source.name || "Source")} logo" loading="lazy">` : ""}
+        <span class="source-chip-name">${escapeHTML(source.name || "Source")}</span>
+        <span class="source-chip-status"></span>
+      </a>`;
+    }
+
+    function renderSourcesWaterfall(data){
+      const sources = Array.isArray(data.sources) ? data.sources.filter(s => s.name && s.url) : [];
+      const fallback = document.getElementById("sourcesWaterfall");
+
+      if(!sources.length){
+        fallback.innerHTML = `<div class="muted">Source list unavailable.</div>`;
+        return;
+      }
+
+      const cols = chunkIntoColumns(sources, 3);
+      const columns = fallback.querySelectorAll(".waterfall-track");
+
+      columns.forEach((track,index)=>{
+        const list = cols[index] && cols[index].length ? cols[index] : sources;
+        track.innerHTML = [...list,...list].map(sourceChip).join("");
+      });
+    }
+
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+
+      if(raw === null || raw === undefined) return "Neutral";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "Neutral";
+    }
+
+    function getTechnicalForInstrument(name){
+      if(!technicalData) return "Neutral";
+
+      const techRoot = technicalData.technical || technicalData;
+      let entry = null;
+
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => normalize(item?.instrument || item?.name || item?.symbol || "") === normalize(name));
+      }else if(typeof techRoot === "object"){
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
+          return possible.includes(normalize(name));
+        });
+
+        entry = found ? found[1] : null;
+      }
+
+      return entry ? extractTechLabel(entry, "daily") : "Neutral";
+    }
+
+    function directionType(direction){
+      const d = String(direction || "").toLowerCase();
+
+      if(d.includes("bullish") && !d.includes("bearish")) return "up";
+      if(d.includes("bearish") && !d.includes("bullish")) return "down";
+
+      return "neutral";
+    }
+
+    function renderTopInstruments(){
+      const rail = document.getElementById("topInstrumentsRail");
+
+      const rows = TOP_INSTRUMENTS.map(item => {
+        const direction = getTechnicalForInstrument(item.name);
+        const type = directionType(direction);
+        const icon = type === "up" ? "↗" : type === "down" ? "↘" : "•";
+        const label = type === "up" ? "Up" : type === "down" ? "Down" : "Neutral";
+        const userValue = userSentimentFor(item.name);
+
+        return `<a class="rail-item direction-${type}" href="${escapeHTML(item.url)}" target="_blank" rel="noopener">
+          <span class="rail-icon">${icon}</span>
+          <span>
+            <span class="rail-name">${escapeHTML(item.label)}</span>
+            <span class="rail-sub">User: <span data-user-sentiment="${escapeHTML(item.name)}" class="psd-user-sentiment-value ${normalizeClass(userValue)}">${escapeHTML(userValue)}</span></span>
+          </span>
+          <span class="rail-state">${label}</span>
+        </a>`;
+      }).join("");
+
+      rail.innerHTML = rows + rows;
+
+      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
+    }
+
+    async function loadPage(){
+      try{
+        const [dashboardRes, technicalRes] = await Promise.all([
+          fetch("dashboard_data.json", {cache:"no-store"}),
+          fetch("technical_data.json", {cache:"no-store"}).catch(() => null)
+        ]);
+
+        dashboardData = await dashboardRes.json();
+        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
+
+        renderTopInstruments();
+        renderScore(dashboardData);
+        renderStats(dashboardData);
+        renderDailySummary(dashboardData);
+        renderMarketFocus(dashboardData);
+        renderSourcesWaterfall(dashboardData);
+      }catch(error){
+        console.error(error);
+        renderTopInstruments();
+        document.getElementById("dailySummary").innerHTML = `<div class="summary-line">Dashboard data could not be loaded right now.</div>`;
+        document.getElementById("marketFocus").innerHTML = `<div class="mini-card dynamic-card focus-card">Dashboard data could not be loaded right now.</div>`;
+        document.getElementById("sourcesWaterfall").innerHTML = `<div class="muted">Source list could not be loaded right now.</div>`;
+      }
+    }
+
+    window.addEventListener("psdUserSentimentReady", renderTopInstruments);
+    loadPage();
+  </script>
 
   <script src="vote-widget.js" defer></script>
 </body>
