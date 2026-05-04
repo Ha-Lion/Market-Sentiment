@@ -1,4 +1,3 @@
-<script src="vote-widget.js" defer></script>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Public Sentiment Dash — Interactive Dashboard</title>
-  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, headline activity, source votes, technical direction, and relevant news.">
+  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, source votes, technical direction, and relevant news.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
@@ -14,59 +13,67 @@
 
   <style>
     .compare-selects{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
-    select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
+    select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;font-weight:400}
     select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
-    optgroup{color:#ffd780;background:#0b111a;font-weight:800;text-align:center}
+    optgroup{color:#ffd780;background:#0b111a;font-weight:600;text-align:center}
     option{color:#e6edf3;background:#111821;font-weight:400;text-align:left;padding-left:10px}
+
     .compare-grid{display:grid;gap:14px;margin-top:14px}
     .compare-block{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:16px}
-    .compare-title{color:#fff;font-weight:700;font-size:16px;margin-bottom:4px}
-    .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px}
+    .compare-title{color:#fff;font-weight:600;font-size:16px;margin-bottom:4px}
+    .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px;font-weight:400}
     .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 160px;align-items:center;gap:14px;margin-bottom:12px}
-    .metric-label{color:#fff;font-weight:650;line-height:1.35}
+    .metric-label{color:#fff;font-weight:500;line-height:1.35}
     .metric-bar-wrap{height:24px;border-radius:999px;background:#2b3647;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
     .metric-bar{height:100%;border-radius:999px}
     .score-bar{background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55)}
     .count-bar{background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold))}
-    .metric-value{color:#fff;font-weight:650;text-align:right;font-size:15px;line-height:1.35}
+    .metric-value{color:#fff;font-weight:500;text-align:right;font-size:15px;line-height:1.35}
+
     .instrument-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
-    .instrument-card{padding:18px;min-height:260px}
-    .instrument-name{color:#fff;font-size:18px;font-weight:700;margin-bottom:10px}
+    .instrument-card{padding:18px;min-height:285px}
+    .instrument-name{color:#fff;font-size:18px;font-weight:600;margin-bottom:10px}
     .info-row{color:var(--soft);line-height:1.55;margin-bottom:8px;font-weight:400}
     .label{color:var(--muted);font-weight:400}
-    .subsection{margin-top:12px;color:#fff;font-weight:650}
+    .subsection{margin-top:12px;color:#fff;font-weight:600}
     .headline-link{display:inline-block;margin-top:4px;color:var(--blue);line-height:1.5;font-weight:400}
     .headline-link:hover{color:#8ec2ff;text-decoration:underline}
+
     .help-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
     .help-card{background:rgba(17,24,33,.65);border:1px solid var(--line);border-radius:14px;padding:14px}
-    .help-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
-    .help-card p{font-size:13px;margin:0;color:var(--muted);line-height:1.5}
+    .help-card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+    .help-card p{font-size:13px;margin:0;color:var(--muted);line-height:1.5;font-weight:400}
+
     .source-table-wrap{overflow:auto;margin-top:12px}
     table{width:100%;border-collapse:collapse;min-width:760px}
     th,td{padding:13px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
-    th{color:#fff;font-size:14px;font-weight:650}
+    th{color:#fff;font-size:14px;font-weight:600}
     td{color:var(--soft);font-size:14px;font-weight:400}
     .source-link{color:var(--blue);font-weight:400}
     .source-link:hover{color:#8ec2ff;text-decoration:underline}
     .source-table-wrap .Bullish,.source-table-wrap .Bearish,.source-table-wrap .Neutral,.source-table-wrap .Mixed,.source-table-wrap .MixedBullish,.source-table-wrap .MixedBearish,.source-table-wrap .MixedNeutral{font-weight:400}
+
     .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 12px rgba(255,255,255,.15)}
     .status-ok{background:var(--green);box-shadow:0 0 14px rgba(63,185,80,.55)}
     .status-partial{background:var(--orange);box-shadow:0 0 14px rgba(245,158,11,.55)}
     .status-fail{background:var(--red);box-shadow:0 0 14px rgba(248,81,73,.55)}
+
     .headline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:12px}
     .news-card{display:flex;flex-direction:column;min-height:330px;color:var(--text);padding:16px}
     .news-source-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
     .news-source-icon{width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#fff}
-    .news-source-name{color:#fff;font-size:13px;font-weight:800}
+    .news-source-name{color:#fff;font-size:13px;font-weight:600}
     .news-body{display:flex;flex-direction:column;height:100%}
     .news-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
     .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff;font-size:12px;font-weight:500}
     .impact-chip{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
     .tech-chip{background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.20);color:#c9f5ce}
-    .news-title{color:#fff;font-size:21px;font-weight:550;line-height:1.45;margin-bottom:10px}
-    .news-meta{color:var(--muted);font-size:12px;line-height:1.55}
-    .news-open{margin-top:auto;color:#fff;font-size:13px;font-weight:650;padding-top:12px}
+    .user-chip{background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.22);color:#d8ebff}
+    .news-title{color:#fff;font-size:20px;font-weight:500;line-height:1.45;margin-bottom:10px}
+    .news-meta{color:var(--muted);font-size:12px;line-height:1.55;font-weight:400}
+    .news-open{margin-top:auto;color:#fff;font-size:13px;font-weight:500;padding-top:12px}
     .news-card .Bullish,.news-card .Bearish,.news-card .Neutral,.news-card .Mixed,.news-card .MixedBullish,.news-card .MixedBearish,.news-card .MixedNeutral{font-weight:500}
+
     @media(max-width:1280px){.compare-selects,.instrument-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.headline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.help-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:980px){.compare-selects,.instrument-cards,.headline-grid,.help-grid{grid-template-columns:1fr}.metric-row{grid-template-columns:1fr;gap:8px}.metric-value{text-align:left}}
   </style>
@@ -106,7 +113,7 @@
     <section class="panel">
       <div class="page-chip">Interactive Dashboard</div>
       <h1>Interactive Instrument Comparison</h1>
-      <p>Choose up to 5 instruments. This page compares public sentiment, relevant headline count, source votes, technical direction, and related news.</p>
+      <p>Choose up to 5 instruments. This page compares public sentiment, user sentiment, relevant headline count, source votes, technical direction, and related news.</p>
       <p class="muted">PSI = Public Sentiment Index. <b>0/100</b> means very bearish public narrative, <b>50/100</b> means mixed or neutral, and <b>100/100</b> means very bullish public narrative.</p>
 
       <div class="compare-selects" id="compareSelects"></div>
@@ -127,8 +134,8 @@
           <p>0/100 is very bearish, 50/100 is mixed or neutral, and 100/100 is very bullish public sentiment.</p>
         </div>
         <div class="help-card">
-          <h3>Source Ranking</h3>
-          <p>Sources are sorted by how many matching headlines they have for your selected instruments.</p>
+          <h3>User Sentiment</h3>
+          <p>Anonymous daily user voting. It shows Bullish, Bearish, Neutral, or N/A. Vote count is not displayed.</p>
         </div>
         <div class="help-card">
           <h3>Impact</h3>
@@ -143,7 +150,7 @@
 
     <section class="panel">
       <h2>Source Votes</h2>
-      <p class="muted">Filtered by the currently selected instruments. Website names are clickable.</p>
+      <p class="muted">Filtered by the currently selected instruments. Sources are ranked by matching headline count.</p>
       <div class="source-table-wrap">
         <table>
           <thead><tr><th>Source</th><th>Filtered Vote</th><th>Impact</th><th>Matching Headlines</th><th></th></tr></thead>
@@ -264,6 +271,10 @@
     function faviconForURL(url){ const domain = domainFromURL(url || ""); return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : ""; }
     function sourceURL(sourceName){ const found = (dashboardData?.sources || []).find(s => s.name === sourceName); return found?.url || "#"; }
 
+    function userSentimentFor(instrument){
+      return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
+    }
+
     function mapVoteToScore(vote){
       const v = String(vote || "").toLowerCase();
       if(v.includes("bullish") && !v.includes("bearish")) return 100;
@@ -357,7 +368,7 @@
         label = scoreToLabel(avg);
       }
 
-      return { def: instrumentDef, matches, count, score, scoreLabel: label, latest: matches[0] || null, tech: getTechnicalForInstrument(instrumentDef) };
+      return { def: instrumentDef, matches, count, score, scoreLabel: label, latest: matches[0] || null, tech: getTechnicalForInstrument(instrumentDef), userSentiment: userSentimentFor(instrumentDef.key) };
     }
 
     function allCurrentScopeHeadlines(){
@@ -422,6 +433,7 @@
         return `<div class="dynamic-card instrument-card">
           <div class="instrument-name">${escapeHTML(stats.def.label)}</div>
           <div class="info-row"><span class="label">Public sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div>
+          <div class="info-row"><span class="label">User sentiment:</span> <span data-user-sentiment="${escapeHTML(stats.def.key)}" class="psd-user-sentiment-value ${voteClass(stats.userSentiment)}">${escapeHTML(stats.userSentiment)}</span></div>
           <div class="info-row"><span class="label">Headlines:</span> ${stats.count}</div>
           <div class="subsection">Technical Direction</div>
           <div class="info-row">Daily: <span class="${voteClass(stats.tech.daily)}">${escapeHTML(stats.tech.daily)}</span></div>
@@ -431,6 +443,8 @@
           <div class="info-row">${latestHeadline}</div>
         </div>`;
       }).join("");
+
+      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
     }
 
     function computeSourceVote(headlines){
@@ -492,6 +506,12 @@
       return { label:`Tech Daily: ${tech.daily}`, css:`chip tech-chip ${voteClass(tech.daily)}` };
     }
 
+    function userBadgeForHeadline(item){
+      const name = findTechnicalInstrumentName(item);
+      const value = name ? userSentimentFor(name) : "N/A";
+      return { label:`User: ${value}`, value };
+    }
+
     function renderRelevantNews(scopeHeadlines){
       const grid = document.getElementById("relevantNewsGrid");
       const count = document.getElementById("relevantNewsCount");
@@ -506,6 +526,7 @@
 
       grid.innerHTML = items.map(item => {
         const techBadge = technicalBadgeForHeadline(item);
+        const userBadge = userBadgeForHeadline(item);
         const srcUrl = sourceURL(item.source);
         const sourceIcon = faviconForURL(srcUrl || item.link || "");
 
@@ -517,6 +538,7 @@
           <div class="news-body">
             <div class="news-top">
               <span class="${techBadge.css}">${escapeHTML(techBadge.label)}</span>
+              <span class="chip user-chip ${voteClass(userBadge.value)}">${escapeHTML(userBadge.label)}</span>
               <span class="${voteClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
               <span class="chip impact-chip">${escapeHTML(item.impact || "Normal")} Impact</span>
             </div>
@@ -564,7 +586,10 @@
       }
     }
 
+    window.addEventListener("psdUserSentimentReady", renderDashboard);
     loadData();
   </script>
+
+  <script src="vote-widget.js" defer></script>
 </body>
 </html>
