@@ -1,6 +1,7 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
 const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdl_7955Ej6tK01awQ_DljLC6sv";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
+const PSD_SITE_URL = "https://publicsentimentdash.com";
 
 const PSD_VOTE_INSTRUMENTS = [
   "S&P 500 / ES",
@@ -87,6 +88,71 @@ function psdTrack(eventName, params){
   if(typeof window.gtag === "function"){
     window.gtag("event", eventName, params || {});
   }
+}
+
+function psdCanonicalURL(){
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if(canonical && canonical.href) return canonical.href;
+
+  const path = window.location.pathname === "/" ? "/" : window.location.pathname;
+  return PSD_SITE_URL + path;
+}
+
+function psdMetaDescription(){
+  const meta = document.querySelector('meta[name="description"]');
+  return meta ? meta.getAttribute("content") || "" : "";
+}
+
+function psdInjectStructuredData(){
+  if(document.getElementById("psdStructuredData")) return;
+
+  const currentUrl = psdCanonicalURL();
+  const description = psdMetaDescription();
+  const title = document.title || "Public Sentiment Dash";
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": PSD_SITE_URL + "/#organization",
+        "name": "Public Sentiment Dash",
+        "url": PSD_SITE_URL + "/",
+        "logo": PSD_SITE_URL + "/logo.png",
+        "description": "AI-assisted public market sentiment dashboard for stocks, forex, crypto, commodities, bonds, macro headlines, and financial news."
+      },
+      {
+        "@type": "WebSite",
+        "@id": PSD_SITE_URL + "/#website",
+        "url": PSD_SITE_URL + "/",
+        "name": "Public Sentiment Dash",
+        "publisher": {
+          "@id": PSD_SITE_URL + "/#organization"
+        },
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "WebPage",
+        "@id": currentUrl + "#webpage",
+        "url": currentUrl,
+        "name": title,
+        "description": description,
+        "isPartOf": {
+          "@id": PSD_SITE_URL + "/#website"
+        },
+        "publisher": {
+          "@id": PSD_SITE_URL + "/#organization"
+        },
+        "inLanguage": "en-US"
+      }
+    ]
+  };
+
+  const script = document.createElement("script");
+  script.id = "psdStructuredData";
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
 }
 
 function psdEscape(value){
@@ -403,6 +469,7 @@ function psdCreateVoteWidget(){
 
 function psdInit(){
   psdLoadGA4();
+  psdInjectStructuredData();
   psdAddHomeLabel();
   psdFixNavigation();
   psdCreateVoteWidget();
