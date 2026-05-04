@@ -12,336 +12,54 @@
   <link rel="stylesheet" href="site.css">
 
   <style>
-    .compare-selects {
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-      margin-top:16px;
-    }
-
-    select {
-      width:100%;
-      background:var(--card);
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px 14px;
-      font-size:15px;
-      outline:none;
-    }
-
-    select:focus {
-      border-color:rgba(210,153,34,0.65);
-      box-shadow:0 0 0 3px rgba(210,153,34,0.10);
-    }
-
-    .compare-grid {
-      display:grid;
-      gap:14px;
-      margin-top:14px;
-    }
-
-    .compare-block {
-      background:linear-gradient(180deg,#101826,#0d131d);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:16px;
-    }
-
-    .compare-title {
-      color:#fff;
-      font-weight:900;
-      font-size:16px;
-      margin-bottom:4px;
-    }
-
-    .compare-note {
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:12px;
-    }
-
-    .metric-row {
-      display:grid;
-      grid-template-columns:190px minmax(0,1fr) 160px;
-      align-items:center;
-      gap:14px;
-      margin-bottom:12px;
-    }
-
-    .metric-label {
-      color:#fff;
-      font-weight:800;
-      line-height:1.35;
-    }
-
-    .metric-bar-wrap {
-      height:24px;
-      border-radius:999px;
-      background:#2b3647;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,0.05);
-    }
-
-    .metric-bar {
-      height:100%;
-      border-radius:999px;
-    }
-
-    .score-bar {
-      background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55);
-    }
-
-    .count-bar {
-      background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold));
-    }
-
-    .metric-value {
-      color:#fff;
-      font-weight:900;
-      text-align:right;
-      font-size:15px;
-      line-height:1.35;
-    }
-
-    .instrument-cards {
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:14px;
-      margin-top:14px;
-    }
-
-    .instrument-card {
-      padding:18px;
-      min-height:240px;
-    }
-
-    .instrument-name {
-      color:#fff;
-      font-size:18px;
-      font-weight:900;
-      margin-bottom:10px;
-    }
-
-    .info-row {
-      color:var(--soft);
-      line-height:1.55;
-      margin-bottom:8px;
-    }
-
-    .label {
-      color:var(--muted);
-    }
-
-    .subsection {
-      margin-top:12px;
-      color:#fff;
-      font-weight:900;
-    }
-
-    .headline-link {
-      display:inline-block;
-      margin-top:4px;
-      color:var(--blue);
-      line-height:1.5;
-    }
-
-    .headline-link:hover {
-      color:#8ec2ff;
-      text-decoration:underline;
-    }
-
-    .source-table-wrap {
-      overflow:auto;
-      margin-top:12px;
-    }
-
-    table {
-      width:100%;
-      border-collapse:collapse;
-      min-width:760px;
-    }
-
-    th,
-    td {
-      padding:13px 10px;
-      border-bottom:1px solid var(--line);
-      text-align:left;
-      vertical-align:middle;
-    }
-
-    th {
-      color:#fff;
-      font-size:14px;
-    }
-
-    td {
-      color:var(--soft);
-      font-size:14px;
-    }
-
-    .source-link {
-      color:var(--blue);
-      font-weight:800;
-    }
-
-    .source-link:hover {
-      color:#8ec2ff;
-      text-decoration:underline;
-    }
-
-    .status-dot {
-      width:12px;
-      height:12px;
-      border-radius:50%;
-      display:inline-block;
-      box-shadow:0 0 12px rgba(255,255,255,0.15);
-    }
-
-    .status-ok {
-      background:var(--green);
-      box-shadow:0 0 14px rgba(63,185,80,0.55);
-    }
-
-    .status-partial {
-      background:var(--orange);
-      box-shadow:0 0 14px rgba(245,158,11,0.55);
-    }
-
-    .status-fail {
-      background:var(--red);
-      box-shadow:0 0 14px rgba(248,81,73,0.55);
-    }
-
-    .headline-grid {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-      margin-top:12px;
-    }
-
-    .news-card {
-      display:flex;
-      flex-direction:column;
-      min-height:380px;
-      color:var(--text);
-    }
-
-    .news-image-wrap {
-      width:100%;
-      height:128px;
-      border-bottom:1px solid var(--line);
-      background:linear-gradient(135deg,#142033,#101826);
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .news-image {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .news-fallback {
-      width:100%;
-      height:100%;
-      display:grid;
-      place-items:center;
-      color:#fff;
-      font-weight:900;
-      font-size:18px;
-      padding:10px;
-      text-align:center;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.18), transparent 10rem),
-        linear-gradient(135deg,#142033,#101826);
-    }
-
-    .news-body {
-      padding:16px;
-      display:flex;
-      flex-direction:column;
-      height:100%;
-    }
-
-    .news-top {
-      display:flex;
-      align-items:center;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-bottom:12px;
-    }
-
-    .chip {
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(88,166,255,0.12);
-      border:1px solid rgba(88,166,255,0.20);
-      color:#b9d9ff;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .impact-chip {
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.25);
-      color:#f4d17d;
-    }
-
-    .news-title {
-      color:#fff;
-      font-size:21px;
-      font-weight:900;
-      line-height:1.45;
-      margin-bottom:10px;
-    }
-
-    .news-meta {
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.55;
-    }
-
-    .news-open {
-      margin-top:auto;
-      color:#fff;
-      font-size:13px;
-      font-weight:900;
-      padding-top:12px;
-    }
-
-    @media (max-width:1280px) {
-      .compare-selects,
-      .instrument-cards {
-        grid-template-columns:repeat(3,minmax(0,1fr));
-      }
-
-      .headline-grid {
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
-    }
-
-    @media (max-width:980px) {
-      .compare-selects,
-      .instrument-cards,
-      .headline-grid {
-        grid-template-columns:1fr;
-      }
-
-      .metric-row {
-        grid-template-columns:1fr;
-        gap:8px;
-      }
-
-      .metric-value {
-        text-align:left;
-      }
-    }
+    .compare-selects{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
+    select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
+    select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .compare-grid{display:grid;gap:14px;margin-top:14px}
+    .compare-block{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:16px}
+    .compare-title{color:#fff;font-weight:900;font-size:16px;margin-bottom:4px}
+    .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px}
+    .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 160px;align-items:center;gap:14px;margin-bottom:12px}
+    .metric-label{color:#fff;font-weight:800;line-height:1.35}
+    .metric-bar-wrap{height:24px;border-radius:999px;background:#2b3647;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
+    .metric-bar{height:100%;border-radius:999px}
+    .score-bar{background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55)}
+    .count-bar{background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold))}
+    .metric-value{color:#fff;font-weight:900;text-align:right;font-size:15px;line-height:1.35}
+    .instrument-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
+    .instrument-card{padding:18px;min-height:260px}
+    .instrument-name{color:#fff;font-size:18px;font-weight:900;margin-bottom:10px}
+    .info-row{color:var(--soft);line-height:1.55;margin-bottom:8px}
+    .label{color:var(--muted)}
+    .subsection{margin-top:12px;color:#fff;font-weight:900}
+    .headline-link{display:inline-block;margin-top:4px;color:var(--blue);line-height:1.5}
+    .headline-link:hover{color:#8ec2ff;text-decoration:underline}
+    .source-table-wrap{overflow:auto;margin-top:12px}
+    table{width:100%;border-collapse:collapse;min-width:760px}
+    th,td{padding:13px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+    th{color:#fff;font-size:14px}
+    td{color:var(--soft);font-size:14px}
+    .source-link{color:var(--blue);font-weight:800}
+    .source-link:hover{color:#8ec2ff;text-decoration:underline}
+    .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 12px rgba(255,255,255,.15)}
+    .status-ok{background:var(--green);box-shadow:0 0 14px rgba(63,185,80,.55)}
+    .status-partial{background:var(--orange);box-shadow:0 0 14px rgba(245,158,11,.55)}
+    .status-fail{background:var(--red);box-shadow:0 0 14px rgba(248,81,73,.55)}
+    .headline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:12px}
+    .news-card{display:flex;flex-direction:column;min-height:330px;color:var(--text);padding:16px}
+    .news-source-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .news-source-icon{width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#fff}
+    .news-source-name{color:#fff;font-size:13px;font-weight:900}
+    .news-body{display:flex;flex-direction:column;height:100%}
+    .news-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+    .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff;font-size:12px;font-weight:900}
+    .impact-chip{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
+    .tech-chip{background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.20);color:#c9f5ce}
+    .news-title{color:#fff;font-size:21px;font-weight:900;line-height:1.45;margin-bottom:10px}
+    .news-meta{color:var(--muted);font-size:12px;line-height:1.55}
+    .news-open{margin-top:auto;color:#fff;font-size:13px;font-weight:900;padding-top:12px}
+    @media(max-width:1280px){.compare-selects,.instrument-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.headline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:980px){.compare-selects,.instrument-cards,.headline-grid{grid-template-columns:1fr}.metric-row{grid-template-columns:1fr;gap:8px}.metric-value{text-align:left}}
   </style>
 </head>
 
@@ -367,6 +85,11 @@
       <a href="how-it-works.html">How it works</a>
       <a href="market-sentiment.html">Guides</a>
       <a href="contact.html">Get in Touch</a>
+      <div class="social-links">
+        <span class="social-label">Follow us</span>
+        <span class="social-pill">X</span>
+        <span class="social-pill linkedin">LinkedIn</span>
+      </div>
     </nav>
   </header>
 
@@ -374,28 +97,14 @@
     <section class="panel">
       <div class="page-chip">Interactive Dashboard</div>
       <h1>Interactive Instrument Comparison</h1>
-      <p>
-        Choose up to 5 instruments. The page shows <b>both</b> Public Sentiment Score and Relevant Headline Count together.
-      </p>
-      <p class="muted">
-        Public Sentiment Score: <b>0 = more bearish public narrative</b>, <b>100 = more bullish public narrative</b>.<br>
-        Relevant Headline Count: <b>higher number = more public attention</b> in the latest scan.
-      </p>
+      <p>Choose up to 5 instruments. The page shows <b>both</b> Public Sentiment Index (PSI) and Relevant Headline Count together.</p>
+      <p class="muted">Public Sentiment Index (PSI): <b>0 = more bearish public narrative</b>, <b>100 = more bullish public narrative</b>.<br>Relevant Headline Count: <b>higher number = more public attention</b> in the latest scan.</p>
 
       <div class="compare-selects" id="compareSelects"></div>
 
       <div class="compare-grid">
-        <div class="compare-block">
-          <div class="compare-title">Public Sentiment Score</div>
-          <div class="compare-note">Simple reading of the public narrative for each selected instrument.</div>
-          <div id="scoreComparison"></div>
-        </div>
-
-        <div class="compare-block">
-          <div class="compare-title">Relevant Headline Count</div>
-          <div class="compare-note">How many relevant headlines matched each selected instrument.</div>
-          <div id="countComparison"></div>
-        </div>
+        <div class="compare-block"><div class="compare-title">Public Sentiment Score</div><div class="compare-note">Short sentiment index for each selected instrument.</div><div id="scoreComparison"></div></div>
+        <div class="compare-block"><div class="compare-title">Relevant Headline Count</div><div class="compare-note">How many relevant headlines matched each selected instrument.</div><div id="countComparison"></div></div>
       </div>
 
       <div class="instrument-cards" id="instrumentCards"></div>
@@ -404,21 +113,10 @@
     <section class="panel">
       <h2>Source Votes</h2>
       <p class="muted">Filtered by the currently selected instruments. Website names are clickable.</p>
-
       <div class="source-table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Source</th>
-              <th>Filtered Vote</th>
-              <th>Impact</th>
-              <th>Matching Headlines</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="sourceVotesBody">
-            <tr><td colspan="5">Loading source votes...</td></tr>
-          </tbody>
+          <thead><tr><th>Source</th><th>Filtered Vote</th><th>Impact</th><th>Matching Headlines</th><th></th></tr></thead>
+          <tbody id="sourceVotesBody"><tr><td colspan="5">Loading source votes...</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -426,12 +124,7 @@
     <section class="panel">
       <h2>Relevant News</h2>
       <p class="muted" id="relevantNewsCount">Loading relevant headlines...</p>
-
-      <div class="headline-grid" id="relevantNewsGrid">
-        <div class="dynamic-card news-card">
-          <div class="news-body">Loading relevant headlines...</div>
-        </div>
-      </div>
+      <div class="headline-grid" id="relevantNewsGrid"><div class="dynamic-card news-card"><div class="news-body">Loading relevant headlines...</div></div></div>
     </section>
 
     <footer class="footer">
@@ -525,362 +218,201 @@
 
     const DEFAULT_SELECTIONS = ["Crude Oil","GDP","CAD / USDCAD","None","None"];
     const INSTRUMENT_MAP = {};
-
-    Object.values(INSTRUMENT_GROUPS).flat().forEach(item => {
-      INSTRUMENT_MAP[item.key] = item;
-    });
+    Object.values(INSTRUMENT_GROUPS).flat().forEach(item => { INSTRUMENT_MAP[item.key] = item; });
 
     let dashboardData = null;
     let technicalData = null;
 
-    function normalize(text) {
-      return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    }
+    function normalize(text){ return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function escapeHTML(value){ return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+    function statusClass(status){ const s = String(status || "").toLowerCase(); if(s.includes("ok")) return "status-ok"; if(s.includes("empty") || s.includes("partial")) return "status-partial"; return "status-fail"; }
+    function voteClass(value){ return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral"; }
+    function domainFromURL(url){ try { return new URL(url).hostname.replace(/^www\./, ""); } catch(e){ return ""; } }
+    function faviconForURL(url){ const domain = domainFromURL(url || ""); return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : ""; }
 
-    function escapeHTML(value) {
-      return String(value ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-
-    function statusClass(status) {
-      const s = String(status || "").toLowerCase();
-      if (s.includes("ok")) return "status-ok";
-      if (s.includes("empty") || s.includes("partial")) return "status-partial";
-      return "status-fail";
-    }
-
-    function voteClass(value) {
-      return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral";
-    }
-
-    function mapVoteToScore(vote) {
+    function mapVoteToScore(vote){
       const v = String(vote || "").toLowerCase();
-      if (v.includes("bullish") && !v.includes("bearish")) return 100;
-      if (v.includes("bearish") && !v.includes("bullish")) return 0;
-      if (v.includes("mixed") && v.includes("bullish")) return 70;
-      if (v.includes("mixed") && v.includes("bearish")) return 30;
+      if(v.includes("bullish") && !v.includes("bearish")) return 100;
+      if(v.includes("bearish") && !v.includes("bullish")) return 0;
+      if(v.includes("mixed") && v.includes("bullish")) return 70;
+      if(v.includes("mixed") && v.includes("bearish")) return 30;
       return 50;
     }
 
-    function scoreToLabel(score) {
-      if (score === null || score === undefined) return "N/A";
-      if (score >= 70) return "Bullish";
-      if (score <= 30) return "Bearish";
-      if (score > 55) return "Mixed/Bullish";
-      if (score < 45) return "Mixed/Bearish";
+    function scoreToLabel(score){
+      if(score === null || score === undefined) return "N/A";
+      if(score >= 70) return "Bullish";
+      if(score <= 30) return "Bearish";
+      if(score > 55) return "Mixed/Bullish";
+      if(score < 45) return "Mixed/Bearish";
       return "Mixed/Neutral";
     }
 
-    function makeSelectHTML(slot, selected) {
+    function makeSelectHTML(slot, selected){
       const groupsHTML = Object.entries(INSTRUMENT_GROUPS).map(([group, items]) => {
-        const options = items.map(item => {
-          const selectedText = item.key === selected ? "selected" : "";
-          return `<option value="${escapeHTML(item.key)}" ${selectedText}>${escapeHTML(item.label)}</option>`;
-        }).join("");
-
+        const options = items.map(item => `<option value="${escapeHTML(item.key)}" ${item.key === selected ? "selected" : ""}>${escapeHTML(item.label)}</option>`).join("");
         return `<optgroup label="${escapeHTML(group)}">${options}</optgroup>`;
       }).join("");
-
-      return `
-        <select id="instrumentSelect${slot}" data-slot="${slot}">
-          <option value="None" ${selected === "None" ? "selected" : ""}>None</option>
-          ${groupsHTML}
-        </select>
-      `;
+      return `<select id="instrumentSelect${slot}" data-slot="${slot}"><option value="None" ${selected === "None" ? "selected" : ""}>None</option>${groupsHTML}</select>`;
     }
 
-    function buildSelects() {
+    function buildSelects(){
       const wrap = document.getElementById("compareSelects");
       wrap.innerHTML = DEFAULT_SELECTIONS.map((item, idx) => makeSelectHTML(idx + 1, item)).join("");
-
-      wrap.querySelectorAll("select").forEach(select => {
-        select.addEventListener("change", renderDashboard);
-      });
+      wrap.querySelectorAll("select").forEach(select => select.addEventListener("change", renderDashboard));
     }
 
-    function getSelectedDefs() {
+    function getSelectedDefs(){
       const values = [];
-
-      for (let i = 1; i <= 5; i++) {
-        const value = document.getElementById(`instrumentSelect${i}`).value;
-        if (value && value !== "None") values.push(value);
-      }
-
+      for(let i=1;i<=5;i++){ const value = document.getElementById(`instrumentSelect${i}`).value; if(value && value !== "None") values.push(value); }
       return values.map(v => INSTRUMENT_MAP[v]).filter(Boolean);
     }
 
-    function headlineMatchesInstrument(headline, instrumentDef) {
+    function headlineMatchesInstrument(headline, instrumentDef){
       const headlineInstruments = Array.isArray(headline?.instruments) ? headline.instruments : [];
       const headlineSet = headlineInstruments.map(normalize);
-
       return instrumentDef.aliases.some(alias => headlineSet.includes(normalize(alias))) ||
              instrumentDef.aliases.some(alias => normalize(headline.title).includes(normalize(alias))) ||
              instrumentDef.aliases.some(alias => normalize(headline.description).includes(normalize(alias)));
     }
 
-    function getMatchedHeadlinesForInstrument(instrumentDef) {
-      return (dashboardData?.top_headlines || []).filter(h => headlineMatchesInstrument(h, instrumentDef));
+    function getMatchedHeadlinesForInstrument(instrumentDef){ return (dashboardData?.top_headlines || []).filter(h => headlineMatchesInstrument(h, instrumentDef)); }
+
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+      if(raw === null || raw === undefined) return "N/A";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
     }
 
-    function getTechnicalForInstrument() {
-      return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
+    function getTechnicalForInstrument(instrumentDef){
+      if(!technicalData) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
+      const techRoot = technicalData.technical || technicalData;
+      const wanted = instrumentDef.aliases.map(normalize);
+      let entry = null;
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => wanted.includes(normalize(item?.instrument || item?.name || item?.symbol || "")));
+      } else if(typeof techRoot === "object"){
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
+          return wanted.some(w => possible.includes(w));
+        });
+        entry = found ? found[1] : null;
+      }
+      if(!entry) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
+      return { daily: extractTechLabel(entry, "daily"), weekly: extractTechLabel(entry, "weekly"), monthly: extractTechLabel(entry, "monthly") };
     }
 
-    function getInstrumentStats(instrumentDef) {
+    function getInstrumentStats(instrumentDef){
       const matches = getMatchedHeadlinesForInstrument(instrumentDef);
       const count = matches.length;
-
-      let score = null;
-      let label = "N/A";
-
-      if (count > 0) {
+      let score = null, label = "N/A";
+      if(count > 0){
         const avg = Math.round(matches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / count);
-        score = avg;
-        label = scoreToLabel(avg);
+        score = avg; label = scoreToLabel(avg);
       }
-
-      return {
-        def: instrumentDef,
-        matches,
-        count,
-        score,
-        scoreLabel: label,
-        latest: matches[0] || null,
-        tech: getTechnicalForInstrument(instrumentDef)
-      };
+      return { def: instrumentDef, matches, count, score, scoreLabel: label, latest: matches[0] || null, tech: getTechnicalForInstrument(instrumentDef) };
     }
 
-    function allCurrentScopeHeadlines() {
+    function allCurrentScopeHeadlines(){
       const defs = getSelectedDefs();
-
-      if (!defs.length) return dashboardData?.top_headlines || [];
-
-      const merged = [];
-      const seen = new Set();
-
+      if(!defs.length) return dashboardData?.top_headlines || [];
+      const merged = [], seen = new Set();
       defs.forEach(def => {
         getMatchedHeadlinesForInstrument(def).forEach(h => {
           const key = `${h.source}__${h.title}`;
-
-          if (!seen.has(key)) {
-            seen.add(key);
-            merged.push(h);
-          }
+          if(!seen.has(key)){ seen.add(key); merged.push(h); }
         });
       });
-
       return merged;
     }
 
-    function renderScoreComparison(statsList) {
+    function renderScoreComparison(statsList){
       const wrap = document.getElementById("scoreComparison");
-
-      if (!statsList.length) {
-        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
-        return;
-      }
-
+      if(!statsList.length){ wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`; return; }
       wrap.innerHTML = statsList.map(stats => {
         const width = stats.score === null ? 0 : Math.max(6, stats.score);
-        const rightText = stats.score === null ? `No score yet` : `${stats.score} / 100`;
-
-        return `
-          <div class="metric-row">
-            <div class="metric-label">${escapeHTML(stats.def.label)}</div>
-            <div class="metric-bar-wrap">
-              <div class="metric-bar score-bar" style="width:${width}%;"></div>
-            </div>
-            <div class="metric-value">${escapeHTML(rightText)}</div>
-          </div>
-        `;
+        const rightText = stats.score === null ? `No PSI yet` : `PSI ${stats.score}`;
+        return `<div class="metric-row"><div class="metric-label">${escapeHTML(stats.def.label)}</div><div class="metric-bar-wrap"><div class="metric-bar score-bar" style="width:${width}%;"></div></div><div class="metric-value">${escapeHTML(rightText)}</div></div>`;
       }).join("");
     }
 
-    function renderCountComparison(statsList) {
+    function renderCountComparison(statsList){
       const wrap = document.getElementById("countComparison");
-
-      if (!statsList.length) {
-        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
-        return;
-      }
-
+      if(!statsList.length){ wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`; return; }
       const maxCount = Math.max(...statsList.map(x => x.count), 1);
-
       wrap.innerHTML = statsList.map(stats => {
         const width = stats.count > 0 ? Math.max(4, Math.round((stats.count / maxCount) * 100)) : 0;
-
-        return `
-          <div class="metric-row">
-            <div class="metric-label">${escapeHTML(stats.def.label)}</div>
-            <div class="metric-bar-wrap">
-              <div class="metric-bar count-bar" style="width:${width}%;"></div>
-            </div>
-            <div class="metric-value">${stats.count} headline${stats.count === 1 ? "" : "s"}</div>
-          </div>
-        `;
+        return `<div class="metric-row"><div class="metric-label">${escapeHTML(stats.def.label)}</div><div class="metric-bar-wrap"><div class="metric-bar count-bar" style="width:${width}%;"></div></div><div class="metric-value">${stats.count} headline${stats.count === 1 ? "" : "s"}</div></div>`;
       }).join("");
     }
 
-    function renderInstrumentCards(statsList) {
+    function renderInstrumentCards(statsList){
       const wrap = document.getElementById("instrumentCards");
-
-      if (!statsList.length) {
-        wrap.innerHTML = `<div class="dynamic-card instrument-card">Choose at least one instrument.</div>`;
-        return;
-      }
-
+      if(!statsList.length){ wrap.innerHTML = `<div class="dynamic-card instrument-card">Choose at least one instrument.</div>`; return; }
       wrap.innerHTML = statsList.map(stats => {
-        const latestHeadline = stats.latest
-          ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>`
-          : `No related headline found.`;
-
-        const scoreText = stats.score === null ? "N/A" : `${stats.scoreLabel} (${stats.score}/100)`;
-
-        return `
-          <div class="dynamic-card instrument-card">
-            <div class="instrument-name">${escapeHTML(stats.def.label)}</div>
-            <div class="info-row"><span class="label">Public Sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div>
-            <div class="info-row"><span class="label">Headlines:</span> ${stats.count}</div>
-            <div class="subsection">Technical Direction</div>
-            <div class="info-row">Daily: <span class="${voteClass(stats.tech.daily)}">${escapeHTML(stats.tech.daily)}</span></div>
-            <div class="info-row">Weekly: <span class="${voteClass(stats.tech.weekly)}">${escapeHTML(stats.tech.weekly)}</span></div>
-            <div class="info-row">Monthly: <span class="${voteClass(stats.tech.monthly)}">${escapeHTML(stats.tech.monthly)}</span></div>
-            <div class="subsection">Latest related headline</div>
-            <div class="info-row">${latestHeadline}</div>
-          </div>
-        `;
+        const latestHeadline = stats.latest ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>` : `No related headline found.`;
+        const scoreText = stats.score === null ? "N/A" : `${stats.scoreLabel} (PSI ${stats.score})`;
+        return `<div class="dynamic-card instrument-card"><div class="instrument-name">${escapeHTML(stats.def.label)}</div><div class="info-row"><span class="label">Public Sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div><div class="info-row"><span class="label">Headlines:</span> ${stats.count}</div><div class="subsection">Technical Direction</div><div class="info-row">Daily: <span class="${voteClass(stats.tech.daily)}">${escapeHTML(stats.tech.daily)}</span></div><div class="info-row">Weekly: <span class="${voteClass(stats.tech.weekly)}">${escapeHTML(stats.tech.weekly)}</span></div><div class="info-row">Monthly: <span class="${voteClass(stats.tech.monthly)}">${escapeHTML(stats.tech.monthly)}</span></div><div class="subsection">Latest related headline</div><div class="info-row">${latestHeadline}</div></div>`;
       }).join("");
     }
 
-    function computeSourceVote(headlines) {
-      if (!headlines.length) return "N/A";
-
+    function computeSourceVote(headlines){
+      if(!headlines.length) return "N/A";
       const bullish = headlines.filter(h => String(h.vote).toLowerCase().includes("bullish")).length;
       const bearish = headlines.filter(h => String(h.vote).toLowerCase().includes("bearish")).length;
-
-      if (bullish > bearish) return "Bullish";
-      if (bearish > bullish) return "Bearish";
-      if (bullish > 0 && bearish > 0) return "Mixed";
-
+      if(bullish > bearish) return "Bullish";
+      if(bearish > bullish) return "Bearish";
+      if(bullish > 0 && bearish > 0) return "Mixed";
       return "Neutral";
     }
 
-    function computeSourceImpact(headlines) {
-      if (!headlines.length) return "N/A";
-      return headlines.some(h => String(h.impact).toLowerCase() === "high") ? "High" : "Normal";
-    }
+    function computeSourceImpact(headlines){ if(!headlines.length) return "N/A"; return headlines.some(h => String(h.impact).toLowerCase() === "high") ? "High" : "Normal"; }
 
-    function renderSourceVotes(scopeHeadlines) {
+    function renderSourceVotes(scopeHeadlines){
       const body = document.getElementById("sourceVotesBody");
       const sources = dashboardData?.sources || [];
-
-      if (!sources.length) {
-        body.innerHTML = `<tr><td colspan="5">No source data available.</td></tr>`;
-        return;
-      }
-
+      if(!sources.length){ body.innerHTML = `<tr><td colspan="5">No source data available.</td></tr>`; return; }
       const rows = sources.map(source => {
         const matching = scopeHeadlines.filter(h => h.source === source.name);
-
-        return {
-          source,
-          matchingCount: matching.length,
-          vote: computeSourceVote(matching),
-          impact: computeSourceImpact(matching)
-        };
-      }).sort((a,b) => b.matchingCount - a.matchingCount || a.source.name.localeCompare(b.source.name));
-
-      body.innerHTML = rows.map(row => `
-        <tr>
-          <td><a class="source-link" href="${escapeHTML(row.source.url || "#")}" target="_blank" rel="noopener">${escapeHTML(row.source.name)}</a></td>
-          <td><span class="${voteClass(row.vote)}">${escapeHTML(row.vote)}</span></td>
-          <td>${escapeHTML(row.impact)}</td>
-          <td>${row.matchingCount}</td>
-          <td><span class="status-dot ${statusClass(row.source.status)}" title="${escapeHTML(row.source.status || "Unknown")}"></span></td>
-        </tr>
-      `).join("");
+        return { source, matchingCount: matching.length, vote: computeSourceVote(matching), impact: computeSourceImpact(matching) };
+      }).sort((a,b)=>b.matchingCount-a.matchingCount || a.source.name.localeCompare(b.source.name));
+      body.innerHTML = rows.map(row => `<tr><td><a class="source-link" href="${escapeHTML(row.source.url || "#")}" target="_blank" rel="noopener">${escapeHTML(row.source.name)}</a></td><td><span class="${voteClass(row.vote)}">${escapeHTML(row.vote)}</span></td><td>${escapeHTML(row.impact)}</td><td>${row.matchingCount}</td><td><span class="status-dot ${statusClass(row.source.status)}" title="${escapeHTML(row.source.status || "Unknown")}"></span></td></tr>`).join("");
     }
 
-    function getImage(item) {
-      const candidates = [
-        item?.image,
-        item?.image_url,
-        item?.imageUrl,
-        item?.thumbnail,
-        item?.thumbnail_url,
-        item?.thumb,
-        item?.og_image,
-        item?.ogImage,
-        item?.picture,
-        item?.img
-      ];
-
-      for (const value of candidates) {
-        if (typeof value === "string" && value.trim()) return value.trim();
-        if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0].trim();
+    function findTechnicalInstrumentName(item){
+      const names = Array.isArray(item?.instruments) ? item.instruments : [];
+      for(const name of names){
+        if(getTechnicalForInstrument({ aliases:[name] }).daily !== "N/A") return name;
       }
-
-      return "";
+      return names[0] || null;
     }
 
-    function renderRelevantNews(scopeHeadlines) {
+    function technicalBadgeForHeadline(item){
+      const name = findTechnicalInstrumentName(item);
+      if(!name) return { label:"Tech: N/A", css:"chip tech-chip" };
+      const tech = getTechnicalForInstrument({ aliases:[name] });
+      return { label:`Tech Daily: ${tech.daily}`, css:`chip tech-chip ${voteClass(tech.daily)}` };
+    }
+
+    function renderRelevantNews(scopeHeadlines){
       const grid = document.getElementById("relevantNewsGrid");
       const count = document.getElementById("relevantNewsCount");
       const items = scopeHeadlines.slice(0,9);
-
       count.textContent = `${scopeHeadlines.length} relevant headline(s) shown for the current scope.`;
-
-      if (!items.length) {
-        grid.innerHTML = `<div class="dynamic-card news-card"><div class="news-body">No relevant headlines found for the selected instruments.</div></div>`;
-        return;
-      }
-
+      if(!items.length){ grid.innerHTML = `<div class="dynamic-card news-card"><div class="news-body">No relevant headlines found for the selected instruments.</div></div>`; return; }
       grid.innerHTML = items.map(item => {
-        const img = getImage(item);
-
-        return `
-          <a class="dynamic-card news-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
-            <div class="news-image-wrap">
-              ${
-                img
-                  ? `<img class="news-image" src="${escapeHTML(img)}" alt="${escapeHTML(item.title || "Article image")}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
-                     <div class="news-fallback" style="display:none;">${escapeHTML(item.source || "Market News")}</div>`
-                  : `<div class="news-fallback">${escapeHTML(item.source || "Market News")}</div>`
-              }
-            </div>
-
-            <div class="news-body">
-              <div class="news-top">
-                <span class="chip">${escapeHTML(item.source || "Source")}</span>
-                <span class="${voteClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
-                <span class="chip impact-chip">${escapeHTML(item.impact || "Normal")} Impact</span>
-              </div>
-
-              <div class="news-title">${escapeHTML(item.title || "Untitled headline")}</div>
-
-              <div class="news-meta">
-                Markets: ${escapeHTML((item.markets || []).join(", ") || "N/A")}<br>
-                Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}
-              </div>
-
-              <div class="news-open">Open article →</div>
-            </div>
-          </a>
-        `;
+        const techBadge = technicalBadgeForHeadline(item);
+        const sourceIcon = faviconForURL(item.link || "");
+        return `<a class="dynamic-card news-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener"><div class="news-source-row">${sourceIcon ? `<img class="news-source-icon" src="${escapeHTML(sourceIcon)}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}<div class="news-source-name">${escapeHTML(item.source || "Source")}</div></div><div class="news-body"><div class="news-top"><span class="${techBadge.css}">${escapeHTML(techBadge.label)}</span><span class="${voteClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span><span class="chip impact-chip">${escapeHTML(item.impact || "Normal")} Impact</span></div><div class="news-title">${escapeHTML(item.title || "Untitled headline")}</div><div class="news-meta">Markets: ${escapeHTML((item.markets || []).join(", ") || "N/A")}<br>Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}</div><div class="news-open">Open article →</div></div></a>`;
       }).join("");
     }
 
-    function renderDashboard() {
-      if (!dashboardData) return;
-
+    function renderDashboard(){
+      if(!dashboardData) return;
       const defs = getSelectedDefs();
       const statsList = defs.map(getInstrumentStats);
       const scopeHeadlines = allCurrentScopeHeadlines();
-
       renderScoreComparison(statsList);
       renderCountComparison(statsList);
       renderInstrumentCards(statsList);
@@ -888,14 +420,17 @@
       renderRelevantNews(scopeHeadlines);
     }
 
-    async function loadData() {
-      try {
-        const res = await fetch("dashboard_data.json", { cache:"no-store" });
-        dashboardData = await res.json();
-
+    async function loadData(){
+      try{
+        const [dashboardRes, technicalRes] = await Promise.all([
+          fetch("dashboard_data.json", { cache:"no-store" }),
+          fetch("technical_data.json", { cache:"no-store" }).catch(() => null)
+        ]);
+        dashboardData = await dashboardRes.json();
+        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
         buildSelects();
         renderDashboard();
-      } catch(error) {
+      } catch(error){
         console.error(error);
         document.getElementById("scoreComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
         document.getElementById("countComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
