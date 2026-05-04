@@ -3,474 +3,108 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Public Sentiment Dash — News & Articles</title>
-  <meta name="description" content="Browse and search published market news and articles from the Public Sentiment Dash global public sentiment dashboard.">
-  <meta name="robots" content="index, follow">
+  <meta name="description" content="Browse and search published market news and articles from Public Sentiment Dash.">
   <link rel="canonical" href="https://publicsentimentdash.com/news-articles.html">
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
-    :root {
-      --bg:#05070b;
-      --panel:#0d1117;
-      --card:#111821;
-      --line:#263241;
-      --text:#e6edf3;
-      --soft:#c9d1d9;
-      --muted:#8b949e;
-      --gold:#d29922;
-      --gold2:#f0b72f;
-      --green:#3fb950;
-      --red:#f85149;
-      --blue:#58a6ff;
+    :root{
+      --bg:#05070b; --panel:#0d1117; --card:#111821; --line:#263241; --text:#e6edf3;
+      --soft:#c9d1d9; --muted:#8b949e; --gold:#d29922; --green:#3fb950; --red:#f85149; --blue:#58a6ff;
     }
-
-    * {
-      box-sizing:border-box;
-    }
-
-    body {
-      margin:0;
-      font-family:"Segoe UI", Inter, Arial, sans-serif;
-      color:var(--text);
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;color:var(--text);
       background:
-        radial-gradient(circle at top left, rgba(210,153,34,0.10), transparent 33rem),
-        radial-gradient(circle at top right, rgba(88,166,255,0.08), transparent 32rem),
+        radial-gradient(circle at top left, rgba(210,153,34,.10), transparent 33rem),
+        radial-gradient(circle at top right, rgba(88,166,255,.08), transparent 32rem),
         var(--bg);
     }
-
-    a {
-      color:var(--blue);
-      text-decoration:none;
+    a{color:var(--blue);text-decoration:none}
+    .header{
+      position:sticky;top:0;z-index:30;display:grid;grid-template-columns:auto 1fr auto;
+      align-items:center;gap:18px;padding:14px 26px;background:rgba(6,9,15,.95);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)
     }
-
-    a:hover {
-      text-decoration:none;
+    .brand{display:flex;align-items:center;gap:14px;color:var(--text);padding:6px 8px;margin:-6px -8px;border-radius:14px;transition:.18s ease}
+    .brand:hover{background:rgba(210,153,34,.15);transform:translateY(-1px)}
+    .logo{width:68px;height:68px;object-fit:contain;border-radius:12px}
+    .brand-copy{display:flex;flex-direction:column;gap:6px}
+    .brand-stamp,.header-pill,.page-chip{
+      display:inline-flex;align-items:center;width:max-content;padding:8px 14px;border-radius:999px;
+      background:rgba(210,153,34,.14);border:1px solid rgba(210,153,34,.40);color:#ffd780;font-size:13px;font-weight:900
     }
-
-    .header {
-      position:sticky;
-      top:0;
-      z-index:30;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 26px;
-      background:rgba(6,9,15,0.95);
-      border-bottom:1px solid var(--line);
-      backdrop-filter:blur(10px);
+    .site-subtitle{color:var(--muted);font-size:12px;margin-left:4px}
+    .header-center{display:flex;justify-content:center}
+    .header-pill{background:rgba(210,153,34,.10);border-color:rgba(210,153,34,.30);color:#f4d17d}
+    .nav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+    .nav a{color:var(--soft);font-size:15px;font-weight:700;padding:7px 9px;border-radius:8px;transition:.18s ease}
+    .nav a:hover{color:#fff;background:rgba(210,153,34,.16)}
+    .page{max-width:1440px;margin:0 auto;padding:26px}
+    .panel{background:rgba(13,17,23,.94);border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 40px rgba(0,0,0,.20);padding:22px;margin-bottom:18px}
+    h1{margin:0 0 10px;font-size:34px}
+    h2{margin:0 0 14px;font-size:24px}
+    p{color:var(--soft);line-height:1.65;margin:0 0 10px}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
+    input[type="text"],select{
+      background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none
     }
-
-    .brand {
-      display:flex;
-      align-items:center;
-      gap:14px;
-      color:var(--text);
-      text-decoration:none;
-      padding:6px 8px;
-      margin:-6px -8px;
-      border-radius:14px;
-      transition:background 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+    input[type="text"]{min-width:320px;flex:1 1 320px}
+    select{min-width:220px}
+    .btn{
+      border:0;cursor:pointer;border-radius:999px;padding:12px 16px;background:var(--gold);color:#05070b;
+      font-weight:900;font-size:14px;transition:.18s ease
     }
-
-    .brand:hover {
-      background:rgba(210,153,34,0.15);
-      transform:translateY(-1px);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
+    .btn.secondary{background:transparent;color:var(--soft);border:1px solid var(--line)}
+    .btn:hover{transform:translateY(-1px)}
+    .count-note{color:var(--muted);font-size:13px;margin-bottom:14px}
+    .headline-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}
+    .headline-card{
+      position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:365px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);
+      border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18);transition:.18s ease;color:var(--text)
     }
-
-    .logo {
-      width:68px;
-      height:68px;
-      object-fit:contain;
-      border-radius:12px;
-      box-shadow:0 0 18px rgba(210,153,34,0.18);
-      transition:transform 0.18s ease, box-shadow 0.18s ease;
+    .headline-card:hover{transform:translateY(-3px);border-color:rgba(210,153,34,.45)}
+    .headline-image-wrap{width:100%;height:190px;background:linear-gradient(135deg,#101826,#182335);border-bottom:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .headline-image{width:100%;height:100%;object-fit:cover;display:block}
+    .headline-image-fallback{width:100%;height:100%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:18px;background:radial-gradient(circle at top right, rgba(210,153,34,.18), transparent 10rem), linear-gradient(135deg,#142033,#101826);text-align:center;padding:16px}
+    .headline-body{display:flex;flex-direction:column;gap:10px;padding:16px;height:100%}
+    .headline-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:12px}
+    .tag,.impact-tag{
+      display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900
     }
-
-    .brand:hover .logo {
-      transform:translateY(-2px) scale(1.03);
-      box-shadow:0 0 26px rgba(210,153,34,0.34);
-    }
-
-    .site-title {
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:0.2px;
-    }
-
-    .site-subtitle {
-      color:var(--muted);
-      font-size:12px;
-      margin-top:2px;
-    }
-
-    .nav {
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-end;
-    }
-
-    .nav a {
-      color:var(--soft);
-      font-size:15px;
-      font-weight:700;
-      padding:7px 9px;
-      border-radius:8px;
-      transition:color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
-    }
-
-    .nav a:hover {
-      color:#ffffff;
-      background:rgba(210,153,34,0.16);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-      transform:translateY(-1px);
-    }
-
-    .page {
-      max-width:1440px;
-      margin:0 auto;
-      padding:26px;
-    }
-
-    .panel {
-      background:rgba(13,17,23,0.94);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 16px 40px rgba(0,0,0,0.20);
-      padding:22px;
-      margin-bottom:18px;
-    }
-
-    h1 {
-      margin:0 0 10px;
-      font-size:34px;
-      letter-spacing:-0.5px;
-    }
-
-    h2 {
-      margin:0 0 14px;
-      font-size:24px;
-    }
-
-    p {
-      color:var(--soft);
-      line-height:1.65;
-    }
-
-    .controls {
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      align-items:center;
-      margin-top:16px;
-    }
-
-    input[type="text"],
-    select {
-      background:var(--card);
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px 14px;
-      font-size:15px;
-      outline:none;
-    }
-
-    input[type="text"]:focus,
-    select:focus {
-      border-color:rgba(210,153,34,0.65);
-      box-shadow:0 0 0 3px rgba(210,153,34,0.10);
-    }
-
-    input[type="text"] {
-      min-width:320px;
-      flex:1 1 320px;
-    }
-
-    select {
-      min-width:220px;
-    }
-
-    .btn {
-      border:0;
-      cursor:pointer;
-      border-radius:999px;
-      padding:12px 16px;
-      background:var(--gold);
-      color:#05070b;
-      font-weight:900;
-      font-size:14px;
-      transition:background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .btn:hover {
-      background:var(--gold2);
-      transform:translateY(-1px);
-      box-shadow:0 0 18px rgba(210,153,34,0.28);
-    }
-
-    .btn.secondary {
-      background:transparent;
-      color:var(--soft);
-      border:1px solid var(--line);
-    }
-
-    .btn.secondary:hover {
-      color:#ffffff;
-      border-color:rgba(210,153,34,0.45);
-      background:rgba(210,153,34,0.08);
-    }
-
-    .count-note {
-      color:var(--muted);
-      font-size:13px;
-      margin-bottom:14px;
-    }
-
-    .headline-list {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
-      gap:16px;
-    }
-
-    .headline-card {
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      min-height:365px;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.15), transparent 14rem),
-        linear-gradient(180deg,#101826,#0d131d);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 12px 30px rgba(0,0,0,0.18);
-      animation:fadeUp 0.35s ease both;
-      transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-      color:var(--text);
-    }
-
-    .headline-card:hover {
-      transform:translateY(-3px);
-      border-color:rgba(210,153,34,0.45);
-      box-shadow:0 18px 35px rgba(0,0,0,0.26);
-    }
-
-    .headline-image-wrap {
-      width:100%;
-      height:190px;
-      background:linear-gradient(135deg,#101826,#182335);
-      border-bottom:1px solid var(--line);
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .headline-image {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .headline-image-fallback {
-      width:100%;
-      height:100%;
-      display:grid;
-      place-items:center;
-      color:#ffffff;
-      font-weight:900;
-      font-size:18px;
-      letter-spacing:0.3px;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.18), transparent 10rem),
-        linear-gradient(135deg,#142033,#101826);
-      text-align:center;
-      padding:16px;
-    }
-
-    .headline-body {
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      padding:16px;
-      height:100%;
-    }
-
-    .headline-top {
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      align-items:center;
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    .tag {
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(88,166,255,0.12);
-      border:1px solid rgba(88,166,255,0.20);
-      color:#b9d9ff;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .impact-tag {
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.25);
-      color:#f4d17d;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .headline-title {
-      color:#ffffff;
-      font-size:21px;
-      font-weight:900;
-      line-height:1.42;
-      margin-top:2px;
-    }
-
-    .headline-meta {
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.55;
-    }
-
-    .headline-open {
-      margin-top:auto;
-      color:#ffffff;
-      font-size:13px;
-      font-weight:900;
-    }
-
-    @keyframes fadeUp {
-      from {
-        opacity:0;
-        transform:translateY(8px);
-      }
-      to {
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
-
-    .Bullish { color:var(--green); font-weight:900; }
-    .Bearish { color:var(--red); font-weight:900; }
-    .Mixed,
-    .MixedBullish,
-    .MixedBearish,
-    .MixedNeutral { color:var(--gold); font-weight:900; }
-    .Neutral { color:var(--muted); font-weight:900; }
-
-    .empty-card {
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:18px;
-      color:var(--soft);
-      line-height:1.6;
-    }
-
-    .footer {
-      margin-top:20px;
-      padding:24px 0 10px;
-      border-top:1px solid var(--line);
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    .footer-links {
-      display:flex;
-      flex-wrap:wrap;
-      gap:16px;
-      margin-bottom:12px;
-    }
-
-    .footer-links a {
-      color:var(--soft);
-      font-weight:700;
-      padding:6px 8px;
-      border-radius:8px;
-      transition:color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease;
-    }
-
-    .footer-links a:hover {
-      color:#ffffff;
-      background:rgba(210,153,34,0.16);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-    }
-
-    .legal {
-      margin-top:12px;
-      background:rgba(248,81,73,0.07);
-      border:1px solid rgba(248,81,73,0.18);
-      border-radius:14px;
-      padding:14px;
-      color:var(--soft);
-      line-height:1.55;
-    }
-
-    @media (max-width:760px) {
-      .header {
-        flex-direction:column;
-        align-items:flex-start;
-        padding:14px 18px;
-      }
-
-      .page {
-        padding:18px;
-      }
-
-      .logo {
-        width:60px;
-        height:60px;
-      }
-
-      .site-title {
-        font-size:20px;
-      }
-
-      .nav {
-        gap:8px;
-      }
-
-      input[type="text"],
-      select,
-      .btn {
-        min-width:100%;
-        width:100%;
-      }
-
-      .headline-list {
-        grid-template-columns:1fr;
-      }
-    }
+    .tag{background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff}
+    .impact-tag{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
+    .headline-title{color:#fff;font-size:21px;font-weight:900;line-height:1.42;margin-top:2px}
+    .headline-meta{color:var(--muted);font-size:12px;line-height:1.55}
+    .headline-open{margin-top:auto;color:#fff;font-size:13px;font-weight:900}
+    .Bullish{color:var(--green);font-weight:900}
+    .Bearish{color:var(--red);font-weight:900}
+    .Mixed,.MixedBullish,.MixedBearish,.MixedNeutral{color:var(--gold);font-weight:900}
+    .Neutral{color:var(--muted);font-weight:900}
+    .empty-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;color:var(--soft);line-height:1.6}
+    .footer{margin-top:20px;padding:24px 0 10px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+    .footer-links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px}
+    .footer-links a{color:var(--soft);font-weight:700;padding:6px 8px;border-radius:8px}
+    .footer-links a:hover{color:#fff;background:rgba(210,153,34,.16)}
+    .legal{margin-top:12px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.18);border-radius:14px;padding:14px;color:var(--soft);line-height:1.55}
+    @media (max-width:980px){.header{grid-template-columns:1fr}.header-center{justify-content:flex-start}.nav{justify-content:flex-start}}
+    @media (max-width:760px){.page{padding:18px}.logo{width:60px;height:60px}.brand-stamp,.header-pill,.page-chip{font-size:12px}input[type="text"],select,.btn{min-width:100%;width:100%}.headline-list{grid-template-columns:1fr}}
   </style>
 </head>
-
 <body>
   <header class="header">
-    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+    <a class="brand" href="index.html">
       <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-      <div>
-        <div class="site-title">Public Sentiment Dash</div>
-        <div class="site-subtitle">News & Articles</div>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
 
     <nav class="nav">
       <a href="index.html">Home</a>
@@ -485,32 +119,15 @@
 
   <main class="page">
     <section class="panel">
+      <div class="page-chip">News & Articles</div>
       <h1>News & Articles</h1>
-      <p>
-        Search the published news feed by keyword, market, instrument, and source. Results update instantly as you type or change filters.
-      </p>
+      <p>Search the published news feed by keyword, market, instrument, and source. Results update instantly.</p>
 
       <div class="controls">
         <input type="text" id="searchBox" placeholder="Search keywords, headlines, markets, instruments, or sources...">
-
-        <select id="marketFilter">
-          <option value="all">All Markets</option>
-          <option value="indexes">Indexes / Futures</option>
-          <option value="bonds">Bonds / Rates</option>
-          <option value="forex">Forex / Currencies</option>
-          <option value="crypto">Crypto</option>
-          <option value="commodities">Commodities</option>
-          <option value="macro">Macro / Fed / Inflation</option>
-        </select>
-
-        <select id="instrumentFilter">
-          <option value="all">All Instruments</option>
-        </select>
-
-        <select id="sourceFilter">
-          <option value="all">All Sources</option>
-        </select>
-
+        <select id="marketFilter"><option value="all">All Markets</option><option value="indexes">Indexes / Futures</option><option value="bonds">Bonds / Rates</option><option value="forex">Forex / Currencies</option><option value="crypto">Crypto</option><option value="commodities">Commodities</option><option value="macro">Macro / Fed / Inflation</option></select>
+        <select id="instrumentFilter"><option value="all">All Instruments</option></select>
+        <select id="sourceFilter"><option value="all">All Sources</option></select>
         <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
         <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
       </div>
@@ -532,227 +149,96 @@
         <a href="market-sentiment.html">Guides</a>
         <a href="contact.html">Get in Touch</a>
       </div>
-
-      <div class="legal">
-        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
-      </div>
-
+      <div class="legal"><b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice.</div>
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
 
   <script>
     let dashboardData = null;
-
     const marketLabels = {
-      indexes: "Indexes / Futures",
-      bonds: "Bonds / Rates",
-      forex: "Forex / Currencies",
-      crypto: "Crypto",
-      commodities: "Commodities",
-      macro: "Macro / Fed / Inflation",
-      general: "General Market"
+      indexes: "Indexes / Futures", bonds: "Bonds / Rates", forex: "Forex / Currencies",
+      crypto: "Crypto", commodities: "Commodities", macro: "Macro / Fed / Inflation", general: "General Market"
     };
 
     const instrumentGroups = {
-      indexes: [
-        "S&P 500 / ES",
-        "Nasdaq / NQ",
-        "Dow / YM",
-        "Russell / RTY",
-        "VIX",
-        "DAX",
-        "FTSE 100",
-        "Nikkei 225",
-        "Hang Seng",
-        "Euro Stoxx 50",
-        "CAC 40"
-      ],
-      bonds: [
-        "US 10Y Treasury",
-        "US 2Y Treasury",
-        "Treasury Yields"
-      ],
-      forex: [
-        "US Dollar / DXY",
-        "EUR / EURUSD",
-        "GBP / GBPUSD",
-        "JPY / USDJPY",
-        "CHF / USDCHF",
-        "CAD / USDCAD",
-        "AUD / AUDUSD",
-        "NZD / NZDUSD",
-        "EURJPY",
-        "EURGBP",
-        "GBPJPY",
-        "AUDJPY",
-        "CADJPY",
-        "EURCHF",
-        "EURCAD",
-        "AUDCAD",
-        "AUDNZD",
-        "NZDJPY",
-        "USDTRY",
-        "USDMXN",
-        "USDZAR"
-      ],
-      crypto: [
-        "Bitcoin / BTC",
-        "Ethereum / ETH",
-        "Solana / SOL",
-        "XRP",
-        "BNB",
-        "Cardano / ADA",
-        "Dogecoin / DOGE",
-        "General Crypto"
-      ],
-      commodities: [
-        "Gold",
-        "Silver",
-        "Copper",
-        "Crude Oil",
-        "Natural Gas"
-      ],
-      macro: [
-        "Fed / FOMC",
-        "CPI / Inflation",
-        "PPI",
-        "Jobs / NFP",
-        "GDP",
-        "Geopolitical / Tariffs"
-      ]
+      indexes:["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX","DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40"],
+      bonds:["US 10Y Treasury","US 2Y Treasury","Treasury Yields"],
+      forex:["US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF","CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY","AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY","USDTRY","USDMXN","USDZAR"],
+      crypto:["Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA","Dogecoin / DOGE","General Crypto"],
+      commodities:["Gold","Silver","Copper","Crude Oil","Natural Gas"],
+      macro:["Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","GDP","Geopolitical / Tariffs"]
     };
 
-    function allInstruments() {
-      return [...new Set(Object.values(instrumentGroups).flat())];
-    }
+    function allInstruments(){ return [...new Set(Object.values(instrumentGroups).flat())]; }
+    function escapeHTML(value){ return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+    function normalizeClass(value){ return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral"; }
 
-    function escapeHTML(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function normalizeClass(value) {
-      const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
-      return clean || "Neutral";
-    }
-
-    function populateInstrumentOptions() {
+    function populateInstrumentOptions(){
       const market = document.getElementById("marketFilter").value;
       const instruments = market === "all" ? allInstruments() : (instrumentGroups[market] || []);
-
-      document.getElementById("instrumentFilter").innerHTML =
-        [`<option value="all">All Instruments</option>`]
-          .concat(instruments.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
-          .join("");
+      document.getElementById("instrumentFilter").innerHTML = [`<option value="all">All Instruments</option>`].concat(instruments.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`)).join("");
     }
 
-    function populateSourceOptions() {
+    function populateSourceOptions(){
       const sources = [...new Set((dashboardData.top_headlines || []).map(item => item.source).filter(Boolean))].sort();
-
-      document.getElementById("sourceFilter").innerHTML =
-        [`<option value="all">All Sources</option>`]
-          .concat(sources.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
-          .join("");
+      document.getElementById("sourceFilter").innerHTML = [`<option value="all">All Sources</option>`].concat(sources.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`)).join("");
     }
 
-    function filteredHeadlines() {
+    function filteredHeadlines(){
       const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
       const market = document.getElementById("marketFilter").value;
       const instrument = document.getElementById("instrumentFilter").value;
       const source = document.getElementById("sourceFilter").value;
 
       return (dashboardData.top_headlines || []).filter(item => {
-        const text = [
-          item.title || "",
-          item.description || "",
-          item.source || "",
-          ...(item.markets || []),
-          ...(item.instruments || [])
-        ].join(" ").toLowerCase();
-
+        const text = [item.title || "", item.description || "", item.source || "", ...(item.markets || []), ...(item.instruments || [])].join(" ").toLowerCase();
         const marketOk = market === "all" || (item.markets || []).includes(market);
         const instrumentOk = instrument === "all" || (item.instruments || []).includes(instrument);
         const sourceOk = source === "all" || item.source === source;
         const keywordOk = !keyword || text.includes(keyword);
-
         return marketOk && instrumentOk && sourceOk && keywordOk;
       });
     }
 
-    function getItemImage(item) {
-      const candidates = [
-        item?.image,
-        item?.image_url,
-        item?.imageUrl,
-        item?.thumbnail,
-        item?.thumbnail_url,
-        item?.thumb,
-        item?.og_image,
-        item?.ogImage,
-        item?.picture,
-        item?.img
-      ];
-
-      for (const value of candidates) {
-        if (typeof value === "string" && value.trim()) return value.trim();
-        if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0].trim();
+    function getItemImage(item){
+      const candidates = [item?.image,item?.image_url,item?.imageUrl,item?.thumbnail,item?.thumbnail_url,item?.thumb,item?.og_image,item?.ogImage,item?.picture,item?.img];
+      for(const value of candidates){
+        if(typeof value === "string" && value.trim()) return value.trim();
+        if(Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0].trim();
       }
-
       return null;
     }
 
-    function fallbackImageLabel(item) {
-      if (item?.source) return item.source;
-
+    function fallbackImageLabel(item){
+      if(item?.source) return item.source;
       const markets = Array.isArray(item?.markets) ? item.markets : [];
-
-      if (markets[0]) return marketLabels[markets[0]] || markets[0];
-
+      if(markets[0]) return marketLabels[markets[0]] || markets[0];
       return "Market News";
     }
 
-    function renderHeadlines() {
-      if (!dashboardData) return;
-
+    function renderHeadlines(){
+      if(!dashboardData) return;
       const headlines = filteredHeadlines();
-
-      document.getElementById("resultsCount").textContent =
-        `${headlines.length} article(s) matched your search and filters.`;
-
+      document.getElementById("resultsCount").textContent = `${headlines.length} article(s) matched your search and filters.`;
       document.getElementById("headlineList").innerHTML = headlines.length
-        ? headlines.slice(0,250).map((item,index) => {
+        ? headlines.slice(0,250).map(item => {
             const img = getItemImage(item);
-
             return `
-              <a class="headline-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener" style="animation-delay:${Math.min(index * 0.015, 0.45)}s;">
+              <a class="headline-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
                 <div class="headline-image-wrap">
-                  ${
-                    img
-                      ? `<img class="headline-image" src="${escapeHTML(img)}" alt="${escapeHTML(item.title || "Article image")}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
-                         <div class="headline-image-fallback" style="display:none;">${escapeHTML(fallbackImageLabel(item))}</div>`
-                      : `<div class="headline-image-fallback">${escapeHTML(fallbackImageLabel(item))}</div>`
-                  }
+                  ${img
+                    ? `<img class="headline-image" src="${escapeHTML(img)}" alt="${escapeHTML(item.title || "Article image")}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"><div class="headline-image-fallback" style="display:none;">${escapeHTML(fallbackImageLabel(item))}</div>`
+                    : `<div class="headline-image-fallback">${escapeHTML(fallbackImageLabel(item))}</div>`}
                 </div>
-
                 <div class="headline-body">
                   <div class="headline-top">
                     <span class="tag">${escapeHTML(item.source || "Source")}</span>
                     <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
                     <span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span>
                   </div>
-
                   <div class="headline-title">${escapeHTML(item.title || "Untitled headline")}</div>
-
-                  <div class="headline-meta">
-                    Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
-                    Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}
-                  </div>
-
+                  <div class="headline-meta">Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}</div>
                   <div class="headline-open">Open article →</div>
                 </div>
               </a>
@@ -761,7 +247,7 @@
         : `<div class="empty-card">No articles matched your search and filters.</div>`;
     }
 
-    function clearSearch() {
+    function clearSearch(){
       document.getElementById("searchBox").value = "";
       document.getElementById("marketFilter").value = "all";
       populateInstrumentOptions();
@@ -770,26 +256,20 @@
       renderHeadlines();
     }
 
-    async function loadPage() {
-      try {
+    async function loadPage(){
+      try{
         const res = await fetch("dashboard_data.json", { cache:"no-store" });
         dashboardData = await res.json();
-
         populateInstrumentOptions();
         populateSourceOptions();
         renderHeadlines();
-      } catch (error) {
+      } catch(error){
         console.error(error);
-        document.getElementById("headlineList").innerHTML =
-          `<div class="empty-card">Published articles could not be loaded right now.</div>`;
+        document.getElementById("headlineList").innerHTML = `<div class="empty-card">Published articles could not be loaded right now.</div>`;
       }
     }
 
-    document.getElementById("marketFilter").addEventListener("change", () => {
-      populateInstrumentOptions();
-      renderHeadlines();
-    });
-
+    document.getElementById("marketFilter").addEventListener("change", () => { populateInstrumentOptions(); renderHeadlines(); });
     document.getElementById("instrumentFilter").addEventListener("change", renderHeadlines);
     document.getElementById("sourceFilter").addEventListener("change", renderHeadlines);
     document.getElementById("searchBox").addEventListener("input", renderHeadlines);
