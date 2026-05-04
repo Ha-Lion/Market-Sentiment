@@ -3,589 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Public Sentiment Dash — Interactive Dashboard</title>
   <meta name="description" content="Interactive dashboard for comparing up to 5 instruments by public sentiment, headline activity, source votes, and relevant news.">
-  <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
     :root{
-      --bg:#05070b;
-      --panel:#0d1117;
-      --card:#111821;
-      --line:#263241;
-      --text:#e6edf3;
-      --soft:#c9d1d9;
-      --muted:#8b949e;
-      --gold:#d29922;
-      --gold2:#f0b72f;
-      --green:#3fb950;
-      --red:#f85149;
-      --blue:#58a6ff;
-      --blue2:#7fb4ff;
-      --orange:#f59e0b;
+      --bg:#05070b; --panel:#0d1117; --card:#111821; --line:#263241; --text:#e6edf3;
+      --soft:#c9d1d9; --muted:#8b949e; --gold:#d29922; --green:#3fb950; --red:#f85149;
+      --blue:#58a6ff; --blue2:#7fb4ff; --orange:#f59e0b;
     }
-
     *{box-sizing:border-box}
-
     body{
-      margin:0;
-      font-family:"Segoe UI", Inter, Arial, sans-serif;
-      color:var(--text);
+      margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;color:var(--text);
       background:
-        radial-gradient(circle at top left, rgba(210,153,34,0.10), transparent 33rem),
-        radial-gradient(circle at top right, rgba(88,166,255,0.08), transparent 32rem),
+        radial-gradient(circle at top left, rgba(210,153,34,.10), transparent 33rem),
+        radial-gradient(circle at top right, rgba(88,166,255,.08), transparent 32rem),
         var(--bg);
     }
-
     a{color:var(--blue);text-decoration:none}
-    a:hover{text-decoration:none}
-
     .header{
-      position:sticky;
-      top:0;
-      z-index:30;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 26px;
-      background:rgba(6,9,15,0.95);
-      border-bottom:1px solid var(--line);
-      backdrop-filter:blur(10px);
+      position:sticky;top:0;z-index:30;display:grid;grid-template-columns:auto 1fr auto;
+      align-items:center;gap:18px;padding:14px 26px;background:rgba(6,9,15,.95);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)
     }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
-      color:var(--text);
-      text-decoration:none;
-      padding:6px 8px;
-      margin:-6px -8px;
-      border-radius:14px;
-      transition:background .18s ease, transform .18s ease, text-shadow .18s ease;
+    .brand{display:flex;align-items:center;gap:14px;color:var(--text);padding:6px 8px;margin:-6px -8px;border-radius:14px;transition:.18s ease}
+    .brand:hover{background:rgba(210,153,34,.15);transform:translateY(-1px);text-shadow:0 0 10px rgba(210,153,34,.55)}
+    .logo{width:68px;height:68px;object-fit:contain;border-radius:12px;box-shadow:0 0 18px rgba(210,153,34,.18);transition:.18s ease}
+    .brand:hover .logo{transform:translateY(-2px) scale(1.03)}
+    .brand-copy{display:flex;flex-direction:column;gap:6px}
+    .brand-stamp,.header-pill,.page-chip{
+      display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:8px 14px;border-radius:999px;
+      background:rgba(210,153,34,.14);border:1px solid rgba(210,153,34,.40);color:#ffd780;font-size:13px;font-weight:900;line-height:1
     }
-
-    .brand:hover{
-      background:rgba(210,153,34,0.15);
-      transform:translateY(-1px);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-    }
-
-    .logo{
-      width:68px;
-      height:68px;
-      object-fit:contain;
-      border-radius:12px;
-      box-shadow:0 0 18px rgba(210,153,34,0.18);
-      transition:transform .18s ease, box-shadow .18s ease;
-    }
-
-    .brand:hover .logo{
-      transform:translateY(-2px) scale(1.03);
-      box-shadow:0 0 26px rgba(210,153,34,0.34);
-    }
-
-    .site-title{
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-
-    .site-subtitle{
-      color:var(--muted);
-      font-size:12px;
-      margin-top:2px;
-    }
-
-    .nav{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-end;
-    }
-
-    .nav a{
-      color:var(--soft);
-      font-size:15px;
-      font-weight:700;
-      padding:7px 9px;
-      border-radius:8px;
-      transition:color .18s ease, background .18s ease, text-shadow .18s ease, transform .18s ease;
-    }
-
-    .nav a:hover{
-      color:#fff;
-      background:rgba(210,153,34,0.16);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-      transform:translateY(-1px);
-    }
-
-    .page{
-      max-width:1440px;
-      margin:0 auto;
-      padding:26px;
-    }
-
-    .panel{
-      background:rgba(13,17,23,0.94);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 16px 40px rgba(0,0,0,0.20);
-      padding:22px;
-      margin-bottom:18px;
-    }
-
-    h1{
-      margin:0 0 10px;
-      font-size:34px;
-      letter-spacing:-0.5px;
-    }
-
-    h2{
-      margin:0 0 14px;
-      font-size:24px;
-    }
-
-    h3{
-      margin:0 0 8px;
-      color:#fff;
-      font-size:18px;
-    }
-
-    p{
-      color:var(--soft);
-      line-height:1.65;
-      margin:0 0 10px;
-    }
-
-    .muted{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.55;
-    }
-
-    .compare-selects{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-      margin-top:16px;
-    }
-
-    select{
-      width:100%;
-      background:var(--card);
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px 14px;
-      font-size:15px;
-      outline:none;
-    }
-
-    select:focus{
-      border-color:rgba(210,153,34,0.65);
-      box-shadow:0 0 0 3px rgba(210,153,34,0.10);
-    }
-
-    .compare-grid{
-      display:grid;
-      gap:14px;
-      margin-top:14px;
-    }
-
-    .compare-block{
-      background:linear-gradient(180deg,#101826,#0d131d);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:16px;
-    }
-
-    .compare-title{
-      color:#fff;
-      font-weight:900;
-      font-size:16px;
-      margin-bottom:4px;
-    }
-
-    .compare-note{
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:12px;
-    }
-
-    .metric-row{
-      display:grid;
-      grid-template-columns:190px minmax(0,1fr) 160px;
-      align-items:center;
-      gap:14px;
-      margin-bottom:12px;
-    }
-
-    .metric-label{
-      color:#fff;
-      font-weight:800;
-      line-height:1.35;
-    }
-
-    .metric-bar-wrap{
-      height:24px;
-      border-radius:999px;
-      background:#2b3647;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,0.05);
-    }
-
-    .metric-bar{
-      height:100%;
-      border-radius:999px;
-    }
-
-    .score-bar{
-      background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55);
-    }
-
-    .count-bar{
-      background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold));
-    }
-
-    .metric-value{
-      color:#fff;
-      font-weight:900;
-      text-align:right;
-      font-size:15px;
-      line-height:1.35;
-    }
-
-    .instrument-cards{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:14px;
-      margin-top:14px;
-    }
-
+    .site-subtitle{color:var(--muted);font-size:12px;margin-left:4px}
+    .header-center{display:flex;justify-content:center}
+    .header-pill{background:rgba(210,153,34,.10);border-color:rgba(210,153,34,.30);color:#f4d17d}
+    .nav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+    .nav a{color:var(--soft);font-size:15px;font-weight:700;padding:7px 9px;border-radius:8px;transition:.18s ease}
+    .nav a:hover{color:#fff;background:rgba(210,153,34,.16);text-shadow:0 0 10px rgba(210,153,34,.55);transform:translateY(-1px)}
+    .page{max-width:1440px;margin:0 auto;padding:26px}
+    .panel{background:rgba(13,17,23,.94);border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 40px rgba(0,0,0,.20);padding:22px;margin-bottom:18px}
+    h1{margin:0 0 10px;font-size:34px;letter-spacing:-.5px}
+    h2{margin:0 0 14px;font-size:24px}
+    h3{margin:0 0 8px;color:#fff;font-size:18px}
+    p{color:var(--soft);line-height:1.65;margin:0 0 10px}
+    .muted{color:var(--muted);font-size:13px;line-height:1.55}
+    .compare-selects{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
+    select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
+    select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .compare-grid{display:grid;gap:14px;margin-top:14px}
+    .compare-block{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:16px}
+    .compare-title{color:#fff;font-weight:900;font-size:16px;margin-bottom:4px}
+    .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px}
+    .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 160px;align-items:center;gap:14px;margin-bottom:12px}
+    .metric-label{color:#fff;font-weight:800;line-height:1.35}
+    .metric-bar-wrap{height:24px;border-radius:999px;background:#2b3647;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
+    .metric-bar{height:100%;border-radius:999px}
+    .score-bar{background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55)}
+    .count-bar{background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold))}
+    .metric-value{color:#fff;font-weight:900;text-align:right;font-size:15px;line-height:1.35}
+    .instrument-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
     .dynamic-card{
-      position:relative;
-      overflow:hidden;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.15), transparent 14rem),
-        linear-gradient(180deg,#101826,#0d131d);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 12px 30px rgba(0,0,0,0.18);
-      transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+      position:relative;overflow:hidden;background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);
+      border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18);transition:.18s ease
     }
-
-    .dynamic-card:hover{
-      transform:translateY(-3px);
-      border-color:rgba(210,153,34,0.45);
-      box-shadow:0 18px 35px rgba(0,0,0,0.26);
-    }
-
-    .instrument-card{
-      padding:18px;
-      min-height:240px;
-    }
-
-    .instrument-name{
-      color:#fff;
-      font-size:18px;
-      font-weight:900;
-      margin-bottom:10px;
-    }
-
-    .info-row{
-      color:var(--soft);
-      line-height:1.55;
-      margin-bottom:8px;
-    }
-
-    .label{
-      color:var(--muted);
-    }
-
-    .subsection{
-      margin-top:12px;
-      color:#fff;
-      font-weight:900;
-    }
-
-    .headline-link{
-      display:inline-block;
-      margin-top:4px;
-      color:var(--blue);
-      line-height:1.5;
-    }
-
-    .headline-link:hover{
-      color:#8ec2ff;
-      text-decoration:underline;
-    }
-
-    .source-table-wrap{
-      overflow:auto;
-      margin-top:12px;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:760px;
-    }
-
-    th, td{
-      padding:13px 10px;
-      border-bottom:1px solid var(--line);
-      text-align:left;
-      vertical-align:middle;
-    }
-
-    th{
-      color:#fff;
-      font-size:14px;
-    }
-
-    td{
-      color:var(--soft);
-      font-size:14px;
-    }
-
-    .source-link{
-      color:var(--blue);
-      font-weight:800;
-    }
-
-    .source-link:hover{
-      color:#8ec2ff;
-      text-decoration:underline;
-    }
-
-    .status-dot{
-      width:12px;
-      height:12px;
-      border-radius:50%;
-      display:inline-block;
-      box-shadow:0 0 12px rgba(255,255,255,0.15);
-    }
-
-    .status-ok{background:var(--green); box-shadow:0 0 14px rgba(63,185,80,0.55);}
-    .status-partial{background:var(--orange); box-shadow:0 0 14px rgba(245,158,11,0.55);}
-    .status-fail{background:var(--red); box-shadow:0 0 14px rgba(248,81,73,0.55);}
-
-    .Bullish{color:var(--green); font-weight:900;}
-    .Bearish{color:var(--red); font-weight:900;}
-    .Neutral{color:var(--muted); font-weight:900;}
-    .Mixed, .MixedBullish, .MixedBearish, .MixedNeutral{color:var(--gold); font-weight:900;}
-
-    .headline-grid{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-      margin-top:12px;
-    }
-
-    .news-card{
-      display:flex;
-      flex-direction:column;
-      min-height:380px;
-      color:var(--text);
-    }
-
-    .news-image-wrap{
-      width:100%;
-      height:128px;
-      border-bottom:1px solid var(--line);
-      background:linear-gradient(135deg,#142033,#101826);
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .news-image{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .news-fallback{
-      width:100%;
-      height:100%;
-      display:grid;
-      place-items:center;
-      color:#fff;
-      font-weight:900;
-      font-size:18px;
-      padding:10px;
-      text-align:center;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.18), transparent 10rem),
-        linear-gradient(135deg,#142033,#101826);
-    }
-
-    .news-body{
-      padding:16px;
-      display:flex;
-      flex-direction:column;
-      height:100%;
-    }
-
-    .news-top{
-      display:flex;
-      align-items:center;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-bottom:12px;
-    }
-
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(88,166,255,0.12);
-      border:1px solid rgba(88,166,255,0.20);
-      color:#b9d9ff;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .impact-chip{
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.25);
-      color:#f4d17d;
-    }
-
-    .news-title{
-      color:#fff;
-      font-size:21px;
-      font-weight:900;
-      line-height:1.45;
-      margin-bottom:10px;
-    }
-
-    .news-meta{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.55;
-    }
-
-    .news-open{
-      margin-top:auto;
-      color:#fff;
-      font-size:13px;
-      font-weight:900;
-      padding-top:12px;
-    }
-
-    .footer{
-      margin-top:20px;
-      padding:24px 0 10px;
-      border-top:1px solid var(--line);
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    .footer-links{
-      display:flex;
-      flex-wrap:wrap;
-      gap:16px;
-      margin-bottom:12px;
-    }
-
-    .footer-links a{
-      color:var(--soft);
-      font-weight:700;
-      padding:6px 8px;
-      border-radius:8px;
-      transition:color .18s ease, background .18s ease, text-shadow .18s ease;
-    }
-
-    .footer-links a:hover{
-      color:#fff;
-      background:rgba(210,153,34,0.16);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-    }
-
-    .legal{
-      margin-top:12px;
-      background:rgba(248,81,73,0.07);
-      border:1px solid rgba(248,81,73,0.18);
-      border-radius:14px;
-      padding:14px;
-      color:var(--soft);
-      line-height:1.55;
-    }
-
-    @media (max-width:1280px){
-      .compare-selects,
-      .instrument-cards{
-        grid-template-columns:repeat(3,minmax(0,1fr));
-      }
-
-      .headline-grid{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
-    }
-
-    @media (max-width:980px){
-      .compare-selects,
-      .instrument-cards,
-      .headline-grid{
-        grid-template-columns:1fr;
-      }
-
-      .metric-row{
-        grid-template-columns:1fr;
-        gap:8px;
-      }
-
-      .metric-value{
-        text-align:left;
-      }
-    }
-
-    @media (max-width:760px){
-      .header{
-        flex-direction:column;
-        align-items:flex-start;
-        padding:14px 18px;
-      }
-
-      .page{
-        padding:18px;
-      }
-
-      .logo{
-        width:60px;
-        height:60px;
-      }
-
-      .site-title{
-        font-size:20px;
-      }
-
-      .nav{
-        gap:8px;
-      }
-    }
+    .dynamic-card:hover{transform:translateY(-3px);border-color:rgba(210,153,34,.45);box-shadow:0 18px 35px rgba(0,0,0,.26)}
+    .instrument-card{padding:18px;min-height:240px}
+    .instrument-name{color:#fff;font-size:18px;font-weight:900;margin-bottom:10px}
+    .info-row{color:var(--soft);line-height:1.55;margin-bottom:8px}
+    .label{color:var(--muted)}
+    .subsection{margin-top:12px;color:#fff;font-weight:900}
+    .headline-link{display:inline-block;margin-top:4px;color:var(--blue);line-height:1.5}
+    .headline-link:hover{color:#8ec2ff;text-decoration:underline}
+    .source-table-wrap{overflow:auto;margin-top:12px}
+    table{width:100%;border-collapse:collapse;min-width:760px}
+    th,td{padding:13px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+    th{color:#fff;font-size:14px}
+    td{color:var(--soft);font-size:14px}
+    .source-link{color:var(--blue);font-weight:800}
+    .source-link:hover{color:#8ec2ff;text-decoration:underline}
+    .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 12px rgba(255,255,255,.15)}
+    .status-ok{background:var(--green); box-shadow:0 0 14px rgba(63,185,80,.55)}
+    .status-partial{background:var(--orange); box-shadow:0 0 14px rgba(245,158,11,.55)}
+    .status-fail{background:var(--red); box-shadow:0 0 14px rgba(248,81,73,.55)}
+    .Bullish{color:var(--green);font-weight:900}
+    .Bearish{color:var(--red);font-weight:900}
+    .Neutral{color:var(--muted);font-weight:900}
+    .Mixed,.MixedBullish,.MixedBearish,.MixedNeutral{color:var(--gold);font-weight:900}
+    .headline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:12px}
+    .news-card{display:flex;flex-direction:column;min-height:380px;color:var(--text)}
+    .news-image-wrap{width:100%;height:128px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#142033,#101826);overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .news-image{width:100%;height:100%;object-fit:cover;display:block}
+    .news-fallback{width:100%;height:100%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:18px;padding:10px;text-align:center;background:radial-gradient(circle at top right, rgba(210,153,34,.18), transparent 10rem), linear-gradient(135deg,#142033,#101826)}
+    .news-body{padding:16px;display:flex;flex-direction:column;height:100%}
+    .news-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+    .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff;font-size:12px;font-weight:900}
+    .impact-chip{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
+    .news-title{color:#fff;font-size:21px;font-weight:900;line-height:1.45;margin-bottom:10px}
+    .news-meta{color:var(--muted);font-size:12px;line-height:1.55}
+    .news-open{margin-top:auto;color:#fff;font-size:13px;font-weight:900;padding-top:12px}
+    .footer{margin-top:20px;padding:24px 0 10px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+    .footer-links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px}
+    .footer-links a{color:var(--soft);font-weight:700;padding:6px 8px;border-radius:8px;transition:.18s ease}
+    .footer-links a:hover{color:#fff;background:rgba(210,153,34,.16)}
+    .legal{margin-top:12px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.18);border-radius:14px;padding:14px;color:var(--soft);line-height:1.55}
+    @media (max-width:1280px){.compare-selects,.instrument-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.headline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:980px){.header{grid-template-columns:1fr}.header-center{justify-content:flex-start}.nav{justify-content:flex-start}.compare-selects,.instrument-cards,.headline-grid{grid-template-columns:1fr}.metric-row{grid-template-columns:1fr;gap:8px}.metric-value{text-align:left}}
+    @media (max-width:760px){.page{padding:18px}.logo{width:60px;height:60px}.brand-stamp,.header-pill,.page-chip{font-size:12px}}
   </style>
 </head>
-
 <body>
   <header class="header">
-    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+    <a class="brand" href="index.html">
       <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-      <div>
-        <div class="site-title">Public Sentiment Dash</div>
-        <div class="site-subtitle">Interactive dashboard</div>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
 
     <nav class="nav">
       <a href="index.html">Home</a>
@@ -600,12 +140,10 @@
 
   <main class="page">
     <section class="panel">
+      <div class="page-chip">Interactive Dashboard</div>
       <h1>Interactive Instrument Comparison</h1>
       <p>Choose up to 5 instruments. The page shows <b>both</b> Public Sentiment Score and Relevant Headline Count together.</p>
-      <p class="muted">
-        Public Sentiment Score: <b>0 = more bearish public narrative</b>, <b>100 = more bullish public narrative</b>.<br>
-        Relevant Headline Count: <b>higher number = more public attention</b> in the latest scan.
-      </p>
+      <p class="muted">Public Sentiment Score: <b>0 = more bearish public narrative</b>, <b>100 = more bullish public narrative</b>.<br>Relevant Headline Count: <b>higher number = more public attention</b> in the latest scan.</p>
 
       <div class="compare-selects" id="compareSelects"></div>
 
@@ -665,11 +203,7 @@
         <a href="market-sentiment.html">Guides</a>
         <a href="contact.html">Get in Touch</a>
       </div>
-
-      <div class="legal">
-        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
-      </div>
-
+      <div class="legal"><b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice or a recommendation to buy or sell any asset.</div>
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
@@ -745,99 +279,61 @@
     };
 
     const DEFAULT_SELECTIONS = ["Crude Oil","GDP","CAD / USDCAD","None","None"];
-
     const INSTRUMENT_MAP = {};
     Object.values(INSTRUMENT_GROUPS).flat().forEach(item => { INSTRUMENT_MAP[item.key] = item; });
 
     let dashboardData = null;
     let technicalData = null;
 
-    function normalize(text){
-      return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    }
-
-    function escapeHTML(value){
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function statusClass(status){
-      const s = String(status || "").toLowerCase();
-
-      if (s.includes("ok")) return "status-ok";
-      if (s.includes("empty") || s.includes("partial")) return "status-partial";
-      return "status-fail";
-    }
-
-    function voteClass(value){
-      return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral";
-    }
+    function normalize(text){ return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function escapeHTML(value){ return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+    function statusClass(status){ const s = String(status || "").toLowerCase(); if(s.includes("ok")) return "status-ok"; if(s.includes("empty") || s.includes("partial")) return "status-partial"; return "status-fail"; }
+    function voteClass(value){ return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral"; }
 
     function mapVoteToScore(vote){
       const v = String(vote || "").toLowerCase();
-
-      if (v.includes("bullish") && !v.includes("bearish")) return 100;
-      if (v.includes("bearish") && !v.includes("bullish")) return 0;
-      if (v.includes("mixed") && v.includes("bullish")) return 70;
-      if (v.includes("mixed") && v.includes("bearish")) return 30;
+      if(v.includes("bullish") && !v.includes("bearish")) return 100;
+      if(v.includes("bearish") && !v.includes("bullish")) return 0;
+      if(v.includes("mixed") && v.includes("bullish")) return 70;
+      if(v.includes("mixed") && v.includes("bearish")) return 30;
       return 50;
     }
 
     function scoreToLabel(score){
-      if (score === null || score === undefined) return "N/A";
-      if (score >= 70) return "Bullish";
-      if (score <= 30) return "Bearish";
-      if (score > 55) return "Mixed/Bullish";
-      if (score < 45) return "Mixed/Bearish";
+      if(score === null || score === undefined) return "N/A";
+      if(score >= 70) return "Bullish";
+      if(score <= 30) return "Bearish";
+      if(score > 55) return "Mixed/Bullish";
+      if(score < 45) return "Mixed/Bearish";
       return "Mixed/Neutral";
     }
 
     function makeSelectHTML(slot, selected){
       const groupsHTML = Object.entries(INSTRUMENT_GROUPS).map(([group, items]) => {
-        const options = items.map(item => {
-          const sel = item.key === selected ? "selected" : "";
-          return `<option value="${escapeHTML(item.key)}" ${sel}>${escapeHTML(item.label)}</option>`;
-        }).join("");
-
+        const options = items.map(item => `<option value="${escapeHTML(item.key)}" ${item.key === selected ? "selected" : ""}>${escapeHTML(item.label)}</option>`).join("");
         return `<optgroup label="${escapeHTML(group)}">${options}</optgroup>`;
       }).join("");
-
-      return `
-        <select id="instrumentSelect${slot}" data-slot="${slot}">
-          <option value="None" ${selected === "None" ? "selected" : ""}>None</option>
-          ${groupsHTML}
-        </select>
-      `;
+      return `<select id="instrumentSelect${slot}" data-slot="${slot}"><option value="None" ${selected === "None" ? "selected" : ""}>None</option>${groupsHTML}</select>`;
     }
 
     function buildSelects(){
       const wrap = document.getElementById("compareSelects");
       wrap.innerHTML = DEFAULT_SELECTIONS.map((item, idx) => makeSelectHTML(idx + 1, item)).join("");
-
-      wrap.querySelectorAll("select").forEach(select => {
-        select.addEventListener("change", renderDashboard);
-      });
+      wrap.querySelectorAll("select").forEach(select => select.addEventListener("change", renderDashboard));
     }
 
     function getSelectedDefs(){
       const values = [];
-
-      for(let i = 1; i <= 5; i++){
+      for(let i=1;i<=5;i++){
         const value = document.getElementById(`instrumentSelect${i}`).value;
-        if (value && value !== "None") values.push(value);
+        if(value && value !== "None") values.push(value);
       }
-
       return values.map(v => INSTRUMENT_MAP[v]).filter(Boolean);
     }
 
     function headlineMatchesInstrument(headline, instrumentDef){
       const headlineInstruments = Array.isArray(headline?.instruments) ? headline.instruments : [];
       const headlineSet = headlineInstruments.map(normalize);
-
       return instrumentDef.aliases.some(alias => headlineSet.includes(normalize(alias))) ||
              instrumentDef.aliases.some(alias => normalize(headline.title).includes(normalize(alias))) ||
              instrumentDef.aliases.some(alias => normalize(headline.description).includes(normalize(alias)));
@@ -847,82 +343,29 @@
       return (dashboardData?.top_headlines || []).filter(h => headlineMatchesInstrument(h, instrumentDef));
     }
 
-    function getInstrumentStats(instrumentDef){
-      const matches = getMatchedHeadlinesForInstrument(instrumentDef);
-      const count = matches.length;
-
-      let score = null;
-      let label = "N/A";
-
-      if (count > 0){
-        const avg = Math.round(matches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / count);
-        score = avg;
-        label = scoreToLabel(avg);
-      }
-
-      const latest = matches[0] || null;
-      const tech = getTechnicalForInstrument(instrumentDef);
-
-      return {
-        def: instrumentDef,
-        matches,
-        count,
-        score,
-        scoreLabel: label,
-        latest,
-        tech
-      };
-    }
-
-    function allCurrentScopeHeadlines(){
-      const defs = getSelectedDefs();
-
-      if (!defs.length) return dashboardData?.top_headlines || [];
-
-      const merged = [];
-      const seen = new Set();
-
-      defs.forEach(def => {
-        getMatchedHeadlinesForInstrument(def).forEach(h => {
-          const key = `${h.source}__${h.title}`;
-          if (!seen.has(key)){
-            seen.add(key);
-            merged.push(h);
-          }
-        });
-      });
-
-      return merged;
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+      if(raw === null || raw === undefined) return "N/A";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
     }
 
     function getTechnicalForInstrument(instrumentDef){
-      if (!technicalData) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
-
+      if(!technicalData) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
       const wanted = instrumentDef.aliases.map(normalize);
       let entry = null;
 
-      if (Array.isArray(technicalData)){
+      if(Array.isArray(technicalData)){
         entry = technicalData.find(item => wanted.includes(normalize(item?.instrument || item?.name || item?.symbol || "")));
-      } else if (typeof technicalData === "object"){
-        const entries = Object.entries(technicalData);
-        const found = entries.find(([key, value]) => {
-          const possible = [
-            key,
-            value?.instrument,
-            value?.name,
-            value?.symbol
-          ].filter(Boolean).map(normalize);
-
+      } else if(typeof technicalData === "object"){
+        const found = Object.entries(technicalData).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
           return wanted.some(w => possible.includes(w));
         });
-
         entry = found ? found[1] : null;
       }
 
-      if (!entry){
-        return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
-      }
-
+      if(!entry) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
       return {
         daily: extractTechLabel(entry, "daily"),
         weekly: extractTechLabel(entry, "weekly"),
@@ -930,92 +373,65 @@
       };
     }
 
-    function extractTechLabel(entry, period){
-      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+    function getInstrumentStats(instrumentDef){
+      const matches = getMatchedHeadlinesForInstrument(instrumentDef);
+      const count = matches.length;
+      let score = null, label = "N/A";
+      if(count > 0){
+        const avg = Math.round(matches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / count);
+        score = avg;
+        label = scoreToLabel(avg);
+      }
+      return {
+        def: instrumentDef, matches, count, score, scoreLabel: label,
+        latest: matches[0] || null, tech: getTechnicalForInstrument(instrumentDef)
+      };
+    }
 
-      if (raw === null || raw === undefined) return "N/A";
-
-      if (typeof raw === "string") return raw;
-      if (typeof raw === "number") return String(raw);
-
-      const candidate = raw.direction || raw.signal || raw.label || raw.trend || raw.value;
-      if (candidate) return String(candidate);
-
-      return "N/A";
+    function allCurrentScopeHeadlines(){
+      const defs = getSelectedDefs();
+      if(!defs.length) return dashboardData?.top_headlines || [];
+      const merged = [], seen = new Set();
+      defs.forEach(def => {
+        getMatchedHeadlinesForInstrument(def).forEach(h => {
+          const key = `${h.source}__${h.title}`;
+          if(!seen.has(key)){ seen.add(key); merged.push(h); }
+        });
+      });
+      return merged;
     }
 
     function renderScoreComparison(statsList){
       const wrap = document.getElementById("scoreComparison");
-
-      if (!statsList.length){
-        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
-        return;
-      }
-
+      if(!statsList.length){ wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`; return; }
       wrap.innerHTML = statsList.map(stats => {
         const width = stats.score === null ? 0 : Math.max(6, stats.score);
-        const rightText = stats.score === null
-          ? `No score yet`
-          : `${stats.score} / 100`;
-
-        return `
-          <div class="metric-row">
-            <div class="metric-label">${escapeHTML(stats.def.label)}</div>
-            <div class="metric-bar-wrap">
-              <div class="metric-bar score-bar" style="width:${width}%;"></div>
-            </div>
-            <div class="metric-value">${escapeHTML(rightText)}</div>
-          </div>
-        `;
+        const rightText = stats.score === null ? `No score yet` : `${stats.score} / 100`;
+        return `<div class="metric-row"><div class="metric-label">${escapeHTML(stats.def.label)}</div><div class="metric-bar-wrap"><div class="metric-bar score-bar" style="width:${width}%;"></div></div><div class="metric-value">${escapeHTML(rightText)}</div></div>`;
       }).join("");
     }
 
     function renderCountComparison(statsList){
       const wrap = document.getElementById("countComparison");
-
-      if (!statsList.length){
-        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
-        return;
-      }
-
+      if(!statsList.length){ wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`; return; }
       const maxCount = Math.max(...statsList.map(x => x.count), 1);
-
       wrap.innerHTML = statsList.map(stats => {
         const width = stats.count > 0 ? Math.max(4, Math.round((stats.count / maxCount) * 100)) : 0;
-
-        return `
-          <div class="metric-row">
-            <div class="metric-label">${escapeHTML(stats.def.label)}</div>
-            <div class="metric-bar-wrap">
-              <div class="metric-bar count-bar" style="width:${width}%;"></div>
-            </div>
-            <div class="metric-value">${stats.count} headline${stats.count === 1 ? "" : "s"}</div>
-          </div>
-        `;
+        return `<div class="metric-row"><div class="metric-label">${escapeHTML(stats.def.label)}</div><div class="metric-bar-wrap"><div class="metric-bar count-bar" style="width:${width}%;"></div></div><div class="metric-value">${stats.count} headline${stats.count === 1 ? "" : "s"}</div></div>`;
       }).join("");
     }
 
     function renderInstrumentCards(statsList){
       const wrap = document.getElementById("instrumentCards");
-
-      if (!statsList.length){
-        wrap.innerHTML = `<div class="dynamic-card instrument-card">Choose at least one instrument.</div>`;
-        return;
-      }
+      if(!statsList.length){ wrap.innerHTML = `<div class="dynamic-card instrument-card">Choose at least one instrument.</div>`; return; }
 
       wrap.innerHTML = statsList.map(stats => {
-        const latestHeadline = stats.latest
-          ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>`
-          : `No related headline found.`;
-
-        const scoreText = stats.score === null
-          ? "N/A"
-          : `${stats.scoreLabel} (${stats.score}/100)`;
+        const latestHeadline = stats.latest ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>` : `No related headline found.`;
+        const scoreText = stats.score === null ? "N/A" : `${stats.scoreLabel} (${stats.score}/100)`;
 
         return `
           <div class="dynamic-card instrument-card">
             <div class="instrument-name">${escapeHTML(stats.def.label)}</div>
-
             <div class="info-row"><span class="label">Public Sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div>
             <div class="info-row"><span class="label">Headlines:</span> ${stats.count}</div>
 
@@ -1032,47 +448,28 @@
     }
 
     function computeSourceVote(headlines){
-      if (!headlines.length) return "N/A";
-
+      if(!headlines.length) return "N/A";
       const bullish = headlines.filter(h => String(h.vote).toLowerCase().includes("bullish")).length;
       const bearish = headlines.filter(h => String(h.vote).toLowerCase().includes("bearish")).length;
-
-      if (bullish > bearish) return "Bullish";
-      if (bearish > bullish) return "Bearish";
-      if (bullish > 0 && bearish > 0) return "Mixed";
+      if(bullish > bearish) return "Bullish";
+      if(bearish > bullish) return "Bearish";
+      if(bullish > 0 && bearish > 0) return "Mixed";
       return "Neutral";
     }
 
     function computeSourceImpact(headlines){
-      if (!headlines.length) return "N/A";
-
-      const high = headlines.filter(h => String(h.impact).toLowerCase() === "high").length;
-      if (high > 0) return "High";
-
-      const normal = headlines.filter(h => String(h.impact).toLowerCase() === "normal").length;
-      return normal > 0 ? "Normal" : "N/A";
+      if(!headlines.length) return "N/A";
+      return headlines.some(h => String(h.impact).toLowerCase() === "high") ? "High" : "Normal";
     }
 
     function renderSourceVotes(scopeHeadlines){
       const body = document.getElementById("sourceVotesBody");
       const sources = dashboardData?.sources || [];
-
-      if (!sources.length){
-        body.innerHTML = `<tr><td colspan="5">No source data available.</td></tr>`;
-        return;
-      }
+      if(!sources.length){ body.innerHTML = `<tr><td colspan="5">No source data available.</td></tr>`; return; }
 
       const rows = sources.map(source => {
         const matching = scopeHeadlines.filter(h => h.source === source.name);
-        const vote = computeSourceVote(matching);
-        const impact = computeSourceImpact(matching);
-
-        return {
-          source,
-          matchingCount: matching.length,
-          vote,
-          impact
-        };
+        return { source, matchingCount: matching.length, vote: computeSourceVote(matching), impact: computeSourceImpact(matching) };
       }).sort((a, b) => b.matchingCount - a.matchingCount || a.source.name.localeCompare(b.source.name));
 
       body.innerHTML = rows.map(row => `
@@ -1087,55 +484,33 @@
     }
 
     function getImage(item){
-      const candidates = [
-        item?.image,
-        item?.image_url,
-        item?.imageUrl,
-        item?.thumbnail,
-        item?.thumbnail_url,
-        item?.thumb,
-        item?.og_image,
-        item?.ogImage,
-        item?.picture,
-        item?.img
-      ];
-
-      for (const value of candidates){
-        if (typeof value === "string" && value.trim()) return value.trim();
-        if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0].trim();
+      const candidates = [item?.image,item?.image_url,item?.imageUrl,item?.thumbnail,item?.thumbnail_url,item?.thumb,item?.og_image,item?.ogImage,item?.picture,item?.img];
+      for(const value of candidates){
+        if(typeof value === "string" && value.trim()) return value.trim();
+        if(Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) return value[0].trim();
       }
-
       return "";
-    }
-
-    function fallbackLabel(item){
-      return item?.source || "Market News";
     }
 
     function renderRelevantNews(scopeHeadlines){
       const grid = document.getElementById("relevantNewsGrid");
       const count = document.getElementById("relevantNewsCount");
       const items = scopeHeadlines.slice(0, 9);
-
       count.textContent = `${scopeHeadlines.length} relevant headline(s) shown for the current scope.`;
 
-      if (!items.length){
+      if(!items.length){
         grid.innerHTML = `<div class="dynamic-card news-card"><div class="news-body">No relevant headlines found for the selected instruments.</div></div>`;
         return;
       }
 
       grid.innerHTML = items.map(item => {
         const img = getImage(item);
-
         return `
           <a class="dynamic-card news-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
             <div class="news-image-wrap">
-              ${
-                img
-                  ? `<img class="news-image" src="${escapeHTML(img)}" alt="${escapeHTML(item.title || "Article image")}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
-                     <div class="news-fallback" style="display:none;">${escapeHTML(fallbackLabel(item))}</div>`
-                  : `<div class="news-fallback">${escapeHTML(fallbackLabel(item))}</div>`
-              }
+              ${img
+                ? `<img class="news-image" src="${escapeHTML(img)}" alt="${escapeHTML(item.title || "Article image")}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';"><div class="news-fallback" style="display:none;">${escapeHTML(item.source || "Market News")}</div>`
+                : `<div class="news-fallback">${escapeHTML(item.source || "Market News")}</div>`}
             </div>
 
             <div class="news-body">
@@ -1144,14 +519,8 @@
                 <span class="${voteClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
                 <span class="chip impact-chip">${escapeHTML(item.impact || "Normal")} Impact</span>
               </div>
-
               <div class="news-title">${escapeHTML(item.title || "Untitled headline")}</div>
-
-              <div class="news-meta">
-                Markets: ${escapeHTML((item.markets || []).join(", ") || "N/A")}<br>
-                Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}
-              </div>
-
+              <div class="news-meta">Markets: ${escapeHTML((item.markets || []).join(", ") || "N/A")}<br>Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}</div>
               <div class="news-open">Open article →</div>
             </div>
           </a>
@@ -1160,12 +529,10 @@
     }
 
     function renderDashboard(){
-      if (!dashboardData) return;
-
+      if(!dashboardData) return;
       const defs = getSelectedDefs();
       const statsList = defs.map(getInstrumentStats);
       const scopeHeadlines = allCurrentScopeHeadlines();
-
       renderScoreComparison(statsList);
       renderCountComparison(statsList);
       renderInstrumentCards(statsList);
@@ -1181,16 +548,10 @@
         ]);
 
         dashboardData = await dashboardRes.json();
-
-        if (technicalRes && technicalRes.ok){
-          technicalData = await technicalRes.json();
-        } else {
-          technicalData = null;
-        }
-
+        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
         buildSelects();
         renderDashboard();
-      } catch (error){
+      } catch(error){
         console.error(error);
         document.getElementById("scoreComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
         document.getElementById("countComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
