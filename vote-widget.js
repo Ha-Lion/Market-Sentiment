@@ -1,5 +1,5 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
-const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdl_7955Ej6tK01awQ_DljLC6sv";
+const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdI_7955Ej6tK01awQ_DljLC6sv";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 
