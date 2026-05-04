@@ -1,5 +1,5 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
-const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdI_7955Ej6tK01awQ_DljLC6sv";
+const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdl_7955Ej6tK01awQ_DljLC6sv";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 
@@ -223,7 +223,6 @@ function psdGetVoterId(){
 function psdHeaders(){
   return {
     "apikey": PSD_SUPABASE_ANON_KEY,
-    "Authorization": "Bearer " + PSD_SUPABASE_ANON_KEY,
     "Content-Type": "application/json"
   };
 }
@@ -317,7 +316,10 @@ async function psdLoadUserSentiment(){
       body:"{}"
     });
 
-    if(!response.ok) return;
+    if(!response.ok){
+      console.warn("User sentiment load failed:", response.status);
+      return;
+    }
 
     const rows = await response.json();
     const map = {};
@@ -370,11 +372,18 @@ async function psdSubmitVote(instrument, vote){
       })
     });
 
-    const result = await response.json();
+    let result = {};
+
+    try{
+      result = await response.json();
+    }catch(e){
+      result = {};
+    }
 
     if(!response.ok || !result.ok){
-      status.textContent = result.error || "Vote failed.";
+      status.textContent = result.error || `Vote failed. Error ${response.status}`;
       status.className = "psd-vote-status error";
+      console.warn("Vote failed:", response.status, result);
       return;
     }
 
@@ -397,6 +406,7 @@ async function psdSubmitVote(instrument, vote){
   }catch(error){
     status.textContent = "Vote failed.";
     status.className = "psd-vote-status error";
+    console.warn("Vote failed:", error);
   }
 }
 
