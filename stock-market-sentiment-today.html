@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Market Sentiment Today — Public Sentiment Dash</title>
+  <meta name="description" content="Stock market sentiment today for S&P 500, Nasdaq, Dow, Russell 2000, VIX, earnings, futures, and equity market headlines.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/stock-market-sentiment-today.html">
+  <link rel="icon" type="image/png" href="logo.png"><link rel="stylesheet" href="site.css">
+  <style>
+    .hero{max-width:1120px;margin:0 auto 18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box{padding:20px}.headline-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.headline{padding:16px}.meta{color:var(--muted);font-size:12px;line-height:1.5}.open{margin-top:10px;color:#fff;font-weight:500;font-size:13px}
+  </style>
+</head>
+<body>
+<header class="header"><a class="brand" href="index.html"><img src="logo.png" alt="Public Sentiment Dash Logo" class="logo"><div class="brand-copy"><div class="brand-stamp">AI-built public market sentiment dashboard</div><div class="site-subtitle">Global market public sentiment dashboard</div></div></a><div class="header-center"><div class="header-pill">✨ Constantly learning & improving</div></div><nav class="nav"><a href="dashboard.html">Interactive Dashboard</a><a href="news-articles.html">News & Articles</a><a href="market-sentiment.html" class="active">Guides</a><a href="contact.html">Get in Touch</a><a href="how-it-works.html">Dashboard Works</a><a href="about.html">About</a><div class="social-links"><span class="social-label">Follow us</span><span class="social-pill">X</span><span class="social-pill linkedin">LinkedIn</span></div></nav></header>
+<main class="page">
+<section class="panel hero"><div class="page-chip">Stock Market Sentiment Today</div><h1>Stock Market Sentiment Today</h1><p>Track today’s equity sentiment across S&P 500, Nasdaq, Dow, Russell 2000, VIX, futures, earnings, and major stock market headlines.</p></section>
+<section class="grid"><a class="dynamic-card box" href="dashboard.html"><h2>Compare Indexes</h2><p>Open the dashboard to compare S&P 500, Nasdaq, Dow, Russell, and VIX.</p><div class="open">Open dashboard →</div></a><a class="dynamic-card box" href="sp500-sentiment-today.html"><h2>S&P 500 Sentiment</h2><p>Dedicated page for S&P 500 public sentiment today.</p><div class="open">Open page →</div></a><a class="dynamic-card box" href="nasdaq-sentiment-today.html"><h2>Nasdaq Sentiment</h2><p>Dedicated page for Nasdaq public sentiment today.</p><div class="open">Open page →</div></a></section>
+<section class="panel"><h2>Latest Stock Market Headlines</h2><p class="muted" id="statusText">Loading...</p><div class="headline-list" id="headlineList"></div></section>
+<script>
+function e(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function match(x){const t=((x.markets||[]).join(" ")+(x.instruments||[]).join(" ")+x.title).toLowerCase();return t.includes("index")||t.includes("stocks")||t.includes("s&p")||t.includes("nasdaq")||t.includes("dow")||t.includes("russell")||t.includes("vix")||t.includes("earnings")||t.includes("shares")}
+async function load(){try{const r=await fetch("dashboard_data.json",{cache:"no-store"});const d=await r.json();const items=(d.top_headlines||[]).filter(match).slice(0,12);document.getElementById("statusText").textContent=`Updated: ${d.updated_ny||"latest scan"} • ${items.length} headline(s) shown.`;document.getElementById("headlineList").innerHTML=items.map(x=>`<a class="dynamic-card headline" href="${e(x.link||"#")}" target="_blank" rel="noopener"><h3>${e(x.title)}</h3><div class="meta">${e(x.source||"Source")} • ${e((x.instruments||[]).join(", "))}</div><div class="open">Open article →</div></a>`).join("")||"No stock headlines found yet."}catch(err){document.getElementById("statusText").textContent="Data could not be loaded."}}load();
+</script>
+<footer class="footer"><div class="footer-links"><a href="dashboard.html">Interactive Dashboard</a><a href="news-articles.html">News & Articles</a><a href="market-sentiment.html" class="active">Guides</a><a href="contact.html">Get in Touch</a><a href="how-it-works.html">Dashboard Works</a><a href="about.html">About</a></div><div class="legal"><b>Disclaimer:</b> Informational only. Not financial advice.</div><p>© 2026 Public Sentiment Dash. All rights reserved.</p></footer>
+</main><script src="vote-widget.js" defer></script>
+</body></html>
