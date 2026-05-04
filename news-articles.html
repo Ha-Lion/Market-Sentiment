@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PublicSentimentDash — News & Articles</title>
+  <meta name="description" content="Browse and search published news and articles from the public sentiment dashboard.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/news-articles.html">
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <style>
+    :root {
+      --bg: #05070b;
+      --panel: #0d1117;
+      --card: #111821;
+      --line: #263241;
+      --text: #e6edf3;
+      --soft: #c9d1d9;
+      --muted: #8b949e;
+      --gold: #d29922;
+      --green: #3fb950;
+      --red: #f85149;
+      --blue: #58a6ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(210,153,34,0.10), transparent 33rem),
+        radial-gradient(circle at top right, rgba(88,166,255,0.08), transparent 32rem),
+        var(--bg);
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 26px;
+      background: rgba(6, 9, 15, 0.95);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 0 18px rgba(210,153,34,0.18);
+    }
+
+    .site-title {
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .site-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      color: var(--soft);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .nav a:hover {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 26px;
+    }
+
+    .panel {
+      background: rgba(13,17,23,0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.20);
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      letter-spacing: -0.5px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+
+    p {
+      color: var(--soft);
+      line-height: 1.65;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    input[type="text"], select {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input[type="text"] {
+      min-width: 320px;
+      flex: 1 1 320px;
+    }
+
+    select {
+      min-width: 220px;
+    }
+
+    .count-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .headline-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .headline-item {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .headline-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #243041;
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .headline-title {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+
+    .headline-tags {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .Bullish { color: var(--green); font-weight: 900; }
+    .Bearish { color: var(--red); font-weight: 900; }
+    .Mixed, .MixedBullish, .MixedBearish, .MixedNeutral { color: var(--gold); font-weight: 900; }
+    .Neutral { color: var(--muted); font-weight: 900; }
+
+    .footer {
+      margin-top: 20px;
+      padding: 24px 0 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: var(--soft);
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 14px 18px;
+      }
+
+      .page {
+        padding: 18px;
+      }
+
+      .logo {
+        width: 60px;
+        height: 60px;
+      }
+
+      .nav {
+        gap: 14px;
+      }
+
+      input[type="text"], select {
+        min-width: 100%;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <img src="logo.png" alt="PublicSentimentDash Logo" class="logo">
+      <div>
+        <div class="site-title">PublicSentimentDash</div>
+        <div class="site-subtitle">News & Articles</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="about.html">About</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="contact.html">Get in Touch</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="panel">
+      <h1>News & Articles</h1>
+      <p>Search the published news feed by keyword, market, instrument, and source.</p>
+
+      <div class="controls">
+        <input type="text" id="searchBox" placeholder="Search keywords...">
+
+        <select id="marketFilter">
+          <option value="all">All Markets</option>
+          <option value="indexes">Indexes / Futures</option>
+          <option value="bonds">Bonds / Rates</option>
+          <option value="forex">Forex / Currencies</option>
+          <option value="crypto">Crypto</option>
+          <option value="commodities">Commodities</option>
+          <option value="macro">Macro / Fed / Inflation</option>
+        </select>
+
+        <select id="instrumentFilter">
+          <option value="all">All Instruments</option>
+        </select>
+
+        <select id="sourceFilter">
+          <option value="all">All Sources</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Published Articles Feed</h2>
+      <div class="count-note" id="resultsCount">Loading published articles...</div>
+      <div class="headline-list" id="headlineList">Loading published articles...</div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms & Disclaimer</a>
+      </div>
+      <p>© 2026 PublicSentimentDash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script>
+    let dashboardData = null;
+
+    const marketLabels = {
+      indexes: "Indexes / Futures",
+      bonds: "Bonds / Rates",
+      forex: "Forex / Currencies",
+      crypto: "Crypto",
+      commodities: "Commodities",
+      macro: "Macro / Fed / Inflation",
+      general: "General Market"
+    };
+
+    const instrumentGroups = {
+      indexes: [
+        "S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX","DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40"
+      ],
+      bonds: [
+        "US 10Y Treasury","US 2Y Treasury","Treasury Yields"
+      ],
+      forex: [
+        "US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF","CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD",
+        "EURJPY","EURGBP","GBPJPY","AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY","USDTRY","USDMXN","USDZAR"
+      ],
+      crypto: [
+        "Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA","Dogecoin / DOGE","General Crypto"
+      ],
+      commodities: [
+        "Gold","Silver","Copper","Crude Oil","Natural Gas"
+      ],
+      macro: [
+        "Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","GDP","Geopolitical / Tariffs"
+      ]
+    };
+
+    function allInstruments() {
+      return [...new Set(Object.values(instrumentGroups).flat())];
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeClass(value) {
+      const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
+      return clean || "Neutral";
+    }
+
+    function populateInstrumentOptions() {
+      const market = document.getElementById("marketFilter").value;
+      const instruments = market === "all" ? allInstruments() : (instrumentGroups[market] || []);
+
+      document.getElementById("instrumentFilter").innerHTML =
+        [`<option value="all">All Instruments</option>`]
+          .concat(instruments.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
+          .join("");
+    }
+
+    function populateSourceOptions() {
+      const sources = [...new Set((dashboardData.top_headlines || []).map(item => item.source).filter(Boolean))].sort();
+      document.getElementById("sourceFilter").innerHTML =
+        [`<option value="all">All Sources</option>`]
+          .concat(sources.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
+          .join("");
+    }
+
+    function filteredHeadlines() {
+      const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
+      const market = document.getElementById("marketFilter").value;
+      const instrument = document.getElementById("instrumentFilter").value;
+      const source = document.getElementById("sourceFilter").value;
+
+      return (dashboardData.top_headlines || []).filter(item => {
+        const text = [
+          item.title || "",
+          item.description || "",
+          item.source || "",
+          ...(item.markets || []),
+          ...(item.instruments || [])
+        ].join(" ").toLowerCase();
+
+        const marketOk = market === "all" || (item.markets || []).includes(market);
+        const instrumentOk = instrument === "all" || (item.instruments || []).includes(instrument);
+        const sourceOk = source === "all" || item.source === source;
+        const keywordOk = !keyword || text.includes(keyword);
+
+        return marketOk && instrumentOk && sourceOk && keywordOk;
+      });
+    }
+
+    function renderHeadlines() {
+      const headlines = filteredHeadlines();
+
+      document.getElementById("resultsCount").textContent =
+        `${headlines.length} article(s) matched your search and filters.`;
+
+      document.getElementById("headlineList").innerHTML = headlines.length
+        ? headlines.slice(0, 250).map(item => `
+            <article class="headline-item">
+              <div class="headline-top">
+                <span class="tag">${escapeHTML(item.source || "Source")}</span>
+                <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
+                <span>${escapeHTML(item.impact || "Normal")} Impact</span>
+              </div>
+
+              <div class="headline-title">
+                <a href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">${escapeHTML(item.title || "Untitled headline")}</a>
+              </div>
+
+              <div class="headline-tags">
+                Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
+                Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}
+              </div>
+            </article>
+          `).join("")
+        : `<div class="headline-item">No articles matched your search and filters.</div>`;
+    }
+
+    async function loadPage() {
+      try {
+        const res = await fetch("dashboard_data.json", { cache: "no-store" });
+        dashboardData = await res.json();
+
+        populateInstrumentOptions();
+        populateSourceOptions();
+        renderHeadlines();
+      } catch (error) {
+        console.error(error);
+        document.getElementById("headlineList").innerHTML =
+          `<div class="headline-item">Published articles could not be loaded right now.</div>`;
+      }
+    }
+
+    document.getElementById("marketFilter").addEventListener("change", () => {
+      populateInstrumentOptions();
+      renderHeadlines();
+    });
+
+    document.getElementById("instrumentFilter").addEventListener("change", renderHeadlines);
+    document.getElementById("sourceFilter").addEventListener("change", renderHeadlines);
+    document.getElementById("searchBox").addEventListener("input", renderHeadlines);
+
+    loadPage();
+  </script>
+</body>
+</html>
