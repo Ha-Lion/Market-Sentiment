@@ -3,787 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Public Sentiment Dash — Home</title>
-  <meta name="description" content="Free global market public sentiment dashboard tracking financial headlines, market focus, source votes, and public narrative across major assets.">
-  <meta name="keywords" content="public sentiment dashboard, market sentiment, financial news sentiment, forex sentiment, crypto sentiment, stock sentiment, commodity sentiment">
-  <meta name="robots" content="index, follow">
-
-  <meta name="google-site-verification" content="S0CFcMngcfWARClpc5kXp_FdebDc8Hkb0LYHA8znuI">
-  <meta name="msvalidate.01" content="00775D05D701156A2226FE28A7FA2D8">
-
+  <meta name="description" content="Free global market public sentiment dashboard tracking financial headlines, source votes, and public narrative across major assets.">
   <link rel="canonical" href="https://publicsentimentdash.com/">
   <link rel="icon" type="image/png" href="logo.png">
 
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Public Sentiment Dash — Global Market Public Sentiment">
-  <meta property="og:description" content="Read global public market sentiment across headlines, instruments, and source votes.">
-  <meta property="og:url" content="https://publicsentimentdash.com/">
-  <meta property="og:image" content="https://publicsentimentdash.com/logo.png">
-
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Public Sentiment Dash — Global Market Public Sentiment">
-  <meta name="twitter:description" content="Read global public market sentiment across headlines, instruments, and source votes.">
-  <meta name="twitter:image" content="https://publicsentimentdash.com/logo.png">
-
   <style>
-    :root {
-      --bg:#05070b;
-      --panel:#0d1117;
-      --card:#111821;
-      --line:#263241;
-      --text:#e6edf3;
-      --soft:#c9d1d9;
-      --muted:#8b949e;
-      --gold:#d29922;
-      --gold2:#f0b72f;
-      --green:#3fb950;
-      --red:#f85149;
-      --blue:#58a6ff;
-      --orange:#f59e0b;
+    :root{
+      --bg:#05070b; --panel:#0d1117; --card:#111821; --line:#263241; --text:#e6edf3;
+      --soft:#c9d1d9; --muted:#8b949e; --gold:#d29922; --gold2:#f0b72f;
+      --green:#3fb950; --red:#f85149; --blue:#58a6ff; --orange:#f59e0b;
     }
-
-    * { box-sizing:border-box; }
-
-    body {
-      margin:0;
-      font-family:"Segoe UI", Inter, Arial, sans-serif;
-      color:var(--text);
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;color:var(--text);
       background:
-        radial-gradient(circle at top left, rgba(210,153,34,0.10), transparent 33rem),
-        radial-gradient(circle at top right, rgba(88,166,255,0.08), transparent 32rem),
+        radial-gradient(circle at top left, rgba(210,153,34,.10), transparent 33rem),
+        radial-gradient(circle at top right, rgba(88,166,255,.08), transparent 32rem),
         var(--bg);
     }
-
-    a {
-      color:var(--blue);
-      text-decoration:none;
+    a{color:var(--blue);text-decoration:none}
+    .header{
+      position:sticky;top:0;z-index:30;display:grid;grid-template-columns:auto 1fr auto;
+      align-items:center;gap:18px;padding:14px 26px;background:rgba(6,9,15,.95);
+      border-bottom:1px solid var(--line);backdrop-filter:blur(10px)
     }
-
-    a:hover {
-      text-decoration:none;
+    .brand{
+      display:flex;align-items:center;gap:14px;color:var(--text);padding:6px 8px;margin:-6px -8px;
+      border-radius:14px;transition:.18s ease;text-decoration:none
     }
-
-    .header {
-      position:sticky;
-      top:0;
-      z-index:30;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 26px;
-      background:rgba(6,9,15,0.95);
-      border-bottom:1px solid var(--line);
-      backdrop-filter:blur(10px);
+    .brand:hover{background:rgba(210,153,34,.15);transform:translateY(-1px);text-shadow:0 0 10px rgba(210,153,34,.55)}
+    .logo{
+      width:68px;height:68px;object-fit:contain;border-radius:12px;
+      box-shadow:0 0 18px rgba(210,153,34,.18);transition:.18s ease
     }
-
-    .brand {
-      display:flex;
-      align-items:center;
-      gap:14px;
-      color:var(--text);
-      text-decoration:none;
-      padding:6px 8px;
-      margin:-6px -8px;
-      border-radius:14px;
-      transition:background 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+    .brand:hover .logo{transform:translateY(-2px) scale(1.03);box-shadow:0 0 26px rgba(210,153,34,.34)}
+    .brand-copy{display:flex;flex-direction:column;gap:6px}
+    .brand-stamp,.header-pill{
+      display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:8px 14px;
+      border-radius:999px;background:rgba(210,153,34,.14);border:1px solid rgba(210,153,34,.40);
+      color:#ffd780;font-size:13px;font-weight:900;line-height:1;box-shadow:0 0 18px rgba(210,153,34,.14)
     }
-
-    .brand:hover {
-      background:rgba(210,153,34,0.15);
-      transform:translateY(-1px);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-    }
-
-    .logo {
-      width:68px;
-      height:68px;
-      object-fit:contain;
-      border-radius:12px;
-      box-shadow:0 0 18px rgba(210,153,34,0.18);
-      transition:transform 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .brand:hover .logo {
-      transform:translateY(-2px) scale(1.03);
-      box-shadow:0 0 26px rgba(210,153,34,0.34);
-    }
-
-    .brand-copy {
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-
-    .brand-stamp {
-      display:inline-flex;
-      align-items:center;
-      width:max-content;
-      max-width:100%;
-      padding:8px 14px;
-      border-radius:999px;
-      background:rgba(210,153,34,0.14);
-      border:1px solid rgba(210,153,34,0.40);
-      color:#ffd780;
-      font-size:13px;
-      font-weight:900;
-      line-height:1;
-      box-shadow:0 0 18px rgba(210,153,34,0.14);
-      transition:background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-    }
-
-    .brand:hover .brand-stamp {
-      background:rgba(210,153,34,0.20);
-      border-color:rgba(210,153,34,0.62);
-      box-shadow:0 0 24px rgba(210,153,34,0.22);
-      transform:translateY(-1px);
-    }
-
-    .site-subtitle {
-      color:var(--muted);
-      font-size:12px;
-      margin-left:4px;
-    }
-
-    .nav {
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-end;
-    }
-
-    .nav a {
-      color:var(--soft);
-      font-size:15px;
-      font-weight:700;
-      padding:7px 9px;
-      border-radius:8px;
-      transition:color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
-    }
-
-    .nav a:hover {
-      color:#ffffff;
-      background:rgba(210,153,34,0.16);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-      transform:translateY(-1px);
-    }
-
-    .page {
-      max-width:1440px;
-      margin:0 auto;
-      padding:26px;
-    }
-
-    .panel {
-      background:rgba(13,17,23,0.94);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 16px 40px rgba(0,0,0,0.20);
-    }
-
-    .hero {
-      display:grid;
-      grid-template-columns:minmax(0,1.2fr) minmax(360px,0.8fr);
-      gap:18px;
-      margin-bottom:18px;
-    }
-
-    .hero-copy {
-      padding:26px;
-    }
-
-    .badge {
-      display:inline-flex;
-      padding:7px 12px;
-      border-radius:999px;
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.35);
+    .site-subtitle{color:var(--muted);font-size:12px;margin-left:4px}
+    .header-center{display:flex;justify-content:center}
+    .header-pill{
+      background:rgba(210,153,34,.10);
+      border-color:rgba(210,153,34,.30);
       color:#f4d17d;
-      font-size:12px;
-      font-weight:900;
-      margin-bottom:16px;
     }
-
-    h1 {
-      font-size:clamp(30px,4vw,50px);
-      line-height:1.05;
-      letter-spacing:-1px;
-      margin:0 0 14px;
+    .nav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+    .nav a{
+      color:var(--soft);font-size:15px;font-weight:700;padding:7px 9px;border-radius:8px;transition:.18s ease
     }
-
-    h2 {
-      margin:0 0 14px;
-      font-size:24px;
+    .nav a:hover{color:#fff;background:rgba(210,153,34,.16);text-shadow:0 0 10px rgba(210,153,34,.55);transform:translateY(-1px)}
+    .page{max-width:1440px;margin:0 auto;padding:26px}
+    .panel{
+      background:rgba(13,17,23,.94);border:1px solid var(--line);border-radius:18px;
+      box-shadow:0 16px 40px rgba(0,0,0,.20)
     }
-
-    h3 {
-      margin:0 0 8px;
-      color:#fff;
+    .hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);gap:18px;margin-bottom:18px}
+    .hero-copy{padding:26px}
+    h1{font-size:clamp(30px,4vw,50px);line-height:1.05;letter-spacing:-1px;margin:0 0 14px}
+    h2{margin:0 0 14px;font-size:24px}
+    h3{margin:0 0 8px;color:#fff}
+    p,li{color:var(--soft);line-height:1.65}
+    .hero-points{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+    .hero-point{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+    .hero-point strong{display:block;color:#fff;margin-bottom:6px}
+    .hero-point span{color:var(--muted);font-size:13px;line-height:1.45}
+    .score-panel{padding:24px;text-align:center;display:grid;place-items:center}
+    .scope-pill{
+      display:inline-flex;margin-bottom:8px;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.10);
+      border:1px solid rgba(88,166,255,.20);color:#a5cfff;font-size:12px;font-weight:900
     }
-
-    p, li {
-      color:var(--soft);
-      line-height:1.65;
-    }
-
-    .hero-points {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:12px;
-      margin-top:18px;
-    }
-
-    .hero-point {
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:14px;
-    }
-
-    .hero-point strong {
-      display:block;
-      color:#fff;
-      margin-bottom:6px;
-    }
-
-    .hero-point span {
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.45;
-    }
-
-    .score-panel {
-      padding:24px;
-      text-align:center;
-      display:grid;
-      place-items:center;
-    }
-
-    .scope-pill {
-      display:inline-flex;
-      margin-bottom:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(88,166,255,0.10);
-      border:1px solid rgba(88,166,255,0.20);
-      color:#a5cfff;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .score-label {
-      color:var(--muted);
-      font-size:14px;
-      font-weight:800;
-      margin-bottom:8px;
-    }
-
-    .score-ring {
-      --score:50;
-      --accent:var(--gold);
-      width:230px;
-      height:230px;
-      border-radius:50%;
+    .score-label{color:var(--muted);font-size:14px;font-weight:800;margin-bottom:8px}
+    .score-ring{
+      --score:50;--accent:var(--gold);width:230px;height:230px;border-radius:50%;
       background:conic-gradient(var(--accent) calc(var(--score) * 1%), #26313f 0);
-      display:grid;
-      place-items:center;
-      margin:8px auto 16px;
-      box-shadow:0 0 32px rgba(210,153,34,0.12);
-    }
-
-    .score-inner {
-      width:170px;
-      height:170px;
-      border-radius:50%;
-      background:var(--panel);
-      border:1px solid var(--line);
-      display:grid;
-      place-items:center;
-    }
-
-    .score-number {
-      font-size:50px;
-      line-height:1;
-      font-weight:950;
-    }
-
-    .score-word {
-      margin-top:8px;
-      font-size:18px;
-      font-weight:900;
-    }
-
-    .score-desc {
-      max-width:370px;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.55;
-      margin:0 auto;
-    }
-
-    .scale {
-      width:100%;
-      margin-top:16px;
-    }
-
-    .scale-bar {
-      height:10px;
-      border-radius:999px;
-      background:linear-gradient(90deg, var(--red), var(--orange), var(--gold), var(--green));
-      border:1px solid rgba(255,255,255,0.06);
-    }
-
-    .scale-labels {
-      display:flex;
-      justify-content:space-between;
-      color:var(--muted);
-      font-size:11px;
-      margin-top:6px;
-    }
-
-    .grid-3 {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-      margin-bottom:18px;
-    }
-
-    .metric {
-      padding:18px;
-    }
-
-    .metric-title {
-      color:var(--muted);
-      font-size:13px;
-      font-weight:800;
-      margin-bottom:8px;
-    }
-
-    .metric-value {
-      color:#fff;
-      font-size:26px;
-      font-weight:950;
-    }
-
-    .metric-note {
-      margin-top:8px;
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.45;
-    }
-
-    .section {
-      padding:22px;
-      margin-bottom:18px;
-    }
-
-    .sources-layout {
-      display:grid;
-      grid-template-columns:300px minmax(0,1fr);
-      gap:18px;
-      align-items:stretch;
-    }
-
-    .sources-copy {
-      padding:6px 6px 6px 2px;
-    }
-
-    .sources-copy h2 {
-      margin-bottom:10px;
-    }
-
-    .sources-copy p {
-      margin-top:0;
-      margin-bottom:12px;
-    }
-
-    .sources-pill {
-      display:inline-flex;
-      padding:7px 12px;
-      border-radius:999px;
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.35);
-      color:#f4d17d;
-      font-size:12px;
-      font-weight:900;
-      margin-bottom:12px;
-    }
-
-    .sources-waterfall {
-      position:relative;
-      overflow:hidden;
-      min-height:430px;
-      height:430px;
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.10), transparent 15rem),
-        linear-gradient(180deg,#101826,#0d131d);
-      padding:14px;
-    }
-
-    .sources-waterfall::before,
-    .sources-waterfall::after {
-      content:"";
-      position:absolute;
-      left:0;
-      right:0;
-      height:48px;
-      z-index:2;
-      pointer-events:none;
-    }
-
-    .sources-waterfall::before {
-      top:0;
-      background:linear-gradient(to bottom, rgba(13,17,23,1), rgba(13,17,23,0));
-    }
-
-    .sources-waterfall::after {
-      bottom:0;
-      background:linear-gradient(to top, rgba(13,17,23,1), rgba(13,17,23,0));
-    }
-
-    .waterfall-grid {
-      position:relative;
-      z-index:1;
-      display:grid;
-      grid-template-columns:repeat(3, minmax(0,1fr));
-      gap:12px;
-      height:100%;
-    }
-
-    .waterfall-column {
-      overflow:hidden;
-      height:100%;
-      position:relative;
-    }
-
-    .waterfall-track {
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      will-change:transform;
-    }
-
-    .waterfall-column.column-1 .waterfall-track {
-      animation:scrollUp 28s linear infinite;
-    }
-
-    .waterfall-column.column-2 .waterfall-track {
-      animation:scrollDown 32s linear infinite;
-    }
-
-    .waterfall-column.column-3 .waterfall-track {
-      animation:scrollUp 36s linear infinite;
-    }
-
-    @keyframes scrollUp {
-      0% { transform:translateY(0); }
-      100% { transform:translateY(-50%); }
-    }
-
-    @keyframes scrollDown {
-      0% { transform:translateY(-50%); }
-      100% { transform:translateY(0); }
-    }
-
-    .source-chip {
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-height:52px;
-      padding:10px 12px;
-      border-radius:14px;
-      background:rgba(17,24,33,0.92);
-      border:1px solid rgba(210,153,34,0.14);
-      color:#fff;
-      box-shadow:0 10px 24px rgba(0,0,0,0.16);
-      transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-    }
-
-    .source-chip:hover {
-      transform:translateY(-2px);
-      border-color:rgba(210,153,34,0.48);
-      background:rgba(210,153,34,0.08);
-      box-shadow:0 14px 28px rgba(0,0,0,0.24), 0 0 14px rgba(210,153,34,0.10);
-    }
-
-    .source-chip img {
-      width:24px;
-      height:24px;
-      border-radius:6px;
-      object-fit:cover;
-      flex-shrink:0;
-    }
-
-    .source-chip-name {
-      font-size:14px;
-      font-weight:800;
-      line-height:1.3;
-      color:#e6edf3;
-    }
-
-    .source-chip:hover .source-chip-name {
-      color:#ffd780;
-      text-shadow:0 0 10px rgba(210,153,34,0.45);
-    }
-
-    .source-chip-status {
-      margin-left:auto;
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:var(--green);
-      box-shadow:0 0 10px rgba(63,185,80,0.5);
-      flex-shrink:0;
-    }
-
-    .focus-grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-      grid-auto-rows:1fr;
-      gap:12px;
-      margin-top:12px;
-    }
-
-    .dynamic-card {
-      position:relative;
-      overflow:hidden;
-      background:
-        radial-gradient(circle at top right, rgba(210,153,34,0.15), transparent 14rem),
-        linear-gradient(180deg,#101826,#0d131d);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:0 12px 30px rgba(0,0,0,0.18);
-      transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .dynamic-card:hover {
-      transform:translateY(-3px);
-      border-color:rgba(210,153,34,0.45);
-      box-shadow:0 18px 35px rgba(0,0,0,0.26);
-    }
-
-    .mini-card {
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:14px;
-      height:100%;
-    }
-
-    .focus-card {
-      min-height:140px;
-      cursor:pointer;
-      animation:focusFade 0.35s ease both;
-    }
-
-    @keyframes focusFade {
-      from {
-        opacity:0;
-        transform:translateY(8px);
-      }
-      to {
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
-
-    .mini-title {
-      color:#fff;
-      font-weight:900;
-      margin-bottom:8px;
-    }
-
-    .mini-meta {
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.45;
-    }
-
-    .mini-headline {
-      margin-top:10px;
-      font-size:12px;
-      line-height:1.45;
-      color:var(--soft);
-    }
-
-    .focus-open {
-      margin-top:12px;
-      color:#ffffff;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    .action-grid {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-      margin-top:14px;
-    }
-
-    .action-card {
-      padding:20px;
-      color:var(--text);
-    }
-
-    .action-label {
-      display:inline-flex;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.25);
-      color:#f4d17d;
-      font-size:11px;
-      font-weight:900;
-      margin-bottom:12px;
-    }
-
-    .action-card h3 {
-      margin:0 0 8px;
-      color:#fff;
-      font-size:22px;
-    }
-
-    .action-card p {
-      margin:0 0 14px;
-      color:var(--soft);
-      line-height:1.6;
-    }
-
-    .action-cta {
-      color:#fff;
-      font-weight:900;
-      font-size:14px;
-    }
-
-    .action-card:hover .action-cta {
-      color:#ffd780;
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-    }
-
-    .summary-lines {
-      display:grid;
-      gap:10px;
-    }
-
-    .summary-line {
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:14px;
-      color:var(--soft);
-      line-height:1.55;
-    }
-
-    .Bullish { color:var(--green); font-weight:900; }
-    .Bearish { color:var(--red); font-weight:900; }
-    .Mixed, .MixedBullish, .MixedBearish, .MixedNeutral { color:var(--gold); font-weight:900; }
-    .Neutral { color:var(--muted); font-weight:900; }
-
-    .footer {
-      margin-top:20px;
-      padding:24px 0 10px;
-      border-top:1px solid var(--line);
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    .footer-links {
-      display:flex;
-      flex-wrap:wrap;
-      gap:16px;
-      margin-bottom:12px;
-    }
-
-    .footer-links a {
-      color:var(--soft);
-      font-weight:700;
-      padding:6px 8px;
-      border-radius:8px;
-      transition:color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease;
-    }
-
-    .footer-links a:hover {
-      color:#ffffff;
-      background:rgba(210,153,34,0.16);
-      text-shadow:0 0 10px rgba(210,153,34,0.55);
-    }
-
-    .legal {
-      margin-top:12px;
-      background:rgba(248,81,73,0.07);
-      border:1px solid rgba(248,81,73,0.18);
-      border-radius:14px;
-      padding:14px;
-      color:var(--soft);
-      line-height:1.55;
-    }
-
-    @media (max-width:1180px) {
-      .hero,
-      .sources-layout,
-      .grid-3,
-      .action-grid,
-      .hero-points {
-        grid-template-columns:1fr;
-      }
-    }
-
-    @media (max-width:860px) {
-      .waterfall-grid {
-        grid-template-columns:1fr;
-      }
-
-      .waterfall-column.column-2,
-      .waterfall-column.column-3 {
-        display:none;
-      }
-    }
-
-    @media (max-width:760px) {
-      .header {
-        flex-direction:column;
-        align-items:flex-start;
-        padding:14px 18px;
-      }
-
-      .page {
-        padding:18px;
-      }
-
-      .logo {
-        width:60px;
-        height:60px;
-      }
-
-      .nav {
-        gap:8px;
-      }
-
-      .score-ring {
-        width:210px;
-        height:210px;
-      }
-
-      .score-inner {
-        width:154px;
-        height:154px;
-      }
-
-      .score-number {
-        font-size:44px;
-      }
-
-      .brand-stamp {
-        font-size:12px;
-      }
-    }
+      display:grid;place-items:center;margin:8px auto 16px;box-shadow:0 0 32px rgba(210,153,34,.12)
+    }
+    .score-inner{
+      width:170px;height:170px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center
+    }
+    .score-number{font-size:50px;line-height:1;font-weight:950}
+    .score-word{margin-top:8px;font-size:18px;font-weight:900}
+    .score-desc{max-width:370px;color:var(--muted);font-size:13px;line-height:1.55;margin:0 auto}
+    .scale{width:100%;margin-top:16px}
+    .scale-bar{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--red),var(--orange),var(--gold),var(--green))}
+    .scale-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}
+    .metric{padding:18px}
+    .metric-title{color:var(--muted);font-size:13px;font-weight:800;margin-bottom:8px}
+    .metric-value{color:#fff;font-size:26px;font-weight:950}
+    .metric-note{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.45}
+    .section{padding:22px;margin-bottom:18px}
+    .sources-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:stretch}
+    .sources-pill{
+      display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.35);color:#f4d17d;font-size:12px;font-weight:900;margin-bottom:12px
+    }
+    .sources-waterfall{
+      position:relative;overflow:hidden;min-height:430px;height:430px;border:1px solid var(--line);border-radius:18px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.10), transparent 15rem), linear-gradient(180deg,#101826,#0d131d);
+      padding:14px
+    }
+    .sources-waterfall::before,.sources-waterfall::after{
+      content:"";position:absolute;left:0;right:0;height:48px;z-index:2;pointer-events:none
+    }
+    .sources-waterfall::before{top:0;background:linear-gradient(to bottom, rgba(13,17,23,1), rgba(13,17,23,0))}
+    .sources-waterfall::after{bottom:0;background:linear-gradient(to top, rgba(13,17,23,1), rgba(13,17,23,0))}
+    .waterfall-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;height:100%}
+    .waterfall-column{overflow:hidden;height:100%;position:relative}
+    .waterfall-track{display:flex;flex-direction:column;gap:10px;will-change:transform}
+    .waterfall-column.column-1 .waterfall-track{animation:scrollUp 28s linear infinite}
+    .waterfall-column.column-2 .waterfall-track{animation:scrollDown 32s linear infinite}
+    .waterfall-column.column-3 .waterfall-track{animation:scrollUp 36s linear infinite}
+    @keyframes scrollUp{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+    @keyframes scrollDown{0%{transform:translateY(-50%)}100%{transform:translateY(0)}}
+    .source-chip{
+      display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 12px;border-radius:14px;
+      background:rgba(17,24,33,.92);border:1px solid rgba(210,153,34,.14);color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16);transition:.18s ease
+    }
+    .source-chip:hover{transform:translateY(-2px);border-color:rgba(210,153,34,.48);background:rgba(210,153,34,.08);box-shadow:0 14px 28px rgba(0,0,0,.24), 0 0 14px rgba(210,153,34,.10)}
+    .source-chip img{width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0}
+    .source-chip-name{font-size:14px;font-weight:800;line-height:1.3;color:#e6edf3}
+    .source-chip:hover .source-chip-name{color:#ffd780;text-shadow:0 0 10px rgba(210,153,34,.45)}
+    .source-chip-status{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(63,185,80,.5);flex-shrink:0}
+    .summary-lines{display:grid;gap:10px}
+    .summary-line{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--soft);line-height:1.55}
+    .focus-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));grid-auto-rows:1fr;gap:12px;margin-top:12px}
+    .dynamic-card{
+      position:relative;overflow:hidden;background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);
+      border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18);transition:.18s ease
+    }
+    .dynamic-card:hover{transform:translateY(-3px);border-color:rgba(210,153,34,.45);box-shadow:0 18px 35px rgba(0,0,0,.26)}
+    .mini-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;height:100%}
+    .focus-card{min-height:140px;cursor:pointer}
+    .mini-title{color:#fff;font-weight:900;margin-bottom:8px}
+    .mini-meta{color:var(--muted);font-size:13px;line-height:1.45}
+    .mini-headline{margin-top:10px;font-size:12px;line-height:1.45;color:var(--soft)}
+    .focus-open{margin-top:12px;color:#fff;font-size:12px;font-weight:900}
+    .action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:14px}
+    .action-card{padding:20px;color:var(--text)}
+    .action-label{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d;font-size:11px;font-weight:900;margin-bottom:12px}
+    .action-card h3{margin:0 0 8px;color:#fff;font-size:22px}
+    .action-card p{margin:0 0 14px}
+    .action-cta{color:#fff;font-weight:900;font-size:14px}
+    .action-card:hover .action-cta{color:#ffd780;text-shadow:0 0 10px rgba(210,153,34,.55)}
+    .Bullish{color:var(--green);font-weight:900}
+    .Bearish{color:var(--red);font-weight:900}
+    .Mixed,.MixedBullish,.MixedBearish,.MixedNeutral{color:var(--gold);font-weight:900}
+    .Neutral{color:var(--muted);font-weight:900}
+    .footer{margin-top:20px;padding:24px 0 10px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+    .footer-links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px}
+    .footer-links a{color:var(--soft);font-weight:700;padding:6px 8px;border-radius:8px;transition:.18s ease}
+    .footer-links a:hover{color:#fff;background:rgba(210,153,34,.16);text-shadow:0 0 10px rgba(210,153,34,.55)}
+    .legal{margin-top:12px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.18);border-radius:14px;padding:14px;color:var(--soft);line-height:1.55}
+    @media (max-width:1180px){.hero,.sources-layout,.grid-3,.action-grid,.hero-points{grid-template-columns:1fr}}
+    @media (max-width:980px){.header{grid-template-columns:1fr}.header-center{justify-content:flex-start}.nav{justify-content:flex-start}}
+    @media (max-width:860px){.waterfall-grid{grid-template-columns:1fr}.waterfall-column.column-2,.waterfall-column.column-3{display:none}}
+    @media (max-width:760px){.page{padding:18px}.logo{width:60px;height:60px}.brand-stamp,.header-pill{font-size:12px}.score-ring{width:210px;height:210px}.score-inner{width:154px;height:154px}.score-number{font-size:44px}}
   </style>
 </head>
-
 <body>
   <header class="header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
@@ -793,6 +174,10 @@
         <div class="site-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
 
     <nav class="nav">
       <a href="index.html">Home</a>
@@ -808,26 +193,19 @@
   <main class="page">
     <section class="hero">
       <div class="panel hero-copy">
-        <div class="badge">AI-built public market sentiment dashboard</div>
         <h1>Home for Global Market Public Sentiment</h1>
-        <p>
-          <b>Public Sentiment Dash</b> tracks public financial narrative across <b>indexes, bonds, forex, crypto, commodities, and macro themes</b>.
-        </p>
-        <p>
-          The main score below is a <b>global all-markets score</b>. It is not U.S.-only. It reflects the latest published sentiment across the full dashboard universe.
-        </p>
+        <p><b>Public Sentiment Dash</b> tracks public financial narrative across <b>indexes, bonds, forex, crypto, commodities, and macro themes</b>.</p>
+        <p>The main score is a <b>global all-markets score</b>. It is not U.S.-only. It reflects the latest published sentiment across the full dashboard universe.</p>
 
         <div class="hero-points">
           <div class="hero-point">
             <strong>Global Score</strong>
             <span>Fast all-markets public sentiment reading from the latest published scan.</span>
           </div>
-
           <div class="hero-point">
             <strong>Market Focus</strong>
             <span>See which markets and instruments are getting the most attention right now.</span>
           </div>
-
           <div class="hero-point">
             <strong>Interactive Pages</strong>
             <span>Use the separate dashboard and news pages for deeper filtering and browsing.</span>
@@ -848,9 +226,7 @@
           </div>
         </div>
 
-        <div class="score-desc" id="scoreDesc">
-          Loading latest dashboard data...
-        </div>
+        <div class="score-desc" id="scoreDesc">Loading latest dashboard data...</div>
 
         <div class="scale">
           <div class="scale-bar"></div>
@@ -869,13 +245,11 @@
         <div class="metric-value" id="lastUpdated">Loading</div>
         <div class="metric-note">Latest public site update time.</div>
       </div>
-
       <div class="panel metric">
         <div class="metric-title">Relevant Headlines</div>
         <div class="metric-value" id="relevantHeadlines">--</div>
         <div class="metric-note">Published relevant headlines in the latest scan.</div>
       </div>
-
       <div class="panel metric">
         <div class="metric-title">Sources Working</div>
         <div class="metric-value" id="sourcesWorking">--</div>
@@ -885,15 +259,11 @@
 
     <section class="panel section">
       <div class="sources-layout">
-        <div class="sources-copy">
+        <div>
           <div class="sources-pill">These are our sources for sentiment</div>
           <h2>Live Sentiment Sources</h2>
-          <p>
-            We scan trusted public financial and macro sources, organize the headline flow, and turn that public narrative into a cleaner sentiment view.
-          </p>
-          <p class="muted" style="margin:0;">
-            Each source below is clickable. The moving wall updates dynamically from the current source list.
-          </p>
+          <p>We scan trusted public financial and macro sources, organize the headline flow, and turn that public narrative into a cleaner sentiment view.</p>
+          <p style="margin:0;color:var(--muted)">Each source below is clickable. The moving wall updates dynamically from the current source list.</p>
         </div>
 
         <div class="sources-waterfall">
@@ -923,32 +293,25 @@
 
     <section class="panel section">
       <h2>Explore the Site</h2>
-
       <div class="action-grid">
         <a href="dashboard.html" class="action-card dynamic-card">
           <div class="action-label">Main Tool</div>
           <h3>Interactive Dashboard</h3>
-          <p>
-            Filter by market and instrument, compare instruments, view source votes, and browse relevant news based on the chosen scope.
-          </p>
+          <p>Filter by market and instrument, compare instruments, view source votes, and browse relevant news based on the chosen scope.</p>
           <div class="action-cta">Open Dashboard →</div>
         </a>
 
         <a href="news-articles.html" class="action-card dynamic-card">
           <div class="action-label">Search Page</div>
           <h3>News & Articles</h3>
-          <p>
-            Browse all published relevant articles and search by keyword, source, market, and instrument.
-          </p>
+          <p>Browse all published relevant articles and search by keyword, source, market, and instrument.</p>
           <div class="action-cta">Open News & Articles →</div>
         </a>
 
         <a href="market-sentiment.html" class="action-card dynamic-card">
           <div class="action-label">Learning</div>
           <h3>Guides</h3>
-          <p>
-            Read the educational pages covering market sentiment, forex sentiment, crypto sentiment, stocks, and commodities.
-          </p>
+          <p>Read the educational pages covering market sentiment, forex sentiment, crypto sentiment, stocks, and commodities.</p>
           <div class="action-cta">Open Guides →</div>
         </a>
       </div>
@@ -966,7 +329,7 @@
       </div>
 
       <div class="legal">
-        <b>Disclaimer:</b> This website is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset. Market sentiment and technical direction can be incomplete, delayed, inaccurate, or misinterpreted.
+        <b>Disclaimer:</b> This website is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
       </div>
 
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
@@ -976,147 +339,112 @@
   <script>
     let dashboardData = null;
 
-    function escapeHTML(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    function escapeHTML(value){
+      return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
     }
 
-    function normalizeClass(value) {
+    function normalizeClass(value){
       const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
       return clean || "Neutral";
     }
 
-    function voteToScore(vote) {
+    function voteToScore(vote){
       const v = String(vote || "").toLowerCase();
-
-      if (v.includes("bullish") && !v.includes("bearish")) return 100;
-      if (v.includes("bearish") && !v.includes("bullish")) return 0;
-      if (v.includes("mixed")) return 55;
-
+      if(v.includes("bullish") && !v.includes("bearish")) return 100;
+      if(v.includes("bearish") && !v.includes("bullish")) return 0;
+      if(v.includes("mixed")) return 55;
       return 50;
     }
 
-    function scoreLabel(score) {
-      if (score >= 70) return "Bullish";
-      if (score <= 30) return "Bearish";
-      if (score >= 56) return "Mixed/Bullish";
-      if (score <= 44) return "Mixed/Bearish";
-
+    function scoreLabel(score){
+      if(score >= 70) return "Bullish";
+      if(score <= 30) return "Bearish";
+      if(score >= 56) return "Mixed/Bullish";
+      if(score <= 44) return "Mixed/Bearish";
       return "Mixed/Neutral";
     }
 
-    function scoreColor(score) {
-      if (score >= 70) return "var(--green)";
-      if (score <= 30) return "var(--red)";
+    function scoreColor(score){
+      if(score >= 70) return "var(--green)";
+      if(score <= 30) return "var(--red)";
       return "var(--gold)";
     }
 
-    function calculateGlobalScore(data) {
+    function calculateGlobalScore(data){
       const sources = Array.isArray(data.sources) ? data.sources : [];
-
-      if (!sources.length) return 50;
-
-      let totalWeight = 0;
-      let weightedScore = 0;
-
+      if(!sources.length) return 50;
+      let totalWeight = 0, weightedScore = 0;
       sources.forEach(source => {
         const weight = Number(source.weight || 1);
         weightedScore += voteToScore(source.vote) * weight;
         totalWeight += weight;
       });
-
       return totalWeight ? Math.round(weightedScore / totalWeight) : 50;
     }
 
-    function renderScore(data) {
+    function renderScore(data){
       const score = calculateGlobalScore(data);
       const label = scoreLabel(score);
-
       const ring = document.getElementById("scoreRing");
       ring.style.setProperty("--score", score);
       ring.style.setProperty("--accent", scoreColor(score));
-
       document.getElementById("scoreNumber").textContent = score;
       document.getElementById("scoreWord").textContent = label;
       document.getElementById("scoreWord").className = "score-word " + normalizeClass(label);
-      document.getElementById("scoreDesc").textContent =
-        "This is the global all-markets score. It includes the full dashboard universe, not only U.S. markets.";
+      document.getElementById("scoreDesc").textContent = "This is the global all-markets score. It includes the full dashboard universe, not only U.S. markets.";
     }
 
-    function renderStats(data) {
+    function renderStats(data){
       const trust = data.trust_layer || {};
-
       document.getElementById("lastUpdated").textContent = data.updated_ny || "N/A";
-      document.getElementById("relevantHeadlines").textContent =
-        trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
-      document.getElementById("sourcesWorking").textContent =
-        `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
+      document.getElementById("relevantHeadlines").textContent = trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
+      document.getElementById("sourcesWorking").textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
     }
 
-    function renderDailySummary(data) {
+    function renderDailySummary(data){
       const items = Array.isArray(data.daily_summary) ? data.daily_summary : [];
-
       document.getElementById("dailySummary").innerHTML = items.length
         ? items.map(item => `<div class="summary-line">${escapeHTML(item)}</div>`).join("")
         : `<div class="summary-line">No daily summary available yet.</div>`;
     }
 
-    function focusCard(item, type, index) {
+    function focusCard(item, type){
       const headline = Array.isArray(item.headlines) && item.headlines[0] ? item.headlines[0] : null;
-
       return `
-        <div class="mini-card dynamic-card focus-card" style="animation-delay:${Math.min(index * 0.04,0.4)}s;" onclick="window.location.href='dashboard.html'">
+        <div class="mini-card dynamic-card focus-card" onclick="window.location.href='dashboard.html'">
           <div class="mini-title">${escapeHTML(item.name || "Unknown")}</div>
-          <div class="mini-meta">
-            ${escapeHTML(type)} • ${escapeHTML(item.count ?? 0)} mentions •
-            <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
-          </div>
+          <div class="mini-meta">${escapeHTML(type)} • ${escapeHTML(item.count ?? 0)} mentions • <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span></div>
           ${headline ? `<div class="mini-headline">${escapeHTML(headline.title || "")}</div>` : ""}
           <div class="focus-open">Open dashboard →</div>
         </div>
       `;
     }
 
-    function renderMarketFocus(data) {
+    function renderMarketFocus(data){
       const focus = data.top_market_focus || {};
       const markets = Array.isArray(focus.top_markets) ? focus.top_markets : [];
       const instruments = Array.isArray(focus.top_instruments) ? focus.top_instruments : [];
       const cards = [];
-
       markets.slice(0,4).forEach(item => cards.push({ item, type:"Market" }));
       instruments.slice(0,4).forEach(item => cards.push({ item, type:"Instrument" }));
-
       document.getElementById("marketFocus").innerHTML = cards.length
-        ? cards.map((card,index) => focusCard(card.item, card.type, index)).join("")
+        ? cards.map(card => focusCard(card.item, card.type)).join("")
         : `<div class="mini-card dynamic-card focus-card">No market focus data available.</div>`;
     }
 
-    function domainFromURL(url) {
-      try {
-        return new URL(url).hostname.replace(/^www\./, "");
-      } catch (e) {
-        return "";
-      }
+    function domainFromURL(url){
+      try { return new URL(url).hostname.replace(/^www\./, ""); } catch(e){ return ""; }
     }
 
-    function chunkIntoColumns(items, columnCount) {
+    function chunkIntoColumns(items, columnCount){
       const cols = Array.from({ length: columnCount }, () => []);
-      items.forEach((item, index) => {
-        cols[index % columnCount].push(item);
-      });
+      items.forEach((item, index) => cols[index % columnCount].push(item));
       return cols;
     }
 
-    function sourceChip(source) {
+    function sourceChip(source){
       const domain = domainFromURL(source.url || "");
-      const favicon = domain
-        ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
-        : "";
-
+      const favicon = domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
       return `
         <a class="source-chip" href="${escapeHTML(source.url || "#")}" target="_blank" rel="noopener">
           ${favicon ? `<img src="${favicon}" alt="${escapeHTML(source.name || "Source")} logo" loading="lazy">` : ""}
@@ -1126,46 +454,35 @@
       `;
     }
 
-    function renderSourcesWaterfall(data) {
+    function renderSourcesWaterfall(data){
       const sources = Array.isArray(data.sources) ? data.sources.filter(s => s.name && s.url) : [];
       const fallback = document.getElementById("sourcesWaterfall");
-
-      if (!sources.length) {
-        fallback.innerHTML = `<div class="muted">Source list unavailable.</div>`;
+      if(!sources.length){
+        fallback.innerHTML = `<div style="color:var(--muted)">Source list unavailable.</div>`;
         return;
       }
-
       const cols = chunkIntoColumns(sources, 3);
       const columns = fallback.querySelectorAll(".waterfall-track");
-
       columns.forEach((track, index) => {
         const list = cols[index] && cols[index].length ? cols[index] : sources;
-        const doubled = [...list, ...list];
-        track.innerHTML = doubled.map(sourceChip).join("");
+        track.innerHTML = [...list, ...list].map(sourceChip).join("");
       });
     }
 
-    async function loadPage() {
-      try {
+    async function loadPage(){
+      try{
         const res = await fetch("dashboard_data.json", { cache:"no-store" });
         dashboardData = await res.json();
-
         renderScore(dashboardData);
         renderStats(dashboardData);
         renderDailySummary(dashboardData);
         renderMarketFocus(dashboardData);
         renderSourcesWaterfall(dashboardData);
-      } catch (error) {
+      } catch(error){
         console.error(error);
-
-        document.getElementById("dailySummary").innerHTML =
-          `<div class="summary-line">Dashboard data could not be loaded right now.</div>`;
-
-        document.getElementById("marketFocus").innerHTML =
-          `<div class="mini-card dynamic-card focus-card">Dashboard data could not be loaded right now.</div>`;
-
-        document.getElementById("sourcesWaterfall").innerHTML =
-          `<div class="muted">Source list could not be loaded right now.</div>`;
+        document.getElementById("dailySummary").innerHTML = `<div class="summary-line">Dashboard data could not be loaded right now.</div>`;
+        document.getElementById("marketFocus").innerHTML = `<div class="mini-card dynamic-card focus-card">Dashboard data could not be loaded right now.</div>`;
+        document.getElementById("sourcesWaterfall").innerHTML = `<div style="color:var(--muted)">Source list could not be loaded right now.</div>`;
       }
     }
 
