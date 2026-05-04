@@ -3,124 +3,190 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Contact Us — PublicSentimentDash</title>
-  <meta name="description" content="Contact PublicSentimentDash. Send your message, question, feedback, or inquiry.">
+  <meta name="description" content="Contact PublicSentimentDash. Send your message, question, feedback, bug report, or inquiry.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/contact.html">
   <link rel="icon" type="image/png" href="logo.png">
 
   <style>
+    :root {
+      --bg: #05070b;
+      --panel: #0d1117;
+      --card: #111821;
+      --line: #263241;
+      --text: #e6edf3;
+      --soft: #c9d1d9;
+      --muted: #8b949e;
+      --gold: #d29922;
+      --gold2: #f0b72f;
+      --green: #3fb950;
+      --red: #f85149;
+      --blue: #58a6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-      background: #05070b;
-      color: #e6edf3;
       margin: 0;
-      padding: 0;
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(210,153,34,0.10), transparent 33rem),
+        radial-gradient(circle at top right, rgba(88,166,255,0.08), transparent 32rem),
+        var(--bg);
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
 
     .header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 28px;
-      border-bottom: 1px solid #1f2937;
-      background: #070a10;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      gap: 18px;
+      padding: 14px 26px;
+      background: rgba(6, 9, 15, 0.95);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand:hover {
+      text-decoration: none;
     }
 
     .logo {
-      width: 82px;
-      height: 82px;
+      width: 68px;
+      height: 68px;
       object-fit: contain;
       border-radius: 12px;
-      background: transparent;
-      box-shadow: 0 0 16px rgba(218, 165, 32, 0.18);
+      box-shadow: 0 0 18px rgba(210,153,34,0.18);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .brand:hover .logo {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(210,153,34,0.30);
     }
 
     .site-title {
-      color: #e6edf3;
       font-size: 22px;
-      font-weight: 700;
+      font-weight: 900;
     }
 
-    .header-actions {
+    .site-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
+      gap: 18px;
+      align-items: center;
+      justify-content: flex-end;
     }
 
-    .action-btn {
-      color: #05070b;
-      background: #d29922;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 14px;
+    .nav a {
+      color: var(--soft);
+      font-size: 15px;
       font-weight: 700;
-      text-decoration: none;
-      border: 0;
-      cursor: pointer;
-      display: inline-block;
     }
 
-    .action-btn:hover {
-      background: #f0b72f;
+    .nav a:hover {
+      color: #ffffff;
       text-decoration: none;
     }
 
     .page {
-      max-width: 980px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 28px;
+      padding: 26px;
+    }
+
+    .hero,
+    .card {
+      background: rgba(13,17,23,0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.20);
+      margin-bottom: 18px;
     }
 
     .hero {
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 22px;
-      line-height: 1.7;
+      padding: 28px;
     }
 
     .badge {
       display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(210, 153, 34, 0.12);
-      border: 1px solid rgba(210, 153, 34, 0.35);
+      padding: 7px 12px;
       border-radius: 999px;
-      padding: 8px 14px;
-      color: #f6d78b;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 14px;
+      background: rgba(210,153,34,0.12);
+      border: 1px solid rgba(210,153,34,0.35);
+      color: #f4d17d;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 16px;
     }
 
-    .hero h1 {
-      margin: 0 0 8px 0;
-      font-size: 30px;
-      color: #ffffff;
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(32px, 4vw, 50px);
+      line-height: 1.05;
+      letter-spacing: -1px;
     }
 
-    .hero p {
-      margin: 8px 0;
-      color: #c9d1d9;
+    h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
     }
 
-    .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 20px;
+    p,
+    li {
+      color: var(--soft);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .helper {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .contact-form {
+      display: grid;
+      gap: 14px;
     }
 
     .form-grid {
@@ -130,10 +196,8 @@
     }
 
     .field {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 16px;
+      display: grid;
+      gap: 7px;
     }
 
     .field.full {
@@ -142,25 +206,27 @@
 
     label {
       color: #ffffff;
+      font-weight: 800;
       font-size: 14px;
-      font-weight: 600;
     }
 
-    input, textarea {
+    input,
+    textarea {
       width: 100%;
-      box-sizing: border-box;
-      background: #0d1117;
-      color: #e6edf3;
-      border: 1px solid #30363d;
-      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
       padding: 13px 14px;
       font-size: 15px;
       outline: none;
+      font-family: inherit;
     }
 
-    input:focus, textarea:focus {
-      border-color: #d29922;
-      box-shadow: 0 0 0 2px rgba(210, 153, 34, 0.15);
+    input:focus,
+    textarea:focus {
+      border-color: rgba(210,153,34,0.65);
+      box-shadow: 0 0 0 3px rgba(210,153,34,0.12);
     }
 
     textarea {
@@ -168,35 +234,27 @@
       resize: vertical;
     }
 
-    .helper {
-      color: #8b949e;
-      font-size: 13px;
-      line-height: 1.5;
-      margin-bottom: 18px;
-    }
-
     .submit-row {
       display: flex;
       align-items: center;
       gap: 14px;
       flex-wrap: wrap;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .submit-btn {
-      color: #05070b;
-      background: #d29922;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      text-decoration: none;
       border: 0;
       cursor: pointer;
+      padding: 13px 20px;
+      border-radius: 999px;
+      background: var(--gold);
+      color: #05070b;
+      font-weight: 950;
+      font-size: 15px;
     }
 
     .submit-btn:hover {
-      background: #f0b72f;
+      background: var(--gold2);
     }
 
     .submit-btn:disabled {
@@ -210,144 +268,267 @@
     }
 
     .status.success {
-      color: #3fb950;
+      color: var(--green);
+      font-weight: 800;
     }
 
     .status.error {
-      color: #f85149;
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .info-box,
+    .note {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .info-title {
+      color: #ffffff;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .info-text {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .note {
+      color: var(--soft);
+      line-height: 1.6;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+
+    .warning {
+      background: rgba(248,81,73,0.08);
+      border: 1px solid rgba(248,81,73,0.22);
+    }
+
+    .footer {
+      margin-top: 20px;
+      padding: 24px 0 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: var(--soft);
+      font-weight: 700;
     }
 
     .legal {
-      color: #8b949e;
-      font-size: 12px;
-      line-height: 1.6;
+      margin-top: 12px;
+      background: rgba(248,81,73,0.07);
+      border: 1px solid rgba(248,81,73,0.18);
+      border-radius: 14px;
+      padding: 14px;
+      color: var(--soft);
+      line-height: 1.55;
     }
 
-    .footer-note {
-      text-align: center;
-      color: #8b949e;
-      font-size: 13px;
-      margin: 24px 0 10px 0;
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 760px) {
       .header {
         flex-direction: column;
-        gap: 12px;
         align-items: flex-start;
-      }
-
-      .site-title {
-        font-size: 18px;
-      }
-
-      .logo {
-        width: 70px;
-        height: 70px;
+        padding: 14px 18px;
       }
 
       .page {
         padding: 18px;
       }
 
-      .hero h1 {
-        font-size: 24px;
+      .logo {
+        width: 60px;
+        height: 60px;
+      }
+
+      .nav {
+        gap: 14px;
       }
 
       .form-grid {
         grid-template-columns: 1fr;
       }
+
+      .field.full {
+        grid-column: auto;
+      }
+
+      .submit-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
+
 <body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to PublicSentimentDash home page">
+      <img src="logo.png" alt="PublicSentimentDash Logo" class="logo">
+      <div>
+        <div class="site-title">PublicSentimentDash</div>
+        <div class="site-subtitle">Get in touch</div>
+      </div>
+    </a>
 
-  <div class="header">
-    <div class="brand">
-      <img src="logo.png" alt="PublicSentimentDash Ha-Lion Logo" class="logo">
-      <div class="site-title">PublicSentimentDash</div>
-    </div>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="about.html">About</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="contact.html">Get in Touch</a>
+    </nav>
+  </header>
 
-    <div class="header-actions">
-      <a class="action-btn" href="index.html">Dashboard</a>
-      <a class="action-btn" href="about.html">About</a>
-      <a class="action-btn" href="how-it-works.html">How It Works</a>
-      <a class="action-btn" href="market-sentiment.html">Guides</a>
-    </div>
-  </div>
-
-  <div class="page">
-
-    <div class="hero">
-      <div class="badge">✨ Constantly learning &amp; improving</div>
-      <h1>Contact Us</h1>
+  <main class="page">
+    <section class="hero">
+      <div class="badge">Contact</div>
+      <h1>Get in Touch</h1>
       <p>
-        Have a question, suggestion, bug report, partnership idea, or general feedback?
+        Have a question, suggestion, bug report, partnership idea, data-quality concern, or general feedback?
       </p>
       <p>
-        Fill out the form below and send us a message.
+        Fill out the form below and send a message. Required fields are first name, last name, email, and message. Phone is optional.
       </p>
-    </div>
+    </section>
 
-    <div class="card">
-      <div class="helper">
-        Required: first name, last name, email, and message. Phone is optional.
+    <section class="layout">
+      <div class="card">
+        <h2>Contact Form</h2>
+
+        <div class="helper">
+          Your message will be sent securely through the site contact form.
+        </div>
+
+        <form id="contactForm" class="contact-form">
+          <div class="form-grid">
+            <div class="field">
+              <label for="first_name">First Name *</label>
+              <input type="text" id="first_name" name="first_name" autocomplete="given-name" required>
+            </div>
+
+            <div class="field">
+              <label for="last_name">Last Name *</label>
+              <input type="text" id="last_name" name="last_name" autocomplete="family-name" required>
+            </div>
+
+            <div class="field">
+              <label for="email">Email Address *</label>
+              <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone Optional</label>
+              <input type="tel" id="phone" name="phone" autocomplete="tel">
+            </div>
+
+            <div class="field full">
+              <label for="message">Message *</label>
+              <textarea id="message" name="message" required></textarea>
+            </div>
+          </div>
+
+          <input type="hidden" name="_subject" value="New Contact Us message from PublicSentimentDash">
+
+          <div class="submit-row">
+            <button type="submit" class="submit-btn" id="submitBtn">Submit Message</button>
+            <div id="formStatus" class="status"></div>
+          </div>
+        </form>
+
+        <div class="note warning">
+          <b>Privacy note:</b> Please do not send passwords, account secrets, private trading account information, brokerage credentials, API keys, or highly sensitive financial information through this form.
+        </div>
       </div>
 
-      <form id="contactForm">
-        <div class="form-grid">
-          <div class="field">
-            <label for="first_name">First Name *</label>
-            <input type="text" id="first_name" name="first_name" required>
+      <aside class="card">
+        <h2>Good Reasons to Reach Out</h2>
+
+        <div class="info-list">
+          <div class="info-box">
+            <div class="info-title">Bug Reports</div>
+            <div class="info-text">
+              Report broken links, dashboard display issues, missing data, source problems, or search/filter issues.
+            </div>
           </div>
 
-          <div class="field">
-            <label for="last_name">Last Name *</label>
-            <input type="text" id="last_name" name="last_name" required>
+          <div class="info-box">
+            <div class="info-title">Feature Ideas</div>
+            <div class="info-text">
+              Suggest better filters, market coverage, sentiment tools, visualizations, dashboards, or research pages.
+            </div>
           </div>
 
-          <div class="field">
-            <label for="email">Email Address *</label>
-            <input type="email" id="email" name="email" required>
+          <div class="info-box">
+            <div class="info-title">Data Quality Feedback</div>
+            <div class="info-text">
+              Share examples where a headline, source vote, market, instrument, or sentiment label looks inaccurate.
+            </div>
           </div>
 
-          <div class="field">
-            <label for="phone">Phone (Optional)</label>
-            <input type="text" id="phone" name="phone">
-          </div>
-
-          <div class="field full">
-            <label for="message">Message *</label>
-            <textarea id="message" name="message" required></textarea>
+          <div class="info-box">
+            <div class="info-title">Partnerships</div>
+            <div class="info-text">
+              Use the form for collaboration, media, or business-related messages.
+            </div>
           </div>
         </div>
+      </aside>
+    </section>
 
-        <input type="hidden" name="_subject" value="New Contact Us message from PublicSentimentDash">
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="about.html">About</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms & Disclaimer</a>
+      </div>
 
-        <div class="submit-row">
-          <button type="submit" class="submit-btn" id="submitBtn">Submit</button>
-          <div id="formStatus" class="status"></div>
-        </div>
-      </form>
-    </div>
+      <div class="legal">
+        <b>Disclaimer:</b> PublicSentimentDash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
 
-    <div class="card legal">
-      <b>Privacy note:</b> Please do not send passwords, account secrets, private trading account information, or highly sensitive financial information through this form.
-    </div>
-
-    <div class="footer-note">
-      © 2026 PublicSentimentDash. All rights reserved. Powered by Ha-Lion Public Sentiment Engine.
-    </div>
-
-  </div>
+      <p>© 2026 PublicSentimentDash. All rights reserved. Powered by Ha-Lion Public Sentiment Engine.</p>
+    </footer>
+  </main>
 
   <script>
     const form = document.getElementById("contactForm");
     const submitBtn = document.getElementById("submitBtn");
     const formStatus = document.getElementById("formStatus");
 
-    form.addEventListener("submit", async function (e) {
-      e.preventDefault();
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
 
       submitBtn.disabled = true;
       submitBtn.textContent = "Sending...";
@@ -379,7 +560,7 @@
       }
 
       submitBtn.disabled = false;
-      submitBtn.textContent = "Submit";
+      submitBtn.textContent = "Submit Message";
     });
   </script>
 </body>
