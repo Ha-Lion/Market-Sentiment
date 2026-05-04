@@ -12,44 +12,287 @@
   <link rel="stylesheet" href="site.css">
 
   <style>
-    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
-    input[type="text"],select{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;font-weight:400}
-    input[type="text"]:focus,select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
-    input[type="text"]{min-width:320px;flex:1 1 320px}
-    select{min-width:220px}
-    .btn{border:0;cursor:pointer;border-radius:999px;padding:12px 16px;background:var(--gold);color:#05070b;font-weight:600;font-size:14px;transition:.18s ease}
-    .btn:hover{background:var(--gold2);transform:translateY(-1px)}
-    .btn.secondary{background:transparent;color:var(--soft);border:1px solid var(--line)}
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      margin-top:16px;
+    }
 
-    .source-summary{display:none;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(17,24,33,.62)}
-    .source-summary-title{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:10px}
-    .source-summary-list{display:flex;flex-wrap:wrap;gap:10px}
-    .source-summary-link{display:inline-flex;align-items:center;gap:7px;color:var(--blue);font-size:13px;font-weight:500;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.15)}
-    .source-summary-link:hover{color:#fff;background:rgba(210,153,34,.12);border-color:rgba(210,153,34,.30)}
-    .source-summary-link img{width:16px;height:16px;border-radius:4px}
+    input[type="text"],select{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:15px;
+      outline:none;
+      font-weight:400;
+    }
 
-    .count-note{color:var(--muted);font-size:13px;margin-bottom:14px;font-weight:400}
-    .headline-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}
-    .headline-card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:320px;background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18);transition:.18s ease;color:var(--text);padding:16px}
-    .headline-card:hover{transform:translateY(-3px);border-color:rgba(210,153,34,.45);box-shadow:0 18px 35px rgba(0,0,0,.26)}
-    .headline-source-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-    .headline-source-icon{width:24px;height:24px;border-radius:6px;object-fit:cover;background:#fff;flex-shrink:0}
-    .headline-source-name{color:#fff;font-size:13px;font-weight:600}
-    .headline-body{display:flex;flex-direction:column;gap:10px;height:100%}
-    .headline-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:12px}
-    .tag,.impact-tag,.tech-tag{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:500}
-    .tag{background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff}
-    .impact-tag{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
-    .tech-tag{background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.20);color:#c9f5ce}
-    .headline-title{color:#fff;font-size:20px;font-weight:500;line-height:1.45;margin-top:2px}
-    .headline-meta{color:var(--muted);font-size:12px;line-height:1.55;font-weight:400}
-    .headline-open{margin-top:auto;color:#fff;font-size:13px;font-weight:500}
-    .empty-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;color:var(--soft);line-height:1.6;font-weight:400}
-    .cache-note{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
-    .page-up{position:fixed;right:22px;bottom:22px;z-index:50;display:none;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;border:1px solid rgba(210,153,34,.45);background:rgba(13,17,23,.94);color:#ffd780;font-size:22px;font-weight:500;cursor:pointer;box-shadow:0 0 22px rgba(210,153,34,.18);transition:.18s ease}
-    .page-up:hover{transform:translateY(-3px);background:rgba(210,153,34,.18)}
-    .page-up.show{display:flex}
-    @media(max-width:760px){input[type="text"],select,.btn{min-width:100%;width:100%}.headline-list{grid-template-columns:1fr}}
+    input[type="text"]:focus,select:focus{
+      border-color:rgba(210,153,34,.65);
+      box-shadow:0 0 0 3px rgba(210,153,34,.10);
+    }
+
+    input[type="text"]{
+      min-width:320px;
+      flex:1 1 320px;
+    }
+
+    select{
+      min-width:220px;
+    }
+
+    .btn{
+      border:0;
+      cursor:pointer;
+      border-radius:999px;
+      padding:12px 16px;
+      background:var(--gold);
+      color:#05070b;
+      font-weight:600;
+      font-size:14px;
+      transition:.18s ease;
+    }
+
+    .btn:hover{
+      background:var(--gold2);
+      transform:translateY(-1px);
+    }
+
+    .btn.secondary{
+      background:transparent;
+      color:var(--soft);
+      border:1px solid var(--line);
+    }
+
+    .source-summary{
+      display:none;
+      margin-top:14px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:rgba(17,24,33,.62);
+    }
+
+    .source-summary-title{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:500;
+      margin-bottom:10px;
+    }
+
+    .source-summary-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
+    .source-summary-link{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      color:var(--blue);
+      font-size:13px;
+      font-weight:500;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(88,166,255,.08);
+      border:1px solid rgba(88,166,255,.15);
+    }
+
+    .source-summary-link:hover{
+      color:#fff;
+      background:rgba(210,153,34,.12);
+      border-color:rgba(210,153,34,.30);
+    }
+
+    .source-summary-link img{
+      width:16px;
+      height:16px;
+      border-radius:4px;
+    }
+
+    .count-note{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:14px;
+      font-weight:400;
+    }
+
+    .headline-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+      gap:16px;
+    }
+
+    .headline-card{
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:320px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 12px 30px rgba(0,0,0,.18);
+      transition:.18s ease;
+      color:var(--text);
+      padding:16px;
+    }
+
+    .headline-card:hover{
+      transform:translateY(-3px);
+      border-color:rgba(210,153,34,.45);
+      box-shadow:0 18px 35px rgba(0,0,0,.26);
+    }
+
+    .headline-source-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .headline-source-icon{
+      width:24px;
+      height:24px;
+      border-radius:6px;
+      object-fit:cover;
+      background:#fff;
+      flex-shrink:0;
+    }
+
+    .headline-source-name{
+      color:#fff;
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .headline-body{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      height:100%;
+    }
+
+    .headline-top{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .tag,.impact-tag,.tech-tag{
+      display:inline-flex;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:500;
+    }
+
+    .tag{
+      background:rgba(88,166,255,.12);
+      border:1px solid rgba(88,166,255,.20);
+      color:#b9d9ff;
+    }
+
+    .impact-tag{
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.25);
+      color:#f4d17d;
+    }
+
+    .tech-tag{
+      background:rgba(63,185,80,.10);
+      border:1px solid rgba(63,185,80,.20);
+      color:#c9f5ce;
+    }
+
+    .headline-title{
+      color:#fff;
+      font-size:20px;
+      font-weight:500;
+      line-height:1.45;
+      margin-top:2px;
+    }
+
+    .headline-meta{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.55;
+      font-weight:400;
+    }
+
+    .headline-open{
+      margin-top:auto;
+      color:#fff;
+      font-size:13px;
+      font-weight:500;
+    }
+
+    .empty-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      color:var(--soft);
+      line-height:1.6;
+      font-weight:400;
+    }
+
+    .cache-note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .page-up{
+      position:fixed;
+      right:22px;
+      bottom:22px;
+      z-index:50;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      width:46px;
+      height:46px;
+      border-radius:50%;
+      border:1px solid rgba(210,153,34,.45);
+      background:rgba(13,17,23,.94);
+      color:#ffd780;
+      font-size:22px;
+      font-weight:500;
+      cursor:pointer;
+      box-shadow:0 0 22px rgba(210,153,34,.18);
+      transition:.18s ease;
+    }
+
+    .page-up:hover{
+      transform:translateY(-3px);
+      background:rgba(210,153,34,.18);
+    }
+
+    .page-up.show{
+      display:flex;
+    }
+
+    @media(max-width:760px){
+      input[type="text"],select,.btn{
+        min-width:100%;
+        width:100%;
+      }
+
+      .headline-list{
+        grid-template-columns:1fr;
+      }
+    }
   </style>
 </head>
 
@@ -68,13 +311,13 @@
     </div>
 
     <nav class="nav">
-      <a href="index.html">Home</a>
       <a href="dashboard.html">Interactive Dashboard</a>
       <a href="news-articles.html" class="active">News & Articles</a>
-      <a href="about.html">About</a>
-      <a href="how-it-works.html">How it works</a>
       <a href="market-sentiment.html">Guides</a>
       <a href="contact.html">Get in Touch</a>
+      <a href="how-it-works.html">Dashboard Works</a>
+      <a href="about.html">About</a>
+
       <div class="social-links">
         <span class="social-label">Follow us</span>
         <span class="social-pill">X</span>
@@ -104,8 +347,13 @@
           <option value="stocks">Stocks / Company News</option>
         </select>
 
-        <select id="instrumentFilter"><option value="all">All Instruments</option></select>
-        <select id="sourceFilter"><option value="all">All Sources</option></select>
+        <select id="instrumentFilter">
+          <option value="all">All Instruments</option>
+        </select>
+
+        <select id="sourceFilter">
+          <option value="all">All Sources</option>
+        </select>
 
         <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
         <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
@@ -125,13 +373,12 @@
 
     <footer class="footer">
       <div class="footer-links">
-        <a href="index.html">Home</a>
         <a href="dashboard.html">Interactive Dashboard</a>
         <a href="news-articles.html" class="active">News & Articles</a>
-        <a href="about.html">About</a>
-        <a href="how-it-works.html">How it works</a>
         <a href="market-sentiment.html">Guides</a>
         <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">Dashboard Works</a>
+        <a href="about.html">About</a>
       </div>
 
       <div class="legal">
@@ -170,10 +417,17 @@
       stocks:["Stocks / Company News","Airlines","Banks","Technology Stocks","Energy Stocks","Retail Stocks","Market Movers"]
     };
 
-    function allInstruments(){ return [...new Set(Object.values(instrumentGroups).flat())]; }
+    function allInstruments(){
+      return [...new Set(Object.values(instrumentGroups).flat())];
+    }
 
     function escapeHTML(value){
-      return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
     function normalizeClass(value){
@@ -181,8 +435,11 @@
     }
 
     function domainFromURL(url){
-      try { return new URL(url).hostname.replace(/^www\./, ""); }
-      catch(e){ return ""; }
+      try{
+        return new URL(url).hostname.replace(/^www\./, "");
+      }catch(e){
+        return "";
+      }
     }
 
     function faviconForURL(url){
@@ -197,27 +454,42 @@
 
     function getTechnicalEntry(name){
       if(!technicalData) return null;
+
       const root = technicalData.technical || technicalData;
+
       if(!root || !name) return null;
-      if(Array.isArray(root)) return root.find(item => String(item.instrument || item.name || item.symbol || "") === name) || null;
+
+      if(Array.isArray(root)){
+        return root.find(item => String(item.instrument || item.name || item.symbol || "") === name) || null;
+      }
+
       return root[name] || null;
     }
 
     function extractTechLabel(entry){
       if(!entry) return "N/A";
+
       const daily = entry.daily || entry.Daily;
+
       if(typeof daily === "string") return daily;
-      if(typeof daily === "object" && daily) return daily.direction || daily.signal || daily.label || daily.trend || daily.value || "N/A";
+
+      if(typeof daily === "object" && daily){
+        return daily.direction || daily.signal || daily.label || daily.trend || daily.value || "N/A";
+      }
+
       return "N/A";
     }
 
     function headlineTech(item){
       const instruments = Array.isArray(item?.instruments) ? item.instruments : [];
+
       for(const name of instruments){
         const entry = getTechnicalEntry(name);
         const daily = extractTechLabel(entry);
+
         if(daily !== "N/A") return `Tech Daily: ${daily}`;
       }
+
       return "Tech Daily: N/A";
     }
 
@@ -234,7 +506,9 @@
 
       items.forEach(item => {
         const key = `${String(item.link || "").toLowerCase()}__${String(item.title || "").toLowerCase()}`;
+
         if(!item.title || seen.has(key)) return;
+
         seen.add(key);
         output.push(item);
       });
@@ -305,11 +579,16 @@
       }
 
       box.style.display = "block";
+
       list.innerHTML = sourceNames.map(name => {
         const sample = headlines.find(h => h.source === name);
         const url = sourceURL(name) || sample?.source_url || sample?.link || "#";
         const icon = faviconForURL(url);
-        return `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo">` : ""}<span>${escapeHTML(name)}</span></a>`;
+
+        return `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">
+          ${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo">` : ""}
+          <span>${escapeHTML(name)}</span>
+        </a>`;
       }).join("");
     }
 
@@ -317,10 +596,13 @@
       if(!dashboardData) return;
 
       const headlines = filteredHeadlines();
+
       renderSourceSummary(headlines);
 
       const cacheInfo = allArticles.length ? ` Searching ${allArticles.length} cached article(s).` : "";
-      document.getElementById("resultsCount").textContent = `${headlines.length} article(s) matched your search and filters.${cacheInfo}`;
+
+      document.getElementById("resultsCount").textContent =
+        `${headlines.length} article(s) matched your search and filters.${cacheInfo}`;
 
       document.getElementById("headlineList").innerHTML = headlines.length
         ? headlines.slice(0,300).map(item => {
@@ -330,11 +612,26 @@
 
             return `
               <a class="headline-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
-                <div class="headline-source-row">${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}<div class="headline-source-name">${escapeHTML(item.source || "Source")}</div></div>
+                <div class="headline-source-row">
+                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}
+                  <div class="headline-source-name">${escapeHTML(item.source || "Source")}</div>
+                </div>
+
                 <div class="headline-body">
-                  <div class="headline-top"><span class="tech-tag ${normalizeClass(techLabel)}">${escapeHTML(techLabel)}</span><span class="tag">${escapeHTML(item.vote || "Neutral")}</span><span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span></div>
+                  <div class="headline-top">
+                    <span class="tech-tag ${normalizeClass(techLabel)}">${escapeHTML(techLabel)}</span>
+                    <span class="tag">${escapeHTML(item.vote || "Neutral")}</span>
+                    <span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span>
+                  </div>
+
                   <div class="headline-title">${escapeHTML(item.title || "Untitled headline")}</div>
-                  <div class="headline-meta">Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}<br>${escapeHTML(item.published || "")}</div>
+
+                  <div class="headline-meta">
+                    Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
+                    Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}<br>
+                    ${escapeHTML(item.published || "")}
+                  </div>
+
                   <div class="headline-open">Open article →</div>
                 </div>
               </a>
@@ -364,33 +661,41 @@
         technicalData = (techRes && techRes.ok) ? await techRes.json() : null;
 
         let cacheItems = [];
+
         if(cacheRes && cacheRes.ok){
           const cacheData = await cacheRes.json();
           cacheItems = Array.isArray(cacheData.articles) ? cacheData.articles : [];
         }
 
         const latestItems = Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : [];
+
         allArticles = dedupeArticles([...latestItems, ...cacheItems]);
 
         populateInstrumentOptions();
         populateSourceOptions();
         renderHeadlines();
-      } catch(error){
+      }catch(error){
         console.error(error);
         document.getElementById("headlineList").innerHTML = `<div class="empty-card">Published articles could not be loaded right now.</div>`;
       }
     }
 
-    document.getElementById("marketFilter").addEventListener("change", () => { populateInstrumentOptions(); renderHeadlines(); });
+    document.getElementById("marketFilter").addEventListener("change", () => {
+      populateInstrumentOptions();
+      renderHeadlines();
+    });
+
     document.getElementById("instrumentFilter").addEventListener("change", renderHeadlines);
     document.getElementById("sourceFilter").addEventListener("change", renderHeadlines);
     document.getElementById("searchBox").addEventListener("input", renderHeadlines);
 
     const pageUpBtn = document.getElementById("pageUpBtn");
+
     window.addEventListener("scroll", () => {
       if(window.scrollY > 500) pageUpBtn.classList.add("show");
       else pageUpBtn.classList.remove("show");
     });
+
     pageUpBtn.addEventListener("click", () => window.scrollTo({ top:0, behavior:"smooth" }));
 
     loadPage();
