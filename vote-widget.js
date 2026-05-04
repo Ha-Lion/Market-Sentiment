@@ -1,5 +1,5 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
-const PSD_SUPABASE_ANON_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdI_7955Ej6tK01awQ_DljLC6sv";
 
 const PSD_VOTE_INSTRUMENTS = [
   "S&P 500 / ES",
