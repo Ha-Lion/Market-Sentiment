@@ -74,6 +74,43 @@ function psdClass(value){
   return clean || "NA";
 }
 
+function psdAddHomeLabel(){
+  const brand = document.querySelector(".brand");
+  const logo = document.querySelector(".brand .logo");
+
+  if(!brand || !logo || document.querySelector(".psd-logo-home-wrap")) return;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .psd-logo-home-wrap{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+      flex-shrink:0;
+    }
+    .psd-logo-home-word{
+      color:#ffd780;
+      font-size:11px;
+      font-weight:600;
+      line-height:1;
+      letter-spacing:.2px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const wrap = document.createElement("span");
+  wrap.className = "psd-logo-home-wrap";
+
+  brand.insertBefore(wrap, logo);
+  wrap.appendChild(logo);
+
+  const word = document.createElement("span");
+  word.className = "psd-logo-home-word";
+  word.textContent = "Home";
+  wrap.appendChild(word);
+}
+
 function psdGetVoterId(){
   let id = localStorage.getItem("psd_voter_id");
 
@@ -109,14 +146,9 @@ function psdFixNavigation(){
     ["about.html", "About"]
   ];
 
-  const links = Array.from(nav.querySelectorAll("a"));
-  const social = nav.querySelector(".social-links");
-
-  links.forEach(link => {
+  Array.from(nav.querySelectorAll("a")).forEach(link => {
     const href = link.getAttribute("href") || "";
-    if(href.includes("index.html")){
-      link.remove();
-    }
+    if(href.includes("index.html")) link.remove();
   });
 
   order.forEach(([href, label]) => {
@@ -127,6 +159,7 @@ function psdFixNavigation(){
     }
   });
 
+  const social = nav.querySelector(".social-links");
   if(social) nav.appendChild(social);
 }
 
@@ -153,6 +186,16 @@ function psdFallbackFromElement(el){
     if(rail.classList.contains("direction-up")) return "Bullish";
     if(rail.classList.contains("direction-down")) return "Bearish";
     if(rail.classList.contains("direction-neutral")) return "Neutral";
+  }
+
+  const newsCard = el.closest(".news-card");
+  if(newsCard){
+    const tech = newsCard.querySelector(".tech-chip");
+    const text = tech ? tech.textContent.toLowerCase() : "";
+
+    if(text.includes("bullish")) return "Bullish";
+    if(text.includes("bearish")) return "Bearish";
+    if(text.includes("neutral")) return "Neutral";
   }
 
   return "N/A";
@@ -202,8 +245,13 @@ function psdApplyUserSentiment(){
     const fallback = psdFallbackFromElement(el);
     const value = psdEffectiveSentiment(instrument, fallback);
 
-    el.textContent = value;
-    el.className = "psd-user-sentiment-value " + psdClass(value);
+    if(el.classList.contains("user-chip")){
+      el.textContent = "User: " + value;
+      el.className = "chip user-chip " + psdClass(value);
+    }else{
+      el.textContent = value;
+      el.className = "psd-user-sentiment-value " + psdClass(value);
+    }
   });
 }
 
@@ -317,6 +365,7 @@ function psdCreateVoteWidget(){
 }
 
 function psdInit(){
+  psdAddHomeLabel();
   psdFixNavigation();
   psdCreateVoteWidget();
   psdApplyUserSentiment();
@@ -334,6 +383,7 @@ if(document.readyState === "loading"){
 }
 
 window.addEventListener("load", () => {
+  psdAddHomeLabel();
   psdFixNavigation();
   psdApplyUserSentiment();
 });
