@@ -3,88 +3,520 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock Market Sentiment Guide — PublicSentimentDash</title>
-  <meta name="description" content="Learn how stock market sentiment works across the S&P 500, Nasdaq, Dow, Russell 2000, VIX, earnings, rates, and macro themes.">
+
+  <title>Stock Market Sentiment Guide — Public Sentiment Dash</title>
+  <meta name="description" content="Learn how stock market sentiment works, how public headlines affect indexes and futures, and how to use Public Sentiment Dash for market awareness.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/stock-market-sentiment.html">
   <link rel="icon" type="image/png" href="logo.png">
+
   <style>
-    body { font-family:"Segoe UI", Inter, Helvetica, Arial, sans-serif; background:#05070b; color:#e6edf3; margin:0; padding:0; }
-    .header { display:flex; align-items:center; justify-content:space-between; padding:16px 28px; border-bottom:1px solid #1f2937; background:#070a10; position:sticky; top:0; z-index:10; }
-    .brand { display:flex; align-items:center; gap:16px; }
-    .logo { width:82px; height:82px; object-fit:contain; border-radius:12px; box-shadow:0 0 16px rgba(218,165,32,.18); }
-    .site-title { color:#e6edf3; font-size:22px; font-weight:700; }
-    .header-actions { display:flex; gap:10px; flex-wrap:wrap; }
-    .action-btn { color:#05070b; background:#d29922; padding:10px 14px; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; display:inline-block; }
-    .page { max-width:1120px; margin:0 auto; padding:28px; }
-    .hero,.card { background:#161b22; border:1px solid #30363d; border-radius:14px; padding:24px; margin-bottom:20px; line-height:1.75; }
-    .hero { background:#0d1117; }
-    h1,h2,h3 { color:#fff; margin-top:0; }
-    p,li { color:#c9d1d9; }
-    ul { padding-left:22px; }
-    li { margin-bottom:8px; }
-    .footer-note { text-align:center; color:#8b949e; font-size:13px; margin:24px 0 10px 0; }
-    .legal { color:#8b949e; font-size:12px; line-height:1.6; }
-    @media(max-width:700px){ .header{flex-direction:column;align-items:flex-start;gap:12px;} .logo{width:70px;height:70px;} .site-title{font-size:18px;} .page{padding:18px;} }
+    :root {
+      --bg:#05070b;
+      --panel:#0d1117;
+      --card:#111821;
+      --line:#263241;
+      --text:#e6edf3;
+      --soft:#c9d1d9;
+      --muted:#8b949e;
+      --gold:#d29922;
+      --gold2:#f0b72f;
+      --green:#3fb950;
+      --red:#f85149;
+      --blue:#58a6ff;
+    }
+
+    * {
+      box-sizing:border-box;
+    }
+
+    body {
+      margin:0;
+      font-family:"Segoe UI", Inter, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(210,153,34,0.10), transparent 33rem),
+        radial-gradient(circle at top right, rgba(88,166,255,0.08), transparent 32rem),
+        var(--bg);
+    }
+
+    a {
+      color:var(--blue);
+      text-decoration:none;
+    }
+
+    a:hover {
+      text-decoration:none;
+    }
+
+    .header {
+      position:sticky;
+      top:0;
+      z-index:30;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      padding:14px 26px;
+      background:rgba(6,9,15,0.95);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(10px);
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:14px;
+      color:var(--text);
+      text-decoration:none;
+      padding:6px 8px;
+      margin:-6px -8px;
+      border-radius:14px;
+      transition:background 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+    }
+
+    .brand:hover {
+      text-decoration:none;
+      background:rgba(210,153,34,0.15);
+      transform:translateY(-1px);
+      text-shadow:0 0 10px rgba(210,153,34,0.55);
+    }
+
+    .logo {
+      width:68px;
+      height:68px;
+      object-fit:contain;
+      border-radius:12px;
+      box-shadow:0 0 18px rgba(210,153,34,0.18);
+      transition:transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .brand:hover .logo {
+      transform:translateY(-2px) scale(1.03);
+      box-shadow:0 0 26px rgba(210,153,34,0.34);
+    }
+
+    .site-title {
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:0.2px;
+    }
+
+    .site-subtitle {
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .nav {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .nav a {
+      color:var(--soft);
+      font-size:15px;
+      font-weight:700;
+      padding:7px 9px;
+      border-radius:8px;
+      transition:color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .nav a:hover {
+      color:#ffffff;
+      text-decoration:none;
+      background:rgba(210,153,34,0.16);
+      text-shadow:0 0 10px rgba(210,153,34,0.55);
+      transform:translateY(-1px);
+    }
+
+    .page {
+      max-width:1200px;
+      margin:0 auto;
+      padding:26px;
+    }
+
+    .hero,
+    .card {
+      background:rgba(13,17,23,0.94);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 16px 40px rgba(0,0,0,0.20);
+    }
+
+    .hero {
+      padding:28px;
+      margin-bottom:18px;
+    }
+
+    .card {
+      padding:22px;
+      margin-bottom:18px;
+    }
+
+    .badge {
+      display:inline-flex;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(210,153,34,0.12);
+      border:1px solid rgba(210,153,34,0.35);
+      color:#f4d17d;
+      font-size:12px;
+      font-weight:900;
+      margin-bottom:16px;
+    }
+
+    h1 {
+      margin:0 0 14px;
+      font-size:clamp(32px,4vw,50px);
+      line-height:1.05;
+      letter-spacing:-1px;
+    }
+
+    h2 {
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    h3 {
+      color:#ffffff;
+      margin:0 0 8px;
+      font-size:18px;
+    }
+
+    p,
+    li {
+      color:var(--soft);
+      line-height:1.7;
+      font-size:16px;
+    }
+
+    .cta-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .cta {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px 16px;
+      border-radius:999px;
+      background:var(--gold);
+      color:#05070b;
+      font-weight:950;
+      font-size:15px;
+      text-decoration:none;
+      transition:background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .cta:hover {
+      background:var(--gold2);
+      transform:translateY(-1px);
+      box-shadow:0 0 18px rgba(210,153,34,0.28);
+      text-decoration:none;
+    }
+
+    .cta.secondary {
+      background:transparent;
+      color:var(--soft);
+      border:1px solid var(--line);
+    }
+
+    .cta.secondary:hover {
+      color:#fff;
+      background:rgba(210,153,34,0.12);
+      border-color:rgba(210,153,34,0.45);
+    }
+
+    .grid-3 {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .grid-2 {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .dynamic-card {
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at top right, rgba(210,153,34,0.15), transparent 14rem),
+        linear-gradient(180deg,#101826,#0d131d);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.18);
+      transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .dynamic-card:hover {
+      transform:translateY(-3px);
+      border-color:rgba(210,153,34,0.45);
+      box-shadow:0 18px 35px rgba(0,0,0,0.26);
+    }
+
+    .mini-card {
+      padding:18px;
+      min-height:145px;
+    }
+
+    .mini-title {
+      color:#fff;
+      font-weight:900;
+      font-size:18px;
+      margin-bottom:8px;
+    }
+
+    .mini-text {
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    .guide-link {
+      display:inline-flex;
+      margin-top:14px;
+      color:#ffffff;
+      font-size:13px;
+      font-weight:900;
+    }
+
+    .dynamic-card:hover .guide-link {
+      color:#ffd780;
+      text-shadow:0 0 10px rgba(210,153,34,0.55);
+    }
+
+    .footer {
+      margin-top:20px;
+      padding:24px 0 10px;
+      border-top:1px solid var(--line);
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .footer-links {
+      display:flex;
+      flex-wrap:wrap;
+      gap:16px;
+      margin-bottom:12px;
+    }
+
+    .footer-links a {
+      color:var(--soft);
+      font-weight:700;
+      padding:6px 8px;
+      border-radius:8px;
+      transition:color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease;
+    }
+
+    .footer-links a:hover {
+      color:#fff;
+      text-decoration:none;
+      background:rgba(210,153,34,0.16);
+      text-shadow:0 0 10px rgba(210,153,34,0.55);
+    }
+
+    .legal {
+      margin-top:12px;
+      background:rgba(248,81,73,0.07);
+      border:1px solid rgba(248,81,73,0.18);
+      border-radius:14px;
+      padding:14px;
+      color:var(--soft);
+      line-height:1.55;
+    }
+
+    @media (max-width:900px) {
+      .grid-3,
+      .grid-2 {
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width:760px) {
+      .header {
+        flex-direction:column;
+        align-items:flex-start;
+        padding:14px 18px;
+      }
+
+      .page {
+        padding:18px;
+      }
+
+      .logo {
+        width:60px;
+        height:60px;
+      }
+
+      .site-title {
+        font-size:20px;
+      }
+
+      .nav {
+        gap:8px;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <div class="header">
-    <div class="brand">
-      <img src="logo.png" alt="PublicSentimentDash logo" class="logo">
-      <div class="site-title">PublicSentimentDash</div>
-    </div>
-    <div class="header-actions">
-      <a class="action-btn" href="index.html">Dashboard</a>
-      <a class="action-btn" href="market-sentiment.html">Guides</a>
-      <a class="action-btn" href="contact.html">Contact Us</a>
-    </div>
-  </div>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+      <div>
+        <div class="site-title">Public Sentiment Dash</div>
+        <div class="site-subtitle">Stock Market Sentiment Guide</div>
+      </div>
+    </a>
 
-  <div class="page">
-    <div class="hero">
-      <h1>Stock Market Sentiment Guide</h1>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="about.html">About</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="contact.html">Get in Touch</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="badge">Stock market guide</div>
+      <h1>Stock Market Sentiment</h1>
       <p>
-        Stock market sentiment reflects public narrative around equity markets, indexes, futures, earnings, interest rates, volatility, and macro expectations.
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>What drives stock market sentiment?</h2>
-      <ul>
-        <li>Earnings expectations and corporate guidance</li>
-        <li>Interest rates and Federal Reserve policy</li>
-        <li>Inflation and jobs data</li>
-        <li>Risk appetite and volatility</li>
-        <li>Geopolitics and tariffs</li>
-        <li>Sector rotation and mega-cap leadership</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>Indexes covered</h2>
-      <p>
-        PublicSentimentDash tracks public narrative around major equity indexes and futures including the S&P 500, Nasdaq, Dow, Russell 2000, VIX, DAX, FTSE 100, Nikkei 225, Hang Seng, Euro Stoxx 50, and CAC 40.
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>How to use stock market sentiment</h2>
-      <p>
-        Public sentiment can help identify whether the market narrative is focused on fear, optimism, rate pressure, earnings strength, recession risk, volatility, or rotation.
+        Stock market sentiment is the public mood around equities, indexes, stock futures, volatility, earnings, interest rates, and risk appetite.
       </p>
       <p>
-        It should be compared with chart trend, earnings reality, liquidity, macro data, and valuation conditions.
+        Public Sentiment Dash helps organize stock-related headlines so users can quickly see whether the public narrative is leaning bullish, bearish, mixed, or neutral.
       </p>
-    </div>
 
-    <div class="card legal">
-      <b>Disclaimer:</b> This guide is educational only and is not financial advice.
-    </div>
+      <div class="cta-row">
+        <a class="cta" href="dashboard.html">Open Interactive Dashboard</a>
+        <a class="cta secondary" href="news-articles.html">Search News & Articles</a>
+      </div>
+    </section>
 
-    <div class="footer-note">
-      © 2026 PublicSentimentDash. All rights reserved. Powered by Ha-Lion Public Sentiment Engine.
-    </div>
-  </div>
+    <section class="grid-3">
+      <div class="mini-card dynamic-card">
+        <div class="mini-title">Indexes</div>
+        <div class="mini-text">
+          Tracks public narrative around S&P 500, Nasdaq, Dow, Russell, VIX, and global equity indexes.
+        </div>
+      </div>
+
+      <div class="mini-card dynamic-card">
+        <div class="mini-title">Risk Appetite</div>
+        <div class="mini-text">
+          Helps show when coverage is focused on fear, risk-on behavior, volatility, recession, earnings, or Fed policy.
+        </div>
+      </div>
+
+      <div class="mini-card dynamic-card">
+        <div class="mini-title">Relevant Headlines</div>
+        <div class="mini-text">
+          Filters market news into cleaner stock-related headlines for faster review.
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>What Moves Stock Market Sentiment?</h2>
+      <p>
+        Stock market sentiment can shift quickly when investors react to macro data, interest rates, inflation, earnings reports, central bank comments, geopolitical headlines, or sudden changes in volatility.
+      </p>
+      <p>
+        Public headlines can also create short-term pressure. When many sources focus on fear, recession risk, rising yields, or disappointing earnings, sentiment may turn defensive. When headlines focus on growth, rate-cut hopes, strong earnings, or risk appetite, sentiment may improve.
+      </p>
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <h2>Bullish Stock Sentiment</h2>
+        <ul>
+          <li>Strong earnings or guidance</li>
+          <li>Lower inflation expectations</li>
+          <li>Rate-cut optimism</li>
+          <li>Risk-on market tone</li>
+          <li>Strong futures or broad index participation</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Bearish Stock Sentiment</h2>
+        <ul>
+          <li>Higher yields or inflation fears</li>
+          <li>Weak earnings or guidance</li>
+          <li>Recession concerns</li>
+          <li>Geopolitical risk</li>
+          <li>Rising volatility or risk-off headlines</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>How to Use Public Sentiment Dash for Stocks</h2>
+      <p>
+        Use the dashboard to filter for indexes and futures. Review the selected public sentiment score, source votes, and related headlines. Then compare that sentiment with price action, support/resistance, volume, market breadth, volatility, and macro context.
+      </p>
+      <p>
+        Sentiment is not a prediction. It is a public narrative layer. Strong public sentiment can continue, fade, or reverse quickly.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Related Guides</h2>
+
+      <div class="grid-3">
+        <a class="mini-card dynamic-card" href="forex-sentiment.html">
+          <div class="mini-title">Forex Sentiment</div>
+          <div class="mini-text">Understand currency sentiment, dollar strength, and macro-driven forex narratives.</div>
+          <div class="guide-link">Read guide →</div>
+        </a>
+
+        <a class="mini-card dynamic-card" href="crypto-sentiment.html">
+          <div class="mini-title">Crypto Sentiment</div>
+          <div class="mini-text">Understand Bitcoin, Ethereum, regulation, and crypto risk appetite.</div>
+          <div class="guide-link">Read guide →</div>
+        </a>
+
+        <a class="mini-card dynamic-card" href="commodity-sentiment.html">
+          <div class="mini-title">Commodity Sentiment</div>
+          <div class="mini-text">Understand oil, gold, natural gas, inflation, and supply-demand narratives.</div>
+          <div class="guide-link">Read guide →</div>
+        </a>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="about.html">About</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
 </body>
 </html>
