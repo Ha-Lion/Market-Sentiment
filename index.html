@@ -4,12 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>PublicSentimentDash — Home</title>
+  <title>Public Sentiment Dash — Home</title>
   <meta name="description" content="Free global market public sentiment dashboard tracking financial headlines, market focus, source votes, and public narrative across major assets.">
   <meta name="keywords" content="public sentiment dashboard, market sentiment, financial news sentiment, forex sentiment, crypto sentiment, stock sentiment, commodity sentiment">
   <meta name="robots" content="index, follow">
 
-  <!-- KEEP -->
   <meta name="google-site-verification" content="S0CFcMngcfWARClpc5kXp_FdebDc8Hkb0LYHA8znuI">
   <meta name="msvalidate.01" content="00775D05D701156A2226FE28A7FA2D8">
 
@@ -17,25 +16,15 @@
   <link rel="icon" type="image/png" href="logo.png">
 
   <meta property="og:type" content="website">
-  <meta property="og:title" content="PublicSentimentDash — Global Market Public Sentiment">
+  <meta property="og:title" content="Public Sentiment Dash — Global Market Public Sentiment">
   <meta property="og:description" content="Read global public market sentiment across headlines, instruments, and source votes.">
   <meta property="og:url" content="https://publicsentimentdash.com/">
   <meta property="og:image" content="https://publicsentimentdash.com/logo.png">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="PublicSentimentDash — Global Market Public Sentiment">
+  <meta name="twitter:title" content="Public Sentiment Dash — Global Market Public Sentiment">
   <meta name="twitter:description" content="Read global public market sentiment across headlines, instruments, and source votes.">
   <meta name="twitter:image" content="https://publicsentimentdash.com/logo.png">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "PublicSentimentDash",
-    "url": "https://publicsentimentdash.com/",
-    "description": "Free global market public sentiment dashboard tracking financial headlines, market focus, source votes, and public narrative across major assets."
-  }
-  </script>
 
   <style>
     :root {
@@ -54,7 +43,9 @@
       --orange: #f59e0b;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -93,6 +84,19 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      color: var(--text);
+      text-decoration: none;
+      padding: 6px 8px;
+      margin: -6px -8px;
+      border-radius: 14px;
+      transition: background 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+    }
+
+    .brand:hover {
+      text-decoration: none;
+      background: rgba(210,153,34,0.15);
+      transform: translateY(-1px);
+      text-shadow: 0 0 10px rgba(210,153,34,0.55);
     }
 
     .logo {
@@ -101,11 +105,18 @@
       object-fit: contain;
       border-radius: 12px;
       box-shadow: 0 0 18px rgba(210,153,34,0.18);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .brand:hover .logo {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 26px rgba(210,153,34,0.34);
     }
 
     .site-title {
       font-size: 22px;
       font-weight: 900;
+      letter-spacing: 0.2px;
     }
 
     .site-subtitle {
@@ -117,7 +128,7 @@
     .nav {
       display: flex;
       flex-wrap: wrap;
-      gap: 18px;
+      gap: 10px;
       align-items: center;
       justify-content: flex-end;
     }
@@ -126,11 +137,17 @@
       color: var(--soft);
       font-size: 15px;
       font-weight: 700;
+      padding: 7px 9px;
+      border-radius: 8px;
+      transition: color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease, transform 0.18s ease;
     }
 
     .nav a:hover {
       color: #ffffff;
       text-decoration: none;
+      background: rgba(210,153,34,0.16);
+      text-shadow: 0 0 10px rgba(210,153,34,0.55);
+      transform: translateY(-1px);
     }
 
     .page {
@@ -181,7 +198,8 @@
       font-size: 24px;
     }
 
-    p, li {
+    p,
+    li {
       color: var(--soft);
       line-height: 1.65;
     }
@@ -340,6 +358,7 @@
     .focus-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px,1fr));
+      grid-auto-rows: 1fr;
       gap: 12px;
       margin-top: 12px;
     }
@@ -349,6 +368,36 @@
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 14px;
+      height: 100%;
+    }
+
+    .focus-card {
+      min-height: 140px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top right, rgba(210,153,34,0.15), transparent 14rem),
+        linear-gradient(180deg, #101826, #0d131d);
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      animation: focusFade 0.35s ease both;
+    }
+
+    .focus-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(210,153,34,0.45);
+      box-shadow: 0 18px 35px rgba(0,0,0,0.26);
+    }
+
+    @keyframes focusFade {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .mini-title {
@@ -368,6 +417,13 @@
       font-size: 12px;
       line-height: 1.45;
       color: var(--soft);
+    }
+
+    .focus-open {
+      margin-top: 12px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
     }
 
     .action-grid {
@@ -441,10 +497,28 @@
       line-height: 1.55;
     }
 
-    .Bullish { color: var(--green); font-weight: 900; }
-    .Bearish { color: var(--red); font-weight: 900; }
-    .Mixed, .MixedBullish, .MixedBearish, .MixedNeutral { color: var(--gold); font-weight: 900; }
-    .Neutral { color: var(--muted); font-weight: 900; }
+    .Bullish {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .Bearish {
+      color: var(--red);
+      font-weight: 900;
+    }
+
+    .Mixed,
+    .MixedBullish,
+    .MixedBearish,
+    .MixedNeutral {
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .Neutral {
+      color: var(--muted);
+      font-weight: 900;
+    }
 
     .footer {
       margin-top: 20px;
@@ -464,6 +538,16 @@
     .footer-links a {
       color: var(--soft);
       font-weight: 700;
+      padding: 6px 8px;
+      border-radius: 8px;
+      transition: color 0.18s ease, background 0.18s ease, text-shadow 0.18s ease;
+    }
+
+    .footer-links a:hover {
+      color: #ffffff;
+      text-decoration: none;
+      background: rgba(210,153,34,0.16);
+      text-shadow: 0 0 10px rgba(210,153,34,0.55);
     }
 
     .legal {
@@ -509,7 +593,7 @@
       }
 
       .nav {
-        gap: 14px;
+        gap: 8px;
       }
 
       .score-ring {
@@ -528,17 +612,19 @@
     }
   </style>
 </head>
+
 <body>
   <header class="header">
-    <div class="brand">
-      <img src="logo.png" alt="PublicSentimentDash Logo" class="logo">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
       <div>
-        <div class="site-title">PublicSentimentDash</div>
+        <div class="site-title">Public Sentiment Dash</div>
         <div class="site-subtitle">Global market public sentiment dashboard</div>
       </div>
-    </div>
+    </a>
 
     <nav class="nav">
+      <a href="index.html">Home</a>
       <a href="dashboard.html">Interactive Dashboard</a>
       <a href="news-articles.html">News & Articles</a>
       <a href="about.html">About</a>
@@ -553,7 +639,7 @@
       <div class="panel hero-copy">
         <div class="badge">AI-built public market sentiment dashboard</div>
         <h1>Home for Global Market Public Sentiment</h1>
-        <p><b>PublicSentimentDash</b> tracks public financial narrative across <b>indexes, bonds, forex, crypto, commodities, and macro themes</b>.</p>
+        <p><b>Public Sentiment Dash</b> tracks public financial narrative across <b>indexes, bonds, forex, crypto, commodities, and macro themes</b>.</p>
         <p>The main score below is a <b>global all-markets score</b>. It is not U.S.-only. It reflects the latest published sentiment across the full dashboard universe.</p>
 
         <div class="hero-points">
@@ -631,7 +717,7 @@
       <h2>Market Focus Today</h2>
       <p>Most discussed markets and instruments in the latest published scan.</p>
       <div class="focus-grid" id="marketFocus">
-        <div class="mini-card">Loading market focus...</div>
+        <div class="mini-card focus-card">Loading market focus...</div>
       </div>
     </section>
 
@@ -663,6 +749,7 @@
 
     <footer class="footer">
       <div class="footer-links">
+        <a href="index.html">Home</a>
         <a href="dashboard.html">Interactive Dashboard</a>
         <a href="news-articles.html">News & Articles</a>
         <a href="about.html">About</a>
@@ -676,7 +763,7 @@
         <b>Disclaimer:</b> This website is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset. Market sentiment and technical direction can be incomplete, delayed, inaccurate, or misinterpreted.
       </div>
 
-      <p>© 2026 PublicSentimentDash. All rights reserved.</p>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
 
@@ -753,9 +840,10 @@
     function renderStats(data) {
       const trust = data.trust_layer || {};
       document.getElementById("lastUpdated").textContent = data.updated_ny || "N/A";
-      document.getElementById("relevantHeadlines").textContent = trust.relevant_headlines ?? (data.top_headlines || []).length ?? "N/A";
+      document.getElementById("relevantHeadlines").textContent =
+        trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
       document.getElementById("sourcesWorking").textContent =
-        `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? (data.sources || []).length ?? "N/A"}`;
+        `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
     }
 
     function renderDailySummary(data) {
@@ -765,17 +853,18 @@
         : `<div class="summary-line">No daily summary available yet.</div>`;
     }
 
-    function focusCard(item, type) {
+    function focusCard(item, type, index) {
       const headline = Array.isArray(item.headlines) && item.headlines[0] ? item.headlines[0] : null;
 
       return `
-        <div class="mini-card">
+        <div class="mini-card focus-card" style="animation-delay:${Math.min(index * 0.04, 0.4)}s;" onclick="window.location.href='dashboard.html'">
           <div class="mini-title">${escapeHTML(item.name || "Unknown")}</div>
           <div class="mini-meta">
             ${escapeHTML(type)} • ${escapeHTML(item.count ?? 0)} mentions •
             <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
           </div>
-          ${headline ? `<div class="mini-headline"><a href="${escapeHTML(headline.link)}" target="_blank" rel="noopener">${escapeHTML(headline.title)}</a></div>` : ""}
+          ${headline ? `<div class="mini-headline">${escapeHTML(headline.title || "")}</div>` : ""}
+          <div class="focus-open">Open dashboard →</div>
         </div>
       `;
     }
@@ -786,12 +875,12 @@
       const instruments = Array.isArray(focus.top_instruments) ? focus.top_instruments : [];
       const cards = [];
 
-      markets.slice(0, 4).forEach(item => cards.push(focusCard(item, "Market")));
-      instruments.slice(0, 4).forEach(item => cards.push(focusCard(item, "Instrument")));
+      markets.slice(0, 4).forEach(item => cards.push({ item, type: "Market" }));
+      instruments.slice(0, 4).forEach(item => cards.push({ item, type: "Instrument" }));
 
       document.getElementById("marketFocus").innerHTML = cards.length
-        ? cards.join("")
-        : `<div class="mini-card">No market focus data available.</div>`;
+        ? cards.map((card, index) => focusCard(card.item, card.type, index)).join("")
+        : `<div class="mini-card focus-card">No market focus data available.</div>`;
     }
 
     async function loadPage() {
@@ -808,7 +897,7 @@
         document.getElementById("dailySummary").innerHTML =
           `<div class="summary-line">Dashboard data could not be loaded right now.</div>`;
         document.getElementById("marketFocus").innerHTML =
-          `<div class="mini-card">Dashboard data could not be loaded right now.</div>`;
+          `<div class="mini-card focus-card">Dashboard data could not be loaded right now.</div>`;
       }
     }
 
