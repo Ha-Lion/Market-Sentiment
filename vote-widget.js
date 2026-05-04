@@ -1,16 +1,61 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
-const PSD_SUPABASE_ANON_KEY = "KEEP_YOUR_REAL_PUBLISHABLE_KEY_HERE";
+const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdl_7955Ej6tK01awQ_DljLC6sv";
 
 const PSD_VOTE_INSTRUMENTS = [
-  "S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX",
-  "DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40",
-  "US 2Y Treasury","US 10Y Treasury","Treasury Yields",
-  "US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF",
-  "CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY",
-  "AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY","USDTRY","USDMXN","USDZAR",
-  "Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA","Dogecoin / DOGE","General Crypto",
-  "Gold","Silver","Copper","Crude Oil","Natural Gas",
-  "Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","US GDP / Growth","Geopolitical / Tariffs"
+  "S&P 500 / ES",
+  "Nasdaq / NQ",
+  "Dow / YM",
+  "Russell / RTY",
+  "VIX",
+  "DAX",
+  "FTSE 100",
+  "Nikkei 225",
+  "Hang Seng",
+  "Euro Stoxx 50",
+  "CAC 40",
+  "US 2Y Treasury",
+  "US 10Y Treasury",
+  "Treasury Yields",
+  "US Dollar / DXY",
+  "EUR / EURUSD",
+  "GBP / GBPUSD",
+  "JPY / USDJPY",
+  "CHF / USDCHF",
+  "CAD / USDCAD",
+  "AUD / AUDUSD",
+  "NZD / NZDUSD",
+  "EURJPY",
+  "EURGBP",
+  "GBPJPY",
+  "AUDJPY",
+  "CADJPY",
+  "EURCHF",
+  "EURCAD",
+  "AUDCAD",
+  "AUDNZD",
+  "NZDJPY",
+  "USDTRY",
+  "USDMXN",
+  "USDZAR",
+  "Bitcoin / BTC",
+  "Ethereum / ETH",
+  "Solana / SOL",
+  "XRP",
+  "BNB",
+  "Cardano / ADA",
+  "Dogecoin / DOGE",
+  "General Crypto",
+  "Gold",
+  "Silver",
+  "Copper",
+  "Crude Oil",
+  "Natural Gas",
+  "Fed / FOMC",
+  "CPI / Inflation",
+  "PPI",
+  "Jobs / NFP",
+  "US GDP / Growth",
+  "Geopolitical / Tariffs"
 ];
 
 window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
@@ -31,10 +76,15 @@ function psdClass(value){
 
 function psdGetVoterId(){
   let id = localStorage.getItem("psd_voter_id");
+
   if(!id){
-    id = window.crypto && crypto.randomUUID ? crypto.randomUUID() : "voter_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    id = window.crypto && crypto.randomUUID
+      ? crypto.randomUUID()
+      : "voter_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+
     localStorage.setItem("psd_voter_id", id);
   }
+
   return id;
 }
 
@@ -59,20 +109,21 @@ function psdFixNavigation(){
     ["about.html", "About"]
   ];
 
-  const existing = Array.from(nav.querySelectorAll("a"));
+  const links = Array.from(nav.querySelectorAll("a"));
   const social = nav.querySelector(".social-links");
 
-  order.forEach(([href, label]) => {
-    const link = existing.find(a => (a.getAttribute("href") || "").includes(href));
-    if(link){
-      link.textContent = label;
-      nav.appendChild(link);
+  links.forEach(link => {
+    const href = link.getAttribute("href") || "";
+    if(href.includes("index.html")){
+      link.remove();
     }
   });
 
-  existing.forEach(a => {
-    if((a.getAttribute("href") || "").includes("index.html")){
-      a.remove();
+  order.forEach(([href, label]) => {
+    const link = Array.from(nav.querySelectorAll("a")).find(a => (a.getAttribute("href") || "").includes(href));
+    if(link){
+      link.textContent = label;
+      nav.appendChild(link);
     }
   });
 
@@ -81,17 +132,23 @@ function psdFixNavigation(){
 
 function psdFallbackFromElement(el){
   const card = el.closest(".instrument-card");
+
   if(card){
-    const daily = Array.from(card.querySelectorAll(".info-row")).find(row => row.textContent.trim().toLowerCase().startsWith("daily:"));
-    if(daily){
-      const txt = daily.textContent.toLowerCase();
-      if(txt.includes("bullish")) return "Bullish";
-      if(txt.includes("bearish")) return "Bearish";
-      if(txt.includes("neutral")) return "Neutral";
+    const dailyRow = Array.from(card.querySelectorAll(".info-row")).find(row =>
+      row.textContent.trim().toLowerCase().startsWith("daily:")
+    );
+
+    if(dailyRow){
+      const text = dailyRow.textContent.toLowerCase();
+
+      if(text.includes("bullish")) return "Bullish";
+      if(text.includes("bearish")) return "Bearish";
+      if(text.includes("neutral")) return "Neutral";
     }
   }
 
   const rail = el.closest(".rail-item");
+
   if(rail){
     if(rail.classList.contains("direction-up")) return "Bullish";
     if(rail.classList.contains("direction-down")) return "Bearish";
@@ -103,12 +160,16 @@ function psdFallbackFromElement(el){
 
 function psdEffectiveSentiment(instrument, fallback){
   const voted = window.PSD_USER_SENTIMENT?.[instrument];
-  if(voted && voted !== "N/A") return voted;
+
+  if(voted && voted !== "N/A"){
+    return voted;
+  }
+
   return fallback || "N/A";
 }
 
 async function psdLoadUserSentiment(){
-  if(!PSD_SUPABASE_URL || !PSD_SUPABASE_ANON_KEY || PSD_SUPABASE_ANON_KEY.includes("KEEP_")) return;
+  if(!PSD_SUPABASE_URL || !PSD_SUPABASE_ANON_KEY) return;
 
   try{
     const response = await fetch(`${PSD_SUPABASE_URL}/rest/v1/rpc/get_user_sentiment`, {
@@ -128,6 +189,7 @@ async function psdLoadUserSentiment(){
 
     window.PSD_USER_SENTIMENT = map;
     psdApplyUserSentiment();
+
     window.dispatchEvent(new CustomEvent("psdUserSentimentReady", { detail: map }));
   }catch(error){
     console.warn("User sentiment load failed", error);
@@ -148,11 +210,7 @@ function psdApplyUserSentiment(){
 async function psdSubmitVote(instrument, vote){
   const status = document.getElementById("psdVoteStatus");
 
-  if(!PSD_SUPABASE_URL || !PSD_SUPABASE_ANON_KEY || PSD_SUPABASE_ANON_KEY.includes("KEEP_")){
-    status.textContent = "Voting is not connected yet.";
-    status.className = "psd-vote-status error";
-    return;
-  }
+  if(!status) return;
 
   status.textContent = "Submitting...";
   status.className = "psd-vote-status";
@@ -221,6 +279,7 @@ function psdCreateVoteWidget(){
 
       <button type="button" class="psd-vote-submit" id="psdVoteSubmit">Submit Vote</button>
       <button type="button" class="psd-vote-cancel" id="psdVoteCancel">Cancel</button>
+
       <div class="psd-vote-status" id="psdVoteStatus"></div>
     </div>
   `;
@@ -235,8 +294,13 @@ function psdCreateVoteWidget(){
 
   let selectedVote = "Bullish";
 
-  tab.addEventListener("click", () => panel.classList.toggle("open"));
-  cancel.addEventListener("click", () => panel.classList.remove("open"));
+  tab.addEventListener("click", () => {
+    panel.classList.toggle("open");
+  });
+
+  cancel.addEventListener("click", () => {
+    panel.classList.remove("open");
+  });
 
   choices.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -260,6 +324,7 @@ function psdInit(){
 
   setTimeout(psdApplyUserSentiment, 500);
   setTimeout(psdApplyUserSentiment, 1500);
+  setTimeout(psdApplyUserSentiment, 3000);
 }
 
 if(document.readyState === "loading"){
