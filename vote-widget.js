@@ -1,5 +1,5 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
-const PSD_SUPABASE_ANON_KEY = "sb_publishable_70UGBdI_7955Ej6tK01awQ_DljLC6sv";
+const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 
@@ -223,6 +223,7 @@ function psdGetVoterId(){
 function psdHeaders(){
   return {
     "apikey": PSD_SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + PSD_SUPABASE_ANON_KEY,
     "Content-Type": "application/json"
   };
 }
