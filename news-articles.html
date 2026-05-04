@@ -1,4 +1,3 @@
-<script src="vote-widget.js" defer></script>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,12 +20,14 @@
     .btn{border:0;cursor:pointer;border-radius:999px;padding:12px 16px;background:var(--gold);color:#05070b;font-weight:600;font-size:14px;transition:.18s ease}
     .btn:hover{background:var(--gold2);transform:translateY(-1px)}
     .btn.secondary{background:transparent;color:var(--soft);border:1px solid var(--line)}
+
     .source-summary{display:none;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(17,24,33,.62)}
     .source-summary-title{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:10px}
     .source-summary-list{display:flex;flex-wrap:wrap;gap:10px}
     .source-summary-link{display:inline-flex;align-items:center;gap:7px;color:var(--blue);font-size:13px;font-weight:500;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.15)}
     .source-summary-link:hover{color:#fff;background:rgba(210,153,34,.12);border-color:rgba(210,153,34,.30)}
     .source-summary-link img{width:16px;height:16px;border-radius:4px}
+
     .count-note{color:var(--muted);font-size:13px;margin-bottom:14px;font-weight:400}
     .headline-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}
     .headline-card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:320px;background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.18);transition:.18s ease;color:var(--text);padding:16px}
@@ -220,6 +221,13 @@
       return "Tech Daily: N/A";
     }
 
+    function hasActiveSearch(){
+      return document.getElementById("searchBox").value.trim() !== "" ||
+             document.getElementById("marketFilter").value !== "all" ||
+             document.getElementById("instrumentFilter").value !== "all" ||
+             document.getElementById("sourceFilter").value !== "all";
+    }
+
     function dedupeArticles(items){
       const seen = new Set();
       const output = [];
@@ -281,6 +289,13 @@
     function renderSourceSummary(headlines){
       const box = document.getElementById("sourceSummary");
       const list = document.getElementById("sourceSummaryList");
+
+      if(!hasActiveSearch()){
+        box.style.display = "none";
+        list.innerHTML = "";
+        return;
+      }
+
       const sourceNames = [...new Set(headlines.map(h => h.source).filter(Boolean))].sort();
 
       if(!sourceNames.length){
@@ -380,5 +395,7 @@
 
     loadPage();
   </script>
+
+  <script src="vote-widget.js" defer></script>
 </body>
 </html>
