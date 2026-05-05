@@ -5,73 +5,26 @@ const PSD_SITE_URL = "https://publicsentimentdash.com";
 const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
 
 const PSD_VOTE_INSTRUMENTS = [
-  "S&P 500 / ES",
-  "Nasdaq / NQ",
-  "Dow / YM",
-  "Russell / RTY",
-  "VIX",
-  "DAX",
-  "FTSE 100",
-  "Nikkei 225",
-  "Hang Seng",
-  "Euro Stoxx 50",
-  "CAC 40",
-  "US 2Y Treasury",
-  "US 10Y Treasury",
-  "Treasury Yields",
-  "US Dollar / DXY",
-  "EUR / EURUSD",
-  "GBP / GBPUSD",
-  "JPY / USDJPY",
-  "CHF / USDCHF",
-  "CAD / USDCAD",
-  "AUD / AUDUSD",
-  "NZD / NZDUSD",
-  "EURJPY",
-  "EURGBP",
-  "GBPJPY",
-  "AUDJPY",
-  "CADJPY",
-  "EURCHF",
-  "EURCAD",
-  "AUDCAD",
-  "AUDNZD",
-  "NZDJPY",
-  "USDTRY",
-  "USDMXN",
-  "USDZAR",
-  "Bitcoin / BTC",
-  "Ethereum / ETH",
-  "Solana / SOL",
-  "XRP",
-  "BNB",
-  "Cardano / ADA",
-  "Dogecoin / DOGE",
-  "General Crypto",
-  "Gold",
-  "Silver",
-  "Copper",
-  "Crude Oil",
-  "Natural Gas",
-  "Fed / FOMC",
-  "CPI / Inflation",
-  "PPI",
-  "Jobs / NFP",
-  "US GDP / Growth",
-  "Geopolitical / Tariffs"
+  "S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX",
+  "DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40",
+  "US 2Y Treasury","US 10Y Treasury","Treasury Yields",
+  "US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF",
+  "CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY",
+  "AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY",
+  "USDTRY","USDMXN","USDZAR",
+  "Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA",
+  "Dogecoin / DOGE","General Crypto",
+  "Gold","Silver","Copper","Crude Oil","Natural Gas",
+  "Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","US GDP / Growth","Geopolitical / Tariffs"
 ];
 
 window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
 
 function psdLoadGA4(){
   if(!PSD_GA4_ID || window.PSD_GA4_LOADED) return;
-
   window.PSD_GA4_LOADED = true;
   window.dataLayer = window.dataLayer || [];
-
-  window.gtag = function(){
-    window.dataLayer.push(arguments);
-  };
+  window.gtag = function(){ window.dataLayer.push(arguments); };
 
   const script = document.createElement("script");
   script.async = true;
@@ -94,7 +47,6 @@ function psdTrack(eventName, params){
 function psdCanonicalURL(){
   const canonical = document.querySelector('link[rel="canonical"]');
   if(canonical && canonical.href) return canonical.href;
-
   const path = window.location.pathname === "/" ? "/" : window.location.pathname;
   return PSD_SITE_URL + path;
 }
@@ -120,9 +72,7 @@ function psdInjectStructuredData(){
         "name": "Public Sentiment Dash",
         "url": PSD_SITE_URL + "/",
         "logo": PSD_SITE_URL + "/logo.png",
-        "sameAs": [
-          PSD_X_PROFILE_URL
-        ],
+        "sameAs": [PSD_X_PROFILE_URL],
         "description": "AI-assisted public market sentiment dashboard for stocks, forex, crypto, commodities, bonds, macro headlines, and financial news."
       },
       {
@@ -130,9 +80,7 @@ function psdInjectStructuredData(){
         "@id": PSD_SITE_URL + "/#website",
         "url": PSD_SITE_URL + "/",
         "name": "Public Sentiment Dash",
-        "publisher": {
-          "@id": PSD_SITE_URL + "/#organization"
-        },
+        "publisher": {"@id": PSD_SITE_URL + "/#organization"},
         "inLanguage": "en-US"
       },
       {
@@ -141,12 +89,8 @@ function psdInjectStructuredData(){
         "url": currentUrl,
         "name": title,
         "description": description,
-        "isPartOf": {
-          "@id": PSD_SITE_URL + "/#website"
-        },
-        "publisher": {
-          "@id": PSD_SITE_URL + "/#organization"
-        },
+        "isPartOf": {"@id": PSD_SITE_URL + "/#website"},
+        "publisher": {"@id": PSD_SITE_URL + "/#organization"},
         "inLanguage": "en-US"
       }
     ]
@@ -176,31 +120,17 @@ function psdClass(value){
 function psdAddHomeLabel(){
   const brand = document.querySelector(".brand");
   const logo = document.querySelector(".brand .logo");
-
   if(!brand || !logo || document.querySelector(".psd-logo-home-wrap")) return;
 
   const style = document.createElement("style");
   style.textContent = `
-    .psd-logo-home-wrap{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:4px;
-      flex-shrink:0;
-    }
-    .psd-logo-home-word{
-      color:#ffd780;
-      font-size:11px;
-      font-weight:600;
-      line-height:1;
-      letter-spacing:.2px;
-    }
+    .psd-logo-home-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+    .psd-logo-home-word{color:#ffd780;font-size:11px;font-weight:600;line-height:1;letter-spacing:.2px}
   `;
   document.head.appendChild(style);
 
   const wrap = document.createElement("span");
   wrap.className = "psd-logo-home-wrap";
-
   brand.insertBefore(wrap, logo);
   wrap.appendChild(logo);
 
@@ -212,15 +142,12 @@ function psdAddHomeLabel(){
 
 function psdGetVoterId(){
   let id = localStorage.getItem("psd_voter_id");
-
   if(!id){
     id = window.crypto && crypto.randomUUID
       ? crypto.randomUUID()
       : "voter_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-
     localStorage.setItem("psd_voter_id", id);
   }
-
   return id;
 }
 
@@ -262,10 +189,33 @@ function psdFixNavigation(){
   if(social) nav.appendChild(social);
 }
 
-function psdEnhanceSocialLinks(){
-  const socials = document.querySelectorAll(".social-links");
+function psdEnhanceFooterLegalLinks(){
+  document.querySelectorAll(".footer-links").forEach(footer => {
+    const legalLinks = [
+      ["privacy.html", "Privacy"],
+      ["terms.html", "Terms"],
+      ["disclaimer.html", "Disclaimer"]
+    ];
 
-  socials.forEach(social => {
+    legalLinks.forEach(([href, label]) => {
+      const exists = Array.from(footer.querySelectorAll("a")).some(a => (a.getAttribute("href") || "") === href);
+      if(!exists){
+        const a = document.createElement("a");
+        a.href = href;
+        a.textContent = label;
+
+        if(window.location.pathname.toLowerCase().endsWith("/" + href.toLowerCase())){
+          a.className = "active";
+        }
+
+        footer.appendChild(a);
+      }
+    });
+  });
+}
+
+function psdEnhanceSocialLinks(){
+  document.querySelectorAll(".social-links").forEach(social => {
     const xPill = Array.from(social.querySelectorAll(".social-pill")).find(el =>
       el.textContent.trim().toLowerCase() === "x"
     );
@@ -289,6 +239,12 @@ function psdEnhanceSocialLinks(){
 function psdCreateShareButtons(){
   if(document.getElementById("psdShareBox")) return;
 
+  const legalPage = ["privacy.html","terms.html","disclaimer.html"].some(page =>
+    window.location.pathname.toLowerCase().endsWith(page)
+  );
+
+  if(legalPage) return;
+
   const main = document.querySelector("main.page");
   if(!main) return;
 
@@ -299,58 +255,13 @@ function psdCreateShareButtons(){
 
   const style = document.createElement("style");
   style.textContent = `
-    .psd-share-box{
-      max-width:1120px;
-      margin:0 auto 18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:14px 16px;
-      border:1px solid var(--line);
-      border-radius:16px;
-      background:linear-gradient(180deg,rgba(17,24,33,.92),rgba(13,18,27,.92));
-    }
-    .psd-share-text{
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.5;
-    }
-    .psd-share-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .psd-share-btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      border:1px solid var(--line);
-      background:#111821;
-      color:#fff;
-      border-radius:999px;
-      padding:9px 13px;
-      font-size:13px;
-      font-weight:600;
-      text-decoration:none;
-      cursor:pointer;
-      transition:.18s ease;
-      white-space:nowrap;
-    }
-    .psd-share-btn:hover{
-      border-color:rgba(210,153,34,.55);
-      transform:translateY(-1px);
-    }
-    .psd-share-x{
-      background:rgba(88,166,255,.10);
-      border-color:rgba(88,166,255,.25);
-    }
-    @media(max-width:720px){
-      .psd-share-box{
-        align-items:flex-start;
-        flex-direction:column;
-      }
-    }
+    .psd-share-box{max-width:1120px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(17,24,33,.92),rgba(13,18,27,.92))}
+    .psd-share-text{color:var(--muted);font-size:14px;line-height:1.5}
+    .psd-share-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .psd-share-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#111821;color:#fff;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;transition:.18s ease;white-space:nowrap}
+    .psd-share-btn:hover{border-color:rgba(210,153,34,.55);transform:translateY(-1px)}
+    .psd-share-x{background:rgba(88,166,255,.10);border-color:rgba(88,166,255,.25)}
+    @media(max-width:720px){.psd-share-box{align-items:flex-start;flex-direction:column}}
   `;
   document.head.appendChild(style);
 
@@ -359,9 +270,7 @@ function psdCreateShareButtons(){
   box.className = "psd-share-box";
 
   box.innerHTML = `
-    <div class="psd-share-text">
-      Like this dashboard? Share it and help more traders discover it.
-    </div>
+    <div class="psd-share-text">Like this dashboard? Share it and help more traders discover it.</div>
     <div class="psd-share-actions">
       <a class="psd-share-btn psd-share-x" href="${psdEscape(xShareUrl)}" target="_blank" rel="noopener">Share on X</a>
       <a class="psd-share-btn" href="${psdEscape(PSD_X_PROFILE_URL)}" target="_blank" rel="noopener">Follow on X</a>
@@ -402,7 +311,6 @@ function psdFallbackFromElement(el){
 
     if(dailyRow){
       const text = dailyRow.textContent.toLowerCase();
-
       if(text.includes("bullish")) return "Bullish";
       if(text.includes("bearish")) return "Bearish";
       if(text.includes("neutral")) return "Neutral";
@@ -422,7 +330,6 @@ function psdFallbackFromElement(el){
   if(newsCard){
     const tech = newsCard.querySelector(".tech-chip");
     const text = tech ? tech.textContent.toLowerCase() : "";
-
     if(text.includes("bullish")) return "Bullish";
     if(text.includes("bearish")) return "Bearish";
     if(text.includes("neutral")) return "Neutral";
@@ -433,11 +340,7 @@ function psdFallbackFromElement(el){
 
 function psdEffectiveSentiment(instrument, fallback){
   const voted = window.PSD_USER_SENTIMENT?.[instrument];
-
-  if(voted && voted !== "N/A"){
-    return voted;
-  }
-
+  if(voted && voted !== "N/A") return voted;
   return fallback || "N/A";
 }
 
@@ -490,7 +393,6 @@ function psdApplyUserSentiment(){
 
 async function psdSubmitVote(instrument, vote){
   const status = document.getElementById("psdVoteStatus");
-
   if(!status) return;
 
   status.textContent = "Submitting...";
@@ -508,12 +410,7 @@ async function psdSubmitVote(instrument, vote){
     });
 
     let result = {};
-
-    try{
-      result = await response.json();
-    }catch(e){
-      result = {};
-    }
+    try{ result = await response.json(); }catch(e){ result = {}; }
 
     if(!response.ok || !result.ok){
       status.textContent = result.error || `Vote failed. Error ${response.status}`;
@@ -617,6 +514,7 @@ function psdInit(){
   psdInjectStructuredData();
   psdAddHomeLabel();
   psdFixNavigation();
+  psdEnhanceFooterLegalLinks();
   psdEnhanceSocialLinks();
   psdCreateVoteWidget();
   psdCreateShareButtons();
@@ -637,6 +535,7 @@ if(document.readyState === "loading"){
 window.addEventListener("load", () => {
   psdAddHomeLabel();
   psdFixNavigation();
+  psdEnhanceFooterLegalLinks();
   psdEnhanceSocialLinks();
   psdApplyUserSentiment();
 });
