@@ -22,7 +22,7 @@
     .compare-block{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:16px}
     .compare-title{color:#fff;font-weight:600;font-size:16px;margin-bottom:4px}
     .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px;font-weight:400}
-    .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 160px;align-items:center;gap:14px;margin-bottom:12px}
+    .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 170px;align-items:center;gap:14px;margin-bottom:12px}
     .metric-label{color:#fff;font-weight:500;line-height:1.35}
     .metric-bar-wrap{height:24px;border-radius:999px;background:#2b3647;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
     .metric-bar{height:100%;border-radius:999px}
@@ -31,7 +31,7 @@
     .metric-value{color:#fff;font-weight:500;text-align:right;font-size:15px;line-height:1.35}
 
     .instrument-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
-    .instrument-card{padding:18px;min-height:285px}
+    .instrument-card{padding:18px;min-height:310px}
     .instrument-name{color:#fff;font-size:18px;font-weight:600;margin-bottom:10px}
     .info-row{color:var(--soft);line-height:1.55;margin-bottom:8px;font-weight:400}
     .label{color:var(--muted);font-weight:400}
@@ -51,7 +51,6 @@
     td{color:var(--soft);font-size:14px;font-weight:400}
     .source-link{color:var(--blue);font-weight:400}
     .source-link:hover{color:#8ec2ff;text-decoration:underline}
-    .source-table-wrap .Bullish,.source-table-wrap .Bearish,.source-table-wrap .Neutral,.source-table-wrap .Mixed,.source-table-wrap .MixedBullish,.source-table-wrap .MixedBearish,.source-table-wrap .MixedNeutral{font-weight:400}
 
     .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 12px rgba(255,255,255,.15)}
     .status-ok{background:var(--green);box-shadow:0 0 14px rgba(63,185,80,.55)}
@@ -121,20 +120,20 @@
       <div class="page-chip">Interactive Dashboard</div>
       <h1>Interactive Instrument Comparison</h1>
       <p>Choose up to 5 instruments. This page compares public sentiment, user sentiment, relevant headline count, source votes, technical direction, and related news.</p>
-      <p class="muted">PSI = Public Sentiment Index. <b>0/100</b> means very bearish public narrative, <b>50/100</b> means mixed or neutral, and <b>100/100</b> means very bullish public narrative.</p>
+      <p class="muted">Instrument PSI now uses the backend PSI headline set: the top 500 fresh, major-outlet-prioritized headlines when available. Relevant News still uses the broader headline set for browsing.</p>
 
       <div class="compare-selects" id="compareSelects"></div>
 
       <div class="compare-grid">
         <div class="compare-block">
           <div class="compare-title">Public Sentiment Index</div>
-          <div class="compare-note">Short sentiment index for each selected instrument.</div>
+          <div class="compare-note">Instrument PSI from the 500-headline major-outlet-prioritized PSI set.</div>
           <div id="scoreComparison"></div>
         </div>
 
         <div class="compare-block">
           <div class="compare-title">Relevant Headline Count</div>
-          <div class="compare-note">How many relevant headlines matched each selected instrument.</div>
+          <div class="compare-note">Broader relevant headline count for each selected instrument.</div>
           <div id="countComparison"></div>
         </div>
       </div>
@@ -151,13 +150,13 @@
         </div>
 
         <div class="help-card">
-          <h3>User Sentiment</h3>
-          <p>Anonymous daily user voting. If votes are not strong enough yet, it falls back to daily technical direction.</p>
+          <h3>Instrument PSI</h3>
+          <p>Calculated from the fresh 500-headline PSI set when available, not the full 365-day news cache.</p>
         </div>
 
         <div class="help-card">
-          <h3>Impact</h3>
-          <p>Impact means the headline contains stronger market-moving keywords. It is not a source-quality score.</p>
+          <h3>User Sentiment</h3>
+          <p>Anonymous daily user voting. If votes are not strong enough yet, it falls back to daily technical direction.</p>
         </div>
 
         <div class="help-card">
@@ -303,6 +302,17 @@
     function faviconForURL(url){ const domain = domainFromURL(url || ""); return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : ""; }
     function sourceURL(sourceName){ const found = (dashboardData?.sources || []).find(s => s.name === sourceName); return found?.url || "#"; }
 
+    function getNewsHeadlines(){
+      return Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : [];
+    }
+
+    function getPsiHeadlines(){
+      if(Array.isArray(dashboardData?.psi_headlines) && dashboardData.psi_headlines.length){
+        return dashboardData.psi_headlines;
+      }
+      return getNewsHeadlines();
+    }
+
     function userSentimentFor(instrument){
       return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
     }
@@ -358,8 +368,9 @@
              instrumentDef.aliases.some(alias => normalize(headline.description).includes(normalize(alias)));
     }
 
-    function getMatchedHeadlinesForInstrument(instrumentDef){
-      return (dashboardData?.top_headlines || []).filter(h => headlineMatchesInstrument(h, instrumentDef));
+    function getMatchedHeadlinesForInstrument(instrumentDef, headlineList){
+      const list = Array.isArray(headlineList) ? headlineList : getNewsHeadlines();
+      return list.filter(h => headlineMatchesInstrument(h, instrumentDef));
     }
 
     function extractTechLabel(entry, period){
@@ -397,24 +408,27 @@
     }
 
     function getInstrumentStats(instrumentDef){
-      const matches = getMatchedHeadlinesForInstrument(instrumentDef);
-      const count = matches.length;
+      const newsMatches = getMatchedHeadlinesForInstrument(instrumentDef, getNewsHeadlines());
+      const psiMatches = getMatchedHeadlinesForInstrument(instrumentDef, getPsiHeadlines());
+
       let score = null;
       let label = "N/A";
 
-      if(count > 0){
-        const avg = Math.round(matches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / count);
+      if(psiMatches.length > 0){
+        const avg = Math.round(psiMatches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / psiMatches.length);
         score = avg;
         label = scoreToLabel(avg);
       }
 
       return {
         def: instrumentDef,
-        matches,
-        count,
+        newsMatches,
+        psiMatches,
+        newsCount: newsMatches.length,
+        psiCount: psiMatches.length,
         score,
         scoreLabel: label,
-        latest: matches[0] || null,
+        latest: newsMatches[0] || null,
         tech: getTechnicalForInstrument(instrumentDef),
         userSentiment: userSentimentFor(instrumentDef.key)
       };
@@ -422,13 +436,13 @@
 
     function allCurrentScopeHeadlines(){
       const defs = getSelectedDefs();
-      if(!defs.length) return dashboardData?.top_headlines || [];
+      if(!defs.length) return getNewsHeadlines();
 
       const merged = [];
       const seen = new Set();
 
       defs.forEach(def => {
-        getMatchedHeadlinesForInstrument(def).forEach(h => {
+        getMatchedHeadlinesForInstrument(def, getNewsHeadlines()).forEach(h => {
           const key = `${h.source}__${h.title}`;
           if(!seen.has(key)){
             seen.add(key);
@@ -450,7 +464,7 @@
 
       wrap.innerHTML = statsList.map(stats => {
         const width = stats.score === null ? 0 : Math.max(6, stats.score);
-        const rightText = stats.score === null ? `No PSI yet` : `PSI ${stats.score}/100`;
+        const rightText = stats.score === null ? `No PSI match` : `PSI ${stats.score}/100`;
 
         return `<div class="metric-row">
           <div class="metric-label">${escapeHTML(stats.def.label)}</div>
@@ -468,15 +482,15 @@
         return;
       }
 
-      const maxCount = Math.max(...statsList.map(x => x.count), 1);
+      const maxCount = Math.max(...statsList.map(x => x.newsCount), 1);
 
       wrap.innerHTML = statsList.map(stats => {
-        const width = stats.count > 0 ? Math.max(4, Math.round((stats.count / maxCount) * 100)) : 0;
+        const width = stats.newsCount > 0 ? Math.max(4, Math.round((stats.newsCount / maxCount) * 100)) : 0;
 
         return `<div class="metric-row">
           <div class="metric-label">${escapeHTML(stats.def.label)}</div>
           <div class="metric-bar-wrap"><div class="metric-bar count-bar" style="width:${width}%;"></div></div>
-          <div class="metric-value">${stats.count} headline${stats.count === 1 ? "" : "s"}</div>
+          <div class="metric-value">${stats.newsCount} headline${stats.newsCount === 1 ? "" : "s"}</div>
         </div>`;
       }).join("");
     }
@@ -494,13 +508,14 @@
           ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>`
           : `No related headline found.`;
 
-        const scoreText = stats.score === null ? "N/A" : `${stats.scoreLabel} (PSI ${stats.score}/100)`;
+        const scoreText = stats.score === null ? "No PSI match" : `${stats.scoreLabel} (PSI ${stats.score}/100)`;
 
         return `<div class="dynamic-card instrument-card">
           <div class="instrument-name">${escapeHTML(stats.def.label)}</div>
           <div class="info-row"><span class="label">Public sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div>
+          <div class="info-row"><span class="label">PSI headlines:</span> ${stats.psiCount}</div>
+          <div class="info-row"><span class="label">Relevant headlines:</span> ${stats.newsCount}</div>
           <div class="info-row"><span class="label">User sentiment:</span> <span data-user-sentiment="${escapeHTML(stats.def.key)}" class="psd-user-sentiment-value ${voteClass(stats.userSentiment)}">${escapeHTML(stats.userSentiment)}</span></div>
-          <div class="info-row"><span class="label">Headlines:</span> ${stats.count}</div>
           <div class="subsection">Technical Direction</div>
           <div class="info-row">Daily: <span class="${voteClass(stats.tech.daily)}">${escapeHTML(stats.tech.daily)}</span></div>
           <div class="info-row">Weekly: <span class="${voteClass(stats.tech.weekly)}">${escapeHTML(stats.tech.weekly)}</span></div>
