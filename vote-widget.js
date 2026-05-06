@@ -22,7 +22,6 @@ window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
 
 function psdLoadGA4(){
   if(!PSD_GA4_ID || window.PSD_GA4_LOADED) return;
-
   window.PSD_GA4_LOADED = true;
   window.dataLayer = window.dataLayer || [];
   window.gtag = function(){ window.dataLayer.push(arguments); };
@@ -48,7 +47,6 @@ function psdTrack(eventName, params){
 function psdCanonicalURL(){
   const canonical = document.querySelector('link[rel="canonical"]');
   if(canonical && canonical.href) return canonical.href;
-
   const path = window.location.pathname === "/" ? "/" : window.location.pathname;
   return PSD_SITE_URL + path;
 }
@@ -107,11 +105,11 @@ function psdInjectStructuredData(){
 
 function psdEscape(value){
   return String(value ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 }
 
 function psdClass(value){
@@ -122,7 +120,6 @@ function psdClass(value){
 function psdAddHomeLabel(){
   const brand = document.querySelector(".brand");
   const logo = document.querySelector(".brand .logo");
-
   if(!brand || !logo || document.querySelector(".psd-logo-home-wrap")) return;
 
   const style = document.createElement("style");
@@ -200,15 +197,12 @@ function psdCreateAdvertiseBanner(){
 
 function psdGetVoterId(){
   let id = localStorage.getItem("psd_voter_id");
-
   if(!id){
     id = window.crypto && crypto.randomUUID
       ? crypto.randomUUID()
       : "voter_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-
     localStorage.setItem("psd_voter_id", id);
   }
-
   return id;
 }
 
@@ -265,11 +259,9 @@ function psdEnhanceFooterLegalLinks(){
         const a = document.createElement("a");
         a.href = href;
         a.textContent = label;
-
         if(window.location.pathname.toLowerCase().endsWith("/" + href.toLowerCase())){
           a.className = "active";
         }
-
         footer.appendChild(a);
       }
     });
@@ -304,7 +296,6 @@ function psdCreateShareButtons(){
   const noSharePages = ["privacy.html","terms.html","disclaimer.html"].some(page =>
     window.location.pathname.toLowerCase().endsWith(page)
   );
-
   if(noSharePages) return;
 
   const main = document.querySelector("main.page");
@@ -330,7 +321,6 @@ function psdCreateShareButtons(){
   const box = document.createElement("section");
   box.id = "psdShareBox";
   box.className = "psd-share-box";
-
   box.innerHTML = `
     <div class="psd-share-text">Like this dashboard? Share it and help more traders discover it.</div>
     <div class="psd-share-actions">
@@ -365,12 +355,10 @@ function psdCreateShareButtons(){
 
 function psdFallbackFromElement(el){
   const card = el.closest(".instrument-card");
-
   if(card){
     const dailyRow = Array.from(card.querySelectorAll(".info-row")).find(row =>
       row.textContent.trim().toLowerCase().startsWith("daily:")
     );
-
     if(dailyRow){
       const text = dailyRow.textContent.toLowerCase();
       if(text.includes("bullish")) return "Bullish";
@@ -380,7 +368,6 @@ function psdFallbackFromElement(el){
   }
 
   const rail = el.closest(".rail-item");
-
   if(rail){
     if(rail.classList.contains("direction-up")) return "Bullish";
     if(rail.classList.contains("direction-down")) return "Bearish";
@@ -388,11 +375,9 @@ function psdFallbackFromElement(el){
   }
 
   const newsCard = el.closest(".news-card");
-
   if(newsCard){
     const tech = newsCard.querySelector(".tech-chip");
     const text = tech ? tech.textContent.toLowerCase() : "";
-
     if(text.includes("bullish")) return "Bullish";
     if(text.includes("bearish")) return "Bearish";
     if(text.includes("neutral")) return "Neutral";
@@ -403,11 +388,7 @@ function psdFallbackFromElement(el){
 
 function psdEffectiveSentiment(instrument, fallback){
   const voted = window.PSD_USER_SENTIMENT?.[instrument];
-
-  if(voted && voted !== "N/A"){
-    return voted;
-  }
-
+  if(voted && voted !== "N/A") return voted;
   return fallback || "N/A";
 }
 
@@ -428,14 +409,12 @@ async function psdLoadUserSentiment(){
 
     const rows = await response.json();
     const map = {};
-
     rows.forEach(row => {
       map[row.instrument] = row.user_sentiment || "N/A";
     });
 
     window.PSD_USER_SENTIMENT = map;
     psdApplyUserSentiment();
-
     window.dispatchEvent(new CustomEvent("psdUserSentimentReady", { detail: map }));
   }catch(error){
     console.warn("User sentiment load failed", error);
@@ -460,7 +439,6 @@ function psdApplyUserSentiment(){
 
 async function psdSubmitVote(instrument, vote){
   const status = document.getElementById("psdVoteStatus");
-
   if(!status) return;
 
   status.textContent = "Submitting...";
