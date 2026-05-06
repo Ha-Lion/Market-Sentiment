@@ -22,6 +22,7 @@ window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
 
 function psdLoadGA4(){
   if(!PSD_GA4_ID || window.PSD_GA4_LOADED) return;
+
   window.PSD_GA4_LOADED = true;
   window.dataLayer = window.dataLayer || [];
   window.gtag = function(){ window.dataLayer.push(arguments); };
@@ -47,6 +48,7 @@ function psdTrack(eventName, params){
 function psdCanonicalURL(){
   const canonical = document.querySelector('link[rel="canonical"]');
   if(canonical && canonical.href) return canonical.href;
+
   const path = window.location.pathname === "/" ? "/" : window.location.pathname;
   return PSD_SITE_URL + path;
 }
@@ -120,6 +122,7 @@ function psdClass(value){
 function psdAddHomeLabel(){
   const brand = document.querySelector(".brand");
   const logo = document.querySelector(".brand .logo");
+
   if(!brand || !logo || document.querySelector(".psd-logo-home-wrap")) return;
 
   const style = document.createElement("style");
@@ -140,14 +143,84 @@ function psdAddHomeLabel(){
   wrap.appendChild(word);
 }
 
+function psdCreateAdvertiseBanner(){
+  if(document.getElementById("psdAdvertiseBanner")) return;
+
+  const header = document.querySelector(".header");
+  const main = document.querySelector("main.page");
+
+  if(!header || !main) return;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .psd-ad-banner{
+      max-width:1120px;
+      margin:14px auto 0;
+      padding:11px 14px;
+      border:1px solid rgba(210,153,34,.28);
+      border-radius:999px;
+      background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.08));
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      text-align:center;
+      font-size:13px;
+      line-height:1.45;
+      box-shadow:0 10px 26px rgba(0,0,0,.16);
+    }
+    .psd-ad-banner strong{
+      color:#ffd780;
+      font-weight:800;
+    }
+    .psd-ad-banner a{
+      color:#fff;
+      font-weight:800;
+      text-decoration:none;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      padding:6px 10px;
+      border-radius:999px;
+      white-space:nowrap;
+      transition:.18s ease;
+    }
+    .psd-ad-banner a:hover{
+      border-color:rgba(210,153,34,.55);
+      transform:translateY(-1px);
+    }
+    @media(max-width:760px){
+      .psd-ad-banner{
+        border-radius:18px;
+        flex-direction:column;
+        margin:12px 14px 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const banner = document.createElement("div");
+  banner.id = "psdAdvertiseBanner";
+  banner.className = "psd-ad-banner";
+  banner.innerHTML = `
+    <span>📣 <strong>Advertise on Public Sentiment Dash</strong> — reach finance, trading, investing, and market-sentiment readers.</span>
+    <a href="contact.html">Contact Us</a>
+  `;
+
+  header.insertAdjacentElement("afterend", banner);
+}
+
 function psdGetVoterId(){
   let id = localStorage.getItem("psd_voter_id");
+
   if(!id){
     id = window.crypto && crypto.randomUUID
       ? crypto.randomUUID()
       : "voter_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+
     localStorage.setItem("psd_voter_id", id);
   }
+
   return id;
 }
 
@@ -311,6 +384,7 @@ function psdFallbackFromElement(el){
 
     if(dailyRow){
       const text = dailyRow.textContent.toLowerCase();
+
       if(text.includes("bullish")) return "Bullish";
       if(text.includes("bearish")) return "Bearish";
       if(text.includes("neutral")) return "Neutral";
@@ -330,6 +404,7 @@ function psdFallbackFromElement(el){
   if(newsCard){
     const tech = newsCard.querySelector(".tech-chip");
     const text = tech ? tech.textContent.toLowerCase() : "";
+
     if(text.includes("bullish")) return "Bullish";
     if(text.includes("bearish")) return "Bearish";
     if(text.includes("neutral")) return "Neutral";
@@ -340,7 +415,11 @@ function psdFallbackFromElement(el){
 
 function psdEffectiveSentiment(instrument, fallback){
   const voted = window.PSD_USER_SENTIMENT?.[instrument];
-  if(voted && voted !== "N/A") return voted;
+
+  if(voted && voted !== "N/A"){
+    return voted;
+  }
+
   return fallback || "N/A";
 }
 
@@ -393,6 +472,7 @@ function psdApplyUserSentiment(){
 
 async function psdSubmitVote(instrument, vote){
   const status = document.getElementById("psdVoteStatus");
+
   if(!status) return;
 
   status.textContent = "Submitting...";
@@ -513,6 +593,7 @@ function psdInit(){
   psdLoadGA4();
   psdInjectStructuredData();
   psdAddHomeLabel();
+  psdCreateAdvertiseBanner();
   psdFixNavigation();
   psdEnhanceFooterLegalLinks();
   psdEnhanceSocialLinks();
@@ -534,6 +615,7 @@ if(document.readyState === "loading"){
 
 window.addEventListener("load", () => {
   psdAddHomeLabel();
+  psdCreateAdvertiseBanner();
   psdFixNavigation();
   psdEnhanceFooterLegalLinks();
   psdEnhanceSocialLinks();
