@@ -1,295 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Public Sentiment Dash — News & Articles</title>
-  <meta name="description" content="Browse and search published market news and articles from the Public Sentiment Dash global public sentiment dashboard." />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://publicsentimentdash.com/news-articles.html" />
-  <link rel="icon" type="image/png" href="logo.png" />
-  <link rel="stylesheet" href="site.css" />
+  <meta name="description" content="Browse and search published market news and articles from the Public Sentiment Dash global public sentiment dashboard.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/news-articles.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
 
   <style>
-    .news-page-shell {
-      display: grid;
-      gap: 18px;
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      margin-top:16px;
     }
 
-    .news-hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 280px;
-      gap: 18px;
-      align-items: stretch;
+    input[type="text"],select{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:15px;
+      outline:none;
+      font-weight:400;
     }
 
-    .news-hero-copy,
-    .news-stat-box {
-      padding: 24px;
+    input[type="text"]:focus,select:focus{
+      border-color:rgba(210,153,34,.65);
+      box-shadow:0 0 0 3px rgba(210,153,34,.10);
     }
 
-    .page-chip {
-      display: inline-flex;
-      width: fit-content;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(88,166,255,.10);
-      border: 1px solid rgba(88,166,255,.22);
-      color: #a5cfff;
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 10px;
+    input[type="text"]{
+      min-width:320px;
+      flex:1 1 320px;
     }
 
-    .news-stat-box {
-      display: grid;
-      place-items: center;
-      text-align: center;
+    select{
+      min-width:220px;
     }
 
-    .stat-big {
-      color: #fff;
-      font-size: 44px;
-      font-weight: 950;
-      letter-spacing: -0.06em;
-      line-height: 1;
+    .btn{
+      border:0;
+      cursor:pointer;
+      border-radius:999px;
+      padding:12px 16px;
+      background:var(--gold);
+      color:#05070b;
+      font-weight:600;
+      font-size:14px;
+      transition:.18s ease;
     }
 
-    .stat-label {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      font-weight: 800;
-      margin-top: 8px;
+    .btn:hover{
+      background:var(--gold2);
+      transform:translateY(-1px);
     }
 
-    .cache-note {
-      color: var(--muted, #aab4c5);
-      font-size: 14px;
-      margin-top: 8px;
+    .btn.secondary{
+      background:transparent;
+      color:var(--soft);
+      border:1px solid var(--line);
     }
 
-    .filter-panel {
-      padding: 18px;
+    .source-summary{
+      display:none;
+      margin-top:14px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:rgba(17,24,33,.62);
     }
 
-    .controls {
-      display: grid;
-      grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, .8fr)) auto auto;
-      gap: 10px;
-      align-items: end;
+    .source-summary-title{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:500;
+      margin-bottom:10px;
     }
 
-    .controls input,
-    .controls select,
-    .controls button {
-      min-height: 42px;
+    .source-summary-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
     }
 
-    .btn.secondary {
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.14);
+    .source-summary-link{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      color:var(--blue);
+      font-size:13px;
+      font-weight:500;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(88,166,255,.08);
+      border:1px solid rgba(88,166,255,.15);
     }
 
-    .source-summary {
-      margin-top: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.035);
-      border-radius: 14px;
-      padding: 13px;
+    .source-summary-link:hover{
+      color:#fff;
+      background:rgba(210,153,34,.12);
+      border-color:rgba(210,153,34,.30);
     }
 
-    .source-summary-title {
-      color: #fff;
-      font-size: 13px;
-      font-weight: 900;
-      margin-bottom: 8px;
+    .source-summary-link img{
+      width:16px;
+      height:16px;
+      border-radius:4px;
     }
 
-    .source-summary-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
+    .count-note{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:14px;
+      font-weight:400;
     }
 
-    .source-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 9px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.055);
-      border: 1px solid rgba(255,255,255,.10);
-      color: var(--muted, #aab4c5);
-      font-size: 12px;
-      font-weight: 800;
+    .headline-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+      gap:16px;
     }
 
-    .feed-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 14px;
+    .headline-card{
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:320px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 12px 30px rgba(0,0,0,.18);
+      transition:.18s ease;
+      color:var(--text);
+      padding:16px;
     }
 
-    .count-note {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      font-weight: 800;
+    .headline-card:hover{
+      transform:translateY(-3px);
+      border-color:rgba(210,153,34,.45);
+      box-shadow:0 18px 35px rgba(0,0,0,.26);
     }
 
-    .headline-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr));
-      gap: 14px;
+    .headline-source-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
     }
 
-    .headline-card {
-      display: flex;
-      flex-direction: column;
-      min-height: 100%;
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      background: rgba(255,255,255,.035);
-      color: inherit;
-      text-decoration: none;
-      overflow: hidden;
-      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    .headline-source-icon{
+      width:24px;
+      height:24px;
+      border-radius:6px;
+      object-fit:cover;
+      background:#fff;
+      flex-shrink:0;
     }
 
-    .headline-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(244,201,93,.35);
-      background: rgba(255,255,255,.052);
-      text-decoration: none;
+    .headline-source-name{
+      color:#fff;
+      font-size:13px;
+      font-weight:600;
     }
 
-    .headline-body {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 16px;
-      min-height: 100%;
+    .headline-body{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      height:100%;
     }
 
-    .headline-title {
-      color: #fff;
-      font-size: 16px;
-      font-weight: 950;
-      line-height: 1.28;
+    .headline-top{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      color:var(--muted);
+      font-size:12px;
     }
 
-    .headline-description {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      line-height: 1.45;
-      flex: 1;
+    .tag,.impact-tag,.tech-tag{
+      display:inline-flex;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:500;
     }
 
-    .headline-meta,
-    .headline-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
+    .tag{
+      background:rgba(88,166,255,.12);
+      border:1px solid rgba(88,166,255,.20);
+      color:#b9d9ff;
     }
 
-    .meta-chip,
-    .headline-tag {
-      display: inline-flex;
-      align-items: center;
-      min-height: 25px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.055);
-      color: var(--muted, #aab4c5);
-      font-size: 11px;
-      font-weight: 850;
+    .impact-tag{
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.25);
+      color:#f4d17d;
     }
 
-    .Bullish {
-      color: var(--green, #38d39f) !important;
+    .tech-tag{
+      background:rgba(63,185,80,.10);
+      border:1px solid rgba(63,185,80,.20);
+      color:#c9f5ce;
     }
 
-    .Bearish {
-      color: var(--red, #ff6b6b) !important;
+    .headline-title{
+      color:#fff;
+      font-size:20px;
+      font-weight:500;
+      line-height:1.45;
+      margin-top:2px;
     }
 
-    .Mixed,
-    .Neutral,
-    .MixedNeutral {
-      color: var(--gold, #f4c95d) !important;
+    .headline-meta{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.55;
+      font-weight:400;
     }
 
-    .headline-open {
-      color: var(--gold, #f4c95d);
-      font-size: 13px;
-      font-weight: 950;
-      margin-top: 4px;
+    .headline-open{
+      margin-top:auto;
+      color:#fff;
+      font-size:13px;
+      font-weight:500;
     }
 
-    .empty-card {
-      grid-column: 1 / -1;
-      padding: 18px;
-      border: 1px dashed rgba(255,255,255,.18);
-      border-radius: 14px;
-      color: var(--muted, #aab4c5);
-      text-align: center;
+    .empty-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      color:var(--soft);
+      line-height:1.6;
+      font-weight:400;
     }
 
-    .page-up {
-      position: fixed;
-      right: 18px;
-      bottom: 84px;
-      z-index: 80;
-      width: 42px;
-      height: 42px;
-      border-radius: 999px;
-      opacity: 0;
-      pointer-events: none;
-      transition: .18s ease;
+    .cache-note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
     }
 
-    .page-up.show {
-      opacity: 1;
-      pointer-events: auto;
+    .page-up{
+      position:fixed;
+      right:22px;
+      bottom:22px;
+      z-index:50;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      width:46px;
+      height:46px;
+      border-radius:50%;
+      border:1px solid rgba(210,153,34,.45);
+      background:rgba(13,17,23,.94);
+      color:#ffd780;
+      font-size:22px;
+      font-weight:500;
+      cursor:pointer;
+      box-shadow:0 0 22px rgba(210,153,34,.18);
+      transition:.18s ease;
     }
 
-    @media (max-width: 1080px) {
-      .news-hero,
-      .controls {
-        grid-template-columns: 1fr;
+    .page-up:hover{
+      transform:translateY(-3px);
+      background:rgba(210,153,34,.18);
+    }
+
+    .page-up.show{
+      display:flex;
+    }
+
+    @media(max-width:760px){
+      input[type="text"],select,.btn{
+        min-width:100%;
+        width:100%;
       }
 
-      .news-stat-box {
-        place-items: start;
-        text-align: left;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .news-hero-copy,
-      .news-stat-box,
-      .filter-panel {
-        padding: 16px;
-      }
-
-      .feed-head {
-        display: block;
-      }
-
-      .headline-list {
-        grid-template-columns: 1fr;
-      }
-
-      .stat-big {
-        font-size: 36px;
-      }
-
-      .page-up {
-        right: 11px;
-        bottom: 74px;
+      .headline-list{
+        grid-template-columns:1fr;
       }
     }
   </style>
@@ -298,7 +299,7 @@
 <body>
   <header class="header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo" />
+      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
       <div class="brand-copy">
         <div class="brand-stamp">AI-built public market sentiment dashboard</div>
         <div class="site-subtitle">Global market public sentiment dashboard</div>
@@ -309,13 +310,14 @@
       <div class="header-pill">✨ Constantly learning & improving</div>
     </div>
 
-    <nav class="nav" aria-label="Main navigation">
+    <nav class="nav">
       <a href="dashboard.html">Interactive Dashboard</a>
       <a href="news-articles.html" class="active">News & Articles</a>
       <a href="market-sentiment.html">Guides</a>
       <a href="contact.html">Get in Touch</a>
       <a href="how-it-works.html">Dashboard Works</a>
       <a href="about.html">About</a>
+
       <div class="social-links">
         <span class="social-label">Follow us</span>
         <span class="social-pill">X</span>
@@ -325,89 +327,66 @@
   </header>
 
   <main class="page">
-    <div class="news-page-shell">
-      <section class="news-hero">
-        <div class="panel news-hero-copy">
-          <div class="page-chip">News & Articles</div>
-          <h1>News & Articles</h1>
-          <p>Search the rolling news memory by keyword, market, instrument, and source.</p>
-          <p class="cache-note">The site searches the latest scan plus the rolling archive. New articles are added hourly when the private scraper runs.</p>
-        </div>
+    <section class="panel">
+      <div class="page-chip">News & Articles</div>
+      <h1>News & Articles</h1>
+      <p>Search the rolling news memory by keyword, market, instrument, and source.</p>
+      <p class="cache-note">The site searches the latest scan plus the rolling archive. New articles are added hourly when the private scraper runs.</p>
 
-        <aside class="panel news-stat-box">
-          <div>
-            <div class="stat-big" id="articleCountBig">--</div>
-            <div class="stat-label">Published articles loaded</div>
-          </div>
-        </aside>
-      </section>
+      <div class="controls">
+        <input type="text" id="searchBox" placeholder="Search keywords, headlines, markets, instruments, or sources...">
 
-      <section class="panel filter-panel">
-        <div class="controls">
-          <input type="text" id="searchBox" placeholder="Search keywords, headlines, markets, instruments, or sources..." />
+        <select id="marketFilter">
+          <option value="all">All Markets</option>
+          <option value="indexes">Indexes / Futures</option>
+          <option value="bonds">Bonds / Rates</option>
+          <option value="forex">Forex / Currencies</option>
+          <option value="crypto">Crypto</option>
+          <option value="commodities">Commodities</option>
+          <option value="macro">Macro / Fed / Inflation</option>
+          <option value="stocks">Stocks / Company News</option>
+        </select>
 
-          <select id="marketFilter">
-            <option value="all">All Markets</option>
-            <option value="indexes">Indexes / Futures</option>
-            <option value="bonds">Bonds / Rates</option>
-            <option value="forex">Forex / Currencies</option>
-            <option value="crypto">Crypto</option>
-            <option value="commodities">Commodities</option>
-            <option value="macro">Macro / Fed / Inflation</option>
-            <option value="stocks">Stocks / Company News</option>
-          </select>
+        <select id="instrumentFilter">
+          <option value="all">All Instruments</option>
+        </select>
 
-          <select id="instrumentFilter">
-            <option value="all">All Instruments</option>
-          </select>
+        <select id="sourceFilter">
+          <option value="all">All Sources</option>
+        </select>
 
-          <select id="sourceFilter">
-            <option value="all">All Sources</option>
-          </select>
+        <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
+        <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
+      </div>
 
-          <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
-          <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
-        </div>
+      <div class="source-summary" id="sourceSummary">
+        <div class="source-summary-title">Sources found in this search</div>
+        <div class="source-summary-list" id="sourceSummaryList"></div>
+      </div>
+    </section>
 
-        <div class="source-summary" id="sourceSummary">
-          <div class="source-summary-title">Sources found in this search</div>
-          <div class="source-summary-list" id="sourceSummaryList"></div>
-        </div>
-      </section>
+    <section class="panel">
+      <h2>Published Articles Feed</h2>
+      <div class="count-note" id="resultsCount">Loading published articles...</div>
+      <div class="headline-list" id="headlineList">Loading published articles...</div>
+    </section>
 
-      <section class="panel">
-        <div class="feed-head">
-          <div>
-            <h2>Published Articles Feed</h2>
-            <p class="muted">Filtered by your search controls.</p>
-          </div>
-          <div class="count-note" id="resultsCount">Loading published articles...</div>
-        </div>
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="news-articles.html" class="active">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">Dashboard Works</a>
+        <a href="about.html">About</a>
+      </div>
 
-        <div class="headline-list" id="headlineList">Loading published articles...</div>
-      </section>
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
 
-      <footer class="footer">
-        <div class="footer-links">
-          <a href="dashboard.html">Interactive Dashboard</a>
-          <a href="news-articles.html" class="active">News & Articles</a>
-          <a href="market-sentiment.html">Guides</a>
-          <a href="contact.html">Get in Touch</a>
-          <a href="how-it-works.html">Dashboard Works</a>
-          <a href="about.html">About</a>
-          <a href="advertise.html">Advertise</a>
-          <a href="privacy.html">Privacy</a>
-          <a href="terms.html">Terms</a>
-          <a href="disclaimer.html">Disclaimer</a>
-        </div>
-
-        <div class="legal">
-          <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
-        </div>
-
-        <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
-      </footer>
-    </div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
   </main>
 
   <button class="page-up" id="pageUpBtn" type="button" aria-label="Go back to top">↑</button>
@@ -418,241 +397,250 @@
     let allArticles = [];
 
     const marketLabels = {
-      indexes: "Indexes / Futures",
-      bonds: "Bonds / Rates",
-      forex: "Forex / Currencies",
-      crypto: "Crypto",
-      commodities: "Commodities",
-      macro: "Macro / Fed / Inflation",
-      stocks: "Stocks / Company News",
-      general: "General Market"
+      indexes:"Indexes / Futures",
+      bonds:"Bonds / Rates",
+      forex:"Forex / Currencies",
+      crypto:"Crypto",
+      commodities:"Commodities",
+      macro:"Macro / Fed / Inflation",
+      stocks:"Stocks / Company News",
+      general:"General Market"
     };
 
     const instrumentGroups = {
-      indexes: ["S&P 500 / ES", "Nasdaq / NQ", "Dow / YM", "Russell / RTY", "VIX", "DAX", "FTSE 100", "Nikkei 225", "Hang Seng", "Euro Stoxx 50", "CAC 40"],
-      bonds: ["US 10Y Treasury", "US 2Y Treasury", "Treasury Yields"],
-      forex: ["US Dollar / DXY", "EUR / EURUSD", "GBP / GBPUSD", "JPY / USDJPY", "CHF / USDCHF", "CAD / USDCAD", "AUD / AUDUSD", "NZD / NZDUSD", "EURJPY", "EURGBP", "GBPJPY", "AUDJPY", "CADJPY", "EURCHF", "EURCAD", "AUDCAD", "AUDNZD", "NZDJPY", "USDTRY", "USDMXN", "USDZAR"],
-      crypto: ["Bitcoin / BTC", "Ethereum / ETH", "Solana / SOL", "XRP", "BNB", "Cardano / ADA", "Dogecoin / DOGE", "General Crypto"],
-      commodities: ["Gold", "Silver", "Copper", "Crude Oil", "Natural Gas"],
-      macro: ["Fed / FOMC", "CPI / Inflation", "PPI", "Jobs / NFP", "US GDP / Growth", "Geopolitical / Tariffs"],
-      stocks: ["Stocks / Company News", "Airlines", "Banks", "Technology Stocks", "Energy Stocks", "Retail Stocks", "Market Movers"]
+      indexes:["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX","DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40"],
+      bonds:["US 10Y Treasury","US 2Y Treasury","Treasury Yields"],
+      forex:["US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF","CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY","AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY","USDTRY","USDMXN","USDZAR"],
+      crypto:["Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA","Dogecoin / DOGE","General Crypto"],
+      commodities:["Gold","Silver","Copper","Crude Oil","Natural Gas"],
+      macro:["Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","US GDP / Growth","Geopolitical / Tariffs"],
+      stocks:["Stocks / Company News","Airlines","Banks","Technology Stocks","Energy Stocks","Retail Stocks","Market Movers"]
     };
 
-    function allInstruments() {
+    function allInstruments(){
       return [...new Set(Object.values(instrumentGroups).flat())];
     }
 
-    function escapeHTML(value) {
+    function escapeHTML(value){
       return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
-    function normalize(value) {
-      return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    function normalizeClass(value){
+      return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral";
     }
 
-    function normalizeClass(value) {
-      const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
-      return clean || "Neutral";
+    function domainFromURL(url){
+      try{
+        return new URL(url).hostname.replace(/^www\./, "");
+      }catch(e){
+        return "";
+      }
     }
 
-    function itemMarkets(item) {
-      return Array.isArray(item.markets) ? item.markets : item.market ? [item.market] : [];
+    function faviconForURL(url){
+      const domain = domainFromURL(url || "");
+      return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
     }
 
-    function itemInstruments(item) {
-      return Array.isArray(item.instruments) ? item.instruments : item.instrument ? [item.instrument] : [];
+    function sourceURL(sourceName){
+      const found = (dashboardData?.sources || []).find(s => s.name === sourceName);
+      return found?.url || "";
     }
 
-    function itemURL(item) {
-      return item.link || item.url || item.article_url || "#";
+    function getTechnicalEntry(name){
+      if(!technicalData) return null;
+
+      const root = technicalData.technical || technicalData;
+
+      if(!root || !name) return null;
+
+      if(Array.isArray(root)){
+        return root.find(item => String(item.instrument || item.name || item.symbol || "") === name) || null;
+      }
+
+      return root[name] || null;
     }
 
-    function itemSourceURL(item) {
-      return item.source_url || itemURL(item);
+    function extractTechLabel(entry){
+      if(!entry) return "N/A";
+
+      const daily = entry.daily || entry.Daily;
+
+      if(typeof daily === "string") return daily;
+
+      if(typeof daily === "object" && daily){
+        return daily.direction || daily.signal || daily.label || daily.trend || daily.value || "N/A";
+      }
+
+      return "N/A";
     }
 
-    function dedupeArticles(items) {
+    function headlineTech(item){
+      const instruments = Array.isArray(item?.instruments) ? item.instruments : [];
+
+      for(const name of instruments){
+        const entry = getTechnicalEntry(name);
+        const daily = extractTechLabel(entry);
+
+        if(daily !== "N/A") return `Tech Daily: ${daily}`;
+      }
+
+      return "Tech Daily: N/A";
+    }
+
+    function hasActiveSearch(){
+      return document.getElementById("searchBox").value.trim() !== "" ||
+             document.getElementById("marketFilter").value !== "all" ||
+             document.getElementById("instrumentFilter").value !== "all" ||
+             document.getElementById("sourceFilter").value !== "all";
+    }
+
+    function dedupeArticles(items){
       const seen = new Set();
-      const result = [];
+      const output = [];
 
       items.forEach(item => {
-        const key = normalize(itemURL(item) || item.title || "");
-        if (!key || seen.has(key)) return;
+        const key = `${String(item.link || "").toLowerCase()}__${String(item.title || "").toLowerCase()}`;
+
+        if(!item.title || seen.has(key)) return;
+
         seen.add(key);
-        result.push(item);
+        output.push(item);
       });
 
-      return result;
+      return output;
     }
 
-    function marketMatches(item, market) {
-      if (market === "all") return true;
+    function populateInstrumentOptions(){
+      const market = document.getElementById("marketFilter").value;
+      const instruments = market === "all" ? allInstruments() : (instrumentGroups[market] || []);
 
-      const markets = itemMarkets(item).map(normalize);
-      const label = normalize(marketLabels[market] || market);
-      const key = normalize(market);
-
-      return markets.some(m => m === key || m.includes(key) || m.includes(label) || label.includes(m));
+      document.getElementById("instrumentFilter").innerHTML =
+        [`<option value="all">All Instruments</option>`]
+          .concat(instruments.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
+          .join("");
     }
 
-    function instrumentMatches(item, instrument) {
-      if (instrument === "all") return true;
+    function populateSourceOptions(){
+      const sources = [...new Set(allArticles.map(item => item.source).filter(Boolean))].sort();
 
-      const wanted = normalize(instrument);
-      return itemInstruments(item).some(inst => {
-        const n = normalize(inst);
-        return n === wanted || n.includes(wanted) || wanted.includes(n);
-      });
+      document.getElementById("sourceFilter").innerHTML =
+        [`<option value="all">All Sources</option>`]
+          .concat(sources.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
+          .join("");
     }
 
-    function sourceMatches(item, source) {
-      if (source === "all") return true;
-      return normalize(item.source || "") === normalize(source);
-    }
-
-    function textMatches(item, query) {
-      if (!query) return true;
-
-      const haystack = normalize([
-        item.title,
-        item.description,
-        item.summary,
-        item.source,
-        item.published,
-        item.vote,
-        item.impact,
-        itemMarkets(item).join(" "),
-        itemInstruments(item).join(" ")
-      ].join(" "));
-
-      return haystack.includes(normalize(query));
-    }
-
-    function getFilteredArticles() {
-      const query = document.getElementById("searchBox").value;
+    function filteredHeadlines(){
+      const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
       const market = document.getElementById("marketFilter").value;
       const instrument = document.getElementById("instrumentFilter").value;
       const source = document.getElementById("sourceFilter").value;
 
-      return allArticles.filter(item =>
-        marketMatches(item, market) &&
-        instrumentMatches(item, instrument) &&
-        sourceMatches(item, source) &&
-        textMatches(item, query)
-      );
-    }
+      return allArticles.filter(item => {
+        const text = [
+          item.title || "",
+          item.description || "",
+          item.source || "",
+          item.published || "",
+          ...(item.markets || []),
+          ...(item.instruments || [])
+        ].join(" ").toLowerCase();
 
-    function populateInstrumentOptions() {
-      const market = document.getElementById("marketFilter").value;
-      const select = document.getElementById("instrumentFilter");
-      const current = select.value;
+        const marketOk = market === "all" || (item.markets || []).includes(market);
+        const instrumentOk = instrument === "all" || (item.instruments || []).includes(instrument);
+        const sourceOk = source === "all" || item.source === source;
+        const keywordOk = !keyword || text.includes(keyword);
 
-      const options = market === "all"
-        ? allInstruments()
-        : (instrumentGroups[market] || allInstruments());
-
-      const dynamic = new Set(options);
-
-      allArticles.forEach(item => {
-        itemInstruments(item).forEach(inst => {
-          if (market === "all" || marketMatches(item, market)) dynamic.add(inst);
-        });
+        return marketOk && instrumentOk && sourceOk && keywordOk;
       });
+    }
 
-      select.innerHTML = `<option value="all">All Instruments</option>` +
-        [...dynamic].sort().map(inst => `<option value="${escapeHTML(inst)}">${escapeHTML(inst)}</option>`).join("");
+    function renderSourceSummary(headlines){
+      const box = document.getElementById("sourceSummary");
+      const list = document.getElementById("sourceSummaryList");
 
-      if ([...select.options].some(opt => opt.value === current)) {
-        select.value = current;
+      if(!hasActiveSearch()){
+        box.style.display = "none";
+        list.innerHTML = "";
+        return;
       }
-    }
 
-    function populateSourceOptions() {
-      const select = document.getElementById("sourceFilter");
-      const current = select.value;
+      const sourceNames = [...new Set(headlines.map(h => h.source).filter(Boolean))].sort();
 
-      const sources = [...new Set(allArticles.map(item => item.source).filter(Boolean))].sort();
-
-      select.innerHTML = `<option value="all">All Sources</option>` +
-        sources.map(source => `<option value="${escapeHTML(source)}">${escapeHTML(source)}</option>`).join("");
-
-      if ([...select.options].some(opt => opt.value === current)) {
-        select.value = current;
+      if(!sourceNames.length){
+        box.style.display = "none";
+        list.innerHTML = "";
+        return;
       }
+
+      box.style.display = "block";
+
+      list.innerHTML = sourceNames.map(name => {
+        const sample = headlines.find(h => h.source === name);
+        const url = sourceURL(name) || sample?.source_url || sample?.link || "#";
+        const icon = faviconForURL(url);
+
+        return `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">
+          ${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo">` : ""}
+          <span>${escapeHTML(name)}</span>
+        </a>`;
+      }).join("");
     }
 
-    function updateSourceSummary(items) {
-      const sourceMap = new Map();
+    function renderHeadlines(){
+      if(!dashboardData) return;
 
-      items.forEach(item => {
-        const source = item.source || "Unknown Source";
-        sourceMap.set(source, (sourceMap.get(source) || 0) + 1);
-      });
+      const headlines = filteredHeadlines();
 
-      const entries = [...sourceMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 18);
+      renderSourceSummary(headlines);
 
-      document.getElementById("sourceSummaryList").innerHTML = entries.length
-        ? entries.map(([source, count]) => `<span class="source-pill">${escapeHTML(source)} <b>${count}</b></span>`).join("")
-        : `<span class="source-pill">No sources found</span>`;
-    }
+      const cacheInfo = allArticles.length ? ` Searching ${allArticles.length} cached article(s).` : "";
 
-    function articleCard(item) {
-      const url = itemURL(item);
-      const sourceUrl = itemSourceURL(item);
-      const title = item.title || "Untitled article";
-      const desc = item.description || item.summary || "";
-      const vote = item.vote || "Neutral";
-      const impact = item.impact || "Impact N/A";
-      const markets = itemMarkets(item).slice(0, 3);
-      const instruments = itemInstruments(item).slice(0, 4);
-      const published = item.published || item.date || "";
+      document.getElementById("resultsCount").textContent =
+        `${headlines.length} article(s) matched your search and filters.${cacheInfo}`;
 
-      return `<a class="headline-card" href="${escapeHTML(url)}" target="_blank" rel="noopener">
-        <div class="headline-body">
-          <div class="headline-meta">
-            <span class="meta-chip">${escapeHTML(item.source || "Source")}</span>
-            <span class="meta-chip ${normalizeClass(vote)}">${escapeHTML(vote)}</span>
-            <span class="meta-chip">${escapeHTML(impact)}</span>
-          </div>
+      document.getElementById("headlineList").innerHTML = headlines.length
+        ? headlines.slice(0,300).map(item => {
+            const url = sourceURL(item.source) || item.source_url || item.link || "";
+            const icon = faviconForURL(url);
+            const techLabel = headlineTech(item);
 
-          <div class="headline-title">${escapeHTML(title)}</div>
+            return `
+              <a class="headline-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
+                <div class="headline-source-row">
+                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}
+                  <div class="headline-source-name">${escapeHTML(item.source || "Source")}</div>
+                </div>
 
-          ${desc ? `<div class="headline-description">${escapeHTML(desc).slice(0, 260)}${desc.length > 260 ? "..." : ""}</div>` : ""}
+                <div class="headline-body">
+                  <div class="headline-top">
+                    <span class="tech-tag ${normalizeClass(techLabel)}">${escapeHTML(techLabel)}</span>
+                    <span class="tag">${escapeHTML(item.vote || "Neutral")}</span>
+                    <span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span>
+                  </div>
 
-          <div class="headline-tags">
-            ${markets.map(m => `<span class="headline-tag">${escapeHTML(m)}</span>`).join("")}
-            ${instruments.map(i => `<span class="headline-tag">${escapeHTML(i)}</span>`).join("")}
-          </div>
+                  <div class="headline-title">${escapeHTML(item.title || "Untitled headline")}</div>
 
-          <div class="headline-description">
-            Source: ${escapeHTML(item.source || "N/A")}<br />
-            Instruments: ${escapeHTML(itemInstruments(item).join(", ") || "N/A")}<br />
-            ${escapeHTML(published)}
-          </div>
+                  <div class="headline-meta">
+                    Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
+                    Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}<br>
+                    ${escapeHTML(item.published || "")}
+                  </div>
 
-          <div class="headline-open">Open article →</div>
-        </div>
-      </a>`;
-    }
-
-    function renderHeadlines() {
-      const items = getFilteredArticles();
-
-      document.getElementById("articleCountBig").textContent = allArticles.length;
-      document.getElementById("resultsCount").textContent = `${items.length} matching articles`;
-      updateSourceSummary(items);
-
-      document.getElementById("headlineList").innerHTML = items.length
-        ? items.slice(0, 250).map(articleCard).join("")
+                  <div class="headline-open">Open article →</div>
+                </div>
+              </a>
+            `;
+          }).join("")
         : `<div class="empty-card">No articles matched your search and filters. Try broader keywords or check again after the next hourly scrape.</div>`;
     }
 
-    function clearSearch() {
+    function clearSearch(){
       document.getElementById("searchBox").value = "";
       document.getElementById("marketFilter").value = "all";
       populateInstrumentOptions();
@@ -661,35 +649,33 @@
       renderHeadlines();
     }
 
-    async function loadPage() {
-      try {
+    async function loadPage(){
+      try{
         const [dashboardRes, cacheRes, techRes] = await Promise.all([
-          fetch("dashboard_data.json", { cache: "no-store" }),
-          fetch("news_cache.json", { cache: "no-store" }).catch(() => null),
-          fetch("technical_data.json", { cache: "no-store" }).catch(() => null)
+          fetch("dashboard_data.json", { cache:"no-store" }),
+          fetch("news_cache.json", { cache:"no-store" }).catch(() => null),
+          fetch("technical_data.json", { cache:"no-store" }).catch(() => null)
         ]);
 
         dashboardData = await dashboardRes.json();
         technicalData = (techRes && techRes.ok) ? await techRes.json() : null;
 
         let cacheItems = [];
-        if (cacheRes && cacheRes.ok) {
+
+        if(cacheRes && cacheRes.ok){
           const cacheData = await cacheRes.json();
           cacheItems = Array.isArray(cacheData.articles) ? cacheData.articles : [];
         }
 
         const latestItems = Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : [];
-        const extraItems = Array.isArray(dashboardData.relevant_headlines) ? dashboardData.relevant_headlines : [];
 
-        allArticles = dedupeArticles([...latestItems, ...extraItems, ...cacheItems]);
+        allArticles = dedupeArticles([...latestItems, ...cacheItems]);
 
         populateInstrumentOptions();
         populateSourceOptions();
         renderHeadlines();
-      } catch (error) {
+      }catch(error){
         console.error(error);
-        document.getElementById("articleCountBig").textContent = "--";
-        document.getElementById("resultsCount").textContent = "Could not load articles";
         document.getElementById("headlineList").innerHTML = `<div class="empty-card">Published articles could not be loaded right now.</div>`;
       }
     }
@@ -706,11 +692,11 @@
     const pageUpBtn = document.getElementById("pageUpBtn");
 
     window.addEventListener("scroll", () => {
-      if (window.scrollY > 500) pageUpBtn.classList.add("show");
+      if(window.scrollY > 500) pageUpBtn.classList.add("show");
       else pageUpBtn.classList.remove("show");
     });
 
-    pageUpBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    pageUpBtn.addEventListener("click", () => window.scrollTo({ top:0, behavior:"smooth" }));
 
     loadPage();
   </script>
