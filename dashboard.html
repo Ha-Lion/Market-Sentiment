@@ -1,419 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Public Sentiment Dash — Interactive Dashboard</title>
-  <meta name="description" content="Interactive public market sentiment dashboard comparing instrument PSI, user sentiment, headline count, source votes, technical direction, and relevant financial news." />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html" />
-  <link rel="icon" type="image/png" href="logo.png" />
-  <link rel="stylesheet" href="site.css" />
+  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, source votes, technical direction, and relevant news.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
 
   <style>
-    .dash-shell {
-      display: grid;
-      gap: 18px;
+    .compare-selects{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
+    select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;font-weight:400}
+    select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    optgroup{color:#ffd780;background:#0b111a;font-weight:600;text-align:center}
+    option{color:#e6edf3;background:#111821;font-weight:400;text-align:left;padding-left:10px}
+
+    .compare-grid{display:grid;gap:14px;margin-top:14px}
+    .compare-block{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:16px}
+    .compare-title{color:#fff;font-weight:600;font-size:16px;margin-bottom:4px}
+    .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px;font-weight:400}
+    .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 170px;align-items:center;gap:14px;margin-bottom:12px}
+    .metric-label{color:#fff;font-weight:500;line-height:1.35}
+    .metric-bar-wrap{height:24px;border-radius:999px;background:#2b3647;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
+    .metric-bar{height:100%;border-radius:999px}
+    .score-bar{background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55)}
+    .count-bar{background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold))}
+    .metric-value{color:#fff;font-weight:500;text-align:right;font-size:15px;line-height:1.35}
+
+    .instrument-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
+    .instrument-card{padding:18px;min-height:310px}
+    .instrument-name{color:#fff;font-size:18px;font-weight:600;margin-bottom:10px}
+    .info-row{color:var(--soft);line-height:1.55;margin-bottom:8px;font-weight:400}
+    .label{color:var(--muted);font-weight:400}
+    .subsection{margin-top:12px;color:#fff;font-weight:600}
+    .headline-link{display:inline-block;margin-top:4px;color:var(--blue);line-height:1.5;font-weight:400}
+    .headline-link:hover{color:#8ec2ff;text-decoration:underline}
+
+    .help-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+    .help-card{background:rgba(17,24,33,.65);border:1px solid var(--line);border-radius:14px;padding:14px}
+    .help-card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+    .help-card p{font-size:13px;margin:0;color:var(--muted);line-height:1.5;font-weight:400}
+
+    .source-table-wrap{overflow:auto;margin-top:12px}
+    table{width:100%;border-collapse:collapse;min-width:760px}
+    th,td{padding:13px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+    th{color:#fff;font-size:14px;font-weight:600}
+    td{color:var(--soft);font-size:14px;font-weight:400}
+    .source-link{color:var(--blue);font-weight:400}
+    .source-link:hover{color:#8ec2ff;text-decoration:underline}
+
+    .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 12px rgba(255,255,255,.15)}
+    .status-ok{background:var(--green);box-shadow:0 0 14px rgba(63,185,80,.55)}
+    .status-partial{background:var(--orange);box-shadow:0 0 14px rgba(245,158,11,.55)}
+    .status-fail{background:var(--red);box-shadow:0 0 14px rgba(248,81,73,.55)}
+
+    .headline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:12px}
+    .news-card{display:flex;flex-direction:column;min-height:330px;color:var(--text);padding:16px}
+    .news-source-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .news-source-icon{width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#fff}
+    .news-source-name{color:#fff;font-size:13px;font-weight:600}
+    .news-body{display:flex;flex-direction:column;height:100%}
+    .news-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+    .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff;font-size:12px;font-weight:500}
+    .impact-chip{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
+    .tech-chip{background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.20);color:#c9f5ce}
+    .user-chip{background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.22);color:#d8ebff}
+    .news-title{color:#fff;font-size:20px;font-weight:500;line-height:1.45;margin-bottom:10px}
+    .news-meta{color:var(--muted);font-size:12px;line-height:1.55;font-weight:400}
+    .news-open{margin-top:auto;color:#fff;font-size:13px;font-weight:500;padding-top:12px}
+
+    @media(max-width:1280px){
+      .compare-selects,.instrument-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .headline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .help-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
 
-    .dash-hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(290px, .9fr);
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .dash-copy,
-    .dash-score-box {
-      padding: 24px;
-    }
-
-    .dash-score-box {
-      display: grid;
-      place-items: center;
-      text-align: center;
-    }
-
-    .dash-badge {
-      display: inline-flex;
-      width: fit-content;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(88,166,255,.10);
-      border: 1px solid rgba(88,166,255,.22);
-      color: #a5cfff;
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    .global-score {
-      --score: 50;
-      --accent: var(--gold, #f4c95d);
-      width: 178px;
-      height: 178px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at center, #111827 0 58%, transparent 59%),
-        conic-gradient(var(--accent) calc(var(--score) * 1%), rgba(255,255,255,.10) 0);
-      margin: 12px auto;
-    }
-
-    .global-score-inner {
-      width: 126px;
-      height: 126px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: #0d1220;
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    .global-score-number {
-      font-size: 42px;
-      font-weight: 950;
-      letter-spacing: -0.06em;
-      color: #fff;
-    }
-
-    .global-score-word {
-      font-size: 12px;
-      color: var(--muted, #aab4c5);
-      font-weight: 850;
-    }
-
-    .dash-note {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 520px;
-    }
-
-    .quick-stats {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .quick-stat {
-      border: 1px solid var(--border, rgba(255,255,255,.10));
-      background: rgba(255,255,255,.035);
-      border-radius: 14px;
-      padding: 13px;
-    }
-
-    .quick-stat-label {
-      color: var(--muted, #aab4c5);
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .quick-stat-value {
-      color: #fff;
-      font-size: 24px;
-      font-weight: 950;
-      margin-top: 2px;
-    }
-
-    .selector-layout {
-      display: grid;
-      grid-template-columns: 320px minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .instrument-picker {
-      position: sticky;
-      top: 112px;
-      padding: 16px;
-    }
-
-    .picker-search {
-      margin: 10px 0 12px;
-    }
-
-    .instrument-list {
-      display: grid;
-      gap: 7px;
-      max-height: 520px;
-      overflow: auto;
-      padding-right: 4px;
-    }
-
-    .instrument-option {
-      display: grid;
-      grid-template-columns: 20px minmax(0, 1fr) auto;
-      gap: 8px;
-      align-items: center;
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 12px;
-      background: rgba(255,255,255,.035);
-      padding: 8px 9px;
-      cursor: pointer;
-    }
-
-    .instrument-option input {
-      width: 16px;
-      height: 16px;
-      min-height: 16px;
-      padding: 0;
-    }
-
-    .instrument-name {
-      color: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-
-    .instrument-count {
-      color: var(--muted, #aab4c5);
-      font-size: 11px;
-      white-space: nowrap;
-    }
-
-    .picker-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .comparison-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
-      gap: 14px;
-    }
-
-    .instrument-card {
-      padding: 16px;
-    }
-
-    .instrument-title-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .instrument-title {
-      color: #fff;
-      font-size: 17px;
-      font-weight: 950;
-      line-height: 1.2;
-    }
-
-    .psi-pill,
-    .sentiment-pill,
-    .impact-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 26px;
-      padding: 4px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color: var(--muted, #aab4c5);
-      font-size: 11px;
-      font-weight: 850;
-      white-space: nowrap;
-    }
-
-    .Bullish {
-      color: var(--green, #38d39f) !important;
-    }
-
-    .Bearish {
-      color: var(--red, #ff6b6b) !important;
-    }
-
-    .Mixed,
-    .Neutral,
-    .MixedNeutral {
-      color: var(--gold, #f4c95d) !important;
-    }
-
-    .mini-meter {
-      height: 9px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.09);
-      overflow: hidden;
-      margin: 10px 0 12px;
-    }
-
-    .mini-meter-fill {
-      height: 100%;
-      width: 50%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--red, #ff6b6b), var(--gold, #f4c95d), var(--green, #38d39f));
-    }
-
-    .info-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 7px 0;
-      border-top: 1px solid rgba(255,255,255,.08);
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-    }
-
-    .info-row strong {
-      color: #fff;
-    }
-
-    .read-panel {
-      padding: 18px;
-    }
-
-    .read-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .read-card {
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.035);
-      border-radius: 14px;
-      padding: 14px;
-    }
-
-    .read-card h3 {
-      font-size: 15px;
-      margin: 0 0 8px;
-    }
-
-    .read-card p {
-      font-size: 13px;
-      margin: 0;
-    }
-
-    .section-title-row {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 12px;
-    }
-
-    .section-title-row p {
-      margin: 0;
-    }
-
-    .news-controls {
-      display: grid;
-      grid-template-columns: minmax(180px, 1fr) 150px;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .news-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-      gap: 14px;
-    }
-
-    .news-card {
-      padding: 15px;
-    }
-
-    .news-card h3 {
-      font-size: 15px;
-      line-height: 1.3;
-      margin-bottom: 8px;
-    }
-
-    .news-card h3 a {
-      color: #fff;
-    }
-
-    .news-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-bottom: 8px;
-    }
-
-    .news-desc {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .source-link {
-      color: var(--gold, #f4c95d);
-      font-weight: 850;
-      font-size: 12px;
-    }
-
-    .empty-state {
-      padding: 18px;
-      border: 1px dashed rgba(255,255,255,.18);
-      border-radius: 14px;
-      color: var(--muted, #aab4c5);
-      text-align: center;
-    }
-
-    @media (max-width: 1080px) {
-      .dash-hero,
-      .selector-layout,
-      .read-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .instrument-picker {
-        position: relative;
-        top: auto;
-      }
-
-      .instrument-list {
-        max-height: 280px;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .dash-copy,
-      .dash-score-box,
-      .read-panel {
-        padding: 16px;
-      }
-
-      .quick-stats,
-      .news-controls {
-        grid-template-columns: 1fr;
-      }
-
-      .section-title-row {
-        display: block;
-      }
-
-      .global-score {
-        width: 154px;
-        height: 154px;
-      }
-
-      .global-score-inner {
-        width: 112px;
-        height: 112px;
-      }
-
-      .global-score-number {
-        font-size: 36px;
-      }
-
-      .picker-actions {
-        grid-template-columns: 1fr;
-      }
+    @media(max-width:980px){
+      .compare-selects,.instrument-cards,.headline-grid,.help-grid{grid-template-columns:1fr}
+      .metric-row{grid-template-columns:1fr;gap:8px}
+      .metric-value{text-align:left}
     }
   </style>
 </head>
@@ -421,7 +89,7 @@
 <body>
   <header class="header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo" />
+      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
       <div class="brand-copy">
         <div class="brand-stamp">AI-built public market sentiment dashboard</div>
         <div class="site-subtitle">Global market public sentiment dashboard</div>
@@ -432,7 +100,7 @@
       <div class="header-pill">✨ Constantly learning & improving</div>
     </div>
 
-    <nav class="nav" aria-label="Main navigation">
+    <nav class="nav">
       <a href="dashboard.html" class="active">Interactive Dashboard</a>
       <a href="news-articles.html">News & Articles</a>
       <a href="market-sentiment.html">Guides</a>
@@ -448,579 +116,584 @@
   </header>
 
   <main class="page">
-    <div class="dash-shell">
-      <section class="dash-hero">
-        <div class="panel dash-copy">
-          <div class="dash-badge">Interactive Dashboard</div>
-          <h1>Interactive Instrument Comparison</h1>
-          <p>Choose up to 5 instruments. This page compares public sentiment, user sentiment, relevant headline count, source votes, technical direction, and related news.</p>
-          <p>Instrument PSI uses the backend PSI headline set: the top 500 fresh, major-outlet-prioritized headlines when available. Relevant News still uses the broader headline set for browsing.</p>
+    <section class="panel">
+      <div class="page-chip">Interactive Dashboard</div>
+      <h1>Interactive Instrument Comparison</h1>
+      <p>Choose up to 5 instruments. This page compares public sentiment, user sentiment, relevant headline count, source votes, technical direction, and related news.</p>
+      <p class="muted">Instrument PSI now uses the backend PSI headline set: the top 500 fresh, major-outlet-prioritized headlines when available. Relevant News still uses the broader headline set for browsing.</p>
 
-          <div class="quick-stats">
-            <div class="quick-stat">
-              <div class="quick-stat-label">Relevant Headlines</div>
-              <div class="quick-stat-value" id="statRelevant">--</div>
-            </div>
-            <div class="quick-stat">
-              <div class="quick-stat-label">PSI Headlines</div>
-              <div class="quick-stat-value" id="statPsi">--</div>
-            </div>
-            <div class="quick-stat">
-              <div class="quick-stat-label">Sources</div>
-              <div class="quick-stat-value" id="statSources">--</div>
-            </div>
-          </div>
+      <div class="compare-selects" id="compareSelects"></div>
+
+      <div class="compare-grid">
+        <div class="compare-block">
+          <div class="compare-title">Public Sentiment Index</div>
+          <div class="compare-note">Instrument PSI from the 500-headline major-outlet-prioritized PSI set.</div>
+          <div id="scoreComparison"></div>
         </div>
 
-        <aside class="panel dash-score-box">
-          <div>
-            <div class="dash-badge">Global PSI</div>
-            <div class="global-score" id="globalScoreRing">
-              <div class="global-score-inner">
-                <div>
-                  <div class="global-score-number" id="globalScoreNumber">--</div>
-                  <div class="global-score-word" id="globalScoreWord">Loading</div>
-                </div>
-              </div>
-            </div>
-            <p class="dash-note" id="globalScoreNote">Loading latest dashboard data...</p>
-          </div>
-        </aside>
-      </section>
-
-      <section class="panel read-panel">
-        <h2>How to Read This Page</h2>
-        <div class="read-grid">
-          <div class="read-card">
-            <h3>PSI</h3>
-            <p>0 is very bearish, 50 is mixed or neutral, and 100 is very bullish public sentiment.</p>
-          </div>
-          <div class="read-card">
-            <h3>Instrument PSI</h3>
-            <p>Calculated from the fresh 500-headline PSI set when available, not the full 365-day news cache.</p>
-          </div>
-          <div class="read-card">
-            <h3>User Sentiment</h3>
-            <p>Anonymous daily user voting. If votes are not strong enough yet, it falls back to daily technical direction.</p>
-          </div>
-          <div class="read-card">
-            <h3>Technical Direction</h3>
-            <p>Technical direction comes from price data when available. Macro themes may show “No price chart.”</p>
-          </div>
+        <div class="compare-block">
+          <div class="compare-title">Relevant Headline Count</div>
+          <div class="compare-note">Broader relevant headline count for each selected instrument.</div>
+          <div id="countComparison"></div>
         </div>
-      </section>
+      </div>
 
-      <section class="selector-layout">
-        <aside class="panel instrument-picker">
-          <div class="dash-badge">Choose Instruments</div>
-          <h2>Compare Up To 5</h2>
-          <p class="muted">Use search, then check instruments to compare.</p>
+      <div class="instrument-cards" id="instrumentCards"></div>
+    </section>
 
-          <input class="picker-search" id="instrumentSearch" type="search" placeholder="Search instruments..." />
-
-          <div class="instrument-list" id="instrumentList">
-            <div class="muted">Loading instruments...</div>
-          </div>
-
-          <div class="picker-actions">
-            <button type="button" id="clearSelectionBtn">Clear</button>
-            <button type="button" id="topSelectionBtn">Top 5</button>
-          </div>
-        </aside>
-
-        <div>
-          <section class="panel">
-            <div class="section-title-row">
-              <div>
-                <h2>Public Sentiment Index</h2>
-                <p>Short sentiment index for each selected instrument.</p>
-              </div>
-            </div>
-            <div class="comparison-grid" id="comparisonGrid">
-              <div class="empty-state">Loading comparison...</div>
-            </div>
-          </section>
-
-          <section class="panel section">
-            <div class="section-title-row">
-              <div>
-                <h2>Relevant News</h2>
-                <p>Filtered by the currently selected instruments.</p>
-              </div>
-            </div>
-
-            <div class="news-controls">
-              <input id="newsSearch" type="search" placeholder="Search filtered news..." />
-              <select id="newsLimit">
-                <option value="12">12 articles</option>
-                <option value="24">24 articles</option>
-                <option value="48">48 articles</option>
-              </select>
-            </div>
-
-            <div class="news-grid" id="newsGrid">
-              <div class="empty-state">Loading relevant headlines...</div>
-            </div>
-          </section>
-
-          <section class="panel section">
-            <div class="section-title-row">
-              <div>
-                <h2>Source Votes</h2>
-                <p>Sources are ranked by matching headline count.</p>
-              </div>
-            </div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Source</th>
-                    <th>Filtered Vote</th>
-                    <th>Impact</th>
-                    <th>Matching Headlines</th>
-                  </tr>
-                </thead>
-                <tbody id="sourceVotesBody">
-                  <tr>
-                    <td colspan="4">Loading source votes...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <footer class="footer">
-        <div class="footer-links">
-          <a href="dashboard.html">Interactive Dashboard</a>
-          <a href="news-articles.html">News & Articles</a>
-          <a href="market-sentiment.html">Guides</a>
-          <a href="contact.html">Get in Touch</a>
-          <a href="how-it-works.html">Dashboard Works</a>
-          <a href="about.html">About</a>
-          <a href="advertise.html">Advertise</a>
-          <a href="privacy.html">Privacy</a>
-          <a href="terms.html">Terms</a>
-          <a href="disclaimer.html">Disclaimer</a>
+    <section class="panel">
+      <h2>How to Read This Page</h2>
+      <div class="help-grid">
+        <div class="help-card">
+          <h3>PSI</h3>
+          <p>0/100 is very bearish, 50/100 is mixed or neutral, and 100/100 is very bullish public sentiment.</p>
         </div>
 
-        <div class="legal">
-          <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+        <div class="help-card">
+          <h3>Instrument PSI</h3>
+          <p>Calculated from the fresh 500-headline PSI set when available, not the full 365-day news cache.</p>
         </div>
 
-        <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
-      </footer>
-    </div>
+        <div class="help-card">
+          <h3>User Sentiment</h3>
+          <p>Anonymous daily user voting. If votes are not strong enough yet, it falls back to daily technical direction.</p>
+        </div>
+
+        <div class="help-card">
+          <h3>Technical Direction</h3>
+          <p>Technical direction comes from price data when available. Macro themes may show “No price chart.”</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Relevant News</h2>
+      <p class="muted" id="relevantNewsCount">Loading relevant headlines...</p>
+      <div class="headline-grid" id="relevantNewsGrid">
+        <div class="dynamic-card news-card">
+          <div class="news-body">Loading relevant headlines...</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Source Votes</h2>
+      <p class="muted">Filtered by the currently selected instruments. Sources are ranked by matching headline count.</p>
+      <div class="source-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>Filtered Vote</th>
+              <th>Impact</th>
+              <th>Matching Headlines</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sourceVotesBody">
+            <tr><td colspan="5">Loading source votes...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html" class="active">Interactive Dashboard</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">Dashboard Works</a>
+        <a href="about.html">About</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
   </main>
 
   <script>
+    const INSTRUMENT_GROUPS = {
+      "Indexes / Futures": [
+        { key:"S&P 500 / ES", label:"S&P 500 / ES", aliases:["S&P 500 / ES","SPX","SP 500","S&P 500","ES","ES Futures"] },
+        { key:"Nasdaq / NQ", label:"Nasdaq / NQ", aliases:["Nasdaq / NQ","Nasdaq","NQ","NQ Futures"] },
+        { key:"Dow / YM", label:"Dow / YM", aliases:["Dow / YM","Dow","YM","YM Futures","Dow Jones"] },
+        { key:"Russell / RTY", label:"Russell / RTY", aliases:["Russell / RTY","Russell","RTY","RTY Futures"] },
+        { key:"VIX", label:"VIX", aliases:["VIX"] }
+      ],
+      "Global Indexes": [
+        { key:"DAX", label:"DAX", aliases:["DAX"] },
+        { key:"FTSE 100", label:"FTSE 100", aliases:["FTSE 100","FTSE"] },
+        { key:"Nikkei 225", label:"Nikkei 225", aliases:["Nikkei 225","Nikkei"] },
+        { key:"Hang Seng", label:"Hang Seng", aliases:["Hang Seng"] },
+        { key:"Euro Stoxx 50", label:"Euro Stoxx 50", aliases:["Euro Stoxx 50","Euro Stoxx"] },
+        { key:"CAC 40", label:"CAC 40", aliases:["CAC 40"] }
+      ],
+      "Bonds / Rates": [
+        { key:"US 2Y Treasury", label:"US 2Y Treasury", aliases:["US 2Y Treasury","2Y Treasury","2 Year Treasury","US 2-Year Treasury","US 2-Year Yield","2-Year Yield"] },
+        { key:"US 10Y Treasury", label:"US 10Y Treasury", aliases:["US 10Y Treasury","10Y Treasury","10 Year Treasury","US 10-Year Treasury","US 10-Year Yield","10-Year Yield"] },
+        { key:"Treasury Yields", label:"Treasury Yields", aliases:["Treasury Yields","Yields","Bond Yields","Treasury"] }
+      ],
+      "Forex / Currencies": [
+        { key:"US Dollar / DXY", label:"US Dollar / DXY", aliases:["US Dollar / DXY","DXY","US Dollar","Dollar Index"] },
+        { key:"EUR / EURUSD", label:"EUR/USD", aliases:["EUR / EURUSD","EUR/USD","EURUSD"] },
+        { key:"GBP / GBPUSD", label:"GBP/USD", aliases:["GBP / GBPUSD","GBP/USD","GBPUSD"] },
+        { key:"JPY / USDJPY", label:"USD/JPY", aliases:["JPY / USDJPY","USD/JPY","USDJPY"] },
+        { key:"CHF / USDCHF", label:"USD/CHF", aliases:["CHF / USDCHF","USD/CHF","USDCHF"] },
+        { key:"CAD / USDCAD", label:"USD/CAD", aliases:["CAD / USDCAD","USD/CAD","USDCAD","USD/CAN"] },
+        { key:"AUD / AUDUSD", label:"AUD/USD", aliases:["AUD / AUDUSD","AUD/USD","AUDUSD"] },
+        { key:"NZD / NZDUSD", label:"NZD/USD", aliases:["NZD / NZDUSD","NZD/USD","NZDUSD"] },
+        { key:"EURJPY", label:"EUR/JPY", aliases:["EURJPY","EUR/JPY"] },
+        { key:"EURGBP", label:"EUR/GBP", aliases:["EURGBP","EUR/GBP"] },
+        { key:"GBPJPY", label:"GBP/JPY", aliases:["GBPJPY","GBP/JPY"] },
+        { key:"AUDJPY", label:"AUD/JPY", aliases:["AUDJPY","AUD/JPY"] },
+        { key:"CADJPY", label:"CAD/JPY", aliases:["CADJPY","CAD/JPY"] },
+        { key:"EURCHF", label:"EUR/CHF", aliases:["EURCHF","EUR/CHF"] },
+        { key:"EURCAD", label:"EUR/CAD", aliases:["EURCAD","EUR/CAD"] },
+        { key:"AUDCAD", label:"AUD/CAD", aliases:["AUDCAD","AUD/CAD"] },
+        { key:"AUDNZD", label:"AUD/NZD", aliases:["AUDNZD","AUD/NZD"] },
+        { key:"NZDJPY", label:"NZD/JPY", aliases:["NZDJPY","NZD/JPY"] },
+        { key:"USDTRY", label:"USD/TRY", aliases:["USDTRY","USD/TRY"] },
+        { key:"USDMXN", label:"USD/MXN", aliases:["USDMXN","USD/MXN"] },
+        { key:"USDZAR", label:"USD/ZAR", aliases:["USDZAR","USD/ZAR"] }
+      ],
+      "Crypto": [
+        { key:"Bitcoin / BTC", label:"Bitcoin / BTC", aliases:["Bitcoin / BTC","Bitcoin","BTC"] },
+        { key:"Ethereum / ETH", label:"Ethereum / ETH", aliases:["Ethereum / ETH","Ethereum","ETH"] },
+        { key:"Solana / SOL", label:"Solana / SOL", aliases:["Solana / SOL","Solana","SOL"] },
+        { key:"XRP", label:"XRP", aliases:["XRP","Ripple"] },
+        { key:"BNB", label:"BNB", aliases:["BNB","Binance Coin"] },
+        { key:"Cardano / ADA", label:"Cardano / ADA", aliases:["Cardano / ADA","Cardano","ADA"] },
+        { key:"Dogecoin / DOGE", label:"Dogecoin / DOGE", aliases:["Dogecoin / DOGE","Dogecoin","DOGE"] },
+        { key:"General Crypto", label:"General Crypto", aliases:["General Crypto","Crypto"] }
+      ],
+      "Commodities": [
+        { key:"Gold", label:"Gold", aliases:["Gold"] },
+        { key:"Silver", label:"Silver", aliases:["Silver"] },
+        { key:"Copper", label:"Copper", aliases:["Copper"] },
+        { key:"Crude Oil", label:"Crude Oil", aliases:["Crude Oil","Oil","WTI","Brent"] },
+        { key:"Natural Gas", label:"Natural Gas", aliases:["Natural Gas","Nat Gas"] }
+      ],
+      "Macro Themes": [
+        { key:"Fed / FOMC", label:"Fed / FOMC", aliases:["Fed / FOMC","Fed","FOMC"], noChart:true },
+        { key:"CPI / Inflation", label:"US CPI / Inflation", aliases:["CPI / Inflation","CPI","Inflation","US CPI"], noChart:true },
+        { key:"PPI", label:"US PPI", aliases:["PPI","US PPI"], noChart:true },
+        { key:"Jobs / NFP", label:"US Jobs / NFP", aliases:["Jobs / NFP","Jobs","NFP","Payrolls","US Jobs"], noChart:true },
+        { key:"US GDP / Growth", label:"US GDP / Growth", aliases:["GDP","US GDP","U.S. GDP","Growth"], noChart:true },
+        { key:"Geopolitical / Tariffs", label:"Geopolitical / Tariffs", aliases:["Geopolitical / Tariffs","Geopolitical","Tariffs"], noChart:true }
+      ]
+    };
+
+    const DEFAULT_SELECTIONS = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
+    const INSTRUMENT_MAP = {};
+    Object.values(INSTRUMENT_GROUPS).flat().forEach(item => { INSTRUMENT_MAP[item.key] = item; });
+
     let dashboardData = null;
     let technicalData = null;
-    let selectedInstruments = [];
-    let allInstruments = [];
-    let instrumentCounts = {};
 
-    const DEFAULT_INSTRUMENTS = [
-      "S&P 500 / ES", "Nasdaq / NQ", "Dow / YM", "Russell / RTY", "VIX",
-      "DAX", "FTSE 100", "Nikkei 225", "Hang Seng", "Euro Stoxx 50", "CAC 40",
-      "US 2Y Treasury", "US 10Y Treasury", "Treasury Yields",
-      "US Dollar / DXY", "EUR / EURUSD", "GBP / GBPUSD", "JPY / USDJPY", "CHF / USDCHF",
-      "CAD / USDCAD", "AUD / AUDUSD", "NZD / NZDUSD",
-      "Bitcoin / BTC", "Ethereum / ETH", "Solana / SOL", "XRP", "BNB", "Cardano / ADA",
-      "Gold", "Silver", "Copper", "Crude Oil", "Natural Gas",
-      "Fed / FOMC", "CPI / Inflation", "PPI", "Jobs / NFP", "US GDP / Growth",
-      "Stocks / Company News", "Technology Stocks", "Market Movers", "Geopolitical / Tariffs"
-    ];
+    function normalize(text){ return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function escapeHTML(value){ return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+    function statusClass(status){ const s = String(status || "").toLowerCase(); if(s.includes("ok")) return "status-ok"; if(s.includes("empty") || s.includes("partial")) return "status-partial"; return "status-fail"; }
+    function voteClass(value){ return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral"; }
+    function domainFromURL(url){ try { return new URL(url).hostname.replace(/^www\./, ""); } catch(e){ return ""; } }
+    function faviconForURL(url){ const domain = domainFromURL(url || ""); return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : ""; }
+    function sourceURL(sourceName){ const found = (dashboardData?.sources || []).find(s => s.name === sourceName); return found?.url || "#"; }
 
-    function escapeHTML(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    function getNewsHeadlines(){
+      return Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : [];
     }
 
-    function normalize(text) {
-      return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    function getPsiHeadlines(){
+      if(Array.isArray(dashboardData?.psi_headlines) && dashboardData.psi_headlines.length){
+        return dashboardData.psi_headlines;
+      }
+      return getNewsHeadlines();
     }
 
-    function normalizeClass(value) {
-      const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
-      return clean || "Neutral";
+    function userSentimentFor(instrument){
+      return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
     }
 
-    function headlinePools() {
-      const psi = Array.isArray(dashboardData?.psi_headlines) ? dashboardData.psi_headlines : [];
-      const top = Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : [];
-      const rel = Array.isArray(dashboardData?.relevant_headlines) ? dashboardData.relevant_headlines : [];
-      const all = Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [];
-
-      return {
-        psi: psi.length ? psi : top.length ? top : rel.length ? rel : all,
-        news: top.length ? top : rel.length ? rel : all.length ? all : psi
-      };
-    }
-
-    function voteScore(vote) {
+    function mapVoteToScore(vote){
       const v = String(vote || "").toLowerCase();
-      if (v.includes("bullish") && !v.includes("bearish")) return 100;
-      if (v.includes("bearish") && !v.includes("bullish")) return 0;
-      if (v.includes("mixed")) return 55;
+      if(v.includes("bullish") && !v.includes("bearish")) return 100;
+      if(v.includes("bearish") && !v.includes("bullish")) return 0;
+      if(v.includes("mixed") && v.includes("bullish")) return 70;
+      if(v.includes("mixed") && v.includes("bearish")) return 30;
       return 50;
     }
 
-    function scoreLabel(score) {
-      if (score >= 70) return "Bullish";
-      if (score <= 30) return "Bearish";
-      if (score >= 56) return "Mixed/Bullish";
-      if (score <= 44) return "Mixed/Bearish";
+    function scoreToLabel(score){
+      if(score === null || score === undefined) return "N/A";
+      if(score >= 70) return "Bullish";
+      if(score <= 30) return "Bearish";
+      if(score > 55) return "Mixed/Bullish";
+      if(score < 45) return "Mixed/Bearish";
       return "Mixed/Neutral";
     }
 
-    function scoreColor(score) {
-      if (score >= 70) return "var(--green, #38d39f)";
-      if (score <= 30) return "var(--red, #ff6b6b)";
-      return "var(--gold, #f4c95d)";
+    function makeSelectHTML(slot, selected){
+      const groupsHTML = Object.entries(INSTRUMENT_GROUPS).map(([group, items]) => {
+        const options = items.map(item => `<option value="${escapeHTML(item.key)}" ${item.key === selected ? "selected" : ""}>${escapeHTML(item.label)}</option>`).join("");
+        return `<optgroup label="${escapeHTML(group)}">${options}</optgroup>`;
+      }).join("");
+
+      return `<select id="instrumentSelect${slot}" data-slot="${slot}"><option value="None" ${selected === "None" ? "selected" : ""}>None</option>${groupsHTML}</select>`;
     }
 
-    function calculateScore(headlines) {
-      if (!headlines.length) return 50;
-
-      let totalWeight = 0;
-      let weighted = 0;
-
-      headlines.forEach(item => {
-        const freshness = Number(item.freshness_weight || 1);
-        const relevance = Number(item.relevance_score || 5);
-        const impactBoost = String(item.impact || "").toLowerCase() === "high" ? 1.25 : 1;
-        const weight = Math.max(.1, freshness) * Math.max(1, relevance) * impactBoost;
-        weighted += voteScore(item.vote) * weight;
-        totalWeight += weight;
-      });
-
-      return totalWeight ? Math.round(weighted / totalWeight) : 50;
+    function buildSelects(){
+      const wrap = document.getElementById("compareSelects");
+      wrap.innerHTML = DEFAULT_SELECTIONS.map((item, idx) => makeSelectHTML(idx + 1, item)).join("");
+      wrap.querySelectorAll("select").forEach(select => select.addEventListener("change", renderDashboard));
     }
 
-    function calculateGlobalScore() {
-      if (Number.isFinite(Number(dashboardData?.headline_psi_score))) {
-        return Math.round(Number(dashboardData.headline_psi_score));
+    function getSelectedDefs(){
+      const values = [];
+      for(let i=1;i<=5;i++){
+        const value = document.getElementById(`instrumentSelect${i}`).value;
+        if(value && value !== "None") values.push(value);
       }
-
-      if (Number.isFinite(Number(dashboardData?.psi_score))) {
-        return Math.round(Number(dashboardData.psi_score));
-      }
-
-      return calculateScore(headlinePools().psi);
+      return values.map(v => INSTRUMENT_MAP[v]).filter(Boolean);
     }
 
-    function matchesInstrument(item, instrument) {
-      const arr = Array.isArray(item.instruments) ? item.instruments : [];
-      const wanted = normalize(instrument);
-      return arr.some(x => {
-        const n = normalize(x);
-        return n === wanted || n.includes(wanted) || wanted.includes(n);
-      });
+    function headlineMatchesInstrument(headline, instrumentDef){
+      const headlineInstruments = Array.isArray(headline?.instruments) ? headline.instruments : [];
+      const headlineSet = headlineInstruments.map(normalize);
+
+      return instrumentDef.aliases.some(alias => headlineSet.includes(normalize(alias))) ||
+             instrumentDef.aliases.some(alias => normalize(headline.title).includes(normalize(alias))) ||
+             instrumentDef.aliases.some(alias => normalize(headline.description).includes(normalize(alias)));
     }
 
-    function filteredHeadlines(pool, instrument) {
-      return pool.filter(item => matchesInstrument(item, instrument));
+    function getMatchedHeadlinesForInstrument(instrumentDef, headlineList){
+      const list = Array.isArray(headlineList) ? headlineList : getNewsHeadlines();
+      return list.filter(h => headlineMatchesInstrument(h, instrumentDef));
     }
 
-    function getInstrumentTechnical(name) {
-      if (!technicalData) return "No price chart";
-
-      const root = technicalData.technical || technicalData;
-      const direct = root[name];
-
-      if (direct) return extractTechnical(direct);
-
-      const wanted = normalize(name);
-      const key = Object.keys(root).find(k => normalize(k) === wanted || normalize(k).includes(wanted) || wanted.includes(normalize(k)));
-
-      return key ? extractTechnical(root[key]) : "No price chart";
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+      if(raw === null || raw === undefined) return "N/A";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
     }
 
-    function extractTechnical(value) {
-      if (value === null || value === undefined) return "No price chart";
-      if (typeof value === "string" || typeof value === "number") return String(value);
+    function getTechnicalForInstrument(instrumentDef){
+      if(instrumentDef.noChart) return { daily:"No price chart", weekly:"No price chart", monthly:"No price chart" };
+      if(!technicalData) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
 
-      const daily = value.daily || value.Daily || value.D1 || value["1D"];
-      if (daily) {
-        if (typeof daily === "string" || typeof daily === "number") return String(daily);
-        return daily.direction || daily.signal || daily.label || daily.trend || daily.value || "Neutral";
-      }
+      const techRoot = technicalData.technical || technicalData;
+      const wanted = instrumentDef.aliases.map(normalize);
+      let entry = null;
 
-      return value.direction || value.signal || value.label || value.trend || value.value || "Neutral";
-    }
-
-    function userSentiment(name, fallback) {
-      return window.PSD_USER_SENTIMENT?.[name] || fallback || "N/A";
-    }
-
-    function buildInstrumentList() {
-      const pools = headlinePools();
-      const map = new Map();
-
-      DEFAULT_INSTRUMENTS.forEach(name => map.set(name, 0));
-
-      pools.news.concat(pools.psi).forEach(item => {
-        (item.instruments || []).forEach(name => {
-          if (!name) return;
-          map.set(name, (map.get(name) || 0) + 1);
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => wanted.includes(normalize(item?.instrument || item?.name || item?.symbol || "")));
+      }else if(typeof techRoot === "object"){
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
+          return wanted.some(w => possible.includes(w));
         });
-      });
+        entry = found ? found[1] : null;
+      }
 
-      instrumentCounts = Object.fromEntries(map.entries());
+      if(!entry) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
 
-      allInstruments = Array.from(map.keys()).sort((a, b) => {
-        const diff = (instrumentCounts[b] || 0) - (instrumentCounts[a] || 0);
-        return diff || a.localeCompare(b);
-      });
-
-      selectedInstruments = allInstruments.slice(0, 5);
+      return {
+        daily: extractTechLabel(entry, "daily"),
+        weekly: extractTechLabel(entry, "weekly"),
+        monthly: extractTechLabel(entry, "monthly")
+      };
     }
 
-    function renderGlobalStats() {
-      const pools = headlinePools();
-      const trust = dashboardData?.trust_layer || {};
-      const score = calculateGlobalScore();
-      const label = dashboardData?.overall_vote || scoreLabel(score);
-      const ring = document.getElementById("globalScoreRing");
+    function getInstrumentStats(instrumentDef){
+      const newsMatches = getMatchedHeadlinesForInstrument(instrumentDef, getNewsHeadlines());
+      const psiMatches = getMatchedHeadlinesForInstrument(instrumentDef, getPsiHeadlines());
 
-      ring.style.setProperty("--score", score);
-      ring.style.setProperty("--accent", scoreColor(score));
-      document.getElementById("globalScoreNumber").textContent = score;
-      document.getElementById("globalScoreWord").textContent = label;
-      document.getElementById("globalScoreWord").className = "global-score-word " + normalizeClass(label);
-      document.getElementById("globalScoreNote").textContent = "PSI = Public Sentiment Index. 0 is bearish, 50 is mixed or neutral, and 100 is bullish.";
+      let score = null;
+      let label = "N/A";
 
-      document.getElementById("statRelevant").textContent = trust.relevant_headlines ?? pools.news.length ?? "--";
-      document.getElementById("statPsi").textContent = dashboardData?.psi_headlines_used ?? pools.psi.length ?? "--";
-      document.getElementById("statSources").textContent = trust.sources_working ?? (dashboardData?.sources || []).length ?? "--";
+      if(psiMatches.length > 0){
+        const avg = Math.round(psiMatches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / psiMatches.length);
+        score = avg;
+        label = scoreToLabel(avg);
+      }
+
+      return {
+        def: instrumentDef,
+        newsMatches,
+        psiMatches,
+        newsCount: newsMatches.length,
+        psiCount: psiMatches.length,
+        score,
+        scoreLabel: label,
+        latest: newsMatches[0] || null,
+        tech: getTechnicalForInstrument(instrumentDef),
+        userSentiment: userSentimentFor(instrumentDef.key)
+      };
     }
 
-    function renderInstrumentPicker() {
-      const query = normalize(document.getElementById("instrumentSearch").value);
-      const list = document.getElementById("instrumentList");
+    function allCurrentScopeHeadlines(){
+      const defs = getSelectedDefs();
+      if(!defs.length) return getNewsHeadlines();
 
-      const filtered = allInstruments.filter(name => normalize(name).includes(query));
+      const merged = [];
+      const seen = new Set();
 
-      list.innerHTML = filtered.length ? filtered.map(name => {
-        const checked = selectedInstruments.includes(name) ? "checked" : "";
-        return `<label class="instrument-option">
-          <input type="checkbox" value="${escapeHTML(name)}" ${checked}>
-          <span class="instrument-name">${escapeHTML(name)}</span>
-          <span class="instrument-count">${escapeHTML(instrumentCounts[name] || 0)}</span>
-        </label>`;
-      }).join("") : `<div class="empty-state">No instruments found.</div>`;
-
-      list.querySelectorAll("input[type='checkbox']").forEach(box => {
-        box.addEventListener("change", () => {
-          const value = box.value;
-
-          if (box.checked) {
-            if (selectedInstruments.length >= 5) {
-              box.checked = false;
-              alert("Choose up to 5 instruments.");
-              return;
-            }
-            selectedInstruments.push(value);
-          } else {
-            selectedInstruments = selectedInstruments.filter(x => x !== value);
+      defs.forEach(def => {
+        getMatchedHeadlinesForInstrument(def, getNewsHeadlines()).forEach(h => {
+          const key = `${h.source}__${h.title}`;
+          if(!seen.has(key)){
+            seen.add(key);
+            merged.push(h);
           }
-
-          renderDashboardSections();
         });
       });
+
+      return merged;
     }
 
-    function instrumentCard(name) {
-      const pools = headlinePools();
-      const psiItems = filteredHeadlines(pools.psi, name);
-      const newsItems = filteredHeadlines(pools.news, name);
-      const score = calculateScore(psiItems);
-      const label = scoreLabel(score);
-      const technical = getInstrumentTechnical(name);
-      const user = userSentiment(name, technical);
+    function renderScoreComparison(statsList){
+      const wrap = document.getElementById("scoreComparison");
 
-      return `<article class="card instrument-card">
-        <div class="instrument-title-row">
-          <div class="instrument-title">${escapeHTML(name)}</div>
-          <div class="psi-pill ${normalizeClass(label)}">${escapeHTML(label)}</div>
-        </div>
-
-        <div class="score-number">${score}</div>
-        <div class="mini-meter"><div class="mini-meter-fill" style="width:${score}%"></div></div>
-
-        <div class="info-row"><span>PSI Headlines</span><strong>${psiItems.length}</strong></div>
-        <div class="info-row"><span>Relevant Headlines</span><strong>${newsItems.length}</strong></div>
-        <div class="info-row"><span>User Sentiment</span><strong class="${normalizeClass(user)}" data-user-sentiment="${escapeHTML(name)}">${escapeHTML(user)}</strong></div>
-        <div class="info-row"><span>Technical</span><strong class="${normalizeClass(technical)}">${escapeHTML(technical)}</strong></div>
-      </article>`;
-    }
-
-    function renderComparison() {
-      const grid = document.getElementById("comparisonGrid");
-
-      if (!selectedInstruments.length) {
-        grid.innerHTML = `<div class="empty-state">Select at least one instrument.</div>`;
+      if(!statsList.length){
+        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
         return;
       }
 
-      grid.innerHTML = selectedInstruments.map(instrumentCard).join("");
+      wrap.innerHTML = statsList.map(stats => {
+        const width = stats.score === null ? 0 : Math.max(6, stats.score);
+        const rightText = stats.score === null ? `No PSI match` : `PSI ${stats.score}/100`;
 
-      if (typeof window.psdApplyUserSentiment === "function") {
-        window.psdApplyUserSentiment();
+        return `<div class="metric-row">
+          <div class="metric-label">${escapeHTML(stats.def.label)}</div>
+          <div class="metric-bar-wrap"><div class="metric-bar score-bar" style="width:${width}%;"></div></div>
+          <div class="metric-value">${escapeHTML(rightText)}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderCountComparison(statsList){
+      const wrap = document.getElementById("countComparison");
+
+      if(!statsList.length){
+        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
+        return;
       }
+
+      const maxCount = Math.max(...statsList.map(x => x.newsCount), 1);
+
+      wrap.innerHTML = statsList.map(stats => {
+        const width = stats.newsCount > 0 ? Math.max(4, Math.round((stats.newsCount / maxCount) * 100)) : 0;
+
+        return `<div class="metric-row">
+          <div class="metric-label">${escapeHTML(stats.def.label)}</div>
+          <div class="metric-bar-wrap"><div class="metric-bar count-bar" style="width:${width}%;"></div></div>
+          <div class="metric-value">${stats.newsCount} headline${stats.newsCount === 1 ? "" : "s"}</div>
+        </div>`;
+      }).join("");
     }
 
-    function renderNews() {
-      const pools = headlinePools();
-      const search = normalize(document.getElementById("newsSearch").value);
-      const limit = Number(document.getElementById("newsLimit").value || 12);
+    function renderInstrumentCards(statsList){
+      const wrap = document.getElementById("instrumentCards");
 
-      let items = pools.news.filter(item => {
-        const matchInstrument = selectedInstruments.length
-          ? selectedInstruments.some(name => matchesInstrument(item, name))
-          : true;
+      if(!statsList.length){
+        wrap.innerHTML = `<div class="dynamic-card instrument-card">Choose at least one instrument.</div>`;
+        return;
+      }
 
-        const haystack = normalize([
-          item.title,
-          item.description,
-          item.source,
-          (item.markets || []).join(" "),
-          (item.instruments || []).join(" ")
-        ].join(" "));
+      wrap.innerHTML = statsList.map(stats => {
+        const latestHeadline = stats.latest
+          ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>`
+          : `No related headline found.`;
 
-        return matchInstrument && (!search || haystack.includes(search));
-      });
+        const scoreText = stats.score === null ? "No PSI match" : `${stats.scoreLabel} (PSI ${stats.score}/100)`;
 
-      items = items.slice(0, limit);
+        return `<div class="dynamic-card instrument-card">
+          <div class="instrument-name">${escapeHTML(stats.def.label)}</div>
+          <div class="info-row"><span class="label">Public sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div>
+          <div class="info-row"><span class="label">PSI headlines:</span> ${stats.psiCount}</div>
+          <div class="info-row"><span class="label">Relevant headlines:</span> ${stats.newsCount}</div>
+          <div class="info-row"><span class="label">User sentiment:</span> <span data-user-sentiment="${escapeHTML(stats.def.key)}" class="psd-user-sentiment-value ${voteClass(stats.userSentiment)}">${escapeHTML(stats.userSentiment)}</span></div>
+          <div class="subsection">Technical Direction</div>
+          <div class="info-row">Daily: <span class="${voteClass(stats.tech.daily)}">${escapeHTML(stats.tech.daily)}</span></div>
+          <div class="info-row">Weekly: <span class="${voteClass(stats.tech.weekly)}">${escapeHTML(stats.tech.weekly)}</span></div>
+          <div class="info-row">Monthly: <span class="${voteClass(stats.tech.monthly)}">${escapeHTML(stats.tech.monthly)}</span></div>
+          <div class="subsection">Latest related headline</div>
+          <div class="info-row">${latestHeadline}</div>
+        </div>`;
+      }).join("");
 
-      document.getElementById("newsGrid").innerHTML = items.length ? items.map(item => {
-        const url = item.link || item.url || "#";
-        const sourceUrl = item.source_url || "#";
-        const desc = item.description || "";
-        const instruments = Array.isArray(item.instruments) ? item.instruments.slice(0, 3).join(", ") : "";
-
-        return `<article class="card news-card">
-          <div class="news-meta">
-            <span class="sentiment-pill ${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
-            <span class="impact-pill">${escapeHTML(item.impact || "Impact N/A")}</span>
-            ${instruments ? `<span class="impact-pill">${escapeHTML(instruments)}</span>` : ""}
-          </div>
-          <h3><a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(item.title || "Untitled headline")}</a></h3>
-          <div class="news-desc">${escapeHTML(desc).slice(0, 240)}${desc.length > 240 ? "..." : ""}</div>
-          <a class="source-link" href="${escapeHTML(sourceUrl)}" target="_blank" rel="noopener">${escapeHTML(item.source || "Source")}</a>
-        </article>`;
-      }).join("") : `<div class="empty-state">No matching headlines found.</div>`;
+      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
     }
 
-    function sourceVoteFor(items) {
-      if (!items.length) return "N/A";
-      const score = calculateScore(items);
-      return scoreLabel(score);
+    function computeSourceVote(headlines){
+      if(!headlines.length) return "N/A";
+
+      const bullish = headlines.filter(h => String(h.vote).toLowerCase().includes("bullish")).length;
+      const bearish = headlines.filter(h => String(h.vote).toLowerCase().includes("bearish")).length;
+
+      if(bullish > bearish) return "Bullish";
+      if(bearish > bullish) return "Bearish";
+      if(bullish > 0 && bearish > 0) return "Mixed";
+      return "Neutral";
     }
 
-    function renderSourceVotes() {
-      const pools = headlinePools();
-      const sources = Array.isArray(dashboardData?.sources) ? dashboardData.sources : [];
-      const tbody = document.getElementById("sourceVotesBody");
+    function computeSourceImpact(headlines){
+      if(!headlines.length) return "N/A";
+      return headlines.some(h => String(h.impact).toLowerCase() === "high") ? "High" : "Normal";
+    }
+
+    function renderSourceVotes(scopeHeadlines){
+      const body = document.getElementById("sourceVotesBody");
+      const sources = dashboardData?.sources || [];
+
+      if(!sources.length){
+        body.innerHTML = `<tr><td colspan="5">No source data available.</td></tr>`;
+        return;
+      }
 
       const rows = sources.map(source => {
-        const sourceName = source.name || source.source || "Source";
-        const matching = pools.news.filter(item => {
-          const sameSource = normalize(item.source) === normalize(sourceName);
-          const selectedMatch = selectedInstruments.length
-            ? selectedInstruments.some(name => matchesInstrument(item, name))
-            : true;
-          return sameSource && selectedMatch;
-        });
-
-        const highImpact = matching.filter(item => String(item.impact || "").toLowerCase() === "high").length;
-
+        const matching = scopeHeadlines.filter(h => h.source === source.name);
         return {
           source,
-          sourceName,
-          matching,
-          highImpact,
-          vote: matching.length ? sourceVoteFor(matching) : (source.vote || "N/A")
+          matchingCount: matching.length,
+          vote: computeSourceVote(matching),
+          impact: computeSourceImpact(matching)
         };
-      }).filter(row => row.matching.length > 0 || !selectedInstruments.length)
-        .sort((a, b) => b.matching.length - a.matching.length);
+      }).sort((a,b)=>b.matchingCount-a.matchingCount || a.source.name.localeCompare(b.source.name));
 
-      tbody.innerHTML = rows.length ? rows.map(row => {
-        const sourceUrl = row.source.url || row.source.source_url || "#";
-        return `<tr>
-          <td><a href="${escapeHTML(sourceUrl)}" target="_blank" rel="noopener">${escapeHTML(row.sourceName)}</a></td>
-          <td class="${normalizeClass(row.vote)}">${escapeHTML(row.vote)}</td>
-          <td>${row.highImpact} high</td>
-          <td>${row.matching.length}</td>
-        </tr>`;
-      }).join("") : `<tr><td colspan="4">No matching source votes.</td></tr>`;
+      body.innerHTML = rows.map(row => `<tr>
+        <td><a class="source-link" href="${escapeHTML(row.source.url || "#")}" target="_blank" rel="noopener">${escapeHTML(row.source.name)}</a></td>
+        <td><span class="${voteClass(row.vote)}">${escapeHTML(row.vote)}</span></td>
+        <td>${escapeHTML(row.impact)}</td>
+        <td>${row.matchingCount}</td>
+        <td><span class="status-dot ${statusClass(row.source.status)}" title="${escapeHTML(row.source.status || "Unknown")}"></span></td>
+      </tr>`).join("");
     }
 
-    function renderDashboardSections() {
-      renderComparison();
-      renderNews();
-      renderSourceVotes();
-      renderInstrumentPicker();
+    function findInstrumentForHeadline(item){
+      const names = Array.isArray(item?.instruments) ? item.instruments : [];
+      const allDefs = Object.values(INSTRUMENT_GROUPS).flat();
+
+      for(const name of names){
+        const direct = allDefs.find(def =>
+          def.aliases.map(normalize).includes(normalize(name)) ||
+          normalize(def.key) === normalize(name)
+        );
+
+        if(direct) return direct;
+      }
+
+      return null;
     }
 
-    async function loadJSON(url) {
-      const response = await fetch(url + "?v=" + Date.now(), { cache: "no-store" });
-      if (!response.ok) throw new Error(url + " failed");
-      return response.json();
+    function technicalBadgeForHeadline(item){
+      const def = findInstrumentForHeadline(item);
+      if(!def) return { label:"Tech: N/A", css:"chip tech-chip" };
+
+      const tech = getTechnicalForInstrument(def);
+
+      return {
+        label:`Tech Daily: ${tech.daily}`,
+        css:`chip tech-chip ${voteClass(tech.daily)}`
+      };
     }
 
-    async function initDashboard() {
-      try {
-        const [data, tech] = await Promise.all([
-          loadJSON("dashboard_data.json"),
-          loadJSON("technical_data.json").catch(() => null)
+    function userBadgeForHeadline(item){
+      const def = findInstrumentForHeadline(item);
+      const value = def ? userSentimentFor(def.key) : "N/A";
+
+      return {
+        instrument: def ? def.key : "",
+        label:`User: ${value}`,
+        value
+      };
+    }
+
+    function renderRelevantNews(scopeHeadlines){
+      const grid = document.getElementById("relevantNewsGrid");
+      const count = document.getElementById("relevantNewsCount");
+      const items = scopeHeadlines.slice(0,9);
+
+      count.textContent = `${scopeHeadlines.length} relevant headline(s) shown for the current scope.`;
+
+      if(!items.length){
+        grid.innerHTML = `<div class="dynamic-card news-card"><div class="news-body">No relevant headlines found for the selected instruments.</div></div>`;
+        return;
+      }
+
+      grid.innerHTML = items.map(item => {
+        const techBadge = technicalBadgeForHeadline(item);
+        const userBadge = userBadgeForHeadline(item);
+        const srcUrl = sourceURL(item.source);
+        const sourceIcon = faviconForURL(srcUrl || item.link || "");
+
+        return `<a class="dynamic-card news-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
+          <div class="news-source-row">
+            ${sourceIcon ? `<img class="news-source-icon" src="${escapeHTML(sourceIcon)}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}
+            <div class="news-source-name">${escapeHTML(item.source || "Source")}</div>
+          </div>
+
+          <div class="news-body">
+            <div class="news-top">
+              <span class="${techBadge.css}">${escapeHTML(techBadge.label)}</span>
+              <span class="chip user-chip ${voteClass(userBadge.value)}" ${userBadge.instrument ? `data-user-sentiment="${escapeHTML(userBadge.instrument)}"` : ""}>${escapeHTML(userBadge.label)}</span>
+              <span class="${voteClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
+              <span class="chip impact-chip">${escapeHTML(item.impact || "Normal")} Impact</span>
+            </div>
+
+            <div class="news-title">${escapeHTML(item.title || "Untitled headline")}</div>
+            <div class="news-meta">Markets: ${escapeHTML((item.markets || []).join(", ") || "N/A")}<br>Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}</div>
+            <div class="news-open">Open article →</div>
+          </div>
+        </a>`;
+      }).join("");
+
+      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
+    }
+
+    function renderDashboard(){
+      if(!dashboardData) return;
+
+      const defs = getSelectedDefs();
+      const statsList = defs.map(getInstrumentStats);
+      const scopeHeadlines = allCurrentScopeHeadlines();
+
+      renderScoreComparison(statsList);
+      renderCountComparison(statsList);
+      renderInstrumentCards(statsList);
+      renderRelevantNews(scopeHeadlines);
+      renderSourceVotes(scopeHeadlines);
+    }
+
+    async function loadData(){
+      try{
+        const [dashboardRes, technicalRes] = await Promise.all([
+          fetch("dashboard_data.json", { cache:"no-store" }),
+          fetch("technical_data.json", { cache:"no-store" }).catch(() => null)
         ]);
 
-        dashboardData = data;
-        technicalData = tech;
+        dashboardData = await dashboardRes.json();
+        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
 
-        buildInstrumentList();
-        renderGlobalStats();
-        renderInstrumentPicker();
-        renderDashboardSections();
-      } catch (error) {
-        console.warn(error);
-        document.getElementById("comparisonGrid").innerHTML = `<div class="empty-state">Dashboard data could not be loaded.</div>`;
-        document.getElementById("newsGrid").innerHTML = `<div class="empty-state">Relevant headlines could not be loaded.</div>`;
-        document.getElementById("sourceVotesBody").innerHTML = `<tr><td colspan="4">Source votes could not be loaded.</td></tr>`;
+        buildSelects();
+        renderDashboard();
+      }catch(error){
+        console.error(error);
+        document.getElementById("scoreComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
+        document.getElementById("countComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
+        document.getElementById("instrumentCards").innerHTML = `<div class="dynamic-card instrument-card">Dashboard data could not be loaded.</div>`;
+        document.getElementById("sourceVotesBody").innerHTML = `<tr><td colspan="5">Dashboard data could not be loaded.</td></tr>`;
+        document.getElementById("relevantNewsGrid").innerHTML = `<div class="dynamic-card news-card"><div class="news-body">Dashboard data could not be loaded.</div></div>`;
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("instrumentSearch").addEventListener("input", renderInstrumentPicker);
-      document.getElementById("newsSearch").addEventListener("input", renderNews);
-      document.getElementById("newsLimit").addEventListener("change", renderNews);
-
-      document.getElementById("clearSelectionBtn").addEventListener("click", () => {
-        selectedInstruments = [];
-        renderDashboardSections();
-      });
-
-      document.getElementById("topSelectionBtn").addEventListener("click", () => {
-        selectedInstruments = allInstruments.slice(0, 5);
-        renderDashboardSections();
-      });
-
-      initDashboard();
-    });
-
-    window.addEventListener("psdUserSentimentReady", () => {
-      renderComparison();
-    });
+    window.addEventListener("psdUserSentimentReady", renderDashboard);
+    loadData();
   </script>
 
-  <script src="vote-widget.js"></script>
+  <script src="vote-widget.js" defer></script>
 </body>
 </html>
