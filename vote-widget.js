@@ -1,5 +1,5 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
-const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGFieHVvbnZ6YWtvZ3V1Y2dsa2sifQ.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
+const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
@@ -152,8 +152,7 @@ function psdCreateAdvertiseBanner(){
   const style = document.createElement("style");
   style.textContent = `
     .psd-ad-banner{
-      max-width:860px;
-      width:calc(100% - 48px);
+      max-width:1120px;
       margin:14px auto 0;
       padding:11px 14px;
       border:1px solid rgba(210,153,34,.28);
@@ -183,7 +182,7 @@ function psdCreateAdvertiseBanner(){
     }
     .psd-ad-banner a:hover{border-color:rgba(210,153,34,.55);transform:translateY(-1px)}
     @media(max-width:760px){
-      .psd-ad-banner{width:calc(100% - 28px);border-radius:18px;flex-direction:column;margin:12px auto 0}
+      .psd-ad-banner{border-radius:18px;flex-direction:column;margin:12px 14px 0}
     }
   `;
   document.head.appendChild(style);
@@ -197,82 +196,6 @@ function psdCreateAdvertiseBanner(){
   `;
 
   header.insertAdjacentElement("afterend", banner);
-}
-
-function psdCreateFreshnessNote(){
-  if(document.getElementById("psdFreshnessNote")) return;
-
-  const adBanner = document.getElementById("psdAdvertiseBanner");
-  const header = document.querySelector(".header");
-
-  if(!header) return;
-
-  const style = document.createElement("style");
-  style.textContent = `
-    .psd-freshness-note{
-      max-width:860px;
-      width:calc(100% - 48px);
-      margin:8px auto 0;
-      padding:8px 12px;
-      border:1px solid rgba(88,166,255,.16);
-      border-radius:999px;
-      background:rgba(88,166,255,.055);
-      color:var(--muted);
-      text-align:center;
-      font-size:12px;
-      line-height:1.45;
-    }
-    .psd-freshness-note strong{
-      color:#d8ebff;
-      font-weight:600;
-    }
-    @media(max-width:760px){
-      .psd-freshness-note{
-        width:calc(100% - 28px);
-        border-radius:16px;
-        margin:8px auto 0;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-
-  const note = document.createElement("div");
-  note.id = "psdFreshnessNote";
-  note.className = "psd-freshness-note";
-  note.innerHTML = `<strong>Market data last updated:</strong> Loading...`;
-
-  if(adBanner){
-    adBanner.insertAdjacentElement("afterend", note);
-  }else{
-    header.insertAdjacentElement("afterend", note);
-  }
-
-  psdLoadFreshnessNote();
-}
-
-async function psdLoadFreshnessNote(){
-  const note = document.getElementById("psdFreshnessNote");
-  if(!note) return;
-
-  try{
-    const response = await fetch("status.json?ts=" + Date.now(), { cache:"no-store" });
-
-    if(!response.ok){
-      throw new Error("status.json HTTP " + response.status);
-    }
-
-    const data = await response.json();
-
-    const updated = data.updated || "N/A";
-    const psi = data.headline_psi_score !== undefined ? data.headline_psi_score : "N/A";
-    const used = data.psi_headlines_used !== undefined ? data.psi_headlines_used : "N/A";
-    const raw = data.raw_headlines_collected !== undefined ? data.raw_headlines_collected : "N/A";
-
-    note.innerHTML = `<strong>Market data last updated:</strong> ${psdEscape(updated)} · <strong>PSI:</strong> ${psdEscape(psi)}/100 · <strong>PSI headlines:</strong> ${psdEscape(used)} · <strong>Raw headlines:</strong> ${psdEscape(raw)}`;
-  }catch(error){
-    note.innerHTML = `<strong>Market data last updated:</strong> Status temporarily unavailable`;
-    console.warn("Freshness note failed:", error);
-  }
 }
 
 function psdGetVoterId(){
@@ -659,7 +582,6 @@ function psdInit(){
   psdInjectStructuredData();
   psdAddHomeLabel();
   psdCreateAdvertiseBanner();
-  psdCreateFreshnessNote();
   psdFixNavigation();
   psdEnhanceFooterLegalLinks();
   psdEnhanceSocialLinks();
@@ -682,7 +604,6 @@ if(document.readyState === "loading"){
 window.addEventListener("load", () => {
   psdAddHomeLabel();
   psdCreateAdvertiseBanner();
-  psdCreateFreshnessNote();
   psdFixNavigation();
   psdEnhanceFooterLegalLinks();
   psdEnhanceSocialLinks();
