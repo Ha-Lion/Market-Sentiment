@@ -147,9 +147,7 @@ function psdCreateAdvertiseBanner(){
   if(document.getElementById("psdAdvertiseBanner")) return;
 
   const header = document.querySelector(".header");
-  const main = document.querySelector("main.page");
-
-  if(!header || !main) return;
+  if(!header) return;
 
   const style = document.createElement("style");
   style.textContent = `
@@ -170,10 +168,7 @@ function psdCreateAdvertiseBanner(){
       line-height:1.45;
       box-shadow:0 10px 26px rgba(0,0,0,.16);
     }
-    .psd-ad-banner strong{
-      color:#ffd780;
-      font-weight:800;
-    }
+    .psd-ad-banner strong{color:#ffd780;font-weight:800}
     .psd-ad-banner a{
       color:#fff;
       font-weight:800;
@@ -185,16 +180,9 @@ function psdCreateAdvertiseBanner(){
       white-space:nowrap;
       transition:.18s ease;
     }
-    .psd-ad-banner a:hover{
-      border-color:rgba(210,153,34,.55);
-      transform:translateY(-1px);
-    }
+    .psd-ad-banner a:hover{border-color:rgba(210,153,34,.55);transform:translateY(-1px)}
     @media(max-width:760px){
-      .psd-ad-banner{
-        border-radius:18px;
-        flex-direction:column;
-        margin:12px 14px 0;
-      }
+      .psd-ad-banner{border-radius:18px;flex-direction:column;margin:12px 14px 0}
     }
   `;
   document.head.appendChild(style);
@@ -204,7 +192,7 @@ function psdCreateAdvertiseBanner(){
   banner.className = "psd-ad-banner";
   banner.innerHTML = `
     <span>📣 <strong>Advertise on Public Sentiment Dash</strong> — reach finance, trading, investing, and market-sentiment readers.</span>
-    <a href="contact.html">Contact Us</a>
+    <a href="advertise.html">Learn More</a>
   `;
 
   header.insertAdjacentElement("afterend", banner);
@@ -264,13 +252,14 @@ function psdFixNavigation(){
 
 function psdEnhanceFooterLegalLinks(){
   document.querySelectorAll(".footer-links").forEach(footer => {
-    const legalLinks = [
+    const extraLinks = [
+      ["advertise.html", "Advertise"],
       ["privacy.html", "Privacy"],
       ["terms.html", "Terms"],
       ["disclaimer.html", "Disclaimer"]
     ];
 
-    legalLinks.forEach(([href, label]) => {
+    extraLinks.forEach(([href, label]) => {
       const exists = Array.from(footer.querySelectorAll("a")).some(a => (a.getAttribute("href") || "") === href);
       if(!exists){
         const a = document.createElement("a");
@@ -312,11 +301,11 @@ function psdEnhanceSocialLinks(){
 function psdCreateShareButtons(){
   if(document.getElementById("psdShareBox")) return;
 
-  const legalPage = ["privacy.html","terms.html","disclaimer.html"].some(page =>
+  const noSharePages = ["privacy.html","terms.html","disclaimer.html"].some(page =>
     window.location.pathname.toLowerCase().endsWith(page)
   );
 
-  if(legalPage) return;
+  if(noSharePages) return;
 
   const main = document.querySelector("main.page");
   if(!main) return;
@@ -384,7 +373,6 @@ function psdFallbackFromElement(el){
 
     if(dailyRow){
       const text = dailyRow.textContent.toLowerCase();
-
       if(text.includes("bullish")) return "Bullish";
       if(text.includes("bearish")) return "Bearish";
       if(text.includes("neutral")) return "Neutral";
