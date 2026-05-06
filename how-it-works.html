@@ -1,247 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>How Public Sentiment Dash Works</title>
-  <meta name="description" content="Learn how Public Sentiment Dash collects public financial headlines, classifies market sentiment, calculates PSI, tracks user votes, and displays market narratives." />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://publicsentimentdash.com/how-it-works.html" />
-  <link rel="icon" type="image/png" href="logo.png" />
-  <link rel="stylesheet" href="site.css" />
+  <title>How the Dashboard Works — Public Sentiment Dash</title>
+  <meta name="description" content="Learn how Public Sentiment Dash collects public market news, organizes sentiment, adds technical direction, and shows anonymous user sentiment.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/how-it-works.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
 
   <style>
-    .works-page {
-      display: grid;
-      gap: 18px;
-    }
-
-    .works-hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .works-copy,
-    .works-side {
-      padding: 26px;
-    }
-
-    .works-chip {
-      display: inline-flex;
-      width: fit-content;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(88,166,255,.10);
-      border: 1px solid rgba(88,166,255,.22);
-      color: #a5cfff;
-      font-size: 12px;
-      font-weight: 850;
-      margin-bottom: 10px;
-    }
-
-    .works-side {
-      display: grid;
-      align-content: center;
-      text-align: center;
-    }
-
-    .works-big {
-      color: #fff;
-      font-size: clamp(2.4rem, 7vw, 4.5rem);
-      font-weight: 950;
-      letter-spacing: -.07em;
-      line-height: 1;
-    }
-
-    .works-big-label {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      font-weight: 850;
-      margin-top: 10px;
-    }
-
-    .step-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .step-card {
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      background: rgba(255,255,255,.035);
-      padding: 18px;
-    }
-
-    .step-number {
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border-radius: 999px;
-      background: rgba(244,201,93,.14);
-      border: 1px solid rgba(244,201,93,.28);
-      color: var(--gold, #f4c95d);
-      font-weight: 950;
-      margin-bottom: 12px;
-    }
-
-    .step-card h2 {
-      color: #fff;
-      font-size: 17px;
-      margin: 0 0 8px;
-    }
-
-    .step-card p {
-      color: var(--muted, #aab4c5);
-      font-size: 14px;
-      line-height: 1.55;
-      margin: 0;
-    }
-
-    .works-section {
-      padding: 22px;
-    }
-
-    .info-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .info-item {
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      background: rgba(255,255,255,.035);
-      padding: 14px;
-      color: var(--muted, #aab4c5);
-      line-height: 1.55;
-    }
-
-    .info-item strong {
-      color: #fff;
-    }
-
-    .psi-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
-
-    .psi-card {
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      background: rgba(255,255,255,.035);
-      padding: 16px;
-      text-align: center;
-    }
-
-    .psi-num {
-      color: #fff;
-      font-size: 34px;
-      font-weight: 950;
-      letter-spacing: -.05em;
-      line-height: 1;
-    }
-
-    .psi-label {
-      color: var(--muted, #aab4c5);
-      font-size: 13px;
-      font-weight: 850;
-      margin-top: 8px;
-    }
-
-    .cta-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 16px;
-      align-items: center;
-      border: 1px solid rgba(244,201,93,.28);
-      background: linear-gradient(135deg, rgba(244,201,93,.13), rgba(88,166,255,.07));
-      border-radius: 18px;
-      padding: 20px;
-    }
-
-    .cta-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .cta-actions a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 42px;
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-weight: 900;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .cta-primary {
-      background: rgba(244,201,93,.18);
-      border: 1px solid rgba(244,201,93,.42);
-      color: #fff;
-    }
-
-    .cta-secondary {
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.14);
-      color: #fff;
-    }
-
-    @media (max-width: 1040px) {
-      .works-hero,
-      .step-grid,
-      .psi-grid,
-      .cta-row {
-        grid-template-columns: 1fr;
-      }
-
-      .works-side {
-        text-align: left;
-      }
-
-      .cta-actions a {
-        flex: 1 1 180px;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .works-copy,
-      .works-side,
-      .works-section,
-      .cta-row {
-        padding: 16px;
-      }
-
-      .step-grid,
-      .psi-grid {
-        gap: 12px;
-      }
-
-      .cta-actions {
-        display: grid;
-        grid-template-columns: 1fr;
-      }
-
-      .cta-actions a {
-        width: 100%;
-      }
-    }
+    .hero{max-width:1120px;margin:0 auto 18px}
+    .steps{display:grid;gap:16px}
+    .step{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:20px}
+    .step-number{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;border-radius:50%;background:rgba(210,153,34,.18);border:1px solid rgba(210,153,34,.35);color:#ffd780;font-weight:600;margin-bottom:10px}
+    .step h2{font-weight:600}
+    .note-box{margin-top:18px;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.22);border-radius:16px;padding:18px}
   </style>
 </head>
 
 <body>
   <header class="header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo" />
+      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
       <div class="brand-copy">
         <div class="brand-stamp">AI-built public market sentiment dashboard</div>
         <div class="site-subtitle">Global market public sentiment dashboard</div>
@@ -252,7 +35,7 @@
       <div class="header-pill">✨ Constantly learning & improving</div>
     </div>
 
-    <nav class="nav" aria-label="Main navigation">
+    <nav class="nav">
       <a href="dashboard.html">Interactive Dashboard</a>
       <a href="news-articles.html">News & Articles</a>
       <a href="market-sentiment.html">Guides</a>
@@ -268,129 +51,77 @@
   </header>
 
   <main class="page">
-    <div class="works-page">
-      <section class="works-hero">
-        <div class="panel works-copy">
-          <div class="works-chip">How It Works</div>
-          <h1>How Public Sentiment Dash Works</h1>
-          <p>Public Sentiment Dash scans public financial headlines, classifies market sentiment, organizes instruments, and turns the public narrative into a cleaner dashboard view.</p>
-          <p>The goal is simple: help readers understand what the public market narrative is leaning toward without digging through dozens of pages manually.</p>
-        </div>
+    <section class="panel hero">
+      <div class="page-chip">Dashboard Works</div>
+      <h1>How the Dashboard Works</h1>
+      <p>Public Sentiment Dash turns public financial headlines into a cleaner market-sentiment view. It combines public narrative, relevant news, source votes, technical direction, and anonymous user sentiment.</p>
+    </section>
 
-        <aside class="panel works-side">
-          <div>
-            <div class="works-big">PSI</div>
-            <div class="works-big-label">Public Sentiment Index: 0 bearish, 50 mixed, 100 bullish.</div>
-          </div>
-        </aside>
-      </section>
+    <section class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h2>Public Source Collection</h2>
+        <p>The private engine scans public financial, macro, forex, crypto, commodity, stock, and market news sources on a scheduled basis.</p>
+      </div>
 
-      <section class="step-grid">
-        <div class="panel step-card">
-          <div class="step-number">1</div>
-          <h2>Collect Headlines</h2>
-          <p>The system reads public financial sources and collects relevant headlines across stocks, forex, crypto, commodities, bonds, and macro topics.</p>
-        </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h2>Rolling News Memory</h2>
+        <p>Relevant headlines are saved into a rolling archive so keyword search can find stories beyond only the latest scan.</p>
+      </div>
 
-        <div class="panel step-card">
-          <div class="step-number">2</div>
-          <h2>Classify Sentiment</h2>
-          <p>Each headline is classified as bullish, bearish, mixed, or neutral based on its public market meaning.</p>
-        </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h2>Market and Instrument Classification</h2>
+        <p>Headlines are grouped by market type and instrument, such as indexes, bonds, forex, crypto, commodities, macro themes, and selected company-news categories.</p>
+      </div>
 
-        <div class="panel step-card">
-          <div class="step-number">3</div>
-          <h2>Organize Markets</h2>
-          <p>Headlines are grouped by market, instrument, source, impact, and topic so users can compare the narrative quickly.</p>
-        </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <h2>Public Sentiment Index</h2>
+        <p>PSI means Public Sentiment Index. A reading near 0/100 is bearish, around 50/100 is mixed or neutral, and near 100/100 is bullish.</p>
+      </div>
 
-        <div class="panel step-card">
-          <div class="step-number">4</div>
-          <h2>Display Dashboard</h2>
-          <p>The site shows global PSI, instrument PSI, source votes, user votes, technical direction, and relevant news.</p>
-        </div>
-      </section>
+      <div class="step">
+        <div class="step-number">5</div>
+        <h2>Source Votes and Impact</h2>
+        <p>Source votes summarize the filtered public narrative from each source. Impact means a headline contains stronger market-moving keywords; it is not a source-quality score.</p>
+      </div>
 
-      <section class="panel works-section">
-        <div class="works-chip">PSI Scale</div>
-        <h2>How to Read the Public Sentiment Index</h2>
+      <div class="step">
+        <div class="step-number">6</div>
+        <h2>Technical Direction</h2>
+        <p>When price data is available, the dashboard adds daily, weekly, and monthly technical direction to help compare public narrative against price behavior.</p>
+      </div>
 
-        <div class="psi-grid">
-          <div class="psi-card">
-            <div class="psi-num">0–30</div>
-            <div class="psi-label">Bearish public sentiment</div>
-          </div>
+      <div class="step">
+        <div class="step-number">7</div>
+        <h2>Anonymous User Sentiment</h2>
+        <p>Users can vote bullish or bearish on instruments without registration. If voting data is not strong enough yet, the site falls back to daily technical direction so the display stays useful.</p>
+      </div>
+    </section>
 
-          <div class="psi-card">
-            <div class="psi-num">40–60</div>
-            <div class="psi-label">Mixed or neutral sentiment</div>
-          </div>
+    <section class="panel note-box">
+      <h2>Important Note</h2>
+      <p>This dashboard is for information, education, and market awareness. It is not financial advice, not a trading signal, and not a recommendation to buy or sell any asset.</p>
+    </section>
 
-          <div class="psi-card">
-            <div class="psi-num">70–100</div>
-            <div class="psi-label">Bullish public sentiment</div>
-          </div>
-        </div>
-      </section>
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html" class="active">Dashboard Works</a>
+        <a href="about.html">About</a>
+      </div>
 
-      <section class="panel works-section">
-        <div class="works-chip">Data Layers</div>
-        <h2>What the Dashboard Shows</h2>
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
 
-        <div class="info-list">
-          <div class="info-item"><strong>Global PSI:</strong> the broad all-market public sentiment score.</div>
-          <div class="info-item"><strong>Instrument PSI:</strong> sentiment for selected assets, pairs, commodities, indexes, crypto, bonds, and macro themes.</div>
-          <div class="info-item"><strong>Source votes:</strong> how individual public sources lean based on matching headlines.</div>
-          <div class="info-item"><strong>User sentiment:</strong> anonymous bullish or bearish reader votes.</div>
-          <div class="info-item"><strong>Relevant news:</strong> public headlines connected to the selected market or instrument.</div>
-          <div class="info-item"><strong>Technical direction:</strong> a simple price-based direction layer when chart data is available.</div>
-        </div>
-      </section>
-
-      <section class="panel works-section">
-        <div class="works-chip">Important Limits</div>
-        <h2>What It Does Not Do</h2>
-
-        <div class="info-list">
-          <div class="info-item"><strong>No financial advice:</strong> the dashboard does not tell users what to buy, sell, short, hold, or trade.</div>
-          <div class="info-item"><strong>No perfect prediction:</strong> sentiment can be wrong, crowded, delayed, emotional, or incomplete.</div>
-          <div class="info-item"><strong>No private account data:</strong> the site does not need brokerage login information or personal trading account details.</div>
-        </div>
-      </section>
-
-      <section class="cta-row">
-        <div>
-          <h2>Use the Dashboard</h2>
-          <p>Open the dashboard to compare instruments or browse the news feed to search public market headlines.</p>
-        </div>
-
-        <div class="cta-actions">
-          <a class="cta-primary" href="dashboard.html">Open Dashboard</a>
-          <a class="cta-secondary" href="news-articles.html">Browse News</a>
-        </div>
-      </section>
-
-      <footer class="footer">
-        <div class="footer-links">
-          <a href="dashboard.html">Interactive Dashboard</a>
-          <a href="news-articles.html">News & Articles</a>
-          <a href="market-sentiment.html">Guides</a>
-          <a href="contact.html">Get in Touch</a>
-          <a href="how-it-works.html" class="active">Dashboard Works</a>
-          <a href="about.html">About</a>
-          <a href="advertise.html">Advertise</a>
-          <a href="privacy.html">Privacy</a>
-          <a href="terms.html">Terms</a>
-          <a href="disclaimer.html">Disclaimer</a>
-        </div>
-
-        <div class="legal">
-          <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
-        </div>
-
-        <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
-      </footer>
-    </div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
   </main>
 
   <script src="vote-widget.js" defer></script>
