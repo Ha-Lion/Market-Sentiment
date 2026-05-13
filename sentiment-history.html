@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Historical Market Sentiment — Public Sentiment Dash</title>
+  <meta name="description" content="Track historical Global Public Sentiment Index and U.S. market sentiment with daily, weekly, and monthly sentiment charts.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/sentiment-history.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+
+  <style>
+    .history-hero{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+      gap:18px;
+      align-items:stretch;
+      margin-bottom:18px;
+    }
+
+    .history-kicker{
+      display:inline-flex;
+      width:max-content;
+      max-width:100%;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.35);
+      color:#f4d17d;
+      font-size:12px;
+      font-weight:600;
+      margin-bottom:14px;
+    }
+
+    .history-lead{
+      font-size:16px;
+      max-width:760px;
+    }
+
+    .history-summary{
+      display:grid;
+      gap:10px;
+    }
+
+    .summary-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .summary-card strong{
+      display:block;
+      color:#fff;
+      margin-bottom:5px;
+      font-weight:600;
+    }
+
+    .summary-card span{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .chart-shell{
+      padding:22px;
+      margin-bottom:18px;
+    }
+
+    .chart-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .history-controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:flex-end;
+    }
+
+    .history-btn{
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(17,24,33,.88);
+      color:var(--soft);
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:12px;
+    }
+
+    .history-btn.active,.history-btn:hover{
+      color:#ffd780;
+      border-color:rgba(210,153,34,.45);
+      background:rgba(210,153,34,.13);
+    }
+
+    .chart-wrap{
+      position:relative;
+      height:430px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.13), transparent 16rem), linear-gradient(180deg,#101826,#0b111a);
+      padding:14px;
+      overflow:hidden;
+    }
+
+    #sentimentChart{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .chart-empty{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:22px;
+      color:var(--muted);
+      background:rgba(5,7,11,.72);
+    }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .history-stat{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .history-stat-label{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:500;
+      margin-bottom:7px;
+    }
+
+    .history-stat-value{
+      color:#fff;
+      font-size:24px;
+      font-weight:700;
+    }
+
+    .history-stat-note{
+      color:var(--muted);
+      font-size:11px;
+      margin-top:5px;
+      line-height:1.35;
+    }
+
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+
+    .method-list{
+      margin:10px 0 0;
+      padding-left:18px;
+    }
+
+    @media(max-width:1100px){
+      .history-hero,.stats-grid,.info-grid{grid-template-columns:1fr 1fr}
+    }
+
+    @media(max-width:720px){
+      .history-hero,.stats-grid,.info-grid{grid-template-columns:1fr}
+      .chart-wrap{height:340px}
+      .chart-top{display:block}
+      .history-controls{justify-content:flex-start;margin-top:12px}
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">📈 Historical sentiment tracking</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="sentiment-history.html" class="active">Historical Sentiment</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="contact.html">Get in Touch</a>
+      <a href="how-it-works.html">Dashboard Works</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="history-hero">
+      <div class="panel">
+        <div class="history-kicker">Daily database + weekly/monthly views</div>
+        <h1>Historical Market Sentiment</h1>
+        <p class="history-lead">Track how public market sentiment changes over time using Global PSI and U.S. market sentiment history.</p>
+        <p class="muted">The chart reads from <b>sentiment_history.json</b>. Each daily update adds or refreshes one record so the database grows over time.</p>
+      </div>
+
+      <aside class="panel history-summary">
+        <div class="summary-card">
+          <strong>Global PSI History</strong>
+          <span>Daily Global Public Sentiment Index readings over time.</span>
+        </div>
+        <div class="summary-card">
+          <strong>U.S. Market Sentiment</strong>
+          <span>U.S.-focused sentiment from major U.S. markets, rates, and financial headlines once available.</span>
+        </div>
+        <div class="summary-card">
+          <strong>Daily / Weekly / Monthly</strong>
+          <span>Switch between short-term movement, weekly trend, and longer-term direction.</span>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel chart-shell">
+      <div class="chart-top">
+        <div>
+          <h2 id="chartTitle">Global PSI History</h2>
+          <p class="muted" id="chartDescription">Daily Global Public Sentiment Index over time.</p>
+        </div>
+
+        <div class="history-controls" aria-label="Sentiment chart controls">
+          <button class="history-btn active" data-scope="global">Global PSI</button>
+          <button class="history-btn" data-scope="us">U.S. PSI</button>
+          <button class="history-btn active" data-period="daily">Daily</button>
+          <button class="history-btn" data-period="weekly">Weekly</button>
+          <button class="history-btn" data-period="monthly">Monthly</button>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="sentimentChart"></canvas>
+        <div class="chart-empty" id="chartEmpty">Waiting for enough sentiment history records.</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="history-stat">
+          <div class="history-stat-label">Current</div>
+          <div class="history-stat-value" id="statCurrent">--</div>
+          <div class="history-stat-note">Latest saved reading</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-label">1W Change</div>
+          <div class="history-stat-value" id="statWeek">--</div>
+          <div class="history-stat-note">Versus about 7 days ago</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-label">1M Change</div>
+          <div class="history-stat-value" id="statMonth">--</div>
+          <div class="history-stat-note">Versus about 30 days ago</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat-label">Range</div>
+          <div class="history-stat-value" id="statRange">--</div>
+          <div class="history-stat-note">Low / high in selected view</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>What This Page Tracks</h2>
+      <div class="info-grid">
+        <div class="mini-card">
+          <div class="mini-title">Global PSI History</div>
+          <div class="mini-meta">Tracks the daily Global Public Sentiment Index over time.</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">U.S. Market Sentiment</div>
+          <div class="mini-meta">Tracks sentiment focused on major U.S. markets, indexes, rates, and U.S. financial headlines.</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">Daily / Weekly / Monthly</div>
+          <div class="mini-meta">Switch between short-term movement, weekly trend, and longer-term sentiment direction.</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-title">Sentiment Range</div>
+          <div class="mini-meta">Shows strongest and weakest sentiment readings in the selected period.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Database Method</h2>
+      <p>Each day, the engine should update <b>sentiment_history.json</b> with one record for the day.</p>
+      <ul class="method-list">
+        <li>Global PSI is saved daily from the latest dashboard scan.</li>
+        <li>U.S. PSI can be added once the engine outputs a U.S.-focused score.</li>
+        <li>The page automatically turns daily records into weekly and monthly averages.</li>
+      </ul>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="public-sentiment-index.html">Public Sentiment Index</a>
+        <a href="sentiment-history.html" class="active">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">Dashboard Works</a>
+        <a href="about.html">About</a>
+        <a href="advertise.html">Advertise</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script>
+    let historyRecords = [];
+    let selectedScope = "global";
+    let selectedPeriod = "daily";
+
+    function valueKey(){
+      return selectedScope === "us" ? "us_psi" : "global_psi";
+    }
+
+    function escapeHTML(value){
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function toDate(dateText){
+      const parts = String(dateText || "").split("-").map(Number);
+      return new Date(parts[0] || 1970, (parts[1] || 1) - 1, parts[2] || 1);
+    }
+
+    function formatDate(dateText){
+      const d = toDate(dateText);
+      return d.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+    }
+
+    function formatMonth(dateText){
+      const d = toDate(dateText + "-01");
+      return d.toLocaleDateString(undefined, {month:"short", year:"2-digit"});
+    }
+
+    function weekKey(dateText){
+      const d = toDate(dateText);
+      const day = d.getDay() || 7;
+      d.setDate(d.getDate() + 4 - day);
+      const yearStart = new Date(d.getFullYear(),0,1);
+      const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return d.getFullYear() + "-W" + String(week).padStart(2,"0");
+    }
+
+    function aggregate(records){
+      const key = valueKey();
+      const clean = records
+        .filter(r => r.date && Number.isFinite(Number(r[key])))
+        .map(r => ({date:r.date, value:Number(r[key])}))
+        .sort((a,b) => a.date.localeCompare(b.date));
+
+      if(selectedPeriod === "daily"){
+        return clean.map(r => ({label:formatDate(r.date), sort:r.date, value:r.value}));
+      }
+
+      const groups = new Map();
+      clean.forEach(r => {
+        const groupKey = selectedPeriod === "weekly" ? weekKey(r.date) : r.date.slice(0,7);
+        if(!groups.has(groupKey)) groups.set(groupKey, []);
+        groups.get(groupKey).push(r.value);
+      });
+
+      return [...groups.entries()].map(([group, values]) => ({
+        label:selectedPeriod === "weekly" ? group.replace("-W"," W") : formatMonth(group),
+        sort:group,
+        value:Math.round(values.reduce((a,b)=>a+b,0) / values.length)
+      })).sort((a,b) => a.sort.localeCompare(b.sort));
+    }
+
+    function nearestChange(records, daysBack){
+      const key = valueKey();
+      const clean = records
+        .filter(r => r.date && Number.isFinite(Number(r[key])))
+        .sort((a,b) => a.date.localeCompare(b.date));
+
+      if(clean.length < 2) return null;
+
+      const latest = clean[clean.length - 1];
+      const latestDate = toDate(latest.date).getTime();
+      const targetTime = latestDate - daysBack * 86400000;
+      let prior = null;
+
+      clean.forEach(r => {
+        if(toDate(r.date).getTime() <= targetTime) prior = r;
+      });
+
+      if(!prior) prior = clean[0];
+      return Number(latest[key]) - Number(prior[key]);
+    }
+
+    function signed(value){
+      if(value === null || value === undefined || !Number.isFinite(Number(value))) return "--";
+      const n = Math.round(Number(value));
+      return (n > 0 ? "+" : "") + n;
+    }
+
+    function drawChart(points){
+      const canvas = document.getElementById("sentimentChart");
+      const wrap = canvas.parentElement;
+      const rect = wrap.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(320, Math.floor(rect.width * ratio));
+      canvas.height = Math.max(260, Math.floor(rect.height * ratio));
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+
+      const w = rect.width;
+      const h = rect.height;
+      const pad = {left:44,right:18,top:22,bottom:38};
+      const innerW = w - pad.left - pad.right;
+      const innerH = h - pad.top - pad.bottom;
+
+      ctx.clearRect(0,0,w,h);
+      ctx.font = "12px Inter, Arial";
+      ctx.lineWidth = 1;
+
+      const gridColor = "rgba(139,148,158,.22)";
+      const textColor = "rgba(201,209,217,.82)";
+      const gold = "rgba(210,153,34,.95)";
+      const goldFill = "rgba(210,153,34,.18)";
+
+      [0,25,50,75,100].forEach(v => {
+        const y = pad.top + innerH - (v/100) * innerH;
+        ctx.strokeStyle = gridColor;
+        ctx.beginPath();
+        ctx.moveTo(pad.left,y);
+        ctx.lineTo(w-pad.right,y);
+        ctx.stroke();
+        ctx.fillStyle = textColor;
+        ctx.fillText(v, 8, y+4);
+      });
+
+      if(!points.length){
+        return;
+      }
+
+      const xFor = i => points.length === 1 ? pad.left + innerW/2 : pad.left + (i/(points.length-1)) * innerW;
+      const yFor = v => pad.top + innerH - (Math.max(0, Math.min(100, v))/100) * innerH;
+
+      const area = new Path2D();
+      area.moveTo(xFor(0), pad.top + innerH);
+      points.forEach((p,i) => area.lineTo(xFor(i), yFor(p.value)));
+      area.lineTo(xFor(points.length-1), pad.top + innerH);
+      area.closePath();
+      ctx.fillStyle = goldFill;
+      ctx.fill(area);
+
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      points.forEach((p,i) => {
+        const x = xFor(i);
+        const y = yFor(p.value);
+        if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+
+      points.forEach((p,i) => {
+        const x = xFor(i);
+        const y = yFor(p.value);
+        ctx.fillStyle = "rgba(240,183,47,.95)";
+        ctx.beginPath();
+        ctx.arc(x,y,3.2,0,Math.PI*2);
+        ctx.fill();
+      });
+
+      const labelCount = Math.min(points.length, 6);
+      for(let i=0;i<labelCount;i++){
+        const idx = labelCount === 1 ? 0 : Math.round(i*(points.length-1)/(labelCount-1));
+        const p = points[idx];
+        const x = xFor(idx);
+        ctx.fillStyle = textColor;
+        ctx.textAlign = i === 0 ? "left" : i === labelCount-1 ? "right" : "center";
+        ctx.fillText(p.label, x, h-12);
+      }
+      ctx.textAlign = "left";
+    }
+
+    function render(){
+      const points = aggregate(historyRecords);
+      const empty = document.getElementById("chartEmpty");
+      const key = valueKey();
+      const clean = historyRecords.filter(r => r.date && Number.isFinite(Number(r[key]))).sort((a,b)=>a.date.localeCompare(b.date));
+      const latest = clean[clean.length - 1];
+
+      document.getElementById("chartTitle").textContent = selectedScope === "us" ? "U.S. Market Sentiment History" : "Global PSI History";
+      document.getElementById("chartDescription").textContent = selectedScope === "us"
+        ? "U.S.-focused sentiment over time, once U.S. PSI records are available."
+        : "Global Public Sentiment Index over time.";
+
+      empty.style.display = points.length ? "none" : "flex";
+      document.getElementById("statCurrent").textContent = latest ? Math.round(Number(latest[key])) : "--";
+      document.getElementById("statWeek").textContent = signed(nearestChange(historyRecords, 7));
+      document.getElementById("statMonth").textContent = signed(nearestChange(historyRecords, 30));
+
+      if(points.length){
+        const values = points.map(p => p.value);
+        document.getElementById("statRange").textContent = `${Math.min(...values)} / ${Math.max(...values)}`;
+      }else{
+        document.getElementById("statRange").textContent = "--";
+      }
+
+      drawChart(points);
+    }
+
+    function bindControls(){
+      document.querySelectorAll("[data-scope]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          selectedScope = btn.dataset.scope;
+          document.querySelectorAll("[data-scope]").forEach(b => b.classList.toggle("active", b === btn));
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-period]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          selectedPeriod = btn.dataset.period;
+          document.querySelectorAll("[data-period]").forEach(b => b.classList.toggle("active", b === btn));
+          render();
+        });
+      });
+
+      window.addEventListener("resize", render);
+    }
+
+    async function loadHistory(){
+      try{
+        const response = await fetch("sentiment_history.json", {cache:"no-store"});
+        const data = await response.json();
+        historyRecords = Array.isArray(data.records) ? data.records : Array.isArray(data) ? data : [];
+      }catch(error){
+        console.warn("sentiment_history.json not available yet", error);
+        historyRecords = [];
+      }
+
+      render();
+    }
+
+    bindControls();
+    loadHistory();
+  </script>
+</body>
+</html>
