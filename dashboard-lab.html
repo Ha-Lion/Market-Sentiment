@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Dashboard Lab — Public Sentiment Dash</title>
-  <!-- DASHBOARD LAB V5 FULL-INSTRUMENT PERIOD COLOR BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4 TECHNICAL-DIRECTION MOTION BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4B DROPDOWN + SKYLINE BUTTONS ONLY BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -93,9 +94,9 @@
       border:1px solid rgba(255,255,255,.10);
     }
     .badge-bullish{color:#9ff0aa;background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.25)}
-    .badge-mixedbullish{color:#9ff0aa;background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.25)}
+    .badge-mixedbullish{color:#ffd780;background:rgba(210,153,34,.13);border-color:rgba(210,153,34,.30)}
     .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.10);border-color:rgba(88,166,255,.22)}
-    .badge-mixedbearish{color:#ffaaa6;background:rgba(248,81,73,.11);border-color:rgba(248,81,73,.25)}
+    .badge-mixedbearish{color:#ffcc9c;background:rgba(245,158,11,.11);border-color:rgba(245,158,11,.25)}
     .badge-bearish{color:#ffaaa6;background:rgba(248,81,73,.11);border-color:rgba(248,81,73,.25)}
     .gauge-row{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
     .mini-gauge{
@@ -107,7 +108,7 @@
       background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
       display:grid;
       place-items:center;
-      box-shadow:0 0 34px color-mix(in srgb, var(--accent) 25%, transparent);
+      box-shadow:0 0 34px rgba(210,153,34,.12);
     }
     .mini-gauge-inner{
       width:74px;
@@ -131,8 +132,9 @@
     .panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
     .panel-kicker{color:var(--muted);font-size:13px;line-height:1.55}
     .pill-row{display:flex;gap:8px;flex-wrap:wrap}
-    .tiny-pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:800;cursor:pointer;transition:.18s ease}
-    .tiny-pill:hover,.tiny-pill.active{color:#fff;border-color:rgba(88,166,255,.45);background:rgba(88,166,255,.14);box-shadow:0 0 18px rgba(88,166,255,.14)}
+    .tiny-pill{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:700;cursor:pointer;transition:.18s ease}
+    .tiny-pill:hover,.tiny-pill.active{color:#ffd780;border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.13);transform:translateY(-1px)}
+    button.tiny-pill{font-family:inherit}
     .skyline-wrap{
       position:relative;
       height:480px;
@@ -296,7 +298,7 @@
         <div class="lab-warning">PRIVATE TEST PAGE • NOINDEX • DO NOT LINK IN NAV/SITEMAP</div>
         <h1>Sentiment Dashboard Lab</h1>
         <p>Test advanced sentiment comparison visuals here before changing the live dashboard.</p>
-        <p class="lab-small">This lab focuses on selected-market sentiment, not one global or U.S. aggregate. PSI uses selected-market headline sentiment when available. Technical reads technical_data.json when available; otherwise it uses PSI/trend direction. User sentiment defaults from technical direction when direct user votes are not available.</p>
+        <p class="lab-small">This lab focuses on selected-market sentiment, not one global score. PSI uses the selected market's headline sentiment; Technical reads technical_data.json when available; User defaults to technical direction when direct user votes are not available. Mini-trends use preview shapes until true instrument-level history grows.</p>
       </div>
       <div class="lab-controls" id="marketControls"></div>
     </section>
@@ -308,9 +310,9 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Skyline</h2>
-            <div class="panel-kicker">Selected-market PSI movement. Daily, weekly, and monthly buttons redraw the same comparison view.</div>
+            <div class="panel-kicker">Multi-market PSI movement with glowing trend lines, clear end-point badges, and slow motion drawing.</div>
           </div>
-          <div class="pill-row">
+          <div class="pill-row" aria-label="Skyline time period">
             <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
             <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
             <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
@@ -341,11 +343,11 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">Recent PSI-style pressure matrix. Red = bearish, blue = neutral, green = bullish.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Red = bearish pressure, blue = neutral, gold/green = bullish pressure.</div>
           </div>
         </div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values for the selected period. Lower values are bearish pressure, middle values are neutral, and higher values are bullish pressure.</div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Each cell is a recent period in the generated or real series; lower values are bearish pressure, higher values are bullish pressure.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -434,13 +436,14 @@
       {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"], fallback:50}
     ];
 
+    const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
     let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
     let selectedPeriod = "daily";
     let dashboardData = null;
     let technicalData = null;
 
     function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-    function norm(v){return String(v||"").toLowerCase().replace(/[^a-z0-9]/g,"")}
+    function norm(v){return String(v||"").toLowerCase()}
     function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
     function label(score){
       if(score == null) return "No PSI Match";
@@ -450,27 +453,25 @@
       if(score >= 31) return "Mixed Bearish";
       return "Bearish";
     }
-    function simpleBias(score){
-      if(score == null) return "Neutral";
-      if(score >= 56) return "Bullish";
-      if(score < 45) return "Bearish";
-      return "Neutral";
-    }
     function badgeClass(score){return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral")}
     function sentimentColor(score){
-      if(score == null) return "#58a6ff";
-      if(score >= 56) return "#3fb950";
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#3fb950";
+      if(score >= 56) return "#d29922";
       if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f59e0b";
       return "#f85149";
     }
     function heatColor(v){
-      if(v >= 56) return "#3fb950";
+      if(v >= 70) return "#3fb950";
+      if(v >= 56) return "#d29922";
       if(v >= 45) return "#58a6ff";
+      if(v >= 31) return "#f59e0b";
       return "#f85149";
     }
-    function lineColorFor(d){return sentimentColor(d.score)}
+    function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
     function scoreFromText(text){
-      const t = String(text || "").toLowerCase();
+      const t = norm(text);
       if(t.includes("bullish") && !t.includes("bearish")) return 80;
       if(t.includes("bearish") && !t.includes("bullish")) return 20;
       if(t.includes("mixed bullish")) return 60;
@@ -479,8 +480,13 @@
       if(t.includes("neutral")) return 50;
       return null;
     }
-    function textFromItem(item){return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase()}
-    function matchesInstrument(item, ins){const text=textFromItem(item);return ins.aliases.some(a=>text.includes(a.toLowerCase()))}
+    function textFromItem(item){
+      return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
+    }
+    function matchesInstrument(item, ins){
+      const text = textFromItem(item);
+      return ins.aliases.some(a => text.includes(a.toLowerCase()));
+    }
     function getHeadlines(){
       if(!dashboardData) return [];
       return [
@@ -490,137 +496,162 @@
       ];
     }
     function validDirectScore(h){
-      const candidates=[h.psi,h.psi_score,h.sentiment_score,h.public_sentiment_index,h.score_value,h.market_psi];
-      for(const raw of candidates){const n=Number(raw);if(Number.isFinite(n)&&n>=0&&n<=100)return n;}
+      const candidates = [h.psi, h.psi_score, h.sentiment_score, h.public_sentiment_index];
+      for(const raw of candidates){
+        const n = Number(raw);
+        if(Number.isFinite(n) && n >= 0 && n <= 100) return n;
+      }
       return null;
     }
-    function normalizeTechLabel(value){
-      const t=String(value||"").toLowerCase();
-      if(t.includes("bull")||t==="up"||t.includes("rise")||t.includes("positive")) return "Up";
-      if(t.includes("bear")||t==="down"||t.includes("fall")||t.includes("negative")) return "Down";
-      if(t.includes("neutral")||t.includes("mixed")||t.includes("flat")) return "Neutral";
-      return value && value !== "N/A" ? String(value) : "N/A";
-    }
     function extractTechLabel(entry, period){
-      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)] ?? entry?.daily ?? entry?.direction ?? entry?.signal ?? entry?.trend;
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
       if(raw === null || raw === undefined) return "N/A";
-      if(typeof raw === "string" || typeof raw === "number") return normalizeTechLabel(raw);
-      return normalizeTechLabel(raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A");
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
+    }
+    function normalizeTechLabel(value){
+      const t = norm(value);
+      if(t.includes("bull") || t === "up" || t.includes("rise") || t.includes("positive")) return "Up";
+      if(t.includes("bear") || t === "down" || t.includes("fall") || t.includes("negative")) return "Down";
+      if(t.includes("neutral") || t.includes("mixed") || t.includes("flat")) return "Neutral";
+      return value && value !== "N/A" ? String(value) : "N/A";
     }
     function getTechnicalForInstrument(ins){
       if(!technicalData) return "N/A";
       const techRoot = technicalData.technical || technicalData;
-      const wanted = [ins.name, ...ins.aliases].map(norm);
+      const wanted = ins.aliases.map(a => norm(a));
       let entry = null;
+
       if(Array.isArray(techRoot)){
         entry = techRoot.find(item => {
-          const possible=[item?.instrument,item?.name,item?.symbol,item?.label,item?.key].filter(Boolean).map(norm);
-          return wanted.some(w=>possible.includes(w)||possible.some(p=>p.includes(w)||w.includes(p)));
+          const possible = [item?.instrument, item?.name, item?.symbol, item?.label, item?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
         });
       }else if(typeof techRoot === "object"){
-        const found=Object.entries(techRoot).find(([key,value])=>{
-          const possible=[key,value?.instrument,value?.name,value?.symbol,value?.label,value?.key].filter(Boolean).map(norm);
-          return wanted.some(w=>possible.includes(w)||possible.some(p=>p.includes(w)||w.includes(p)));
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol, value?.label, value?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
         });
-        entry=found?found[1]:null;
+        entry = found ? found[1] : null;
       }
-      return entry ? extractTechLabel(entry,"daily") : "N/A";
+
+      if(!entry) return "N/A";
+      return normalizeTechLabel(extractTechLabel(entry, "daily"));
     }
-    function techFromScoreAndSeries(score, series){
-      const live = simpleBias(score);
-      if(live === "Bullish") return "Up";
-      if(live === "Bearish") return "Down";
-      if(series && series.length > 2){
-        const diff = series[series.length-1] - series[series.length-4];
-        if(diff >= 2) return "Up";
-        if(diff <= -2) return "Down";
-      }
+    function techFromScore(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 56) return "Up";
+      if(score <= 44) return "Down";
       return "Neutral";
     }
     function userDefaultFromTech(tech){
-      const t=String(tech||"").toLowerCase();
-      if(t.includes("up")||t.includes("bull")) return "Bullish";
-      if(t.includes("down")||t.includes("bear")) return "Bearish";
+      const t = norm(tech);
+      if(t.includes("up") || t.includes("bull")) return "Bullish";
+      if(t.includes("down") || t.includes("bear")) return "Bearish";
       return "Neutral";
     }
     function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : 24}
     function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
     function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
-    function makeSeries(name, score){
-      const base=score==null?50:score;
-      const len=periodLength();
-      let seed=Array.from(name+selectedPeriod).reduce((a,c)=>a+c.charCodeAt(0),0);
-      const values=[];
-      const amp=selectedPeriod==="daily"?7:selectedPeriod==="weekly"?10:13;
+    function makeSkylineSeries(name, score){
+      const base = score == null ? 50 : score;
+      const len = periodLength();
+      let seed = Array.from(name + selectedPeriod).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      const amp = selectedPeriod === "daily" ? 7 : selectedPeriod === "weekly" ? 10 : 13;
       for(let i=0;i<len;i++){
-        seed=(seed*9301+49297)%233280;
-        const wave=Math.sin((i/(Math.max(len-1,1)))*Math.PI*2 + seed/65000)*amp;
-        const drift=(i-(len*.7))*((base-50)/(selectedPeriod==="monthly"?70:85));
-        const noise=((seed/233280)-.5)*(selectedPeriod==="daily"?5:7);
-        values.push(clamp(Math.round(base-4+(i/Math.max(len-1,1))*8+wave+drift+noise),8,94));
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/Math.max(len-1,1))*Math.PI*2 + seed/65000) * amp;
+        const drift = (i-(len*.7)) * ((base-50)/(selectedPeriod === "monthly" ? 70 : 85));
+        const noise = ((seed/233280)-.5) * (selectedPeriod === "daily" ? 5 : 7);
+        values.push(clamp(Math.round(base - 4 + (i/Math.max(len-1,1))*8 + wave + drift + noise), 8, 94));
       }
-      values[values.length-1]=score==null?50:score;
+      values[values.length-1] = score == null ? 50 : score;
       return values;
     }
     function calcInstrument(ins){
-      const all=getHeadlines();
-      const matched=all.filter(h=>matchesInstrument(h,ins));
-      const scores=[];
-      matched.forEach(h=>{const direct=validDirectScore(h); if(direct!=null) scores.push(clamp(direct,0,100)); else {const s=scoreFromText(textFromItem(h)); if(s!=null)scores.push(s);}});
-      let score=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):ins.fallback;
-      const series=makeSeries(ins.name,score);
-      const liveTech=getTechnicalForInstrument(ins);
-      const tech=liveTech!=="N/A"?liveTech:techFromScoreAndSeries(score,series);
-      const actualUser=window.PSD_USER_SENTIMENT?.[ins.name];
-      const user=actualUser && actualUser!=="N/A" ? actualUser : userDefaultFromTech(tech);
-      const defaultCounts={"S&P 500 / ES":1763,"Nasdaq / NQ":143,"Dow / YM":221,"Russell / RTY":17,"VIX":4};
-      return {name:ins.name, score, sentiment:label(score), headlines: matched.length || defaultCounts[ins.name] || 0, user, tech, series};
-    }
-    function selectedData(){return selected.map(name=>calcInstrument(INSTRUMENTS.find(i=>i.name===name)||INSTRUMENTS[0]))}
-    function renderControls(){
-      const box=document.getElementById("marketControls");
-      box.innerHTML=selected.map((name,idx)=>`<select class="lab-select" data-slot="${idx}">${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}</select>`).join("");
-      box.querySelectorAll("select").forEach(sel=>sel.addEventListener("change",e=>{selected[Number(e.target.dataset.slot)]=e.target.value;renderAll();}));
-    }
-    function bindPeriodButtons(){
-      document.querySelectorAll("[data-period]").forEach(btn=>{
-        btn.classList.toggle("active", btn.dataset.period===selectedPeriod);
-        btn.onclick=()=>{selectedPeriod=btn.dataset.period;renderAll();};
+      const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
+      const scores = [];
+      headlines.forEach(h => {
+        const direct = validDirectScore(h);
+        if(direct != null) scores.push(clamp(direct,0,100));
+        else{
+          const s = scoreFromText(textFromItem(h));
+          if(s != null) scores.push(s);
+        }
       });
+      let score = null;
+      if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+      else score = ins.fallback;
+      const liveTech = getTechnicalForInstrument(ins);
+      const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
+      const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
+      const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+      return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
+    }
+    function makeSeries(name, score){
+      const base = score == null ? 50 : score;
+      let seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      for(let i=0;i<24;i++){
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 8;
+        const drift = (i-18) * ((base-50)/85);
+        const noise = ((seed/233280)-.5) * 7;
+        values.push(clamp(Math.round(base - 5 + (i/23)*10 + wave + drift + noise), 8, 94));
+      }
+      values[values.length-1] = score == null ? 50 : score;
+      return values;
+    }
+    function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
+    function bindPeriodButtons(){
+      document.querySelectorAll("[data-period]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.period === selectedPeriod);
+        btn.onclick = () => { selectedPeriod = btn.dataset.period; renderAll(); };
+      });
+    }
+    function renderControls(){
+      const box = document.getElementById("marketControls");
+      box.innerHTML = selected.map((name,idx) => `<select class="lab-select" data-slot="${idx}">${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}</select>`).join("");
+      box.querySelectorAll("select").forEach(sel => sel.addEventListener("change", e => {selected[Number(e.target.dataset.slot)] = e.target.value; renderAll();}));
     }
     function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
     function renderCards(data){
-      document.getElementById("snapshotCards").innerHTML=data.map((d,idx)=>{const c=sentimentColor(d.score);return `<article class="sentiment-card"><div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div><div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div><svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${c}" opacity=".11"/></svg></article>`;}).join("");
+      document.getElementById("snapshotCards").innerHTML = data.map((d, idx) => {
+        const c = sentimentColor(d.score);
+        return `<article class="sentiment-card"><div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div><div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div><svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg></article>`;
+      }).join("");
     }
-    function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i],midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
+    function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
     function renderSkyline(data){
-      const svg=document.getElementById("skylineChart"),w=1000,h=420,pad={l:56,r:210,t:30,b:40},innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:210,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
       let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
       [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="18" y="${y+4}" fill="#a9b4c1" font-size="14" font-weight="800">${v}</text>`;});
-      const labelRows=data.map((d,idx)=>{const points=d.series.map((v,i)=>[pad.l+(i/(d.series.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);const last=points[points.length-1];return{d,idx,points,last,y:last[1]};}).sort((a,b)=>a.y-b.y);
+      const labelRows=data.map((d,idx)=>{const skylineSeries=makeSkylineSeries(d.name,d.score);const points=skylineSeries.map((v,i)=>[pad.l+(i/(skylineSeries.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);const last=points[points.length-1];return{d,idx,points,last,y:last[1]};}).sort((a,b)=>a.y-b.y);
       for(let i=1;i<labelRows.length;i++){if(labelRows[i].y-labelRows[i-1].y<34)labelRows[i].y=labelRows[i-1].y+34;}
-      labelRows.forEach(row=>{const {d,points,last}=row;const c=lineColorFor(d);const path=smoothPath(points);const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);out+=`<path d="${fill}" fill="${c}" opacity=".07"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="170" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".65"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.5" font-weight="900">${esc(d.name.split(" / ")[0])} • ${d.score??"--"} • ${esc(d.sentiment).replace("Mixed ","M/")}</text></g>`;});
-      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-20}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">Now</text>`;
-      svg.innerHTML=out;
+      labelRows.forEach(row=>{const {d,idx,points,last}=row;const c=lineColor(idx);const path=smoothPath(points);const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="170" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.5" font-weight="900">${esc(d.name.split(" / ")[0])} • ${d.score??"--"} • ${esc(d.sentiment).replace("Mixed ","M/")}</text></g>`;});
+      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-20}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">Now</text>`; svg.innerHTML=out;
     }
     function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
     function renderRadar(data){
-      const svg=document.getElementById("radarChart"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=165;let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/>`;});
-      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+42,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.16)" stroke-width="1.2"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
-      data.slice(0,5).forEach(d=>{const c=lineColorFor(d);const vals=[d.score??50,d.user==="Bullish"?82:d.user==="Bearish"?18:55,clamp(Math.log10((d.headlines||1)+1)*28,8,100),d.tech==="Up"?82:d.tech==="Down"?18:55,clamp(100-Math.abs((d.score??50)-50),35,95)];const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".12" stroke="${c}" stroke-width="3" filter="url(#radarGlow)"/>`;});
+      const svg=document.getElementById("radarChart"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=165; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.15"/>`;});
+      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+42,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.14)" stroke-width="1.1"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
+      data.slice(0,5).forEach((d,idx)=>{const c=lineColor(idx);const vals=[d.score??50,d.user==="Bullish"?80:d.user==="Bearish"?20:55,clamp(Math.log10((d.headlines||1)+1)*28,8,100),d.tech==="Up"?82:d.tech==="Down"?25:55,clamp(100-Math.abs((d.score??50)-50),35,95)];const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".12" stroke="${c}" stroke-width="3" filter="url(#radarGlow)"/>`;});
       svg.innerHTML=out;
     }
-    function heatHeaders(){const n=selectedPeriod==="weekly"?7:12; const prefix=selectedPeriod==="daily"?"H":selectedPeriod==="weekly"?"D":"D";return Array.from({length:n},(_,i)=>`<div class="heat-head">${prefix}-${n-1-i}</div>`).join("")}
-    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const n=selectedPeriod==="weekly"?7:12;const heads=`<div class="heat-row"><div></div>${heatHeaders()}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-n).map(v=>`<div class="heat-cell" title="${periodName()} PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.55+(Math.abs(v-50)/50)*.40}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
+    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.48+(Math.abs(v-50)/50)*.45}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
     function renderRanking(data){const ranked=[...data].sort((a,b)=>(b.score??-1)-(a.score??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(d.sentiment)} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)}</div></div><div class="rank-score" style="color:${sentimentColor(d.score)}">${d.score??"--"}</div></div>`).join("")}
-    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map(d=>`<span><i class="legend-dot" style="background:${lineColorFor(d)}"></i>${esc(d.name)}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} view is active. This lab reads current dashboard data on page load and uses preview history until true instrument-level historical records are available. ${legend}`}
+    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline view is active. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
     async function load(){
       try{
-        const [res,techRes]=await Promise.all([fetch("dashboard_data.json",{cache:"no-store"}).catch(()=>null),fetch("technical_data.json",{cache:"no-store"}).catch(()=>null)]);
-        if(res&&res.ok)dashboardData=await res.json();
-        if(techRes&&techRes.ok)technicalData=await techRes.json();
+        const [res, techRes] = await Promise.all([
+          fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
+          fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
+        ]);
+        if(res && res.ok) dashboardData = await res.json();
+        if(techRes && techRes.ok) technicalData = await techRes.json();
       }catch(e){}
       renderAll();
     }
