@@ -5,83 +5,291 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Public Sentiment Dash — Interactive Dashboard</title>
-  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, source votes, technical direction, and relevant news.">
+  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, technical direction, radar comparison, skyline trend, and sentiment heatwave.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
 
   <style>
-    .compare-selects{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
-    select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;font-weight:400}
-    select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
-    optgroup{color:#ffd780;background:#0b111a;font-weight:600;text-align:center}
-    option{color:#e6edf3;background:#111821;font-weight:400;text-align:left;padding-left:10px}
-
-    .compare-grid{display:grid;gap:14px;margin-top:14px}
-    .compare-block{background:linear-gradient(180deg,#101826,#0d131d);border:1px solid var(--line);border-radius:18px;padding:16px}
-    .compare-title{color:#fff;font-weight:600;font-size:16px;margin-bottom:4px}
-    .compare-note{color:var(--muted);font-size:12px;margin-bottom:12px;font-weight:400}
-    .metric-row{display:grid;grid-template-columns:190px minmax(0,1fr) 170px;align-items:center;gap:14px;margin-bottom:12px}
-    .metric-label{color:#fff;font-weight:500;line-height:1.35}
-    .metric-bar-wrap{height:24px;border-radius:999px;background:#2b3647;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
-    .metric-bar{height:100%;border-radius:999px}
-    .score-bar{background:linear-gradient(90deg,var(--gold),#c8b443,#7abd55,#5bbf55)}
-    .count-bar{background:linear-gradient(90deg,var(--blue2),#b5c9d8,var(--gold))}
-    .metric-value{color:#fff;font-weight:500;text-align:right;font-size:15px;line-height:1.35}
-
-    .instrument-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:14px}
-    .instrument-card{padding:18px;min-height:310px}
-    .instrument-name{color:#fff;font-size:18px;font-weight:600;margin-bottom:10px}
-    .info-row{color:var(--soft);line-height:1.55;margin-bottom:8px;font-weight:400}
-    .label{color:var(--muted);font-weight:400}
-    .subsection{margin-top:12px;color:#fff;font-weight:600}
-    .headline-link{display:inline-block;margin-top:4px;color:var(--blue);line-height:1.5;font-weight:400}
-    .headline-link:hover{color:#8ec2ff;text-decoration:underline}
-
-    .help-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
-    .help-card{background:rgba(17,24,33,.65);border:1px solid var(--line);border-radius:14px;padding:14px}
-    .help-card h3{font-size:15px;font-weight:600;margin-bottom:6px}
-    .help-card p{font-size:13px;margin:0;color:var(--muted);line-height:1.5;font-weight:400}
-
-    .source-table-wrap{overflow:auto;margin-top:12px}
-    table{width:100%;border-collapse:collapse;min-width:760px}
-    th,td{padding:13px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
-    th{color:#fff;font-size:14px;font-weight:600}
-    td{color:var(--soft);font-size:14px;font-weight:400}
-    .source-link{color:var(--blue);font-weight:400}
-    .source-link:hover{color:#8ec2ff;text-decoration:underline}
-
-    .status-dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 12px rgba(255,255,255,.15)}
-    .status-ok{background:var(--green);box-shadow:0 0 14px rgba(63,185,80,.55)}
-    .status-partial{background:var(--orange);box-shadow:0 0 14px rgba(245,158,11,.55)}
-    .status-fail{background:var(--red);box-shadow:0 0 14px rgba(248,81,73,.55)}
-
-    .headline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:12px}
-    .news-card{display:flex;flex-direction:column;min-height:330px;color:var(--text);padding:16px}
-    .news-source-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-    .news-source-icon{width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#fff}
-    .news-source-name{color:#fff;font-size:13px;font-weight:600}
-    .news-body{display:flex;flex-direction:column;height:100%}
-    .news-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-    .chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.20);color:#b9d9ff;font-size:12px;font-weight:500}
-    .impact-chip{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.25);color:#f4d17d}
-    .tech-chip{background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.20);color:#c9f5ce}
-    .user-chip{background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.22);color:#d8ebff}
-    .news-title{color:#fff;font-size:20px;font-weight:500;line-height:1.45;margin-bottom:10px}
-    .news-meta{color:var(--muted);font-size:12px;line-height:1.55;font-weight:400}
-    .news-open{margin-top:auto;color:#fff;font-size:13px;font-weight:500;padding-top:12px}
-
-    @media(max-width:1280px){
-      .compare-selects,.instrument-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
-      .headline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .help-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
+    .lab-hero{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:18px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .lab-warning{
+      display:inline-flex;
+      width:max-content;
+      max-width:100%;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(248,81,73,.10);
+      border:1px solid rgba(248,81,73,.35);
+      color:#ffaaa6;
+      font-size:12px;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+    .lab-small{color:var(--muted);font-size:13px;line-height:1.55}
+    .lab-controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .lab-select{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      min-width:190px;
+      outline:none;
+      font-weight:500;
+    }
+    .lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .lab-card-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .sentiment-card{
+      position:relative;
+      overflow:hidden;
+      padding:18px;
+      min-height:238px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 10rem),
+        linear-gradient(180deg,#111927,#0c121c);
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:0 18px 42px rgba(0,0,0,.24);
+    }
+    .sentiment-card:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      border-radius:20px;
+      background:linear-gradient(135deg,rgba(210,153,34,.35),transparent 38%,rgba(88,166,255,.20));
+      opacity:.32;
+      pointer-events:none;
+      mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      padding:1px;
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+    }
+    .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+    .market-name{color:#fff;font-weight:800;font-size:15px;line-height:1.3}
+    .sentiment-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 9px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .badge-bullish{color:#baf7c5;background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.34)}
+    .badge-mixedbullish{color:#b8fff6;background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.34)}
+    .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.30)}
+    .badge-mixedbearish{color:#ffd8a8;background:rgba(249,115,22,.14);border-color:rgba(249,115,22,.34)}
+    .badge-bearish{color:#ffc0bc;background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.34)}
+    .gauge-row{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
+    .mini-gauge{
+      --score:50;
+      --accent:var(--gold);
+      width:104px;
+      height:104px;
+      border-radius:50%;
+      background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
+      display:grid;
+      place-items:center;
+      box-shadow:0 0 34px rgba(210,153,34,.12);
+    }
+    .mini-gauge-inner{
+      width:74px;
+      height:74px;
+      border-radius:50%;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.06);
+      display:grid;
+      place-items:center;
+      text-align:center;
+    }
+    .psi-big{font-size:27px;font-weight:900;color:#fff;line-height:1}
+    .psi-small{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+    .card-metrics{display:grid;gap:7px}
+    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:6px}
+    .metric-line span:first-child{color:var(--muted)}
+    .metric-line span:last-child{color:#fff;font-weight:700;text-align:right}
+    .sparkline{width:100%;height:54px;margin-top:14px;display:block}
+    .chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.55fr);gap:18px;margin-bottom:18px}
+    .lab-panel{padding:22px}
+    .panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+    .panel-kicker{color:var(--muted);font-size:13px;line-height:1.55}
+    .pill-row{display:flex;gap:8px;flex-wrap:wrap}
+    .tiny-pill{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:700;cursor:pointer;transition:.18s ease}
+    .tiny-pill:hover,.tiny-pill.active{color:#ffd780;border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.13);transform:translateY(-1px)}
+    button.tiny-pill{font-family:inherit}
+    .skyline-wrap{
+      position:relative;
+      height:480px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.12),transparent 18rem),
+        linear-gradient(180deg,#101826,#090e16);
+    }
+    #skylineChart{width:100%;height:100%;display:block}
+    .chart-watermark{
+      position:absolute;
+      right:18px;
+      top:16px;
+      color:rgba(255,255,255,.06);
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-1px;
+      pointer-events:none;
+    }
+    .radar-wrap{
+      height:480px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:radial-gradient(circle at center,rgba(88,166,255,.10),transparent 15rem),linear-gradient(180deg,#101826,#090e16);
+      position:relative;
+      overflow:hidden;
+    }
+    #radarChart{width:100%;height:100%;display:block}
+    .radar-legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+    }
+    .radar-legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 9px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(17,24,33,.72);
+    }
+    .radar-legend i{
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      display:inline-block;
+      box-shadow:0 0 10px currentColor;
     }
 
-    @media(max-width:980px){
-      .compare-selects,.instrument-cards,.headline-grid,.help-grid{grid-template-columns:1fr}
-      .metric-row{grid-template-columns:1fr;gap:8px}
-      .metric-value{text-align:left}
+    .heat-legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+    .heat-legend span{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(17,24,33,.72);border:1px solid var(--line);color:var(--soft);font-size:11px;font-weight:800}
+    .heat-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 10px currentColor}
+
+    .heatmap{
+      display:grid;
+      gap:9px;
+      margin-top:14px;
+    }
+    .heat-row{display:grid;grid-template-columns:180px repeat(12,minmax(0,1fr));gap:7px;align-items:center}
+    .heat-name{color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .heat-cell{
+      height:34px;
+      border-radius:9px;
+      border:1px solid rgba(255,255,255,.12);
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      color:#fff;
+      font-weight:800;
+      box-shadow:inset 0 0 18px rgba(0,0,0,.22),0 0 0 1px rgba(255,255,255,.04);
+      text-shadow:0 1px 1px rgba(0,0,0,.28);
+    }
+    .ranking-list{display:grid;gap:10px}
+    .rank-item{
+      display:grid;
+      grid-template-columns:32px minmax(0,1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:rgba(17,24,33,.70);
+    }
+    .rank-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(210,153,34,.14);color:#ffd780;font-weight:900}
+    .rank-title{color:#fff;font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rank-meta{color:var(--muted);font-size:12px;margin-top:2px}
+    .rank-score{font-size:18px;font-weight:900;color:#fff}
+    .preview-note{
+      margin-top:12px;
+      border:1px solid rgba(210,153,34,.24);
+      background:rgba(210,153,34,.08);
+      color:#f4d17d;
+      padding:12px 14px;
+      border-radius:14px;
+      font-size:12px;
+      line-height:1.55;
+    }
+
+
+    .sentiment-card{
+      animation:labCardFloat 7.5s ease-in-out infinite;
+      will-change:transform,box-shadow,filter;
+    }
+    .sentiment-card:nth-child(2){animation-delay:.65s}.sentiment-card:nth-child(3){animation-delay:1.3s}.sentiment-card:nth-child(4){animation-delay:1.95s}.sentiment-card:nth-child(5){animation-delay:2.6s}
+    @keyframes labCardFloat{
+      0%,100%{transform:translateY(0) scale(1);box-shadow:0 18px 42px rgba(0,0,0,.24);filter:brightness(1)}
+      50%{transform:translateY(-5px) scale(1.012);box-shadow:0 24px 60px rgba(210,153,34,.16);filter:brightness(1.045)}
+    }
+    .sentiment-card:after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(115deg,transparent 0%,transparent 38%,rgba(255,255,255,.08) 48%,transparent 58%,transparent 100%);
+      transform:translateX(-130%);
+      animation:cardSheen 9s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes cardSheen{0%,58%,100%{transform:translateX(-130%)}72%{transform:translateX(130%)}}
+    .mini-gauge{animation:gaugeGlow 5.8s ease-in-out infinite}
+    @keyframes gaugeGlow{0%,100%{filter:saturate(1);transform:scale(1)}50%{filter:saturate(1.28) brightness(1.08);transform:scale(1.025)}}
+    .spark-path{stroke-dasharray:260;stroke-dashoffset:260;animation:sparkDraw 4.5s ease-out forwards, sparkPulse 7.5s ease-in-out infinite 4.5s}
+    @keyframes sparkDraw{to{stroke-dashoffset:0}}
+    @keyframes sparkPulse{0%,100%{opacity:.72;stroke-width:3}50%{opacity:1;stroke-width:4.25}}
+    .skyline-line{stroke-dasharray:1400;stroke-dashoffset:1400;animation:skyDraw 4.8s ease-out forwards, skyPulse 8s ease-in-out infinite 4.8s}
+    @keyframes skyDraw{to{stroke-dashoffset:0}}
+    @keyframes skyPulse{0%,100%{opacity:.76;stroke-width:4.2}50%{opacity:1;stroke-width:5.4}}
+    .skyline-label-box{filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}
+    .radar-poly{animation:radarBreath 9s ease-in-out infinite;transform-origin:250px 250px}
+    .radar-poly:nth-of-type(2){animation-delay:.7s}.radar-poly:nth-of-type(3){animation-delay:1.4s}.radar-poly:nth-of-type(4){animation-delay:2.1s}.radar-poly:nth-of-type(5){animation-delay:2.8s}
+    @keyframes radarBreath{0%,100%{opacity:.50;transform:scale(1)}50%{opacity:.72;transform:scale(1.015)}}
+    .heat-head{color:var(--muted);font-size:11px;font-weight:800;text-align:center}
+    .heat-cell{animation:heatBreathe 8.5s ease-in-out infinite}
+    .heat-cell:nth-child(3n){animation-delay:.6s}.heat-cell:nth-child(4n){animation-delay:1.2s}.heat-cell:nth-child(5n){animation-delay:1.8s}
+    @keyframes heatBreathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.13)}}
+    .legend-mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:11px;font-weight:700}
+    .legend-mini span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(17,24,33,.58)}
+    .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+    @media(max-width:1300px){
+      .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .chart-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:900px){
+      .lab-hero{grid-template-columns:1fr}
+      .lab-controls{justify-content:flex-start}
+      .lab-card-grid{grid-template-columns:1fr}
+      .heat-row{grid-template-columns:1fr repeat(6,minmax(0,1fr))}
+      .heat-row .heat-cell:nth-child(n+8){display:none}
+      .skyline-wrap,.radar-wrap{height:360px}
     }
   </style>
 </head>
@@ -120,85 +328,80 @@
     </nav>
   </header>
 
-  <main class="page">
-    <section class="panel">
-      <div class="page-chip">Interactive Dashboard</div>
-      <h1>Interactive Instrument Comparison</h1>
-      <p>Choose up to 5 instruments. This page compares public sentiment, user sentiment, relevant headline count, source votes, technical direction, and related news.</p>
-      <p class="muted">Instrument PSI now uses the backend PSI headline set: the top 500 fresh, major-outlet-prioritized headlines when available. Relevant News still uses the broader headline set for browsing.</p>
-
-      <div class="compare-selects" id="compareSelects"></div>
-
-      <div class="compare-grid">
-        <div class="compare-block">
-          <div class="compare-title">Public Sentiment Index</div>
-          <div class="compare-note">Instrument PSI from the 500-headline major-outlet-prioritized PSI set.</div>
-          <div id="scoreComparison"></div>
-        </div>
-
-        <div class="compare-block">
-          <div class="compare-title">Relevant Headline Count</div>
-          <div class="compare-note">Broader relevant headline count for each selected instrument.</div>
-          <div id="countComparison"></div>
-        </div>
+  <main class="lab-wrap">
+    <section class="panel lab-hero">
+      <div>
+        <div class="page-chip">Interactive Dashboard</div>
+        <h1>Interactive Market Sentiment Dashboard</h1>
+        <p>Compare selected markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
+        <p class="lab-small">This page focuses on selected-market sentiment, not one global score. PSI uses the selected market's headline sentiment; Technical reads technical_data.json when available; User defaults to technical direction when direct user votes are not available. Mini-trends use generated preview shapes until true instrument-level history grows.</p>
       </div>
-
-      <div class="instrument-cards" id="instrumentCards"></div>
+      <div class="lab-controls" id="marketControls"></div>
     </section>
 
-    <section class="panel">
-      <h2>How to Read This Page</h2>
-      <div class="help-grid">
-        <div class="help-card">
-          <h3>PSI</h3>
-          <p>0/100 is very bearish, 50/100 is mixed or neutral, and 100/100 is very bullish public sentiment.</p>
-        </div>
+    <section class="lab-card-grid" id="snapshotCards"></section>
 
-        <div class="help-card">
-          <h3>Instrument PSI</h3>
-          <p>Calculated from the fresh 500-headline PSI set when available, not the full 365-day news cache.</p>
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Skyline</h2>
+            <div class="panel-kicker">Multi-market PSI movement with glowing trend lines, clear end-point badges, and slow motion drawing.</div>
+          </div>
+          <div class="pill-row" aria-label="Skyline time period">
+            <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
+            <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
+            <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
+          </div>
         </div>
+        <div class="skyline-wrap">
+          <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
+          <div class="chart-watermark">PSI</div>
+        </div>
+        <div class="preview-note" id="skylineNote">Preview mode uses generated trend shape when real instrument history is not available.</div>
+      </div>
 
-        <div class="help-card">
-          <h3>User Sentiment</h3>
-          <p>Anonymous daily user voting. If votes are not strong enough yet, it falls back to daily technical direction.</p>
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Radar Comparison</h2>
+            <div class="panel-kicker">Each colored shape is one selected market. Axes compare PSI, user bias, headline strength, technical direction, and stability.</div>
+          </div>
         </div>
-
-        <div class="help-card">
-          <h3>Technical Direction</h3>
-          <p>Technical direction comes from price data when available. Macro themes may show “No price chart.”</p>
+        <div class="radar-wrap">
+          <svg id="radarChart" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
+        <div class="radar-legend" id="radarLegend"></div>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>Relevant News</h2>
-      <p class="muted" id="relevantNewsCount">Loading relevant headlines...</p>
-      <div class="headline-grid" id="relevantNewsGrid">
-        <div class="dynamic-card news-card">
-          <div class="news-body">Loading relevant headlines...</div>
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Heatwave</h2>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, and sampled days for Monthly.</div>
+          </div>
         </div>
+        <div class="heat-legend" aria-label="Heatwave color scale">
+          <span><i style="background:#22c55e;color:#22c55e"></i>70–100 Bullish</span>
+          <span><i style="background:#14b8a6;color:#14b8a6"></i>56–69 Mixed Bullish</span>
+          <span><i style="background:#3b82f6;color:#3b82f6"></i>45–55 Neutral</span>
+          <span><i style="background:#f97316;color:#f97316"></i>31–44 Mixed Bearish</span>
+          <span><i style="background:#ef4444;color:#ef4444"></i>0–30 Bearish</span>
+        </div>
+        <div class="heatmap" id="heatmapGrid"></div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 70–100 Green/Bullish, 56–69 Teal/Mixed Bullish, 45–55 Blue/Neutral, 31–44 Orange/Mixed Bearish, 0–30 Red/Bearish.</div>
       </div>
-    </section>
 
-    <section class="panel">
-      <h2>Source Votes</h2>
-      <p class="muted">Filtered by the currently selected instruments. Sources are ranked by matching headline count.</p>
-      <div class="source-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Source</th>
-              <th>Filtered Vote</th>
-              <th>Impact</th>
-              <th>Matching Headlines</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="sourceVotesBody">
-            <tr><td colspan="5">Loading source votes...</td></tr>
-          </tbody>
-        </table>
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Strength Ranking</h2>
+            <div class="panel-kicker">Simple ranked read of selected markets.</div>
+          </div>
+        </div>
+        <div class="ranking-list" id="rankingList"></div>
       </div>
     </section>
 
@@ -227,484 +430,374 @@
   </main>
 
   <script>
-    const INSTRUMENT_GROUPS = {
-      "Indexes / Futures": [
-        { key:"S&P 500 / ES", label:"S&P 500 / ES", aliases:["S&P 500 / ES","SPX","SP 500","S&P 500","ES","ES Futures"] },
-        { key:"Nasdaq / NQ", label:"Nasdaq / NQ", aliases:["Nasdaq / NQ","Nasdaq","NQ","NQ Futures"] },
-        { key:"Dow / YM", label:"Dow / YM", aliases:["Dow / YM","Dow","YM","YM Futures","Dow Jones"] },
-        { key:"Russell / RTY", label:"Russell / RTY", aliases:["Russell / RTY","Russell","RTY","RTY Futures"] },
-        { key:"VIX", label:"VIX", aliases:["VIX"] }
-      ],
-      "Global Indexes": [
-        { key:"DAX", label:"DAX", aliases:["DAX"] },
-        { key:"FTSE 100", label:"FTSE 100", aliases:["FTSE 100","FTSE"] },
-        { key:"Nikkei 225", label:"Nikkei 225", aliases:["Nikkei 225","Nikkei"] },
-        { key:"Hang Seng", label:"Hang Seng", aliases:["Hang Seng"] },
-        { key:"Euro Stoxx 50", label:"Euro Stoxx 50", aliases:["Euro Stoxx 50","Euro Stoxx"] },
-        { key:"CAC 40", label:"CAC 40", aliases:["CAC 40"] }
-      ],
-      "Bonds / Rates": [
-        { key:"US 2Y Treasury", label:"US 2Y Treasury", aliases:["US 2Y Treasury","2Y Treasury","2 Year Treasury","US 2-Year Treasury","US 2-Year Yield","2-Year Yield"] },
-        { key:"US 10Y Treasury", label:"US 10Y Treasury", aliases:["US 10Y Treasury","10Y Treasury","10 Year Treasury","US 10-Year Treasury","US 10-Year Yield","10-Year Yield"] },
-        { key:"Treasury Yields", label:"Treasury Yields", aliases:["Treasury Yields","Yields","Bond Yields","Treasury"] }
-      ],
-      "Forex / Currencies": [
-        { key:"US Dollar / DXY", label:"US Dollar / DXY", aliases:["US Dollar / DXY","DXY","US Dollar","Dollar Index"] },
-        { key:"EUR / EURUSD", label:"EUR/USD", aliases:["EUR / EURUSD","EUR/USD","EURUSD"] },
-        { key:"GBP / GBPUSD", label:"GBP/USD", aliases:["GBP / GBPUSD","GBP/USD","GBPUSD"] },
-        { key:"JPY / USDJPY", label:"USD/JPY", aliases:["JPY / USDJPY","USD/JPY","USDJPY"] },
-        { key:"CHF / USDCHF", label:"USD/CHF", aliases:["CHF / USDCHF","USD/CHF","USDCHF"] },
-        { key:"CAD / USDCAD", label:"USD/CAD", aliases:["CAD / USDCAD","USD/CAD","USDCAD","USD/CAN"] },
-        { key:"AUD / AUDUSD", label:"AUD/USD", aliases:["AUD / AUDUSD","AUD/USD","AUDUSD"] },
-        { key:"NZD / NZDUSD", label:"NZD/USD", aliases:["NZD / NZDUSD","NZD/USD","NZDUSD"] },
-        { key:"EURJPY", label:"EUR/JPY", aliases:["EURJPY","EUR/JPY"] },
-        { key:"EURGBP", label:"EUR/GBP", aliases:["EURGBP","EUR/GBP"] },
-        { key:"GBPJPY", label:"GBP/JPY", aliases:["GBPJPY","GBP/JPY"] },
-        { key:"AUDJPY", label:"AUD/JPY", aliases:["AUDJPY","AUD/JPY"] },
-        { key:"CADJPY", label:"CAD/JPY", aliases:["CADJPY","CAD/JPY"] },
-        { key:"EURCHF", label:"EUR/CHF", aliases:["EURCHF","EUR/CHF"] },
-        { key:"EURCAD", label:"EUR/CAD", aliases:["EURCAD","EUR/CAD"] },
-        { key:"AUDCAD", label:"AUD/CAD", aliases:["AUDCAD","AUD/CAD"] },
-        { key:"AUDNZD", label:"AUD/NZD", aliases:["AUDNZD","AUD/NZD"] },
-        { key:"NZDJPY", label:"NZD/JPY", aliases:["NZDJPY","NZD/JPY"] },
-        { key:"USDTRY", label:"USD/TRY", aliases:["USDTRY","USD/TRY"] },
-        { key:"USDMXN", label:"USD/MXN", aliases:["USDMXN","USD/MXN"] },
-        { key:"USDZAR", label:"USD/ZAR", aliases:["USDZAR","USD/ZAR"] }
-      ],
-      "Crypto": [
-        { key:"Bitcoin / BTC", label:"Bitcoin / BTC", aliases:["Bitcoin / BTC","Bitcoin","BTC"] },
-        { key:"Ethereum / ETH", label:"Ethereum / ETH", aliases:["Ethereum / ETH","Ethereum","ETH"] },
-        { key:"Solana / SOL", label:"Solana / SOL", aliases:["Solana / SOL","Solana","SOL"] },
-        { key:"XRP", label:"XRP", aliases:["XRP","Ripple"] },
-        { key:"BNB", label:"BNB", aliases:["BNB","Binance Coin"] },
-        { key:"Cardano / ADA", label:"Cardano / ADA", aliases:["Cardano / ADA","Cardano","ADA"] },
-        { key:"Dogecoin / DOGE", label:"Dogecoin / DOGE", aliases:["Dogecoin / DOGE","Dogecoin","DOGE"] },
-        { key:"General Crypto", label:"General Crypto", aliases:["General Crypto","Crypto"] }
-      ],
-      "Commodities": [
-        { key:"Gold", label:"Gold", aliases:["Gold"] },
-        { key:"Silver", label:"Silver", aliases:["Silver"] },
-        { key:"Copper", label:"Copper", aliases:["Copper"] },
-        { key:"Crude Oil", label:"Crude Oil", aliases:["Crude Oil","Oil","WTI","Brent"] },
-        { key:"Natural Gas", label:"Natural Gas", aliases:["Natural Gas","Nat Gas"] }
-      ],
-      "Macro Themes": [
-        { key:"Fed / FOMC", label:"Fed / FOMC", aliases:["Fed / FOMC","Fed","FOMC"], noChart:true },
-        { key:"CPI / Inflation", label:"US CPI / Inflation", aliases:["CPI / Inflation","CPI","Inflation","US CPI"], noChart:true },
-        { key:"PPI", label:"US PPI", aliases:["PPI","US PPI"], noChart:true },
-        { key:"Jobs / NFP", label:"US Jobs / NFP", aliases:["Jobs / NFP","Jobs","NFP","Payrolls","US Jobs"], noChart:true },
-        { key:"US GDP / Growth", label:"US GDP / Growth", aliases:["GDP","US GDP","U.S. GDP","Growth"], noChart:true },
-        { key:"Geopolitical / Tariffs", label:"Geopolitical / Tariffs", aliases:["Geopolitical / Tariffs","Geopolitical","Tariffs"], noChart:true }
-      ]
-    };
+    const INSTRUMENTS = [
+      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"], fallback:54},
+      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"], fallback:75},
+      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"], fallback:56},
+      {name:"Russell / RTY", aliases:["russell","rty","russell 2000","russell / rty"], fallback:50},
+      {name:"VIX", aliases:["vix","volatility"], fallback:55},
+      {name:"DAX", aliases:["dax"], fallback:62},
+      {name:"FTSE 100", aliases:["ftse","ftse 100"], fallback:52},
+      {name:"Nikkei 225", aliases:["nikkei","nikkei 225"], fallback:57},
+      {name:"Hang Seng", aliases:["hang seng","hsi"], fallback:53},
+      {name:"Euro Stoxx 50", aliases:["euro stoxx","euro stoxx 50","stoxx"], fallback:51},
+      {name:"CAC 40", aliases:["cac","cac 40"], fallback:52},
+      {name:"US 2Y Treasury", aliases:["us 2y","2y treasury","2-year yield","2 year yield"], fallback:50},
+      {name:"US 10Y Treasury", aliases:["10y","us 10y","10y treasury","10-year yield","10 year yield"], fallback:50},
+      {name:"Treasury Yields", aliases:["treasury yields","yields","bond yields","treasury"], fallback:50},
+      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index","usd index"], fallback:50},
+      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro","eur"], fallback:58},
+      {name:"GBP / GBPUSD", aliases:["gbpusd","gbp/usd","pound","gbp"], fallback:56},
+      {name:"JPY / USDJPY", aliases:["usdjpy","usd/jpy","yen","jpy"], fallback:47},
+      {name:"CHF / USDCHF", aliases:["usdchf","usd/chf","swiss franc","chf"], fallback:50},
+      {name:"CAD / USDCAD", aliases:["usdcad","usd/cad","canadian dollar","cad"], fallback:50},
+      {name:"AUD / AUDUSD", aliases:["audusd","aud/usd","australian dollar","aud"], fallback:56},
+      {name:"NZD / NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","nzd"], fallback:53},
+      {name:"EURJPY", aliases:["eurjpy","eur/jpy"], fallback:52},
+      {name:"EURGBP", aliases:["eurgbp","eur/gbp"], fallback:50},
+      {name:"GBPJPY", aliases:["gbpjpy","gbp/jpy"], fallback:51},
+      {name:"AUDJPY", aliases:["audjpy","aud/jpy"], fallback:54},
+      {name:"CADJPY", aliases:["cadjpy","cad/jpy"], fallback:50},
+      {name:"EURCHF", aliases:["eurchf","eur/chf"], fallback:50},
+      {name:"EURCAD", aliases:["eurcad","eur/cad"], fallback:50},
+      {name:"AUDCAD", aliases:["audcad","aud/cad"], fallback:52},
+      {name:"AUDNZD", aliases:["audnzd","aud/nzd"], fallback:52},
+      {name:"NZDJPY", aliases:["nzdjpy","nzd/jpy"], fallback:51},
+      {name:"USDTRY", aliases:["usdtry","usd/try","turkish lira"], fallback:48},
+      {name:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso"], fallback:50},
+      {name:"USDZAR", aliases:["usdzar","usd/zar","rand"], fallback:49},
+      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"], fallback:64},
+      {name:"Ethereum / ETH", aliases:["ethereum","eth"], fallback:61},
+      {name:"Solana / SOL", aliases:["solana","sol"], fallback:58},
+      {name:"XRP", aliases:["xrp","ripple"], fallback:53},
+      {name:"BNB", aliases:["bnb","binance coin"], fallback:51},
+      {name:"Cardano / ADA", aliases:["cardano","ada"], fallback:50},
+      {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"], fallback:50},
+      {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"], fallback:57},
+      {name:"Gold", aliases:["gold","xau"], fallback:48},
+      {name:"Silver", aliases:["silver","xag"], fallback:51},
+      {name:"Copper", aliases:["copper"], fallback:54},
+      {name:"Crude Oil", aliases:["crude oil","oil","wti"], fallback:57},
+      {name:"Natural Gas", aliases:["natural gas","nat gas"], fallback:52},
+      {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"], fallback:50},
+      {name:"CPI / Inflation", aliases:["cpi","inflation"], fallback:50},
+      {name:"PPI", aliases:["ppi","producer price"], fallback:50},
+      {name:"Jobs / NFP", aliases:["jobs","nfp","nonfarm payrolls","payrolls"], fallback:50},
+      {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"], fallback:50},
+      {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"], fallback:50}
+    ];
 
-    const DEFAULT_SELECTIONS = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
-    const INSTRUMENT_MAP = {};
-    Object.values(INSTRUMENT_GROUPS).flat().forEach(item => { INSTRUMENT_MAP[item.key] = item; });
-
+    const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
+    let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
+    let selectedPeriod = "daily";
     let dashboardData = null;
     let technicalData = null;
 
-    function normalize(text){ return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
-    function escapeHTML(value){ return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
-    function statusClass(status){ const s = String(status || "").toLowerCase(); if(s.includes("ok")) return "status-ok"; if(s.includes("empty") || s.includes("partial")) return "status-partial"; return "status-fail"; }
-    function voteClass(value){ return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral"; }
-    function domainFromURL(url){ try { return new URL(url).hostname.replace(/^www\./, ""); } catch(e){ return ""; } }
-    function faviconForURL(url){ const domain = domainFromURL(url || ""); return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : ""; }
-    function sourceURL(sourceName){ const found = (dashboardData?.sources || []).find(s => s.name === sourceName); return found?.url || "#"; }
-
-    function getNewsHeadlines(){
-      return Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : [];
-    }
-
-    function getPsiHeadlines(){
-      if(Array.isArray(dashboardData?.psi_headlines) && dashboardData.psi_headlines.length){
-        return dashboardData.psi_headlines;
-      }
-      return getNewsHeadlines();
-    }
-
-    function userSentimentFor(instrument){
-      return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
-    }
-
-    function mapVoteToScore(vote){
-      const v = String(vote || "").toLowerCase();
-      if(v.includes("bullish") && !v.includes("bearish")) return 100;
-      if(v.includes("bearish") && !v.includes("bullish")) return 0;
-      if(v.includes("mixed") && v.includes("bullish")) return 70;
-      if(v.includes("mixed") && v.includes("bearish")) return 30;
-      return 50;
-    }
-
-    function scoreToLabel(score){
-      if(score === null || score === undefined) return "N/A";
+    function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+    function norm(v){return String(v||"").toLowerCase()}
+    function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+    function label(score){
+      if(score == null) return "No PSI Match";
       if(score >= 70) return "Bullish";
-      if(score <= 30) return "Bearish";
-      if(score > 55) return "Mixed/Bullish";
-      if(score < 45) return "Mixed/Bearish";
-      return "Mixed/Neutral";
+      if(score >= 56) return "Mixed Bullish";
+      if(score >= 45) return "Neutral";
+      if(score >= 31) return "Mixed Bearish";
+      return "Bearish";
     }
-
-    function makeSelectHTML(slot, selected){
-      const groupsHTML = Object.entries(INSTRUMENT_GROUPS).map(([group, items]) => {
-        const options = items.map(item => `<option value="${escapeHTML(item.key)}" ${item.key === selected ? "selected" : ""}>${escapeHTML(item.label)}</option>`).join("");
-        return `<optgroup label="${escapeHTML(group)}">${options}</optgroup>`;
-      }).join("");
-
-      return `<select id="instrumentSelect${slot}" data-slot="${slot}"><option value="None" ${selected === "None" ? "selected" : ""}>None</option>${groupsHTML}</select>`;
+    function badgeClass(score){return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral")}
+    function sentimentColor(score){
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#14b8a6";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f97316";
+      return "#ef4444";
     }
-
-    function buildSelects(){
-      const wrap = document.getElementById("compareSelects");
-      wrap.innerHTML = DEFAULT_SELECTIONS.map((item, idx) => makeSelectHTML(idx + 1, item)).join("");
-      wrap.querySelectorAll("select").forEach(select => select.addEventListener("change", renderDashboard));
+    function heatColor(v){
+      if(v >= 70) return "#22c55e";
+      if(v >= 56) return "#14b8a6";
+      if(v >= 45) return "#3b82f6";
+      if(v >= 31) return "#f97316";
+      return "#ef4444";
     }
-
-    function getSelectedDefs(){
-      const values = [];
-      for(let i=1;i<=5;i++){
-        const value = document.getElementById(`instrumentSelect${i}`).value;
-        if(value && value !== "None") values.push(value);
+    function heatStyle(v){
+      if(v >= 70) return "background:linear-gradient(180deg,rgba(34,197,94,.98),rgba(22,101,52,.76));border-color:rgba(34,197,94,.78);box-shadow:0 0 20px rgba(34,197,94,.30);color:#f0fff4;";
+      if(v >= 56) return "background:linear-gradient(180deg,rgba(20,184,166,.98),rgba(15,118,110,.76));border-color:rgba(20,184,166,.78);box-shadow:0 0 20px rgba(20,184,166,.28);color:#ecfffb;";
+      if(v >= 45) return "background:linear-gradient(180deg,rgba(59,130,246,.98),rgba(30,64,175,.76));border-color:rgba(59,130,246,.78);box-shadow:0 0 20px rgba(59,130,246,.25);color:#f1f7ff;";
+      if(v >= 31) return "background:linear-gradient(180deg,rgba(249,115,22,.98),rgba(154,52,18,.76));border-color:rgba(249,115,22,.78);box-shadow:0 0 20px rgba(249,115,22,.30);color:#fff7ed;";
+      return "background:linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.76));border-color:rgba(239,68,68,.78);box-shadow:0 0 20px rgba(239,68,68,.30);color:#fff1f1;";
+    }
+    function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
+    function scoreFromText(text){
+      const t = norm(text);
+      if(t.includes("bullish") && !t.includes("bearish")) return 80;
+      if(t.includes("bearish") && !t.includes("bullish")) return 20;
+      if(t.includes("mixed bullish")) return 60;
+      if(t.includes("mixed bearish")) return 40;
+      if(t.includes("mixed")) return 55;
+      if(t.includes("neutral")) return 50;
+      return null;
+    }
+    function textFromItem(item){
+      return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
+    }
+    function matchesInstrument(item, ins){
+      const text = textFromItem(item);
+      return ins.aliases.some(a => text.includes(a.toLowerCase()));
+    }
+    function getHeadlines(){
+      if(!dashboardData) return [];
+      return [
+        ...(Array.isArray(dashboardData.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : []),
+        ...(Array.isArray(dashboardData.headlines) ? dashboardData.headlines : [])
+      ];
+    }
+    function validDirectScore(h){
+      const candidates = [h.psi, h.psi_score, h.sentiment_score, h.public_sentiment_index];
+      for(const raw of candidates){
+        const n = Number(raw);
+        if(Number.isFinite(n) && n >= 0 && n <= 100) return n;
       }
-      return values.map(v => INSTRUMENT_MAP[v]).filter(Boolean);
+      return null;
     }
-
-    function headlineMatchesInstrument(headline, instrumentDef){
-      const headlineInstruments = Array.isArray(headline?.instruments) ? headline.instruments : [];
-      const headlineSet = headlineInstruments.map(normalize);
-
-      return instrumentDef.aliases.some(alias => headlineSet.includes(normalize(alias))) ||
-             instrumentDef.aliases.some(alias => normalize(headline.title).includes(normalize(alias))) ||
-             instrumentDef.aliases.some(alias => normalize(headline.description).includes(normalize(alias)));
-    }
-
-    function getMatchedHeadlinesForInstrument(instrumentDef, headlineList){
-      const list = Array.isArray(headlineList) ? headlineList : getNewsHeadlines();
-      return list.filter(h => headlineMatchesInstrument(h, instrumentDef));
-    }
-
     function extractTechLabel(entry, period){
       const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
       if(raw === null || raw === undefined) return "N/A";
       if(typeof raw === "string" || typeof raw === "number") return String(raw);
       return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
     }
-
-    function getTechnicalForInstrument(instrumentDef){
-      if(instrumentDef.noChart) return { daily:"No price chart", weekly:"No price chart", monthly:"No price chart" };
-      if(!technicalData) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
-
+    function normalizeTechLabel(value){
+      const t = norm(value);
+      if(t.includes("bull") || t === "up" || t.includes("rise") || t.includes("positive")) return "Up";
+      if(t.includes("bear") || t === "down" || t.includes("fall") || t.includes("negative")) return "Down";
+      if(t.includes("neutral") || t.includes("mixed") || t.includes("flat")) return "Neutral";
+      return value && value !== "N/A" ? String(value) : "N/A";
+    }
+    function getTechnicalForInstrument(ins){
+      if(!technicalData) return "N/A";
       const techRoot = technicalData.technical || technicalData;
-      const wanted = instrumentDef.aliases.map(normalize);
+      const wanted = ins.aliases.map(a => norm(a));
       let entry = null;
 
       if(Array.isArray(techRoot)){
-        entry = techRoot.find(item => wanted.includes(normalize(item?.instrument || item?.name || item?.symbol || "")));
+        entry = techRoot.find(item => {
+          const possible = [item?.instrument, item?.name, item?.symbol, item?.label, item?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
+        });
       }else if(typeof techRoot === "object"){
         const found = Object.entries(techRoot).find(([key, value]) => {
-          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
-          return wanted.some(w => possible.includes(w));
+          const possible = [key, value?.instrument, value?.name, value?.symbol, value?.label, value?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
         });
         entry = found ? found[1] : null;
       }
 
-      if(!entry) return { daily:"N/A", weekly:"N/A", monthly:"N/A" };
-
-      return {
-        daily: extractTechLabel(entry, "daily"),
-        weekly: extractTechLabel(entry, "weekly"),
-        monthly: extractTechLabel(entry, "monthly")
-      };
+      if(!entry) return "N/A";
+      return normalizeTechLabel(extractTechLabel(entry, "daily"));
     }
-
-    function getInstrumentStats(instrumentDef){
-      const newsMatches = getMatchedHeadlinesForInstrument(instrumentDef, getNewsHeadlines());
-      const psiMatches = getMatchedHeadlinesForInstrument(instrumentDef, getPsiHeadlines());
-
-      let score = null;
-      let label = "N/A";
-
-      if(psiMatches.length > 0){
-        const avg = Math.round(psiMatches.reduce((sum, h) => sum + mapVoteToScore(h.vote), 0) / psiMatches.length);
-        score = avg;
-        label = scoreToLabel(avg);
-      }
-
-      return {
-        def: instrumentDef,
-        newsMatches,
-        psiMatches,
-        newsCount: newsMatches.length,
-        psiCount: psiMatches.length,
-        score,
-        scoreLabel: label,
-        latest: newsMatches[0] || null,
-        tech: getTechnicalForInstrument(instrumentDef),
-        userSentiment: userSentimentFor(instrumentDef.key)
-      };
-    }
-
-    function allCurrentScopeHeadlines(){
-      const defs = getSelectedDefs();
-      if(!defs.length) return getNewsHeadlines();
-
-      const merged = [];
-      const seen = new Set();
-
-      defs.forEach(def => {
-        getMatchedHeadlinesForInstrument(def, getNewsHeadlines()).forEach(h => {
-          const key = `${h.source}__${h.title}`;
-          if(!seen.has(key)){
-            seen.add(key);
-            merged.push(h);
-          }
-        });
-      });
-
-      return merged;
-    }
-
-    function renderScoreComparison(statsList){
-      const wrap = document.getElementById("scoreComparison");
-
-      if(!statsList.length){
-        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
-        return;
-      }
-
-      wrap.innerHTML = statsList.map(stats => {
-        const width = stats.score === null ? 0 : Math.max(6, stats.score);
-        const rightText = stats.score === null ? `No PSI match` : `PSI ${stats.score}/100`;
-
-        return `<div class="metric-row">
-          <div class="metric-label">${escapeHTML(stats.def.label)}</div>
-          <div class="metric-bar-wrap"><div class="metric-bar score-bar" style="width:${width}%;"></div></div>
-          <div class="metric-value">${escapeHTML(rightText)}</div>
-        </div>`;
-      }).join("");
-    }
-
-    function renderCountComparison(statsList){
-      const wrap = document.getElementById("countComparison");
-
-      if(!statsList.length){
-        wrap.innerHTML = `<div class="muted">Choose at least one instrument.</div>`;
-        return;
-      }
-
-      const maxCount = Math.max(...statsList.map(x => x.newsCount), 1);
-
-      wrap.innerHTML = statsList.map(stats => {
-        const width = stats.newsCount > 0 ? Math.max(4, Math.round((stats.newsCount / maxCount) * 100)) : 0;
-
-        return `<div class="metric-row">
-          <div class="metric-label">${escapeHTML(stats.def.label)}</div>
-          <div class="metric-bar-wrap"><div class="metric-bar count-bar" style="width:${width}%;"></div></div>
-          <div class="metric-value">${stats.newsCount} headline${stats.newsCount === 1 ? "" : "s"}</div>
-        </div>`;
-      }).join("");
-    }
-
-    function renderInstrumentCards(statsList){
-      const wrap = document.getElementById("instrumentCards");
-
-      if(!statsList.length){
-        wrap.innerHTML = `<div class="dynamic-card instrument-card">Choose at least one instrument.</div>`;
-        return;
-      }
-
-      wrap.innerHTML = statsList.map(stats => {
-        const latestHeadline = stats.latest
-          ? `<a class="headline-link" href="${escapeHTML(stats.latest.link || "#")}" target="_blank" rel="noopener">${escapeHTML(stats.latest.title)}</a>`
-          : `No related headline found.`;
-
-        const scoreText = stats.score === null ? "No PSI match" : `${stats.scoreLabel} (PSI ${stats.score}/100)`;
-
-        return `<div class="dynamic-card instrument-card">
-          <div class="instrument-name">${escapeHTML(stats.def.label)}</div>
-          <div class="info-row"><span class="label">Public sentiment:</span> <span class="${voteClass(stats.scoreLabel)}">${escapeHTML(scoreText)}</span></div>
-          <div class="info-row"><span class="label">PSI headlines:</span> ${stats.psiCount}</div>
-          <div class="info-row"><span class="label">Relevant headlines:</span> ${stats.newsCount}</div>
-          <div class="info-row"><span class="label">User sentiment:</span> <span data-user-sentiment="${escapeHTML(stats.def.key)}" class="psd-user-sentiment-value ${voteClass(stats.userSentiment)}">${escapeHTML(stats.userSentiment)}</span></div>
-          <div class="subsection">Technical Direction</div>
-          <div class="info-row">Daily: <span class="${voteClass(stats.tech.daily)}">${escapeHTML(stats.tech.daily)}</span></div>
-          <div class="info-row">Weekly: <span class="${voteClass(stats.tech.weekly)}">${escapeHTML(stats.tech.weekly)}</span></div>
-          <div class="info-row">Monthly: <span class="${voteClass(stats.tech.monthly)}">${escapeHTML(stats.tech.monthly)}</span></div>
-          <div class="subsection">Latest related headline</div>
-          <div class="info-row">${latestHeadline}</div>
-        </div>`;
-      }).join("");
-
-      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
-    }
-
-    function computeSourceVote(headlines){
-      if(!headlines.length) return "N/A";
-
-      const bullish = headlines.filter(h => String(h.vote).toLowerCase().includes("bullish")).length;
-      const bearish = headlines.filter(h => String(h.vote).toLowerCase().includes("bearish")).length;
-
-      if(bullish > bearish) return "Bullish";
-      if(bearish > bullish) return "Bearish";
-      if(bullish > 0 && bearish > 0) return "Mixed";
+    function techFromScore(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 56) return "Up";
+      if(score <= 44) return "Down";
       return "Neutral";
     }
-
-    function computeSourceImpact(headlines){
-      if(!headlines.length) return "N/A";
-      return headlines.some(h => String(h.impact).toLowerCase() === "high") ? "High" : "Normal";
+    function userDefaultFromTech(tech){
+      const t = norm(tech);
+      if(t.includes("up") || t.includes("bull")) return "Bullish";
+      if(t.includes("down") || t.includes("bear")) return "Bearish";
+      return "Neutral";
     }
-
-    function renderSourceVotes(scopeHeadlines){
-      const body = document.getElementById("sourceVotesBody");
-      const sources = dashboardData?.sources || [];
-
-      if(!sources.length){
-        body.innerHTML = `<tr><td colspan="5">No source data available.</td></tr>`;
-        return;
+    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : 24}
+    function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
+    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
+    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : "Now"}
+    function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
+    function seriesForPeriod(d){return makeSkylineSeries(d.name, d.score)}
+    function periodScoreFor(d){
+      const values = seriesForPeriod(d);
+      if(!values.length) return d.score ?? null;
+      if(selectedPeriod === "daily") return values[values.length-1];
+      if(selectedPeriod === "weekly") return average(values.slice(-7));
+      return average(values);
+    }
+    function scoreLabelShort(score){return label(score).replace("Mixed ","M/")}
+    function userScore(value){
+      const t = norm(value);
+      if(t.includes("bull")) return 82;
+      if(t.includes("bear")) return 22;
+      if(t.includes("neutral")) return 52;
+      return 50;
+    }
+    function techScore(value){
+      const t = norm(value);
+      if(t.includes("up") || t.includes("bull")) return 82;
+      if(t.includes("down") || t.includes("bear")) return 22;
+      if(t.includes("neutral") || t.includes("mixed")) return 52;
+      return 50;
+    }
+    function stabilityScore(d){
+      const vals = seriesForPeriod(d);
+      if(vals.length < 2) return 60;
+      let totalMove = 0;
+      for(let i=1;i<vals.length;i++) totalMove += Math.abs(vals[i]-vals[i-1]);
+      const avgMove = totalMove/(vals.length-1);
+      return clamp(Math.round(100 - avgMove*7), 25, 95);
+    }
+    function makeSkylineSeries(name, score){
+      const base = score == null ? 50 : score;
+      const len = periodLength();
+      let seed = Array.from(name + selectedPeriod).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      const amp = selectedPeriod === "daily" ? 7 : selectedPeriod === "weekly" ? 10 : 13;
+      for(let i=0;i<len;i++){
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/Math.max(len-1,1))*Math.PI*2 + seed/65000) * amp;
+        const drift = (i-(len*.7)) * ((base-50)/(selectedPeriod === "monthly" ? 70 : 85));
+        const noise = ((seed/233280)-.5) * (selectedPeriod === "daily" ? 5 : 7);
+        values.push(clamp(Math.round(base - 4 + (i/Math.max(len-1,1))*8 + wave + drift + noise), 8, 94));
       }
-
-      const rows = sources.map(source => {
-        const matching = scopeHeadlines.filter(h => h.source === source.name);
-        return {
-          source,
-          matchingCount: matching.length,
-          vote: computeSourceVote(matching),
-          impact: computeSourceImpact(matching)
-        };
-      }).sort((a,b)=>b.matchingCount-a.matchingCount || a.source.name.localeCompare(b.source.name));
-
-      body.innerHTML = rows.map(row => `<tr>
-        <td><a class="source-link" href="${escapeHTML(row.source.url || "#")}" target="_blank" rel="noopener">${escapeHTML(row.source.name)}</a></td>
-        <td><span class="${voteClass(row.vote)}">${escapeHTML(row.vote)}</span></td>
-        <td>${escapeHTML(row.impact)}</td>
-        <td>${row.matchingCount}</td>
-        <td><span class="status-dot ${statusClass(row.source.status)}" title="${escapeHTML(row.source.status || "Unknown")}"></span></td>
-      </tr>`).join("");
+      values[values.length-1] = score == null ? 50 : score;
+      return values;
     }
-
-    function findInstrumentForHeadline(item){
-      const names = Array.isArray(item?.instruments) ? item.instruments : [];
-      const allDefs = Object.values(INSTRUMENT_GROUPS).flat();
-
-      for(const name of names){
-        const direct = allDefs.find(def =>
-          def.aliases.map(normalize).includes(normalize(name)) ||
-          normalize(def.key) === normalize(name)
-        );
-
-        if(direct) return direct;
+    function calcInstrument(ins){
+      const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
+      const scores = [];
+      headlines.forEach(h => {
+        const direct = validDirectScore(h);
+        if(direct != null) scores.push(clamp(direct,0,100));
+        else{
+          const s = scoreFromText(textFromItem(h));
+          if(s != null) scores.push(s);
+        }
+      });
+      let score = null;
+      if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+      else score = ins.fallback;
+      const liveTech = getTechnicalForInstrument(ins);
+      const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
+      const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
+      const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+      return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
+    }
+    function makeSeries(name, score){
+      const base = score == null ? 50 : score;
+      let seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      for(let i=0;i<24;i++){
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 8;
+        const drift = (i-18) * ((base-50)/85);
+        const noise = ((seed/233280)-.5) * 7;
+        values.push(clamp(Math.round(base - 5 + (i/23)*10 + wave + drift + noise), 8, 94));
       }
-
-      return null;
+      values[values.length-1] = score == null ? 50 : score;
+      return values;
     }
-
-    function technicalBadgeForHeadline(item){
-      const def = findInstrumentForHeadline(item);
-      if(!def) return { label:"Tech: N/A", css:"chip tech-chip" };
-
-      const tech = getTechnicalForInstrument(def);
-
-      return {
-        label:`Tech Daily: ${tech.daily}`,
-        css:`chip tech-chip ${voteClass(tech.daily)}`
-      };
+    function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
+    function bindPeriodButtons(){
+      document.querySelectorAll("[data-period]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.period === selectedPeriod);
+        btn.onclick = () => { selectedPeriod = btn.dataset.period; renderAll(); };
+      });
     }
-
-    function userBadgeForHeadline(item){
-      const def = findInstrumentForHeadline(item);
-      const value = def ? userSentimentFor(def.key) : "N/A";
-
-      return {
-        instrument: def ? def.key : "",
-        label:`User: ${value}`,
-        value
-      };
+    function renderControls(){
+      const box = document.getElementById("marketControls");
+      box.innerHTML = selected.map((name,idx) => `<select class="lab-select" data-slot="${idx}">${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}</select>`).join("");
+      box.querySelectorAll("select").forEach(sel => sel.addEventListener("change", e => {selected[Number(e.target.dataset.slot)] = e.target.value; renderAll();}));
     }
-
-    function renderRelevantNews(scopeHeadlines){
-      const grid = document.getElementById("relevantNewsGrid");
-      const count = document.getElementById("relevantNewsCount");
-      const items = scopeHeadlines.slice(0,9);
-
-      count.textContent = `${scopeHeadlines.length} relevant headline(s) shown for the current scope.`;
-
-      if(!items.length){
-        grid.innerHTML = `<div class="dynamic-card news-card"><div class="news-body">No relevant headlines found for the selected instruments.</div></div>`;
-        return;
-      }
-
-      grid.innerHTML = items.map(item => {
-        const techBadge = technicalBadgeForHeadline(item);
-        const userBadge = userBadgeForHeadline(item);
-        const srcUrl = sourceURL(item.source);
-        const sourceIcon = faviconForURL(srcUrl || item.link || "");
-
-        return `<a class="dynamic-card news-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
-          <div class="news-source-row">
-            ${sourceIcon ? `<img class="news-source-icon" src="${escapeHTML(sourceIcon)}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}
-            <div class="news-source-name">${escapeHTML(item.source || "Source")}</div>
-          </div>
-
-          <div class="news-body">
-            <div class="news-top">
-              <span class="${techBadge.css}">${escapeHTML(techBadge.label)}</span>
-              <span class="chip user-chip ${voteClass(userBadge.value)}" ${userBadge.instrument ? `data-user-sentiment="${escapeHTML(userBadge.instrument)}"` : ""}>${escapeHTML(userBadge.label)}</span>
-              <span class="${voteClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span>
-              <span class="chip impact-chip">${escapeHTML(item.impact || "Normal")} Impact</span>
-            </div>
-
-            <div class="news-title">${escapeHTML(item.title || "Untitled headline")}</div>
-            <div class="news-meta">Markets: ${escapeHTML((item.markets || []).join(", ") || "N/A")}<br>Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}</div>
-            <div class="news-open">Open article →</div>
-          </div>
-        </a>`;
+    function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
+    function renderCards(data){
+      document.getElementById("snapshotCards").innerHTML = data.map((d, idx) => {
+        const c = sentimentColor(d.score);
+        return `<article class="sentiment-card"><div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div><div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div><svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg></article>`;
       }).join("");
-
-      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
     }
-
-    function renderDashboard(){
-      if(!dashboardData) return;
-
-      const defs = getSelectedDefs();
-      const statsList = defs.map(getInstrumentStats);
-      const scopeHeadlines = allCurrentScopeHeadlines();
-
-      renderScoreComparison(statsList);
-      renderCountComparison(statsList);
-      renderInstrumentCards(statsList);
-      renderRelevantNews(scopeHeadlines);
-      renderSourceVotes(scopeHeadlines);
+    function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
+    function renderSkyline(data){
+      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:235,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+      let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="18" y="${y+4}" fill="#a9b4c1" font-size="14" font-weight="800">${v}</text>`;});
+      const labelRows=data.map((d,idx)=>{
+        const skylineSeries=seriesForPeriod(d);
+        const pScore=periodScoreFor(d);
+        if(pScore != null) skylineSeries[skylineSeries.length-1]=pScore;
+        const points=skylineSeries.map((v,i)=>[pad.l+(i/(skylineSeries.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);
+        const last=points[points.length-1];
+        return{d,idx,points,last,y:last[1],pScore};
+      }).sort((a,b)=>a.y-b.y);
+      for(let i=1;i<labelRows.length;i++){if(labelRows[i].y-labelRows[i-1].y<34)labelRows[i].y=labelRows[i-1].y+34;}
+      labelRows.forEach(row=>{
+        const {d,idx,points,last,pScore}=row;
+        const c=lineColor(idx);
+        const pSentiment=label(pScore);
+        const path=smoothPath(points);
+        const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
+        const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
+        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="192" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.2" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+      });
+      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
     }
-
-    async function loadData(){
-      try{
-        const [dashboardRes, technicalRes] = await Promise.all([
-          fetch("dashboard_data.json", { cache:"no-store" }),
-          fetch("technical_data.json", { cache:"no-store" }).catch(() => null)
-        ]);
-
-        dashboardData = await dashboardRes.json();
-        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
-
-        buildSelects();
-        renderDashboard();
-      }catch(error){
-        console.error(error);
-        document.getElementById("scoreComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
-        document.getElementById("countComparison").innerHTML = `<div class="muted">Dashboard data could not be loaded.</div>`;
-        document.getElementById("instrumentCards").innerHTML = `<div class="dynamic-card instrument-card">Dashboard data could not be loaded.</div>`;
-        document.getElementById("sourceVotesBody").innerHTML = `<tr><td colspan="5">Dashboard data could not be loaded.</td></tr>`;
-        document.getElementById("relevantNewsGrid").innerHTML = `<div class="dynamic-card news-card"><div class="news-body">Dashboard data could not be loaded.</div></div>`;
+    function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
+    function renderRadar(data){
+      const svg=document.getElementById("radarChart"),legend=document.getElementById("radarLegend"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=162; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      const maxHeadlines=Math.max(...data.map(d=>Number(d.headlines)||0),1);
+      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.25"/>`;});
+      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+43,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.19)" stroke-width="1.25"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
+      data.slice(0,5).forEach((d,idx)=>{
+        const c=lineColor(idx);
+        const pScore=periodScoreFor(d) ?? d.score ?? 50;
+        const headlineStrength=clamp(Math.round(((Number(d.headlines)||0)/maxHeadlines)*100),8,100);
+        const vals=[pScore,userScore(d.user),headlineStrength,techScore(d.tech),stabilityScore(d)];
+        const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");
+        out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".16" stroke="${c}" stroke-width="3.25" filter="url(#radarGlow)"/>`;
+        vals.forEach((v,i)=>{const dot=radarPoint(cx,cy,r,(360/axes.length)*i,v);out+=`<circle cx="${dot[0]}" cy="${dot[1]}" r="3.3" fill="${c}" stroke="#fff" stroke-opacity=".45"/>`;});
+      });
+      svg.innerHTML=out;
+      if(legend){
+        legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
       }
     }
-
-    window.addEventListener("psdUserSentimentReady", renderDashboard);
-    loadData();
+    function heatLabels(){
+      if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
+      if(selectedPeriod === "monthly") return ["30D","27D","24D","21D","18D","15D","12D","9D","6D","3D","1D","Now"];
+      return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
+    }
+    function heatValues(d){
+      const vals = seriesForPeriod(d);
+      const labels = heatLabels();
+      if(vals.length <= labels.length) return vals;
+      if(selectedPeriod === "monthly"){
+        return labels.map((_,i)=>vals[Math.round(i*(vals.length-1)/(labels.length-1))]);
+      }
+      return vals.slice(-labels.length);
+    }
+    function renderHeatmap(data){
+      const box=document.getElementById("heatmapGrid");
+      const labels=heatLabels();
+      const gridStyle=`grid-template-columns:180px repeat(${labels.length},minmax(0,1fr))`;
+      const heads=`<div class="heat-row" style="${gridStyle}"><div></div>${labels.map(x=>`<div class="heat-head">${x}</div>`).join("")}</div>`;
+      box.innerHTML=heads+data.map(d=>{
+        const cells=heatValues(d).map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i]} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
+        return`<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
+      }).join("");
+    }
+    function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
+    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
+    function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
+    async function load(){
+      try{
+        const [res, techRes] = await Promise.all([
+          fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
+          fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
+        ]);
+        if(res && res.ok) dashboardData = await res.json();
+        if(techRes && techRes.ok) technicalData = await techRes.json();
+      }catch(e){}
+      renderAll();
+    }
+    load();
   </script>
-
   <script src="vote-widget.js" defer></script>
 </body>
 </html>
