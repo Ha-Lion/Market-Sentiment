@@ -7,7 +7,7 @@
   <title>Dashboard Lab — Public Sentiment Dash</title>
   <!-- DASHBOARD LAB V4 TECHNICAL-DIRECTION MOTION BUILD 2026-05-14 -->
   <!-- DASHBOARD LAB V4B DROPDOWN + SKYLINE BUTTONS ONLY BUILD 2026-05-14 -->
-  <!-- DASHBOARD LAB V4C DYNAMIC SKYLINE RANKING RADAR BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4D HEATWAVE COLOR SCALE BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -191,6 +191,11 @@
       display:inline-block;
       box-shadow:0 0 10px currentColor;
     }
+
+    .heat-legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+    .heat-legend span{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(17,24,33,.72);border:1px solid var(--line);color:var(--soft);font-size:11px;font-weight:800}
+    .heat-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 10px currentColor}
+
     .heatmap{
       display:grid;
       gap:9px;
@@ -370,11 +375,18 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">Recent PSI-style pressure matrix. Red = bearish pressure, blue = neutral, gold/green = bullish pressure.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix using the same scale as the cards: Green 70–100, Gold 56–69, Blue 45–55, Orange 31–44, Red 0–30.</div>
           </div>
         </div>
+        <div class="heat-legend" aria-label="Heatwave color scale">
+          <span><i style="background:#3fb950;color:#3fb950"></i>70–100 Bullish</span>
+          <span><i style="background:#d29922;color:#d29922"></i>56–69 Mixed Bullish</span>
+          <span><i style="background:#58a6ff;color:#58a6ff"></i>45–55 Neutral</span>
+          <span><i style="background:#f59e0b;color:#f59e0b"></i>31–44 Mixed Bearish</span>
+          <span><i style="background:#f85149;color:#f85149"></i>0–30 Bearish</span>
+        </div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Each cell is a recent period in the generated or real series; lower values are bearish pressure, higher values are bullish pressure.</div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Each cell is one recent period: 70–100 Green/Bullish, 56–69 Gold/Mixed Bullish, 45–55 Blue/Neutral, 31–44 Orange/Mixed Bearish, 0–30 Red/Bearish.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -727,7 +739,7 @@
         legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
       }
     }
-    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.48+(Math.abs(v-50)/50)*.45}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
+    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="${label(v)} • PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.48+(Math.abs(v-50)/50)*.45}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
     function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
