@@ -107,9 +107,10 @@
       height:430px;
       border:1px solid var(--line);
       border-radius:18px;
-      background:radial-gradient(circle at top right, rgba(210,153,34,.13), transparent 16rem), linear-gradient(180deg,#101826,#0b111a);
+      background:radial-gradient(circle at top right, rgba(88,166,255,.12), transparent 16rem), linear-gradient(180deg,#111821,#08111d 70%,#06101b);
       padding:14px;
       overflow:hidden;
+      box-shadow:inset 0 0 28px rgba(88,166,255,.05);
     }
 
     #sentimentChart{
@@ -226,7 +227,7 @@
         <div class="history-kicker">Daily / Weekly / Monthly views</div>
         <h1>Historical Market Sentiment</h1>
         <p class="history-lead">Track how public market sentiment changes over time using Global PSI and U.S. market sentiment history.</p>
-        <p class="muted">Built to show how market sentiment changes over time as daily records accumulate.</p>
+        <p class="muted">Daily view starts from the 1:00 AM New York session. Weekly and monthly views average the saved daily readings.</p>
       </div>
 
       <aside class="panel history-summary">
@@ -240,7 +241,7 @@
         </div>
         <div class="summary-card">
           <strong>Daily / Weekly / Monthly</strong>
-          <span>Switch between short-term movement, weekly trend, and longer-term direction.</span>
+          <span>Switch between intraday movement, weekly averages, and monthly averages.</span>
         </div>
       </aside>
     </section>
@@ -295,7 +296,7 @@
       <div class="info-grid">
         <div class="mini-card">
           <div class="mini-title">Global PSI History</div>
-          <div class="mini-meta">Tracks the daily Global Public Sentiment Index over time.</div>
+          <div class="mini-meta">Tracks Global Public Sentiment Index readings over time.</div>
         </div>
         <div class="mini-card">
           <div class="mini-title">U.S. Market Sentiment</div>
@@ -338,20 +339,22 @@
 
   <script>
     let historyRecords = [];
+    let intradayRecords = [];
     let selectedScope = "global";
     let selectedPeriod = "daily";
+
+    const DAILY_SESSION_START_HOUR_NY = 1;
 
     function valueKey(){
       return selectedScope === "us" ? "us_psi" : "global_psi";
     }
 
-    function escapeHTML(value){
-      return String(value ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+    function hasNumber(value){
+      return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
+    }
+
+    function toNumber(value){
+      return Math.max(0, Math.min(100, Number(value)));
     }
 
     function toDate(dateText){
@@ -369,6 +372,12 @@
       return d.toLocaleDateString(undefined, {month:"short", year:"2-digit"});
     }
 
+    function formatHour(ts){
+      const d = new Date(ts);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleTimeString(undefined, {hour:"numeric", minute:"2-digit"});
+    }
+
     function weekKey(dateText){
       const d = toDate(dateText);
       const day = d.getDay() || 7;
@@ -378,37 +387,101 @@
       return d.getFullYear() + "-W" + String(week).padStart(2,"0");
     }
 
-    function aggregate(records){
+    function getDailyRecords(){
       const key = valueKey();
-      const clean = records
-        .filter(r => r.date && Number.isFinite(Number(r[key])))
-        .map(r => ({date:r.date, value:Number(r[key])}))
+      return historyRecords
+        .filter(r => r && r.date && hasNumber(r[key]))
+        .map(r => ({date:r.date, value:toNumber(r[key])}))
         .sort((a,b) => a.date.localeCompare(b.date));
+    }
 
-      if(selectedPeriod === "daily"){
-        return clean.map(r => ({label:formatDate(r.date), sort:r.date, value:r.value}));
+    function latestSessionDate(){
+      const sessions = intradayRecords
+        .filter(r => r && r.session_date)
+        .map(r => String(r.session_date))
+        .sort();
+      if(sessions.length) return sessions[sessions.length - 1];
+
+      const daily = getDailyRecords();
+      return daily.length ? daily[daily.length - 1].date : "";
+    }
+
+    function dailyIntradayPoints(){
+      const key = valueKey();
+      const session = latestSessionDate();
+
+      const points = intradayRecords
+        .filter(r => r && r.session_date === session && hasNumber(r[key]))
+        .sort((a,b) => String(a.ts || "").localeCompare(String(b.ts || "")))
+        .map(r => ({
+          label: formatHour(r.ts) || String(r.sample_time || ""),
+          sort: String(r.ts || r.sample_time || ""),
+          value: toNumber(r[key]),
+          real: true
+        }));
+
+      if(points.length){
+        const firstTs = points[0].sort || `${session}T01:00:00`;
+        return [
+          {label:"1 AM", sort:`${session}T01:00:00`, value:0, baseline:true},
+          ...points
+        ];
       }
+
+      const daily = getDailyRecords();
+      if(!daily.length) return [];
+
+      if(daily.length === 1){
+        return [
+          {label:"Start", sort:"baseline", value:0, baseline:true},
+          {label:formatDate(daily[0].date), sort:daily[0].date, value:daily[0].value, real:true}
+        ];
+      }
+
+      return daily.slice(-14).map(r => ({
+        label:formatDate(r.date),
+        sort:r.date,
+        value:r.value,
+        real:true
+      }));
+    }
+
+    function aggregateDailyRecords(period){
+      const clean = getDailyRecords();
+      if(!clean.length) return [];
+
+      if(period === "daily") return dailyIntradayPoints();
 
       const groups = new Map();
       clean.forEach(r => {
-        const groupKey = selectedPeriod === "weekly" ? weekKey(r.date) : r.date.slice(0,7);
+        const groupKey = period === "weekly" ? weekKey(r.date) : r.date.slice(0,7);
         if(!groups.has(groupKey)) groups.set(groupKey, []);
         groups.get(groupKey).push(r.value);
       });
 
-      return [...groups.entries()].map(([group, values]) => ({
-        label:selectedPeriod === "weekly" ? group.replace("-W"," W") : formatMonth(group),
+      const aggregated = [...groups.entries()].map(([group, values]) => ({
+        label:period === "weekly" ? group.replace("-W"," W") : formatMonth(group),
         sort:group,
-        value:Math.round(values.reduce((a,b)=>a+b,0) / values.length)
+        value:Math.round(values.reduce((a,b)=>a+b,0) / values.length),
+        real:true
       })).sort((a,b) => a.sort.localeCompare(b.sort));
+
+      if(aggregated.length === 1){
+        return [
+          {label:"Start", sort:"baseline", value:0, baseline:true},
+          aggregated[0]
+        ];
+      }
+
+      return aggregated;
     }
 
-    function nearestChange(records, daysBack){
-      const key = valueKey();
-      const clean = records
-        .filter(r => r.date && Number.isFinite(Number(r[key])))
-        .sort((a,b) => a.date.localeCompare(b.date));
+    function chartPoints(){
+      return aggregateDailyRecords(selectedPeriod);
+    }
 
+    function nearestChange(daysBack){
+      const clean = getDailyRecords();
       if(clean.length < 2) return null;
 
       const latest = clean[clean.length - 1];
@@ -421,13 +494,30 @@
       });
 
       if(!prior) prior = clean[0];
-      return Number(latest[key]) - Number(prior[key]);
+      return latest.value - prior.value;
     }
 
     function signed(value){
       if(value === null || value === undefined || !Number.isFinite(Number(value))) return "--";
       const n = Math.round(Number(value));
       return (n > 0 ? "+" : "") + n;
+    }
+
+    function drawSmoothLine(ctx, points, xFor, yFor){
+      ctx.beginPath();
+      points.forEach((p,i) => {
+        const x = xFor(i);
+        const y = yFor(p.value);
+        if(i === 0){
+          ctx.moveTo(x,y);
+        }else{
+          const prevX = xFor(i-1);
+          const prevY = yFor(points[i-1].value);
+          const midX = (prevX + x) / 2;
+          ctx.quadraticCurveTo(prevX, prevY, midX, (prevY + y) / 2);
+          ctx.quadraticCurveTo(x, y, x, y);
+        }
+      });
     }
 
     function drawChart(points){
@@ -442,18 +532,20 @@
 
       const w = rect.width;
       const h = rect.height;
-      const pad = {left:44,right:18,top:22,bottom:38};
+      const pad = {left:52,right:24,top:28,bottom:42};
       const innerW = w - pad.left - pad.right;
       const innerH = h - pad.top - pad.bottom;
+      const baseY = pad.top + innerH;
 
       ctx.clearRect(0,0,w,h);
       ctx.font = "12px Inter, Arial";
       ctx.lineWidth = 1;
 
-      const gridColor = "rgba(139,148,158,.22)";
+      const gridColor = "rgba(139,148,158,.24)";
       const textColor = "rgba(201,209,217,.82)";
+      const lineColor = "rgba(216,232,255,.96)";
+      const glowColor = "rgba(88,166,255,.28)";
       const gold = "rgba(210,153,34,.95)";
-      const goldFill = "rgba(210,153,34,.18)";
 
       [0,25,50,75,100].forEach(v => {
         const y = pad.top + innerH - (v/100) * innerH;
@@ -463,7 +555,8 @@
         ctx.lineTo(w-pad.right,y);
         ctx.stroke();
         ctx.fillStyle = textColor;
-        ctx.fillText(v, 8, y+4);
+        ctx.textAlign = "right";
+        ctx.fillText(v, pad.left - 12, y + 4);
       });
 
       if(!points.length){
@@ -473,64 +566,75 @@
       const xFor = i => points.length === 1 ? pad.left + innerW/2 : pad.left + (i/(points.length-1)) * innerW;
       const yFor = v => pad.top + innerH - (Math.max(0, Math.min(100, v))/100) * innerH;
 
+      const gradient = ctx.createLinearGradient(0, pad.top, 0, baseY);
+      gradient.addColorStop(0, "rgba(88,166,255,.36)");
+      gradient.addColorStop(.45, "rgba(32,92,145,.26)");
+      gradient.addColorStop(1, "rgba(5,24,43,.06)");
+
       const area = new Path2D();
-      area.moveTo(xFor(0), pad.top + innerH);
+      area.moveTo(xFor(0), baseY);
       points.forEach((p,i) => area.lineTo(xFor(i), yFor(p.value)));
-      area.lineTo(xFor(points.length-1), pad.top + innerH);
+      area.lineTo(xFor(points.length-1), baseY);
       area.closePath();
-      ctx.fillStyle = goldFill;
+      ctx.fillStyle = gradient;
       ctx.fill(area);
 
-      ctx.strokeStyle = gold;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      points.forEach((p,i) => {
-        const x = xFor(i);
-        const y = yFor(p.value);
-        if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
+      ctx.save();
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2.2;
+      drawSmoothLine(ctx, points, xFor, yFor);
       ctx.stroke();
+      ctx.restore();
 
-      points.forEach((p,i) => {
-        const x = xFor(i);
-        const y = yFor(p.value);
-        ctx.fillStyle = "rgba(240,183,47,.95)";
-        ctx.beginPath();
-        ctx.arc(x,y,3.2,0,Math.PI*2);
-        ctx.fill();
-      });
+      const last = points[points.length - 1];
+      const lastX = xFor(points.length - 1);
+      const lastY = yFor(last.value);
+      ctx.fillStyle = gold;
+      ctx.beginPath();
+      ctx.arc(lastX,lastY,4,0,Math.PI*2);
+      ctx.fill();
 
-      const labelCount = Math.min(points.length, 6);
+      ctx.fillStyle = "rgba(230,237,243,.96)";
+      ctx.font = "bold 12px Inter, Arial";
+      ctx.textAlign = lastX > w - 90 ? "right" : "left";
+      ctx.fillText(String(Math.round(last.value)), lastX + (lastX > w - 90 ? -10 : 10), lastY - 8);
+
+      const labelCount = Math.min(points.length, 7);
       for(let i=0;i<labelCount;i++){
         const idx = labelCount === 1 ? 0 : Math.round(i*(points.length-1)/(labelCount-1));
         const p = points[idx];
         const x = xFor(idx);
         ctx.fillStyle = textColor;
+        ctx.font = "12px Inter, Arial";
         ctx.textAlign = i === 0 ? "left" : i === labelCount-1 ? "right" : "center";
-        ctx.fillText(p.label, x, h-12);
+        ctx.fillText(p.label, x, h - 14);
       }
       ctx.textAlign = "left";
     }
 
     function render(){
-      const points = aggregate(historyRecords);
+      const points = chartPoints();
+      const realPoints = points.filter(p => !p.baseline);
       const empty = document.getElementById("chartEmpty");
-      const key = valueKey();
-      const clean = historyRecords.filter(r => r.date && Number.isFinite(Number(r[key]))).sort((a,b)=>a.date.localeCompare(b.date));
-      const latest = clean[clean.length - 1];
+      const daily = getDailyRecords();
+      const latest = daily[daily.length - 1];
 
       document.getElementById("chartTitle").textContent = selectedScope === "us" ? "U.S. Market Sentiment History" : "Global PSI History";
-      document.getElementById("chartDescription").textContent = selectedScope === "us"
-        ? "U.S.-focused sentiment over time."
-        : "Global Public Sentiment Index over time.";
+      document.getElementById("chartDescription").textContent = selectedPeriod === "daily"
+        ? `Daily view uses the ${DAILY_SESSION_START_HOUR_NY}:00 AM New York session and intraday samples when available.`
+        : selectedPeriod === "weekly"
+          ? "Weekly view averages the saved daily readings."
+          : "Monthly view averages the saved daily readings.";
 
-      empty.style.display = points.length ? "none" : "flex";
-      document.getElementById("statCurrent").textContent = latest ? Math.round(Number(latest[key])) : "--";
-      document.getElementById("statWeek").textContent = signed(nearestChange(historyRecords, 7));
-      document.getElementById("statMonth").textContent = signed(nearestChange(historyRecords, 30));
+      empty.style.display = realPoints.length ? "none" : "flex";
+      document.getElementById("statCurrent").textContent = latest ? Math.round(latest.value) : "--";
+      document.getElementById("statWeek").textContent = signed(nearestChange(7));
+      document.getElementById("statMonth").textContent = signed(nearestChange(30));
 
-      if(points.length){
-        const values = points.map(p => p.value);
+      if(realPoints.length){
+        const values = realPoints.map(p => p.value);
         document.getElementById("statRange").textContent = `${Math.min(...values)} / ${Math.max(...values)}`;
       }else{
         document.getElementById("statRange").textContent = "--";
@@ -564,9 +668,11 @@
         const response = await fetch("sentiment_history.json", {cache:"no-store"});
         const data = await response.json();
         historyRecords = Array.isArray(data.records) ? data.records : Array.isArray(data) ? data : [];
+        intradayRecords = Array.isArray(data.intraday) ? data.intraday : [];
       }catch(error){
         console.warn("sentiment_history.json not available yet", error);
         historyRecords = [];
+        intradayRecords = [];
       }
 
       render();
