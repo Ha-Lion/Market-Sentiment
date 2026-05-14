@@ -163,7 +163,7 @@ function psdClass(value){
   banner.id = "psdAdvertiseBanner";
   banner.className = "psd-ad-banner";
   banner.innerHTML = `
-    <span>📣 <strong>Advertise on Public Sentiment Dash</strong> — reach finance, trading, investing, and market-sentiment readers.</span>
+    <span>📣 <strong>Partner with Public Sentiment Dash</strong> — advertising, investor, and business opportunities in market sentiment.</span>
     <a href="advertise.html">Learn More</a>
   `;
 
