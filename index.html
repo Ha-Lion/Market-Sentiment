@@ -387,15 +387,15 @@
     }
 
     .waterfall-column.column-1 .waterfall-track{
-      animation:scrollUp 28s linear infinite;
+      animation:scrollUp 44s linear infinite;
     }
 
     .waterfall-column.column-2 .waterfall-track{
-      animation:scrollDown 32s linear infinite;
+      animation:scrollDown 48s linear infinite;
     }
 
     .waterfall-column.column-3 .waterfall-track{
-      animation:scrollUp 36s linear infinite;
+      animation:scrollUp 52s linear infinite;
     }
 
     @keyframes scrollUp{
@@ -629,7 +629,7 @@
   <main class="page">
     <div class="home-layout">
       <aside class="panel instrument-rail">
-        <div class="page-chip">Top 25 Instruments</div>
+        <div class="page-chip">Top 30 Instruments</div>
         <h2>Market Direction</h2>
         <p class="muted">Daily technical direction plus anonymous user sentiment. Hover to pause.</p>
         <div class="rail-waterfall">
@@ -690,25 +690,6 @@
           </aside>
         </section>
 
-        <section class="grid-3">
-          <div class="panel metric">
-            <div class="metric-title">Last Updated</div>
-            <div class="metric-value" id="lastUpdated">Loading</div>
-            <div class="metric-note">Latest public site update time.</div>
-          </div>
-
-          <div class="panel metric">
-            <div class="metric-title">Relevant Headlines</div>
-            <div class="metric-value" id="relevantHeadlines">--</div>
-            <div class="metric-note">Published relevant headlines in the latest scan.</div>
-          </div>
-
-          <div class="panel metric">
-            <div class="metric-title">Sources Working</div>
-            <div class="metric-value" id="sourcesWorking">--</div>
-            <div class="metric-note">Readable public sources from the latest scan.</div>
-          </div>
-        </section>
 
         <section class="panel section">
           <div class="sources-layout">
@@ -843,6 +824,11 @@
       {name:"Nikkei 225",label:"Nikkei 225",url:"https://indexes.nikkei.co.jp/en/nkave"},
       {name:"Hang Seng",label:"Hang Seng",url:"https://www.hsi.com.hk/"},
       {name:"Euro Stoxx 50",label:"Euro Stoxx",url:"https://www.stoxx.com/index-details?symbol=sx5e"},
+      {name:"CAC 40",label:"CAC 40",url:"https://live.euronext.com/en/product/indices/FR0003500008-XPAR"},
+      {name:"Treasury Yields",label:"Treasury Yields",url:"https://home.treasury.gov/"},
+      {name:"CHF / USDCHF",label:"USD/CHF",url:"https://www.snb.ch/"},
+      {name:"NZD / NZDUSD",label:"NZD/USD",url:"https://www.rbnz.govt.nz/"},
+      {name:"Copper",label:"Copper",url:"https://www.cmegroup.com/markets/metals/base/copper.html"},
       {name:"US 10Y Treasury",label:"US 10Y",url:"https://home.treasury.gov/"},
       {name:"US 2Y Treasury",label:"US 2Y",url:"https://home.treasury.gov/"},
       {name:"US Dollar / DXY",label:"DXY",url:"https://www.ice.com/products/194/US-Dollar-Index-Futures"},
@@ -941,10 +927,13 @@
 
     function renderStats(data){
       const trust = data.trust_layer || {};
+      const lastUpdated = document.getElementById("lastUpdated");
+      const relevantHeadlines = document.getElementById("relevantHeadlines");
+      const sourcesWorking = document.getElementById("sourcesWorking");
 
-      document.getElementById("lastUpdated").textContent = data.updated_ny || "N/A";
-      document.getElementById("relevantHeadlines").textContent = trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
-      document.getElementById("sourcesWorking").textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
+      if(lastUpdated) lastUpdated.textContent = data.updated_ny || "N/A";
+      if(relevantHeadlines) relevantHeadlines.textContent = trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
+      if(sourcesWorking) sourcesWorking.textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
     }
 
     function renderDailySummary(data){
