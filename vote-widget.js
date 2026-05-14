@@ -115,38 +115,7 @@ function psdEscape(value){
 function psdClass(value){
   const clean = String(value || "N/A").replace(/[^a-zA-Z]/g,"");
   return clean || "NA";
-}
-
-function psdAddHomeLabel(){
-  const brand = document.querySelector(".brand");
-  const logo = document.querySelector(".brand .logo");
-
-  if(!brand || !logo) return;
-  if(document.querySelector(".brand-logo-block") || document.querySelector(".psd-logo-home-wrap")) return;
-
-  // Only wrap the logo when it is a direct child of the brand link.
-  // Some pages already have the logo inside a Home wrapper, and insertBefore would fail there.
-  if(logo.parentElement !== brand) return;
-
-  const style = document.createElement("style");
-  style.textContent = `
-    .psd-logo-home-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
-    .psd-logo-home-word{color:#ffd780;font-size:11px;font-weight:600;line-height:1;letter-spacing:.2px}
-  `;
-  document.head.appendChild(style);
-
-  const wrap = document.createElement("span");
-  wrap.className = "psd-logo-home-wrap";
-  brand.insertBefore(wrap, logo);
-  wrap.appendChild(logo);
-
-  const word = document.createElement("span");
-  word.className = "psd-logo-home-word";
-  word.textContent = "Home";
-  wrap.appendChild(word);
-}
-
-function psdCreateAdvertiseBanner(){
+}function psdCreateAdvertiseBanner(){
   if(document.getElementById("psdAdvertiseBanner")) return;
 
   const header = document.querySelector(".header");
@@ -301,72 +270,7 @@ function psdEnhanceSocialLinks(){
       xPill.rel = "noopener";
     }
   });
-}
-
-function psdCreateShareButtons(){
-  if(document.getElementById("psdShareBox")) return;
-
-  const noSharePages = ["privacy.html","terms.html","disclaimer.html"].some(page =>
-    window.location.pathname.toLowerCase().endsWith(page)
-  );
-  if(noSharePages) return;
-
-  const main = document.querySelector("main.page");
-  if(!main) return;
-
-  const currentUrl = psdCanonicalURL();
-  const title = document.title.replace(" — Public Sentiment Dash", "").replace(" - Public Sentiment Dash", "");
-  const xShareText = `${title}\n\nPublic Sentiment Dash\n${currentUrl}`;
-  const xShareUrl = `https://x.com/intent/post?text=${encodeURIComponent(xShareText)}`;
-
-  const style = document.createElement("style");
-  style.textContent = `
-    .psd-share-box{max-width:1120px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(17,24,33,.92),rgba(13,18,27,.92))}
-    .psd-share-text{color:var(--muted);font-size:14px;line-height:1.5}
-    .psd-share-actions{display:flex;gap:10px;flex-wrap:wrap}
-    .psd-share-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#111821;color:#fff;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;transition:.18s ease;white-space:nowrap}
-    .psd-share-btn:hover{border-color:rgba(210,153,34,.55);transform:translateY(-1px)}
-    .psd-share-x{background:rgba(88,166,255,.10);border-color:rgba(88,166,255,.25)}
-    @media(max-width:720px){.psd-share-box{align-items:flex-start;flex-direction:column}}
-  `;
-  document.head.appendChild(style);
-
-  const box = document.createElement("section");
-  box.id = "psdShareBox";
-  box.className = "psd-share-box";
-  box.innerHTML = `
-    <div class="psd-share-text">Like this dashboard? Share it and help more traders discover it.</div>
-    <div class="psd-share-actions">
-      <a class="psd-share-btn psd-share-x" href="${psdEscape(xShareUrl)}" target="_blank" rel="noopener">Share on X</a>
-      <a class="psd-share-btn" href="${psdEscape(PSD_X_PROFILE_URL)}" target="_blank" rel="noopener">Follow on X</a>
-      <button class="psd-share-btn" type="button" id="psdCopyLinkBtn">Copy Link</button>
-    </div>
-  `;
-
-  const firstDirectPanel = main.querySelector(":scope > .panel.hero") || main.querySelector(":scope > .panel");
-  if(firstDirectPanel){
-    firstDirectPanel.insertAdjacentElement("afterend", box);
-  }else{
-    main.prepend(box);
-  }
-
-  const copyBtn = document.getElementById("psdCopyLinkBtn");
-  if(copyBtn){
-    copyBtn.addEventListener("click", async () => {
-      try{
-        await navigator.clipboard.writeText(currentUrl);
-        copyBtn.textContent = "Copied";
-        psdTrack("copy_share_link", { page_url: currentUrl });
-        setTimeout(() => copyBtn.textContent = "Copy Link", 1200);
-      }catch(e){
-        copyBtn.textContent = "Copy Failed";
-        setTimeout(() => copyBtn.textContent = "Copy Link", 1200);
-      }
-    });
-  }
-}
-
-function psdFallbackFromElement(el){
+}function psdFallbackFromElement(el){
   const card = el.closest(".instrument-card");
   if(card){
     const dailyRow = Array.from(card.querySelectorAll(".info-row")).find(row =>
@@ -597,12 +501,10 @@ function psdInit(){
   psdSafe("create vote widget", psdCreateVoteWidget);
   psdSafe("load GA4", psdLoadGA4);
   psdSafe("inject structured data", psdInjectStructuredData);
-  psdSafe("add home label", psdAddHomeLabel);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
   psdSafe("fix navigation", psdFixNavigation);
   psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links", psdEnhanceSocialLinks);
-  psdSafe("create share buttons", psdCreateShareButtons);
   psdSafe("apply user sentiment", psdApplyUserSentiment);
   psdSafe("load user sentiment", psdLoadUserSentiment);
 
@@ -619,7 +521,6 @@ if(document.readyState === "loading"){
 
 window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
-  psdSafe("add home label on load", psdAddHomeLabel);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
   psdSafe("fix navigation on load", psdFixNavigation);
   psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
