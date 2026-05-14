@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Dashboard Lab — Public Sentiment Dash</title>
+  <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+
+  <style>
+    .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
+    .lab-hero{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:18px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .lab-warning{
+      display:inline-flex;
+      width:max-content;
+      max-width:100%;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(248,81,73,.10);
+      border:1px solid rgba(248,81,73,.35);
+      color:#ffaaa6;
+      font-size:12px;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+    .lab-small{color:var(--muted);font-size:13px;line-height:1.55}
+    .lab-controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .lab-select{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      min-width:190px;
+      outline:none;
+      font-weight:500;
+    }
+    .lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .lab-card-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .sentiment-card{
+      position:relative;
+      overflow:hidden;
+      padding:18px;
+      min-height:238px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 10rem),
+        linear-gradient(180deg,#111927,#0c121c);
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:0 18px 42px rgba(0,0,0,.24);
+    }
+    .sentiment-card:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      border-radius:20px;
+      background:linear-gradient(135deg,rgba(210,153,34,.35),transparent 38%,rgba(88,166,255,.20));
+      opacity:.32;
+      pointer-events:none;
+      mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      padding:1px;
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+    }
+    .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+    .market-name{color:#fff;font-weight:800;font-size:15px;line-height:1.3}
+    .sentiment-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 9px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .badge-bullish{color:#9ff0aa;background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.25)}
+    .badge-mixedbullish{color:#ffd780;background:rgba(210,153,34,.13);border-color:rgba(210,153,34,.30)}
+    .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.10);border-color:rgba(88,166,255,.22)}
+    .badge-mixedbearish{color:#ffcc9c;background:rgba(245,158,11,.11);border-color:rgba(245,158,11,.25)}
+    .badge-bearish{color:#ffaaa6;background:rgba(248,81,73,.11);border-color:rgba(248,81,73,.25)}
+    .gauge-row{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
+    .mini-gauge{
+      --score:50;
+      --accent:var(--gold);
+      width:104px;
+      height:104px;
+      border-radius:50%;
+      background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
+      display:grid;
+      place-items:center;
+      box-shadow:0 0 34px rgba(210,153,34,.12);
+    }
+    .mini-gauge-inner{
+      width:74px;
+      height:74px;
+      border-radius:50%;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.06);
+      display:grid;
+      place-items:center;
+      text-align:center;
+    }
+    .psi-big{font-size:27px;font-weight:900;color:#fff;line-height:1}
+    .psi-small{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+    .card-metrics{display:grid;gap:7px}
+    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:6px}
+    .metric-line span:first-child{color:var(--muted)}
+    .metric-line span:last-child{color:#fff;font-weight:700;text-align:right}
+    .sparkline{width:100%;height:54px;margin-top:14px;display:block}
+    .chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.55fr);gap:18px;margin-bottom:18px}
+    .lab-panel{padding:22px}
+    .panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+    .panel-kicker{color:var(--muted);font-size:13px;line-height:1.55}
+    .pill-row{display:flex;gap:8px;flex-wrap:wrap}
+    .tiny-pill{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:700}
+    .skyline-wrap{
+      position:relative;
+      height:480px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.12),transparent 18rem),
+        linear-gradient(180deg,#101826,#090e16);
+    }
+    #skylineChart{width:100%;height:100%;display:block}
+    .chart-watermark{
+      position:absolute;
+      right:18px;
+      top:16px;
+      color:rgba(255,255,255,.06);
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-1px;
+      pointer-events:none;
+    }
+    .radar-wrap{
+      height:480px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:radial-gradient(circle at center,rgba(88,166,255,.10),transparent 15rem),linear-gradient(180deg,#101826,#090e16);
+      position:relative;
+      overflow:hidden;
+    }
+    #radarChart{width:100%;height:100%;display:block}
+    .heatmap{
+      display:grid;
+      gap:9px;
+      margin-top:14px;
+    }
+    .heat-row{display:grid;grid-template-columns:180px repeat(12,minmax(0,1fr));gap:7px;align-items:center}
+    .heat-name{color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .heat-cell{
+      height:34px;
+      border-radius:9px;
+      border:1px solid rgba(255,255,255,.06);
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      color:#fff;
+      font-weight:800;
+      box-shadow:inset 0 0 18px rgba(0,0,0,.22);
+    }
+    .ranking-list{display:grid;gap:10px}
+    .rank-item{
+      display:grid;
+      grid-template-columns:32px minmax(0,1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:rgba(17,24,33,.70);
+    }
+    .rank-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(210,153,34,.14);color:#ffd780;font-weight:900}
+    .rank-title{color:#fff;font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rank-meta{color:var(--muted);font-size:12px;margin-top:2px}
+    .rank-score{font-size:18px;font-weight:900;color:#fff}
+    .preview-note{
+      margin-top:12px;
+      border:1px solid rgba(210,153,34,.24);
+      background:rgba(210,153,34,.08);
+      color:#f4d17d;
+      padding:12px 14px;
+      border-radius:14px;
+      font-size:12px;
+      line-height:1.55;
+    }
+    @media(max-width:1300px){
+      .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .chart-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:900px){
+      .lab-hero{grid-template-columns:1fr}
+      .lab-controls{justify-content:flex-start}
+      .lab-card-grid{grid-template-columns:1fr}
+      .heat-row{grid-template-columns:1fr repeat(6,minmax(0,1fr))}
+      .heat-row .heat-cell:nth-child(n+8){display:none}
+      .skyline-wrap,.radar-wrap{height:360px}
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">🧪 Private dashboard test lab</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="sentiment-history.html">Historical Sentiment</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="advertise.html">Business Opportunities</a>
+      <a href="contact.html">Get in Touch</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main class="lab-wrap">
+    <section class="panel lab-hero">
+      <div>
+        <div class="lab-warning">PRIVATE TEST PAGE • NOINDEX • DO NOT LINK IN NAV/SITEMAP</div>
+        <h1>Dashboard Lab</h1>
+        <p>Test premium dashboard visuals here before changing the live dashboard.</p>
+        <p class="lab-small">This page reads live dashboard data when available. Until instrument-level history grows, some mini-trends render in preview mode for design testing only.</p>
+      </div>
+      <div class="lab-controls" id="marketControls"></div>
+    </section>
+
+    <section class="lab-card-grid" id="snapshotCards"></section>
+
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Skyline</h2>
+            <div class="panel-kicker">Smooth multi-market PSI movement with glowing trend lines and end-point labels.</div>
+          </div>
+          <div class="pill-row">
+            <span class="tiny-pill">1D</span>
+            <span class="tiny-pill">1W</span>
+            <span class="tiny-pill">1M</span>
+            <span class="tiny-pill">Preview Lab</span>
+          </div>
+        </div>
+        <div class="skyline-wrap">
+          <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
+          <div class="chart-watermark">PSI</div>
+        </div>
+        <div class="preview-note" id="skylineNote">Preview mode uses generated trend shape when real instrument history is not available.</div>
+      </div>
+
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Radar Comparison</h2>
+            <div class="panel-kicker">Compares sentiment strength, user bias, headlines, technical direction, and stability.</div>
+          </div>
+        </div>
+        <div class="radar-wrap">
+          <svg id="radarChart" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Heatwave</h2>
+            <div class="panel-kicker">A fast visual matrix for bullish / bearish pressure over recent periods.</div>
+          </div>
+        </div>
+        <div class="heatmap" id="heatmapGrid"></div>
+      </div>
+
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Strength Ranking</h2>
+            <div class="panel-kicker">Simple ranked read of selected markets.</div>
+          </div>
+        </div>
+        <div class="ranking-list" id="rankingList"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="advertise.html">Business Opportunities</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="about.html">About</a>
+      </div>
+      <div class="legal">
+        <b>Private test page:</b> This page is for design review only and should not be added to navigation, sitemap, or public promotion.
+      </div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script>
+    const INSTRUMENTS = [
+      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"], fallback:54},
+      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","nasdaq / nq"], fallback:75},
+      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"], fallback:56},
+      {name:"Russell / RTY", aliases:["russell","rty","russell / rty"], fallback:50},
+      {name:"VIX", aliases:["vix","volatility"], fallback:null},
+      {name:"DAX", aliases:["dax"], fallback:62},
+      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index"], fallback:50},
+      {name:"Gold", aliases:["gold"], fallback:48},
+      {name:"Crude Oil", aliases:["crude oil","oil","wti"], fallback:57},
+      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"], fallback:64},
+      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro"], fallback:58},
+      {name:"US 10Y Treasury", aliases:["10y","us 10y","treasury yield"], fallback:50}
+    ];
+
+    let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
+    let dashboardData = null;
+
+    function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+    function norm(v){return String(v||"").toLowerCase()}
+    function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+    function label(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 70) return "Bullish";
+      if(score >= 56) return "Mixed Bullish";
+      if(score >= 45) return "Neutral";
+      if(score >= 31) return "Mixed Bearish";
+      return "Bearish";
+    }
+    function badgeClass(score){
+      return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral");
+    }
+    function color(score){
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#3fb950";
+      if(score >= 56) return "#d29922";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f59e0b";
+      return "#f85149";
+    }
+    function scoreFromText(text){
+      const t = norm(text);
+      if(t.includes("bullish") && !t.includes("bearish")) return 80;
+      if(t.includes("bearish") && !t.includes("bullish")) return 20;
+      if(t.includes("mixed")) return 55;
+      if(t.includes("neutral")) return 50;
+      return null;
+    }
+    function textFromItem(item){
+      return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
+    }
+    function matchesInstrument(item, ins){
+      const text = textFromItem(item);
+      return ins.aliases.some(a => text.includes(a.toLowerCase()));
+    }
+    function getHeadlines(){
+      if(!dashboardData) return [];
+      return [
+        ...(Array.isArray(dashboardData.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : []),
+        ...(Array.isArray(dashboardData.headlines) ? dashboardData.headlines : [])
+      ];
+    }
+    function calcInstrument(ins){
+      const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
+      const scores = [];
+
+      headlines.forEach(h => {
+        const direct = Number(h.psi ?? h.score ?? h.sentiment_score);
+        if(Number.isFinite(direct)) scores.push(clamp(direct,0,100));
+        else{
+          const s = scoreFromText(textFromItem(h));
+          if(s != null) scores.push(s);
+        }
+      });
+
+      let score = null;
+      if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+      else score = ins.fallback;
+
+      const user = window.PSD_USER_SENTIMENT?.[ins.name] || "N/A";
+      const tech = score == null ? "No PSI Match" : score >= 56 ? "Up" : score <= 44 ? "Down" : "Neutral";
+
+      return {
+        name: ins.name,
+        score,
+        sentiment: label(score),
+        headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0),
+        user,
+        tech,
+        series: makeSeries(ins.name, score)
+      };
+    }
+    function makeSeries(name, score){
+      const base = score == null ? 50 : score;
+      let seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      for(let i=0;i<24;i++){
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 7;
+        const drift = (i-18) * ((base-50)/90);
+        const noise = ((seed/233280)-.5) * 9;
+        values.push(clamp(Math.round(base - 8 + (i/23)*16 + wave + drift + noise), 3, 97));
+      }
+      values[values.length-1] = score == null ? 50 : score;
+      return values;
+    }
+    function selectedData(){
+      return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]));
+    }
+    function renderControls(){
+      const box = document.getElementById("marketControls");
+      box.innerHTML = selected.map((name,idx) => `
+        <select class="lab-select" data-slot="${idx}">
+          ${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}
+        </select>
+      `).join("");
+      box.querySelectorAll("select").forEach(sel => {
+        sel.addEventListener("change", e => {
+          selected[Number(e.target.dataset.slot)] = e.target.value;
+          renderAll();
+        });
+      });
+    }
+    function sparklinePath(series,w=180,h=54){
+      const min = 0, max = 100;
+      return series.map((v,i)=>{
+        const x = (i/(series.length-1))*w;
+        const y = h - ((v-min)/(max-min))*h;
+        return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+    }
+    function renderCards(data){
+      document.getElementById("snapshotCards").innerHTML = data.map(d => {
+        const c = color(d.score);
+        return `
+          <article class="sentiment-card">
+            <div class="card-head">
+              <div class="market-name">${esc(d.name)}</div>
+              <div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div>
+            </div>
+            <div class="gauge-row">
+              <div class="mini-gauge" style="--score:${d.score??0};--accent:${c}">
+                <div class="mini-gauge-inner">
+                  <div>
+                    <div class="psi-big">${d.score??"--"}</div>
+                    <div class="psi-small">PSI / 100</div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-metrics">
+                <div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div>
+                <div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div>
+                <div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div>
+              </div>
+            </div>
+            <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none">
+              <defs><linearGradient id="sparkGrad${esc(d.name).replace(/\W/g,'')}" x1="0" x2="1"><stop offset="0%" stop-color="${c}" stop-opacity=".20"/><stop offset="100%" stop-color="${c}" stop-opacity=".90"/></linearGradient></defs>
+              <path d="${sparklinePath(d.series)}" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${c}" opacity=".10"/>
+            </svg>
+          </article>
+        `;
+      }).join("");
+    }
+    function renderSkyline(data){
+      const svg = document.getElementById("skylineChart");
+      const w=1000,h=420,pad={l:54,r:110,t:28,b:38};
+      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b;
+      let out = `
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <linearGradient id="gridFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity=".08"/><stop offset="100%" stop-color="#ffffff" stop-opacity=".02"/></linearGradient>
+        </defs>
+      `;
+      [0,25,50,75,100].forEach(v=>{
+        const y=pad.t+innerH-(v/100)*innerH;
+        out += `<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="url(#gridFade)" stroke-width="1"/><text x="18" y="${y+4}" fill="#8b949e" font-size="13" font-weight="700">${v}</text>`;
+      });
+      data.forEach((d,idx)=>{
+        const c=color(d.score);
+        const points=d.series.map((v,i)=>{
+          const x=pad.l+(i/(d.series.length-1))*innerW;
+          const y=pad.t+innerH-(v/100)*innerH;
+          return [x,y];
+        });
+        const path=points.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+        const fill=path + ` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
+        const last=points[points.length-1];
+        out += `<path d="${fill}" fill="${c}" opacity=".075"/>`;
+        out += `<path d="${path}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" opacity="${idx===0?1:.86}"/>`;
+        out += `<circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".55"/>`;
+        out += `<text x="${last[0]+10}" y="${last[1]+4}" fill="${c}" font-size="13" font-weight="900">${esc(d.name.split(" / ")[0])} ${d.score??"--"}</text>`;
+      });
+      out += `<text x="${pad.l}" y="${h-12}" fill="#8b949e" font-size="12">Earlier</text><text x="${w-pad.r-20}" y="${h-12}" fill="#8b949e" font-size="12">Now</text>`;
+      svg.innerHTML=out;
+    }
+    function radarPoint(cx,cy,r,angle,value){
+      const rad=(angle-90)*Math.PI/180;
+      const rr=r*(value/100);
+      return [cx+Math.cos(rad)*rr, cy+Math.sin(rad)*rr];
+    }
+    function renderRadar(data){
+      const svg=document.getElementById("radarChart");
+      const axes=["PSI","User","Headlines","Technical","Stability"];
+      const cx=250,cy=250,r=168;
+      let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      [25,50,75,100].forEach(level=>{
+        const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");
+        out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
+      });
+      axes.forEach((a,i)=>{
+        const p=radarPoint(cx,cy,r+30,(360/axes.length)*i,100);
+        const end=radarPoint(cx,cy,r,(360/axes.length)*i,100);
+        out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.07)"/>`;
+        out+=`<text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#c9d1d9" font-size="13" font-weight="800">${a}</text>`;
+      });
+      data.slice(0,5).forEach((d,idx)=>{
+        const c=color(d.score);
+        const vals=[
+          d.score ?? 35,
+          d.user==="Bullish"?80:d.user==="Bearish"?20:55,
+          clamp(Math.log10((d.headlines||1)+1)*28,8,100),
+          d.tech==="Up"?82:d.tech==="Down"?25:55,
+          clamp(100-Math.abs((d.score??50)-50),35,95)
+        ];
+        const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");
+        out+=`<polygon points="${pts}" fill="${c}" opacity=".08" stroke="${c}" stroke-width="2.5" filter="url(#radarGlow)"/>`;
+      });
+      svg.innerHTML=out;
+    }
+    function renderHeatmap(data){
+      const box=document.getElementById("heatmapGrid");
+      box.innerHTML=data.map(d=>{
+        const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" style="background:${color(v)};opacity:${.36 + (Math.abs(v-50)/50)*.55}">${v}</div>`).join("");
+        return `<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
+      }).join("");
+    }
+    function renderRanking(data){
+      const ranked=[...data].sort((a,b)=>(b.score??-1)-(a.score??-1));
+      document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`
+        <div class="rank-item">
+          <div class="rank-num">${i+1}</div>
+          <div>
+            <div class="rank-title">${esc(d.name)}</div>
+            <div class="rank-meta">${esc(d.sentiment)} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)}</div>
+          </div>
+          <div class="rank-score" style="color:${color(d.score)}">${d.score??"--"}</div>
+        </div>
+      `).join("");
+    }
+    function renderAll(){
+      renderControls();
+      const data=selectedData();
+      renderCards(data);
+      renderSkyline(data);
+      renderRadar(data);
+      renderHeatmap(data);
+      renderRanking(data);
+    }
+    async function load(){
+      try{
+        const res=await fetch("dashboard_data.json",{cache:"no-store"});
+        if(res.ok) dashboardData=await res.json();
+      }catch(e){}
+      renderAll();
+    }
+    load();
+  </script>
+</body>
+</html>
