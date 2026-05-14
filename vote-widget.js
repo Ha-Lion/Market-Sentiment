@@ -115,7 +115,9 @@ function psdEscape(value){
 function psdClass(value){
   const clean = String(value || "N/A").replace(/[^a-zA-Z]/g,"");
   return clean || "NA";
-}function psdCreateAdvertiseBanner(){
+}
+
+function psdCreateAdvertiseBanner(){
   if(document.getElementById("psdAdvertiseBanner")) return;
 
   const header = document.querySelector(".header");
@@ -189,47 +191,10 @@ function psdHeaders(){
   };
 }
 
-function psdFixNavigation(){
-  const nav = document.querySelector(".nav");
-  if(!nav) return;
-
-  const order = [
-    ["dashboard.html", "Interactive Dashboard"],
-    ["sentiment-history.html", "Historical Sentiment"],
-    ["news-articles.html", "News & Articles"],
-    ["market-sentiment.html", "Guides"],
-    ["contact.html", "Get in Touch"],
-    ["how-it-works.html", "Dashboard Works"],
-    ["about.html", "About"],
-    ["advertise.html", "Advertise"]
-  ];
-
-  Array.from(nav.querySelectorAll("a")).forEach(link => {
-    const href = link.getAttribute("href") || "";
-    if(href.includes("index.html")) link.remove();
-  });
-
-  order.forEach(([href, label]) => {
-    let link = Array.from(nav.querySelectorAll("a")).find(a => (a.getAttribute("href") || "").includes(href));
-    if(!link){
-      link = document.createElement("a");
-      link.href = href;
-      nav.appendChild(link);
-    }
-    link.textContent = label;
-    const path = window.location.pathname.toLowerCase();
-    if(path.endsWith("/" + href.toLowerCase())) link.classList.add("active");
-    nav.appendChild(link);
-  });
-
-  const social = nav.querySelector(".social-links");
-  if(social) nav.appendChild(social);
-}
-
 function psdEnhanceFooterLegalLinks(){
   document.querySelectorAll(".footer-links").forEach(footer => {
     const extraLinks = [
-      ["advertise.html", "Advertise"],
+      ["advertise.html", "Business Opportunities"],
       ["privacy.html", "Privacy"],
       ["terms.html", "Terms"],
       ["disclaimer.html", "Disclaimer"]
@@ -270,7 +235,9 @@ function psdEnhanceSocialLinks(){
       xPill.rel = "noopener";
     }
   });
-}function psdFallbackFromElement(el){
+}
+
+function psdFallbackFromElement(el){
   const card = el.closest(".instrument-card");
   if(card){
     const dailyRow = Array.from(card.querySelectorAll(".info-row")).find(row =>
@@ -502,7 +469,6 @@ function psdInit(){
   psdSafe("load GA4", psdLoadGA4);
   psdSafe("inject structured data", psdInjectStructuredData);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
-  psdSafe("fix navigation", psdFixNavigation);
   psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment", psdApplyUserSentiment);
@@ -522,7 +488,6 @@ if(document.readyState === "loading"){
 window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
-  psdSafe("fix navigation on load", psdFixNavigation);
   psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links on load", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment on load", psdApplyUserSentiment);
