@@ -220,11 +220,13 @@ function psdFixNavigation(){
 
   const order = [
     ["dashboard.html", "Interactive Dashboard"],
+    ["sentiment-history.html", "Historical Sentiment"],
     ["news-articles.html", "News & Articles"],
     ["market-sentiment.html", "Guides"],
     ["contact.html", "Get in Touch"],
     ["how-it-works.html", "Dashboard Works"],
-    ["about.html", "About"]
+    ["about.html", "About"],
+    ["advertise.html", "Advertise"]
   ];
 
   Array.from(nav.querySelectorAll("a")).forEach(link => {
@@ -233,11 +235,16 @@ function psdFixNavigation(){
   });
 
   order.forEach(([href, label]) => {
-    const link = Array.from(nav.querySelectorAll("a")).find(a => (a.getAttribute("href") || "").includes(href));
-    if(link){
-      link.textContent = label;
+    let link = Array.from(nav.querySelectorAll("a")).find(a => (a.getAttribute("href") || "").includes(href));
+    if(!link){
+      link = document.createElement("a");
+      link.href = href;
       nav.appendChild(link);
     }
+    link.textContent = label;
+    const path = window.location.pathname.toLowerCase();
+    if(path.endsWith("/" + href.toLowerCase())) link.classList.add("active");
+    nav.appendChild(link);
   });
 
   const social = nav.querySelector(".social-links");
@@ -491,6 +498,22 @@ async function psdSubmitVote(instrument, vote){
 function psdCreateVoteWidget(){
   if(document.getElementById("psdVoteWidget")) return;
 
+  if(!document.getElementById("psdVoteWidgetFallbackCss")){
+    const style = document.createElement("style");
+    style.id = "psdVoteWidgetFallbackCss";
+    style.textContent = `
+      .psd-vote-widget{position:fixed;left:18px;top:50%;transform:translateY(-50%);z-index:1000;font-family:Inter,Segoe UI,Arial,sans-serif}
+      .psd-vote-tab{display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;min-height:78px;border:1px solid rgba(210,153,34,.45);border-radius:18px;background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96));color:#ffd780;cursor:pointer;box-shadow:0 0 24px rgba(210,153,34,.18)}
+      .psd-vote-tab-icon{font-size:20px;line-height:1}.psd-vote-tab-text{font-size:12px;font-weight:700}
+      .psd-vote-panel{position:absolute;left:66px;top:50%;transform:translateY(-50%);width:290px;display:none;padding:16px;border-radius:18px;border:1px solid #263241;background:rgba(13,17,23,.98);box-shadow:0 20px 60px rgba(0,0,0,.42)}
+      .psd-vote-panel.open{display:block}.psd-vote-title{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}.psd-vote-note,.psd-vote-status{color:#8b949e;font-size:12px}.psd-vote-label{display:block;color:#c9d1d9;font-size:12px;font-weight:600;margin:10px 0 6px}
+      .psd-vote-select{width:100%;background:#111821;color:#e6edf3;border:1px solid #263241;border-radius:12px;padding:10px 12px}.psd-vote-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.psd-vote-choice{border:1px solid #263241;border-radius:12px;padding:10px;color:#fff;background:rgba(17,24,33,.88);cursor:pointer;font-weight:600}
+      .psd-vote-choice.bullish.active{border-color:rgba(63,185,80,.65);background:rgba(63,185,80,.16);color:#9ff0aa}.psd-vote-choice.bearish.active{border-color:rgba(248,81,73,.65);background:rgba(248,81,73,.16);color:#ffaaa6}
+      .psd-vote-submit{width:100%;border:0;border-radius:999px;padding:11px 14px;background:#d29922;color:#05070b;cursor:pointer;font-weight:800}.psd-vote-cancel{width:100%;margin-top:8px;border:1px solid #263241;border-radius:999px;padding:10px 14px;background:transparent;color:#c9d1d9;cursor:pointer;font-weight:600}
+    `;
+    document.head.appendChild(style);
+  }
+
   const wrap = document.createElement("div");
   wrap.id = "psdVoteWidget";
   wrap.className = "psd-vote-widget";
@@ -555,22 +578,31 @@ function psdCreateVoteWidget(){
   });
 }
 
-function psdInit(){
-  psdLoadGA4();
-  psdInjectStructuredData();
-  psdAddHomeLabel();
-  psdCreateAdvertiseBanner();
-  psdFixNavigation();
-  psdEnhanceFooterLegalLinks();
-  psdEnhanceSocialLinks();
-  psdCreateVoteWidget();
-  psdCreateShareButtons();
-  psdApplyUserSentiment();
-  psdLoadUserSentiment();
+function psdSafe(name, fn){
+  try{
+    return fn();
+  }catch(error){
+    console.warn("PSD widget helper failed:", name, error);
+    return null;
+  }
+}
 
-  setTimeout(psdApplyUserSentiment, 500);
-  setTimeout(psdApplyUserSentiment, 1500);
-  setTimeout(psdApplyUserSentiment, 3000);
+function psdInit(){
+  psdSafe("create vote widget", psdCreateVoteWidget);
+  psdSafe("load GA4", psdLoadGA4);
+  psdSafe("inject structured data", psdInjectStructuredData);
+  psdSafe("add home label", psdAddHomeLabel);
+  psdSafe("create advertise banner", psdCreateAdvertiseBanner);
+  psdSafe("fix navigation", psdFixNavigation);
+  psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
+  psdSafe("enhance social links", psdEnhanceSocialLinks);
+  psdSafe("create share buttons", psdCreateShareButtons);
+  psdSafe("apply user sentiment", psdApplyUserSentiment);
+  psdSafe("load user sentiment", psdLoadUserSentiment);
+
+  setTimeout(() => psdSafe("apply user sentiment 500", psdApplyUserSentiment), 500);
+  setTimeout(() => psdSafe("apply user sentiment 1500", psdApplyUserSentiment), 1500);
+  setTimeout(() => psdSafe("apply user sentiment 3000", psdApplyUserSentiment), 3000);
 }
 
 if(document.readyState === "loading"){
@@ -580,12 +612,13 @@ if(document.readyState === "loading"){
 }
 
 window.addEventListener("load", () => {
-  psdAddHomeLabel();
-  psdCreateAdvertiseBanner();
-  psdFixNavigation();
-  psdEnhanceFooterLegalLinks();
-  psdEnhanceSocialLinks();
-  psdApplyUserSentiment();
+  psdSafe("create vote widget on load", psdCreateVoteWidget);
+  psdSafe("add home label on load", psdAddHomeLabel);
+  psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
+  psdSafe("fix navigation on load", psdFixNavigation);
+  psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
+  psdSafe("enhance social links on load", psdEnhanceSocialLinks);
+  psdSafe("apply user sentiment on load", psdApplyUserSentiment);
 });
 
 window.psdApplyUserSentiment = psdApplyUserSentiment;
