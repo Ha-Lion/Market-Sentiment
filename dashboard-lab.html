@@ -9,6 +9,7 @@
   <!-- DASHBOARD LAB V4B DROPDOWN + SKYLINE BUTTONS ONLY BUILD 2026-05-14 -->
   <!-- DASHBOARD LAB V4D HEATWAVE COLOR SCALE BUILD 2026-05-14 -->
   <!-- DASHBOARD LAB V4E DISTINCT HEATWAVE CELLS BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4F FINAL HEATMAP LABELS + VOTE WIDGET BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -95,11 +96,11 @@
       white-space:nowrap;
       border:1px solid rgba(255,255,255,.10);
     }
-    .badge-bullish{color:#9ff0aa;background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.25)}
-    .badge-mixedbullish{color:#ffd780;background:rgba(210,153,34,.13);border-color:rgba(210,153,34,.30)}
-    .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.10);border-color:rgba(88,166,255,.22)}
-    .badge-mixedbearish{color:#ffcc9c;background:rgba(245,158,11,.11);border-color:rgba(245,158,11,.25)}
-    .badge-bearish{color:#ffaaa6;background:rgba(248,81,73,.11);border-color:rgba(248,81,73,.25)}
+    .badge-bullish{color:#baf7c5;background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.34)}
+    .badge-mixedbullish{color:#b8fff6;background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.34)}
+    .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.30)}
+    .badge-mixedbearish{color:#ffd8a8;background:rgba(249,115,22,.14);border-color:rgba(249,115,22,.34)}
+    .badge-bearish{color:#ffc0bc;background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.34)}
     .gauge-row{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
     .mini-gauge{
       --score:50;
@@ -207,13 +208,14 @@
     .heat-cell{
       height:34px;
       border-radius:9px;
-      border:1px solid rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
       display:grid;
       place-items:center;
       font-size:11px;
       color:#fff;
       font-weight:800;
-      box-shadow:inset 0 0 18px rgba(0,0,0,.22);
+      box-shadow:inset 0 0 18px rgba(0,0,0,.22),0 0 0 1px rgba(255,255,255,.04);
+      text-shadow:0 1px 1px rgba(0,0,0,.28);
     }
     .ranking-list{display:grid;gap:10px}
     .rank-item{
@@ -376,7 +378,7 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">Recent PSI-style pressure matrix with clear cold-to-hot colors: Green 70–100, Teal 56–69, Blue 45–55, Orange 31–44, Red 0–30.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, and sampled days for Monthly.</div>
           </div>
         </div>
         <div class="heat-legend" aria-label="Heatwave color scale">
@@ -387,7 +389,7 @@
           <span><i style="background:#ef4444;color:#ef4444"></i>0–30 Bearish</span>
         </div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Each cell is one recent period: 70–100 Green/Bullish, 56–69 Teal/Mixed Bullish, 45–55 Blue/Neutral, 31–44 Orange/Mixed Bearish, 0–30 Red/Bearish.</div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 70–100 Green/Bullish, 56–69 Teal/Mixed Bullish, 45–55 Blue/Neutral, 31–44 Orange/Mixed Bearish, 0–30 Red/Bearish.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -496,11 +498,11 @@
     function badgeClass(score){return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral")}
     function sentimentColor(score){
       if(score == null) return "#8b949e";
-      if(score >= 70) return "#3fb950";
-      if(score >= 56) return "#d29922";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#14b8a6";
       if(score >= 45) return "#58a6ff";
-      if(score >= 31) return "#f59e0b";
-      return "#f85149";
+      if(score >= 31) return "#f97316";
+      return "#ef4444";
     }
     function heatColor(v){
       if(v >= 70) return "#22c55e";
@@ -747,7 +749,30 @@
         legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
       }
     }
-    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
+    function heatLabels(){
+      if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
+      if(selectedPeriod === "monthly") return ["30D","27D","24D","21D","18D","15D","12D","9D","6D","3D","1D","Now"];
+      return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
+    }
+    function heatValues(d){
+      const vals = seriesForPeriod(d);
+      const labels = heatLabels();
+      if(vals.length <= labels.length) return vals;
+      if(selectedPeriod === "monthly"){
+        return labels.map((_,i)=>vals[Math.round(i*(vals.length-1)/(labels.length-1))]);
+      }
+      return vals.slice(-labels.length);
+    }
+    function renderHeatmap(data){
+      const box=document.getElementById("heatmapGrid");
+      const labels=heatLabels();
+      const gridStyle=`grid-template-columns:180px repeat(${labels.length},minmax(0,1fr))`;
+      const heads=`<div class="heat-row" style="${gridStyle}"><div></div>${labels.map(x=>`<div class="heat-head">${x}</div>`).join("")}</div>`;
+      box.innerHTML=heads+data.map(d=>{
+        const cells=heatValues(d).map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i]} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
+        return`<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
+      }).join("");
+    }
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
     function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
@@ -764,5 +789,6 @@
     }
     load();
   </script>
+  <script src="vote-widget.js" defer></script>
 </body>
 </html>
