@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Lab — Historical Sentiment Intelligence</title>
-  <meta name="description" content="Advanced historical sentiment lab with dynamic multi-chart views for Global PSI and U.S. PSI.">
+
+  <title>Dashboard Lab — Historical Sentiment</title>
+  <meta name="description" content="Advanced historical sentiment lab with compact multi-chart analysis for Global PSI and U.S. PSI.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
   <link rel="icon" type="image/png" href="logo.png">
@@ -12,595 +13,533 @@
 
   <style>
     :root{
-      --lab-blue:#3b82f6;
+      --lab-bg:#05070b;
+      --lab-panel:#09111d;
+      --lab-panel2:#0c1726;
+      --lab-line:#1e3147;
+      --lab-soft:#9db1c8;
+      --lab-text:#eef6ff;
+      --lab-blue:#2f81f7;
       --lab-cyan:#22d3ee;
-      --lab-purple:#8b5cf6;
-      --lab-pink:#ec4899;
+      --lab-gold:#f0b72f;
       --lab-green:#22c55e;
       --lab-red:#ef4444;
-      --lab-gold:#f0b72f;
-      --ink:#0b1220;
+      --lab-pink:#ec4899;
+      --lab-purple:#8b5cf6;
     }
 
-    .lab-hero{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);
-      gap:18px;
-      margin-bottom:18px;
-    }
-
-    .lab-glass{
-      position:relative;
-      overflow:hidden;
+    body{
       background:
-        radial-gradient(circle at 0% 0%, rgba(240,183,47,.15), transparent 28rem),
-        radial-gradient(circle at 100% 10%, rgba(34,211,238,.12), transparent 24rem),
-        radial-gradient(circle at 70% 100%, rgba(139,92,246,.11), transparent 22rem),
-        linear-gradient(180deg, rgba(13,17,23,.96), rgba(8,13,21,.98));
-      border:1px solid rgba(88,166,255,.18);
-      box-shadow:0 18px 50px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.02);
+        radial-gradient(circle at 12% 6%, rgba(47,129,247,.10), transparent 28rem),
+        radial-gradient(circle at 86% 10%, rgba(240,183,47,.08), transparent 30rem),
+        radial-gradient(circle at 50% 100%, rgba(34,211,238,.05), transparent 36rem),
+        var(--lab-bg);
     }
 
-    .lab-glass::before{
-      content:"";
-      position:absolute;
-      inset:auto -20% -55% auto;
-      width:240px;
-      height:240px;
-      background:radial-gradient(circle, rgba(240,183,47,.10), transparent 65%);
-      pointer-events:none;
+    .page{
+      max-width:1600px;
+      padding:18px 22px 28px;
     }
 
-    .hero-tags{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-bottom:16px;
-    }
-
-    .hero-tag{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 14px;
+    .lab-alert{
+      margin:10px auto 16px;
+      max-width:1160px;
+      padding:12px 18px;
       border-radius:999px;
-      background:rgba(240,183,47,.10);
-      border:1px solid rgba(240,183,47,.32);
-      color:#ffd780;
+      border:1px solid rgba(240,183,47,.25);
+      background:linear-gradient(90deg,rgba(240,183,47,.12),rgba(8,18,31,.92),rgba(34,211,238,.08));
+      color:#f4d17d;
+      text-align:center;
       font-size:13px;
-      font-weight:600;
+      font-weight:700;
       box-shadow:0 0 24px rgba(240,183,47,.08);
     }
 
-    .hero-title{
-      font-size:clamp(40px,5vw,76px);
-      line-height:.96;
-      margin:0 0 18px;
-      letter-spacing:-2px;
+    .lab-topbar{
+      display:grid;
+      grid-template-columns:minmax(260px,.8fr) minmax(0,2.4fr);
+      gap:14px;
+      margin-bottom:14px;
     }
 
-    .hero-title .accent{
-      background:linear-gradient(90deg,#fff,#cfe4ff 50%, #8ed9ff 100%);
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-      text-shadow:0 0 22px rgba(88,166,255,.10);
+    .lab-title-card,.lab-controls,.lab-panel,.lab-card{
+      border:1px solid rgba(88,166,255,.18);
+      background:
+        linear-gradient(180deg,rgba(10,18,30,.96),rgba(7,13,22,.98)),
+        radial-gradient(circle at top right, rgba(34,211,238,.08), transparent 18rem);
+      border-radius:18px;
+      box-shadow:0 14px 38px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.025);
     }
 
-    .hero-lead{
-      font-size:18px;
-      max-width:800px;
-      margin-bottom:16px;
+    .lab-title-card{
+      padding:16px 18px;
+      min-height:112px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
     }
 
-    .hero-micro{
+    .lab-kicker-row{
       display:flex;
       flex-wrap:wrap;
-      gap:12px;
-      margin-top:18px;
+      gap:8px;
+      margin-bottom:9px;
     }
 
-    .micro-pill{
-      padding:10px 14px;
+    .lab-kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
       border-radius:999px;
-      background:rgba(12,24,42,.88);
-      border:1px solid rgba(88,166,255,.20);
-      color:#d9ecff;
-      font-weight:600;
-      font-size:13px;
-    }
-
-    .hero-side{
-      display:grid;
-      gap:14px;
-    }
-
-    .feature-tile{
-      min-height:132px;
-      border-radius:18px;
-      background:linear-gradient(180deg,rgba(11,22,38,.95),rgba(12,20,33,.92));
-      border:1px solid rgba(88,166,255,.18);
-      padding:18px;
-      position:relative;
-      overflow:hidden;
-    }
-
-    .feature-tile::after{
-      content:"";
-      position:absolute;
-      right:-20px;
-      bottom:-30px;
-      width:110px;
-      height:110px;
-      border-radius:50%;
-      background:radial-gradient(circle, rgba(240,183,47,.16), transparent 66%);
-      opacity:.8;
-    }
-
-    .feature-kicker{
-      color:#fff;
-      font-size:15px;
-      font-weight:700;
-      margin-bottom:10px;
-    }
-
-    .feature-value{
-      font-size:46px;
-      line-height:1;
+      border:1px solid rgba(240,183,47,.28);
+      background:rgba(240,183,47,.09);
+      color:#ffd780;
+      font-size:11px;
       font-weight:800;
-      color:#ffe08e;
-      margin-bottom:8px;
+      letter-spacing:.2px;
     }
 
-    .feature-note{
-      color:#9cc1ea;
-      font-size:14px;
-      line-height:1.55;
+    .lab-title-card h1{
+      margin:0 0 8px;
+      font-size:clamp(28px,3vw,42px);
+      line-height:1.02;
+      letter-spacing:-1.2px;
     }
 
-    .control-strip{
+    .lab-title-card p{
+      margin:0;
+      color:#bcd2e8;
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .lab-controls{
+      padding:12px;
       display:grid;
       grid-template-columns:repeat(6,minmax(0,1fr));
-      gap:14px;
-      padding:16px;
-      margin-bottom:18px;
+      gap:10px;
+      align-content:center;
     }
 
-    .control-card label{
+    .control label{
       display:block;
-      color:#a7b5c9;
-      font-size:12px;
-      font-weight:700;
-      letter-spacing:.5px;
+      margin:0 0 6px;
+      color:#8fa8c4;
+      font-size:10px;
+      font-weight:900;
+      letter-spacing:.55px;
       text-transform:uppercase;
-      margin-bottom:8px;
     }
 
-    .control-card select,.control-card button{
+    .control select,.control button{
       width:100%;
-      height:54px;
-      border-radius:16px;
+      height:44px;
+      border-radius:12px;
       border:1px solid rgba(88,166,255,.22);
-      background:rgba(13,23,39,.95);
-      color:#eef5fd;
-      padding:0 16px;
-      font-size:15px;
-      font-weight:600;
+      background:rgba(12,24,40,.94);
+      color:#edf6ff;
+      font-size:13px;
+      font-weight:800;
+      padding:0 12px;
       outline:none;
     }
 
-    .control-card select:focus,.control-card button:hover{
-      border-color:rgba(240,183,47,.40);
-      box-shadow:0 0 0 3px rgba(240,183,47,.10);
-    }
-
-    .export-btn{
-      background:linear-gradient(180deg, rgba(240,183,47,.20), rgba(240,183,47,.10)) !important;
-      color:#ffd780 !important;
+    .control button{
       cursor:pointer;
+      color:#ffe08e;
+      background:linear-gradient(180deg,rgba(240,183,47,.18),rgba(240,183,47,.08));
+      border-color:rgba(240,183,47,.35);
     }
 
-    .kpi-grid{
+    .control select:focus,.control button:hover{
+      border-color:rgba(34,211,238,.55);
+      box-shadow:0 0 0 3px rgba(34,211,238,.08);
+    }
+
+    .market-grid{
       display:grid;
-      grid-template-columns:repeat(6,minmax(0,1fr));
+      grid-template-columns:minmax(0,1.65fr) minmax(330px,.75fr);
       gap:14px;
-      margin-bottom:18px;
+      margin-bottom:14px;
     }
 
-    .kpi{
-      min-height:118px;
-      padding:16px 18px;
-      border-radius:18px;
-      background:
-        linear-gradient(180deg, rgba(12,23,38,.96), rgba(11,18,30,.94)),
-        radial-gradient(circle at top right, rgba(34,211,238,.10), transparent 12rem);
-      border:1px solid rgba(88,166,255,.16);
+    .primary-chart{
+      padding:16px;
+      min-height:520px;
       position:relative;
       overflow:hidden;
     }
 
-    .kpi::before{
-      content:"";
-      position:absolute;
-      top:0;
-      left:0;
-      right:0;
-      height:2px;
-      background:linear-gradient(90deg, rgba(59,130,246,.15), rgba(34,211,238,.9), rgba(240,183,47,.7), rgba(236,72,153,.2));
-      opacity:.9;
-    }
-
-    .kpi-label{
-      color:#9cb5d4;
-      font-size:12px;
-      letter-spacing:.5px;
-      text-transform:uppercase;
-      font-weight:700;
-      margin-bottom:10px;
-    }
-
-    .kpi-value{
-      color:#fff;
-      font-size:44px;
-      line-height:1;
-      font-weight:800;
-      margin-bottom:8px;
-    }
-
-    .kpi-note{
-      color:#9cb5d4;
-      font-size:14px;
-    }
-
-    .board{
-      display:grid;
-      grid-template-columns:minmax(0,1.6fr) minmax(320px,.6fr);
-      gap:18px;
-      margin-bottom:18px;
-    }
-
-    .chart-panel{
-      padding:22px;
-      border-radius:24px;
+    .lab-panel{
       position:relative;
       overflow:hidden;
     }
 
-    .chart-panel.large{
-      min-height:560px;
-    }
-
-    .chart-panel.medium{
-      min-height:360px;
-    }
-
-    .chart-panel::before{
+    .lab-panel::before{
       content:"";
       position:absolute;
       inset:0;
       background:
-        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(255,255,255,.02) 1px, transparent 1px);
-      background-size:60px 60px;
+        linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(255,255,255,.018) 1px,transparent 1px);
+      background-size:56px 56px;
       pointer-events:none;
-      opacity:.18;
+      opacity:.7;
     }
 
-    .chart-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:16px;
-      margin-bottom:14px;
+    .panel-head{
       position:relative;
       z-index:2;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
     }
 
-    .chart-title{
-      font-size:22px;
-      font-weight:800;
+    .panel-title{
+      margin:0 0 5px;
       color:#fff;
-      margin:0 0 6px;
+      font-size:20px;
+      font-weight:900;
+      letter-spacing:-.35px;
     }
 
-    .chart-sub{
-      color:#9dc2e9;
-      font-size:14px;
-      line-height:1.55;
+    .panel-sub{
       margin:0;
+      color:#a8c1dd;
+      font-size:13px;
+      line-height:1.45;
     }
 
-    .chart-badge{
+    .legend-pill{
       display:inline-flex;
       align-items:center;
-      gap:10px;
-      color:#d9ebff;
-      font-size:14px;
-      font-weight:700;
-      padding:8px 12px;
-      border-radius:999px;
-      background:rgba(8,21,37,.92);
+      gap:8px;
+      padding:7px 10px;
       border:1px solid rgba(88,166,255,.18);
+      border-radius:999px;
+      background:rgba(5,12,22,.80);
+      color:#dbeafe;
+      font-size:12px;
+      font-weight:800;
       white-space:nowrap;
     }
 
-    .chart-badge-dot{
-      width:10px;
-      height:10px;
+    .pulse-dot{
+      width:9px;
+      height:9px;
       border-radius:50%;
-      background:linear-gradient(180deg,#f7ca57,#f59e0b);
-      box-shadow:0 0 14px rgba(240,183,47,.85);
+      background:var(--lab-gold);
+      box-shadow:0 0 18px rgba(240,183,47,.8);
       animation:pulseDot 1.8s ease-in-out infinite;
     }
 
     @keyframes pulseDot{
       0%,100%{transform:scale(1);opacity:1}
-      50%{transform:scale(1.35);opacity:.75}
+      50%{transform:scale(1.45);opacity:.65}
     }
 
-    .canvas-wrap{
-      height:420px;
-      border-radius:24px;
-      border:1px solid rgba(88,166,255,.15);
-      background:
-        radial-gradient(circle at 0% 0%, rgba(59,130,246,.16), transparent 30rem),
-        radial-gradient(circle at 100% 100%, rgba(240,183,47,.10), transparent 24rem),
-        linear-gradient(180deg, rgba(14,24,40,.96), rgba(10,17,30,.98));
-      padding:14px;
+    .canvas-box{
       position:relative;
+      z-index:2;
+      height:398px;
+      border-radius:18px;
+      border:1px solid rgba(88,166,255,.16);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(47,129,247,.16), transparent 24rem),
+        radial-gradient(circle at 100% 100%, rgba(240,183,47,.10), transparent 22rem),
+        linear-gradient(180deg,rgba(12,23,38,.97),rgba(7,13,22,.98));
       overflow:hidden;
-      z-index:1;
+      padding:12px;
     }
 
-    .canvas-wrap.small{
-      height:250px;
+    .canvas-box.compact{
+      height:220px;
     }
 
-    .canvas-wrap.tall{
-      height:300px;
+    .canvas-box.mid{
+      height:260px;
     }
 
     .chart-canvas{
+      display:block;
       width:100%;
       height:100%;
-      display:block;
     }
 
-    .canvas-overlay-note{
-      position:absolute;
-      top:16px;
-      right:16px;
-      padding:8px 12px;
-      border-radius:999px;
-      background:rgba(8,18,31,.86);
-      border:1px solid rgba(88,166,255,.18);
-      color:#dcecff;
-      font-size:12px;
-      font-weight:700;
+    .status-strip{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:8px;
+      margin-top:12px;
+      position:relative;
       z-index:2;
     }
 
-    .side-stack{
-      display:grid;
-      gap:18px;
+    .stat-tile{
+      border-radius:14px;
+      border:1px solid rgba(88,166,255,.16);
+      background:rgba(8,17,29,.82);
+      padding:11px 12px;
+      min-height:84px;
     }
 
-    .gauge-wrap{
-      display:grid;
-      place-items:center;
-      padding-top:4px;
+    .stat-label{
+      color:#8eb0d8;
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.55px;
+      margin-bottom:7px;
     }
 
-    .gauge-labels{
-      display:flex;
-      justify-content:space-between;
-      gap:8px;
-      margin-top:8px;
-      color:#9db7d8;
-      font-size:13px;
+    .stat-value{
+      color:#fff;
+      font-size:27px;
+      font-weight:900;
+      line-height:1;
+      margin-bottom:6px;
     }
 
-    .insight-list{
+    .stat-note{
+      color:#98b5d4;
+      font-size:11px;
+      line-height:1.35;
+    }
+
+    .right-stack{
       display:grid;
       gap:14px;
-      margin-top:8px;
+    }
+
+    .mini-panel{
+      padding:15px;
+      min-height:180px;
+    }
+
+    .micro-bars{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:52px 1fr 82px;
+      gap:8px;
+      align-items:center;
+      position:relative;
+      z-index:2;
+    }
+
+    .micro-bars span{
+      color:#a8c1dd;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .bar-track{
+      height:7px;
+      border-radius:999px;
+      background:rgba(148,163,184,.16);
+      overflow:hidden;
+    }
+
+    .bar-fill{
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--lab-red),var(--lab-gold),var(--lab-cyan),var(--lab-green));
+      transform-origin:left center;
+      transition:.35s ease;
+    }
+
+    .bar-read{
+      text-align:right;
+      color:#e5f2ff !important;
+    }
+
+    .bias-meter{
+      position:relative;
+      z-index:2;
+      margin-top:12px;
+      min-height:132px;
+      display:grid;
+      place-items:center;
+    }
+
+    .insights{
+      position:relative;
+      z-index:2;
+      display:grid;
+      gap:8px;
+      margin-top:10px;
     }
 
     .insight{
-      border-radius:18px;
-      border:1px solid rgba(88,166,255,.16);
-      background:rgba(10,19,32,.80);
+      border-radius:13px;
+      border:1px solid rgba(88,166,255,.14);
+      background:rgba(6,14,24,.74);
+      padding:10px 11px;
+      color:#dcecff;
+      font-size:12px;
+      line-height:1.48;
+    }
+
+    .insight b{
+      color:#fff;
+    }
+
+    .subgrid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    .sub-panel{
+      padding:16px;
+      min-height:318px;
+    }
+
+    .heat-table-grid{
+      display:grid;
+      grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    .heat-panel,.table-panel{
       padding:16px;
     }
 
-    .insight-tag{
-      display:inline-block;
-      margin-bottom:10px;
-      padding:4px 8px;
-      border-radius:8px;
-      background:rgba(240,183,47,.12);
-      color:#ffd780;
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .insight p{
-      margin:0;
-      color:#dfefff;
-      line-height:1.6;
-      font-size:15px;
-    }
-
-    .duo{
+    .heatmap{
+      position:relative;
+      z-index:2;
       display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:18px;
-      margin-bottom:18px;
-    }
-
-    .heatmap-shell,.table-shell{
-      padding:22px;
-      border-radius:24px;
-      margin-bottom:18px;
-    }
-
-    .heatmap-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(82px,1fr));
-      gap:10px;
-      margin-top:16px;
+      grid-template-columns:repeat(auto-fill,minmax(64px,1fr));
+      gap:8px;
+      margin-top:12px;
+      max-height:360px;
+      overflow:auto;
+      padding-right:4px;
     }
 
     .heat-cell{
-      border-radius:16px;
-      min-height:76px;
-      padding:10px;
-      border:1px solid rgba(255,255,255,.05);
+      min-height:62px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.06);
+      padding:8px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      transition:.18s ease;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+      transition:.16s ease;
     }
 
     .heat-cell:hover{
       transform:translateY(-2px);
-      border-color:rgba(240,183,47,.35);
-      box-shadow:0 12px 26px rgba(0,0,0,.20);
+      border-color:rgba(240,183,47,.32);
+      box-shadow:0 10px 24px rgba(0,0,0,.22);
     }
 
     .heat-date{
-      color:#f3f8ff;
-      font-size:12px;
-      font-weight:700;
+      color:#eaf4ff;
+      font-size:10px;
+      font-weight:900;
     }
 
     .heat-val{
       color:#fff;
-      font-size:22px;
-      font-weight:800;
+      font-size:19px;
+      font-weight:900;
       line-height:1;
     }
 
     .heat-bias{
-      color:rgba(255,255,255,.82);
-      font-size:11px;
-      font-weight:700;
+      color:rgba(255,255,255,.78);
+      font-size:9px;
+      font-weight:900;
       text-transform:uppercase;
-      letter-spacing:.4px;
-    }
-
-    .table-tools{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:14px;
-    }
-
-    .table-note{
-      color:#9ec0e5;
-      font-size:14px;
+      letter-spacing:.35px;
     }
 
     .table-wrap{
+      position:relative;
+      z-index:2;
+      max-height:360px;
       overflow:auto;
+      border-radius:14px;
       border:1px solid rgba(88,166,255,.14);
-      border-radius:18px;
-      background:rgba(10,17,29,.78);
+      background:rgba(5,12,22,.70);
+      margin-top:12px;
     }
 
     table{
       width:100%;
+      min-width:760px;
       border-collapse:collapse;
-      min-width:860px;
     }
 
     th,td{
-      padding:14px 14px;
+      padding:11px 12px;
       border-bottom:1px solid rgba(88,166,255,.10);
       text-align:left;
-      font-size:14px;
+      font-size:12px;
     }
 
     th{
-      color:#cfe4fb;
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.55px;
-      background:rgba(14,24,41,.92);
       position:sticky;
       top:0;
-      z-index:1;
+      z-index:3;
+      color:#cfe4fb;
+      background:rgba(10,20,34,.98);
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      font-size:10px;
+      font-weight:900;
     }
 
     td{
-      color:#edf6ff;
-      background:rgba(8,15,26,.68);
+      color:#ecf6ff;
+      background:rgba(7,14,24,.80);
     }
 
     tr:hover td{
-      background:rgba(15,26,43,.92);
+      background:rgba(13,26,43,.94);
     }
 
     .bias-pill{
       display:inline-flex;
       align-items:center;
-      padding:6px 10px;
+      padding:5px 9px;
       border-radius:999px;
-      font-size:12px;
-      font-weight:700;
-      color:#fff;
+      font-size:11px;
+      font-weight:900;
       border:1px solid rgba(255,255,255,.08);
     }
 
-    .empty-state{
+    .empty{
       display:none;
-      margin-top:16px;
-      padding:18px;
-      border-radius:18px;
+      position:relative;
+      z-index:3;
+      margin-top:10px;
+      padding:12px;
       border:1px dashed rgba(88,166,255,.22);
+      border-radius:14px;
       color:#9ec0e5;
       text-align:center;
-      background:rgba(10,18,31,.55);
-    }
-
-    .lab-banner{
-      margin-bottom:18px;
-      padding:18px 20px;
-      border-radius:999px;
-      border:1px solid rgba(240,183,47,.20);
-      background:linear-gradient(90deg, rgba(240,183,47,.10), rgba(11,23,40,.90), rgba(34,211,238,.06));
-      color:#fff;
-      text-align:center;
-      font-size:15px;
-      font-weight:600;
-    }
-
-    .muted-live{
-      color:#9ec0e5;
+      background:rgba(6,14,24,.64);
+      font-size:13px;
     }
 
     @media(max-width:1280px){
-      .control-strip,.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-      .board,.duo,.lab-hero{grid-template-columns:1fr}
+      .lab-topbar,.market-grid,.heat-table-grid{grid-template-columns:1fr}
+      .lab-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .subgrid{grid-template-columns:1fr}
     }
 
-    @media(max-width:860px){
-      .control-strip,.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .hero-title{font-size:44px}
-      .canvas-wrap{height:340px}
-      .chart-panel.large{min-height:auto}
-    }
-
-    @media(max-width:620px){
-      .control-strip,.kpi-grid{grid-template-columns:1fr}
+    @media(max-width:760px){
       .page{padding:14px}
-      .chart-head{display:block}
-      .chart-badge{margin-top:10px}
-      .canvas-wrap{height:300px}
-      .canvas-wrap.small,.canvas-wrap.tall{height:220px}
+      .lab-controls,.status-strip{grid-template-columns:1fr}
+      .canvas-box{height:330px}
+      .canvas-box.compact,.canvas-box.mid{height:230px}
+      .primary-chart{min-height:auto}
     }
   </style>
 </head>
@@ -640,211 +579,201 @@
   </header>
 
   <main class="page">
-    <div class="lab-banner">⚡ Dashboard Lab — advanced multi-chart test area for historical sentiment analysis. Uses live values from <b>sentiment_history.json</b>.</div>
+    <div class="lab-alert">Dashboard Lab — compact historical sentiment analytics. No oversized hero. Real values only from sentiment_history.json.</div>
 
-    <section class="lab-hero">
-      <div class="panel lab-glass">
-        <div class="hero-tags">
-          <span class="hero-tag">⚡ Market-desk visuals</span>
-          <span class="hero-tag">Daily / Weekly / Monthly</span>
-          <span class="hero-tag">Global + U.S. PSI</span>
+    <section class="lab-topbar">
+      <div class="lab-title-card">
+        <div class="lab-kicker-row">
+          <span class="lab-kicker">⚡ Historical Intelligence</span>
+          <span class="lab-kicker">Multi-chart</span>
         </div>
-        <h1 class="hero-title"><span class="accent">Historical Sentiment</span><br>Command Center</h1>
-        <p class="hero-lead">A multi-chart lab built to feel alive: flowing skyline, trend meter, momentum stream, sentiment spectrum, heatmap, and filtered record table.</p>
-        <p class="muted-live" id="heroStatus">Loading latest sentiment history...</p>
-        <div class="hero-micro">
-          <span class="micro-pill">Sentiment Source stays</span>
-          <span class="micro-pill">Motion + live glow</span>
-          <span class="micro-pill">Real data only</span>
-          <span class="micro-pill">CSV export</span>
+        <h1>Historical Sentiment</h1>
+        <p id="loadStatus">Loading historical sentiment data...</p>
+      </div>
+
+      <div class="lab-controls">
+        <div class="control">
+          <label for="sourceSelect">Sentiment Source</label>
+          <select id="sourceSelect">
+            <option value="global">Global PSI</option>
+            <option value="us">U.S. PSI</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="viewSelect">View</label>
+          <select id="viewSelect">
+            <option value="daily">Daily / intraday</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="rangeSelect">Range</label>
+          <select id="rangeSelect">
+            <option value="1d">Last 1 day</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d" selected>Last 90 days</option>
+            <option value="180d">Last 180 days</option>
+            <option value="365d">Last 365 days</option>
+            <option value="all">All available</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="smoothSelect">Smoothing</label>
+          <select id="smoothSelect">
+            <option value="0">Raw</option>
+            <option value="3" selected>3-record average</option>
+            <option value="5">5-record average</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="biasSelect">Bias Filter</label>
+          <select id="biasSelect">
+            <option value="all">All sentiment</option>
+            <option value="bullish">Bullish only</option>
+            <option value="neutral">Neutral only</option>
+            <option value="bearish">Bearish only</option>
+          </select>
+        </div>
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="exportBtn">Export CSV</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="market-grid">
+      <div class="lab-panel primary-chart">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Sentiment Market Tape</h2>
+            <p class="panel-sub" id="mainSub">Animated flow chart with regime color bands, momentum pulse, and live endpoint.</p>
+          </div>
+          <div class="legend-pill"><span class="pulse-dot"></span><span id="mainBadge">Global PSI • Daily</span></div>
+        </div>
+
+        <div class="canvas-box">
+          <canvas id="mainCanvas" class="chart-canvas"></canvas>
+        </div>
+        <div class="empty" id="mainEmpty">No usable values for this source/filter yet.</div>
+
+        <div class="status-strip">
+          <div class="stat-tile"><div class="stat-label">Current</div><div class="stat-value" id="statCurrent">--</div><div class="stat-note">Latest selected reading</div></div>
+          <div class="stat-tile"><div class="stat-label">Change</div><div class="stat-value" id="statChange">--</div><div class="stat-note" id="statChangeNote">Selected range</div></div>
+          <div class="stat-tile"><div class="stat-label">Average</div><div class="stat-value" id="statAverage">--</div><div class="stat-note">Mean in filtered view</div></div>
+          <div class="stat-tile"><div class="stat-label">Range</div><div class="stat-value" id="statRange">--</div><div class="stat-note">Low / high</div></div>
+          <div class="stat-tile"><div class="stat-label">Volatility</div><div class="stat-value" id="statVol">--</div><div class="stat-note">Avg abs move</div></div>
         </div>
       </div>
 
-      <aside class="panel lab-glass hero-side">
-        <div class="feature-tile">
-          <div class="feature-kicker">Selected Reading</div>
-          <div class="feature-value" id="heroValue">--</div>
-          <div class="feature-note" id="heroValueNote">Waiting for data.</div>
+      <aside class="right-stack">
+        <div class="lab-panel mini-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Bias Dashboard</h2>
+              <p class="panel-sub">Inspired by market technical panels.</p>
+            </div>
+          </div>
+          <div class="micro-bars">
+            <span>Price</span><div class="bar-track"><div class="bar-fill" id="barPrice"></div></div><span class="bar-read" id="barPriceText">--</span>
+            <span>Trend</span><div class="bar-track"><div class="bar-fill" id="barTrend"></div></div><span class="bar-read" id="barTrendText">--</span>
+            <span>Power</span><div class="bar-track"><div class="bar-fill" id="barPower"></div></div><span class="bar-read" id="barPowerText">--</span>
+          </div>
         </div>
-        <div class="feature-tile">
-          <div class="feature-kicker">Dominant Bias</div>
-          <div class="feature-value" id="heroBias">--</div>
-          <div class="feature-note" id="heroBiasNote">Bias from current filtered view.</div>
+
+        <div class="lab-panel mini-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Sentiment Gauge</h2>
+              <p class="panel-sub">Current zone and direction.</p>
+            </div>
+          </div>
+          <div class="bias-meter">
+            <canvas id="gaugeCanvas" width="320" height="150"></canvas>
+          </div>
         </div>
-        <div class="feature-tile">
-          <div class="feature-kicker">Data Depth</div>
-          <div class="feature-value" id="heroDepth">--</div>
-          <div class="feature-note" id="heroDepthNote">Filtered points available.</div>
+
+        <div class="lab-panel mini-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Auto Readout</h2>
+              <p class="panel-sub">Plain-English interpretation.</p>
+            </div>
+          </div>
+          <div class="insights" id="insights"></div>
         </div>
       </aside>
     </section>
 
-    <section class="panel lab-glass control-strip">
-      <div class="control-card">
-        <label for="sourceSelect">Sentiment Source</label>
-        <select id="sourceSelect">
-          <option value="global">Global PSI</option>
-          <option value="us">U.S. PSI</option>
-        </select>
-      </div>
-      <div class="control-card">
-        <label for="viewSelect">View</label>
-        <select id="viewSelect">
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </div>
-      <div class="control-card">
-        <label for="rangeSelect">Range</label>
-        <select id="rangeSelect">
-          <option value="1d">Last 1 day</option>
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="90d" selected>Last 90 days</option>
-          <option value="180d">Last 180 days</option>
-          <option value="365d">Last 365 days</option>
-          <option value="all">All available</option>
-        </select>
-      </div>
-      <div class="control-card">
-        <label for="smoothSelect">Smoothing</label>
-        <select id="smoothSelect">
-          <option value="0">Raw</option>
-          <option value="3" selected>3-record average</option>
-          <option value="5">5-record average</option>
-        </select>
-      </div>
-      <div class="control-card">
-        <label for="biasSelect">Bias Filter</label>
-        <select id="biasSelect">
-          <option value="all">All sentiment</option>
-          <option value="bullish">Bullish only</option>
-          <option value="neutral">Neutral only</option>
-          <option value="bearish">Bearish only</option>
-        </select>
-      </div>
-      <div class="control-card">
-        <label>&nbsp;</label>
-        <button class="export-btn" id="exportBtn">Export CSV</button>
-      </div>
-    </section>
-
-    <section class="kpi-grid" id="kpiGrid">
-      <div class="kpi"><div class="kpi-label">Current</div><div class="kpi-value" id="kpiCurrent">--</div><div class="kpi-note">Latest selected reading</div></div>
-      <div class="kpi"><div class="kpi-label">Change</div><div class="kpi-value" id="kpiChange">--</div><div class="kpi-note" id="kpiChangeNote">Selected window change</div></div>
-      <div class="kpi"><div class="kpi-label">Average</div><div class="kpi-value" id="kpiAverage">--</div><div class="kpi-note">Mean score in filtered view</div></div>
-      <div class="kpi"><div class="kpi-label">Range</div><div class="kpi-value" id="kpiRange">--</div><div class="kpi-note">Low / high reading</div></div>
-      <div class="kpi"><div class="kpi-label">Volatility</div><div class="kpi-value" id="kpiVol">--</div><div class="kpi-note">Average absolute move</div></div>
-      <div class="kpi"><div class="kpi-label">Bull / Bear</div><div class="kpi-value" id="kpiBullBear">--</div><div class="kpi-note">Bias count in filtered view</div></div>
-    </section>
-
-    <section class="board">
-      <div class="panel lab-glass chart-panel large">
-        <div class="chart-head">
+    <section class="subgrid">
+      <div class="lab-panel sub-panel">
+        <div class="panel-head">
           <div>
-            <h2 class="chart-title">Sentiment Skyline Flow</h2>
-            <p class="chart-sub" id="flowSub">Animated historical sentiment flow.</p>
+            <h2 class="panel-title">Momentum Oscillator</h2>
+            <p class="panel-sub">Positive and negative sentiment impulse.</p>
           </div>
-          <div class="chart-badge"><span class="chart-badge-dot"></span><span id="flowBadge">Global PSI • daily</span></div>
         </div>
-        <div class="canvas-wrap">
-          <div class="canvas-overlay-note" id="flowOverlay">Flow mode</div>
-          <canvas id="flowCanvas" class="chart-canvas"></canvas>
-        </div>
-        <div class="empty-state" id="flowEmpty">Not enough data for this source/view yet.</div>
+        <div class="canvas-box compact"><canvas id="momentumCanvas" class="chart-canvas"></canvas></div>
       </div>
 
-      <aside class="side-stack">
-        <div class="panel lab-glass chart-panel">
-          <div class="chart-head">
-            <div>
-              <h2 class="chart-title">Trend Meter</h2>
-              <p class="chart-sub">Instant view of the current sentiment zone.</p>
-            </div>
-          </div>
-          <div class="gauge-wrap">
-            <canvas id="gaugeCanvas" width="320" height="220"></canvas>
-          </div>
-          <div class="gauge-labels">
-            <span>Strong Bearish</span>
-            <span>Neutral</span>
-            <span>Strong Bullish</span>
-          </div>
-        </div>
-
-        <div class="panel lab-glass chart-panel">
-          <div class="chart-head">
-            <div>
-              <h2 class="chart-title">Auto Insights</h2>
-              <p class="chart-sub">Fast plain-English read from the selected slice.</p>
-            </div>
-          </div>
-          <div class="insight-list" id="insightList"></div>
-        </div>
-      </aside>
-    </section>
-
-    <section class="duo">
-      <div class="panel lab-glass chart-panel medium">
-        <div class="chart-head">
+      <div class="lab-panel sub-panel">
+        <div class="panel-head">
           <div>
-            <h2 class="chart-title">Momentum Stream</h2>
-            <p class="chart-sub">Shows directional bursts from one reading to the next.</p>
+            <h2 class="panel-title">Regime Strip</h2>
+            <p class="panel-sub">Green/red/neutral zones across time.</p>
           </div>
         </div>
-        <div class="canvas-wrap small">
-          <canvas id="momentumCanvas" class="chart-canvas"></canvas>
-        </div>
+        <div class="canvas-box compact"><canvas id="regimeCanvas" class="chart-canvas"></canvas></div>
       </div>
 
-      <div class="panel lab-glass chart-panel medium">
-        <div class="chart-head">
+      <div class="lab-panel sub-panel">
+        <div class="panel-head">
           <div>
-            <h2 class="chart-title">Sentiment Spectrum</h2>
-            <p class="chart-sub">Cluster map across bearish, neutral, and bullish zones.</p>
+            <h2 class="panel-title">Distribution Radar</h2>
+            <p class="panel-sub">Where readings cluster.</p>
           </div>
         </div>
-        <div class="canvas-wrap small">
-          <canvas id="spectrumCanvas" class="chart-canvas"></canvas>
-        </div>
+        <div class="canvas-box compact"><canvas id="distCanvas" class="chart-canvas"></canvas></div>
       </div>
     </section>
 
-    <section class="panel lab-glass heatmap-shell">
-      <div class="chart-head">
-        <div>
-          <h2 class="chart-title">Sentiment Heatmap</h2>
-          <p class="chart-sub">Quick visual scan of saved points by date and strength.</p>
+    <section class="heat-table-grid">
+      <div class="lab-panel heat-panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Sentiment Heatmap</h2>
+            <p class="panel-sub">Keep this. Improves as more samples collect.</p>
+          </div>
+          <div class="legend-pill"><span class="pulse-dot"></span>Heatmap</div>
         </div>
-        <div class="chart-badge"><span class="chart-badge-dot"></span>Heatmap stays</div>
+        <div class="heatmap" id="heatmap"></div>
       </div>
-      <div class="heatmap-grid" id="heatmapGrid"></div>
-    </section>
 
-    <section class="panel lab-glass table-shell">
-      <div class="table-tools">
-        <div>
-          <h2 class="chart-title" style="margin-bottom:4px;">Filtered Historical Records</h2>
-          <div class="table-note" id="tableCount">0 rows</div>
+      <div class="lab-panel table-panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Filtered Historical Records</h2>
+            <p class="panel-sub" id="tableCount">0 rows</p>
+          </div>
+          <div class="legend-pill"><span class="pulse-dot"></span><span id="tableBadge">Current filter</span></div>
         </div>
-        <div class="chart-badge"><span class="chart-badge-dot"></span><span id="tableBadge">Current filter</span></div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date / Time</th>
-              <th>Source</th>
-              <th>Value</th>
-              <th>Bias</th>
-              <th>Headline Count</th>
-              <th>Samples</th>
-              <th>View</th>
-            </tr>
-          </thead>
-          <tbody id="recordsBody"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>Source</th>
+                <th>Value</th>
+                <th>Bias</th>
+                <th>Headlines</th>
+                <th>Samples</th>
+                <th>View</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -873,633 +802,504 @@
   </main>
 
   <script>
-    let historyData = {records: [], intraday: []};
-    let filteredPoints = [];
-    let animationToken = 0;
+    let historyData = {records:[], intraday:[]};
+    let points = [];
+    let animId = 0;
 
-    const els = {
-      source: document.getElementById("sourceSelect"),
-      view: document.getElementById("viewSelect"),
-      range: document.getElementById("rangeSelect"),
-      smooth: document.getElementById("smoothSelect"),
-      bias: document.getElementById("biasSelect"),
-      exportBtn: document.getElementById("exportBtn"),
-      flowEmpty: document.getElementById("flowEmpty"),
-      heatmap: document.getElementById("heatmapGrid"),
-      recordsBody: document.getElementById("recordsBody"),
-      tableCount: document.getElementById("tableCount"),
-      tableBadge: document.getElementById("tableBadge"),
-      heroStatus: document.getElementById("heroStatus"),
-      heroValue: document.getElementById("heroValue"),
-      heroValueNote: document.getElementById("heroValueNote"),
-      heroBias: document.getElementById("heroBias"),
-      heroBiasNote: document.getElementById("heroBiasNote"),
-      heroDepth: document.getElementById("heroDepth"),
-      heroDepthNote: document.getElementById("heroDepthNote"),
-      flowSub: document.getElementById("flowSub"),
-      flowBadge: document.getElementById("flowBadge"),
-      flowOverlay: document.getElementById("flowOverlay"),
-      insightList: document.getElementById("insightList")
-    };
+    const $ = id => document.getElementById(id);
+    const sourceSelect = $("sourceSelect");
+    const viewSelect = $("viewSelect");
+    const rangeSelect = $("rangeSelect");
+    const smoothSelect = $("smoothSelect");
+    const biasSelect = $("biasSelect");
 
-    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    function sourceKey(){ return sourceSelect.value === "us" ? "us_psi" : "global_psi"; }
+    function sourceName(){ return sourceSelect.value === "us" ? "U.S. PSI" : "Global PSI"; }
+    function viewName(){ return viewSelect.value === "daily" ? "Daily" : viewSelect.value === "weekly" ? "Weekly" : "Monthly"; }
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
 
-    function valueKey(){
-      return els.source.value === "us" ? "us_psi" : "global_psi";
+    function formatDate(s){
+      const d = new Date(s);
+      if(String(s).includes("T")){
+        return d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+      }
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
     }
 
-    function sourceLabel(){
-      return els.source.value === "us" ? "U.S. PSI" : "Global PSI";
-    }
-
-    function currentViewLabel(){
-      return els.view.value;
-    }
-
-    function formatDate(d){
-      return new Date(d).toLocaleString(undefined, {
-        month:"short", day:"numeric", year:"numeric",
-        hour: d.includes("T") ? "numeric" : undefined,
-        minute: d.includes("T") ? "2-digit" : undefined
-      });
-    }
-
-    function shortDate(d){
-      const dt = new Date(d);
-      return dt.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    function shortDate(s){
+      const d = new Date(s);
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
     }
 
     function biasLabel(v){
-      const n = Number(v);
-      if(!Number.isFinite(n)) return "N/A";
-      if(n >= 70) return "Bullish";
-      if(n >= 56) return "Mixed Bullish";
-      if(n >= 45) return "Neutral";
-      if(n >= 31) return "Mixed Bearish";
+      v = Number(v);
+      if(!Number.isFinite(v)) return "N/A";
+      if(v >= 70) return "Bullish";
+      if(v >= 56) return "Mixed Bullish";
+      if(v >= 45) return "Neutral";
+      if(v >= 31) return "Mixed Bearish";
       return "Bearish";
     }
 
     function biasBucket(v){
-      const label = biasLabel(v).toLowerCase();
-      if(label.includes("bullish")) return "bullish";
-      if(label.includes("bearish")) return "bearish";
+      const b = biasLabel(v).toLowerCase();
+      if(b.includes("bullish")) return "bullish";
+      if(b.includes("bearish")) return "bearish";
       return "neutral";
     }
 
-    function biasColor(v){
-      const n = Number(v);
-      if(!Number.isFinite(n)) return "rgba(88,166,255,.16)";
-      if(n >= 70) return "linear-gradient(180deg, rgba(34,197,94,.26), rgba(18,45,27,.86))";
-      if(n >= 56) return "linear-gradient(180deg, rgba(34,211,238,.26), rgba(14,35,43,.86))";
-      if(n >= 45) return "linear-gradient(180deg, rgba(240,183,47,.24), rgba(46,38,16,.86))";
-      if(n >= 31) return "linear-gradient(180deg, rgba(236,72,153,.22), rgba(54,18,40,.86))";
-      return "linear-gradient(180deg, rgba(239,68,68,.24), rgba(56,18,18,.86))";
+    function colorFor(v, alpha=1){
+      v = Number(v);
+      if(v >= 70) return `rgba(34,197,94,${alpha})`;
+      if(v >= 56) return `rgba(34,211,238,${alpha})`;
+      if(v >= 45) return `rgba(240,183,47,${alpha})`;
+      if(v >= 31) return `rgba(236,72,153,${alpha})`;
+      return `rgba(239,68,68,${alpha})`;
     }
 
-    function pillColor(v){
-      const n = Number(v);
-      if(!Number.isFinite(n)) return "background:rgba(88,166,255,.14);";
-      if(n >= 70) return "background:rgba(34,197,94,.20);color:#aef2c2;border-color:rgba(34,197,94,.30)";
-      if(n >= 56) return "background:rgba(34,211,238,.18);color:#bff5ff;border-color:rgba(34,211,238,.30)";
-      if(n >= 45) return "background:rgba(240,183,47,.16);color:#ffe199;border-color:rgba(240,183,47,.28)";
-      if(n >= 31) return "background:rgba(236,72,153,.18);color:#ffc2dc;border-color:rgba(236,72,153,.28)";
-      return "background:rgba(239,68,68,.18);color:#ffc3c3;border-color:rgba(239,68,68,.28)";
+    function gradientFor(v){
+      v = Number(v);
+      if(v >= 70) return "linear-gradient(180deg,rgba(34,197,94,.32),rgba(16,42,26,.86))";
+      if(v >= 56) return "linear-gradient(180deg,rgba(34,211,238,.28),rgba(11,37,45,.86))";
+      if(v >= 45) return "linear-gradient(180deg,rgba(240,183,47,.28),rgba(45,37,14,.86))";
+      if(v >= 31) return "linear-gradient(180deg,rgba(236,72,153,.26),rgba(48,16,37,.86))";
+      return "linear-gradient(180deg,rgba(239,68,68,.28),rgba(49,15,15,.86))";
     }
 
-    function movingAverage(points, size){
-      if(!size) return points.map(p => ({...p}));
-      return points.map((point, idx) => {
-        const slice = points.slice(Math.max(0, idx - size + 1), idx + 1);
-        const avg = slice.reduce((sum, item) => sum + Number(item.value || 0), 0) / slice.length;
-        return {...point, value: Math.round(avg * 10) / 10};
-      });
+    function weekKey(date){
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const day = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - day);
+      const start = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const week = Math.ceil((((d - start) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(week).padStart(2,"0")}`;
     }
 
-    function parseDailySeries(key){
+    function dailyRows(key){
       const intraday = Array.isArray(historyData.intraday) ? historyData.intraday : [];
-      const validIntraday = intraday
-        .filter(r => Number.isFinite(Number(r[key])) && r.ts)
+      const valid = intraday
+        .filter(r => r.ts && Number.isFinite(Number(r[key])))
         .map(r => ({
-          stamp: r.ts,
-          label: formatDate(r.ts),
-          short: shortDate(r.ts),
-          value: Number(r[key]),
-          headline_count: r.headline_count ?? "",
-          sample_count: 1,
-          date_key: r.ts.slice(0, 10),
-          view: "daily"
+          stamp:r.ts,
+          label:formatDate(r.ts),
+          short:shortDate(r.ts),
+          value:Number(r[key]),
+          headline_count:r.headline_count ?? "",
+          sample_count:1,
+          view:"daily"
         }))
         .sort((a,b) => new Date(a.stamp) - new Date(b.stamp));
 
-      if(validIntraday.length) return validIntraday;
+      if(valid.length) return valid;
 
       return (Array.isArray(historyData.records) ? historyData.records : [])
-        .filter(r => Number.isFinite(Number(r[key])) && r.date)
+        .filter(r => r.date && Number.isFinite(Number(r[key])))
         .map(r => ({
-          stamp: r.date,
-          label: formatDate(r.date),
-          short: shortDate(r.date),
-          value: Number(r[key]),
-          headline_count: r.headline_count ?? "",
-          sample_count: r.sample_count ?? 1,
-          date_key: r.date,
-          view: "daily"
+          stamp:r.date,
+          label:formatDate(r.date),
+          short:shortDate(r.date),
+          value:Number(r[key]),
+          headline_count:r.headline_count ?? "",
+          sample_count:r.sample_count ?? 1,
+          view:"daily"
         }))
         .sort((a,b) => new Date(a.stamp) - new Date(b.stamp));
     }
 
-    function isoWeek(date){
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2,"0")}`;
-    }
-
-    function aggregateSeries(key, mode){
-      const rows = (Array.isArray(historyData.records) ? historyData.records : [])
-        .filter(r => Number.isFinite(Number(r[key])) && r.date)
-        .map(r => ({
-          date: r.date,
-          value: Number(r[key]),
-          headline_count: r.headline_count ?? "",
-          sample_count: r.sample_count ?? 1
-        }))
+    function aggregateRows(key, mode){
+      const records = (Array.isArray(historyData.records) ? historyData.records : [])
+        .filter(r => r.date && Number.isFinite(Number(r[key])))
         .sort((a,b) => a.date.localeCompare(b.date));
 
-      const groups = new Map();
-      rows.forEach(row => {
-        const dt = new Date(row.date + "T00:00:00");
-        const bucket = mode === "weekly" ? isoWeek(dt) : row.date.slice(0,7);
-        if(!groups.has(bucket)) groups.set(bucket, []);
-        groups.get(bucket).push(row);
+      const map = new Map();
+      records.forEach(r => {
+        const d = new Date(r.date + "T00:00:00");
+        const group = mode === "weekly" ? weekKey(d) : r.date.slice(0,7);
+        if(!map.has(group)) map.set(group, []);
+        map.get(group).push(r);
       });
 
-      return [...groups.entries()].map(([bucket, items]) => {
-        const value = items.reduce((sum, item) => sum + item.value, 0) / items.length;
-        const latest = items[items.length - 1];
-        let stamp = latest.date;
-        let label = mode === "weekly" ? bucket.replace("-W"," W") : new Date(latest.date + "T00:00:00").toLocaleDateString(undefined,{month:"short",year:"numeric"});
+      return [...map.entries()].map(([group, rows]) => {
+        const avg = rows.reduce((s,r) => s + Number(r[key]),0) / rows.length;
+        const latest = rows[rows.length - 1];
+        const label = mode === "weekly" ? group.replace("-W"," W") : new Date(latest.date + "T00:00:00").toLocaleDateString(undefined,{month:"short",year:"numeric"});
         return {
-          stamp,
+          stamp:latest.date,
           label,
-          short: label,
-          value: Math.round(value * 10) / 10,
-          headline_count: latest.headline_count,
-          sample_count: items.reduce((sum, item) => sum + Number(item.sample_count || 1), 0),
-          date_key: bucket,
-          view: mode
+          short:label,
+          value:Math.round(avg * 10) / 10,
+          headline_count:latest.headline_count ?? "",
+          sample_count:rows.reduce((s,r) => s + Number(r.sample_count || 1),0),
+          view:mode
         };
       }).sort((a,b) => new Date(a.stamp) - new Date(b.stamp));
     }
 
-    function applyRange(points){
-      const range = els.range.value;
-      if(range === "all") return points;
+    function applyRange(rows){
+      if(rangeSelect.value === "all") return rows;
+      const days = {"1d":1,"7d":7,"30d":30,"90d":90,"180d":180,"365d":365}[rangeSelect.value] || 90;
+      if(!rows.length) return rows;
+      const last = new Date(rows[rows.length - 1].stamp);
+      return rows.filter(r => ((last - new Date(r.stamp)) / 86400000) <= days - .000001);
+    }
 
-      const daysMap = { "1d":1, "7d":7, "30d":30, "90d":90, "180d":180, "365d":365 };
-      const days = daysMap[range] || 90;
-      const last = points[points.length - 1];
-      if(!last) return [];
-      const lastDate = new Date(last.stamp);
-      return points.filter(p => {
-        const diff = (lastDate - new Date(p.stamp)) / 86400000;
-        return diff <= days - 1e-6;
+    function applyBias(rows){
+      if(biasSelect.value === "all") return rows;
+      return rows.filter(r => biasBucket(r.value) === biasSelect.value);
+    }
+
+    function smoothRows(rows){
+      const n = Number(smoothSelect.value || 0);
+      if(!n) return rows;
+      return rows.map((r,i) => {
+        const slice = rows.slice(Math.max(0,i-n+1), i+1);
+        const avg = slice.reduce((s,x)=>s + x.value,0) / slice.length;
+        return {...r, value:Math.round(avg * 10) / 10};
       });
     }
 
-    function applyBias(points){
-      const bias = els.bias.value;
-      if(bias === "all") return points;
-      return points.filter(p => biasBucket(p.value) === bias);
+    function buildPoints(){
+      const key = sourceKey();
+      let rows = viewSelect.value === "daily" ? dailyRows(key) : aggregateRows(key, viewSelect.value);
+      rows = applyRange(rows);
+      rows = applyBias(rows);
+      rows = smoothRows(rows);
+      points = rows;
+      return rows;
     }
 
-    function buildFiltered(){
-      const key = valueKey();
-      const view = els.view.value;
-      let points = view === "daily" ? parseDailySeries(key) : aggregateSeries(key, view);
-      points = applyRange(points);
-      points = applyBias(points);
-      points = movingAverage(points, Number(els.smooth.value || 0));
-      filteredPoints = points.map((p, idx) => ({...p, idx}));
-      return filteredPoints;
-    }
-
-    function summarize(points){
-      if(!points.length) return null;
-      const values = points.map(p => Number(p.value)).filter(Number.isFinite);
-      const current = values[values.length - 1];
-      const first = values[0];
-      const avg = values.reduce((a,b) => a+b, 0) / values.length;
-      const low = Math.min(...values);
-      const high = Math.max(...values);
-      const diffs = values.slice(1).map((v,i) => v - values[i]);
+    function summary(rows){
+      if(!rows.length) return null;
+      const vals = rows.map(r => Number(r.value));
+      const current = vals[vals.length - 1];
+      const first = vals[0];
+      const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+      const low = Math.min(...vals);
+      const high = Math.max(...vals);
+      const diffs = vals.slice(1).map((v,i)=>v - vals[i]);
       const vol = diffs.length ? diffs.reduce((a,b)=>a+Math.abs(b),0) / diffs.length : 0;
-      const bull = values.filter(v => biasBucket(v) === "bullish").length;
-      const bear = values.filter(v => biasBucket(v) === "bearish").length;
-      return {
-        current, first, avg, low, high, change: current - first, vol, bull, bear,
-        count: values.length,
-        latestBias: biasLabel(current)
-      };
+      return {current, first, avg, low, high, change:current-first, vol, count:rows.length};
     }
 
-    function setText(id, value){
-      const el = document.getElementById(id);
-      if(el) el.textContent = value;
-    }
+    function setText(id, text){ $(id).textContent = text; }
 
-    function renderKPIs(points){
-      const summary = summarize(points);
-      if(!summary){
-        ["kpiCurrent","kpiChange","kpiAverage","kpiRange","kpiVol","kpiBullBear","heroValue","heroBias","heroDepth"].forEach(id => setText(id,"--"));
-        els.heroValueNote.textContent = "No matching data in this slice.";
-        els.heroBiasNote.textContent = "Try another source or view.";
-        els.heroDepthNote.textContent = "0 filtered points.";
+    function renderStats(rows){
+      const s = summary(rows);
+      if(!s){
+        ["statCurrent","statChange","statAverage","statRange","statVol"].forEach(id => setText(id,"--"));
+        setText("statChangeNote","No data");
         return;
       }
-
-      setText("kpiCurrent", Math.round(summary.current));
-      setText("kpiChange", (summary.change > 0 ? "+" : "") + Math.round(summary.change));
-      setText("kpiAverage", Math.round(summary.avg));
-      setText("kpiRange", `${Math.round(summary.low)} / ${Math.round(summary.high)}`);
-      setText("kpiVol", Math.round(summary.vol * 10) / 10);
-      setText("kpiBullBear", `${summary.bull} / ${summary.bear}`);
-      document.getElementById("kpiChangeNote").textContent = `${points[0].short} to ${points[points.length - 1].short}`;
-
-      setText("heroValue", Math.round(summary.current));
-      els.heroValueNote.textContent = `${sourceLabel()} • ${points[points.length - 1].label}`;
-      setText("heroBias", summary.latestBias);
-      els.heroBiasNote.textContent = `Latest bias from ${summary.count} filtered point${summary.count === 1 ? "" : "s"}.`;
-      setText("heroDepth", summary.count);
-      els.heroDepthNote.textContent = `${currentViewLabel()} points after filters.`;
+      setText("statCurrent", Math.round(s.current));
+      setText("statChange", (s.change > 0 ? "+" : "") + Math.round(s.change));
+      setText("statAverage", Math.round(s.avg));
+      setText("statRange", `${Math.round(s.low)} / ${Math.round(s.high)}`);
+      setText("statVol", Math.round(s.vol * 10) / 10);
+      setText("statChangeNote", `${rows[0].short} to ${rows[rows.length - 1].short}`);
     }
 
-    function renderInsights(points){
-      const summary = summarize(points);
-      if(!summary){
-        els.insightList.innerHTML = '<div class="insight"><span class="insight-tag">No data</span><p>This source does not have enough values for the current filters.</p></div>';
-        return;
-      }
-
-      const direction = Math.abs(summary.change) < 4 ? "mostly flat" : summary.change > 0 ? "rising" : "falling";
-      const volText = summary.vol < 3 ? "low" : summary.vol < 8 ? "moderate" : "high";
-      const strongest = points.reduce((max, item) => item.value > max.value ? item : max, points[0]);
-      const weakest = points.reduce((min, item) => item.value < min.value ? item : min, points[0]);
-
-      els.insightList.innerHTML = `
-        <div class="insight">
-          <span class="insight-tag">Current read</span>
-          <p>${sourceLabel()} is <b>${Math.round(summary.current)}</b>, currently classified as <b>${summary.latestBias}</b>.</p>
-        </div>
-        <div class="insight">
-          <span class="insight-tag">Trend direction</span>
-          <p>The selected period is <b>${direction}</b>. Net change is <b>${summary.change > 0 ? "+" : ""}${Math.round(summary.change)}</b> from ${points[0].short} to ${points[points.length - 1].short}.</p>
-        </div>
-        <div class="insight">
-          <span class="insight-tag">Best / worst</span>
-          <p>Highest reading: <b>${Math.round(strongest.value)}</b> on ${strongest.label}. Lowest reading: <b>${Math.round(weakest.value)}</b> on ${weakest.label}.</p>
-        </div>
-        <div class="insight">
-          <span class="insight-tag">Volatility</span>
-          <p>Sentiment volatility is <b>${volText}</b> with an average absolute move near <b>${Math.round(summary.vol * 10) / 10}</b>.</p>
-        </div>
-      `;
-    }
-
-    function resizeCanvas(canvas){
+    function resize(canvas){
       const rect = canvas.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.max(320, Math.floor(rect.width * ratio));
-      canvas.height = Math.max(220, Math.floor(rect.height * ratio));
+      canvas.width = Math.max(260, Math.floor(rect.width * ratio));
+      canvas.height = Math.max(180, Math.floor(rect.height * ratio));
       const ctx = canvas.getContext("2d");
       ctx.setTransform(ratio,0,0,ratio,0,0);
-      return {ctx, w: rect.width, h: rect.height};
+      return {ctx,w:rect.width,h:rect.height};
     }
 
-    function drawFlowChart(points, progress){
-      const canvas = document.getElementById("flowCanvas");
-      const {ctx, w, h} = resizeCanvas(canvas);
+    function drawMain(rows, p){
+      const {ctx,w,h} = resize($("mainCanvas"));
       ctx.clearRect(0,0,w,h);
+      const pad = {l:46,r:16,t:18,b:30};
+      const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
 
-      const pad = {l:48, r:20, t:18, b:34};
-      const innerW = w - pad.l - pad.r;
-      const innerH = h - pad.t - pad.b;
-
-      ctx.strokeStyle = "rgba(147,173,202,.18)";
-      ctx.lineWidth = 1;
-      [0,25,50,75,100].forEach(v => {
-        const y = pad.t + innerH - (v/100) * innerH;
-        ctx.beginPath();
-        ctx.moveTo(pad.l, y);
-        ctx.lineTo(w - pad.r, y);
-        ctx.stroke();
-        ctx.fillStyle = "rgba(190,210,232,.76)";
-        ctx.font = "12px Inter, Arial";
-        ctx.fillText(String(v), 8, y + 4);
+      const bands = [
+        {min:70,max:100,c:"rgba(34,197,94,.07)"},
+        {min:56,max:70,c:"rgba(34,211,238,.06)"},
+        {min:45,max:56,c:"rgba(240,183,47,.055)"},
+        {min:31,max:45,c:"rgba(236,72,153,.05)"},
+        {min:0,max:31,c:"rgba(239,68,68,.055)"}
+      ];
+      bands.forEach(b=>{
+        const y1 = pad.t + ih - (b.max/100)*ih;
+        const y2 = pad.t + ih - (b.min/100)*ih;
+        ctx.fillStyle = b.c;
+        ctx.fillRect(pad.l,y1,iw,y2-y1);
       });
 
-      if(points.length < 1) return;
+      ctx.strokeStyle = "rgba(160,183,210,.18)";
+      ctx.lineWidth = 1;
+      ctx.font = "11px Inter, Arial";
+      ctx.fillStyle = "rgba(202,219,238,.72)";
+      [0,25,50,75,100].forEach(v=>{
+        const y = pad.t + ih - (v/100)*ih;
+        ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+        ctx.fillText(v,8,y+4);
+      });
 
-      const xAt = i => points.length === 1 ? pad.l + innerW / 2 : pad.l + (i / (points.length - 1)) * innerW;
-      const yAt = v => pad.t + innerH - (clamp(v,0,100) / 100) * innerH;
+      if(!rows.length) return;
 
-      const shown = Math.max(1, Math.round(progress * points.length));
-      const shownPoints = points.slice(0, shown);
+      const shown = rows.slice(0, Math.max(1, Math.round(rows.length * p)));
+      const x = i => rows.length === 1 ? pad.l + iw/2 : pad.l + (i/(rows.length-1))*iw;
+      const y = v => pad.t + ih - (clamp(v,0,100)/100)*ih;
 
       const area = new Path2D();
-      area.moveTo(xAt(0), pad.t + innerH);
-      shownPoints.forEach((p, i) => area.lineTo(xAt(i), yAt(p.value)));
-      area.lineTo(xAt(shownPoints.length - 1), pad.t + innerH);
+      area.moveTo(x(0), pad.t + ih);
+      shown.forEach((r,i)=>area.lineTo(x(i),y(r.value)));
+      area.lineTo(x(shown.length-1), pad.t + ih);
       area.closePath();
-
-      const areaFill = ctx.createLinearGradient(0, pad.t, 0, h);
-      areaFill.addColorStop(0, "rgba(59,130,246,.26)");
-      areaFill.addColorStop(.5, "rgba(34,211,238,.14)");
-      areaFill.addColorStop(1, "rgba(240,183,47,.12)");
-      ctx.fillStyle = areaFill;
+      const fill = ctx.createLinearGradient(0,pad.t,0,h);
+      fill.addColorStop(0,"rgba(34,211,238,.20)");
+      fill.addColorStop(.5,"rgba(47,129,247,.12)");
+      fill.addColorStop(1,"rgba(240,183,47,.12)");
+      ctx.fillStyle = fill;
       ctx.fill(area);
 
-      const lineGrad = ctx.createLinearGradient(pad.l, 0, w - pad.r, 0);
-      lineGrad.addColorStop(0, "rgba(96,165,250,1)");
-      lineGrad.addColorStop(.5, "rgba(34,211,238,1)");
-      lineGrad.addColorStop(1, "rgba(240,183,47,1)");
-
-      ctx.strokeStyle = lineGrad;
-      ctx.lineWidth = 3.2;
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = "rgba(34,211,238,.35)";
+      const grad = ctx.createLinearGradient(pad.l,0,w-pad.r,0);
+      grad.addColorStop(0,"#2f81f7");
+      grad.addColorStop(.45,"#22d3ee");
+      grad.addColorStop(1,"#f0b72f");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "rgba(34,211,238,.36)";
+      ctx.shadowBlur = 16;
       ctx.beginPath();
-      shownPoints.forEach((p, i) => {
-        const x = xAt(i);
-        const y = yAt(p.value);
-        if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      });
+      shown.forEach((r,i)=>{ if(i===0) ctx.moveTo(x(i),y(r.value)); else ctx.lineTo(x(i),y(r.value)); });
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      shownPoints.forEach((p, i) => {
-        const x = xAt(i);
-        const y = yAt(p.value);
-        ctx.fillStyle = i === shownPoints.length - 1 ? "rgba(240,183,47,1)" : "rgba(147,197,253,.95)";
-        ctx.beginPath();
-        ctx.arc(x, y, i === shownPoints.length - 1 ? 5.2 : 3.2, 0, Math.PI * 2);
-        ctx.fill();
-        if(i === shownPoints.length - 1){
-          ctx.strokeStyle = "rgba(240,183,47,.26)";
-          ctx.lineWidth = 10;
-          ctx.beginPath();
-          ctx.arc(x, y, 12, 0, Math.PI * 2);
-          ctx.stroke();
+      shown.forEach((r,i)=>{
+        const xx = x(i), yy = y(r.value);
+        ctx.fillStyle = i === shown.length-1 ? "#f0b72f" : colorFor(r.value,.95);
+        ctx.beginPath(); ctx.arc(xx,yy,i === shown.length-1 ? 4.8 : 2.7,0,Math.PI*2); ctx.fill();
+        if(i === shown.length-1){
+          ctx.strokeStyle = "rgba(240,183,47,.22)";
+          ctx.lineWidth = 11;
+          ctx.beginPath(); ctx.arc(xx,yy,12,0,Math.PI*2); ctx.stroke();
         }
       });
 
-      const labelCount = Math.min(shownPoints.length, 6);
-      ctx.fillStyle = "rgba(220,236,255,.86)";
-      ctx.font = "12px Inter, Arial";
+      const labelCount = Math.min(shown.length, 6);
+      ctx.fillStyle = "rgba(220,236,255,.82)";
+      ctx.font = "11px Inter, Arial";
       for(let i=0;i<labelCount;i++){
-        const idx = labelCount === 1 ? 0 : Math.round(i * (shownPoints.length - 1) / (labelCount - 1));
-        const p = shownPoints[idx];
-        const x = xAt(idx);
-        ctx.textAlign = i === 0 ? "left" : i === labelCount - 1 ? "right" : "center";
-        ctx.fillText(p.short, x, h - 10);
+        const idx = labelCount === 1 ? 0 : Math.round(i*(shown.length-1)/(labelCount-1));
+        ctx.textAlign = i===0 ? "left" : i===labelCount-1 ? "right" : "center";
+        ctx.fillText(shown[idx].short, x(idx), h-9);
       }
       ctx.textAlign = "left";
     }
 
-    function drawMomentum(points, progress){
-      const canvas = document.getElementById("momentumCanvas");
-      const {ctx, w, h} = resizeCanvas(canvas);
+    function drawMomentum(rows, p){
+      const {ctx,w,h} = resize($("momentumCanvas"));
       ctx.clearRect(0,0,w,h);
+      const pad = {l:34,r:12,t:14,b:24};
+      const iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+      const zero = pad.t + ih/2;
 
-      const changes = points.slice(1).map((p, i) => ({
-        label: p.short,
-        value: p.value - points[i].value
-      }));
+      ctx.strokeStyle = "rgba(160,183,210,.20)";
+      ctx.beginPath(); ctx.moveTo(pad.l,zero); ctx.lineTo(w-pad.r,zero); ctx.stroke();
 
-      const pad = {l:44, r:14, t:16, b:26};
-      const innerW = w - pad.l - pad.r;
-      const innerH = h - pad.t - pad.b;
-      const maxAbs = Math.max(4, ...changes.map(c => Math.abs(c.value)), 4);
+      const diffs = rows.slice(1).map((r,i)=>({stamp:r.stamp,short:r.short,value:r.value-rows[i].value}));
+      const maxAbs = Math.max(3,...diffs.map(d=>Math.abs(d.value)),3);
+      const shown = diffs.slice(0, Math.max(1,Math.round(diffs.length*p)));
+      const bw = Math.min(42, iw / Math.max(diffs.length,1) * .62);
 
-      const zeroY = pad.t + innerH / 2;
-      ctx.strokeStyle = "rgba(147,173,202,.22)";
-      ctx.beginPath();
-      ctx.moveTo(pad.l, zeroY);
-      ctx.lineTo(w - pad.r, zeroY);
-      ctx.stroke();
+      shown.forEach((d,i)=>{
+        const x = pad.l + (i+.5)*(iw/Math.max(diffs.length,1));
+        const bh = (Math.abs(d.value)/maxAbs)*(ih/2-8);
+        const y = d.value >= 0 ? zero-bh : zero;
+        ctx.fillStyle = d.value >= 0 ? "rgba(34,197,94,.85)" : "rgba(239,68,68,.85)";
+        ctx.shadowColor = d.value >= 0 ? "rgba(34,197,94,.30)" : "rgba(239,68,68,.30)";
+        ctx.shadowBlur = 10;
+        ctx.fillRect(x-bw/2,y,bw,Math.max(bh,2));
+        ctx.shadowBlur = 0;
+      });
+    }
 
+    function drawRegime(rows, p){
+      const {ctx,w,h} = resize($("regimeCanvas"));
+      ctx.clearRect(0,0,w,h);
+      if(!rows.length) return;
+      const pad = {l:16,r:16,t:18,b:28};
+      const iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+      const shown = rows.slice(0, Math.max(1,Math.round(rows.length*p)));
+      const cellW = iw / Math.max(rows.length,1);
+
+      shown.forEach((r,i)=>{
+        ctx.fillStyle = colorFor(r.value,.82);
+        ctx.fillRect(pad.l+i*cellW,pad.t,Math.max(cellW-1,2),ih);
+      });
+
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.strokeRect(pad.l,pad.t,iw,ih);
       ctx.fillStyle = "rgba(220,236,255,.78)";
-      ctx.font = "12px Inter, Arial";
-      ctx.fillText("+" + maxAbs, 6, pad.t + 10);
-      ctx.fillText("0", 18, zeroY + 4);
-      ctx.fillText("-" + maxAbs, 6, pad.t + innerH);
-
-      const count = Math.max(changes.length, 1);
-      const barW = Math.min(54, innerW / count * .68);
-      const shown = Math.max(1, Math.round(progress * changes.length));
-      changes.slice(0, shown).forEach((c, i) => {
-        const x = pad.l + (i + .5) * (innerW / count);
-        const barH = (Math.abs(c.value) / maxAbs) * (innerH / 2 - 10);
-        const y = c.value >= 0 ? zeroY - barH : zeroY;
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-        if(c.value >= 0){
-          grad.addColorStop(0, "rgba(34,197,94,.95)");
-          grad.addColorStop(1, "rgba(34,197,94,.35)");
-        }else{
-          grad.addColorStop(0, "rgba(239,68,68,.95)");
-          grad.addColorStop(1, "rgba(236,72,153,.35)");
-        }
-        ctx.fillStyle = grad;
-        ctx.fillRect(x - barW / 2, y, barW, Math.max(barH, 2));
-
-        if(i < 5 || i === shown - 1){
-          ctx.fillStyle = "rgba(220,236,255,.76)";
-          ctx.textAlign = "center";
-          ctx.fillText(c.label, x, h - 8);
-        }
-      });
+      ctx.font = "11px Inter, Arial";
+      ctx.fillText("Bearish", pad.l, h-8);
+      ctx.textAlign = "center"; ctx.fillText("Neutral", w/2, h-8);
+      ctx.textAlign = "right"; ctx.fillText("Bullish", w-pad.r, h-8);
       ctx.textAlign = "left";
     }
 
-    function drawSpectrum(points, progress){
-      const canvas = document.getElementById("spectrumCanvas");
-      const {ctx, w, h} = resizeCanvas(canvas);
+    function drawDist(rows, p){
+      const {ctx,w,h} = resize($("distCanvas"));
       ctx.clearRect(0,0,w,h);
-
       const bins = [
-        {label:"0-30", min:0, max:30, color:"#ef4444"},
-        {label:"31-44", min:31, max:44, color:"#ec4899"},
-        {label:"45-55", min:45, max:55, color:"#f0b72f"},
-        {label:"56-69", min:56, max:69, color:"#22d3ee"},
-        {label:"70-100", min:70, max:100, color:"#22c55e"}
+        {label:"Bear",min:0,max:30,c:"#ef4444"},
+        {label:"M Bear",min:31,max:44,c:"#ec4899"},
+        {label:"Neutral",min:45,max:55,c:"#f0b72f"},
+        {label:"M Bull",min:56,max:69,c:"#22d3ee"},
+        {label:"Bull",min:70,max:100,c:"#22c55e"}
       ];
+      bins.forEach(b=>b.count=rows.filter(r=>r.value>=b.min&&r.value<=b.max).length);
+      const max = Math.max(1,...bins.map(b=>b.count));
+      const pad = {l:18,r:18,t:16,b:28};
+      const iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+      const cw = iw / bins.length;
 
-      bins.forEach(bin => bin.count = points.filter(p => p.value >= bin.min && p.value <= bin.max).length);
-      const maxCount = Math.max(1, ...bins.map(b => b.count));
-
-      const pad = {l:20,r:20,t:18,b:30};
-      const innerW = w - pad.l - pad.r;
-      const innerH = h - pad.t - pad.b;
-      const colW = innerW / bins.length;
-
-      bins.forEach((bin, i) => {
-        const x = pad.l + i * colW + colW * .18;
-        const width = colW * .64;
-        const height = (bin.count / maxCount) * (innerH - 16) * progress;
-        const y = pad.t + innerH - height;
-
-        const grad = ctx.createLinearGradient(0, y, 0, y + height);
-        grad.addColorStop(0, bin.color + "ff".slice(0,0));
-        grad.addColorStop(0, bin.color);
-        grad.addColorStop(1, "rgba(15,24,39,.20)");
-
-        ctx.fillStyle = bin.color + "CC";
-        ctx.fillRect(x, y, width, height);
-        ctx.strokeStyle = "rgba(255,255,255,.06)";
-        ctx.strokeRect(x, y, width, height);
-
-        ctx.fillStyle = "rgba(232,241,255,.90)";
-        ctx.font = "bold 12px Inter, Arial";
+      bins.forEach((b,i)=>{
+        const bh = (b.count/max)*(ih-10)*p;
+        const x = pad.l+i*cw+cw*.18;
+        const y = pad.t+ih-bh;
+        ctx.fillStyle = b.c;
+        ctx.shadowColor = b.c;
+        ctx.shadowBlur = 10;
+        ctx.fillRect(x,y,cw*.64,bh);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(235,245,255,.88)";
+        ctx.font = "bold 11px Inter, Arial";
         ctx.textAlign = "center";
-        ctx.fillText(String(bin.count), x + width / 2, y - 6);
-        ctx.fillStyle = "rgba(184,207,232,.82)";
-        ctx.fillText(bin.label, x + width / 2, h - 8);
+        ctx.fillText(b.count, x+cw*.32, y-5);
+        ctx.fillStyle = "rgba(200,220,240,.78)";
+        ctx.fillText(b.label, x+cw*.32, h-8);
       });
       ctx.textAlign = "left";
     }
 
-    function drawGauge(points, progress){
-      const canvas = document.getElementById("gaugeCanvas");
+    function drawGauge(rows, p){
+      const canvas = $("gaugeCanvas");
       const ctx = canvas.getContext("2d");
-      const w = canvas.width;
-      const h = canvas.height;
+      const w = canvas.width, h = canvas.height;
       ctx.clearRect(0,0,w,h);
-
-      const summary = summarize(points);
-      const value = summary ? summary.current : 50;
-      const cx = w / 2;
-      const cy = 180;
-      const radius = 86;
-      const start = Math.PI;
-      const end = 2 * Math.PI;
-
-      ctx.lineWidth = 14;
-      const segments = [
-        {from: 0, to: .2, color:"#ef4444"},
-        {from: .2, to: .4, color:"#ec4899"},
-        {from: .4, to: .6, color:"#f0b72f"},
-        {from: .6, to: .8, color:"#22d3ee"},
-        {from: .8, to: 1, color:"#22c55e"}
+      const s = summary(rows);
+      const val = s ? s.current : 50;
+      const cx = w/2, cy = 128, r = 78;
+      const start = Math.PI, end = Math.PI*2;
+      const segs = [
+        [0,.2,"#ef4444"], [.2,.4,"#ec4899"], [.4,.6,"#f0b72f"], [.6,.8,"#22d3ee"], [.8,1,"#22c55e"]
       ];
-      segments.forEach(seg => {
-        ctx.strokeStyle = seg.color;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, start + (end - start) * seg.from, start + (end - start) * seg.to);
-        ctx.stroke();
+      ctx.lineWidth = 12;
+      segs.forEach(([a,b,c])=>{
+        ctx.strokeStyle = c;
+        ctx.beginPath(); ctx.arc(cx,cy,r,start+(end-start)*a,start+(end-start)*b); ctx.stroke();
       });
-
-      ctx.strokeStyle = "rgba(255,255,255,.12)";
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius - 22, start, end);
-      ctx.stroke();
-
-      const angle = start + (end - start) * (clamp(value,0,100) / 100) * progress;
-      const px = cx + Math.cos(angle) * (radius - 10);
-      const py = cy + Math.sin(angle) * (radius - 10);
-
-      ctx.strokeStyle = "rgba(231,240,255,.92)";
+      const angle = start + (end-start)*(clamp(val,0,100)/100)*p;
+      ctx.strokeStyle = "rgba(238,246,255,.95)";
       ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(px, py);
-      ctx.stroke();
-
-      ctx.fillStyle = "rgba(240,183,47,1)";
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, Math.PI*2);
-      ctx.fill();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "800 34px Inter, Arial";
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(angle)*(r-8), cy+Math.sin(angle)*(r-8)); ctx.stroke();
+      ctx.fillStyle = "#f0b72f";
+      ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill();
       ctx.textAlign = "center";
-      ctx.fillText(String(Math.round(value)), cx, 76);
-      ctx.font = "700 15px Inter, Arial";
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 30px Inter, Arial";
+      ctx.fillText(Math.round(val),cx,55);
       ctx.fillStyle = "#dbeafe";
-      ctx.fillText(biasLabel(value), cx, 100);
+      ctx.font = "800 13px Inter, Arial";
+      ctx.fillText(biasLabel(val),cx,76);
       ctx.textAlign = "left";
     }
 
-    function renderHeatmap(points){
-      if(!points.length){
-        els.heatmap.innerHTML = '<div class="muted">No heatmap values for this filter.</div>';
-        return;
-      }
-      els.heatmap.innerHTML = points.map(p => `
-        <div class="heat-cell" style="background:${biasColor(p.value)}">
-          <div class="heat-date">${p.short}</div>
-          <div class="heat-val">${Math.round(p.value)}</div>
-          <div class="heat-bias">${biasLabel(p.value)}</div>
-        </div>
-      `).join("");
-    }
-
-    function renderTable(points){
-      els.tableCount.textContent = `${points.length} row${points.length === 1 ? "" : "s"}`;
-      els.tableBadge.textContent = `${sourceLabel()} • ${currentViewLabel()}`;
-      els.recordsBody.innerHTML = points.map(p => `
-        <tr>
-          <td>${p.label}</td>
-          <td>${sourceLabel()}</td>
-          <td>${Math.round(p.value)}</td>
-          <td><span class="bias-pill" style="${pillColor(p.value)}">${biasLabel(p.value)}</span></td>
-          <td>${p.headline_count ?? ""}</td>
-          <td>${p.sample_count ?? ""}</td>
-          <td>${p.view}</td>
-        </tr>
-      `).join("");
-    }
-
-    function animateCharts(points){
-      animationToken += 1;
-      const token = animationToken;
+    function animate(rows){
+      animId += 1;
+      const token = animId;
       const start = performance.now();
-      const duration = 800;
-
+      const dur = 720;
       function frame(now){
-        if(token !== animationToken) return;
-        const progress = clamp((now - start) / duration, 0, 1);
-        drawFlowChart(points, progress);
-        drawMomentum(points, progress);
-        drawSpectrum(points, progress);
-        drawGauge(points, progress);
-        if(progress < 1) requestAnimationFrame(frame);
+        if(token !== animId) return;
+        const p = clamp((now-start)/dur,0,1);
+        drawMain(rows,p); drawMomentum(rows,p); drawRegime(rows,p); drawDist(rows,p); drawGauge(rows,p);
+        if(p < 1) requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
     }
 
+    function renderBars(rows){
+      const s = summary(rows);
+      const current = s ? s.current : 0;
+      const trend = s ? clamp(50 + s.change * 4,0,100) : 0;
+      const power = s ? clamp(100 - s.vol * 7,0,100) : 0;
+
+      $("barPrice").style.transform = `scaleX(${current/100})`;
+      $("barTrend").style.transform = `scaleX(${trend/100})`;
+      $("barPower").style.transform = `scaleX(${power/100})`;
+      $("barPriceText").textContent = s ? `${Math.round(current)} ${biasLabel(current)}` : "--";
+      $("barTrendText").textContent = s ? `${Math.round(s.change) >= 0 ? "+" : ""}${Math.round(s.change)}` : "--";
+      $("barPowerText").textContent = s ? `${Math.round(power)}%` : "--";
+    }
+
+    function renderInsights(rows){
+      const s = summary(rows);
+      if(!s){
+        $("insights").innerHTML = '<div class="insight">No values for this selected source/filter.</div>';
+        return;
+      }
+      const trend = Math.abs(s.change) < 3 ? "mostly flat" : s.change > 0 ? "rising" : "falling";
+      const best = rows.reduce((a,b)=>b.value>a.value?b:a, rows[0]);
+      const worst = rows.reduce((a,b)=>b.value<a.value?b:a, rows[0]);
+      $("insights").innerHTML = `
+        <div class="insight"><b>${sourceName()}</b> is <b>${Math.round(s.current)}</b> and currently <b>${biasLabel(s.current)}</b>.</div>
+        <div class="insight">The selected slice is <b>${trend}</b>. Net change: <b>${s.change>0?"+":""}${Math.round(s.change)}</b>.</div>
+        <div class="insight">High: <b>${Math.round(best.value)}</b> on ${best.label}. Low: <b>${Math.round(worst.value)}</b> on ${worst.label}.</div>
+      `;
+    }
+
+    function renderHeat(rows){
+      $("heatmap").innerHTML = rows.length ? rows.map(r => `
+        <div class="heat-cell" style="background:${gradientFor(r.value)}">
+          <div class="heat-date">${r.short}</div>
+          <div class="heat-val">${Math.round(r.value)}</div>
+          <div class="heat-bias">${biasLabel(r.value)}</div>
+        </div>
+      `).join("") : '<div class="insight">No heatmap values for this filter.</div>';
+    }
+
+    function pillStyle(v){
+      if(v >= 70) return "background:rgba(34,197,94,.20);color:#b8ffd0;border-color:rgba(34,197,94,.30)";
+      if(v >= 56) return "background:rgba(34,211,238,.18);color:#bff8ff;border-color:rgba(34,211,238,.30)";
+      if(v >= 45) return "background:rgba(240,183,47,.18);color:#ffe6a6;border-color:rgba(240,183,47,.30)";
+      if(v >= 31) return "background:rgba(236,72,153,.18);color:#ffc6df;border-color:rgba(236,72,153,.30)";
+      return "background:rgba(239,68,68,.18);color:#ffc7c7;border-color:rgba(239,68,68,.30)";
+    }
+
+    function renderTable(rows){
+      $("tableCount").textContent = `${rows.length} row${rows.length === 1 ? "" : "s"}`;
+      $("tableBadge").textContent = `${sourceName()} • ${viewName()}`;
+      $("recordsBody").innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.label}</td>
+          <td>${sourceName()}</td>
+          <td>${Math.round(r.value)}</td>
+          <td><span class="bias-pill" style="${pillStyle(r.value)}">${biasLabel(r.value)}</span></td>
+          <td>${r.headline_count}</td>
+          <td>${r.sample_count}</td>
+          <td>${r.view}</td>
+        </tr>
+      `).join("");
+    }
+
     function exportCSV(){
-      if(!filteredPoints.length) return;
+      if(!points.length) return;
       const rows = [
         ["datetime","source","value","bias","headline_count","sample_count","view"],
-        ...filteredPoints.map(p => [
-          p.label,
-          sourceLabel(),
-          Math.round(p.value),
-          biasLabel(p.value),
-          p.headline_count ?? "",
-          p.sample_count ?? "",
-          p.view
-        ])
+        ...points.map(r => [r.label,sourceName(),Math.round(r.value),biasLabel(r.value),r.headline_count,r.sample_count,r.view])
       ];
-      const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"','""')}"`).join(",")).join("\n");
+      const csv = rows.map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `historical_sentiment_${els.source.value}_${els.view.value}.csv`;
+      a.download = `historical_sentiment_${sourceSelect.value}_${viewSelect.value}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1507,50 +1307,43 @@
     }
 
     function render(){
-      const points = buildFiltered();
-      const summary = summarize(points);
-
-      els.flowSub.textContent = points.length
-        ? `Animated ${currentViewLabel()} ${sourceLabel()} flow with ${Number(els.smooth.value) ? `${els.smooth.value}-record` : "raw"} smoothing.`
-        : `No ${sourceLabel()} values match the current filter.`;
-      els.flowBadge.textContent = `${sourceLabel()} • ${currentViewLabel()}`;
-      els.flowOverlay.textContent = `${els.range.options[els.range.selectedIndex].text} • ${els.bias.options[els.bias.selectedIndex].text}`;
-      els.flowEmpty.style.display = points.length ? "none" : "block";
+      const rows = buildPoints();
+      $("mainBadge").textContent = `${sourceName()} • ${viewName()}`;
+      $("mainSub").textContent = `${sourceName()} ${viewName().toLowerCase()} tape with ${smoothSelect.value === "0" ? "raw" : smoothSelect.value + "-record average"} smoothing.`;
+      $("mainEmpty").style.display = rows.length ? "none" : "block";
 
       if(historyData.updated){
-        const updatedText = new Date(historyData.updated).toLocaleString();
-        els.heroStatus.textContent = `Last sentiment history update: ${updatedText} • Daily view prefers intraday points when available.`;
+        $("loadStatus").textContent = `Last update: ${new Date(historyData.updated).toLocaleString()}. Daily view uses intraday samples when available.`;
       }
 
-      if(els.source.value === "us" && !points.length){
-        els.heroStatus.textContent = "U.S. PSI is not fully populated yet in the live history file. Once saved, these charts will light up automatically.";
+      if(sourceSelect.value === "us" && !rows.length){
+        $("loadStatus").textContent = "U.S. PSI has no saved numeric history yet. When the updater saves us_psi values, this source will populate automatically.";
       }
 
-      renderKPIs(points);
-      renderInsights(points);
-      renderHeatmap(points);
-      renderTable(points);
-      animateCharts(points);
+      renderStats(rows);
+      renderBars(rows);
+      renderInsights(rows);
+      renderHeat(rows);
+      renderTable(rows);
+      animate(rows);
     }
 
-    async function loadHistory(){
+    async function load(){
       try{
         const res = await fetch("sentiment_history.json?v=" + Date.now(), {cache:"no-store"});
         historyData = await res.json();
-      }catch(err){
-        console.warn("Could not load sentiment history", err);
-        historyData = {records: [], intraday: []};
+      }catch(e){
+        console.warn(e);
+        historyData = {records:[],intraday:[]};
+        $("loadStatus").textContent = "Could not load sentiment_history.json.";
       }
       render();
     }
 
-    [els.source, els.view, els.range, els.smooth, els.bias].forEach(el => {
-      el.addEventListener("change", render);
-    });
-    els.exportBtn.addEventListener("click", exportCSV);
+    [sourceSelect,viewSelect,rangeSelect,smoothSelect,biasSelect].forEach(el => el.addEventListener("change", render));
+    $("exportBtn").addEventListener("click", exportCSV);
     window.addEventListener("resize", render);
-
-    loadHistory();
+    load();
   </script>
   <script src="vote-widget.js" defer></script>
 </body>
