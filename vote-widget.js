@@ -120,7 +120,13 @@ function psdClass(value){
 function psdAddHomeLabel(){
   const brand = document.querySelector(".brand");
   const logo = document.querySelector(".brand .logo");
-  if(!brand || !logo || document.querySelector(".psd-logo-home-wrap")) return;
+
+  if(!brand || !logo) return;
+  if(document.querySelector(".brand-logo-block") || document.querySelector(".psd-logo-home-wrap")) return;
+
+  // Only wrap the logo when it is a direct child of the brand link.
+  // Some pages already have the logo inside a Home wrapper, and insertBefore would fail there.
+  if(logo.parentElement !== brand) return;
 
   const style = document.createElement("style");
   style.textContent = `
@@ -337,11 +343,11 @@ function psdCreateShareButtons(){
     </div>
   `;
 
-  const firstPanel = main.querySelector(".panel.hero") || main.querySelector(".panel");
-  if(firstPanel && firstPanel.nextSibling){
-    main.insertBefore(box, firstPanel.nextSibling);
+  const firstDirectPanel = main.querySelector(":scope > .panel.hero") || main.querySelector(":scope > .panel");
+  if(firstDirectPanel){
+    firstDirectPanel.insertAdjacentElement("afterend", box);
   }else{
-    main.insertBefore(box, main.firstChild);
+    main.prepend(box);
   }
 
   const copyBtn = document.getElementById("psdCopyLinkBtn");
