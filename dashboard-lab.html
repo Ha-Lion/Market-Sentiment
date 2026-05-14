@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Dashboard Lab — Public Sentiment Dash</title>
-  <!-- DASHBOARD LAB V3 SELECTED-MARKET SENTIMENT BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4 TECHNICAL-DIRECTION MOTION BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -207,17 +207,33 @@
     }
 
 
-    .sentiment-card{animation:labCardBreath 9s ease-in-out infinite}
-    .sentiment-card:nth-child(2){animation-delay:.8s}.sentiment-card:nth-child(3){animation-delay:1.6s}.sentiment-card:nth-child(4){animation-delay:2.4s}.sentiment-card:nth-child(5){animation-delay:3.2s}
-    @keyframes labCardBreath{0%,100%{box-shadow:0 18px 42px rgba(0,0,0,.24)}50%{box-shadow:0 18px 52px rgba(210,153,34,.11)}}
-    .mini-gauge{animation:gaugeGlow 8s ease-in-out infinite}
-    @keyframes gaugeGlow{0%,100%{filter:saturate(1)}50%{filter:saturate(1.18) brightness(1.05)}}
-    .spark-path{stroke-dasharray:260;stroke-dashoffset:260;animation:sparkDraw 4.5s ease-out forwards, sparkPulse 10s ease-in-out infinite 4.5s}
+    .sentiment-card{
+      animation:labCardFloat 7.5s ease-in-out infinite;
+      will-change:transform,box-shadow,filter;
+    }
+    .sentiment-card:nth-child(2){animation-delay:.65s}.sentiment-card:nth-child(3){animation-delay:1.3s}.sentiment-card:nth-child(4){animation-delay:1.95s}.sentiment-card:nth-child(5){animation-delay:2.6s}
+    @keyframes labCardFloat{
+      0%,100%{transform:translateY(0) scale(1);box-shadow:0 18px 42px rgba(0,0,0,.24);filter:brightness(1)}
+      50%{transform:translateY(-5px) scale(1.012);box-shadow:0 24px 60px rgba(210,153,34,.16);filter:brightness(1.045)}
+    }
+    .sentiment-card:after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(115deg,transparent 0%,transparent 38%,rgba(255,255,255,.08) 48%,transparent 58%,transparent 100%);
+      transform:translateX(-130%);
+      animation:cardSheen 9s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes cardSheen{0%,58%,100%{transform:translateX(-130%)}72%{transform:translateX(130%)}}
+    .mini-gauge{animation:gaugeGlow 5.8s ease-in-out infinite}
+    @keyframes gaugeGlow{0%,100%{filter:saturate(1);transform:scale(1)}50%{filter:saturate(1.28) brightness(1.08);transform:scale(1.025)}}
+    .spark-path{stroke-dasharray:260;stroke-dashoffset:260;animation:sparkDraw 4.5s ease-out forwards, sparkPulse 7.5s ease-in-out infinite 4.5s}
     @keyframes sparkDraw{to{stroke-dashoffset:0}}
-    @keyframes sparkPulse{0%,100%{opacity:.82}50%{opacity:1}}
-    .skyline-line{stroke-dasharray:1400;stroke-dashoffset:1400;animation:skyDraw 4.8s ease-out forwards, skyPulse 11s ease-in-out infinite 4.8s}
+    @keyframes sparkPulse{0%,100%{opacity:.72;stroke-width:3}50%{opacity:1;stroke-width:4.25}}
+    .skyline-line{stroke-dasharray:1400;stroke-dashoffset:1400;animation:skyDraw 4.8s ease-out forwards, skyPulse 8s ease-in-out infinite 4.8s}
     @keyframes skyDraw{to{stroke-dashoffset:0}}
-    @keyframes skyPulse{0%,100%{opacity:.82}50%{opacity:1}}
+    @keyframes skyPulse{0%,100%{opacity:.76;stroke-width:4.2}50%{opacity:1;stroke-width:5.4}}
     .skyline-label-box{filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}
     .radar-poly{animation:radarBreath 9s ease-in-out infinite;transform-origin:250px 250px}
     .radar-poly:nth-of-type(2){animation-delay:.7s}.radar-poly:nth-of-type(3){animation-delay:1.4s}.radar-poly:nth-of-type(4){animation-delay:2.1s}.radar-poly:nth-of-type(5){animation-delay:2.8s}
@@ -279,7 +295,7 @@
         <div class="lab-warning">PRIVATE TEST PAGE • NOINDEX • DO NOT LINK IN NAV/SITEMAP</div>
         <h1>Sentiment Dashboard Lab</h1>
         <p>Test advanced sentiment comparison visuals here before changing the live dashboard.</p>
-        <p class="lab-small">This lab focuses on selected-market sentiment, not one global score. It reads live dashboard data when available; when true instrument-level history is missing, mini-trends use preview shapes for visual testing only.</p>
+        <p class="lab-small">This lab focuses on selected-market sentiment, not one global score. PSI uses the selected market's headline sentiment; Technical reads technical_data.json when available; User defaults to technical direction when direct user votes are not available. Mini-trends use preview shapes until true instrument-level history grows.</p>
       </div>
       <div class="lab-controls" id="marketControls"></div>
     </section>
@@ -379,6 +395,7 @@
     const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
     let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
     let dashboardData = null;
+    let technicalData = null;
 
     function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
     function norm(v){return String(v||"").toLowerCase()}
@@ -441,6 +458,41 @@
       }
       return null;
     }
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+      if(raw === null || raw === undefined) return "N/A";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
+    }
+    function normalizeTechLabel(value){
+      const t = norm(value);
+      if(t.includes("bull") || t === "up" || t.includes("rise") || t.includes("positive")) return "Up";
+      if(t.includes("bear") || t === "down" || t.includes("fall") || t.includes("negative")) return "Down";
+      if(t.includes("neutral") || t.includes("mixed") || t.includes("flat")) return "Neutral";
+      return value && value !== "N/A" ? String(value) : "N/A";
+    }
+    function getTechnicalForInstrument(ins){
+      if(!technicalData) return "N/A";
+      const techRoot = technicalData.technical || technicalData;
+      const wanted = ins.aliases.map(a => norm(a));
+      let entry = null;
+
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => {
+          const possible = [item?.instrument, item?.name, item?.symbol, item?.label, item?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
+        });
+      }else if(typeof techRoot === "object"){
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol, value?.label, value?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
+        });
+        entry = found ? found[1] : null;
+      }
+
+      if(!entry) return "N/A";
+      return normalizeTechLabel(extractTechLabel(entry, "daily"));
+    }
     function techFromScore(score){
       if(score == null) return "No PSI Match";
       if(score >= 56) return "Up";
@@ -448,8 +500,9 @@
       return "Neutral";
     }
     function userDefaultFromTech(tech){
-      if(tech === "Up") return "Bullish";
-      if(tech === "Down") return "Bearish";
+      const t = norm(tech);
+      if(t.includes("up") || t.includes("bull")) return "Bullish";
+      if(t.includes("down") || t.includes("bear")) return "Bearish";
       return "Neutral";
     }
     function calcInstrument(ins){
@@ -466,7 +519,8 @@
       let score = null;
       if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
       else score = ins.fallback;
-      const tech = techFromScore(score);
+      const liveTech = getTechnicalForInstrument(ins);
+      const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
       const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
       const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
       return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
@@ -520,7 +574,17 @@
     function renderRanking(data){const ranked=[...data].sort((a,b)=>(b.score??-1)-(a.score??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(d.sentiment)} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)}</div></div><div class="rank-score" style="color:${sentimentColor(d.score)}">${d.score??"--"}</div></div>`).join("")}
     function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)}</span>`).join("")}</div>`;top.innerHTML=`Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
     function renderAll(){renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
-    async function load(){try{const res=await fetch("dashboard_data.json",{cache:"no-store"});if(res.ok)dashboardData=await res.json();}catch(e){}renderAll();}
+    async function load(){
+      try{
+        const [res, techRes] = await Promise.all([
+          fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
+          fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
+        ]);
+        if(res && res.ok) dashboardData = await res.json();
+        if(techRes && techRes.ok) technicalData = await techRes.json();
+      }catch(e){}
+      renderAll();
+    }
     load();
   </script>
 </body>
