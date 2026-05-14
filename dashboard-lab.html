@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Dashboard Lab — Historical Sentiment Intelligence</title>
-  <meta name="description" content="Advanced historical sentiment dashboard lab with multi-panel charts, hourly slicing, and hot sentiment-driving news.">
+  <meta name="description" content="Advanced historical sentiment dashboard lab with multi-panel hourly, daily, weekly, and annual sentiment slicing.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
   <link rel="icon" type="image/png" href="logo.png">
@@ -12,147 +13,236 @@
 
   <style>
     :root{
-      --lab-bg:#05070b;
-      --lab-panel:#0b1320;
-      --lab-panel-2:#0f1b2d;
-      --lab-line:#263241;
-      --lab-soft:#a9bfd8;
-      --lab-text:#edf6ff;
-      --lab-gold:#f0b72f;
-      --lab-gold-soft:rgba(240,183,47,.16);
-      --lab-blue:#58a6ff;
-      --lab-cyan:#22d3ee;
-      --lab-green:#22c55e;
-      --lab-red:#ef4444;
-      --lab-pink:#ec4899;
-      --lab-purple:#8b5cf6;
+      --dash-bg:#05070b;
+      --dash-panel:rgba(11,17,28,.76);
+      --dash-panel-strong:rgba(12,20,34,.92);
+      --dash-line:rgba(88,166,255,.17);
+      --dash-text:#eef6ff;
+      --dash-soft:#a6bad0;
+      --dash-muted:#74869c;
+      --dash-gold:#f0b72f;
+      --dash-blue:#58a6ff;
+      --dash-cyan:#22d3ee;
+      --dash-purple:#8b5cf6;
+      --dash-pink:#ec4899;
+      --dash-green:#22c55e;
+      --dash-red:#ef4444;
     }
 
     body{
       background:
-        radial-gradient(circle at 10% 0%, rgba(240,183,47,.08), transparent 26rem),
-        radial-gradient(circle at 100% 0%, rgba(88,166,255,.08), transparent 28rem),
-        linear-gradient(180deg, #04070c, #05070b 20%);
+        radial-gradient(circle at 10% 0%, rgba(240,183,47,.10), transparent 26rem),
+        radial-gradient(circle at 88% 10%, rgba(88,166,255,.10), transparent 28rem),
+        linear-gradient(180deg,#04070c,#05070b 20%,#05070b);
     }
 
     .page{
-      max-width:1600px;
-      padding:18px 22px 28px;
+      max-width:1640px;
+      padding:16px 22px 28px;
     }
 
-    .lab-note{
-      margin:10px 0 16px;
-      padding:12px 18px;
-      border-radius:999px;
-      border:1px solid rgba(240,183,47,.22);
-      background:linear-gradient(90deg, rgba(240,183,47,.10), rgba(8,16,28,.94), rgba(88,166,255,.08));
-      color:#f8d98b;
-      font-size:13px;
-      font-weight:700;
-      text-align:center;
-    }
-
-    .top-strip{
-      display:grid;
-      grid-template-columns:minmax(260px,.8fr) minmax(0,2.7fr);
-      gap:14px;
-      margin-bottom:14px;
-    }
-
-    .title-tile,
-    .controls-tile,
-    .dash-panel{
+    .lab-shell{
       position:relative;
       overflow:hidden;
-      border-radius:18px;
+      border-radius:22px;
       border:1px solid rgba(88,166,255,.18);
       background:
-        linear-gradient(180deg, rgba(12,19,31,.97), rgba(7,12,22,.98)),
-        radial-gradient(circle at top right, rgba(88,166,255,.08), transparent 16rem);
-      box-shadow:0 14px 38px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.025);
+        linear-gradient(180deg, rgba(7,12,22,.92), rgba(5,7,11,.98)),
+        radial-gradient(circle at 42% 20%, rgba(240,183,47,.10), transparent 18rem),
+        radial-gradient(circle at 70% 45%, rgba(88,166,255,.10), transparent 22rem);
+      box-shadow:0 22px 70px rgba(0,0,0,.32);
+      min-height:900px;
     }
 
-    .dash-panel::before{
+    .lab-shell::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(255,255,255,.030) 1px,transparent 1px);
+      background-size:96px 96px;
+      pointer-events:none;
+      opacity:.36;
+    }
+
+    .lab-shell::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(ellipse at 35% 18%, rgba(240,183,47,.10), transparent 18rem),
+        radial-gradient(ellipse at 70% 24%, rgba(236,72,153,.08), transparent 16rem),
+        radial-gradient(ellipse at 55% 62%, rgba(34,211,238,.07), transparent 20rem);
+      pointer-events:none;
+    }
+
+    .lab-layout{
+      position:relative;
+      z-index:2;
+      display:grid;
+      grid-template-columns:150px minmax(0,1fr);
+      gap:18px;
+      padding:18px;
+    }
+
+    .lab-rail{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:760px;
+    }
+
+    .rail-title,
+    .rail-item{
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.055);
+      color:#eef6ff;
+      padding:16px 18px;
+      font-weight:900;
+      letter-spacing:.7px;
+      text-transform:uppercase;
+      font-size:13px;
+      backdrop-filter:blur(12px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .rail-title{
+      color:#ffd780;
+      background:rgba(240,183,47,.13);
+      border-color:rgba(240,183,47,.22);
+    }
+
+    .rail-item{
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .rail-item:hover,
+    .rail-item.active{
+      transform:translateX(3px);
+      color:#ffd780;
+      background:rgba(240,183,47,.12);
+      border-color:rgba(240,183,47,.26);
+    }
+
+    .dashboard-area{
+      display:grid;
+      grid-template-rows:auto auto auto;
+      gap:16px;
+      min-width:0;
+    }
+
+    .lab-top{
+      display:grid;
+      grid-template-columns:minmax(300px,.9fr) minmax(0,2.4fr);
+      gap:16px;
+    }
+
+    .lab-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid var(--dash-line);
+      background:
+        linear-gradient(180deg, var(--dash-panel), rgba(7,13,24,.78)),
+        radial-gradient(circle at top right, rgba(88,166,255,.10), transparent 14rem);
+      box-shadow:0 14px 36px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.035);
+      backdrop-filter:blur(12px);
+    }
+
+    .lab-card::before{
       content:"";
       position:absolute;
       inset:0;
       background:
         linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255,255,255,.018) 1px, transparent 1px);
-      background-size:58px 58px;
-      opacity:.25;
+      background-size:44px 44px;
       pointer-events:none;
+      opacity:.45;
     }
 
-    .title-tile{
-      padding:16px 18px;
-      min-height:110px;
+    .lab-title{
+      padding:18px 20px;
+      min-height:124px;
       display:flex;
       flex-direction:column;
       justify-content:center;
     }
 
-    .title-badges{
+    .lab-badges{
       display:flex;
       flex-wrap:wrap;
       gap:8px;
       margin-bottom:10px;
+      position:relative;
+      z-index:2;
     }
 
-    .title-badge{
+    .badge{
       display:inline-flex;
       align-items:center;
       gap:6px;
       padding:6px 10px;
       border-radius:999px;
       border:1px solid rgba(240,183,47,.28);
-      background:rgba(240,183,47,.09);
+      background:rgba(240,183,47,.10);
       color:#ffd780;
       font-size:11px;
-      font-weight:800;
-      letter-spacing:.15px;
+      font-weight:900;
     }
 
-    .title-tile h1{
+    .lab-title h1{
+      position:relative;
+      z-index:2;
       margin:0 0 8px;
-      font-size:clamp(28px,3vw,40px);
+      font-size:36px;
       line-height:1.02;
       letter-spacing:-1.1px;
     }
 
-    .title-tile p{
+    .lab-title p{
+      position:relative;
+      z-index:2;
       margin:0;
-      color:#b9cfe6;
-      font-size:13px;
+      color:#b6cce4;
       line-height:1.45;
+      font-size:13px;
     }
 
-    .controls-tile{
-      padding:12px;
+    .controls{
+      padding:14px;
       display:grid;
-      grid-template-columns:repeat(6, minmax(0,1fr));
+      grid-template-columns:repeat(6,minmax(0,1fr));
       gap:10px;
       align-content:center;
     }
 
+    .control{
+      position:relative;
+      z-index:2;
+    }
+
     .control label{
       display:block;
-      margin:0 0 6px;
-      color:#8fa8c4;
+      color:#8da8c6;
       font-size:10px;
       font-weight:900;
-      letter-spacing:.55px;
       text-transform:uppercase;
+      letter-spacing:.55px;
+      margin-bottom:6px;
     }
 
     .control select,
     .control button{
       width:100%;
       height:44px;
-      border-radius:12px;
+      border-radius:11px;
       border:1px solid rgba(88,166,255,.22);
-      background:rgba(12,24,40,.95);
-      color:#edf6ff;
+      background:rgba(10,21,36,.94);
+      color:#eef6ff;
       font-size:13px;
       font-weight:800;
       padding:0 12px;
@@ -161,174 +251,218 @@
 
     .control select:focus,
     .control button:hover{
-      border-color:rgba(240,183,47,.42);
+      border-color:rgba(240,183,47,.45);
       box-shadow:0 0 0 3px rgba(240,183,47,.08);
     }
 
     .control button{
       cursor:pointer;
       color:#ffe08e;
-      background:linear-gradient(180deg, rgba(240,183,47,.18), rgba(240,183,47,.08));
+      background:linear-gradient(180deg,rgba(240,183,47,.20),rgba(240,183,47,.08));
       border-color:rgba(240,183,47,.34);
     }
 
-    .stat-row{
+    .chart-grid{
       display:grid;
-      grid-template-columns:repeat(6, minmax(0,1fr));
-      gap:12px;
-      margin-bottom:14px;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
     }
 
-    .stat-card{
-      padding:14px 14px 12px;
-      min-height:100px;
+    .chart-card{
+      min-height:210px;
     }
 
-    .stat-label{
-      color:#90adcb;
-      font-size:10px;
-      font-weight:900;
-      letter-spacing:.55px;
-      text-transform:uppercase;
-      margin-bottom:8px;
-      position:relative;
-      z-index:2;
+    .chart-card.wide{
+      grid-column:span 2;
+      min-height:270px;
     }
 
-    .stat-value{
-      color:#fff;
-      font-size:28px;
-      font-weight:900;
-      line-height:1;
-      margin-bottom:8px;
-      position:relative;
-      z-index:2;
+    .chart-card.tall{
+      min-height:270px;
     }
 
-    .stat-note{
-      color:#a6bed8;
-      font-size:11px;
-      line-height:1.35;
-      position:relative;
-      z-index:2;
+    .chart-card.large{
+      grid-column:span 2;
+      min-height:360px;
     }
 
-    .overview-grid{
-      display:grid;
-      grid-template-columns:repeat(3, minmax(0,1fr));
-      gap:14px;
-      margin-bottom:14px;
-    }
-
-    .panel-body{
+    .panel-inner{
       position:relative;
       z-index:2;
       padding:16px;
+      height:100%;
+      display:flex;
+      flex-direction:column;
     }
 
     .panel-head{
       display:flex;
-      align-items:flex-start;
       justify-content:space-between;
+      align-items:flex-start;
       gap:12px;
-      margin-bottom:12px;
+      margin-bottom:10px;
     }
 
     .panel-title{
-      margin:0 0 5px;
+      margin:0 0 4px;
       color:#fff;
-      font-size:18px;
+      font-size:16px;
+      line-height:1.15;
       font-weight:900;
-      letter-spacing:-.3px;
+      letter-spacing:-.25px;
     }
 
     .panel-sub{
       margin:0;
-      color:#a8c1dd;
-      font-size:12px;
-      line-height:1.45;
+      color:#9fb9d5;
+      font-size:11px;
+      line-height:1.35;
+    }
+
+    .panel-actions{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      color:rgba(255,255,255,.48);
+      font-size:18px;
+      line-height:1;
+      white-space:nowrap;
     }
 
     .chip{
       display:inline-flex;
       align-items:center;
-      gap:8px;
-      padding:7px 10px;
+      gap:7px;
+      padding:6px 9px;
       border-radius:999px;
       border:1px solid rgba(88,166,255,.18);
-      background:rgba(6,14,24,.82);
+      background:rgba(5,12,22,.70);
       color:#dbeafe;
-      font-size:11px;
-      font-weight:800;
+      font-size:10px;
+      font-weight:900;
       white-space:nowrap;
     }
 
     .dot{
-      width:9px;
-      height:9px;
-      border-radius:50%;
-      background:var(--lab-gold);
-      box-shadow:0 0 16px rgba(240,183,47,.85);
-      animation:pulseDot 1.8s ease-in-out infinite;
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:var(--dash-gold);
+      box-shadow:0 0 16px rgba(240,183,47,.9);
+      animation:pulseDot 1.9s ease-in-out infinite;
     }
 
     @keyframes pulseDot{
       0%,100%{transform:scale(1);opacity:1}
-      50%{transform:scale(1.4);opacity:.66}
+      50%{transform:scale(1.42);opacity:.62}
     }
 
-    .canvas-wrap{
-      height:210px;
-      border-radius:16px;
-      border:1px solid rgba(88,166,255,.16);
+    .svg-box{
+      flex:1;
+      min-height:126px;
+      border-radius:14px;
+      border:1px solid rgba(88,166,255,.12);
       background:
-        radial-gradient(circle at 0% 0%, rgba(88,166,255,.15), transparent 16rem),
-        radial-gradient(circle at 100% 100%, rgba(240,183,47,.09), transparent 18rem),
-        linear-gradient(180deg, rgba(12,23,38,.97), rgba(7,13,22,.98));
+        radial-gradient(circle at 0 0, rgba(88,166,255,.11), transparent 12rem),
+        radial-gradient(circle at 100% 100%, rgba(240,183,47,.08), transparent 12rem),
+        rgba(5,12,22,.50);
       overflow:hidden;
-      padding:10px;
     }
 
-    .canvas-wrap.large{
-      height:355px;
+    .svg-box.no-border{
+      border:0;
+      background:transparent;
+      border-radius:0;
     }
 
-    .canvas-wrap.small{
-      height:170px;
-    }
-
-    .chart-canvas{
+    .chart-svg{
       width:100%;
       height:100%;
+      min-height:126px;
       display:block;
     }
 
-    .main-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.75fr) minmax(330px,.8fr);
-      gap:14px;
-      margin-bottom:14px;
+    .chart-card.large .chart-svg{
+      min-height:256px;
     }
 
-    .side-stack{
-      display:grid;
-      gap:14px;
+    .chart-card.wide .chart-svg,
+    .chart-card.tall .chart-svg{
+      min-height:176px;
     }
 
-    .meter-bars{
+    .draw-line{
+      stroke-dasharray:1200;
+      stroke-dashoffset:1200;
+      animation:dashDraw 1.05s ease forwards;
+    }
+
+    .fade-in{
+      animation:fadeIn .65s ease forwards;
+    }
+
+    .bar-anim{
+      transform-box:fill-box;
+      transform-origin:bottom;
+      animation:barRise .75s ease forwards;
+    }
+
+    @keyframes dashDraw{
+      to{stroke-dashoffset:0}
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0}
+      to{opacity:1}
+    }
+
+    @keyframes barRise{
+      from{transform:scaleY(0)}
+      to{transform:scaleY(1)}
+    }
+
+    .stats-strip{
       display:grid;
-      grid-template-columns:58px 1fr 78px;
+      grid-template-columns:repeat(5,minmax(0,1fr));
       gap:8px;
-      align-items:center;
       margin-top:10px;
     }
 
-    .meter-bars span{
-      color:#a9c2dc;
+    .mini-stat{
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(88,166,255,.14);
+      background:rgba(5,12,22,.58);
+    }
+
+    .mini-label{
+      color:#8fb0d1;
+      font-size:9px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.45px;
+      margin-bottom:5px;
+    }
+
+    .mini-value{
+      color:#fff;
+      font-size:22px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .meter-list{
+      display:grid;
+      grid-template-columns:54px 1fr 82px;
+      gap:8px;
+      align-items:center;
+      margin-top:8px;
+    }
+
+    .meter-list span{
+      color:#b1c8e3;
       font-size:12px;
       font-weight:800;
-      position:relative;
-      z-index:2;
     }
 
     .meter-track{
@@ -336,16 +470,13 @@
       border-radius:999px;
       background:rgba(148,163,184,.16);
       overflow:hidden;
-      position:relative;
-      z-index:2;
     }
 
     .meter-fill{
       height:100%;
       border-radius:999px;
-      transform-origin:left center;
+      background:linear-gradient(90deg,var(--dash-red),var(--dash-gold),var(--dash-cyan),var(--dash-green));
       transition:.35s ease;
-      background:linear-gradient(90deg, var(--lab-red), var(--lab-gold), var(--lab-cyan), var(--lab-green));
     }
 
     .meter-right{
@@ -355,147 +486,134 @@
 
     .news-grid{
       display:grid;
-      grid-template-columns:repeat(2, minmax(0,1fr));
-      gap:14px;
-      margin-bottom:14px;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:16px;
+      margin-top:16px;
     }
 
     .news-list{
       display:grid;
-      gap:10px;
-      margin-top:4px;
+      gap:9px;
+      overflow:auto;
+      max-height:310px;
+      padding-right:4px;
     }
 
     .news-item{
       display:grid;
       grid-template-columns:auto 1fr;
-      gap:10px;
-      align-items:flex-start;
-      padding:11px 12px;
-      border-radius:14px;
-      border:1px solid rgba(88,166,255,.14);
-      background:rgba(7,15,25,.78);
+      gap:9px;
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid rgba(88,166,255,.13);
+      background:rgba(5,12,22,.64);
     }
 
     .news-rank{
-      width:28px;
-      height:28px;
-      border-radius:50%;
+      width:25px;
+      height:25px;
+      border-radius:999px;
       display:grid;
       place-items:center;
-      background:rgba(240,183,47,.12);
-      border:1px solid rgba(240,183,47,.25);
       color:#ffd780;
-      font-size:11px;
+      background:rgba(240,183,47,.12);
+      border:1px solid rgba(240,183,47,.24);
+      font-size:10px;
       font-weight:900;
     }
 
     .news-title{
       display:block;
-      color:#eef6ff;
-      font-size:13px;
-      line-height:1.45;
-      margin-bottom:6px;
+      color:#edf6ff;
+      font-size:12px;
+      line-height:1.35;
+      font-weight:700;
       text-decoration:none;
+      margin-bottom:4px;
     }
 
     .news-title:hover{
-      color:#ffe08e;
+      color:#ffd780;
     }
 
     .news-meta{
-      color:#95b4d2;
-      font-size:11px;
-      line-height:1.35;
-    }
-
-    .sub-panels{
-      display:grid;
-      grid-template-columns:repeat(4, minmax(0,1fr));
-      gap:14px;
-      margin-bottom:14px;
+      color:#8fa8c4;
+      font-size:10px;
+      line-height:1.25;
     }
 
     .heat-table-grid{
       display:grid;
-      grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
-      gap:14px;
-      margin-bottom:14px;
+      grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);
+      gap:16px;
+      margin-top:16px;
     }
 
     .heatmap{
       display:grid;
-      grid-template-columns:repeat(auto-fill, minmax(64px,1fr));
-      gap:8px;
-      margin-top:12px;
-      max-height:370px;
+      grid-template-columns:repeat(auto-fill,minmax(62px,1fr));
+      gap:7px;
+      max-height:280px;
       overflow:auto;
       padding-right:4px;
-      position:relative;
-      z-index:2;
     }
 
     .heat-cell{
-      min-height:64px;
-      border-radius:12px;
+      min-height:60px;
+      border-radius:11px;
       border:1px solid rgba(255,255,255,.06);
-      padding:8px;
+      padding:7px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      transition:.16s ease;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+      transition:.15s ease;
     }
 
     .heat-cell:hover{
       transform:translateY(-2px);
       border-color:rgba(240,183,47,.34);
-      box-shadow:0 10px 24px rgba(0,0,0,.22);
     }
 
     .heat-date{
       color:#ecf6ff;
-      font-size:10px;
+      font-size:9px;
       font-weight:900;
     }
 
-    .heat-val{
+    .heat-value{
       color:#fff;
-      font-size:19px;
+      font-size:18px;
       font-weight:900;
       line-height:1;
     }
 
     .heat-bias{
-      color:rgba(255,255,255,.78);
-      font-size:9px;
+      color:rgba(255,255,255,.72);
+      font-size:8px;
       font-weight:900;
-      letter-spacing:.35px;
       text-transform:uppercase;
+      letter-spacing:.3px;
     }
 
     .table-wrap{
-      max-height:370px;
+      max-height:280px;
       overflow:auto;
-      border-radius:14px;
-      border:1px solid rgba(88,166,255,.14);
-      background:rgba(5,12,22,.72);
-      margin-top:12px;
-      position:relative;
-      z-index:2;
+      border-radius:13px;
+      border:1px solid rgba(88,166,255,.13);
+      background:rgba(5,12,22,.62);
     }
 
     table{
       width:100%;
-      min-width:860px;
+      min-width:780px;
       border-collapse:collapse;
     }
 
     th,td{
-      padding:11px 12px;
+      padding:10px 11px;
       border-bottom:1px solid rgba(88,166,255,.10);
       text-align:left;
-      font-size:12px;
+      font-size:11px;
     }
 
     th{
@@ -504,77 +622,58 @@
       z-index:3;
       color:#cfe4fb;
       background:rgba(10,20,34,.98);
+      font-size:9px;
       text-transform:uppercase;
-      letter-spacing:.5px;
-      font-size:10px;
+      letter-spacing:.45px;
       font-weight:900;
     }
 
     td{
       color:#edf6ff;
-      background:rgba(7,14,24,.80);
-    }
-
-    tr:hover td{
-      background:rgba(13,26,43,.94);
+      background:rgba(7,14,24,.78);
     }
 
     .bias-pill{
       display:inline-flex;
       align-items:center;
-      padding:5px 9px;
+      padding:4px 8px;
       border-radius:999px;
-      font-size:11px;
+      font-size:10px;
       font-weight:900;
       border:1px solid rgba(255,255,255,.08);
     }
 
-    .empty{
-      display:none;
-      margin-top:10px;
-      padding:12px;
+    .empty-box{
+      padding:18px;
+      border-radius:13px;
       border:1px dashed rgba(88,166,255,.22);
-      border-radius:14px;
       color:#9ec0e5;
       text-align:center;
-      background:rgba(6,14,24,.64);
-      font-size:13px;
-      position:relative;
-      z-index:2;
+      background:rgba(5,12,22,.56);
+      font-size:12px;
+      line-height:1.4;
     }
 
     @media(max-width:1320px){
-      .top-strip,
-      .main-grid,
+      .lab-layout{grid-template-columns:1fr}
+      .lab-rail{display:none}
+      .lab-top,
       .news-grid,
-      .heat-table-grid{
-        grid-template-columns:1fr;
-      }
-      .controls-tile{
-        grid-template-columns:repeat(3, minmax(0,1fr));
-      }
-      .overview-grid{
-        grid-template-columns:1fr 1fr;
-      }
-      .sub-panels{
-        grid-template-columns:1fr 1fr;
-      }
-      .stat-row{
-        grid-template-columns:repeat(3, minmax(0,1fr));
-      }
+      .heat-table-grid{grid-template-columns:1fr}
+      .controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .chart-grid{grid-template-columns:1fr 1fr}
+      .chart-card.large,.chart-card.wide{grid-column:span 2}
     }
 
-    @media(max-width:760px){
-      .page{padding:14px}
-      .controls-tile,
-      .overview-grid,
-      .sub-panels,
-      .stat-row{
-        grid-template-columns:1fr;
-      }
-      .canvas-wrap.large{
-        height:300px;
-      }
+    @media(max-width:800px){
+      .page{padding:12px}
+      .controls,
+      .chart-grid,
+      .stats-strip{grid-template-columns:1fr}
+      .chart-card.large,.chart-card.wide{grid-column:span 1}
+      .lab-shell{border-radius:16px}
+      .lab-layout{padding:12px}
+      .lab-title h1{font-size:30px}
     }
   </style>
 </head>
@@ -604,7 +703,6 @@
       <a href="advertise.html">Business Opportunities</a>
       <a href="contact.html">Get in Touch</a>
       <a href="about.html">About</a>
-
       <div class="social-links">
         <span class="social-label">Follow us</span>
         <a class="social-pill" href="#" aria-label="X">X</a>
@@ -614,309 +712,267 @@
   </header>
 
   <main class="page">
-    <div class="lab-note">Dashboard Lab — inspired by the reference layout, re-skinned in your site colors. Supports hourly, daily, weekly, and annually slicing.</div>
+    <section class="lab-shell">
+      <div class="lab-layout">
+        <aside class="lab-rail" aria-label="Lab navigation">
+          <div class="rail-title">Dashboard</div>
+          <div class="rail-item active" data-slice-shortcut="hourly">Hourly</div>
+          <div class="rail-item" data-slice-shortcut="daily">Daily</div>
+          <div class="rail-item" data-slice-shortcut="weekly">Weekly</div>
+          <div class="rail-item" data-slice-shortcut="annually">Annual</div>
+          <div class="rail-item" data-news-jump="true">Hot News</div>
+        </aside>
 
-    <section class="top-strip">
-      <div class="title-tile">
-        <div class="title-badges">
-          <span class="title-badge">⚡ Multi-panel dashboard</span>
-          <span class="title-badge">Global + U.S.</span>
-        </div>
-        <h1>Historical Sentiment Lab</h1>
-        <p id="loadStatus">Loading hourly and historical sentiment data...</p>
-      </div>
-
-      <div class="controls-tile">
-        <div class="control">
-          <label for="sourceSelect">Sentiment Source</label>
-          <select id="sourceSelect">
-            <option value="global">Global PSI</option>
-            <option value="us">U.S. PSI</option>
-            <option value="both">Global + U.S.</option>
-          </select>
-        </div>
-        <div class="control">
-          <label for="sliceSelect">Slice</label>
-          <select id="sliceSelect">
-            <option value="hourly">Hourly</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="annually">Annually</option>
-          </select>
-        </div>
-        <div class="control">
-          <label for="rangeSelect">Range</label>
-          <select id="rangeSelect">
-            <option value="1d">Last 1 day</option>
-            <option value="7d">Last 7 days</option>
-            <option value="30d" selected>Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="365d">Last 365 days</option>
-            <option value="all">All available</option>
-          </select>
-        </div>
-        <div class="control">
-          <label for="smoothSelect">Smoothing</label>
-          <select id="smoothSelect">
-            <option value="0">Raw</option>
-            <option value="3" selected>3-record average</option>
-            <option value="5">5-record average</option>
-          </select>
-        </div>
-        <div class="control">
-          <label for="newsCountSelect">Hot News</label>
-          <select id="newsCountSelect">
-            <option value="5">Top 5</option>
-            <option value="10">Top 10</option>
-          </select>
-        </div>
-        <div class="control">
-          <label>&nbsp;</label>
-          <button id="exportBtn">Export CSV</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="stat-row">
-      <div class="dash-panel stat-card">
-        <div class="stat-label">Current Selected</div>
-        <div class="stat-value" id="statCurrent">--</div>
-        <div class="stat-note" id="statCurrentNote">Latest value in current slice</div>
-      </div>
-      <div class="dash-panel stat-card">
-        <div class="stat-label">Global Now</div>
-        <div class="stat-value" id="statGlobal">--</div>
-        <div class="stat-note">Latest Global PSI</div>
-      </div>
-      <div class="dash-panel stat-card">
-        <div class="stat-label">U.S. Now</div>
-        <div class="stat-value" id="statUS">--</div>
-        <div class="stat-note">Latest U.S. PSI</div>
-      </div>
-      <div class="dash-panel stat-card">
-        <div class="stat-label">Net Change</div>
-        <div class="stat-value" id="statChange">--</div>
-        <div class="stat-note" id="statChangeNote">Selected range change</div>
-      </div>
-      <div class="dash-panel stat-card">
-        <div class="stat-label">Range</div>
-        <div class="stat-value" id="statRange">--</div>
-        <div class="stat-note">Low / high reading</div>
-      </div>
-      <div class="dash-panel stat-card">
-        <div class="stat-label">Today's Hourly Samples</div>
-        <div class="stat-value" id="statSamples">--</div>
-        <div class="stat-note">Saved in the database today</div>
-      </div>
-    </section>
-
-    <section class="overview-grid">
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Sentiment Summary</h2>
-              <p class="panel-sub">Quick sweep of the selected series.</p>
-            </div>
-            <div class="chip"><span class="dot"></span><span id="summaryChip">Selected source</span></div>
-          </div>
-          <div class="canvas-wrap"><canvas id="summaryCanvas" class="chart-canvas"></canvas></div>
-        </div>
-      </div>
-
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Global vs U.S. Pulse</h2>
-              <p class="panel-sub">Overlapping area view for both available sources.</p>
-            </div>
-            <div class="chip"><span class="dot"></span>Comparison</div>
-          </div>
-          <div class="canvas-wrap"><canvas id="compareCanvas" class="chart-canvas"></canvas></div>
-        </div>
-      </div>
-
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Bias Distribution</h2>
-              <p class="panel-sub">How the selected values are clustered.</p>
-            </div>
-            <div class="chip"><span class="dot"></span>Zones</div>
-          </div>
-          <div class="canvas-wrap"><canvas id="distBarsCanvas" class="chart-canvas"></canvas></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="main-grid">
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Historical Sentiment Flow</h2>
-              <p class="panel-sub" id="mainSub">Main animated chart with advanced dashboard styling.</p>
-            </div>
-            <div class="chip"><span class="dot"></span><span id="mainChip">Flow view</span></div>
-          </div>
-          <div class="canvas-wrap large"><canvas id="mainCanvas" class="chart-canvas"></canvas></div>
-          <div class="empty" id="mainEmpty">No data is available for this source yet. If U.S. remains blank, the data layer still needs real <b>us_psi</b> values.</div>
-        </div>
-      </div>
-
-      <div class="side-stack">
-        <div class="dash-panel">
-          <div class="panel-body">
-            <div class="panel-head">
-              <div>
-                <h2 class="panel-title">Sentiment Level</h2>
-                <p class="panel-sub">Dashboard-style level bars and strength meter.</p>
+        <div class="dashboard-area">
+          <section class="lab-top">
+            <div class="lab-card lab-title">
+              <div class="lab-badges">
+                <span class="badge">⚡ Sentiment Intelligence</span>
+                <span class="badge">Global + U.S.</span>
               </div>
-              <div class="chip"><span class="dot"></span>Live feel</div>
+              <h1>Historical Sentiment Lab</h1>
+              <p id="loadStatus">Loading hourly and historical sentiment data...</p>
             </div>
-            <div class="meter-bars">
-              <span>Price</span><div class="meter-track"><div class="meter-fill" id="meterPrice"></div></div><span class="meter-right" id="meterPriceText">--</span>
-              <span>Trend</span><div class="meter-track"><div class="meter-fill" id="meterTrend"></div></div><span class="meter-right" id="meterTrendText">--</span>
-              <span>Power</span><div class="meter-track"><div class="meter-fill" id="meterPower"></div></div><span class="meter-right" id="meterPowerText">--</span>
-            </div>
-            <div class="canvas-wrap small" style="margin-top:12px;"><canvas id="gaugeCanvas" class="chart-canvas"></canvas></div>
-          </div>
-        </div>
 
-        <div class="dash-panel">
-          <div class="panel-body">
-            <div class="panel-head">
-              <div>
-                <h2 class="panel-title">Spread / Divergence</h2>
-                <p class="panel-sub">Tracks the gap between Global and U.S. sentiment.</p>
+            <div class="lab-card controls">
+              <div class="control">
+                <label for="sourceSelect">Sentiment Source</label>
+                <select id="sourceSelect">
+                  <option value="global">Global PSI</option>
+                  <option value="us">U.S. PSI</option>
+                  <option value="both">Global + U.S.</option>
+                </select>
               </div>
-              <div class="chip"><span class="dot"></span>Gap watch</div>
+              <div class="control">
+                <label for="sliceSelect">Slice</label>
+                <select id="sliceSelect">
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="annually">Annually</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="rangeSelect">Range</label>
+                <select id="rangeSelect">
+                  <option value="1d">Last 1 day</option>
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d" selected>Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                  <option value="365d">Last 365 days</option>
+                  <option value="all">All available</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="smoothSelect">Smoothing</label>
+                <select id="smoothSelect">
+                  <option value="0">Raw</option>
+                  <option value="3" selected>3-record average</option>
+                  <option value="5">5-record average</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="newsCountSelect">Hot News</label>
+                <select id="newsCountSelect">
+                  <option value="5">Top 5</option>
+                  <option value="10">Top 10</option>
+                </select>
+              </div>
+              <div class="control">
+                <label>&nbsp;</label>
+                <button id="exportBtn" type="button">Export CSV</button>
+              </div>
             </div>
-            <div class="canvas-wrap small"><canvas id="spreadCanvas" class="chart-canvas"></canvas></div>
-          </div>
-        </div>
-      </div>
-    </section>
+          </section>
 
-    <section class="sub-panels">
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Momentum Wave</h2>
-              <p class="panel-sub">Impulse from one reading to the next.</p>
+          <section class="chart-grid">
+            <div class="lab-card chart-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Sentiment Summary</h2>
+                    <p class="panel-sub">Compact bar view of the selected slice.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="svg-box" id="summaryChart"></div>
+              </div>
             </div>
-          </div>
-          <div class="canvas-wrap small"><canvas id="momentumCanvas" class="chart-canvas"></canvas></div>
-        </div>
-      </div>
 
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Regime Ribbon</h2>
-              <p class="panel-sub">Continuous state strip across time.</p>
+            <div class="lab-card chart-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Global vs U.S. Pulse</h2>
+                    <p class="panel-sub">Two-source overlay when both have data.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="svg-box" id="compareChart"></div>
+              </div>
             </div>
-          </div>
-          <div class="canvas-wrap small"><canvas id="regimeCanvas" class="chart-canvas"></canvas></div>
-        </div>
-      </div>
 
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Donut Breakdown</h2>
-              <p class="panel-sub">Bullish / neutral / bearish balance.</p>
+            <div class="lab-card chart-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Bias History</h2>
+                    <p class="panel-sub">Bearish / neutral / bullish clustering.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="svg-box" id="biasChart"></div>
+              </div>
             </div>
-          </div>
-          <div class="canvas-wrap small"><canvas id="donutCanvas" class="chart-canvas"></canvas></div>
-        </div>
-      </div>
 
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Auto Insights</h2>
-              <p class="panel-sub">Short interpretation of the active slice.</p>
+            <div class="lab-card chart-card large">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Historical Sentiment Flow</h2>
+                    <p class="panel-sub" id="mainSub">Advanced animated flow using real historical data.</p>
+                  </div>
+                  <div class="chip"><span class="dot"></span><span id="mainChip">Global PSI • Hourly</span></div>
+                </div>
+                <div class="svg-box" id="mainChart"></div>
+                <div class="stats-strip">
+                  <div class="mini-stat"><div class="mini-label">Current</div><div class="mini-value" id="statCurrent">--</div></div>
+                  <div class="mini-stat"><div class="mini-label">Global</div><div class="mini-value" id="statGlobal">--</div></div>
+                  <div class="mini-stat"><div class="mini-label">U.S.</div><div class="mini-value" id="statUS">--</div></div>
+                  <div class="mini-stat"><div class="mini-label">Change</div><div class="mini-value" id="statChange">--</div></div>
+                  <div class="mini-stat"><div class="mini-label">Samples</div><div class="mini-value" id="statSamples">--</div></div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div id="insights" style="display:grid;gap:10px;margin-top:4px;position:relative;z-index:2;"></div>
-        </div>
-      </div>
-    </section>
 
-    <section class="news-grid">
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Global Hot News</h2>
-              <p class="panel-sub">Top sentiment-moving global headlines.</p>
+            <div class="lab-card chart-card tall">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Sentiment Level</h2>
+                    <p class="panel-sub">Level bars and current bias gauge.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="meter-list">
+                  <span>Price</span><div class="meter-track"><div class="meter-fill" id="meterPrice"></div></div><span class="meter-right" id="meterPriceText">--</span>
+                  <span>Trend</span><div class="meter-track"><div class="meter-fill" id="meterTrend"></div></div><span class="meter-right" id="meterTrendText">--</span>
+                  <span>Power</span><div class="meter-track"><div class="meter-fill" id="meterPower"></div></div><span class="meter-right" id="meterPowerText">--</span>
+                </div>
+                <div class="svg-box no-border" id="gaugeChart" style="margin-top:10px;"></div>
+              </div>
             </div>
-            <div class="chip"><span class="dot"></span><span id="globalNewsChip">Top 5</span></div>
-          </div>
-          <div class="news-list" id="globalNewsList"></div>
-        </div>
-      </div>
 
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">U.S. Hot News</h2>
-              <p class="panel-sub">Top U.S.-focused sentiment-moving headlines.</p>
+            <div class="lab-card chart-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Momentum Wave</h2>
+                    <p class="panel-sub">Point-to-point sentiment impulse.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="svg-box" id="momentumChart"></div>
+              </div>
             </div>
-            <div class="chip"><span class="dot"></span><span id="usNewsChip">Top 5</span></div>
-          </div>
-          <div class="news-list" id="usNewsList"></div>
-        </div>
-      </div>
-    </section>
 
-    <section class="heat-table-grid">
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Sentiment Heatmap</h2>
-              <p class="panel-sub">Keep this. It will get richer as hourly collection grows.</p>
+            <div class="lab-card chart-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Regime Ribbon</h2>
+                    <p class="panel-sub">State strip across the selected period.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="svg-box" id="regimeChart"></div>
+              </div>
             </div>
-            <div class="chip"><span class="dot"></span>Heatmap</div>
-          </div>
-          <div class="heatmap" id="heatmap"></div>
-        </div>
-      </div>
 
-      <div class="dash-panel">
-        <div class="panel-body">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">Filtered Historical Records</h2>
-              <p class="panel-sub" id="tableCount">0 rows</p>
+            <div class="lab-card chart-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Donut Breakdown</h2>
+                    <p class="panel-sub">Bullish / neutral / bearish balance.</p>
+                  </div>
+                  <div class="panel-actions">＋ ×</div>
+                </div>
+                <div class="svg-box no-border" id="donutChart"></div>
+              </div>
             </div>
-            <div class="chip"><span class="dot"></span><span id="tableChip">Current filter</span></div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date / Time</th>
-                  <th>Source</th>
-                  <th>Value</th>
-                  <th>Bias</th>
-                  <th>Headlines</th>
-                  <th>Samples</th>
-                  <th>Slice</th>
-                </tr>
-              </thead>
-              <tbody id="recordsBody"></tbody>
-            </table>
-          </div>
+          </section>
+
+          <section class="news-grid" id="newsSection">
+            <div class="lab-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Global Hot News</h2>
+                    <p class="panel-sub">Top headlines likely influencing global sentiment.</p>
+                  </div>
+                  <div class="chip"><span class="dot"></span><span id="globalNewsChip">Top 5</span></div>
+                </div>
+                <div class="news-list" id="globalNewsList"></div>
+              </div>
+            </div>
+
+            <div class="lab-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">U.S. Hot News</h2>
+                    <p class="panel-sub">Top U.S.-focused headlines likely influencing sentiment.</p>
+                  </div>
+                  <div class="chip"><span class="dot"></span><span id="usNewsChip">Top 5</span></div>
+                </div>
+                <div class="news-list" id="usNewsList"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="heat-table-grid">
+            <div class="lab-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Sentiment Heatmap</h2>
+                    <p class="panel-sub">Improves as hourly collection grows.</p>
+                  </div>
+                  <div class="chip"><span class="dot"></span>Heatmap</div>
+                </div>
+                <div class="heatmap" id="heatmap"></div>
+              </div>
+            </div>
+
+            <div class="lab-card">
+              <div class="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">Filtered Historical Records</h2>
+                    <p class="panel-sub" id="tableCount">0 rows</p>
+                  </div>
+                  <div class="chip"><span class="dot"></span><span id="tableChip">Current filter</span></div>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date / Time</th>
+                        <th>Source</th>
+                        <th>Value</th>
+                        <th>Bias</th>
+                        <th>Headlines</th>
+                        <th>Samples</th>
+                        <th>Slice</th>
+                      </tr>
+                    </thead>
+                    <tbody id="recordsBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </section>
@@ -948,38 +1004,38 @@
   <script>
     let historyData = {records:[], intraday:[]};
     let dashboardData = {};
-    let selectedSeries = [];
-    let compareGlobal = [];
-    let compareUS = [];
-    let activeToken = 0;
+    let selectedRows = [];
+    let globalRows = [];
+    let usRows = [];
 
-    const byId = id => document.getElementById(id);
-    const sourceSelect = byId("sourceSelect");
-    const sliceSelect = byId("sliceSelect");
-    const rangeSelect = byId("rangeSelect");
-    const smoothSelect = byId("smoothSelect");
-    const newsCountSelect = byId("newsCountSelect");
+    const $ = id => document.getElementById(id);
+    const sourceSelect = $("sourceSelect");
+    const sliceSelect = $("sliceSelect");
+    const rangeSelect = $("rangeSelect");
+    const smoothSelect = $("smoothSelect");
+    const newsCountSelect = $("newsCountSelect");
 
-    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
     function isNum(v){ return Number.isFinite(Number(v)); }
-
-    function formatDate(stamp){
-      const d = new Date(stamp);
-      if(String(stamp).includes("T")){
-        return d.toLocaleString(undefined, {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
-      }
-      return d.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"});
-    }
-
-    function shortDate(stamp){
-      const d = new Date(stamp);
-      return d.toLocaleDateString(undefined, {month:"short", day:"numeric"});
-    }
+    function esc(v){ return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 
     function sourceName(mode){
       if(mode === "us") return "U.S. PSI";
       if(mode === "both") return "Global + U.S.";
       return "Global PSI";
+    }
+
+    function formatDate(stamp){
+      const d = new Date(stamp);
+      if(String(stamp).includes("T")){
+        return d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+      }
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+    }
+
+    function shortDate(stamp){
+      const d = new Date(stamp);
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
     }
 
     function biasLabel(v){
@@ -999,22 +1055,22 @@
       return "neutral";
     }
 
-    function colorFor(v, alpha=1){
+    function valueColor(v, a=1){
       v = Number(v);
-      if(v >= 70) return `rgba(34,197,94,${alpha})`;
-      if(v >= 56) return `rgba(34,211,238,${alpha})`;
-      if(v >= 45) return `rgba(240,183,47,${alpha})`;
-      if(v >= 31) return `rgba(236,72,153,${alpha})`;
-      return `rgba(239,68,68,${alpha})`;
+      if(v >= 70) return `rgba(34,197,94,${a})`;
+      if(v >= 56) return `rgba(34,211,238,${a})`;
+      if(v >= 45) return `rgba(240,183,47,${a})`;
+      if(v >= 31) return `rgba(236,72,153,${a})`;
+      return `rgba(239,68,68,${a})`;
     }
 
-    function bgFor(v){
+    function heatBg(v){
       v = Number(v);
       if(v >= 70) return "linear-gradient(180deg,rgba(34,197,94,.30),rgba(17,42,26,.86))";
-      if(v >= 56) return "linear-gradient(180deg,rgba(34,211,238,.26),rgba(10,38,46,.86))";
-      if(v >= 45) return "linear-gradient(180deg,rgba(240,183,47,.26),rgba(43,36,13,.86))";
-      if(v >= 31) return "linear-gradient(180deg,rgba(236,72,153,.24),rgba(46,16,37,.86))";
-      return "linear-gradient(180deg,rgba(239,68,68,.26),rgba(49,15,15,.86))";
+      if(v >= 56) return "linear-gradient(180deg,rgba(34,211,238,.28),rgba(10,38,46,.86))";
+      if(v >= 45) return "linear-gradient(180deg,rgba(240,183,47,.28),rgba(43,36,13,.86))";
+      if(v >= 31) return "linear-gradient(180deg,rgba(236,72,153,.25),rgba(46,16,37,.86))";
+      return "linear-gradient(180deg,rgba(239,68,68,.28),rgba(49,15,15,.86))";
     }
 
     function weekKey(date){
@@ -1026,11 +1082,7 @@
       return `${d.getUTCFullYear()}-W${String(week).padStart(2,"0")}`;
     }
 
-    function yearlyLabel(dateString){
-      return String(dateString).slice(0,4);
-    }
-
-    function getHourlySeries(key){
+    function hourlySeries(key){
       return (Array.isArray(historyData.intraday) ? historyData.intraday : [])
         .filter(r => r.ts && isNum(r[key]))
         .map(r => ({
@@ -1042,10 +1094,10 @@
           sample_count:1,
           slice:"hourly"
         }))
-        .sort((a,b) => new Date(a.stamp) - new Date(b.stamp));
+        .sort((a,b)=>new Date(a.stamp)-new Date(b.stamp));
     }
 
-    function getDailySeries(key){
+    function dailySeries(key){
       return (Array.isArray(historyData.records) ? historyData.records : [])
         .filter(r => r.date && isNum(r[key]))
         .map(r => ({
@@ -1057,641 +1109,456 @@
           sample_count:r.sample_count ?? 1,
           slice:"daily"
         }))
-        .sort((a,b) => new Date(a.stamp) - new Date(b.stamp));
+        .sort((a,b)=>new Date(a.stamp)-new Date(b.stamp));
     }
 
-    function aggregateSeries(rows, mode){
+    function aggregate(rows, mode){
       const groups = new Map();
       rows.forEach(r => {
         const d = new Date(String(r.stamp).includes("T") ? r.stamp : r.stamp + "T00:00:00");
-        const bucket = mode === "weekly" ? weekKey(d) : yearlyLabel(r.stamp);
-        if(!groups.has(bucket)) groups.set(bucket, []);
-        groups.get(bucket).push(r);
+        const key = mode === "weekly" ? weekKey(d) : String(r.stamp).slice(0,4);
+        if(!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
       });
 
-      return [...groups.entries()].map(([bucket, items]) => {
-        const avg = items.reduce((sum, item) => sum + Number(item.value), 0) / items.length;
+      return [...groups.entries()].map(([key, items]) => {
+        const avg = items.reduce((sum, item)=>sum + Number(item.value), 0) / items.length;
         const latest = items[items.length - 1];
         return {
           stamp:latest.stamp,
-          label:bucket,
-          short:bucket,
+          label:key,
+          short:key,
           value:Math.round(avg * 10) / 10,
           headline_count:latest.headline_count,
-          sample_count:items.reduce((sum, item) => sum + Number(item.sample_count || 1), 0),
+          sample_count:items.reduce((sum, item)=>sum + Number(item.sample_count || 1), 0),
           slice:mode
         };
-      }).sort((a,b) => new Date(a.stamp) - new Date(b.stamp));
+      }).sort((a,b)=>new Date(a.stamp)-new Date(b.stamp));
     }
 
     function applyRange(rows){
       if(rangeSelect.value === "all") return rows;
-      const days = {"1d":1,"7d":7,"30d":30,"90d":90,"365d":365}[rangeSelect.value] || 30;
+      const days = { "1d":1, "7d":7, "30d":30, "90d":90, "365d":365 }[rangeSelect.value] || 30;
       if(!rows.length) return rows;
       const last = new Date(rows[rows.length - 1].stamp);
       return rows.filter(r => ((last - new Date(r.stamp)) / 86400000) <= days - .000001);
     }
 
-    function smoothRows(rows){
+    function smooth(rows){
       const n = Number(smoothSelect.value || 0);
       if(!n) return rows;
       return rows.map((row, idx) => {
-        const slice = rows.slice(Math.max(0, idx - n + 1), idx + 1);
-        const avg = slice.reduce((sum, item) => sum + Number(item.value || 0), 0) / slice.length;
+        const part = rows.slice(Math.max(0, idx - n + 1), idx + 1);
+        const avg = part.reduce((sum, item)=>sum + item.value, 0) / part.length;
         return {...row, value:Math.round(avg * 10) / 10};
       });
     }
 
-    function buildSourceRows(key){
-      const slice = sliceSelect.value;
+    function buildSeries(key){
       let rows;
-      if(slice === "hourly"){
-        rows = getHourlySeries(key);
-      }else if(slice === "daily"){
-        rows = getDailySeries(key);
+      if(sliceSelect.value === "hourly"){
+        rows = hourlySeries(key);
+        if(!rows.length) rows = dailySeries(key);
+      }else if(sliceSelect.value === "daily"){
+        rows = dailySeries(key);
       }else{
-        rows = aggregateSeries(getDailySeries(key), slice);
+        rows = aggregate(dailySeries(key), sliceSelect.value);
       }
       rows = applyRange(rows);
-      rows = smoothRows(rows);
+      rows = smooth(rows);
       return rows;
     }
 
-    function currentSourceKey(){
-      return sourceSelect.value === "us" ? "us_psi" : "global_psi";
-    }
+    function rebuild(){
+      globalRows = buildSeries("global_psi");
+      usRows = buildSeries("us_psi");
 
-    function buildAllSeries(){
-      compareGlobal = buildSourceRows("global_psi");
-      compareUS = buildSourceRows("us_psi");
-
-      if(sourceSelect.value === "both"){
-        selectedSeries = compareGlobal.length ? compareGlobal : compareUS;
+      if(sourceSelect.value === "us"){
+        selectedRows = usRows;
       }else{
-        selectedSeries = buildSourceRows(currentSourceKey());
+        selectedRows = globalRows;
       }
     }
 
     function summary(rows){
       if(!rows.length) return null;
-      const values = rows.map(r => Number(r.value));
+      const values = rows.map(r=>Number(r.value));
       const current = values[values.length - 1];
       const first = values[0];
       const avg = values.reduce((a,b)=>a+b,0) / values.length;
       const low = Math.min(...values);
       const high = Math.max(...values);
-      const diffs = values.slice(1).map((v,i)=>v - values[i]);
+      const diffs = values.slice(1).map((v,i)=>v-values[i]);
       const vol = diffs.length ? diffs.reduce((a,b)=>a+Math.abs(b),0) / diffs.length : 0;
-      return {current, first, avg, low, high, change:current - first, vol, count:rows.length};
+      return {current, first, avg, low, high, change:current-first, vol, count:rows.length};
     }
 
     function latestValue(key){
-      const all = getHourlySeries(key);
-      if(all.length) return all[all.length - 1].value;
-      const daily = getDailySeries(key);
-      return daily.length ? daily[daily.length - 1].value : null;
+      const h = hourlySeries(key);
+      if(h.length) return h[h.length - 1].value;
+      const d = dailySeries(key);
+      if(d.length) return d[d.length - 1].value;
+      return null;
     }
 
-    function samplesToday(){
-      const intraday = Array.isArray(historyData.intraday) ? historyData.intraday : [];
-      if(!intraday.length) return 0;
-      const last = intraday[intraday.length - 1];
-      const targetDate = String(last.session_date || String(last.ts).slice(0,10));
-      return intraday.filter(r => String(r.session_date || String(r.ts).slice(0,10)) === targetDate).length;
+    function todaySamples(){
+      const rows = Array.isArray(historyData.intraday) ? historyData.intraday : [];
+      if(!rows.length) return 0;
+      const last = rows[rows.length - 1];
+      const day = String(last.session_date || String(last.ts).slice(0,10));
+      return rows.filter(r => String(r.session_date || String(r.ts).slice(0,10)) === day).length;
     }
 
-    function setText(id, value){ byId(id).textContent = value; }
-
-    function renderTopStats(){
-      const s = summary(selectedSeries);
-      const globalNow = latestValue("global_psi");
-      const usNow = latestValue("us_psi");
-      setText("statCurrent", s ? Math.round(s.current) : "--");
-      setText("statCurrentNote", s ? `${sourceName(sourceSelect.value)} • ${selectedSeries[selectedSeries.length - 1].label}` : "No values in current slice");
-      setText("statGlobal", globalNow === null ? "--" : Math.round(globalNow));
-      setText("statUS", usNow === null ? "--" : Math.round(usNow));
-      setText("statChange", s ? `${s.change > 0 ? "+" : ""}${Math.round(s.change)}` : "--");
-      setText("statChangeNote", s ? `${selectedSeries[0].short} to ${selectedSeries[selectedSeries.length - 1].short}` : "No change yet");
-      setText("statRange", s ? `${Math.round(s.low)} / ${Math.round(s.high)}` : "--");
-      setText("statSamples", samplesToday());
-      setText("summaryChip", sourceName(sourceSelect.value));
-      setText("mainChip", `${sourceName(sourceSelect.value)} • ${sliceSelect.options[sliceSelect.selectedIndex].text}`);
-      setText("globalNewsChip", `Top ${newsCountSelect.value}`);
-      setText("usNewsChip", `Top ${newsCountSelect.value}`);
-      byId("mainSub").textContent = `${sourceName(sourceSelect.value)} ${sliceSelect.options[sliceSelect.selectedIndex].text.toLowerCase()} dashboard flow with ${smoothSelect.value === "0" ? "raw" : smoothSelect.value + "-record average"} smoothing.`;
+    function chartShell(content, viewBox="0 0 640 220"){
+      return `<svg class="chart-svg" viewBox="${viewBox}" preserveAspectRatio="none" role="img" aria-label="chart">${content}</svg>`;
     }
 
-    function resize(canvas){
-      const rect = canvas.getBoundingClientRect();
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.max(260, Math.floor(rect.width * ratio));
-      canvas.height = Math.max(170, Math.floor(rect.height * ratio));
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(ratio,0,0,ratio,0,0);
-      return {ctx, w:rect.width, h:rect.height};
+    function gridLines(w,h,pad){
+      const ys = [0,25,50,75,100].map(v => {
+        const y = pad.t + (h - pad.t - pad.b) - (v/100) * (h - pad.t - pad.b);
+        return `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="rgba(160,183,210,.16)" stroke-width="1"/><text x="10" y="${y+4}" fill="rgba(210,225,242,.62)" font-size="10" font-weight="700">${v}</text>`;
+      }).join("");
+      return ys;
     }
 
-    function drawAxis(ctx, w, h, pad){
-      const iw = w - pad.l - pad.r;
-      const ih = h - pad.t - pad.b;
-      ctx.strokeStyle = "rgba(160,183,210,.18)";
-      ctx.lineWidth = 1;
-      ctx.font = "11px Inter, Arial";
-      ctx.fillStyle = "rgba(202,219,238,.72)";
-      [0,25,50,75,100].forEach(v => {
-        const y = pad.t + ih - (v/100)*ih;
-        ctx.beginPath();
-        ctx.moveTo(pad.l,y);
-        ctx.lineTo(w-pad.r,y);
-        ctx.stroke();
-        ctx.fillText(String(v), 8, y + 4);
-      });
-    }
-
-    function drawLineArea(ctx, rows, opts){
-      const {w,h,pad,color1,color2,progress,fillAlpha=0.16,lineWidth=3,showPoints=true} = opts;
-      const iw = w - pad.l - pad.r;
-      const ih = h - pad.t - pad.b;
-      if(!rows.length) return;
-      const shown = rows.slice(0, Math.max(1, Math.round(rows.length * progress)));
-      const x = i => shown.length === 1 ? pad.l + iw/2 : pad.l + (i/(shown.length-1))*iw;
-      const y = v => pad.t + ih - (clamp(v,0,100)/100)*ih;
-
-      const area = new Path2D();
-      area.moveTo(x(0), pad.t + ih);
-      shown.forEach((r,i)=>area.lineTo(x(i), y(r.value)));
-      area.lineTo(x(shown.length-1), pad.t + ih);
-      area.closePath();
-
-      const fill = ctx.createLinearGradient(0,pad.t,0,h);
-      fill.addColorStop(0, color1.replace('1)', `${fillAlpha})`).replace('rgb', 'rgba'));
-      fill.addColorStop(1, color2.replace('1)', `0.04)`).replace('rgb', 'rgba'));
-      ctx.fillStyle = fill;
-      ctx.fill(area);
-
-      const grad = ctx.createLinearGradient(pad.l,0,w-pad.r,0);
-      grad.addColorStop(0,color1);
-      grad.addColorStop(1,color2);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = lineWidth;
-      ctx.shadowColor = color1;
-      ctx.shadowBlur = 16;
-      ctx.beginPath();
-      shown.forEach((r,i)=>{ if(i===0) ctx.moveTo(x(i), y(r.value)); else ctx.lineTo(x(i), y(r.value)); });
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      if(showPoints){
-        shown.forEach((r,i)=>{
-          const xx = x(i), yy = y(r.value);
-          ctx.fillStyle = i === shown.length - 1 ? color2 : colorFor(r.value,.95);
-          ctx.beginPath();
-          ctx.arc(xx,yy,i === shown.length - 1 ? 4.6 : 2.6,0,Math.PI*2);
-          ctx.fill();
-        });
+    function getXY(rows,w,h,pad){
+      const innerW = w - pad.l - pad.r;
+      const innerH = h - pad.t - pad.b;
+      if(!rows.length) return [];
+      if(rows.length === 1){
+        const y = pad.t + innerH - (clamp(rows[0].value,0,100)/100)*innerH;
+        return [
+          {x:pad.l + innerW*.30, y, row:rows[0]},
+          {x:pad.l + innerW*.70, y, row:rows[0]}
+        ];
       }
+      return rows.map((r,i)=>({
+        x:pad.l + (i/(rows.length-1))*innerW,
+        y:pad.t + innerH - (clamp(r.value,0,100)/100)*innerH,
+        row:r
+      }));
+    }
 
-      const labelCount = Math.min(shown.length, 5);
-      ctx.fillStyle = "rgba(219,235,255,.82)";
-      ctx.font = "11px Inter, Arial";
+    function linePath(points){
+      if(!points.length) return "";
+      return points.map((p,i)=>(i===0 ? "M" : "L") + `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+    }
+
+    function areaPath(points,h,pad){
+      if(!points.length) return "";
+      const bottom = h - pad.b;
+      return `M ${points[0].x.toFixed(1)} ${bottom} ` + points.map(p=>`L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ") + ` L ${points[points.length-1].x.toFixed(1)} ${bottom} Z`;
+    }
+
+    function lineAreaChart(rows, opts={}){
+      const w = 640, h = opts.h || 220;
+      const pad = {l:38,r:18,t:16,b:26};
+      if(!rows.length){
+        return `<div class="empty-box">No values saved for this source/slice yet.</div>`;
+      }
+      const pts = getXY(rows,w,h,pad);
+      const path = linePath(pts);
+      const area = areaPath(pts,h,pad);
+      const c1 = opts.c1 || "#58a6ff";
+      const c2 = opts.c2 || "#f0b72f";
+      const dots = pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="${i===pts.length-1 ? 4.5 : 2.8}" fill="${i===pts.length-1 ? c2 : valueColor(p.row.value,.95)}"/>`).join("");
+      const labels = [];
+      const labelCount = Math.min(rows.length,5);
       for(let i=0;i<labelCount;i++){
-        const idx = labelCount === 1 ? 0 : Math.round(i * (shown.length - 1) / (labelCount - 1));
-        ctx.textAlign = i === 0 ? "left" : i === labelCount - 1 ? "right" : "center";
-        ctx.fillText(shown[idx].short, x(idx), h - 8);
+        const idx = labelCount === 1 ? 0 : Math.round(i*(rows.length-1)/(labelCount-1));
+        const p = getXY(rows,w,h,pad)[idx] || pts[0];
+        const anchor = i===0 ? "start" : i===labelCount-1 ? "end" : "middle";
+        labels.push(`<text x="${p.x}" y="${h-8}" text-anchor="${anchor}" fill="rgba(220,236,255,.72)" font-size="10" font-weight="700">${esc(rows[idx].short)}</text>`);
       }
-      ctx.textAlign = "left";
+      return chartShell(`
+        <defs>
+          <linearGradient id="${opts.id || "grad"}Line" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/>
+          </linearGradient>
+          <linearGradient id="${opts.id || "grad"}Area" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="${c1}" stop-opacity=".24"/><stop offset="100%" stop-color="${c2}" stop-opacity=".05"/>
+          </linearGradient>
+        </defs>
+        ${gridLines(w,h,pad)}
+        <path class="fade-in" d="${area}" fill="url(#${opts.id || "grad"}Area)"/>
+        <path class="draw-line" d="${path}" fill="none" stroke="url(#${opts.id || "grad"}Line)" stroke-width="${opts.stroke || 3}" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dots}
+        ${labels.join("")}
+      `, `0 0 ${w} ${h}`);
     }
 
-    function drawSummary(progress){
-      const canvas = byId("summaryCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const pad = {l:34,r:12,t:14,b:24};
-      const rows = selectedSeries.slice(-12);
-      const iw = w-pad.l-pad.r;
-      const ih = h-pad.t-pad.b;
-      if(!rows.length) return;
-
-      const maxVal = Math.max(100, ...rows.map(r => r.value));
-      const barW = Math.min(34, iw / rows.length * .62);
-      const shown = rows.slice(0, Math.max(1, Math.round(rows.length * progress)));
-      shown.forEach((r,i) => {
-        const x = pad.l + (i + .5) * (iw / rows.length);
-        const bh = (r.value / maxVal) * (ih - 16);
-        const y = pad.t + ih - bh;
-        const grad = ctx.createLinearGradient(0,y,0,y+bh);
-        grad.addColorStop(0, colorFor(r.value,.92));
-        grad.addColorStop(1, "rgba(10,17,28,.12)");
-        ctx.fillStyle = grad;
-        ctx.shadowColor = colorFor(r.value,.32);
-        ctx.shadowBlur = 10;
-        ctx.fillRect(x - barW/2, y, barW, bh);
-        ctx.shadowBlur = 0;
-      });
-
-      ctx.strokeStyle = "rgba(240,183,47,.72)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      shown.forEach((r,i)=>{
-        const x = pad.l + (i + .5) * (iw / rows.length);
-        const y = pad.t + ih - (r.value / maxVal) * (ih - 16);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      ctx.stroke();
+    function barChart(rows){
+      const w=640,h=220,pad={l:26,r:18,t:16,b:28};
+      rows = rows.slice(-12);
+      if(!rows.length) return `<div class="empty-box">No values saved for this chart yet.</div>`;
+      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b;
+      const max=100;
+      const bw=Math.min(34, innerW/rows.length*.58);
+      const bars=rows.map((r,i)=>{
+        const x=pad.l+(i+.5)*(innerW/rows.length)-bw/2;
+        const bh=(r.value/max)*(innerH-10);
+        const y=pad.t+innerH-bh;
+        return `<rect class="bar-anim" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" fill="${valueColor(r.value,.88)}"/><text x="${x+bw/2}" y="${h-8}" text-anchor="middle" fill="rgba(220,236,255,.65)" font-size="9" font-weight="700">${esc(r.short)}</text>`;
+      }).join("");
+      return chartShell(`${gridLines(w,h,pad)}${bars}`);
     }
 
-    function drawCompare(progress){
-      const canvas = byId("compareCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const pad = {l:34,r:16,t:14,b:24};
-      drawAxis(ctx,w,h,pad);
-      drawLineArea(ctx, compareGlobal, {w,h,pad,color1:"rgba(34,211,238,1)",color2:"rgba(88,166,255,1)",progress,fillAlpha:0.11,lineWidth:2.6,showPoints:false});
-      drawLineArea(ctx, compareUS, {w,h,pad,color1:"rgba(240,183,47,1)",color2:"rgba(236,72,153,1)",progress,fillAlpha:0.08,lineWidth:2.4,showPoints:false});
-      ctx.fillStyle = "rgba(219,235,255,.90)";
-      ctx.font = "11px Inter, Arial";
-      ctx.fillText("Global", w - 120, 18);
-      ctx.fillStyle = "rgba(34,211,238,.95)";
-      ctx.fillRect(w - 150, 11, 18, 3);
-      ctx.fillStyle = "rgba(219,235,255,.90)";
-      ctx.fillText("U.S.", w - 54, 18);
-      ctx.fillStyle = "rgba(240,183,47,.95)";
-      ctx.fillRect(w - 76, 11, 18, 3);
+    function compareChart(){
+      const w=640,h=220,pad={l:38,r:18,t:16,b:26};
+      if(!globalRows.length && !usRows.length) return `<div class="empty-box">No comparison data available yet.</div>`;
+      const gPts=getXY(globalRows,w,h,pad);
+      const uPts=getXY(usRows,w,h,pad);
+      const gPath=linePath(gPts), uPath=linePath(uPts);
+      const gArea=areaPath(gPts,h,pad), uArea=areaPath(uPts,h,pad);
+      return chartShell(`
+        <defs>
+          <linearGradient id="compareG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#58a6ff"/></linearGradient>
+          <linearGradient id="compareU" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f0b72f"/><stop offset="100%" stop-color="#ec4899"/></linearGradient>
+        </defs>
+        ${gridLines(w,h,pad)}
+        ${gArea ? `<path class="fade-in" d="${gArea}" fill="rgba(34,211,238,.10)"/>` : ""}
+        ${uArea ? `<path class="fade-in" d="${uArea}" fill="rgba(240,183,47,.07)"/>` : ""}
+        ${gPath ? `<path class="draw-line" d="${gPath}" fill="none" stroke="url(#compareG)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>` : ""}
+        ${uPath ? `<path class="draw-line" d="${uPath}" fill="none" stroke="url(#compareU)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` : ""}
+        <rect x="486" y="13" width="18" height="3" fill="#22d3ee"/><text x="510" y="17" fill="#dbeafe" font-size="10" font-weight="800">Global</text>
+        <rect x="558" y="13" width="18" height="3" fill="#f0b72f"/><text x="582" y="17" fill="#dbeafe" font-size="10" font-weight="800">U.S.</text>
+      `);
     }
 
-    function drawDistBars(progress){
-      const canvas = byId("distBarsCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const rows = selectedSeries;
-      const bins = [
-        {label:"Bear", min:0, max:30, c:"#ef4444"},
-        {label:"M Bear", min:31, max:44, c:"#ec4899"},
-        {label:"Neutral", min:45, max:55, c:"#f0b72f"},
-        {label:"M Bull", min:56, max:69, c:"#22d3ee"},
-        {label:"Bull", min:70, max:100, c:"#22c55e"}
+    function distChart(rows){
+      const w=640,h=220,pad={l:24,r:24,t:18,b:28};
+      const bins=[
+        {label:"Bear",min:0,max:30,c:"#ef4444"},
+        {label:"M Bear",min:31,max:44,c:"#ec4899"},
+        {label:"Neutral",min:45,max:55,c:"#f0b72f"},
+        {label:"M Bull",min:56,max:69,c:"#22d3ee"},
+        {label:"Bull",min:70,max:100,c:"#22c55e"}
       ];
-      bins.forEach(b => b.count = rows.filter(r => r.value >= b.min && r.value <= b.max).length);
-      const max = Math.max(1, ...bins.map(b => b.count));
-      const pad = {l:12,r:12,t:14,b:24};
-      const iw = w-pad.l-pad.r;
-      const ih = h-pad.t-pad.b;
-      const cw = iw / bins.length;
-      bins.forEach((b,i)=>{
-        const bh = (b.count / max) * (ih - 10) * progress;
-        const x = pad.l + i*cw + cw*.18;
-        const y = pad.t + ih - bh;
-        ctx.fillStyle = b.c;
-        ctx.shadowColor = b.c;
-        ctx.shadowBlur = 10;
-        ctx.fillRect(x,y,cw*.64,bh);
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(235,245,255,.88)";
-        ctx.font = "bold 11px Inter, Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(String(b.count), x+cw*.32, y-5);
-        ctx.fillStyle = "rgba(200,220,240,.78)";
-        ctx.fillText(b.label, x+cw*.32, h-8);
-      });
-      ctx.textAlign = "left";
+      bins.forEach(b=>b.count=rows.filter(r=>r.value>=b.min&&r.value<=b.max).length);
+      const max=Math.max(1,...bins.map(b=>b.count));
+      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b, col=innerW/bins.length;
+      const rects=bins.map((b,i)=>{
+        const bh=(b.count/max)*(innerH-12);
+        const x=pad.l+i*col+col*.20;
+        const y=pad.t+innerH-bh;
+        return `<rect class="bar-anim" x="${x}" y="${y}" width="${col*.58}" height="${Math.max(2,bh)}" rx="4" fill="${b.c}" opacity=".88"/><text x="${x+col*.29}" y="${y-6}" text-anchor="middle" fill="#edf6ff" font-size="11" font-weight="900">${b.count}</text><text x="${x+col*.29}" y="${h-8}" text-anchor="middle" fill="rgba(220,236,255,.68)" font-size="9" font-weight="800">${b.label}</text>`;
+      }).join("");
+      return chartShell(rects);
     }
 
-    function drawMain(progress){
-      const canvas = byId("mainCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const pad = {l:44,r:16,t:16,b:28};
-      drawAxis(ctx,w,h,pad);
+    function momentumChart(rows){
+      const w=640,h=220,pad={l:28,r:18,t:18,b:28};
+      if(rows.length < 2) return `<div class="empty-box">Need at least two saved points for momentum.</div>`;
+      const diffs=rows.slice(1).map((r,i)=>({value:r.value-rows[i].value, short:r.short}));
+      const maxAbs=Math.max(3,...diffs.map(d=>Math.abs(d.value)));
+      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b, zero=pad.t+innerH/2;
+      const pts=diffs.map((d,i)=>({
+        x:pad.l+(i/Math.max(1,diffs.length-1))*innerW,
+        y:zero-(d.value/maxAbs)*(innerH/2-10),
+        d
+      }));
+      const bars=diffs.map((d,i)=>{
+        const x=pad.l+(i+.5)*(innerW/diffs.length);
+        const bh=(Math.abs(d.value)/maxAbs)*(innerH/2-10);
+        const y=d.value>=0?zero-bh:zero;
+        return `<rect class="bar-anim" x="${x-8}" y="${y}" width="16" height="${Math.max(2,bh)}" rx="3" fill="${d.value>=0?'#22c55e':'#ef4444'}" opacity=".55"/>`;
+      }).join("");
+      return chartShell(`
+        <line x1="${pad.l}" y1="${zero}" x2="${w-pad.r}" y2="${zero}" stroke="rgba(160,183,210,.20)"/>
+        ${bars}
+        <path class="draw-line" d="${linePath(pts)}" fill="none" stroke="#f0b72f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      `);
+    }
 
-      // background regime bands
-      const ih = h - pad.t - pad.b;
-      const iw = w - pad.l - pad.r;
-      [
-        {min:70,max:100,c:"rgba(34,197,94,.06)"},
-        {min:56,max:70,c:"rgba(34,211,238,.05)"},
-        {min:45,max:56,c:"rgba(240,183,47,.055)"},
-        {min:31,max:45,c:"rgba(236,72,153,.045)"},
-        {min:0,max:31,c:"rgba(239,68,68,.05)"}
-      ].forEach(b=>{
-        const y1 = pad.t + ih - (b.max/100)*ih;
-        const y2 = pad.t + ih - (b.min/100)*ih;
-        ctx.fillStyle = b.c;
-        ctx.fillRect(pad.l, y1, iw, y2-y1);
-      });
+    function regimeChart(rows){
+      const w=640,h=220,pad={l:18,r:18,t:18,b:28};
+      if(!rows.length) return `<div class="empty-box">No regime values yet.</div>`;
+      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b;
+      const cellW=innerW/rows.length;
+      const cells=rows.map((r,i)=>`<rect class="fade-in" x="${pad.l+i*cellW}" y="${pad.t}" width="${Math.max(2,cellW-1)}" height="${innerH}" fill="${valueColor(r.value,.86)}"/>`).join("");
+      return chartShell(`
+        ${cells}
+        <rect x="${pad.l}" y="${pad.t}" width="${innerW}" height="${innerH}" fill="none" stroke="rgba(255,255,255,.10)"/>
+        <text x="${pad.l}" y="${h-8}" fill="rgba(220,236,255,.68)" font-size="10" font-weight="800">Bearish</text>
+        <text x="${w/2}" y="${h-8}" text-anchor="middle" fill="rgba(220,236,255,.68)" font-size="10" font-weight="800">Neutral</text>
+        <text x="${w-pad.r}" y="${h-8}" text-anchor="end" fill="rgba(220,236,255,.68)" font-size="10" font-weight="800">Bullish</text>
+      `);
+    }
 
-      if(sourceSelect.value === "both"){
-        drawLineArea(ctx, compareGlobal, {w,h,pad,color1:"rgba(34,211,238,1)",color2:"rgba(88,166,255,1)",progress,fillAlpha:0.10,lineWidth:2.8});
-        drawLineArea(ctx, compareUS, {w,h,pad,color1:"rgba(240,183,47,1)",color2:"rgba(236,72,153,1)",progress,fillAlpha:0.07,lineWidth:2.5});
-        ctx.fillStyle = "rgba(219,235,255,.90)";
-        ctx.font = "11px Inter, Arial";
-        ctx.fillText("Global", w - 132, 18);
-        ctx.fillStyle = "rgba(34,211,238,.95)";
-        ctx.fillRect(w - 162, 11, 18, 3);
-        ctx.fillStyle = "rgba(219,235,255,.90)";
-        ctx.fillText("U.S.", w - 66, 18);
-        ctx.fillStyle = "rgba(240,183,47,.95)";
-        ctx.fillRect(w - 88, 11, 18, 3);
-      }else{
-        drawLineArea(ctx, selectedSeries, {w,h,pad,color1:"rgba(88,166,255,1)",color2:"rgba(240,183,47,1)",progress,fillAlpha:0.14,lineWidth:3});
+    function donutChart(rows){
+      const w=360,h=220,cx=180,cy=104,r=60;
+      const bull=rows.filter(r=>biasBucket(r.value)==="bullish").length;
+      const neutral=rows.filter(r=>biasBucket(r.value)==="neutral").length;
+      const bear=rows.filter(r=>biasBucket(r.value)==="bearish").length;
+      const total=Math.max(1,bull+neutral+bear);
+      const parts=[
+        {label:"Bull",v:bull,c:"#22d3ee"},
+        {label:"Neutral",v:neutral,c:"#f0b72f"},
+        {label:"Bear",v:bear,c:"#ef4444"}
+      ];
+
+      function arc(cx,cy,r,start,end){
+        const sx=cx+r*Math.cos(start), sy=cy+r*Math.sin(start);
+        const ex=cx+r*Math.cos(end), ey=cy+r*Math.sin(end);
+        const large=end-start>Math.PI?1:0;
+        return `M ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey}`;
       }
+
+      let angle=-Math.PI/2;
+      const arcs=parts.map(p=>{
+        const next=angle+(p.v/total)*Math.PI*2;
+        const d=arc(cx,cy,r,angle,next);
+        angle=next;
+        return `<path class="draw-line" d="${d}" fill="none" stroke="${p.c}" stroke-width="18" stroke-linecap="round"/>`;
+      }).join("");
+
+      const legend=parts.map((p,i)=>`<circle cx="82" cy="${174+i*16}" r="4" fill="${p.c}"/><text x="94" y="${178+i*16}" fill="rgba(220,236,255,.76)" font-size="11" font-weight="800">${p.label}: ${p.v}</text>`).join("");
+
+      return chartShell(`
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(148,163,184,.16)" stroke-width="18"/>
+        ${arcs}
+        <text x="${cx}" y="${cy+7}" text-anchor="middle" fill="#fff" font-size="28" font-weight="900">${rows.length}</text>
+        <text x="${cx}" y="${cy+27}" text-anchor="middle" fill="rgba(220,236,255,.74)" font-size="11" font-weight="800">points</text>
+        ${legend}
+      `, `0 0 ${w} ${h}`);
     }
 
-    function drawGauge(progress){
-      const canvas = byId("gaugeCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const s = summary(selectedSeries);
-      const val = s ? s.current : 50;
-      const cx = w/2, cy = h - 12, r = Math.min(w*.34, h*.82);
-      const start = Math.PI;
-      const end = Math.PI * 2;
-      const segs = [
+    function gaugeChart(rows){
+      const s=summary(rows);
+      const v=s?s.current:0;
+      const w=360,h=170,cx=180,cy=148,r=82;
+      const segs=[
         [0,.2,"#ef4444"], [.2,.4,"#ec4899"], [.4,.6,"#f0b72f"], [.6,.8,"#22d3ee"], [.8,1,"#22c55e"]
       ];
-      ctx.lineWidth = 12;
-      segs.forEach(([a,b,c])=>{
-        ctx.strokeStyle = c;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, start + (end-start)*a, start + (end-start)*b);
-        ctx.stroke();
-      });
-      const angle = start + (end-start) * (clamp(val,0,100)/100) * progress;
-      ctx.strokeStyle = "rgba(238,246,255,.95)";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      ctx.lineTo(cx + Math.cos(angle)*(r-8), cy + Math.sin(angle)*(r-8));
-      ctx.stroke();
-      ctx.fillStyle = "#f0b72f";
-      ctx.beginPath();
-      ctx.arc(cx,cy,5,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.font = "900 26px Inter, Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(String(Math.round(val)), cx, 32);
-      ctx.fillStyle = "#dbeafe";
-      ctx.font = "800 13px Inter, Arial";
-      ctx.fillText(biasLabel(val), cx, 52);
-      ctx.textAlign = "left";
-    }
+      const start=Math.PI,end=Math.PI*2;
 
-    function drawSpread(progress){
-      const canvas = byId("spreadCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const globalRows = compareGlobal;
-      const usRows = compareUS;
-      const len = Math.min(globalRows.length, usRows.length);
-      const spreadRows = [];
-      for(let i=0;i<len;i++){
-        spreadRows.push({
-          stamp: globalRows[i].stamp,
-          short: globalRows[i].short,
-          value: globalRows[i].value - usRows[i].value
-        });
+      function arc(startA,endA){
+        const sx=cx+r*Math.cos(startA), sy=cy+r*Math.sin(startA);
+        const ex=cx+r*Math.cos(endA), ey=cy+r*Math.sin(endA);
+        const large=endA-startA>Math.PI?1:0;
+        return `M ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey}`;
       }
-      const pad = {l:24,r:12,t:12,b:24};
-      const iw = w-pad.l-pad.r;
-      const ih = h-pad.t-pad.b;
-      const zeroY = pad.t + ih/2;
-      ctx.strokeStyle = "rgba(160,183,210,.20)";
-      ctx.beginPath(); ctx.moveTo(pad.l,zeroY); ctx.lineTo(w-pad.r,zeroY); ctx.stroke();
-      if(!spreadRows.length) return;
-      const maxAbs = Math.max(5, ...spreadRows.map(r => Math.abs(r.value)));
-      const shown = spreadRows.slice(0, Math.max(1, Math.round(spreadRows.length * progress)));
-      shown.forEach((r,i)=>{
-        const x = pad.l + (i + .5) * (iw / spreadRows.length);
-        const bh = (Math.abs(r.value) / maxAbs) * (ih/2 - 8);
-        const y = r.value >= 0 ? zeroY - bh : zeroY;
-        ctx.fillStyle = r.value >= 0 ? "rgba(34,211,238,.82)" : "rgba(236,72,153,.82)";
-        ctx.fillRect(x - 8, y, 16, Math.max(2,bh));
-      });
+
+      const arcs=segs.map(([a,b,c])=>`<path d="${arc(start+(end-start)*a,start+(end-start)*b)}" stroke="${c}" stroke-width="13" fill="none" stroke-linecap="round"/>`).join("");
+      const needleA=start+(end-start)*(clamp(v,0,100)/100);
+      const nx=cx+Math.cos(needleA)*(r-10), ny=cy+Math.sin(needleA)*(r-10);
+      return chartShell(`
+        ${arcs}
+        <line class="draw-line" x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#eef6ff" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="6" fill="#f0b72f"/>
+        <text x="${cx}" y="50" text-anchor="middle" fill="#fff" font-size="30" font-weight="900">${s?Math.round(v):"--"}</text>
+        <text x="${cx}" y="72" text-anchor="middle" fill="#dbeafe" font-size="12" font-weight="900">${s?biasLabel(v):"No data"}</text>
+      `, `0 0 ${w} ${h}`);
     }
 
-    function drawMomentum(progress){
-      const canvas = byId("momentumCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const rows = selectedSeries;
-      const diffs = rows.slice(1).map((r,i)=>({value:r.value - rows[i].value}));
-      const pad = {l:18,r:12,t:12,b:20};
-      const iw = w-pad.l-pad.r;
-      const ih = h-pad.t-pad.b;
-      const zeroY = pad.t + ih/2;
-      ctx.strokeStyle = "rgba(160,183,210,.20)";
-      ctx.beginPath(); ctx.moveTo(pad.l,zeroY); ctx.lineTo(w-pad.r,zeroY); ctx.stroke();
-      if(!diffs.length) return;
-      const maxAbs = Math.max(4, ...diffs.map(d => Math.abs(d.value)));
-      const shown = diffs.slice(0, Math.max(1, Math.round(diffs.length * progress)));
-      ctx.beginPath();
-      shown.forEach((d,i)=>{
-        const x = pad.l + (i/Math.max(diffs.length-1,1))*iw;
-        const y = zeroY - (d.value / maxAbs) * (ih/2 - 8);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      const grad = ctx.createLinearGradient(pad.l,0,w-pad.r,0);
-      grad.addColorStop(0,"rgba(236,72,153,1)");
-      grad.addColorStop(.5,"rgba(240,183,47,1)");
-      grad.addColorStop(1,"rgba(34,211,238,1)");
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 2.6;
-      ctx.shadowColor = "rgba(240,183,47,.24)";
-      ctx.shadowBlur = 12;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-
-    function drawRegime(progress){
-      const canvas = byId("regimeCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const rows = selectedSeries;
-      if(!rows.length) return;
-      const pad = {l:12,r:12,t:12,b:24};
-      const iw = w-pad.l-pad.r;
-      const ih = h-pad.t-pad.b;
-      const shown = rows.slice(0, Math.max(1, Math.round(rows.length * progress)));
-      const cellW = iw / rows.length;
-      shown.forEach((r,i)=>{
-        ctx.fillStyle = colorFor(r.value,.84);
-        ctx.fillRect(pad.l + i*cellW, pad.t, Math.max(cellW-1,2), ih);
-      });
-      ctx.fillStyle = "rgba(220,236,255,.82)";
-      ctx.font = "11px Inter, Arial";
-      ctx.fillText("Bearish", pad.l, h - 8);
-      ctx.textAlign = "center"; ctx.fillText("Neutral", w/2, h - 8);
-      ctx.textAlign = "right"; ctx.fillText("Bullish", w - pad.r, h - 8);
-      ctx.textAlign = "left";
-    }
-
-    function drawDonut(progress){
-      const canvas = byId("donutCanvas");
-      const {ctx,w,h} = resize(canvas);
-      ctx.clearRect(0,0,w,h);
-      const rows = selectedSeries;
-      const bull = rows.filter(r => biasBucket(r.value) === "bullish").length;
-      const bear = rows.filter(r => biasBucket(r.value) === "bearish").length;
-      const neutral = rows.filter(r => biasBucket(r.value) === "neutral").length;
-      const total = Math.max(1, bull + bear + neutral);
-      const cx = w/2, cy = h/2 - 6, r = Math.min(w,h) * .26;
-      let start = -Math.PI/2;
-      const parts = [
-        {v:bull/total, c:"#22d3ee", label:"Bull"},
-        {v:neutral/total, c:"#f0b72f", label:"Neutral"},
-        {v:bear/total, c:"#ef4444", label:"Bear"}
-      ];
-      ctx.lineWidth = 18;
-      parts.forEach(part=>{
-        const end = start + Math.PI*2*part.v*progress;
-        ctx.strokeStyle = part.c;
-        ctx.beginPath(); ctx.arc(cx,cy,r,start,end); ctx.stroke();
-        start = end;
-      });
-      ctx.fillStyle = "#fff";
-      ctx.font = "900 24px Inter, Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(String(rows.length), cx, cy + 6);
-      ctx.fillStyle = "#dbeafe";
-      ctx.font = "800 11px Inter, Arial";
-      ctx.fillText("points", cx, cy + 22);
-      ctx.textAlign = "left";
+    function renderCharts(){
+      const rows = sourceSelect.value === "both" ? globalRows : selectedRows;
+      $("summaryChart").innerHTML = barChart(rows);
+      $("compareChart").innerHTML = compareChart();
+      $("biasChart").innerHTML = distChart(rows);
+      $("mainChart").innerHTML = sourceSelect.value === "both" ? compareChart() : lineAreaChart(rows,{id:"main",h:300,c1:"#58a6ff",c2:"#f0b72f",stroke:3.2});
+      $("momentumChart").innerHTML = momentumChart(rows);
+      $("regimeChart").innerHTML = regimeChart(rows);
+      $("donutChart").innerHTML = donutChart(rows);
+      $("gaugeChart").innerHTML = gaugeChart(rows);
     }
 
     function renderMeters(){
-      const s = summary(selectedSeries);
-      const current = s ? clamp(s.current, 0, 100) : 0;
-      const trend = s ? clamp(50 + s.change * 4, 0, 100) : 0;
-      const power = s ? clamp(100 - s.vol * 7, 0, 100) : 0;
-
-      byId("meterPrice").style.transform = `scaleX(${current / 100})`;
-      byId("meterTrend").style.transform = `scaleX(${trend / 100})`;
-      byId("meterPower").style.transform = `scaleX(${power / 100})`;
-      byId("meterPriceText").textContent = s ? `${Math.round(current)} ${biasLabel(current)}` : "--";
-      byId("meterTrendText").textContent = s ? `${s.change > 0 ? "+" : ""}${Math.round(s.change)}` : "--";
-      byId("meterPowerText").textContent = s ? `${Math.round(power)}%` : "--";
+      const s = summary(sourceSelect.value === "both" ? globalRows : selectedRows);
+      const current = s ? clamp(s.current,0,100) : 0;
+      const trend = s ? clamp(50 + s.change * 4,0,100) : 0;
+      const power = s ? clamp(100 - s.vol * 7,0,100) : 0;
+      $("meterPrice").style.transform = `scaleX(${current/100})`;
+      $("meterTrend").style.transform = `scaleX(${trend/100})`;
+      $("meterPower").style.transform = `scaleX(${power/100})`;
+      $("meterPriceText").textContent = s ? `${Math.round(current)} ${biasLabel(current)}` : "--";
+      $("meterTrendText").textContent = s ? `${s.change>0?"+":""}${Math.round(s.change)}` : "--";
+      $("meterPowerText").textContent = s ? `${Math.round(power)}%` : "--";
     }
 
-    function renderInsights(){
-      const box = byId("insights");
-      const s = summary(selectedSeries);
-      if(!s){
-        box.innerHTML = '<div class="news-item"><div><span class="news-meta">No values available for this source or slice.</span></div></div>';
-        return;
-      }
-      const trend = Math.abs(s.change) < 3 ? "mostly flat" : s.change > 0 ? "rising" : "falling";
-      const best = selectedSeries.reduce((a,b)=>b.value>a.value?b:a, selectedSeries[0]);
-      const worst = selectedSeries.reduce((a,b)=>b.value<a.value?b:a, selectedSeries[0]);
-      box.innerHTML = `
-        <div class="news-item"><div><span class="news-meta"><b>${sourceName(sourceSelect.value)}</b> is <b>${Math.round(s.current)}</b> and currently <b>${biasLabel(s.current)}</b>.</span></div></div>
-        <div class="news-item"><div><span class="news-meta">The active slice is <b>${trend}</b>. Net change is <b>${s.change > 0 ? "+" : ""}${Math.round(s.change)}</b>.</span></div></div>
-        <div class="news-item"><div><span class="news-meta">High <b>${Math.round(best.value)}</b> on ${best.label}. Low <b>${Math.round(worst.value)}</b> on ${worst.label}.</span></div></div>
-      `;
+    function renderStats(){
+      const active = sourceSelect.value === "both" ? globalRows : selectedRows;
+      const s = summary(active);
+      const globalNow = latestValue("global_psi");
+      const usNow = latestValue("us_psi");
+      $("statCurrent").textContent = s ? Math.round(s.current) : "--";
+      $("statGlobal").textContent = globalNow === null ? "--" : Math.round(globalNow);
+      $("statUS").textContent = usNow === null ? "--" : Math.round(usNow);
+      $("statChange").textContent = s ? `${s.change>0?"+":""}${Math.round(s.change)}` : "--";
+      $("statSamples").textContent = todaySamples();
+      $("mainChip").textContent = `${sourceName(sourceSelect.value)} • ${sliceSelect.options[sliceSelect.selectedIndex].text}`;
+      $("mainSub").textContent = `${sourceName(sourceSelect.value)} ${sliceSelect.options[sliceSelect.selectedIndex].text.toLowerCase()} view with ${smoothSelect.value==="0"?"raw":smoothSelect.value+"-record average"} smoothing.`;
     }
 
-    function extractNewsItems(input){
-      const out = [];
-      const seen = new Set();
-
-      function pushItem(item){
-        if(!item) return;
-        let title = item.title || item.headline || item.name || item.summary || item.text || "";
-        if(!title || typeof title !== "string") return;
-        title = title.trim();
-        if(title.length < 20) return;
+    function extractNews(data){
+      const out=[], seen=new Set();
+      function add(obj){
+        if(!obj || typeof obj !== "object") return;
+        const title = String(obj.title || obj.headline || obj.name || obj.summary || obj.text || "").trim();
+        if(title.length < 18) return;
         const key = title.toLowerCase();
         if(seen.has(key)) return;
         seen.add(key);
-
         out.push({
           title,
-          url: item.url || item.link || item.href || "#",
-          source: item.source || item.publisher || item.site || item.domain || "",
-          published: item.published || item.date || item.time || item.timestamp || "",
-          region: item.region || item.market || item.category || item.group || "",
-          score: Number(item.impact || item.relevance || item.sentiment_impact || item.rank || 0),
-          tags: Array.isArray(item.tags) ? item.tags.join(" ").toLowerCase() : String(item.tags || "").toLowerCase()
+          url:obj.url || obj.link || obj.href || "#",
+          source:obj.source || obj.publisher || obj.site || obj.domain || "",
+          published:obj.published || obj.date || obj.time || obj.timestamp || "",
+          tags:String(obj.tags || obj.region || obj.market || obj.category || "").toLowerCase()
         });
       }
-
-      function walk(obj){
-        if(!obj) return;
-        if(Array.isArray(obj)){
-          obj.forEach(walk);
-          return;
-        }
-        if(typeof obj !== "object") return;
-
-        const maybeNewsKeys = ["top_headlines","headlines","news","articles","top_news","news_items","items","stories","latest"];
-        maybeNewsKeys.forEach(key => {
-          if(Array.isArray(obj[key])) obj[key].forEach(pushItem);
-        });
-
-        const hasHeadlineLike = obj.title || obj.headline;
-        if(hasHeadlineLike) pushItem(obj);
-
-        Object.values(obj).forEach(val => {
-          if(val && typeof val === "object") walk(val);
+      function walk(x){
+        if(!x) return;
+        if(Array.isArray(x)){ x.forEach(walk); return; }
+        if(typeof x !== "object") return;
+        add(x);
+        Object.values(x).forEach(v => {
+          if(v && typeof v === "object") walk(v);
         });
       }
-
-      walk(input);
+      walk(data);
       return out;
     }
 
-    function isUSNews(item){
-      const hay = `${item.title} ${item.source} ${item.region} ${item.tags}`.toLowerCase();
-      const tokens = ["u.s."," us ","usa","united states","federal reserve","fed","dow","nasdaq","s&p","sp500","treasury","wall street","nyse","dollar index","dxy"];
-      return tokens.some(token => hay.includes(token));
+    function isUS(item){
+      const s = `${item.title} ${item.source} ${item.tags}`.toLowerCase();
+      return ["u.s."," us ","usa","united states","federal reserve"," fed ","dow","nasdaq","s&p","sp500","treasury","wall street","nyse","dxy","dollar"].some(t => s.includes(t));
     }
 
     function renderNews(){
-      const allNews = extractNewsItems(dashboardData);
+      const all = extractNews(dashboardData);
       const limit = Number(newsCountSelect.value || 5);
+      let us = all.filter(isUS).slice(0,limit);
+      let global = all.filter(x => !isUS(x)).slice(0,limit);
+      if(!global.length) global = all.slice(0,limit);
+      if(!us.length) us = all.slice(0,limit);
+      $("globalNewsChip").textContent = `Top ${limit}`;
+      $("usNewsChip").textContent = `Top ${limit}`;
 
-      let us = allNews.filter(isUSNews);
-      let global = allNews.filter(item => !isUSNews(item));
-
-      if(!global.length) global = allNews.slice();
-      if(!us.length) us = allNews.slice();
-
-      global = global.slice(0, limit);
-      us = us.slice(0, limit);
-
-      function renderList(items, elId, emptyLabel){
-        const el = byId(elId);
-        if(!items.length){
-          el.innerHTML = `<div class="news-item"><div><span class="news-meta">${emptyLabel}</span></div></div>`;
-          return;
-        }
-        el.innerHTML = items.map((item, idx) => `
+      function list(items,id,msg){
+        $(id).innerHTML = items.length ? items.map((item,i)=>`
           <div class="news-item">
-            <div class="news-rank">${idx + 1}</div>
+            <div class="news-rank">${i+1}</div>
             <div>
-              <a class="news-title" href="${item.url || '#'}" target="_blank" rel="noopener noreferrer">${item.title}</a>
-              <div class="news-meta">${item.source || "Source"}${item.published ? " • " + item.published : ""}</div>
+              <a class="news-title" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a>
+              <div class="news-meta">${esc(item.source || "Source")}${item.published ? " • " + esc(item.published) : ""}</div>
             </div>
           </div>
-        `).join("");
+        `).join("") : `<div class="empty-box">${msg}</div>`;
       }
-
-      renderList(global, "globalNewsList", "No global news items found in the current data feed.");
-      renderList(us, "usNewsList", "No U.S. news items found in the current data feed.");
+      list(global,"globalNewsList","No global headlines found in dashboard_data.json.");
+      list(us,"usNewsList","No U.S. headlines found in dashboard_data.json.");
     }
 
     function renderHeatmap(){
-      const el = byId("heatmap");
-      if(!selectedSeries.length){
-        el.innerHTML = '<div class="news-item"><div><span class="news-meta">No heatmap values for this filter.</span></div></div>';
-        return;
-      }
-      el.innerHTML = selectedSeries.map(item => `
-        <div class="heat-cell" style="background:${bgFor(item.value)}">
-          <div class="heat-date">${item.short}</div>
-          <div class="heat-val">${Math.round(item.value)}</div>
-          <div class="heat-bias">${biasLabel(item.value)}</div>
+      const rows = sourceSelect.value === "both" ? globalRows : selectedRows;
+      $("heatmap").innerHTML = rows.length ? rows.map(row=>`
+        <div class="heat-cell" style="background:${heatBg(row.value)}">
+          <div class="heat-date">${esc(row.short)}</div>
+          <div class="heat-value">${Math.round(row.value)}</div>
+          <div class="heat-bias">${esc(biasLabel(row.value))}</div>
         </div>
-      `).join("");
+      `).join("") : `<div class="empty-box">No heatmap values for this filter.</div>`;
     }
 
     function pillStyle(v){
@@ -1703,28 +1570,30 @@
     }
 
     function renderTable(){
-      byId("tableCount").textContent = `${selectedSeries.length} row${selectedSeries.length === 1 ? "" : "s"}`;
-      byId("tableChip").textContent = `${sourceName(sourceSelect.value)} • ${sliceSelect.options[sliceSelect.selectedIndex].text}`;
-      byId("recordsBody").innerHTML = selectedSeries.map(row => `
+      const rows = sourceSelect.value === "both" ? globalRows : selectedRows;
+      $("tableCount").textContent = `${rows.length} row${rows.length===1?"":"s"}`;
+      $("tableChip").textContent = `${sourceName(sourceSelect.value)} • ${sliceSelect.options[sliceSelect.selectedIndex].text}`;
+      $("recordsBody").innerHTML = rows.map(row=>`
         <tr>
-          <td>${row.label}</td>
-          <td>${sourceName(sourceSelect.value)}</td>
+          <td>${esc(row.label)}</td>
+          <td>${esc(sourceName(sourceSelect.value))}</td>
           <td>${Math.round(row.value)}</td>
-          <td><span class="bias-pill" style="${pillStyle(row.value)}">${biasLabel(row.value)}</span></td>
-          <td>${row.headline_count}</td>
-          <td>${row.sample_count}</td>
-          <td>${row.slice}</td>
+          <td><span class="bias-pill" style="${pillStyle(row.value)}">${esc(biasLabel(row.value))}</span></td>
+          <td>${esc(row.headline_count)}</td>
+          <td>${esc(row.sample_count)}</td>
+          <td>${esc(row.slice)}</td>
         </tr>
       `).join("");
     }
 
     function exportCSV(){
-      if(!selectedSeries.length) return;
-      const rows = [
+      const rows = sourceSelect.value === "both" ? globalRows : selectedRows;
+      if(!rows.length) return;
+      const csvRows = [
         ["datetime","source","value","bias","headline_count","sample_count","slice"],
-        ...selectedSeries.map(r => [r.label, sourceName(sourceSelect.value), Math.round(r.value), biasLabel(r.value), r.headline_count, r.sample_count, r.slice])
+        ...rows.map(row => [row.label,sourceName(sourceSelect.value),Math.round(row.value),biasLabel(row.value),row.headline_count,row.sample_count,row.slice])
       ];
-      const csv = rows.map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+      const csv = csvRows.map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -1736,45 +1605,21 @@
       URL.revokeObjectURL(url);
     }
 
-    function animateAll(){
-      activeToken += 1;
-      const token = activeToken;
-      const start = performance.now();
-      const duration = 800;
-
-      function frame(now){
-        if(token !== activeToken) return;
-        const progress = clamp((now - start) / duration, 0, 1);
-        drawSummary(progress);
-        drawCompare(progress);
-        drawDistBars(progress);
-        drawMain(progress);
-        drawGauge(progress);
-        drawSpread(progress);
-        drawMomentum(progress);
-        drawRegime(progress);
-        drawDonut(progress);
-        if(progress < 1) requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    }
-
     function render(){
-      buildAllSeries();
-      renderTopStats();
+      rebuild();
+      renderStats();
       renderMeters();
-      renderInsights();
+      renderCharts();
       renderNews();
       renderHeatmap();
       renderTable();
-      byId("mainEmpty").style.display = selectedSeries.length ? "none" : "block";
-      animateAll();
 
+      const active = sourceSelect.value === "both" ? globalRows : selectedRows;
       if(historyData.updated){
-        byId("loadStatus").textContent = `Last update: ${new Date(historyData.updated).toLocaleString()}. Hourly view uses intraday history. Daily / weekly / annually use saved records.`;
+        $("loadStatus").textContent = `Last update: ${new Date(historyData.updated).toLocaleString()}. Hourly uses intraday samples; daily, weekly, and annual use saved history.`;
       }
-      if(sourceSelect.value === "us" && !selectedSeries.length){
-        byId("loadStatus").textContent = "U.S. PSI is still missing real saved numeric values in the live history file. The layout is ready; the data layer still needs U.S. history population.";
+      if(sourceSelect.value === "us" && !active.length){
+        $("loadStatus").textContent = "U.S. PSI has no saved numeric history yet. The page is ready; update_sentiment_history.py must save us_psi values.";
       }
     }
 
@@ -1785,23 +1630,29 @@
           fetch("dashboard_data.json?v=" + Date.now(), {cache:"no-store"}).catch(() => null)
         ]);
         historyData = await historyRes.json();
-        if(dashboardRes && dashboardRes.ok){
-          dashboardData = await dashboardRes.json();
-        }else{
-          dashboardData = {};
-        }
+        if(dashboardRes && dashboardRes.ok) dashboardData = await dashboardRes.json();
       }catch(err){
         console.warn(err);
         historyData = {records:[], intraday:[]};
         dashboardData = {};
-        byId("loadStatus").textContent = "Could not load one or more live data files.";
+        $("loadStatus").textContent = "Could not load sentiment_history.json or dashboard_data.json.";
       }
       render();
     }
 
-    [sourceSelect, sliceSelect, rangeSelect, smoothSelect, newsCountSelect].forEach(el => el.addEventListener("change", render));
-    byId("exportBtn").addEventListener("click", exportCSV);
-    window.addEventListener("resize", render);
+    [sourceSelect,sliceSelect,rangeSelect,smoothSelect,newsCountSelect].forEach(el=>el.addEventListener("change",render));
+    $("exportBtn").addEventListener("click", exportCSV);
+    document.querySelectorAll("[data-slice-shortcut]").forEach(item => {
+      item.addEventListener("click", () => {
+        sliceSelect.value = item.dataset.sliceShortcut;
+        document.querySelectorAll(".rail-item").forEach(x => x.classList.remove("active"));
+        item.classList.add("active");
+        render();
+      });
+    });
+    document.querySelector("[data-news-jump='true']").addEventListener("click", () => {
+      document.getElementById("newsSection").scrollIntoView({behavior:"smooth", block:"start"});
+    });
 
     loadAll();
   </script>
