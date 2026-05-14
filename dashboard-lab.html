@@ -8,6 +8,7 @@
   <!-- DASHBOARD LAB V4 TECHNICAL-DIRECTION MOTION BUILD 2026-05-14 -->
   <!-- DASHBOARD LAB V4B DROPDOWN + SKYLINE BUTTONS ONLY BUILD 2026-05-14 -->
   <!-- DASHBOARD LAB V4D HEATWAVE COLOR SCALE BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4E DISTINCT HEATWAVE CELLS BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -508,6 +509,13 @@
       if(v >= 31) return "#f59e0b";
       return "#f85149";
     }
+    function heatStyle(v){
+      if(v >= 70) return "background:linear-gradient(180deg,rgba(63,185,80,.98),rgba(37,132,55,.72));border-color:rgba(63,185,80,.70);box-shadow:0 0 18px rgba(63,185,80,.28);color:#effff1;";
+      if(v >= 56) return "background:linear-gradient(180deg,rgba(210,153,34,.98),rgba(136,96,17,.72));border-color:rgba(210,153,34,.72);box-shadow:0 0 18px rgba(210,153,34,.25);color:#fff8dc;";
+      if(v >= 45) return "background:linear-gradient(180deg,rgba(88,166,255,.98),rgba(43,99,165,.72));border-color:rgba(88,166,255,.70);box-shadow:0 0 18px rgba(88,166,255,.22);color:#f4faff;";
+      if(v >= 31) return "background:linear-gradient(180deg,rgba(245,158,11,.98),rgba(164,91,11,.72));border-color:rgba(245,158,11,.72);box-shadow:0 0 18px rgba(245,158,11,.24);color:#fff3db;";
+      return "background:linear-gradient(180deg,rgba(248,81,73,.98),rgba(154,38,35,.72));border-color:rgba(248,81,73,.72);box-shadow:0 0 18px rgba(248,81,73,.25);color:#fff1ef;";
+    }
     function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
     function scoreFromText(text){
       const t = norm(text);
@@ -739,7 +747,7 @@
         legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
       }
     }
-    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="${label(v)} • PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.48+(Math.abs(v-50)/50)*.45}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
+    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
     function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
