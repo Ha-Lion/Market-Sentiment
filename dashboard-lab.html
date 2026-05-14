@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Dashboard Lab — Public Sentiment Dash</title>
+  <!-- DASHBOARD LAB V3 SELECTED-MARKET SENTIMENT BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -204,6 +205,31 @@
       font-size:12px;
       line-height:1.55;
     }
+
+
+    .sentiment-card{animation:labCardBreath 9s ease-in-out infinite}
+    .sentiment-card:nth-child(2){animation-delay:.8s}.sentiment-card:nth-child(3){animation-delay:1.6s}.sentiment-card:nth-child(4){animation-delay:2.4s}.sentiment-card:nth-child(5){animation-delay:3.2s}
+    @keyframes labCardBreath{0%,100%{box-shadow:0 18px 42px rgba(0,0,0,.24)}50%{box-shadow:0 18px 52px rgba(210,153,34,.11)}}
+    .mini-gauge{animation:gaugeGlow 8s ease-in-out infinite}
+    @keyframes gaugeGlow{0%,100%{filter:saturate(1)}50%{filter:saturate(1.18) brightness(1.05)}}
+    .spark-path{stroke-dasharray:260;stroke-dashoffset:260;animation:sparkDraw 4.5s ease-out forwards, sparkPulse 10s ease-in-out infinite 4.5s}
+    @keyframes sparkDraw{to{stroke-dashoffset:0}}
+    @keyframes sparkPulse{0%,100%{opacity:.82}50%{opacity:1}}
+    .skyline-line{stroke-dasharray:1400;stroke-dashoffset:1400;animation:skyDraw 4.8s ease-out forwards, skyPulse 11s ease-in-out infinite 4.8s}
+    @keyframes skyDraw{to{stroke-dashoffset:0}}
+    @keyframes skyPulse{0%,100%{opacity:.82}50%{opacity:1}}
+    .skyline-label-box{filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}
+    .radar-poly{animation:radarBreath 9s ease-in-out infinite;transform-origin:250px 250px}
+    .radar-poly:nth-of-type(2){animation-delay:.7s}.radar-poly:nth-of-type(3){animation-delay:1.4s}.radar-poly:nth-of-type(4){animation-delay:2.1s}.radar-poly:nth-of-type(5){animation-delay:2.8s}
+    @keyframes radarBreath{0%,100%{opacity:.50;transform:scale(1)}50%{opacity:.72;transform:scale(1.015)}}
+    .heat-head{color:var(--muted);font-size:11px;font-weight:800;text-align:center}
+    .heat-cell{animation:heatBreathe 8.5s ease-in-out infinite}
+    .heat-cell:nth-child(3n){animation-delay:.6s}.heat-cell:nth-child(4n){animation-delay:1.2s}.heat-cell:nth-child(5n){animation-delay:1.8s}
+    @keyframes heatBreathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.13)}}
+    .legend-mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:11px;font-weight:700}
+    .legend-mini span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(17,24,33,.58)}
+    .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
     @media(max-width:1300px){
       .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
       .chart-grid{grid-template-columns:1fr}
@@ -251,9 +277,9 @@
     <section class="panel lab-hero">
       <div>
         <div class="lab-warning">PRIVATE TEST PAGE • NOINDEX • DO NOT LINK IN NAV/SITEMAP</div>
-        <h1>Dashboard Lab</h1>
-        <p>Test premium dashboard visuals here before changing the live dashboard.</p>
-        <p class="lab-small">This page reads live dashboard data when available. Until instrument-level history grows, some mini-trends render in preview mode for design testing only.</p>
+        <h1>Sentiment Dashboard Lab</h1>
+        <p>Test advanced sentiment comparison visuals here before changing the live dashboard.</p>
+        <p class="lab-small">This lab focuses on selected-market sentiment, not one global score. It reads live dashboard data when available; when true instrument-level history is missing, mini-trends use preview shapes for visual testing only.</p>
       </div>
       <div class="lab-controls" id="marketControls"></div>
     </section>
@@ -265,7 +291,7 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Skyline</h2>
-            <div class="panel-kicker">Smooth multi-market PSI movement with glowing trend lines and end-point labels.</div>
+            <div class="panel-kicker">Multi-market PSI movement with glowing trend lines, clear end-point badges, and slow motion drawing.</div>
           </div>
           <div class="pill-row">
             <span class="tiny-pill">1D</span>
@@ -285,7 +311,7 @@
         <div class="panel-top">
           <div>
             <h2>Radar Comparison</h2>
-            <div class="panel-kicker">Compares sentiment strength, user bias, headlines, technical direction, and stability.</div>
+            <div class="panel-kicker">Compares PSI, user bias, headline strength, technical direction, and stability on a clearer advanced grid.</div>
           </div>
         </div>
         <div class="radar-wrap">
@@ -299,10 +325,11 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">A fast visual matrix for bullish / bearish pressure over recent periods.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Red = bearish pressure, blue = neutral, gold/green = bullish pressure.</div>
           </div>
         </div>
         <div class="heatmap" id="heatmapGrid"></div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Each cell is a recent period in the generated or real series; lower values are bearish pressure, higher values are bullish pressure.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -349,6 +376,7 @@
       {name:"US 10Y Treasury", aliases:["10y","us 10y","treasury yield"], fallback:50}
     ];
 
+    const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
     let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
     let dashboardData = null;
 
@@ -363,10 +391,8 @@
       if(score >= 31) return "Mixed Bearish";
       return "Bearish";
     }
-    function badgeClass(score){
-      return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral");
-    }
-    function color(score){
+    function badgeClass(score){return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral")}
+    function sentimentColor(score){
       if(score == null) return "#8b949e";
       if(score >= 70) return "#3fb950";
       if(score >= 56) return "#d29922";
@@ -374,10 +400,20 @@
       if(score >= 31) return "#f59e0b";
       return "#f85149";
     }
+    function heatColor(v){
+      if(v >= 70) return "#3fb950";
+      if(v >= 56) return "#d29922";
+      if(v >= 45) return "#58a6ff";
+      if(v >= 31) return "#f59e0b";
+      return "#f85149";
+    }
+    function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
     function scoreFromText(text){
       const t = norm(text);
       if(t.includes("bullish") && !t.includes("bearish")) return 80;
       if(t.includes("bearish") && !t.includes("bullish")) return 20;
+      if(t.includes("mixed bullish")) return 60;
+      if(t.includes("mixed bearish")) return 40;
       if(t.includes("mixed")) return 55;
       if(t.includes("neutral")) return 50;
       return null;
@@ -397,35 +433,43 @@
         ...(Array.isArray(dashboardData.headlines) ? dashboardData.headlines : [])
       ];
     }
+    function validDirectScore(h){
+      const candidates = [h.psi, h.psi_score, h.sentiment_score, h.public_sentiment_index];
+      for(const raw of candidates){
+        const n = Number(raw);
+        if(Number.isFinite(n) && n >= 0 && n <= 100) return n;
+      }
+      return null;
+    }
+    function techFromScore(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 56) return "Up";
+      if(score <= 44) return "Down";
+      return "Neutral";
+    }
+    function userDefaultFromTech(tech){
+      if(tech === "Up") return "Bullish";
+      if(tech === "Down") return "Bearish";
+      return "Neutral";
+    }
     function calcInstrument(ins){
       const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
       const scores = [];
-
       headlines.forEach(h => {
-        const direct = Number(h.psi ?? h.score ?? h.sentiment_score);
-        if(Number.isFinite(direct)) scores.push(clamp(direct,0,100));
+        const direct = validDirectScore(h);
+        if(direct != null) scores.push(clamp(direct,0,100));
         else{
           const s = scoreFromText(textFromItem(h));
           if(s != null) scores.push(s);
         }
       });
-
       let score = null;
       if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
       else score = ins.fallback;
-
-      const user = window.PSD_USER_SENTIMENT?.[ins.name] || "N/A";
-      const tech = score == null ? "No PSI Match" : score >= 56 ? "Up" : score <= 44 ? "Down" : "Neutral";
-
-      return {
-        name: ins.name,
-        score,
-        sentiment: label(score),
-        headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0),
-        user,
-        tech,
-        series: makeSeries(ins.name, score)
-      };
+      const tech = techFromScore(score);
+      const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
+      const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+      return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
     }
     function makeSeries(name, score){
       const base = score == null ? 50 : score;
@@ -433,174 +477,50 @@
       const values = [];
       for(let i=0;i<24;i++){
         seed = (seed * 9301 + 49297) % 233280;
-        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 7;
-        const drift = (i-18) * ((base-50)/90);
-        const noise = ((seed/233280)-.5) * 9;
-        values.push(clamp(Math.round(base - 8 + (i/23)*16 + wave + drift + noise), 3, 97));
+        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 8;
+        const drift = (i-18) * ((base-50)/85);
+        const noise = ((seed/233280)-.5) * 7;
+        values.push(clamp(Math.round(base - 5 + (i/23)*10 + wave + drift + noise), 8, 94));
       }
       values[values.length-1] = score == null ? 50 : score;
       return values;
     }
-    function selectedData(){
-      return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]));
-    }
+    function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
     function renderControls(){
       const box = document.getElementById("marketControls");
-      box.innerHTML = selected.map((name,idx) => `
-        <select class="lab-select" data-slot="${idx}">
-          ${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}
-        </select>
-      `).join("");
-      box.querySelectorAll("select").forEach(sel => {
-        sel.addEventListener("change", e => {
-          selected[Number(e.target.dataset.slot)] = e.target.value;
-          renderAll();
-        });
-      });
+      box.innerHTML = selected.map((name,idx) => `<select class="lab-select" data-slot="${idx}">${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}</select>`).join("");
+      box.querySelectorAll("select").forEach(sel => sel.addEventListener("change", e => {selected[Number(e.target.dataset.slot)] = e.target.value; renderAll();}));
     }
-    function sparklinePath(series,w=180,h=54){
-      const min = 0, max = 100;
-      return series.map((v,i)=>{
-        const x = (i/(series.length-1))*w;
-        const y = h - ((v-min)/(max-min))*h;
-        return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;
-      }).join(" ");
-    }
+    function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
     function renderCards(data){
-      document.getElementById("snapshotCards").innerHTML = data.map(d => {
-        const c = color(d.score);
-        return `
-          <article class="sentiment-card">
-            <div class="card-head">
-              <div class="market-name">${esc(d.name)}</div>
-              <div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div>
-            </div>
-            <div class="gauge-row">
-              <div class="mini-gauge" style="--score:${d.score??0};--accent:${c}">
-                <div class="mini-gauge-inner">
-                  <div>
-                    <div class="psi-big">${d.score??"--"}</div>
-                    <div class="psi-small">PSI / 100</div>
-                  </div>
-                </div>
-              </div>
-              <div class="card-metrics">
-                <div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div>
-                <div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div>
-                <div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div>
-              </div>
-            </div>
-            <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none">
-              <defs><linearGradient id="sparkGrad${esc(d.name).replace(/\W/g,'')}" x1="0" x2="1"><stop offset="0%" stop-color="${c}" stop-opacity=".20"/><stop offset="100%" stop-color="${c}" stop-opacity=".90"/></linearGradient></defs>
-              <path d="${sparklinePath(d.series)}" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${c}" opacity=".10"/>
-            </svg>
-          </article>
-        `;
+      document.getElementById("snapshotCards").innerHTML = data.map((d, idx) => {
+        const c = sentimentColor(d.score);
+        return `<article class="sentiment-card"><div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div><div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div><svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg></article>`;
       }).join("");
     }
+    function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
     function renderSkyline(data){
-      const svg = document.getElementById("skylineChart");
-      const w=1000,h=420,pad={l:54,r:110,t:28,b:38};
-      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b;
-      let out = `
-        <defs>
-          <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <linearGradient id="gridFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity=".08"/><stop offset="100%" stop-color="#ffffff" stop-opacity=".02"/></linearGradient>
-        </defs>
-      `;
-      [0,25,50,75,100].forEach(v=>{
-        const y=pad.t+innerH-(v/100)*innerH;
-        out += `<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="url(#gridFade)" stroke-width="1"/><text x="18" y="${y+4}" fill="#8b949e" font-size="13" font-weight="700">${v}</text>`;
-      });
-      data.forEach((d,idx)=>{
-        const c=color(d.score);
-        const points=d.series.map((v,i)=>{
-          const x=pad.l+(i/(d.series.length-1))*innerW;
-          const y=pad.t+innerH-(v/100)*innerH;
-          return [x,y];
-        });
-        const path=points.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-        const fill=path + ` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
-        const last=points[points.length-1];
-        out += `<path d="${fill}" fill="${c}" opacity=".075"/>`;
-        out += `<path d="${path}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" opacity="${idx===0?1:.86}"/>`;
-        out += `<circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".55"/>`;
-        out += `<text x="${last[0]+10}" y="${last[1]+4}" fill="${c}" font-size="13" font-weight="900">${esc(d.name.split(" / ")[0])} ${d.score??"--"}</text>`;
-      });
-      out += `<text x="${pad.l}" y="${h-12}" fill="#8b949e" font-size="12">Earlier</text><text x="${w-pad.r-20}" y="${h-12}" fill="#8b949e" font-size="12">Now</text>`;
-      svg.innerHTML=out;
+      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:210,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+      let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="18" y="${y+4}" fill="#a9b4c1" font-size="14" font-weight="800">${v}</text>`;});
+      const labelRows=data.map((d,idx)=>{const points=d.series.map((v,i)=>[pad.l+(i/(d.series.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);const last=points[points.length-1];return{d,idx,points,last,y:last[1]};}).sort((a,b)=>a.y-b.y);
+      for(let i=1;i<labelRows.length;i++){if(labelRows[i].y-labelRows[i-1].y<34)labelRows[i].y=labelRows[i-1].y+34;}
+      labelRows.forEach(row=>{const {d,idx,points,last}=row;const c=lineColor(idx);const path=smoothPath(points);const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="170" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.5" font-weight="900">${esc(d.name.split(" / ")[0])} • ${d.score??"--"} • ${esc(d.sentiment).replace("Mixed ","M/")}</text></g>`;});
+      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">Earlier</text><text x="${pad.l+innerW-20}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">Now</text>`; svg.innerHTML=out;
     }
-    function radarPoint(cx,cy,r,angle,value){
-      const rad=(angle-90)*Math.PI/180;
-      const rr=r*(value/100);
-      return [cx+Math.cos(rad)*rr, cy+Math.sin(rad)*rr];
-    }
+    function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
     function renderRadar(data){
-      const svg=document.getElementById("radarChart");
-      const axes=["PSI","User","Headlines","Technical","Stability"];
-      const cx=250,cy=250,r=168;
-      let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-      [25,50,75,100].forEach(level=>{
-        const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");
-        out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
-      });
-      axes.forEach((a,i)=>{
-        const p=radarPoint(cx,cy,r+30,(360/axes.length)*i,100);
-        const end=radarPoint(cx,cy,r,(360/axes.length)*i,100);
-        out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.07)"/>`;
-        out+=`<text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#c9d1d9" font-size="13" font-weight="800">${a}</text>`;
-      });
-      data.slice(0,5).forEach((d,idx)=>{
-        const c=color(d.score);
-        const vals=[
-          d.score ?? 35,
-          d.user==="Bullish"?80:d.user==="Bearish"?20:55,
-          clamp(Math.log10((d.headlines||1)+1)*28,8,100),
-          d.tech==="Up"?82:d.tech==="Down"?25:55,
-          clamp(100-Math.abs((d.score??50)-50),35,95)
-        ];
-        const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");
-        out+=`<polygon points="${pts}" fill="${c}" opacity=".08" stroke="${c}" stroke-width="2.5" filter="url(#radarGlow)"/>`;
-      });
+      const svg=document.getElementById("radarChart"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=165; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.15"/>`;});
+      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+42,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.14)" stroke-width="1.1"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
+      data.slice(0,5).forEach((d,idx)=>{const c=lineColor(idx);const vals=[d.score??50,d.user==="Bullish"?80:d.user==="Bearish"?20:55,clamp(Math.log10((d.headlines||1)+1)*28,8,100),d.tech==="Up"?82:d.tech==="Down"?25:55,clamp(100-Math.abs((d.score??50)-50),35,95)];const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".12" stroke="${c}" stroke-width="3" filter="url(#radarGlow)"/>`;});
       svg.innerHTML=out;
     }
-    function renderHeatmap(data){
-      const box=document.getElementById("heatmapGrid");
-      box.innerHTML=data.map(d=>{
-        const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" style="background:${color(v)};opacity:${.36 + (Math.abs(v-50)/50)*.55}">${v}</div>`).join("");
-        return `<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
-      }).join("");
-    }
-    function renderRanking(data){
-      const ranked=[...data].sort((a,b)=>(b.score??-1)-(a.score??-1));
-      document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`
-        <div class="rank-item">
-          <div class="rank-num">${i+1}</div>
-          <div>
-            <div class="rank-title">${esc(d.name)}</div>
-            <div class="rank-meta">${esc(d.sentiment)} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)}</div>
-          </div>
-          <div class="rank-score" style="color:${color(d.score)}">${d.score??"--"}</div>
-        </div>
-      `).join("");
-    }
-    function renderAll(){
-      renderControls();
-      const data=selectedData();
-      renderCards(data);
-      renderSkyline(data);
-      renderRadar(data);
-      renderHeatmap(data);
-      renderRanking(data);
-    }
-    async function load(){
-      try{
-        const res=await fetch("dashboard_data.json",{cache:"no-store"});
-        if(res.ok) dashboardData=await res.json();
-      }catch(e){}
-      renderAll();
-    }
+    function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.48+(Math.abs(v-50)/50)*.45}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
+    function renderRanking(data){const ranked=[...data].sort((a,b)=>(b.score??-1)-(a.score??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(d.sentiment)} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)}</div></div><div class="rank-score" style="color:${sentimentColor(d.score)}">${d.score??"--"}</div></div>`).join("")}
+    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)}</span>`).join("")}</div>`;top.innerHTML=`Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
+    function renderAll(){renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
+    async function load(){try{const res=await fetch("dashboard_data.json",{cache:"no-store"});if(res.ok)dashboardData=await res.json();}catch(e){}renderAll();}
     load();
   </script>
 </body>
