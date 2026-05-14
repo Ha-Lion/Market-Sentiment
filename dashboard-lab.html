@@ -7,6 +7,7 @@
   <title>Dashboard Lab — Public Sentiment Dash</title>
   <!-- DASHBOARD LAB V4 TECHNICAL-DIRECTION MOTION BUILD 2026-05-14 -->
   <!-- DASHBOARD LAB V4B DROPDOWN + SKYLINE BUTTONS ONLY BUILD 2026-05-14 -->
+  <!-- DASHBOARD LAB V4C DYNAMIC SKYLINE RANKING RADAR BUILD 2026-05-14 -->
   <meta name="description" content="Private noindex test page for Public Sentiment Dash visual dashboard experiments.">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <link rel="icon" type="image/png" href="logo.png">
@@ -165,6 +166,31 @@
       overflow:hidden;
     }
     #radarChart{width:100%;height:100%;display:block}
+    .radar-legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+    }
+    .radar-legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 9px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(17,24,33,.72);
+    }
+    .radar-legend i{
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      display:inline-block;
+      box-shadow:0 0 10px currentColor;
+    }
     .heatmap{
       display:grid;
       gap:9px;
@@ -329,12 +355,13 @@
         <div class="panel-top">
           <div>
             <h2>Radar Comparison</h2>
-            <div class="panel-kicker">Compares PSI, user bias, headline strength, technical direction, and stability on a clearer advanced grid.</div>
+            <div class="panel-kicker">Each colored shape is one selected market. Axes compare PSI, user bias, headline strength, technical direction, and stability.</div>
           </div>
         </div>
         <div class="radar-wrap">
           <svg id="radarChart" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
+        <div class="radar-legend" id="radarLegend"></div>
       </div>
     </section>
 
@@ -553,6 +580,39 @@
     function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : 24}
     function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
     function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
+    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : "Now"}
+    function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
+    function seriesForPeriod(d){return makeSkylineSeries(d.name, d.score)}
+    function periodScoreFor(d){
+      const values = seriesForPeriod(d);
+      if(!values.length) return d.score ?? null;
+      if(selectedPeriod === "daily") return values[values.length-1];
+      if(selectedPeriod === "weekly") return average(values.slice(-7));
+      return average(values);
+    }
+    function scoreLabelShort(score){return label(score).replace("Mixed ","M/")}
+    function userScore(value){
+      const t = norm(value);
+      if(t.includes("bull")) return 82;
+      if(t.includes("bear")) return 22;
+      if(t.includes("neutral")) return 52;
+      return 50;
+    }
+    function techScore(value){
+      const t = norm(value);
+      if(t.includes("up") || t.includes("bull")) return 82;
+      if(t.includes("down") || t.includes("bear")) return 22;
+      if(t.includes("neutral") || t.includes("mixed")) return 52;
+      return 50;
+    }
+    function stabilityScore(d){
+      const vals = seriesForPeriod(d);
+      if(vals.length < 2) return 60;
+      let totalMove = 0;
+      for(let i=1;i<vals.length;i++) totalMove += Math.abs(vals[i]-vals[i-1]);
+      const avgMove = totalMove/(vals.length-1);
+      return clamp(Math.round(100 - avgMove*7), 25, 95);
+    }
     function makeSkylineSeries(name, score){
       const base = score == null ? 50 : score;
       const len = periodLength();
@@ -624,25 +684,52 @@
     }
     function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
     function renderSkyline(data){
-      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:210,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:235,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
       let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
       [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="18" y="${y+4}" fill="#a9b4c1" font-size="14" font-weight="800">${v}</text>`;});
-      const labelRows=data.map((d,idx)=>{const skylineSeries=makeSkylineSeries(d.name,d.score);const points=skylineSeries.map((v,i)=>[pad.l+(i/(skylineSeries.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);const last=points[points.length-1];return{d,idx,points,last,y:last[1]};}).sort((a,b)=>a.y-b.y);
+      const labelRows=data.map((d,idx)=>{
+        const skylineSeries=seriesForPeriod(d);
+        const pScore=periodScoreFor(d);
+        if(pScore != null) skylineSeries[skylineSeries.length-1]=pScore;
+        const points=skylineSeries.map((v,i)=>[pad.l+(i/(skylineSeries.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);
+        const last=points[points.length-1];
+        return{d,idx,points,last,y:last[1],pScore};
+      }).sort((a,b)=>a.y-b.y);
       for(let i=1;i<labelRows.length;i++){if(labelRows[i].y-labelRows[i-1].y<34)labelRows[i].y=labelRows[i-1].y+34;}
-      labelRows.forEach(row=>{const {d,idx,points,last}=row;const c=lineColor(idx);const path=smoothPath(points);const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="170" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.5" font-weight="900">${esc(d.name.split(" / ")[0])} • ${d.score??"--"} • ${esc(d.sentiment).replace("Mixed ","M/")}</text></g>`;});
-      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-20}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">Now</text>`; svg.innerHTML=out;
+      labelRows.forEach(row=>{
+        const {d,idx,points,last,pScore}=row;
+        const c=lineColor(idx);
+        const pSentiment=label(pScore);
+        const path=smoothPath(points);
+        const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
+        const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
+        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="192" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.2" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+      });
+      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
     }
     function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
     function renderRadar(data){
-      const svg=document.getElementById("radarChart"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=165; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.15"/>`;});
-      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+42,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.14)" stroke-width="1.1"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
-      data.slice(0,5).forEach((d,idx)=>{const c=lineColor(idx);const vals=[d.score??50,d.user==="Bullish"?80:d.user==="Bearish"?20:55,clamp(Math.log10((d.headlines||1)+1)*28,8,100),d.tech==="Up"?82:d.tech==="Down"?25:55,clamp(100-Math.abs((d.score??50)-50),35,95)];const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".12" stroke="${c}" stroke-width="3" filter="url(#radarGlow)"/>`;});
+      const svg=document.getElementById("radarChart"),legend=document.getElementById("radarLegend"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=162; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      const maxHeadlines=Math.max(...data.map(d=>Number(d.headlines)||0),1);
+      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.25"/>`;});
+      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+43,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.19)" stroke-width="1.25"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
+      data.slice(0,5).forEach((d,idx)=>{
+        const c=lineColor(idx);
+        const pScore=periodScoreFor(d) ?? d.score ?? 50;
+        const headlineStrength=clamp(Math.round(((Number(d.headlines)||0)/maxHeadlines)*100),8,100);
+        const vals=[pScore,userScore(d.user),headlineStrength,techScore(d.tech),stabilityScore(d)];
+        const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");
+        out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".16" stroke="${c}" stroke-width="3.25" filter="url(#radarGlow)"/>`;
+        vals.forEach((v,i)=>{const dot=radarPoint(cx,cy,r,(360/axes.length)*i,v);out+=`<circle cx="${dot[0]}" cy="${dot[1]}" r="3.3" fill="${c}" stroke="#fff" stroke-opacity=".45"/>`;});
+      });
       svg.innerHTML=out;
+      if(legend){
+        legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
+      }
     }
     function renderHeatmap(data){const box=document.getElementById("heatmapGrid");const heads=`<div class="heat-row"><div></div>${Array.from({length:12},(_,i)=>`<div class="heat-head">T-${11-i}</div>`).join("")}</div>`;box.innerHTML=heads+data.map(d=>{const cells=d.series.slice(-12).map(v=>`<div class="heat-cell" title="PSI-style reading: ${v}" style="background:${heatColor(v)};opacity:${.48+(Math.abs(v-50)/50)*.45}">${v}</div>`).join("");return`<div class="heat-row"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;}).join("")}
-    function renderRanking(data){const ranked=[...data].sort((a,b)=>(b.score??-1)-(a.score??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(d.sentiment)} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)}</div></div><div class="rank-score" style="color:${sentimentColor(d.score)}">${d.score??"--"}</div></div>`).join("")}
-    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline view is active. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
+    function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
+    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
     async function load(){
       try{
