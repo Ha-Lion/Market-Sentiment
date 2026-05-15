@@ -14,11 +14,23 @@
   <style>
     .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
     .lab-hero{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) auto;
-      gap:18px;
-      align-items:center;
-      margin-bottom:18px;
+      display:block;
+      padding:20px 22px 18px;
+      margin-bottom:14px;
+    }
+    .lab-hero h1{
+      font-size:clamp(36px,3.2vw,48px);
+      line-height:1.05;
+      letter-spacing:-0.025em;
+      white-space:nowrap;
+      margin:0 0 10px;
+    }
+    .lab-hero-main{
+      color:var(--text);
+      font-size:16px;
+      line-height:1.45;
+      max-width:1180px;
+      margin:0 0 7px;
     }
     .lab-warning{
       display:inline-flex;
@@ -33,13 +45,14 @@
       font-weight:700;
       margin-bottom:12px;
     }
-    .lab-small{color:var(--muted);font-size:13px;line-height:1.55}
+    .lab-small{color:var(--muted);font-size:13px;line-height:1.45;max-width:1180px;margin:0 0 12px}
     .lab-controls{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
-      justify-content:flex-end;
+      justify-content:flex-start;
       align-items:center;
+      margin-top:8px;
     }
     .lab-select{
       background:var(--card);
@@ -47,7 +60,7 @@
       border:1px solid var(--line);
       border-radius:12px;
       padding:10px 12px;
-      min-width:190px;
+      min-width:175px;
       outline:none;
       font-weight:500;
     }
@@ -202,6 +215,9 @@
     .heat-row{display:grid;grid-template-columns:180px repeat(12,minmax(0,1fr));gap:7px;align-items:center}
     .heat-name{color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .heat-cell{
+      position:relative;
+      overflow:hidden;
+      isolation:isolate;
       height:34px;
       border-radius:9px;
       border:1px solid rgba(255,255,255,.12);
@@ -210,8 +226,21 @@
       font-size:11px;
       color:#fff;
       font-weight:800;
-      box-shadow:inset 0 0 18px rgba(0,0,0,.22),0 0 0 1px rgba(255,255,255,.04);
+      box-shadow:inset 0 0 18px rgba(255,215,128,.16),0 0 0 1px rgba(255,215,128,.08);
       text-shadow:0 1px 1px rgba(0,0,0,.28);
+    }
+    .heat-cell:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 22% 14%,rgba(255,215,128,.34),transparent 42%),
+        linear-gradient(115deg,transparent 0%,rgba(255,215,128,.16) 48%,transparent 100%);
+      opacity:.58;
+      transform:translateX(-18%);
+      animation:heatGoldWash 5.8s ease-in-out infinite;
     }
     .ranking-list{display:grid;gap:10px}
     .rank-item{
@@ -272,9 +301,16 @@
     .radar-poly:nth-of-type(2){animation-delay:.7s}.radar-poly:nth-of-type(3){animation-delay:1.4s}.radar-poly:nth-of-type(4){animation-delay:2.1s}.radar-poly:nth-of-type(5){animation-delay:2.8s}
     @keyframes radarBreath{0%,100%{opacity:.50;transform:scale(1)}50%{opacity:.72;transform:scale(1.015)}}
     .heat-head{color:var(--muted);font-size:11px;font-weight:800;text-align:center}
-    .heat-cell{animation:heatBreathe 8.5s ease-in-out infinite}
-    .heat-cell:nth-child(3n){animation-delay:.6s}.heat-cell:nth-child(4n){animation-delay:1.2s}.heat-cell:nth-child(5n){animation-delay:1.8s}
-    @keyframes heatBreathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.13)}}
+    .heat-cell{animation:heatBreathe 4.8s ease-in-out infinite;will-change:transform,filter,box-shadow}
+    .heat-cell:nth-child(3n){animation-delay:.45s}.heat-cell:nth-child(4n){animation-delay:.9s}.heat-cell:nth-child(5n){animation-delay:1.35s}
+    @keyframes heatBreathe{
+      0%,100%{filter:brightness(1);transform:translateY(0) scale(1);box-shadow:inset 0 0 18px rgba(255,215,128,.16),0 0 0 1px rgba(255,215,128,.08)}
+      50%{filter:brightness(1.16);transform:translateY(-2px) scale(1.018);box-shadow:inset 0 0 22px rgba(255,215,128,.24),0 0 16px rgba(255,215,128,.18)}
+    }
+    @keyframes heatGoldWash{
+      0%,100%{opacity:.36;transform:translateX(-22%)}
+      50%{opacity:.70;transform:translateX(22%)}
+    }
     .legend-mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:11px;font-weight:700}
     .legend-mini span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(17,24,33,.58)}
     .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
@@ -283,9 +319,13 @@
       .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
       .chart-grid{grid-template-columns:1fr}
     }
+    @media(max-width:1100px){
+      .lab-hero h1{white-space:normal}
+    }
     @media(max-width:900px){
-      .lab-hero{grid-template-columns:1fr}
+      .lab-hero{padding:18px}
       .lab-controls{justify-content:flex-start}
+      .lab-select{min-width:160px;flex:1 1 180px}
       .lab-card-grid{grid-template-columns:1fr}
       .heat-row{grid-template-columns:1fr repeat(6,minmax(0,1fr))}
       .heat-row .heat-cell:nth-child(n+8){display:none}
@@ -333,10 +373,10 @@
       <div>
         <div class="page-chip">Interactive Dashboard</div>
         <h1>Interactive Market Sentiment Dashboard</h1>
-        <p>Compare selected markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-        <p class="lab-small">This page focuses on selected-market sentiment, not one global score. PSI uses the selected market's headline sentiment; Technical reads technical_data.json when available; User defaults to technical direction when direct user votes are not available. Mini-trends use generated preview shapes until true instrument-level history grows.</p>
+        <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
+        <div class="lab-controls" id="marketControls"></div>
       </div>
-      <div class="lab-controls" id="marketControls"></div>
     </section>
 
     <section class="lab-card-grid" id="snapshotCards"></section>
@@ -384,14 +424,14 @@
           </div>
         </div>
         <div class="heat-legend" aria-label="Heatwave color scale">
-          <span><i style="background:#22c55e;color:#22c55e"></i>70–100 Bullish</span>
-          <span><i style="background:#14b8a6;color:#14b8a6"></i>56–69 Mixed Bullish</span>
-          <span><i style="background:#3b82f6;color:#3b82f6"></i>45–55 Neutral</span>
-          <span><i style="background:#f97316;color:#f97316"></i>31–44 Mixed Bearish</span>
           <span><i style="background:#ef4444;color:#ef4444"></i>0–30 Bearish</span>
+          <span><i style="background:#facc15;color:#facc15"></i>31–44 Mixed Bearish</span>
+          <span><i style="background:#3b82f6;color:#3b82f6"></i>45–55 Neutral</span>
+          <span><i style="background:#2dd4bf;color:#2dd4bf"></i>56–69 Mixed Bullish</span>
+          <span><i style="background:#16a34a;color:#16a34a"></i>70–100 Bullish</span>
         </div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 70–100 Green/Bullish, 56–69 Teal/Mixed Bullish, 45–55 Blue/Neutral, 31–44 Orange/Mixed Bearish, 0–30 Red/Bearish.</div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -514,18 +554,19 @@
       return "#ef4444";
     }
     function heatColor(v){
-      if(v >= 70) return "#22c55e";
-      if(v >= 56) return "#14b8a6";
+      if(v >= 70) return "#16a34a";
+      if(v >= 56) return "#2dd4bf";
       if(v >= 45) return "#3b82f6";
-      if(v >= 31) return "#f97316";
+      if(v >= 31) return "#facc15";
       return "#ef4444";
     }
     function heatStyle(v){
-      if(v >= 70) return "background:linear-gradient(180deg,rgba(34,197,94,.98),rgba(22,101,52,.76));border-color:rgba(34,197,94,.78);box-shadow:0 0 20px rgba(34,197,94,.30);color:#f0fff4;";
-      if(v >= 56) return "background:linear-gradient(180deg,rgba(20,184,166,.98),rgba(15,118,110,.76));border-color:rgba(20,184,166,.78);box-shadow:0 0 20px rgba(20,184,166,.28);color:#ecfffb;";
-      if(v >= 45) return "background:linear-gradient(180deg,rgba(59,130,246,.98),rgba(30,64,175,.76));border-color:rgba(59,130,246,.78);box-shadow:0 0 20px rgba(59,130,246,.25);color:#f1f7ff;";
-      if(v >= 31) return "background:linear-gradient(180deg,rgba(249,115,22,.98),rgba(154,52,18,.76));border-color:rgba(249,115,22,.78);box-shadow:0 0 20px rgba(249,115,22,.30);color:#fff7ed;";
-      return "background:linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.76));border-color:rgba(239,68,68,.78);box-shadow:0 0 20px rgba(239,68,68,.30);color:#fff1f1;";
+      const goldFade = "radial-gradient(circle at 18% 12%,rgba(255,215,128,.20),transparent 46%),";
+      if(v >= 70) return `background:${goldFade}linear-gradient(180deg,rgba(22,163,74,.98),rgba(20,83,45,.82));border-color:rgba(22,163,74,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(22,163,74,.30);color:#f0fff4;`;
+      if(v >= 56) return `background:${goldFade}linear-gradient(180deg,rgba(45,212,191,.98),rgba(15,118,110,.82));border-color:rgba(45,212,191,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(45,212,191,.28);color:#ecfffb;`;
+      if(v >= 45) return `background:${goldFade}linear-gradient(180deg,rgba(59,130,246,.98),rgba(30,64,175,.82));border-color:rgba(59,130,246,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(59,130,246,.25);color:#f1f7ff;`;
+      if(v >= 31) return `background:${goldFade}linear-gradient(180deg,rgba(250,204,21,.98),rgba(161,98,7,.84));border-color:rgba(250,204,21,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.12),0 0 20px rgba(250,204,21,.24);color:#fffbea;`;
+      return `background:${goldFade}linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.84));border-color:rgba(239,68,68,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(239,68,68,.30);color:#fff1f1;`;
     }
     function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
     function scoreFromText(text){
