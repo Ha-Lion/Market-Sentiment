@@ -258,7 +258,7 @@
     .chart-legend{
       position:absolute;
       left:12px;
-      top:42px;
+      top:46px;
       display:grid;
       gap:3px;
       color:rgba(255,255,255,.75);
@@ -518,7 +518,7 @@
 
           <article class="dash-card card-a">
             <div class="card-head"><div class="card-title">Hourly sentiment pulse</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="mini-tabs" style="position:absolute;right:12px;top:42px;z-index:3;"><span class="active">Today</span><span>7D</span><span>All</span></div>
+            <div class="mini-tabs" style="position:absolute;right:12px;top:44px;z-index:3;"><span class="active">Today</span><span>7D</span><span>All</span></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartHourly"></canvas></div>
           </article>
 
@@ -530,7 +530,7 @@
 
           <article class="dash-card card-c">
             <div class="card-head"><div class="card-title">Sentiment history</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="mini-tabs" style="position:absolute;left:12px;top:42px;z-index:3;"><span>Global</span><span class="active">U.S.</span><span>Momentum</span></div>
+            <div class="mini-tabs" style="position:absolute;left:12px;top:44px;z-index:3;"><span>Global</span><span class="active">U.S.</span><span>Momentum</span></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartBars"></canvas></div>
           </article>
 
@@ -861,7 +861,7 @@
     }
 
     function drawBars(canvas, points, colors=[COLORS.gold,COLORS.pink,COLORS.purple]){
-      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:28,r:12,t:14,b:18});
+      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:34,r:12,t:30,b:18});
       const pts=points.slice(-12); if(!pts.length) return;
       const barW=Math.max(4,box.iw/pts.length*.42);
       pts.forEach((p,i)=>{
@@ -903,7 +903,7 @@
       let pts = aggregate(state.scope,"hourly",true);
       if(pts.length < 2) pts = aggregate(state.scope,"daily",true);
       pts = pts.slice(-16);
-      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:28,r:12,t:14,b:18});
+      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:34,r:12,t:30,b:18});
       if(!pts.length) return;
       const barW=Math.max(5,box.iw/pts.length*.48);
       pts.forEach((p,i)=>{
@@ -924,7 +924,7 @@
       drawLine(document.getElementById("chartFlow"),[
         {points:dailyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
         {points:dailyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
-      ],{dots:false,scan:true});
+      ],{dots:false,scan:true,pad:{l:34,r:10,t:30,b:20}});
       drawBars(document.getElementById("chartBars"), aggregate(state.scope,state.period,true).slice(-12));
       drawLine(document.getElementById("chartSkyline"),[
         {points:dailyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2},
