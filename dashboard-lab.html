@@ -14,11 +14,23 @@
   <style>
     .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
     .lab-hero{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) auto;
-      gap:18px;
-      align-items:center;
-      margin-bottom:18px;
+      display:block;
+      padding:20px 22px 18px;
+      margin-bottom:14px;
+    }
+    .lab-hero h1{
+      font-size:clamp(36px,3.2vw,48px);
+      line-height:1.05;
+      letter-spacing:-0.025em;
+      white-space:nowrap;
+      margin:0 0 10px;
+    }
+    .lab-hero-main{
+      color:var(--text);
+      font-size:16px;
+      line-height:1.45;
+      max-width:1180px;
+      margin:0 0 7px;
     }
     .lab-warning{
       display:inline-flex;
@@ -33,13 +45,14 @@
       font-weight:700;
       margin-bottom:12px;
     }
-    .lab-small{color:var(--muted);font-size:13px;line-height:1.55}
+    .lab-small{color:var(--muted);font-size:13px;line-height:1.45;max-width:1180px;margin:0 0 12px}
     .lab-controls{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
-      justify-content:flex-end;
+      justify-content:flex-start;
       align-items:center;
+      margin-top:8px;
     }
     .lab-select{
       background:var(--card);
@@ -47,7 +60,7 @@
       border:1px solid var(--line);
       border-radius:12px;
       padding:10px 12px;
-      min-width:190px;
+      min-width:175px;
       outline:none;
       font-weight:500;
     }
@@ -306,9 +319,13 @@
       .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
       .chart-grid{grid-template-columns:1fr}
     }
+    @media(max-width:1100px){
+      .lab-hero h1{white-space:normal}
+    }
     @media(max-width:900px){
-      .lab-hero{grid-template-columns:1fr}
+      .lab-hero{padding:18px}
       .lab-controls{justify-content:flex-start}
+      .lab-select{min-width:160px;flex:1 1 180px}
       .lab-card-grid{grid-template-columns:1fr}
       .heat-row{grid-template-columns:1fr repeat(6,minmax(0,1fr))}
       .heat-row .heat-cell:nth-child(n+8){display:none}
@@ -356,10 +373,10 @@
       <div>
         <div class="page-chip">Interactive Dashboard</div>
         <h1>Interactive Market Sentiment Dashboard</h1>
-        <p>Compare selected markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-        <p class="lab-small">This page focuses on selected-market sentiment, not one global score. PSI uses the selected market's headline sentiment; Technical reads technical_data.json when available; User defaults to technical direction when direct user votes are not available. Mini-trends use generated preview shapes until true instrument-level history grows.</p>
+        <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
+        <div class="lab-controls" id="marketControls"></div>
       </div>
-      <div class="lab-controls" id="marketControls"></div>
     </section>
 
     <section class="lab-card-grid" id="snapshotCards"></section>
