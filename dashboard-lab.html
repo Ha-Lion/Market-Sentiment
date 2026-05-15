@@ -21,9 +21,9 @@
       --hist-muted:rgba(202,211,229,.62);
       --hist-gold:#ffd780;
       --hist-gold-2:#d29922;
-      --hist-purple:#9b2cff;
-      --hist-pink:#ff3f86;
-      --hist-orange:#ff9f1c;
+      --hist-purple:#a97918;
+      --hist-pink:#c88a2a;
+      --hist-orange:#ffb33f;
       --hist-cyan:#2ee6d6;
       --hist-green:#55f0a1;
       --hist-red:#ff4b6e;
@@ -78,14 +78,14 @@
       transform:translateY(-1px);
       color:#fff;
       border-color:rgba(255,215,128,.48);
-      background:linear-gradient(135deg,rgba(210,153,34,.22),rgba(155,44,255,.18));
+      background:linear-gradient(135deg,rgba(210,153,34,.24),rgba(255,215,128,.12));
     }
 
     .dash-stage-shell{
       position:relative;
       padding:10px;
       border-radius:26px;
-      background:linear-gradient(135deg,rgba(255,215,128,.24),rgba(155,44,255,.15),rgba(255,63,134,.14));
+      background:linear-gradient(135deg,rgba(255,215,128,.26),rgba(210,153,34,.18),rgba(133,91,18,.14));
       box-shadow:0 24px 70px rgba(0,0,0,.28);
       margin-bottom:18px;
     }
@@ -98,8 +98,8 @@
       border-radius:22px;
       border:1px solid rgba(255,255,255,.09);
       background:
-        radial-gradient(circle at 73% 17%, rgba(255,63,134,.34), transparent 26%),
-        radial-gradient(circle at 34% 38%, rgba(155,44,255,.34), transparent 30%),
+        radial-gradient(circle at 73% 17%, rgba(210,153,34,.28), transparent 26%),
+        radial-gradient(circle at 34% 38%, rgba(255,215,128,.18), transparent 30%),
         radial-gradient(circle at 92% 78%, rgba(210,153,34,.18), transparent 28%),
         linear-gradient(135deg,#070b17 0%,#111038 33%,#57134f 69%,#321332 100%);
       isolation:isolate;
@@ -176,10 +176,10 @@
     }
 
     .side-pill:hover,.side-pill.active{
-      background:linear-gradient(135deg,rgba(255,215,128,.2),rgba(155,44,255,.22));
+      background:linear-gradient(135deg,rgba(255,215,128,.22),rgba(210,153,34,.18));
       border-color:rgba(255,215,128,.34);
       color:#fff;
-      box-shadow:0 8px 24px rgba(155,44,255,.18);
+      box-shadow:0 8px 24px rgba(210,153,34,.16);
     }
 
     .side-spacer{height:6px;}
@@ -280,8 +280,8 @@
       line-height:1;
       font-weight:900;
       letter-spacing:.04em;
-      color:var(--hist-pink);
-      text-shadow:0 0 24px rgba(255,63,134,.25);
+      color:var(--hist-gold);
+      text-shadow:0 0 24px rgba(255,215,128,.22);
       z-index:3;
     }
 
@@ -649,8 +649,8 @@
     };
 
     const COLORS = {
-      gold:"#ffd780", gold2:"#d29922", purple:"#9b2cff", pink:"#ff3f86",
-      orange:"#ff9f1c", cyan:"#2ee6d6", green:"#55f0a1", red:"#ff4b6e",
+      gold:"#ffd780", gold2:"#d29922", purple:"#a97918", pink:"#c88a2a",
+      orange:"#ffb33f", cyan:"#2ee6d6", green:"#55f0a1", red:"#ff4b6e",
       grid:"rgba(255,255,255,.13)", text:"rgba(255,255,255,.72)"
     };
 
@@ -908,7 +908,7 @@
       pts.forEach((p,i)=>{
         const x=xAt(i,pts.length,box); const y=yAt(p.value*state.anim,box); const bh=h-box.pad.b-y;
         const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
-        grad.addColorStop(0,COLORS.pink); grad.addColorStop(.55,COLORS.purple); grad.addColorStop(1,COLORS.gold2);
+        grad.addColorStop(0,COLORS.gold); grad.addColorStop(.55,COLORS.gold2); grad.addColorStop(1,COLORS.pink);
         ctx.fillStyle=grad; ctx.fillRect(x-barW/2,y,barW,bh);
       });
     }
@@ -922,12 +922,12 @@
       drawHourly();
       drawLine(document.getElementById("chartFlow"),[
         {points:dailyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
-        {points:dailyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
+        {points:dailyUs,color:COLORS.pink,fill:"rgba(200,138,42,.11)",width:2.2}
       ],{dots:false,scan:true});
       drawBars(document.getElementById("chartBars"), aggregate(state.scope,state.period,true).slice(-12));
       drawLine(document.getElementById("chartSkyline"),[
         {points:dailyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2},
-        {points:dailyUs,color:COLORS.pink,fill:"rgba(255,63,134,.16)",width:2}
+        {points:dailyUs,color:COLORS.pink,fill:"rgba(200,138,42,.15)",width:2}
       ],{dots:false,scan:true,pad:{l:28,r:10,t:18,b:22}});
 
       const momBase=aggregate(state.scope,state.period,true).slice(-24);
