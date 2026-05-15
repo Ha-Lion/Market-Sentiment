@@ -214,11 +214,11 @@
     .card-head{
       position:absolute;
       inset:0 0 auto 0;
-      height:32px;
+      height:36px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      padding:0 12px;
+      padding:0 14px;
       background:rgba(6,7,18,.34);
       border-bottom:1px solid rgba(255,255,255,.04);
       z-index:2;
@@ -226,7 +226,7 @@
 
     .card-title{
       color:#fff;
-      font-size:12px;
+      font-size:13px;
       font-weight:900;
       letter-spacing:.02em;
       white-space:nowrap;
@@ -234,13 +234,13 @@
       text-overflow:ellipsis;
     }
 
-    .card-icons{display:flex;gap:9px;color:rgba(255,255,255,.42);font-weight:800;}
+    .card-icons{display:flex;gap:10px;color:rgba(255,255,255,.42);font-weight:800;}
 
     .mini-tabs{
       display:flex;
       gap:5px;
       color:rgba(255,255,255,.6);
-      font-size:7px;
+      font-size:9px;
       font-weight:800;
       white-space:nowrap;
     }
@@ -249,7 +249,7 @@
 
     .card-body{
       position:absolute;
-      inset:32px 10px 9px 10px;
+      inset:36px 12px 12px 12px;
       z-index:1;
     }
 
@@ -258,11 +258,11 @@
     .chart-legend{
       position:absolute;
       left:12px;
-      top:38px;
+      top:42px;
       display:grid;
       gap:3px;
       color:rgba(255,255,255,.75);
-      font-size:9px;
+      font-size:10px;
       font-weight:700;
       z-index:3;
     }
@@ -275,9 +275,9 @@
 
     .metric-big{
       position:absolute;
-      left:14px;
-      top:44px;
-      font-size:32px;
+      left:16px;
+      top:46px;
+      font-size:36px;
       line-height:1;
       font-weight:900;
       letter-spacing:.04em;
@@ -288,25 +288,25 @@
 
     .metric-caption{
       position:absolute;
-      left:88px;
-      top:54px;
+      left:106px;
+      top:58px;
       color:rgba(255,255,255,.7);
-      font-size:8px;
+      font-size:9px;
       font-weight:800;
       z-index:3;
     }
 
     .progress-stack{
       position:absolute;
-      left:14px;
-      right:14px;
-      bottom:15px;
+      left:16px;
+      right:16px;
+      bottom:30px;
       display:grid;
-      gap:9px;
+      gap:10px;
       z-index:3;
     }
 
-    .progress-line{height:4px;border-radius:999px;background:rgba(0,0,0,.32);overflow:hidden;}
+    .progress-line{height:5px;border-radius:999px;background:rgba(0,0,0,.32);overflow:hidden;}
     .progress-line span{display:block;height:100%;width:0;border-radius:999px;transition:width .8s ease;}
     .progress-line:nth-child(1) span{background:var(--hist-pink);}
     .progress-line:nth-child(2) span{background:var(--hist-purple);}
@@ -314,17 +314,17 @@
 
     .small-note{
       position:absolute;
-      left:14px;
-      bottom:7px;
+      left:16px;
+      bottom:10px;
       color:rgba(255,255,255,.8);
-      font-size:12px;
+      font-size:11px;
       font-weight:800;
       z-index:3;
     }
 
     .driver-list{
       position:absolute;
-      inset:42px 14px 10px 14px;
+      inset:44px 14px 12px 14px;
       z-index:3;
       display:grid;
       gap:7px;
@@ -338,7 +338,7 @@
       gap:8px;
       align-items:start;
       color:rgba(255,255,255,.82);
-      font-size:9px;
+      font-size:10px;
       line-height:1.25;
       min-width:0;
     }
@@ -559,7 +559,7 @@
 
           <article class="dash-card card-g">
             <div class="card-head"><div class="card-title">All-time direction</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:18px;" id="allTimeValue">--</div>
+            <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:20px;" id="allTimeValue">--</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartAllTime"></canvas></div>
           </article>
 
@@ -806,11 +806,11 @@
       ctx.lineWidth=1;
       ctx.strokeStyle=COLORS.grid;
       ctx.fillStyle=COLORS.text;
-      ctx.font="9px Inter, Arial";
+      ctx.font="10px Inter, Arial";
       [0,25,50,75,100].forEach(v=>{
         const y = pad.t + (100-v)/100*(h-pad.t-pad.b);
         ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
-        if(w>220) ctx.fillText(v,4,y+3);
+        if(w>220) ctx.fillText(v,3,y+3);
       });
       return {iw:w-pad.l-pad.r,ih:h-pad.t-pad.b,pad};
     }
@@ -844,7 +844,7 @@
       });
       const labels=series[0]?.points||[];
       if(labels.length){
-        ctx.fillStyle=COLORS.text; ctx.font="9px Inter, Arial";
+        ctx.fillStyle=COLORS.text; ctx.font="10px Inter, Arial";
         const count=Math.min(5,labels.length);
         for(let i=0;i<count;i++){
           const idx=count===1?0:Math.round(i*(labels.length-1)/(count-1));
@@ -890,9 +890,9 @@
         ctx.strokeStyle=item.color; ctx.lineWidth=thick; ctx.lineCap="butt";
         ctx.beginPath(); ctx.arc(cx,cy,r,start,start+a); ctx.stroke(); start+=a;
       });
-      ctx.font="9px Inter, Arial"; ctx.fillStyle="rgba(255,255,255,.78)";
+      ctx.font="10px Inter, Arial"; ctx.fillStyle="rgba(255,255,255,.78)";
       items.forEach((item,i)=>{
-        const y=cy-r+i*17;
+        const y=cy-r+i*19;
         ctx.fillStyle=item.color; ctx.fillRect(w*.62,y-7,6,6);
         ctx.fillStyle="rgba(255,255,255,.78)"; ctx.fillText(item.label+"  "+Math.round(item.value), w*.62+10, y);
       });
@@ -947,7 +947,7 @@
         {label:"Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
         {label:"Bear",value:vals.filter(v=>v<45).length,color:COLORS.pink}
       ]);
-      drawLine(document.getElementById("chartAllTime"),[{points:allSelected,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2.2}],{dots:false,scan:true,pad:{l:22,r:10,t:34,b:18}});
+      drawLine(document.getElementById("chartAllTime"),[{points:allSelected,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2.2}],{dots:false,scan:true,pad:{l:24,r:10,t:40,b:18}});
     }
 
     function renderStats(){
