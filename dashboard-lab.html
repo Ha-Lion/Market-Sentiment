@@ -1,115 +1,791 @@
-Use this in your lab page.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Lab — Public Sentiment Dash</title>
+  <meta name="description" content="Interactive market sentiment dashboard lab for comparing selected markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
 
-1) REPLACE this CSS block:
+  <style>
+    .lab-wrap{
+      max-width:1500px;
+      margin:0 auto;
+      padding:22px 26px 30px;
+    }
 
-.lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
-.lab-hero{
-display:grid;
-grid-template-columns:minmax(0,1fr) auto;
-gap:18px;
-align-items:center;
-margin-bottom:18px;
-}
-.lab-small{color:var(--muted);font-size:13px;line-height:1.55}
-.lab-controls{
-display:flex;
-flex-wrap:wrap;
-gap:10px;
-justify-content:flex-end;
-align-items:center;
-}
-.lab-select{
-background:var(--card);
-color:var(--text);
-border:1px solid var(--line);
-border-radius:12px;
-padding:10px 12px;
-min-width:190px;
-outline:none;
-font-weight:500;
-}
-.lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .lab-hero{
+      padding:20px 22px 18px;
+      margin-bottom:14px;
+    }
 
-WITH this:
+    .lab-hero-copy{
+      max-width:none;
+    }
 
-.lab-wrap{max-width:1500px;margin:0 auto;padding:22px 26px 26px}
-.lab-hero{
-display:block;
-padding:20px 22px 18px;
-margin-bottom:14px;
-}
-.lab-hero-copy{max-width:none}
-.lab-hero-copy h1{
-margin:0 0 10px;
-font-size:clamp(40px,4.1vw,54px);
-line-height:1.02;
-letter-spacing:-0.03em;
-white-space:nowrap;
-}
-.lab-hero-copy p{
-margin:0 0 8px;
-font-size:16px;
-line-height:1.5;
-max-width:1180px;
-}
-.lab-small{
-color:var(--muted);
-font-size:14px;
-line-height:1.5;
-max-width:1180px;
-margin:0 0 14px;
-}
-.lab-controls{
-display:flex;
-flex-wrap:wrap;
-gap:10px;
-justify-content:flex-start;
-align-items:center;
-margin-top:10px;
-}
-.lab-select{
-background:var(--card);
-color:var(--text);
-border:1px solid var(--line);
-border-radius:12px;
-padding:10px 12px;
-min-width:170px;
-outline:none;
-font-weight:500;
-}
-.lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .lab-hero-copy h1{
+      margin:0 0 10px;
+      font-size:clamp(40px,4.1vw,54px);
+      line-height:1.02;
+      letter-spacing:-.03em;
+      white-space:nowrap;
+    }
 
-@media(max-width:1200px){
-  .lab-hero-copy h1{white-space:normal}
-}
+    .lab-hero-copy p{
+      margin:0 0 8px;
+      font-size:16px;
+      line-height:1.5;
+      max-width:1180px;
+    }
 
-2) REPLACE this HTML block:
+    .lab-small{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+      max-width:1180px;
+      margin:0 0 14px;
+    }
 
-<section class="panel lab-hero">
-  <div>
-    <div class="page-chip">Interactive Dashboard</div>
-    <h1>Interactive Market Sentiment Dashboard</h1>
-    <p>Compare selected markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-    <p class="lab-small">This page focuses on selected-market sentiment, not one global score. PSI uses the selected market's headline sentiment; Technical reads technical_data.json when available; User defaults to technical direction when direct user votes are not available. Mini-trends use generated preview shapes until true instrument-level history grows.</p>
-  </div>
-  <div class="lab-controls" id="marketControls"></div>
-</section>
+    .lab-controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-start;
+      align-items:center;
+      margin-top:10px;
+    }
 
-WITH this:
+    .lab-select{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      min-width:170px;
+      outline:none;
+      font-weight:500;
+    }
 
-<section class="panel lab-hero">
-  <div class="lab-hero-copy">
-    <div class="page-chip">Interactive Dashboard</div>
-    <h1>Interactive Market Sentiment Dashboard</h1>
-    <p>Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-    <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines, and user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
-    <div class="lab-controls" id="marketControls"></div>
-  </div>
-</section>
+    .lab-select:focus{
+      border-color:rgba(210,153,34,.65);
+      box-shadow:0 0 0 3px rgba(210,153,34,.10);
+    }
 
-3) OPTIONAL small mobile tweak:
-If you see crowding on smaller screens, inside your existing @media(max-width:900px) block, use:
+    .lab-card-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:14px;
+    }
 
-.lab-hero{padding:18px 18px 16px}
-.lab-hero-copy h1{font-size:clamp(34px,7vw,46px);white-space:normal}
-.lab-select{min-width:160px;flex:1 1 180px}
+    .instrument-card{
+      min-height:156px;
+      padding:16px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .instrument-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .instrument-name{
+      color:#fff;
+      font-weight:800;
+      font-size:16px;
+    }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:11px;
+      font-weight:800;
+      color:#dbe7ff;
+      background:rgba(88,166,255,.12);
+      white-space:nowrap;
+    }
+
+    .score-ring{
+      width:70px;
+      height:70px;
+      border-radius:50%;
+      background:conic-gradient(#39a6ff var(--score-deg,180deg),rgba(255,255,255,.08) 0deg);
+      display:grid;
+      place-items:center;
+      margin-bottom:10px;
+    }
+
+    .score-ring::after{
+      content:attr(data-score);
+      width:50px;
+      height:50px;
+      border-radius:50%;
+      background:#101826;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      font-size:24px;
+      font-weight:900;
+    }
+
+    .info-row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+      border-top:1px solid rgba(255,255,255,.06);
+      padding-top:7px;
+      margin-top:7px;
+    }
+
+    .info-row strong{color:#fff;}
+
+    .chart-grid{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    .lab-panel{
+      padding:18px;
+      min-height:360px;
+    }
+
+    .panel-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .panel-top h2{
+      margin:0 0 5px;
+      font-size:22px;
+    }
+
+    .panel-kicker{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .pill-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px;
+      justify-content:flex-end;
+    }
+
+    .tiny-pill{
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(17,24,33,.72);
+      color:var(--soft);
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .tiny-pill.active,.tiny-pill:hover{
+      color:#ffd780;
+      border-color:rgba(210,153,34,.45);
+      background:rgba(210,153,34,.12);
+    }
+
+    .skyline-wrap,.radar-wrap,.heat-wrap{
+      position:relative;
+      height:290px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      overflow:hidden;
+      background:radial-gradient(circle at top right,rgba(210,153,34,.12),transparent 14rem),linear-gradient(180deg,#101826,#0b111a);
+    }
+
+    .skyline-wrap svg,.radar-wrap svg{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .chart-watermark{
+      position:absolute;
+      right:18px;
+      bottom:10px;
+      color:rgba(255,255,255,.05);
+      font-size:64px;
+      font-weight:900;
+      pointer-events:none;
+    }
+
+    .preview-note{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:10px;
+      line-height:1.4;
+    }
+
+    .heat-grid{
+      display:grid;
+      gap:5px;
+      padding:14px;
+      height:100%;
+      box-sizing:border-box;
+    }
+
+    .heat-row{
+      display:grid;
+      grid-template-columns:130px repeat(8,minmax(0,1fr));
+      gap:5px;
+      align-items:center;
+    }
+
+    .heat-label{
+      color:#fff;
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .heat-cell{
+      min-height:24px;
+      border-radius:7px;
+      border:1px solid rgba(255,255,255,.08);
+      display:grid;
+      place-items:center;
+      color:#fff;
+      font-size:10px;
+      font-weight:800;
+    }
+
+    .ranking-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .rank-row{
+      display:grid;
+      grid-template-columns:28px 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:11px 12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.035);
+    }
+
+    .rank-number{color:#ffd780;font-weight:900;}
+    .rank-name{color:#fff;font-weight:800;}
+    .rank-score{color:#fff;font-weight:900;}
+
+    .news-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    .news-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .news-item{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:10px;
+      padding:10px 0;
+      border-bottom:1px solid rgba(255,255,255,.07);
+    }
+
+    .news-num{color:#ffd780;font-weight:900;font-size:12px;}
+    .news-item a{color:#fff;text-decoration:none;font-size:13px;line-height:1.35;font-weight:700;}
+    .news-item a:hover{text-decoration:underline;}
+    .news-meta{color:var(--muted);font-size:11px;margin-top:4px;}
+
+    .Bullish,.MixedBullish{color:#3fb950;font-weight:800;}
+    .Bearish,.MixedBearish{color:#ff7b72;font-weight:800;}
+    .MixedNeutral,.Neutral,.NA{color:#d29922;font-weight:800;}
+
+    @media(max-width:1300px){
+      .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+      .chart-grid,.news-grid{grid-template-columns:1fr;}
+    }
+
+    @media(max-width:1200px){
+      .lab-hero-copy h1{white-space:normal;}
+    }
+
+    @media(max-width:900px){
+      .lab-wrap{padding:18px;}
+      .lab-hero{padding:18px 18px 16px;}
+      .lab-hero-copy h1{font-size:clamp(34px,7vw,46px);white-space:normal;}
+      .lab-select{min-width:160px;flex:1 1 180px;}
+      .lab-card-grid{grid-template-columns:1fr;}
+      .heat-row{grid-template-columns:1fr repeat(4,minmax(0,1fr));}
+      .heat-row .heat-cell:nth-child(n+6){display:none;}
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html" class="active">Interactive Dashboard</a>
+      <a href="sentiment-history.html">Historical Sentiment</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="advertise.html">Business Opportunities</a>
+      <a href="contact.html">Get in Touch</a>
+      <a href="about.html">About</a>
+
+      <div class="social-links">
+        <span class="social-label">Follow us</span>
+        <span class="social-pill">X</span>
+        <span class="social-pill linkedin">LinkedIn</span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="lab-wrap">
+    <section class="panel lab-hero">
+      <div class="lab-hero-copy">
+        <div class="page-chip">Interactive Dashboard</div>
+        <h1>Interactive Market Sentiment Dashboard</h1>
+        <p>Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines, and user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
+        <div class="lab-controls" id="marketControls"></div>
+      </div>
+    </section>
+
+    <section class="lab-card-grid" id="snapshotCards"></section>
+
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Skyline</h2>
+            <div class="panel-kicker">Multi-market PSI movement with glowing trend lines and clear end-point badges.</div>
+          </div>
+          <div class="pill-row" aria-label="Skyline time period">
+            <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
+            <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
+            <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
+          </div>
+        </div>
+        <div class="skyline-wrap">
+          <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
+          <div class="chart-watermark">PSI</div>
+        </div>
+        <div class="preview-note" id="skylineNote">Preview mode uses generated trend shape when real instrument history is not available.</div>
+      </div>
+
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Radar Comparison</h2>
+            <div class="panel-kicker">Each colored shape is one selected market. Axes compare PSI, user bias, headline strength, technical direction, and stability.</div>
+          </div>
+        </div>
+        <div class="radar-wrap">
+          <svg id="radarChart" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Heatwave</h2>
+            <div class="panel-kicker">Recent PSI-style pressure matrix for selected markets.</div>
+          </div>
+        </div>
+        <div class="heat-wrap">
+          <div class="heat-grid" id="heatGrid"></div>
+        </div>
+        <div class="preview-note">Color scale: 70–100 Bullish, 56–69 Mixed Bullish, 45–55 Neutral, 31–44 Mixed Bearish, 0–30 Bearish.</div>
+      </div>
+
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Strength Ranking</h2>
+            <div class="panel-kicker">Simple ranked read of selected markets.</div>
+          </div>
+        </div>
+        <div class="ranking-list" id="rankingList"></div>
+      </div>
+    </section>
+
+    <section class="news-grid">
+      <div class="panel lab-panel" style="min-height:auto;">
+        <div class="panel-top">
+          <div>
+            <h2>Relevant News</h2>
+            <div class="panel-kicker">Top headlines matching selected instruments.</div>
+          </div>
+        </div>
+        <div class="news-list" id="newsList"></div>
+      </div>
+
+      <div class="panel lab-panel" style="min-height:auto;">
+        <div class="panel-top">
+          <div>
+            <h2>Source Votes</h2>
+            <div class="panel-kicker">Current source vote summary from dashboard data.</div>
+          </div>
+        </div>
+        <div class="ranking-list" id="sourceVotes"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html" class="active">Interactive Dashboard</a>
+        <a href="public-sentiment-index.html">Public Sentiment Index</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">How the Dashboard Works</a>
+        <a href="advertise.html">Business Opportunities</a>
+        <a href="about.html">About</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script>
+    const INSTRUMENT_GROUPS = {
+      "Indexes": [
+        {key:"sp500",label:"S&P 500 / ES",aliases:["S&P 500 / ES","S&P 500","SPX","SPY","ES","US500"]},
+        {key:"nasdaq",label:"Nasdaq / NQ",aliases:["Nasdaq / NQ","Nasdaq","NQ","NDX","QQQ","US100"]},
+        {key:"dow",label:"Dow / YM",aliases:["Dow / YM","Dow","DJIA","YM","DIA","US30"]},
+        {key:"russell",label:"Russell / RTY",aliases:["Russell / RTY","Russell","RTY","RUT","IWM","US2000"]},
+        {key:"vix",label:"VIX",aliases:["VIX","Volatility Index"]}
+      ],
+      "Commodities": [
+        {key:"gold",label:"Gold",aliases:["Gold","XAU","XAU/USD"]},
+        {key:"silver",label:"Silver",aliases:["Silver","XAG","XAG/USD"]},
+        {key:"oil",label:"Crude Oil",aliases:["Crude Oil","Oil","WTI","Brent"]},
+        {key:"natgas",label:"Natural Gas",aliases:["Natural Gas","Nat Gas"]}
+      ],
+      "Macro": [
+        {key:"dxy",label:"US Dollar / DXY",aliases:["US Dollar / DXY","DXY","Dollar Index","USD Index"]},
+        {key:"fed",label:"Fed / FOMC",aliases:["Fed / FOMC","Federal Reserve","Fed","FOMC"]},
+        {key:"inflation",label:"CPI / Inflation",aliases:["CPI / Inflation","CPI","Inflation"]},
+        {key:"treasury",label:"Treasury Yields",aliases:["Treasury Yields","US10Y","10Y","Bond Market"]}
+      ],
+      "Crypto": [
+        {key:"btc",label:"Bitcoin / BTC",aliases:["Bitcoin / BTC","Bitcoin","BTC"]},
+        {key:"crypto",label:"General Crypto",aliases:["General Crypto","Crypto"]}
+      ]
+    };
+
+    const DEFAULT_SELECTIONS = ["sp500","nasdaq","dow","russell","vix"];
+    const COLORS = ["#39a6ff","#ffd780","#9b2cff","#2ee6d6","#ff3f86"];
+    let dashboardData = null;
+    let technicalData = null;
+    let activePeriod = "daily";
+
+    function normalize(text){ return String(text || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function escapeHTML(value){ return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+    function voteClass(value){ return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral"; }
+    function scoreToLabel(score){ if(score === null || score === undefined) return "N/A"; if(score >= 70) return "Bullish"; if(score <= 30) return "Bearish"; if(score > 55) return "Mixed/Bullish"; if(score < 45) return "Mixed/Bearish"; return "Mixed/Neutral"; }
+    function mapVoteToScore(vote){ const v=String(vote||"").toLowerCase(); if(v.includes("bullish") && !v.includes("bearish")) return 100; if(v.includes("bearish") && !v.includes("bullish")) return 0; if(v.includes("mixed") && v.includes("bullish")) return 70; if(v.includes("mixed") && v.includes("bearish")) return 30; return 50; }
+    function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+    function domainFromURL(url){ try{return new URL(url).hostname.replace(/^www\./,"");}catch(e){return "";} }
+
+    const INSTRUMENT_MAP = {};
+    Object.values(INSTRUMENT_GROUPS).flat().forEach(item => { INSTRUMENT_MAP[item.key] = item; });
+
+    function makeSelectHTML(slot, selected){
+      const groupsHTML = Object.entries(INSTRUMENT_GROUPS).map(([group, items]) => {
+        const options = items.map(item => `<option value="${escapeHTML(item.key)}" ${item.key === selected ? "selected" : ""}>${escapeHTML(item.label)}</option>`).join("");
+        return `<optgroup label="${escapeHTML(group)}">${options}</optgroup>`;
+      }).join("");
+      return `<select class="lab-select" id="instrumentSelect${slot}" data-slot="${slot}"><option value="None" ${selected === "None" ? "selected" : ""}>None</option>${groupsHTML}</select>`;
+    }
+
+    function buildSelects(){
+      const wrap = document.getElementById("marketControls");
+      wrap.innerHTML = DEFAULT_SELECTIONS.map((item, idx) => makeSelectHTML(idx + 1, item)).join("");
+      wrap.querySelectorAll("select").forEach(select => select.addEventListener("change", renderDashboard));
+    }
+
+    function getSelectedDefs(){
+      const values=[];
+      for(let i=1;i<=5;i++){
+        const el=document.getElementById(`instrumentSelect${i}`);
+        const value=el ? el.value : DEFAULT_SELECTIONS[i-1];
+        if(value && value !== "None") values.push(value);
+      }
+      return values.map(v => INSTRUMENT_MAP[v]).filter(Boolean);
+    }
+
+    function getNewsHeadlines(){ return Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : []; }
+    function getPsiHeadlines(){ return Array.isArray(dashboardData?.psi_headlines) && dashboardData.psi_headlines.length ? dashboardData.psi_headlines : getNewsHeadlines(); }
+
+    function headlineMatchesInstrument(headline, instrumentDef){
+      const headlineInstruments = Array.isArray(headline?.instruments) ? headline.instruments : [];
+      const headlineSet = headlineInstruments.map(normalize);
+      const title = normalize(headline?.title || "");
+      const desc = normalize(headline?.description || "");
+      return instrumentDef.aliases.some(alias => headlineSet.includes(normalize(alias))) ||
+             instrumentDef.aliases.some(alias => title.includes(normalize(alias))) ||
+             instrumentDef.aliases.some(alias => desc.includes(normalize(alias)));
+    }
+
+    function getMatchedHeadlinesForInstrument(instrumentDef, headlineList){
+      const list = Array.isArray(headlineList) ? headlineList : getNewsHeadlines();
+      return list.filter(h => headlineMatchesInstrument(h, instrumentDef));
+    }
+
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+      if(raw === null || raw === undefined) return "N/A";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
+    }
+
+    function getTechnicalForInstrument(instrumentDef){
+      if(!technicalData) return {daily:"N/A",weekly:"N/A",monthly:"N/A"};
+      const techRoot = technicalData.technical || technicalData;
+      const wanted = instrumentDef.aliases.map(normalize);
+      let entry = null;
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => wanted.includes(normalize(item?.instrument || item?.name || item?.symbol || "")));
+      }else if(typeof techRoot === "object"){
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
+          return wanted.some(w => possible.includes(w));
+        });
+        entry = found ? found[1] : null;
+      }
+      if(!entry) return {daily:"N/A",weekly:"N/A",monthly:"N/A"};
+      return {daily:extractTechLabel(entry,"daily"),weekly:extractTechLabel(entry,"weekly"),monthly:extractTechLabel(entry,"monthly")};
+    }
+
+    function getInstrumentStats(instrumentDef){
+      const newsMatches = getMatchedHeadlinesForInstrument(instrumentDef, getNewsHeadlines());
+      const psiMatches = getMatchedHeadlinesForInstrument(instrumentDef, getPsiHeadlines());
+      let score = null;
+      let label = "N/A";
+      if(psiMatches.length > 0){
+        score = Math.round(psiMatches.reduce((sum,h) => sum + mapVoteToScore(h.vote),0) / psiMatches.length);
+        label = scoreToLabel(score);
+      }
+      return {def:instrumentDef,newsMatches,psiMatches,newsCount:newsMatches.length,psiCount:psiMatches.length,score,scoreLabel:label,latest:newsMatches[0]||null,tech:getTechnicalForInstrument(instrumentDef)};
+    }
+
+    function generatedTrend(score, idx){
+      const base = score ?? (50 + idx*3);
+      const n = activePeriod === "daily" ? 10 : activePeriod === "weekly" ? 8 : 7;
+      return Array.from({length:n},(_,i)=>clamp(base + Math.sin((i+idx)*.8)*7 + (i-n/2)*(idx%2?1.1:-.7), 8, 92));
+    }
+
+    function renderInstrumentCards(statsList){
+      const wrap=document.getElementById("snapshotCards");
+      if(!statsList.length){ wrap.innerHTML='<div class="panel instrument-card">Choose at least one instrument.</div>'; return; }
+      wrap.innerHTML = statsList.map(stats => {
+        const score = stats.score ?? 50;
+        const deg = score * 3.6;
+        return `<div class="panel instrument-card">
+          <div class="instrument-top"><div class="instrument-name">${escapeHTML(stats.def.label)}</div><span class="status-pill">${escapeHTML(stats.scoreLabel)}</span></div>
+          <div class="score-ring" style="--score-deg:${deg}deg" data-score="${stats.score ?? '--'}"></div>
+          <div class="info-row"><span>PSI headlines</span><strong>${stats.psiCount}</strong></div>
+          <div class="info-row"><span>Relevant news</span><strong>${stats.newsCount}</strong></div>
+          <div class="info-row"><span>Technical</span><strong>${escapeHTML(stats.tech.daily)}</strong></div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderSkyline(statsList){
+      const svg=document.getElementById("skylineChart");
+      const w=1000,h=420,pad={l:55,r:30,t:30,b:45};
+      const innerW=w-pad.l-pad.r, innerH=h-pad.t-pad.b;
+      let html="";
+      [0,25,50,75,100].forEach(v=>{
+        const y=pad.t+(100-v)/100*innerH;
+        html += `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="rgba(255,255,255,.10)" />`;
+        html += `<text x="12" y="${y+4}" fill="rgba(201,209,217,.75)" font-size="12">${v}</text>`;
+      });
+      statsList.forEach((stats,idx)=>{
+        const vals=generatedTrend(stats.score,idx);
+        const pts=vals.map((v,i)=>{
+          const x=pad.l + (i/(vals.length-1))*innerW;
+          const y=pad.t + (100-v)/100*innerH;
+          return `${x},${y}`;
+        }).join(" ");
+        const color=COLORS[idx % COLORS.length];
+        const last=vals[vals.length-1];
+        const x=pad.l+innerW, y=pad.t+(100-last)/100*innerH;
+        html += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".95" />`;
+        html += `<circle cx="${x}" cy="${y}" r="6" fill="${color}" />`;
+        html += `<text x="${x-72}" y="${y-10}" fill="${color}" font-size="12" font-weight="800">${escapeHTML(stats.def.label)}</text>`;
+      });
+      svg.innerHTML=html;
+    }
+
+    function renderRadar(statsList){
+      const svg=document.getElementById("radarChart");
+      const cx=250, cy=250, r=170;
+      const axes=["PSI","User","News","Tech","Stability"];
+      let html="";
+      [40,80,120,160].forEach(rad=>{
+        const pts=axes.map((_,i)=>{
+          const a=(-90+i*360/axes.length)*Math.PI/180;
+          return `${cx+Math.cos(a)*rad},${cy+Math.sin(a)*rad}`;
+        }).join(" ");
+        html += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.10)" />`;
+      });
+      axes.forEach((name,i)=>{
+        const a=(-90+i*360/axes.length)*Math.PI/180;
+        html += `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*r}" y2="${cy+Math.sin(a)*r}" stroke="rgba(255,255,255,.10)" />`;
+        html += `<text x="${cx+Math.cos(a)*(r+28)}" y="${cy+Math.sin(a)*(r+28)}" fill="rgba(201,209,217,.8)" font-size="12" text-anchor="middle">${name}</text>`;
+      });
+      statsList.forEach((stats,idx)=>{
+        const score=stats.score ?? 50;
+        const values=[score,50,Math.min(100,stats.newsCount*3),stats.tech.daily !== "N/A" ? 65 : 45,75];
+        const pts=values.map((v,i)=>{
+          const a=(-90+i*360/axes.length)*Math.PI/180;
+          const rr=(v/100)*r;
+          return `${cx+Math.cos(a)*rr},${cy+Math.sin(a)*rr}`;
+        }).join(" ");
+        const color=COLORS[idx%COLORS.length];
+        html += `<polygon points="${pts}" fill="${color}33" stroke="${color}" stroke-width="2" />`;
+      });
+      svg.innerHTML=html;
+    }
+
+    function heatColor(v){
+      if(v >= 70) return "linear-gradient(135deg,#238636,#3fb950)";
+      if(v >= 56) return "linear-gradient(135deg,#0f766e,#2ee6d6)";
+      if(v >= 45) return "linear-gradient(135deg,#1f6feb,#58a6ff)";
+      if(v >= 31) return "linear-gradient(135deg,#9a6700,#d29922)";
+      return "linear-gradient(135deg,#da3633,#ff7b72)";
+    }
+
+    function renderHeatwave(statsList){
+      const box=document.getElementById("heatGrid");
+      if(!statsList.length){box.innerHTML='<div class="muted">Choose at least one instrument.</div>';return;}
+      box.innerHTML=statsList.map((stats,idx)=>{
+        const vals=generatedTrend(stats.score,idx).slice(-8);
+        return `<div class="heat-row"><div class="heat-label">${escapeHTML(stats.def.label)}</div>${vals.map(v=>`<div class="heat-cell" style="background:${heatColor(v)}">${Math.round(v)}</div>`).join("")}</div>`;
+      }).join("");
+    }
+
+    function renderRanking(statsList){
+      const box=document.getElementById("rankingList");
+      const sorted=[...statsList].sort((a,b)=>(b.score??-1)-(a.score??-1));
+      box.innerHTML=sorted.map((stats,i)=>`<div class="rank-row"><div class="rank-number">${String(i+1).padStart(2,"0")}</div><div class="rank-name">${escapeHTML(stats.def.label)}</div><div class="rank-score">${stats.score ?? "--"}</div></div>`).join("") || '<div class="muted">Choose at least one instrument.</div>';
+    }
+
+    function renderNews(statsList){
+      const box=document.getElementById("newsList");
+      const seen=new Set();
+      const items=[];
+      statsList.forEach(stats=>{
+        stats.newsMatches.forEach(h=>{
+          const key=(h.source||"")+"__"+(h.title||"");
+          if(!seen.has(key)){
+            seen.add(key);
+            items.push(h);
+          }
+        });
+      });
+      const top=items.slice(0,8);
+      box.innerHTML=top.map((h,i)=>`<div class="news-item"><div class="news-num">${String(i+1).padStart(2,"0")}</div><div><a href="${escapeHTML(h.link||'#')}" target="_blank" rel="noopener">${escapeHTML(h.title||'Untitled headline')}</a><div class="news-meta">${escapeHTML(h.source||domainFromURL(h.link)||'Source')} • ${escapeHTML(h.vote||'Neutral')} • ${escapeHTML(h.impact||'Impact')}</div></div></div>`).join("") || '<div class="muted">No matching headlines found yet.</div>';
+    }
+
+    function renderSourceVotes(){
+      const box=document.getElementById("sourceVotes");
+      const sources=Array.isArray(dashboardData?.sources) ? dashboardData.sources.slice(0,8) : [];
+      box.innerHTML=sources.map((s,i)=>`<div class="rank-row"><div class="rank-number">${String(i+1).padStart(2,"0")}</div><div class="rank-name">${escapeHTML(s.name||s.source||'Source')}</div><div class="rank-score ${voteClass(s.vote)}">${escapeHTML(s.vote||'N/A')}</div></div>`).join("") || '<div class="muted">Source vote data not available.</div>';
+    }
+
+    function renderDashboard(){
+      const statsList=getSelectedDefs().map(getInstrumentStats);
+      renderInstrumentCards(statsList);
+      renderSkyline(statsList);
+      renderRadar(statsList);
+      renderHeatwave(statsList);
+      renderRanking(statsList);
+      renderNews(statsList);
+      renderSourceVotes();
+    }
+
+    function bindPeriodButtons(){
+      document.querySelectorAll("[data-period]").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          activePeriod=btn.dataset.period;
+          document.querySelectorAll("[data-period]").forEach(b=>b.classList.toggle("active",b===btn));
+          renderDashboard();
+        });
+      });
+    }
+
+    async function loadJSON(path){
+      try{
+        const res=await fetch(path,{cache:"no-store"});
+        if(!res.ok) throw new Error(path+" "+res.status);
+        return await res.json();
+      }catch(e){
+        console.warn("Could not load",path,e);
+        return null;
+      }
+    }
+
+    async function init(){
+      buildSelects();
+      bindPeriodButtons();
+      dashboardData = await loadJSON("dashboard_data.json") || {};
+      technicalData = await loadJSON("technical_data.json") || {};
+      renderDashboard();
+    }
+
+    init();
+  </script>
+  <script src="vote-widget.js" defer></script>
+</body>
+</html>
