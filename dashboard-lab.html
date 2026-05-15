@@ -861,11 +861,11 @@
     }
 
     function drawBars(canvas, points, colors=[COLORS.gold,COLORS.pink,COLORS.purple]){
-      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:34,r:12,t:30,b:18});
+      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:40,r:12,t:30,b:18});
       const pts=points.slice(-12); if(!pts.length) return;
       const barW=Math.max(4,box.iw/pts.length*.42);
       pts.forEach((p,i)=>{
-        const x=xAt(i,pts.length,box);
+        const x=box.pad.l + ((i + 0.5) / pts.length) * box.iw;
         const vals=[p.global,p.us,Math.abs((p.us??p.value)-(p.global??p.value))+35].filter(Number.isFinite).slice(0,3);
         vals.forEach((v,j)=>{
           const y=yAt(v*state.anim,box);
@@ -903,11 +903,11 @@
       let pts = aggregate(state.scope,"hourly",true);
       if(pts.length < 2) pts = aggregate(state.scope,"daily",true);
       pts = pts.slice(-16);
-      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:34,r:12,t:30,b:18});
+      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:40,r:12,t:30,b:18});
       if(!pts.length) return;
       const barW=Math.max(5,box.iw/pts.length*.48);
       pts.forEach((p,i)=>{
-        const x=xAt(i,pts.length,box); const y=yAt(p.value*state.anim,box); const bh=h-box.pad.b-y;
+        const x=box.pad.l + ((i + 0.5) / pts.length) * box.iw; const y=yAt(p.value*state.anim,box); const bh=h-box.pad.b-y;
         const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
         grad.addColorStop(0,COLORS.pink); grad.addColorStop(.55,COLORS.purple); grad.addColorStop(1,COLORS.gold2);
         ctx.fillStyle=grad; ctx.fillRect(x-barW/2,y,barW,bh);
