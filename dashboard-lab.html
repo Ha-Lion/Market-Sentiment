@@ -396,13 +396,13 @@
 
     .bias-legend{
       position:absolute;
-      top:47px;
-      right:14px;
-      z-index:4;
+      top:40px;
+      right:12px;
+      z-index:5;
       display:grid;
-      gap:7px;
+      gap:5px;
       min-width:92px;
-      color:rgba(255,255,255,.84);
+      color:rgba(255,255,255,.86);
       font-size:10px;
       font-weight:800;
       text-align:left;
@@ -426,7 +426,7 @@
     }
 
     .bias-body{
-      inset:58px 12px 8px 12px;
+      inset:70px 14px 12px 14px;
     }
 
     .card-a{grid-column:2/10;grid-row:1/2;}
@@ -524,9 +524,13 @@
     .history-table-wrap{
       position:relative;
       overflow:auto;
-      border:1px solid var(--line);
-      border-radius:14px;
+      border:1px solid rgba(255,215,128,.16);
+      border-radius:16px;
       margin-top:12px;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(255,215,128,.10), transparent 34%),
+        linear-gradient(135deg,rgba(17,24,39,.72),rgba(10,13,25,.94));
+      box-shadow:0 18px 48px rgba(0,0,0,.22);
     }
 
     .history-table-wrap::before{
@@ -534,15 +538,28 @@
       position:absolute;
       inset:0;
       pointer-events:none;
-      background:linear-gradient(90deg,transparent,rgba(255,215,128,.055),transparent);
-      transform:translateX(-120%);
-      animation:tableSweep 11s ease-in-out infinite;
-      z-index:2;
+      background:linear-gradient(90deg,transparent,rgba(255,215,128,.09),transparent);
+      transform:translateX(-125%);
+      animation:tableSweep 12s ease-in-out infinite;
+      z-index:3;
+    }
+
+    .history-table-wrap::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(255,255,255,.018) 1px,transparent 1px);
+      background-size:64px 64px;
+      opacity:.45;
+      z-index:0;
     }
 
     @keyframes tableSweep{
-      0%,52%{transform:translateX(-120%);}
-      78%,100%{transform:translateX(120%);}
+      0%,50%{transform:translateX(-125%);}
+      78%,100%{transform:translateX(125%);}
     }
 
     .history-table{
@@ -551,35 +568,41 @@
       min-width:720px;
       font-size:13px;
       position:relative;
-      z-index:1;
+      z-index:2;
     }
 
     .history-table th,.history-table td{
       padding:10px 12px;
-      border-bottom:1px solid var(--line);
+      border-bottom:1px solid rgba(255,255,255,.075);
       text-align:left;
       white-space:nowrap;
     }
 
     .history-table tbody tr{
-      transition:background .28s ease, transform .28s ease;
-      animation:tableRowPulse 8.5s ease-in-out infinite;
+      transition:background .28s ease, transform .28s ease, box-shadow .28s ease;
+      animation:tableRowPulse 9.5s ease-in-out infinite;
     }
 
-    .history-table tbody tr:nth-child(2n){animation-delay:1.2s;}
-    .history-table tbody tr:nth-child(3n){animation-delay:2.4s;}
+    .history-table tbody tr:nth-child(2n){animation-delay:1.4s;}
+    .history-table tbody tr:nth-child(3n){animation-delay:2.8s;}
 
     @keyframes tableRowPulse{
-      0%,100%{background:rgba(255,255,255,0);}
-      50%{background:rgba(255,215,128,.025);}
+      0%,100%{background:rgba(255,255,255,.006);}
+      50%{background:rgba(255,215,128,.045);}
     }
 
     .history-table tbody tr:hover{
-      background:rgba(255,215,128,.07);
+      background:rgba(255,215,128,.09);
       transform:translateX(2px);
+      box-shadow:inset 3px 0 rgba(255,215,128,.38);
     }
 
-    .history-table th{color:#fff;background:rgba(255,255,255,.04);font-size:12px;}
+    .history-table th{
+      color:#fff;
+      background:linear-gradient(90deg,rgba(255,215,128,.09),rgba(255,255,255,.035));
+      font-size:12px;
+    }
+
     .history-table td{color:var(--soft);}
     .bias-pill{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);}
 
@@ -1258,11 +1281,14 @@
       const {ctx,w,h}=setupCanvas(canvas);
       ctx.clearRect(0,0,w,h);
 
-      // Bias Mix only: canvas draws donut only; HTML legend sits top-right.
-      const cx=w*.38;
-      const cy=h*.58;
-      const r=Math.min(w*.34,h*.42);
-      const thick=Math.max(19,r*.44);
+      // Bias Mix only: draw the donut centered inside its own safe canvas area.
+      // Radius includes stroke margin so the ring never clips left/right/top/bottom.
+      const margin=18;
+      const maxR=Math.max(22, Math.min((w-margin*2)/2, (h-margin*2)/2));
+      const r=maxR;
+      const thick=Math.max(18, Math.min(24, r*.46));
+      const cx=w/2;
+      const cy=h/2;
       const total=items.reduce((a,b)=>a+b.value,0) || 1;
 
       ctx.strokeStyle="rgba(255,255,255,.08)";
