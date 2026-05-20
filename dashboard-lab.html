@@ -547,9 +547,9 @@
           </article>
 
           <article class="dash-card card-d">
-            <div class="card-head"><div class="card-title">Historical sentiment skyline</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="chart-legend" style="left:auto;right:14px;top:46px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
-            <div class="metric-caption" id="skylineYear">2026</div>
+            <div class="card-head"><div class="card-title" id="skylineTitle">Daily Global vs U.S. skyline</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
+            <div class="metric-caption" id="skylineYear">Daily</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartSkyline"></canvas></div>
           </article>
 
@@ -854,6 +854,32 @@
       })).filter(p => Number.isFinite(p.value)).sort((a,b)=>String(a.sort).localeCompare(String(b.sort)) || a.lastTs-b.lastTs);
     }
 
+    function periodLabel(period){
+      if(period === "hourly") return "Hourly";
+      if(period === "weekly") return "Weekly";
+      if(period === "monthly") return "Monthly";
+      return "Daily";
+    }
+
+    function skylineLimit(period){
+      if(period === "hourly") return 8;
+      if(period === "weekly") return 4;
+      if(period === "monthly") return 6;
+      return 7;
+    }
+
+    function skylinePoints(scope){
+      return aggregate(scope,state.period,true).slice(-skylineLimit(state.period));
+    }
+
+    function updateSkylineHeader(){
+      const label = periodLabel(state.period);
+      const title = document.getElementById("skylineTitle");
+      const mode = document.getElementById("skylineYear");
+      if(title) title.textContent = label + " Global vs U.S. skyline";
+      if(mode) mode.textContent = label;
+    }
+
     function movingAverage(points, key="value", window=3){
       return points.map((p,i) => {
         const slice = points.slice(Math.max(0,i-window+1), i+1).map(x=>x[key]).filter(Number.isFinite);
@@ -928,9 +954,9 @@
       const labels=series[0]?.points||[];
       if(labels.length){
         ctx.fillStyle=COLORS.text; ctx.font="10px Inter, Arial";
-        const count=Math.min(5,labels.length);
+        const count=opts.labelAll ? labels.length : Math.min(5,labels.length);
         for(let i=0;i<count;i++){
-          const idx=count===1?0:Math.round(i*(labels.length-1)/(count-1));
+          const idx=opts.labelAll ? i : (count===1?0:Math.round(i*(labels.length-1)/(count-1)));
           const x=xAt(idx,labels.length,box);
           ctx.textAlign=i===0?"left":i===count-1?"right":"center";
           ctx.fillText(labels[idx].label,x,h-6);
@@ -1064,10 +1090,13 @@
         {points:weeklyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
       ],{dots:false,scan:true,pad:{l:34,r:10,t:30,b:20}});
       drawBars(document.getElementById("chartBars"), aggregate("global","daily",true));
+      updateSkylineHeader();
+      const skylineGlobal=movingAverage(skylinePoints("global")).map(p=>({...p,value:p.smooth??p.value}));
+      const skylineUs=movingAverage(skylinePoints("us")).map(p=>({...p,value:p.smooth??p.value}));
       drawLine(document.getElementById("chartSkyline"),[
-        {points:dailyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2},
-        {points:dailyUs,color:COLORS.pink,fill:"rgba(255,63,134,.16)",width:2}
-      ],{dots:false,scan:true,pad:{l:28,r:10,t:18,b:22}});
+        {points:skylineGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2},
+        {points:skylineUs,color:COLORS.pink,fill:"rgba(255,63,134,.16)",width:2}
+      ],{dots:false,scan:true,labelAll:true,pad:{l:28,r:10,t:28,b:22}});
 
       const momBase=aggregate(state.scope,state.period,true).slice(-24);
       const mom=momBase.map((p,i,a)=>({label:p.label,value:i?clamp(50+(p.value-a[i-1].value)*3,0,100):50}));
@@ -1112,7 +1141,7 @@
       document.getElementById("levelBar1").style.width=clamp(s.current,0,100)+"%";
       document.getElementById("levelBar2").style.width=clamp(s.average,0,100)+"%";
       document.getElementById("levelBar3").style.width=clamp(50+s.change,0,100)+"%";
-      document.getElementById("skylineYear").textContent=s.last?.lastTs?.getFullYear?.() || "2026";
+      updateSkylineHeader();
     }
 
     function renderRows(){
