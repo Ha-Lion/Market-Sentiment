@@ -427,16 +427,48 @@
     }
 
     .stat-tile{
-      background:var(--card);
-      border:1px solid var(--line);
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255,215,128,.10), transparent 42%),
+        linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));
+      border:1px solid rgba(255,215,128,.12);
       border-radius:14px;
       padding:13px;
       min-width:0;
+      transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
     }
 
-    .stat-label{color:var(--muted);font-size:11px;font-weight:700;margin-bottom:6px;}
-    .stat-value{color:#fff;font-size:22px;font-weight:900;letter-spacing:.01em;}
-    .stat-note{color:var(--muted);font-size:10px;margin-top:5px;line-height:1.3;}
+    .stat-tile::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.055),transparent);
+      transform:translateX(-120%);
+      animation:statSweep 7.2s ease-in-out infinite;
+    }
+
+    @keyframes statSweep{
+      0%,48%{transform:translateX(-120%);}
+      74%,100%{transform:translateX(120%);}
+    }
+
+    .stat-tile:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,215,128,.34);
+      box-shadow:0 12px 32px rgba(0,0,0,.28);
+    }
+
+    .stat-tile.stat-bull{border-color:rgba(85,240,161,.24);background:radial-gradient(circle at 18% 0%,rgba(85,240,161,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+    .stat-tile.stat-bear{border-color:rgba(255,75,110,.25);background:radial-gradient(circle at 18% 0%,rgba(255,75,110,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+    .stat-tile.stat-neutral{border-color:rgba(80,160,255,.22);background:radial-gradient(circle at 18% 0%,rgba(80,160,255,.11),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+    .stat-tile.stat-gold{border-color:rgba(255,215,128,.28);}
+    .stat-tile.stat-purple{border-color:rgba(155,44,255,.24);background:radial-gradient(circle at 18% 0%,rgba(155,44,255,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+
+    .stat-label{position:relative;z-index:1;color:var(--muted);font-size:11px;font-weight:700;margin-bottom:6px;}
+    .stat-value{position:relative;z-index:1;color:#fff;font-size:22px;font-weight:900;letter-spacing:.01em;}
+    .stat-note{position:relative;z-index:1;color:var(--muted);font-size:10px;margin-top:5px;line-height:1.3;}
 
     .history-info-grid{
       display:grid;
@@ -625,16 +657,6 @@
       <div class="stat-tile"><div class="stat-label">Range</div><div class="stat-value" id="statRange">--</div><div class="stat-note">Lowest / highest reading</div></div>
       <div class="stat-tile"><div class="stat-label">Volatility</div><div class="stat-value" id="statVolatility">--</div><div class="stat-note">Average absolute move</div></div>
       <div class="stat-tile"><div class="stat-label">Bull / Bear</div><div class="stat-value" id="statBullBear">--</div><div class="stat-note">Bullish vs bearish count</div></div>
-    </section>
-
-    <section class="panel section">
-      <h2>What This Dashboard Shows</h2>
-      <div class="history-info-grid">
-        <div class="mini-card"><div class="mini-title">Hourly Pulse</div><div class="mini-meta">Uses hourly readings when available and rolls them into daily, weekly, and monthly views.</div></div>
-        <div class="mini-card"><div class="mini-title">Global vs U.S.</div><div class="mini-meta">Separates Global PSI and U.S. market sentiment so both can be compared cleanly.</div></div>
-        <div class="mini-card"><div class="mini-title">Momentum + Volatility</div><div class="mini-meta">Shows whether sentiment is strengthening, weakening, or moving sharply.</div></div>
-        <div class="mini-card"><div class="mini-title">Bias Mix</div><div class="mini-meta">Breaks selected records into bullish, neutral, and bearish sentiment zones.</div></div>
-      </div>
     </section>
 
     <section class="panel section">
@@ -1018,6 +1040,22 @@
       };
     }
 
+    function setStatTileClass(id, cls){
+      const el=document.getElementById(id)?.closest(".stat-tile");
+      if(!el) return;
+      el.classList.remove("stat-bull","stat-bear","stat-neutral","stat-gold","stat-purple");
+      if(cls) el.classList.add(cls);
+    }
+
+    function updateStatTileColors(s){
+      setStatTileClass("statCurrent", s.current>=56 ? "stat-bull" : (s.current<45 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statChange", s.change>0 ? "stat-bull" : (s.change<0 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statAverage", s.average>=56 ? "stat-bull" : (s.average<45 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statRange", "stat-gold");
+      setStatTileClass("statVolatility", "stat-purple");
+      setStatTileClass("statBullBear", s.bulls>s.bears ? "stat-bull" : (s.bears>s.bulls ? "stat-bear" : "stat-neutral"));
+    }
+
     function setupCanvas(canvas){
       const rect = canvas.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
@@ -1267,6 +1305,7 @@
       document.getElementById("statRange").textContent=round(s.min)+" / "+round(s.max);
       document.getElementById("statVolatility").textContent=round(s.volatility);
       document.getElementById("statBullBear").textContent=s.bulls+" / "+s.bears;
+      updateStatTileColors(s);
       const levelValueEl=document.getElementById("levelValue");
       if(levelValueEl){
         levelValueEl.textContent=round(s.current);
