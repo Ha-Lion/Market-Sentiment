@@ -648,6 +648,7 @@
   <script>
     const state = {
       raw:[],
+      hourly:[],
       drivers:[],
       scope:"global",
       period:"daily",
@@ -674,7 +675,7 @@
     function esc(value){return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
 
     function dateFromRecord(r){
-      const raw = r.timestamp || r.datetime || r.created_at || r.updated_at || r.time || r.date || r.day;
+      const raw = r.timestamp || r.ts || r.datetime || r.created_at || r.updated_at || r.time || r.sample_key || r.date || r.day;
       if(!raw) return null;
       if(typeof raw === "number") return new Date(raw > 9999999999 ? raw : raw * 1000);
       const s = String(raw);
@@ -722,6 +723,48 @@
         if(global === null && us === null) return null;
         return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i};
       }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
+    }
+
+    function normalizeHourlyPayload(payload){
+      const pools = [];
+      if(Array.isArray(payload)) pools.push(payload);
+      if(payload && typeof payload === "object"){
+        ["intraday","hourly","hourly_records","readings"].forEach(k => {
+          if(Array.isArray(payload[k])) pools.push(payload[k]);
+        });
+      }
+      const source = pools.find(a => a.length) || [];
+      return source.map((r,i) => {
+        const d = dateFromRecord(r);
+        if(!d) return null;
+        const global = valueFrom(r,"global");
+        const us = valueFrom(r,"us");
+        if(global === null && us === null) return null;
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i};
+      }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
+    }
+
+    function aggregateHourlyComparison(records){
+      const groups = new Map();
+      records.forEach(r => {
+        const key = r.date + " " + String(r.hour).padStart(2,"0") + ":00";
+        if(!groups.has(key)){
+          groups.set(key,{key,label:String(r.hour).padStart(2,"0")+":00",sort:r.ts.getTime(),global:[],us:[],lastTs:r.ts});
+        }
+        const g = groups.get(key);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+        if(r.ts > g.lastTs) g.lastTs = r.ts;
+      });
+      return [...groups.values()].map(g => ({
+        key:g.key,
+        label:g.label,
+        sort:g.sort,
+        lastTs:g.lastTs,
+        global:avg(g.global),
+        us:avg(g.us),
+        value:avg(g.global)
+      })).sort((a,b)=>a.sort-b.sort || a.lastTs-b.lastTs);
     }
 
     function bias(v){
@@ -930,7 +973,7 @@
 
     function drawHourly(){
       const canvas=document.getElementById("chartHourly");
-      let pts = aggregate("global","hourly",true);
+      let pts = aggregateHourlyComparison(state.hourly);
 
       // Comparison card: always shows Global + U.S. together.
       // Live intraday samples are sorted oldest to newest.
@@ -938,7 +981,7 @@
       pts = pts.slice(-8);
 
       const {ctx,w,h}=setupCanvas(canvas);
-      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:28});
+      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:30});
       if(!pts.length) return;
 
       const groupW = box.iw / Math.max(pts.length,1);
@@ -967,7 +1010,7 @@
 
         ctx.fillStyle=COLORS.text;
         ctx.textAlign="center";
-        ctx.fillText(String(p.label || "").replace(":00",""), center, h-9);
+        ctx.fillText(String(p.label || ""), center, h-9);
       });
 
       ctx.textAlign="left";
@@ -1132,9 +1175,11 @@
       try{
         const payload=await fetchJSON("sentiment_history.json");
         state.raw=normalizePayload(payload);
+        state.hourly=normalizeHourlyPayload(payload);
       }catch(error){
         console.warn("sentiment_history.json not available yet", error);
         state.raw=[];
+        state.hourly=[];
       }
       await loadDrivers();
       render();
