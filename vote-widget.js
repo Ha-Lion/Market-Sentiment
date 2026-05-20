@@ -494,3 +494,169 @@ window.addEventListener("load", () => {
 });
 
 window.psdApplyUserSentiment = psdApplyUserSentiment;
+
+/*
+  PSD Live Update
+  - Shared auto-update layer for every page that loads vote-widget.js.
+  - Adds cache-busting for same-site JSON data files.
+  - Checks /status.json every 5 minutes.
+  - Reloads once when new published data is detected.
+*/
+(function psdSiteLiveUpdateBootstrap(){
+  const PSD_LIVE_STATUS_PATH = "/status.json";
+  const PSD_LIVE_CHECK_MS = 5 * 60 * 1000;
+  const PSD_LIVE_FIRST_CHECK_MS = 15000;
+  const PSD_LIVE_STORAGE_KEY = "psd_live_status_signature_v1";
+  const PSD_LIVE_RELOAD_KEY = "psd_live_reloaded_signature_v1:" + window.location.pathname;
+  const PSD_JSON_DATA_FILE = /\/(?:dashboard_data|dashboard_history|sentiment_history|technical_data|status|news_cache|news_articles|latest_news|articles|news)\.json$/i;
+
+  function psdInstallFreshJsonFetchGuard(){
+    if(window.PSD_FRESH_JSON_FETCH_GUARD_INSTALLED || typeof window.fetch !== "function") return;
+    window.PSD_FRESH_JSON_FETCH_GUARD_INSTALLED = true;
+
+    const originalFetch = window.fetch.bind(window);
+
+    window.fetch = function(input, init){
+      try{
+        const rawUrl = typeof input === "string"
+          ? input
+          : (input instanceof URL ? input.toString() : (input && input.url ? input.url : ""));
+
+        if(rawUrl){
+          const url = new URL(rawUrl, window.location.href);
+
+          if(url.origin === window.location.origin && PSD_JSON_DATA_FILE.test(url.pathname)){
+            url.searchParams.set("_psd_fresh", Date.now().toString());
+
+            const nextInit = Object.assign({}, init || {}, { cache: "no-store" });
+
+            if(typeof input === "string" || input instanceof URL){
+              return originalFetch(url.toString(), nextInit);
+            }
+
+            if(input && input.url){
+              return originalFetch(url.toString(), nextInit);
+            }
+          }
+        }
+      }catch(error){
+        console.warn("PSD fresh JSON fetch guard skipped:", error);
+      }
+
+      return originalFetch(input, init);
+    };
+  }
+
+  function psdStatusSignatureFromText(text){
+    if(!text) return "";
+
+    try{
+      const json = JSON.parse(text);
+      const direct =
+        json.updated ||
+        json.updated_at ||
+        json.generated_at ||
+        json.last_updated ||
+        json.timestamp ||
+        json.time ||
+        json.run_id ||
+        json.workflow_run ||
+        "";
+
+      if(direct) return String(direct);
+
+      return JSON.stringify(json);
+    }catch(error){
+      return String(text);
+    }
+  }
+
+  function psdIsPageSafeToReload(){
+    if(document.visibilityState && document.visibilityState !== "visible") return false;
+
+    const votePanel = document.getElementById("psdVotePanel");
+    if(votePanel && votePanel.classList.contains("open")) return false;
+
+    const active = document.activeElement;
+    if(active && ["INPUT","TEXTAREA","SELECT"].includes(active.tagName)) return false;
+
+    return true;
+  }
+
+  async function psdCheckForFreshSiteData(){
+    if(window.PSD_LIVE_UPDATE_CHECKING) return;
+    if(!psdIsPageSafeToReload()) return;
+
+    window.PSD_LIVE_UPDATE_CHECKING = true;
+
+    try{
+      const url = new URL(PSD_LIVE_STATUS_PATH, window.location.origin);
+      url.searchParams.set("_psd_status", Date.now().toString());
+
+      const response = await fetch(url.toString(), { cache: "no-store" });
+      if(!response.ok) return;
+
+      const text = await response.text();
+      const signature = psdStatusSignatureFromText(text);
+      if(!signature) return;
+
+      const previousSignature = localStorage.getItem(PSD_LIVE_STORAGE_KEY);
+      const alreadyReloadedSignature = sessionStorage.getItem(PSD_LIVE_RELOAD_KEY);
+
+      if(!previousSignature){
+        localStorage.setItem(PSD_LIVE_STORAGE_KEY, signature);
+        return;
+      }
+
+      if(previousSignature !== signature && alreadyReloadedSignature !== signature){
+        localStorage.setItem(PSD_LIVE_STORAGE_KEY, signature);
+        sessionStorage.setItem(PSD_LIVE_RELOAD_KEY, signature);
+
+        psdTrack("site_auto_refresh", {
+          page_path: window.location.pathname,
+          status_signature: signature.slice(0, 80)
+        });
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 650);
+
+        return;
+      }
+
+      localStorage.setItem(PSD_LIVE_STORAGE_KEY, signature);
+    }catch(error){
+      console.warn("PSD live update check failed:", error);
+    }finally{
+      window.PSD_LIVE_UPDATE_CHECKING = false;
+    }
+  }
+
+  function psdStartLiveUpdate(){
+    if(window.PSD_LIVE_UPDATE_STARTED) return;
+    window.PSD_LIVE_UPDATE_STARTED = true;
+
+    setTimeout(psdCheckForFreshSiteData, PSD_LIVE_FIRST_CHECK_MS);
+    setInterval(psdCheckForFreshSiteData, PSD_LIVE_CHECK_MS);
+
+    document.addEventListener("visibilitychange", () => {
+      if(document.visibilityState === "visible"){
+        setTimeout(psdCheckForFreshSiteData, 1500);
+      }
+    });
+
+    window.addEventListener("focus", () => {
+      setTimeout(psdCheckForFreshSiteData, 1500);
+    });
+  }
+
+  psdInstallFreshJsonFetchGuard();
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", psdStartLiveUpdate);
+  }else{
+    psdStartLiveUpdate();
+  }
+
+  window.psdCheckForFreshSiteData = psdCheckForFreshSiteData;
+})();
