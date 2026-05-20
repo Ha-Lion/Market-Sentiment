@@ -869,6 +869,12 @@
     }
 
     function skylinePoints(scope){
+      if(state.period === "hourly"){
+        return aggregateHourlyComparison(state.hourly)
+          .map(p => ({...p, value: scope === "us" ? p.us : p.global}))
+          .filter(p => Number.isFinite(p.value))
+          .slice(-skylineLimit(state.period));
+      }
       return aggregate(scope,state.period,true).slice(-skylineLimit(state.period));
     }
 
