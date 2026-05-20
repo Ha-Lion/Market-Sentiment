@@ -554,9 +554,9 @@
           </article>
 
           <article class="dash-card card-e">
-            <div class="card-head"><div class="card-title">Momentum performance</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" id="momentumTitle">Daily Global momentum performance</div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(4,auto);gap:12px;">
-              <div class="legend-row"><span class="legend-dot"></span>PSI</div>
+              <div class="legend-row"><span class="legend-dot"></span>Global</div>
               <div class="legend-row"><span class="legend-dot us"></span>U.S.</div>
               <div class="legend-row"><span class="legend-dot mom"></span>Momentum</div>
               <div class="legend-row"><span class="legend-dot vol"></span>Volatility</div>
@@ -886,6 +886,13 @@
       if(mode) mode.textContent = label;
     }
 
+    function updateMomentumHeader(){
+      const label = periodLabel(state.period);
+      const scopeLabel = state.scope === "us" ? "U.S." : "Global";
+      const title = document.getElementById("momentumTitle");
+      if(title) title.textContent = label + " " + scopeLabel + " momentum performance";
+    }
+
     function movingAverage(points, key="value", window=3){
       return points.map((p,i) => {
         const slice = points.slice(Math.max(0,i-window+1), i+1).map(x=>x[key]).filter(Number.isFinite);
@@ -1104,15 +1111,18 @@
         {points:skylineUs,color:COLORS.pink,fill:"rgba(255,63,134,.16)",width:2}
       ],{dots:false,scan:true,labelAll:true,pad:{l:28,r:10,t:28,b:22}});
 
-      const momBase=aggregate(state.scope,state.period,true).slice(-24);
+      updateMomentumHeader();
+      const momentumGlobal=skylinePoints("global");
+      const momentumUs=skylinePoints("us");
+      const momBase=skylinePoints(state.scope);
       const mom=momBase.map((p,i,a)=>({label:p.label,value:i?clamp(50+(p.value-a[i-1].value)*3,0,100):50}));
       const vol=momBase.map((p,i,a)=>({label:p.label,value:i?clamp(Math.abs(p.value-a[i-1].value)*6,0,100):0}));
       drawLine(document.getElementById("chartMomentum"),[
-        {points:selected.slice(-24),color:COLORS.gold,width:2},
-        {points:aggregate("us",state.period,true).slice(-24),color:COLORS.pink,width:1.8},
+        {points:momentumGlobal,color:COLORS.gold,width:2},
+        {points:momentumUs,color:COLORS.pink,width:1.8},
         {points:mom,color:COLORS.purple,width:1.7},
         {points:vol,color:COLORS.cyan,width:1.5}
-      ],{dots:true,scan:false,pad:{l:30,r:10,t:26,b:20}});
+      ],{dots:true,scan:false,labelAll:true,pad:{l:30,r:10,t:30,b:22}});
 
       const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
       drawDonut(document.getElementById("chartBias"),[
