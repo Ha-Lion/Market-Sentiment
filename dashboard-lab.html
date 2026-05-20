@@ -394,6 +394,41 @@
     .driver-item a{color:inherit;text-decoration:none;}
     .driver-item a:hover{color:#fff;text-decoration:underline;}
 
+    .bias-legend{
+      position:absolute;
+      top:47px;
+      right:14px;
+      z-index:4;
+      display:grid;
+      gap:7px;
+      min-width:92px;
+      color:rgba(255,255,255,.84);
+      font-size:10px;
+      font-weight:800;
+      text-align:left;
+      pointer-events:none;
+    }
+
+    .bias-legend-row{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:6px;
+      white-space:nowrap;
+    }
+
+    .bias-legend-dot{
+      width:7px;
+      height:7px;
+      border-radius:2px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .bias-body{
+      inset:58px 12px 8px 12px;
+    }
+
     .card-a{grid-column:2/10;grid-row:1/2;}
     .card-b{grid-column:10/18;grid-row:1/2;}
     .card-c{grid-column:18/26;grid-row:1/2;}
@@ -677,7 +712,8 @@
 
           <article class="dash-card card-f">
             <div class="card-head"><div class="card-title" id="biasTitle">Daily Global bias mix</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
+            <div class="bias-legend" id="biasLegend"></div>
+            <div class="card-body bias-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
           </article>
 
           <article class="dash-card card-g">
@@ -990,6 +1026,12 @@
       if(title) title.textContent = label + " " + scopeLabel + " bias mix";
     }
 
+    function updateBiasLegend(items){
+      const box=document.getElementById("biasLegend");
+      if(!box) return;
+      box.innerHTML=items.map(item=>`<div class="bias-legend-row"><span class="bias-legend-dot" style="background:${item.color};"></span><span>${esc(item.label)} ${Math.round(item.value)}</span></div>`).join("");
+    }
+
     function divergencePoints(){
       if(state.period === "hourly"){
         return aggregateHourlyComparison(state.hourly).slice(-8).map(p => {
@@ -1213,10 +1255,14 @@
     }
 
     function drawDonut(canvas, items){
-      const {ctx,w,h}=setupCanvas(canvas); ctx.clearRect(0,0,w,h);
+      const {ctx,w,h}=setupCanvas(canvas);
+      ctx.clearRect(0,0,w,h);
 
-      // Bias Mix only: keep legend away from the ring and place it top-right.
-      const cx=w*.36, cy=h*.62, r=Math.min(w,h)*.35, thick=Math.max(18,r*.40);
+      // Bias Mix only: canvas draws donut only; HTML legend sits top-right.
+      const cx=w*.38;
+      const cy=h*.58;
+      const r=Math.min(w*.34,h*.42);
+      const thick=Math.max(19,r*.44);
       const total=items.reduce((a,b)=>a+b.value,0) || 1;
 
       ctx.strokeStyle="rgba(255,255,255,.08)";
@@ -1237,19 +1283,6 @@
         ctx.stroke();
         start+=a;
       });
-
-      const legendX=Math.max(w*.55,w-90);
-      const legendY=18;
-      ctx.font="11px Inter, Arial";
-      ctx.textBaseline="middle";
-      items.forEach((item,i)=>{
-        const y=legendY+i*20;
-        ctx.fillStyle=item.color;
-        ctx.fillRect(legendX,y-4,7,7);
-        ctx.fillStyle="rgba(255,255,255,.84)";
-        ctx.fillText(item.label+"  "+Math.round(item.value), legendX+11, y);
-      });
-      ctx.textBaseline="alphabetic";
     }
 
     function drawHourly(){
@@ -1335,11 +1368,13 @@
 
       updateBiasHeader();
       const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
-      drawDonut(document.getElementById("chartBias"),[
+      const biasItems=[
         {label:"Bullish",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
         {label:"Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
         {label:"Bearish",value:vals.filter(v=>v<45).length,color:COLORS.pink}
-      ]);
+      ];
+      updateBiasLegend(biasItems);
+      drawDonut(document.getElementById("chartBias"),biasItems);
       updateDivergenceHeader();
       const divPts = divergencePoints();
       const divColor = divPts.length && divPts[divPts.length-1].gap > 0 ? COLORS.pink : COLORS.gold;
