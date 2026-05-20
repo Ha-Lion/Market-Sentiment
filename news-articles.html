@@ -45,6 +45,28 @@
       min-width:220px;
     }
 
+    .source-filter-stack{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:center;
+      flex:1 1 280px;
+      min-width:280px;
+    }
+
+    .source-filter-stack select{
+      width:100%;
+      min-width:100%;
+    }
+
+    .news-search-actions{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      width:100%;
+    }
+
     .btn{
       border:0;
       cursor:pointer;
@@ -284,9 +306,14 @@
     }
 
     @media(max-width:760px){
-      input[type="text"],select,.btn{
+      input[type="text"],select,.btn,.source-filter-stack{
         min-width:100%;
         width:100%;
+      }
+
+      .news-search-actions{
+        display:grid;
+        grid-template-columns:1fr 1fr;
       }
 
       .headline-list{
@@ -332,7 +359,6 @@
 
   <main class="page">
     <section class="panel">
-      <div class="page-chip">News & Articles</div>
       <h1>News & Articles</h1>
       <p>Search the rolling news memory by keyword, market, instrument, and source.</p>
       <p class="cache-note">The site searches the latest scan plus the rolling archive. New articles are added hourly when the private scraper runs.</p>
@@ -355,12 +381,16 @@
           <option value="all">All Instruments</option>
         </select>
 
-        <select id="sourceFilter">
-          <option value="all">All Sources</option>
-        </select>
+        <div class="source-filter-stack">
+          <div class="news-search-actions">
+            <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
+            <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
+          </div>
 
-        <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
-        <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
+          <select id="sourceFilter">
+            <option value="all">All Sources</option>
+          </select>
+        </div>
       </div>
 
       <div class="source-summary" id="sourceSummary">
