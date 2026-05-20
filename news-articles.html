@@ -12,15 +12,37 @@
   <link rel="stylesheet" href="site.css">
 
   <style>
+    .news-search-panel{
+      position:relative;
+      padding-top:22px;
+      padding-bottom:22px;
+    }
+
+    .news-search-panel h1{
+      margin-bottom:12px;
+      line-height:1.05;
+    }
+
+    .news-search-panel p{
+      margin-bottom:10px;
+    }
+
+    .news-search-panel .cache-note{
+      margin-top:0;
+      margin-bottom:0;
+    }
+
     .controls{
-      display:flex;
-      flex-wrap:wrap;
+      display:grid;
+      grid-template-columns:minmax(260px,1.35fr) minmax(180px,.78fr) minmax(220px,.92fr) minmax(260px,1fr);
       gap:12px;
-      align-items:center;
-      margin-top:16px;
+      align-items:end;
+      margin-top:34px;
     }
 
     input[type="text"],select{
+      width:100%;
+      min-width:0;
       background:var(--card);
       color:var(--text);
       border:1px solid var(--line);
@@ -37,34 +59,29 @@
     }
 
     input[type="text"]{
-      min-width:320px;
-      flex:1 1 320px;
+      min-width:0;
     }
 
     select{
-      min-width:220px;
+      min-width:0;
     }
 
     .source-filter-stack{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      align-items:center;
-      flex:1 1 280px;
-      min-width:280px;
-    }
-
-    .source-filter-stack select{
-      width:100%;
-      min-width:100%;
+      position:relative;
+      min-width:0;
     }
 
     .news-search-actions{
+      position:absolute;
+      left:50%;
+      bottom:calc(100% + 8px);
+      transform:translateX(-50%);
       display:flex;
       justify-content:center;
       align-items:center;
       gap:10px;
-      width:100%;
+      width:max-content;
+      z-index:3;
     }
 
     .btn{
@@ -306,14 +323,28 @@
     }
 
     @media(max-width:760px){
-      input[type="text"],select,.btn,.source-filter-stack{
-        min-width:100%;
-        width:100%;
+      .news-search-panel{
+        padding-top:20px;
+        padding-bottom:20px;
+      }
+
+      .controls{
+        grid-template-columns:1fr;
+        margin-top:14px;
       }
 
       .news-search-actions{
+        position:static;
+        transform:none;
+        width:100%;
         display:grid;
         grid-template-columns:1fr 1fr;
+        margin-bottom:10px;
+      }
+
+      input[type="text"],select,.btn,.source-filter-stack{
+        min-width:100%;
+        width:100%;
       }
 
       .headline-list{
@@ -358,7 +389,7 @@
   </header>
 
   <main class="page">
-    <section class="panel">
+    <section class="panel news-search-panel">
       <h1>News & Articles</h1>
       <p>Search the rolling news memory by keyword, market, instrument, and source.</p>
       <p class="cache-note">The site searches the latest scan plus the rolling archive. New articles are added hourly when the private scraper runs.</p>
