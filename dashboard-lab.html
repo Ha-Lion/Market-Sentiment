@@ -516,7 +516,11 @@
 
           <article class="dash-card card-a">
             <div class="card-head"><div class="card-title">Hourly sentiment pulse</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="mini-tabs" style="position:absolute;right:12px;top:44px;z-index:3;"><span class="active">Today</span><span>7D</span><span>All</span></div>
+            <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
+              <span class="active">NY Time</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
+            </div>
             <div class="card-body"><canvas class="dash-canvas" id="chartHourly"></canvas></div>
           </article>
 
@@ -926,18 +930,48 @@
 
     function drawHourly(){
       const canvas=document.getElementById("chartHourly");
-      let pts = aggregate(state.scope,"hourly",true);
-      if(pts.length < 2) pts = aggregate(state.scope,"daily",true);
-      pts = pts.slice(-16);
-      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,{l:40,r:12,t:30,b:18});
+      let pts = aggregate("global","hourly",true);
+
+      // Comparison card: always shows Global + U.S. together.
+      // Live intraday samples are sorted oldest to newest.
+      // New hourly readings enter from the right while older bars shift left.
+      pts = pts.slice(-8);
+
+      const {ctx,w,h}=setupCanvas(canvas);
+      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:28});
       if(!pts.length) return;
-      const barW=Math.max(5,box.iw/pts.length*.48);
+
+      const groupW = box.iw / Math.max(pts.length,1);
+      const barW=Math.max(6,Math.min(16,groupW*.22));
+
+      ctx.font="10px Inter, Arial";
+      ctx.textBaseline="middle";
+
       pts.forEach((p,i)=>{
-        const x=box.pad.l + ((i + 0.5) / pts.length) * box.iw; const y=yAt(p.value*state.anim,box); const bh=h-box.pad.b-y;
-        const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
-        grad.addColorStop(0,COLORS.pink); grad.addColorStop(.55,COLORS.purple); grad.addColorStop(1,COLORS.gold2);
-        ctx.fillStyle=grad; ctx.fillRect(x-barW/2,y,barW,bh);
+        const center=box.pad.l + ((i + 0.5) / pts.length) * box.iw;
+        const values=[
+          {value:p.global, color:COLORS.gold, offset:-barW*.62},
+          {value:p.us, color:COLORS.pink, offset:barW*.62}
+        ];
+
+        values.forEach(item=>{
+          if(!Number.isFinite(item.value)) return;
+          const y=yAt(item.value*state.anim,box);
+          const bh=h-box.pad.b-y;
+          const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
+          grad.addColorStop(0,item.color);
+          grad.addColorStop(1,"rgba(255,255,255,.06)");
+          ctx.fillStyle=grad;
+          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
+        });
+
+        ctx.fillStyle=COLORS.text;
+        ctx.textAlign="center";
+        ctx.fillText(String(p.label || "").replace(":00",""), center, h-9);
       });
+
+      ctx.textAlign="left";
+      ctx.textBaseline="alphabetic";
     }
 
     function drawAll(){
