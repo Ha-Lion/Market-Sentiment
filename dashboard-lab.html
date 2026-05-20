@@ -523,7 +523,7 @@
 
     .history-table-wrap{
       position:relative;
-      overflow:auto;
+      overflow:hidden;
       border:1px solid rgba(255,215,128,.16);
       border-radius:16px;
       margin-top:12px;
@@ -536,10 +536,12 @@
     .history-table-wrap::before{
       content:"";
       position:absolute;
-      inset:0;
+      top:0;
+      bottom:0;
+      left:-35%;
+      width:35%;
       pointer-events:none;
       background:linear-gradient(90deg,transparent,rgba(255,215,128,.09),transparent);
-      transform:translateX(-125%);
       animation:tableSweep 12s ease-in-out infinite;
       z-index:3;
     }
@@ -558,14 +560,15 @@
     }
 
     @keyframes tableSweep{
-      0%,50%{transform:translateX(-125%);}
-      78%,100%{transform:translateX(125%);}
+      0%,50%{left:-35%;}
+      78%,100%{left:100%;}
     }
 
     .history-table{
       width:100%;
       border-collapse:collapse;
-      min-width:720px;
+      min-width:0;
+      table-layout:fixed;
       font-size:13px;
       position:relative;
       z-index:2;
@@ -576,10 +579,12 @@
       border-bottom:1px solid rgba(255,255,255,.075);
       text-align:left;
       white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     .history-table tbody tr{
-      transition:background .28s ease, transform .28s ease, box-shadow .28s ease;
+      transition:background .28s ease, box-shadow .28s ease;
       animation:tableRowPulse 9.5s ease-in-out infinite;
     }
 
@@ -593,7 +598,6 @@
 
     .history-table tbody tr:hover{
       background:rgba(255,215,128,.09);
-      transform:translateX(2px);
       box-shadow:inset 3px 0 rgba(255,215,128,.38);
     }
 
