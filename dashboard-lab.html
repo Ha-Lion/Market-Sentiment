@@ -565,7 +565,7 @@
           </article>
 
           <article class="dash-card card-f">
-            <div class="card-head"><div class="card-title">Bias mix</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" id="biasTitle">Daily Global bias mix</div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
           </article>
 
@@ -893,6 +893,13 @@
       if(title) title.textContent = label + " " + scopeLabel + " momentum performance";
     }
 
+    function updateBiasHeader(){
+      const label = periodLabel(state.period);
+      const scopeLabel = state.scope === "us" ? "U.S." : "Global";
+      const title = document.getElementById("biasTitle");
+      if(title) title.textContent = label + " " + scopeLabel + " bias mix";
+    }
+
     function movingAverage(points, key="value", window=3){
       return points.map((p,i) => {
         const slice = points.slice(Math.max(0,i-window+1), i+1).map(x=>x[key]).filter(Number.isFinite);
@@ -1124,11 +1131,12 @@
         {points:vol,color:COLORS.cyan,width:1.5}
       ],{dots:true,scan:false,labelAll:true,pad:{l:30,r:10,t:30,b:22}});
 
+      updateBiasHeader();
       const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
       drawDonut(document.getElementById("chartBias"),[
-        {label:"Bull",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
+        {label:"Bullish",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
         {label:"Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
-        {label:"Bear",value:vals.filter(v=>v<45).length,color:COLORS.pink}
+        {label:"Bearish",value:vals.filter(v=>v<45).length,color:COLORS.pink}
       ]);
       drawLine(document.getElementById("chartAllTime"),[{points:allSelected,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2.2}],{dots:false,scan:true,pad:{l:24,r:10,t:40,b:18}});
     }
