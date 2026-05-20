@@ -528,7 +528,11 @@
 
           <article class="dash-card card-c">
             <div class="card-head"><div class="card-title">Sentiment history</div><div class="card-icons"><span>+</span><span>×</span></div></div>
-            <div class="mini-tabs" style="position:absolute;right:12px;top:44px;z-index:3;"><span class="active">Past 5 Days</span><span>Global</span><span>U.S.</span></div>
+            <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
+              <span class="active">Past 5D</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-cyan);display:inline-block;"></i>U.S.</span>
+            </div>
             <div class="card-body"><canvas class="dash-canvas" id="chartBars"></canvas></div>
           </article>
 
@@ -866,8 +870,6 @@
 
       const groupW = box.iw / Math.max(pts.length,1);
       const barW = Math.max(7, Math.min(18, groupW * .24));
-      const globalColor = COLORS.gold;
-      const usColor = COLORS.cyan;
 
       ctx.font="10px Inter, Arial";
       ctx.textBaseline="middle";
@@ -875,8 +877,8 @@
       pts.forEach((p,i)=>{
         const center = box.pad.l + (i + .5) * groupW;
         const values = [
-          {value:p.global, color:globalColor, offset:-barW*.62},
-          {value:p.us, color:usColor, offset:barW*.62}
+          {value:p.global, color:COLORS.gold, offset:-barW*.62},
+          {value:p.us, color:COLORS.cyan, offset:barW*.62}
         ];
 
         values.forEach(item=>{
@@ -897,16 +899,6 @@
 
       ctx.textAlign="left";
       ctx.textBaseline="alphabetic";
-      const legendX = Math.max(box.pad.l + 4, w - 118);
-      const legendY = box.pad.t - 20;
-      ctx.fillStyle=globalColor;
-      ctx.fillRect(legendX,legendY,14,3);
-      ctx.fillStyle=COLORS.text;
-      ctx.fillText("Global",legendX+19,legendY+5);
-      ctx.fillStyle=usColor;
-      ctx.fillRect(legendX+70,legendY,14,3);
-      ctx.fillStyle=COLORS.text;
-      ctx.fillText("U.S.",legendX+89,legendY+5);
     }
 
     function drawDonut(canvas, items){
