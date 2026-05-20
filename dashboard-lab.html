@@ -336,7 +336,7 @@
       inset:44px 14px 12px 14px;
       z-index:3;
       display:grid;
-      gap:7px;
+      gap:8px;
       align-content:start;
       overflow:hidden;
     }
@@ -350,11 +350,45 @@
       font-size:10px;
       line-height:1.25;
       min-width:0;
+      padding-bottom:5px;
+      border-bottom:1px solid rgba(255,255,255,.055);
     }
+
+    .driver-item:last-child{border-bottom:0;}
 
     .driver-rank{
       color:var(--hist-gold);
       font-weight:900;
+    }
+
+    .driver-text{min-width:0;}
+    .driver-main{
+      display:block;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .driver-meta{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      margin-top:3px;
+      color:rgba(255,255,255,.48);
+      font-size:9px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .driver-badge{
+      display:inline-flex;
+      border-radius:999px;
+      padding:1px 6px;
+      font-size:8px;
+      font-weight:900;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.045);
     }
 
     .driver-item a{color:inherit;text-decoration:none;}
@@ -576,7 +610,7 @@
           </article>
 
           <article class="dash-card card-i">
-            <div class="card-head"><div class="card-title">Top sentiment drivers</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" id="driversTitle">Daily Global sentiment drivers</div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="driver-list" id="driverList"></div>
           </article>
         </div>
@@ -1263,14 +1297,80 @@
       }).join("");
     }
 
-    function renderDrivers(){
-      const box=document.getElementById("driverList");
-      const items=state.drivers.slice(0,5);
-      if(!items.length){
-        box.innerHTML='<div class="driver-item"><span class="driver-rank">01</span><span>Waiting for available news driver data.</span></div><div class="driver-item"><span class="driver-rank">02</span><span>Connect this card to your current hot-news JSON feed when ready.</span></div>';
-        return;
+    function updateDriversHeader(){
+      const title=document.getElementById("driversTitle");
+      if(title) title.textContent = periodLabel(state.period) + " " + (state.scope==="us"?"U.S.":"Global") + " sentiment drivers";
+    }
+
+    function driverBadge(d){
+      const s = Number.isFinite(d.score) ? d.score : 0;
+      if(s > .15 || s > 15) return {text:"Bullish", color:COLORS.green};
+      if(s < -.15 || s < -15) return {text:"Bearish", color:COLORS.red};
+      return {text:"Mixed", color:COLORS.gold};
+    }
+
+    function driverSourceText(d){
+      const parts=[];
+      if(d.source) parts.push(d.source);
+      if(d.timeLabel) parts.push(d.timeLabel);
+      return parts.join(" • ") || "Latest headline";
+    }
+
+    function fallbackDrivers(){
+      const points=aggregate(state.scope,state.period,true);
+      const s=stats(points);
+      const div=divergencePoints();
+      const latestDiv=div.length ? div[div.length-1] : null;
+      if(!s) return [{title:"Waiting for sentiment history data", source:"No selected records yet", score:0}];
+
+      const b=bias(s.current);
+      const trend=s.change>1?"improving":(s.change<-1?"weakening":"stable");
+      const period=periodLabel(state.period).toLowerCase();
+      const scope=state.scope==="us"?"U.S.":"Global";
+      const out=[
+        {title:`${scope} PSI is ${round(s.current)} — ${b.text}`, source:`Current ${period} reading`, score:s.current-50},
+        {title:`Selected trend is ${trend} by ${signed(s.change)} points`, source:`First-to-latest move`, score:s.change},
+        {title:`Average volatility is ${round(s.volatility)} points`, source:`Movement pressure`, score:s.volatility}
+      ];
+      if(latestDiv && Number.isFinite(latestDiv.gap)){
+        const gap=Math.round(Math.abs(latestDiv.gap));
+        out.push({
+          title: latestDiv.gap>=0 ? `U.S. sentiment is ${gap} points stronger than Global` : `Global sentiment is ${gap} points stronger than U.S.`,
+          source:"Global vs U.S. divergence",
+          score:latestDiv.gap
+        });
       }
-      box.innerHTML=items.map((d,i)=>`<div class="driver-item"><span class="driver-rank">${String(i+1).padStart(2,"0")}</span><span>${d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a>`:esc(d.title)}</span></div>`).join("");
+      return out;
+    }
+
+    function filteredDrivers(){
+      const raw=state.drivers || [];
+      if(!raw.length) return [];
+      if(state.scope!=="us") return raw.slice(0,4);
+
+      const usWords=/\b(u\.s\.|us|united states|america|american|fed|federal reserve|wall street|s&p|sp500|nasdaq|dow|treasury|white house|congress|nyse)\b/i;
+      const us=raw.filter(d=>usWords.test((d.title||"")+" "+(d.source||"")));
+      return (us.length>=2 ? us : raw).slice(0,4);
+    }
+
+    function renderDrivers(){
+      updateDriversHeader();
+      const box=document.getElementById("driverList");
+      const items=filteredDrivers();
+      const finalItems=items.length ? items : fallbackDrivers();
+
+      box.innerHTML=finalItems.slice(0,4).map((d,i)=>{
+        const badge=driverBadge(d);
+        const title=d.title || "Untitled driver";
+        const titleHtml=d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(title)}</a>`:esc(title);
+        return `<div class="driver-item">
+          <span class="driver-rank">${String(i+1).padStart(2,"0")}</span>
+          <span class="driver-text">
+            <span class="driver-main">${titleHtml}</span>
+            <span class="driver-meta"><span class="driver-badge" style="color:${badge.color};border-color:${badge.color}55;background:${badge.color}14;">${badge.text}</span>${esc(driverSourceText(d))}</span>
+          </span>
+        </div>`;
+      }).join("");
     }
 
     function animate(){
@@ -1327,14 +1427,57 @@
       return res.json();
     }
 
+    function collectDriverCandidates(data){
+      const out=[];
+      const seen=new Set();
+      function walk(v,depth=0){
+        if(!v || out.length>=1200 || depth>5) return;
+        if(Array.isArray(v)){
+          for(const item of v){ walk(item,depth+1); if(out.length>=1200) break; }
+          return;
+        }
+        if(typeof v==="object"){
+          const title=v.title||v.headline||v.name||v.text;
+          if(title && typeof title==="string"){
+            const key=title.trim().toLowerCase();
+            if(key && !seen.has(key)){ seen.add(key); out.push(v); }
+            return;
+          }
+          ["articles","news","items","records","headlines","data","results","latest","stories","psi_headlines"].forEach(k=>walk(v[k],depth+1));
+        }
+      }
+      walk(data);
+      return out;
+    }
+
+    function timeLabelFrom(value){
+      if(!value) return "";
+      const d=new Date(value);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    }
+
+    function normalizeDriver(x,index){
+      const title=String(x.title||x.headline||x.name||x.text||"").trim();
+      const url=x.url||x.link||x.href||"";
+      const source=x.source||x.publisher||x.site||x.domain||"";
+      const rawScore=num(x.score??x.sentiment_score??x.signed_score??x.impact??x.weight??x.psi_score);
+      const score=Number.isFinite(rawScore) ? rawScore : 0;
+      const rawDate=x.published_at||x.published||x.date||x.time||x.created_at||x.updated_at||"";
+      const d=rawDate ? new Date(rawDate) : null;
+      const sortDate=d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+      return {title,url,source,score,timeLabel:timeLabelFrom(rawDate),sortDate,index};
+    }
+
     async function loadDrivers(){
-      const paths=["hot_news.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
+      const paths=["hot_news.json","news_cache.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
       for(const path of paths){
         try{
           const data=await fetchJSON(path);
-          const arr=Array.isArray(data)?data:(data.articles||data.news||data.items||data.records||[]);
-          state.drivers=arr.map(x=>({title:x.title||x.headline||x.name||"",url:x.url||x.link||"",score:num(x.score||x.sentiment_score||x.impact)||0}))
-            .filter(x=>x.title).sort((a,b)=>Math.abs(b.score)-Math.abs(a.score));
+          const arr=collectDriverCandidates(data);
+          state.drivers=arr.map(normalizeDriver)
+            .filter(x=>x.title)
+            .sort((a,b)=>(b.sortDate-a.sortDate) || (Math.abs(b.score)-Math.abs(a.score)) || (a.index-b.index));
           if(state.drivers.length) break;
         }catch(e){}
       }
