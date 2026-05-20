@@ -1168,22 +1168,42 @@
 
     function drawDonut(canvas, items){
       const {ctx,w,h}=setupCanvas(canvas); ctx.clearRect(0,0,w,h);
-      const cx=w*.32, cy=h*.56, r=Math.min(w,h)*.32, thick=Math.max(16,r*.36);
+
+      // Bias Mix only: keep legend away from the ring and place it top-right.
+      const cx=w*.36, cy=h*.62, r=Math.min(w,h)*.35, thick=Math.max(18,r*.40);
       const total=items.reduce((a,b)=>a+b.value,0) || 1;
-      ctx.strokeStyle="rgba(255,255,255,.08)"; ctx.lineWidth=thick; ctx.lineCap="butt";
-      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+
+      ctx.strokeStyle="rgba(255,255,255,.08)";
+      ctx.lineWidth=thick;
+      ctx.lineCap="butt";
+      ctx.beginPath();
+      ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.stroke();
+
       let start=-Math.PI/2;
       items.forEach(item=>{
         const a=(item.value/total)*Math.PI*2*state.anim;
-        ctx.strokeStyle=item.color; ctx.lineWidth=thick; ctx.lineCap="butt";
-        ctx.beginPath(); ctx.arc(cx,cy,r,start,start+a); ctx.stroke(); start+=a;
+        ctx.strokeStyle=item.color;
+        ctx.lineWidth=thick;
+        ctx.lineCap="butt";
+        ctx.beginPath();
+        ctx.arc(cx,cy,r,start,start+a);
+        ctx.stroke();
+        start+=a;
       });
-      ctx.font="11px Inter, Arial"; ctx.fillStyle="rgba(255,255,255,.82)";
+
+      const legendX=Math.max(w*.55,w-90);
+      const legendY=18;
+      ctx.font="11px Inter, Arial";
+      ctx.textBaseline="middle";
       items.forEach((item,i)=>{
-        const y=cy-r+i*20;
-        ctx.fillStyle=item.color; ctx.fillRect(w*.60,y-7,7,7);
-        ctx.fillStyle="rgba(255,255,255,.82)"; ctx.fillText(item.label+"  "+Math.round(item.value), w*.60+11, y);
+        const y=legendY+i*20;
+        ctx.fillStyle=item.color;
+        ctx.fillRect(legendX,y-4,7,7);
+        ctx.fillStyle="rgba(255,255,255,.84)";
+        ctx.fillText(item.label+"  "+Math.round(item.value), legendX+11, y);
       });
+      ctx.textBaseline="alphabetic";
     }
 
     function drawHourly(){
