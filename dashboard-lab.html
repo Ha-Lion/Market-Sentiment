@@ -531,7 +531,8 @@
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">Past 5D</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-cyan);display:inline-block;"></i>U.S.</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-purple);display:inline-block;"></i>Momentum</span>
             </div>
             <div class="card-body"><canvas class="dash-canvas" id="chartBars"></canvas></div>
           </article>
@@ -862,26 +863,28 @@
       }
     }
 
-    function drawBars(canvas, points){
+    function drawBars(canvas, points, colors=[COLORS.gold,COLORS.pink,COLORS.purple]){
       const {ctx,w,h}=setupCanvas(canvas);
       const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:26});
       const pts=points.slice(-5);
       if(!pts.length) return;
 
       const groupW = box.iw / Math.max(pts.length,1);
-      const barW = Math.max(7, Math.min(18, groupW * .24));
+      const barW = Math.max(5, Math.min(13, groupW * .17));
 
       ctx.font="10px Inter, Arial";
       ctx.textBaseline="middle";
 
       pts.forEach((p,i)=>{
         const center = box.pad.l + (i + .5) * groupW;
-        const values = [
-          {value:p.global, color:COLORS.gold, offset:-barW*.62},
-          {value:p.us, color:COLORS.cyan, offset:barW*.62}
+        const momentum = Math.abs((p.us ?? p.value) - (p.global ?? p.value)) + 35;
+        const vals=[
+          {value:p.global, color:colors[0], offset:-barW*.95},
+          {value:p.us, color:colors[1], offset:0},
+          {value:momentum, color:colors[2], offset:barW*.95}
         ];
 
-        values.forEach(item=>{
+        vals.forEach(item=>{
           if(!Number.isFinite(item.value)) return;
           const y=yAt(item.value*state.anim,box);
           const bh=h-box.pad.b-y;
