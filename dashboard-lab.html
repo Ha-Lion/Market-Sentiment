@@ -744,27 +744,55 @@
       }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
     }
 
+    function nyHourParts(d){
+      const parts = new Intl.DateTimeFormat("en-US",{
+        timeZone:"America/New_York",
+        year:"numeric",
+        month:"2-digit",
+        day:"2-digit",
+        hour:"2-digit",
+        hour12:false
+      }).formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
+      const hour = parts.hour === "24" ? "00" : parts.hour;
+      return {
+        key:parts.year+"-"+parts.month+"-"+parts.day+" "+hour+":00",
+        label:hour+":00"
+      };
+    }
+
     function aggregateHourlyComparison(records){
+      const clean = records.filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()) && (Number.isFinite(r.global) || Number.isFinite(r.us))).sort((a,b)=>a.ts-b.ts);
+      if(!clean.length) return [];
+
       const groups = new Map();
-      records.forEach(r => {
-        const key = r.date + " " + String(r.hour).padStart(2,"0") + ":00";
-        if(!groups.has(key)){
-          groups.set(key,{key,label:String(r.hour).padStart(2,"0")+":00",sort:r.ts.getTime(),global:[],us:[],lastTs:r.ts});
+      clean.forEach(r => {
+        const ny = nyHourParts(r.ts);
+        if(!groups.has(ny.key)){
+          groups.set(ny.key,{key:ny.key,label:ny.label,global:[],us:[],lastTs:r.ts});
         }
-        const g = groups.get(key);
+        const g = groups.get(ny.key);
         if(Number.isFinite(r.global)) g.global.push(r.global);
         if(Number.isFinite(r.us)) g.us.push(r.us);
         if(r.ts > g.lastTs) g.lastTs = r.ts;
       });
-      return [...groups.values()].map(g => ({
-        key:g.key,
-        label:g.label,
-        sort:g.sort,
-        lastTs:g.lastTs,
-        global:avg(g.global),
-        us:avg(g.us),
-        value:avg(g.global)
-      })).sort((a,b)=>a.sort-b.sort || a.lastTs-b.lastTs);
+
+      const latest = clean[clean.length-1].ts;
+      const slots = [];
+      for(let i=7;i>=0;i--){
+        const slotDate = new Date(latest.getTime() - i * 3600000);
+        const ny = nyHourParts(slotDate);
+        const g = groups.get(ny.key);
+        slots.push({
+          key:ny.key,
+          label:ny.label,
+          sort:slotDate.getTime(),
+          lastTs:g?.lastTs || slotDate,
+          global:g ? avg(g.global) : null,
+          us:g ? avg(g.us) : null,
+          value:g ? avg(g.global) : null
+        });
+      }
+      return slots;
     }
 
     function bias(v){
