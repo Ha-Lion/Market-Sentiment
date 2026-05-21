@@ -4,10 +4,12 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "8";
+  const PSD_PDF_VERSION = "9";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
+  const PSD_CAPTURE_SCALE = 3;
+  const PSD_EXPORT_IMAGE_TYPE = "PNG";
 
   function qs(selector, root=document){ return root.querySelector(selector); }
   function qsa(selector, root=document){ return Array.from(root.querySelectorAll(selector)); }
@@ -649,7 +651,7 @@
 
     return await window.html2canvas(page, {
       backgroundColor:null,
-      scale:2,
+      scale:PSD_CAPTURE_SCALE,
       useCORS:true,
       allowTaint:false,
       logging:false,
@@ -676,9 +678,9 @@
 
     for(let i=0;i<pages.length;i++){
       const canvas = await canvasForPage(pages[i]);
-      const img = canvas.toDataURL("image/jpeg", 0.94);
+      const img = canvas.toDataURL("image/png");
       if(i > 0) pdf.addPage("a4", "landscape");
-      pdf.addImage(img, "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
+      pdf.addImage(img, "PNG", 0, 0, pageW, pageH, undefined, "FAST");
     }
 
     root.remove();
