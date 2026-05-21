@@ -472,7 +472,7 @@ function psdLoadPdfReportEngine(){
 
     const script = document.createElement("script");
     script.id = "psdPdfReportScript";
-    script.src = "pdf-report.js?v=3";
+    script.src = "pdf-report.js?v=4";
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("PDF report engine failed to load."));
