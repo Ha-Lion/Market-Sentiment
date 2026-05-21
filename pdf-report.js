@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "22";
+  const PSD_PDF_VERSION = "23";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -1120,30 +1120,46 @@
       #psdPdfCaptureRoot .psd-news-source-row{
         display:flex!important;
         align-items:center!important;
-        gap:8px!important;
-        margin:0 0 8px!important;
+        gap:9px!important;
+        min-height:28px!important;
+        margin:0 0 9px!important;
         color:#fff!important;
-        font-size:12.5px!important;
+        font-size:14px!important;
         font-weight:900!important;
         line-height:1.2!important;
-      }
-      #psdPdfCaptureRoot .psd-news-source-dot{
-        width:18px!important;
-        height:18px!important;
-        border-radius:6px!important;
-        display:inline-grid!important;
-        place-items:center!important;
-        background:rgba(88,166,255,.14)!important;
-        border:1px solid rgba(88,166,255,.28)!important;
-        color:#dbeafe!important;
-        font-size:10px!important;
-        font-weight:900!important;
+        opacity:1!important;
+        visibility:visible!important;
         flex:0 0 auto!important;
       }
+      #psdPdfCaptureRoot .psd-news-source-dot{
+        width:26px!important;
+        height:26px!important;
+        border-radius:8px!important;
+        display:inline-grid!important;
+        place-items:center!important;
+        background:rgba(255,255,255,.92)!important;
+        border:1px solid rgba(210,153,34,.38)!important;
+        color:#05070b!important;
+        font-size:12px!important;
+        font-weight:900!important;
+        flex:0 0 26px!important;
+        overflow:hidden!important;
+        box-shadow:0 0 12px rgba(210,153,34,.16)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-source-dot img{
+        width:100%!important;
+        height:100%!important;
+        object-fit:contain!important;
+        display:block!important;
+        border-radius:7px!important;
+      }
       #psdPdfCaptureRoot .psd-news-source-name{
+        display:block!important;
+        color:#fff!important;
         white-space:nowrap!important;
         overflow:hidden!important;
         text-overflow:ellipsis!important;
+        max-width:100%!important;
       }
       #psdPdfCaptureRoot .psd-news-report-card .psd-news-report-source{
         margin-bottom:10px!important;
@@ -1498,6 +1514,26 @@
     return safeText((end >= 0 ? rest.slice(0, end) : rest));
   }
 
+  function domainFromHref(href){
+    try{ return new URL(href, window.location.href).hostname.replace(/^www\./i, ""); }catch(e){ return ""; }
+  }
+
+  function cleanSourceName(value){
+    return safeText(value)
+      .replace(/\s+logo$/i, "")
+      .replace(/\s+favicon$/i, "")
+      .replace(/^Source\s*:\s*/i, "")
+      .trim();
+  }
+
+  function sourceLogoFromCard(card, href){
+    const img = qs("img", card);
+    const src = img ? (img.currentSrc || img.src || img.getAttribute("src") || "") : "";
+    if(src) return src;
+    const domain = domainFromHref(href);
+    return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
+  }
+
   function sourceFromNewsText(text){
     const techIdx = text.search(/Tech Daily\s*:/i);
     if(techIdx > 0){
@@ -1523,17 +1559,22 @@
   function parseNewsBits(card, index){
     const full = cleanNewsText(card.innerText || card.textContent || "");
 
+    const href = card.getAttribute("href") || qs("a", card)?.getAttribute("href") || "#";
     const sourceSelectors = [
-      ".headline-source-name", ".news-source-name", ".article-source-name", ".source-name",
-      ".publisher-name", ".publisher", ".news-provider", ".provider", ".site-name"
+      ".headline-source-name", ".headline-source", ".news-source-name", ".news-source",
+      ".article-source-name", ".article-source", ".source-name", ".source", ".card-source",
+      ".publisher-name", ".publisher", ".news-provider", ".provider", ".site-name",
+      "[data-source]"
     ];
-    let source = firstText(card, sourceSelectors) || sourceFromNewsText(full) || `News Source ${index}`;
-    if(/^(Bullish|Bearish|Neutral|Mixed|High Impact|Normal Impact|Low Impact|Tech Daily)/i.test(source)){
-      source = sourceFromNewsText(full) || `News Source ${index}`;
+    const logoImg = qs("img", card);
+    const logoAlt = cleanSourceName(logoImg ? (logoImg.getAttribute("alt") || "") : "");
+    let source = cleanSourceName(firstText(card, sourceSelectors)) || logoAlt || sourceFromNewsText(full) || domainFromHref(href) || `News Source ${index}`;
+    if(/^(Bullish|Bearish|Neutral|Mixed|High Impact|Normal Impact|Low Impact|Tech Daily|Open article)/i.test(source)){
+      source = logoAlt || sourceFromNewsText(full) || domainFromHref(href) || `News Source ${index}`;
     }
 
     const title = firstText(card, [".headline-title", ".news-title", ".article-title", "h3", "h2"]) || titleFromNewsText(full) || `News article ${index}`;
-    const href = card.getAttribute("href") || qs("a", card)?.getAttribute("href") || "#";
+    const logo = sourceLogoFromCard(card, href);
 
     const techMatch = full.match(/Tech Daily\s*:\s*(N\/A|Bullish|Bearish|Neutral|Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Mixed)/i);
     const impactMatch = full.match(/(?:High|Medium|Normal|Low)\s+Impact/i);
@@ -1558,7 +1599,7 @@
     if(techMatch) chips.push("Tech Daily: " + techMatch[1]);
     if(impactMatch) chips.push(impactMatch[0]);
 
-    return {href, source, title, chips, markets, instruments, date};
+    return {href, source, logo, title, chips, markets, instruments, date};
   }
 
   function buildNewsReportCard(card, index){
@@ -1566,8 +1607,9 @@
     const out = document.createElement("div");
     out.className = "psd-news-report-card";
     const initials = safeText(data.source).slice(0,1).toUpperCase() || "N";
+    const logoHtml = data.logo ? `<img src="${psdEscape(data.logo)}" alt="${psdEscape(data.source)} logo">` : psdEscape(initials);
     out.innerHTML = `
-      <div class="psd-news-source-row"><span class="psd-news-source-dot">${psdEscape(initials)}</span><span class="psd-news-source-name">${psdEscape(data.source)}</span></div>
+      <div class="psd-news-source-row"><span class="psd-news-source-dot">${logoHtml}</span><span class="psd-news-source-name">${psdEscape(data.source)}</span></div>
       <div class="psd-news-report-source">
         ${data.chips.slice(0,4).map(x => `<span class="psd-news-pill">${psdEscape(x)}</span>`).join("")}
       </div>
