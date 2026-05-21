@@ -1,10 +1,10 @@
 /*
-  Public Sentiment Dash - PDF Report Engine v6
+  Public Sentiment Dash - PDF Report Engine v7
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "6";
+  const PSD_PDF_VERSION = "7";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -275,6 +275,165 @@
         background:rgba(248,81,73,.08)!important;
         border-color:rgba(248,81,73,.24)!important;
       }
+
+      /* Historical Sentiment PDF support */
+      #psdPdfCaptureRoot .page{
+        max-width:none!important;
+        width:100%!important;
+        margin:0!important;
+        padding:0!important;
+      }
+      #psdPdfCaptureRoot .history-dashboard-hero{
+        display:block!important;
+        margin:0 0 12px!important;
+        padding:16px 18px!important;
+        border-radius:20px!important;
+        background:rgba(13,17,23,.94)!important;
+      }
+      #psdPdfCaptureRoot .history-dashboard-hero h1{
+        font-size:34px!important;
+        line-height:1.06!important;
+        margin:0 0 8px!important;
+        white-space:nowrap!important;
+      }
+      #psdPdfCaptureRoot .history-kicker{
+        margin-bottom:8px!important;
+        padding:6px 11px!important;
+        font-size:11px!important;
+      }
+      #psdPdfCaptureRoot .history-lead{
+        font-size:13px!important;
+        line-height:1.38!important;
+        max-width:1380px!important;
+      }
+      #psdPdfCaptureRoot .dash-stage-shell{
+        margin:0!important;
+        padding:8px!important;
+        border-radius:24px!important;
+        box-shadow:0 18px 42px rgba(0,0,0,.30)!important;
+      }
+      #psdPdfCaptureRoot .dash-stage{
+        height:640px!important;
+        min-height:0!important;
+        aspect-ratio:auto!important;
+        border-radius:20px!important;
+      }
+      #psdPdfCaptureRoot .dash-layout{
+        position:absolute!important;
+        inset:20px!important;
+        grid-template-columns:132px repeat(24,minmax(0,1fr))!important;
+        grid-template-rows:1fr 1fr 1fr!important;
+        gap:12px!important;
+      }
+      #psdPdfCaptureRoot .dash-side{
+        padding-top:120px!important;
+        gap:7px!important;
+      }
+      #psdPdfCaptureRoot .side-pill{
+        height:31px!important;
+        font-size:9.5px!important;
+      }
+      #psdPdfCaptureRoot .side-note{
+        font-size:8.5px!important;
+      }
+      #psdPdfCaptureRoot .dash-card{
+        border-radius:10px!important;
+      }
+      #psdPdfCaptureRoot .card-head{
+        height:30px!important;
+        padding:0 11px!important;
+      }
+      #psdPdfCaptureRoot .card-title{
+        font-size:11px!important;
+      }
+      #psdPdfCaptureRoot .card-icons,
+      #psdPdfCaptureRoot .mini-tabs,
+      #psdPdfCaptureRoot .chart-legend,
+      #psdPdfCaptureRoot .driver-meta,
+      #psdPdfCaptureRoot .bias-legend{
+        font-size:8.5px!important;
+      }
+      #psdPdfCaptureRoot .card-body{
+        inset:30px 10px 10px 10px!important;
+      }
+      #psdPdfCaptureRoot .bias-body{
+        inset:54px 10px 10px 10px!important;
+      }
+      #psdPdfCaptureRoot .metric-big{
+        top:38px!important;
+        left:12px!important;
+        font-size:28px!important;
+      }
+      #psdPdfCaptureRoot .metric-caption{
+        top:47px!important;
+        left:86px!important;
+        font-size:8.5px!important;
+      }
+      #psdPdfCaptureRoot .driver-list{
+        inset:36px 11px 10px 11px!important;
+        gap:5px!important;
+      }
+      #psdPdfCaptureRoot .driver-item{
+        font-size:8.5px!important;
+        line-height:1.18!important;
+        gap:6px!important;
+        padding-bottom:3px!important;
+      }
+      #psdPdfCaptureRoot .driver-badge{
+        font-size:7px!important;
+        padding:1px 5px!important;
+      }
+      #psdPdfCaptureRoot .stats-strip{
+        display:grid!important;
+        grid-template-columns:repeat(6,minmax(0,1fr))!important;
+        gap:12px!important;
+        margin:0 0 14px!important;
+      }
+      #psdPdfCaptureRoot .stat-tile{
+        border-radius:14px!important;
+        padding:12px!important;
+        min-height:92px!important;
+      }
+      #psdPdfCaptureRoot .stat-label{font-size:11px!important;margin-bottom:5px!important}
+      #psdPdfCaptureRoot .stat-value{font-size:22px!important}
+      #psdPdfCaptureRoot .stat-note{font-size:10px!important;line-height:1.25!important}
+      #psdPdfCaptureRoot .section.panel{
+        padding:18px!important;
+        border-radius:22px!important;
+        margin:0!important;
+      }
+      #psdPdfCaptureRoot .section.panel h2{
+        font-size:25px!important;
+        margin-bottom:6px!important;
+      }
+      #psdPdfCaptureRoot .section.panel .muted{
+        font-size:12px!important;
+        line-height:1.35!important;
+        margin-bottom:10px!important;
+      }
+      #psdPdfCaptureRoot .history-table-wrap{
+        margin-top:8px!important;
+        border-radius:16px!important;
+      }
+      #psdPdfCaptureRoot .history-table{
+        font-size:11px!important;
+      }
+      #psdPdfCaptureRoot .history-table th,
+      #psdPdfCaptureRoot .history-table td{
+        padding:8px 10px!important;
+      }
+      #psdPdfCaptureRoot .bias-pill{
+        font-size:9px!important;
+        padding:3px 7px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-record-page{
+        display:flex!important;
+        flex-direction:column!important;
+      }
+      #psdPdfCaptureRoot .psd-history-record-page .section.panel{
+        flex:1 1 auto!important;
+        min-height:0!important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -282,7 +441,32 @@
   function cloneElement(selectorOrEl){
     const el = typeof selectorOrEl === "string" ? qs(selectorOrEl) : selectorOrEl;
     if(!el) return null;
+
     const clone = el.cloneNode(true);
+
+    // Preserve live canvas charts. cloneNode does not copy drawn canvas pixels.
+    const originalCanvases = qsa("canvas", el);
+    const clonedCanvases = qsa("canvas", clone);
+    originalCanvases.forEach((canvas, idx) => {
+      const target = clonedCanvases[idx];
+      if(!target) return;
+      try{
+        const rect = canvas.getBoundingClientRect();
+        const img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png");
+        img.className = canvas.className || "";
+        img.alt = canvas.getAttribute("aria-label") || "Chart";
+        img.style.display = "block";
+        img.style.width = rect.width ? rect.width + "px" : "100%";
+        img.style.height = rect.height ? rect.height + "px" : "100%";
+        img.style.maxWidth = "100%";
+        img.style.objectFit = "fill";
+        target.replaceWith(img);
+      }catch(error){
+        console.warn("PDF canvas capture skipped", error);
+      }
+    });
+
     clone.removeAttribute("id");
     qsa("[id]", clone).forEach(x => x.removeAttribute("id"));
     qsa("script", clone).forEach(x => x.remove());
@@ -335,6 +519,31 @@
     root.appendChild(page3);
   }
 
+  function buildHistoricalPages(root){
+    const now = new Date().toLocaleString();
+
+    const page1 = createPage("Historical Sentiment", `Generated ${now}`);
+    [".header", "#psdAdvertiseBanner", ".history-dashboard-hero", ".dash-stage-shell"].forEach(sel => {
+      const clone = cloneElement(sel);
+      if(clone) page1.appendChild(clone);
+    });
+
+    const page2 = createPage("Records", "Stats + Filtered Historical Records + Disclaimer");
+    page2.classList.add("psd-history-record-page");
+    [".stats-strip", ".section.panel"].forEach(sel => {
+      const clone = cloneElement(sel);
+      if(clone) page2.appendChild(clone);
+    });
+    const footer = cloneElement(".footer");
+    if(footer){
+      footer.classList.add("psd-pdf-footer");
+      page2.appendChild(footer);
+    }
+
+    root.appendChild(page1);
+    root.appendChild(page2);
+  }
+
   function buildGenericPages(root){
     const now = new Date().toLocaleString();
     const page = createPage("Report", `Generated ${now}`);
@@ -358,6 +567,8 @@
     const path = window.location.pathname.toLowerCase();
     if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html") || qs("#snapshotCards")){
       buildDashboardPages(root);
+    }else if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html") || qs(".dash-stage-shell") || qs("#historyRows")){
+      buildHistoricalPages(root);
     }else{
       buildGenericPages(root);
     }
