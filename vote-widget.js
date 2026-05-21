@@ -455,109 +455,6 @@ function psdCreateVoteWidget(){
   });
 }
 
-
-function psdPdfText(el){
-  return String(el && el.textContent ? el.textContent : "").replace(/\s+/g," ").trim();
-}
-
-function psdPdfFindHeading(text){
-  const target = String(text || "").toLowerCase();
-  return Array.from(document.querySelectorAll("h1,h2,h3,h4")).find(el =>
-    psdPdfText(el).toLowerCase().includes(target)
-  ) || null;
-}
-
-function psdPdfClosestBlock(el){
-  if(!el) return null;
-  return el.closest(".panel,.dynamic-card,.card,.instrument-card,.chart-card,.ranking-card,.heatwave-card,.radar-card,.skyline-card,section,article") || el;
-}
-
-function psdPdfMarkDashboardSections(){
-  const pageKey = (window.location.pathname + " " + document.title + " " + psdPdfText(document.querySelector("h1"))).toLowerCase();
-  const isDashboard = pageKey.includes("dashboard") && !pageKey.includes("sentiment-history") && !pageKey.includes("news-articles");
-  if(!isDashboard) return;
-
-  [
-    "Interactive Market Sentiment Dashboard",
-    "Sentiment Skyline",
-    "Radar Comparison",
-    "Sentiment Heatwave",
-    "Strength Ranking"
-  ].forEach(label => {
-    const block = psdPdfClosestBlock(psdPdfFindHeading(label));
-    if(block) block.classList.add("psd-pdf-keep-together");
-  });
-
-  ["Sentiment Skyline","Sentiment Heatwave"].forEach(label => {
-    const block = psdPdfClosestBlock(psdPdfFindHeading(label));
-    if(block) block.classList.add("psd-pdf-page-break-before");
-  });
-}
-
-function psdPdfPreparePrint(){
-  document.body.classList.add("psd-print-requested");
-  psdPdfMarkDashboardSections();
-}
-
-function psdPdfFinishPrint(){
-  document.body.classList.remove("psd-print-requested");
-  document.querySelectorAll(".psd-pdf-page-break-before,.psd-pdf-keep-together").forEach(el => {
-    el.classList.remove("psd-pdf-page-break-before","psd-pdf-keep-together");
-  });
-}
-
-window.addEventListener("beforeprint", psdPdfPreparePrint);
-window.addEventListener("afterprint", psdPdfFinishPrint);
-
-function psdCreatePdfWidget(){
-  if(document.getElementById("psdPdfWidget")) return;
-
-  if(!document.getElementById("psdPdfWidgetFallbackCss")){
-    const style = document.createElement("style");
-    style.id = "psdPdfWidgetFallbackCss";
-    style.textContent = `
-      .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);z-index:999;font-family:Inter,Segoe UI,Arial,sans-serif}
-      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:54px;min-height:74px;border:1px solid rgba(88,166,255,.45);border-radius:18px;background:linear-gradient(180deg,rgba(88,166,255,.20),rgba(13,17,23,.96));color:#d8ebff;cursor:pointer;box-shadow:0 0 24px rgba(88,166,255,.16);animation:psdPdfFloat 3.5s ease-in-out infinite}
-      .psd-pdf-tab:hover{background:linear-gradient(180deg,rgba(88,166,255,.30),rgba(13,17,23,.96));transform:translateX(2px)}
-      .psd-pdf-tab-icon{font-size:13px;line-height:1;font-weight:800;letter-spacing:.3px}.psd-pdf-tab-text{font-size:12px;font-weight:700}
-      @keyframes psdPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
-      @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 94px)}}
-      @media print{.psd-vote-widget,.psd-pdf-widget{display:none!important}.header{position:static!important}}
-    `;
-    document.head.appendChild(style);
-  }
-
-  const wrap = document.createElement("div");
-  wrap.id = "psdPdfWidget";
-  wrap.className = "psd-pdf-widget";
-  wrap.innerHTML = `
-    <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF" title="Save this page as PDF">
-      <span class="psd-pdf-tab-icon">PDF</span>
-      <span class="psd-pdf-tab-text">Save</span>
-    </button>
-  `;
-
-  document.body.appendChild(wrap);
-
-  const tab = wrap.querySelector(".psd-pdf-tab");
-  tab.addEventListener("click", () => {
-    psdTrack("page_pdf_print", {
-      page_path: window.location.pathname,
-      page_title: document.title || "Public Sentiment Dash"
-    });
-
-    psdPdfPreparePrint();
-
-    setTimeout(() => {
-      window.print();
-    }, 80);
-
-    setTimeout(() => {
-      psdPdfFinishPrint();
-    }, 1500);
-  });
-}
-
 function psdSafe(name, fn){
   try{
     return fn();
@@ -569,7 +466,6 @@ function psdSafe(name, fn){
 
 function psdInit(){
   psdSafe("create vote widget", psdCreateVoteWidget);
-  psdSafe("create pdf widget", psdCreatePdfWidget);
   psdSafe("load GA4", psdLoadGA4);
   psdSafe("inject structured data", psdInjectStructuredData);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
@@ -591,7 +487,6 @@ if(document.readyState === "loading"){
 
 window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
-  psdSafe("create pdf widget on load", psdCreatePdfWidget);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
   psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links on load", psdEnhanceSocialLinks);
