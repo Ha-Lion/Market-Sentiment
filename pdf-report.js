@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "16";
+  const PSD_PDF_VERSION = "17";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -1035,11 +1035,53 @@
         font-size:11px!important;
         line-height:1.28!important;
       }
+
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-card{
+        display:flex!important;
+        flex-direction:column!important;
+        padding:15px!important;
+        min-height:230px!important;
+        max-height:260px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-source-row{
+        margin-bottom:9px!important;
+        gap:8px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-source-icon{
+        width:20px!important;
+        height:20px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-source-name{
+        font-size:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-top{
+        gap:5px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .tag,
+      #psdPdfCaptureRoot .psd-news-top-grid .impact-tag,
+      #psdPdfCaptureRoot .psd-news-top-grid .tech-tag{
+        font-size:9.5px!important;
+        padding:4px 7px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-title{
+        font-size:16px!important;
+        line-height:1.30!important;
+        margin:5px 0!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-meta{
+        font-size:10px!important;
+        line-height:1.35!important;
+      }
+      #psdPdfCaptureRoot .psd-news-top-grid .headline-open{
+        font-size:10.5px!important;
+      }
+
       #psdPdfCaptureRoot .psd-news-widget-row{
         margin-top:auto!important;
         align-self:flex-start!important;
       }
-      #psdPdfCaptureRoot .psd-news-ad-page .psd-news-ad-fill{
+      #psdPdfCaptureRoot .psd-news-ad-page .psd-news-ad-fill,
+      #psdPdfCaptureRoot .psd-news-footer-page .psd-news-ad-fill{
         flex:1 1 auto!important;
         min-height:0!important;
         display:flex!important;
@@ -1312,6 +1354,7 @@
 
   function newsArticleCards(){
     const selectors = [
+      ".headline-card",
       ".news-card",
       ".article-card",
       ".article-tile",
@@ -1325,7 +1368,7 @@
       if(cards.length) return cards;
     }
 
-    const feed = qs("#articlesGrid") || qs("#articleGrid") || qs("#newsGrid") || qs("#articleFeed") || qs("#newsFeed") || qs(".articles-grid") || qs(".news-grid") || qs(".article-feed") || qs(".published-feed");
+    const feed = qs("#headlineList") || qs(".headline-list") || qs("#articlesGrid") || qs("#articleGrid") || qs("#newsGrid") || qs("#articleFeed") || qs("#newsFeed") || qs(".articles-grid") || qs(".news-grid") || qs(".article-feed") || qs(".published-feed");
     if(feed) return Array.from(feed.children).filter(el => el && el.nodeType === 1);
 
     const panels = qsa("main .panel, main .card, main .dynamic-card").filter(el => !el.closest(".header") && !el.closest(".footer"));
@@ -1459,8 +1502,22 @@
     });
   }
 
+  async function waitForNewsCardsReady(){
+    const path = window.location.pathname.toLowerCase();
+    const isNews = path.endsWith("/news-articles.html") || path.endsWith("news-articles.html");
+    if(!isNews) return;
+
+    const start = Date.now();
+    while(Date.now() - start < 7000){
+      const cards = qsa("#headlineList .headline-card, .headline-list .headline-card, .headline-card");
+      if(cards.length >= 4) return;
+      await wait(250);
+    }
+  }
+
   async function savePdfFromCapture(){
     await ensureLibraries();
+    await waitForNewsCardsReady();
 
     const root = createCaptureRoot();
     const pages = qsa(".psd-capture-page", root);
