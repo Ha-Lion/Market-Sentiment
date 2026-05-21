@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "25";
+  const PSD_PDF_VERSION = "26";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -1010,6 +1010,33 @@
       #psdPdfCaptureRoot .psd-news-hero select,
       #psdPdfCaptureRoot .psd-news-hero button,
       #psdPdfCaptureRoot .psd-news-hero .source-summary{display:none!important;}
+      #psdPdfCaptureRoot .psd-news-filter-row{
+        display:grid!important;
+        grid-template-columns:1.45fr 1fr 1fr 1fr!important;
+        gap:10px!important;
+        margin:-2px 0 0!important;
+        flex:0 0 auto!important;
+      }
+      #psdPdfCaptureRoot .psd-news-filter-cell{
+        min-height:42px!important;
+        display:flex!important;
+        align-items:center!important;
+        padding:0 14px!important;
+        border-radius:13px!important;
+        border:1px solid rgba(88,166,255,.24)!important;
+        background:linear-gradient(180deg,#111821,#0d131d)!important;
+        color:#e6edf3!important;
+        font-size:13px!important;
+        font-weight:650!important;
+        overflow:hidden!important;
+        white-space:nowrap!important;
+        text-overflow:ellipsis!important;
+        box-shadow:0 10px 22px rgba(0,0,0,.18)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-filter-cell.placeholder{
+        color:#8b949e!important;
+        font-weight:600!important;
+      }
       #psdPdfCaptureRoot .psd-news-card-title{
         color:#ffd780!important;
         font-weight:900!important;
@@ -1689,6 +1716,34 @@
     return grid;
   }
 
+  function buildNewsFilterCells(){
+    const row = document.createElement("div");
+    row.className = "psd-news-filter-row";
+
+    const hero = qs(".news-search-panel") || qs("main .panel") || document;
+    const input = qs('input[type="search"], input[type="text"], input:not([type])', hero) || qs('input[type="search"], input[type="text"], input:not([type])');
+    const selects = qsa("select", hero).concat(qsa("select")).filter((el, idx, arr) => arr.indexOf(el) === idx).slice(0, 3);
+
+    function addCell(text, isPlaceholder){
+      const cell = document.createElement("div");
+      cell.className = "psd-news-filter-cell" + (isPlaceholder ? " placeholder" : "");
+      cell.textContent = text;
+      row.appendChild(cell);
+    }
+
+    const searchText = safeText(input && (input.value || input.getAttribute("placeholder"))) || "Search keywords, headlines, markets, instruments, or source";
+    addCell(searchText, true);
+
+    const defaults = ["All Markets", "All Instruments", "All Sources"];
+    defaults.forEach((fallback, idx) => {
+      const sel = selects[idx];
+      const selectedText = sel && sel.options && sel.selectedIndex >= 0 ? safeText(sel.options[sel.selectedIndex].textContent) : "";
+      addCell(selectedText || fallback, false);
+    });
+
+    return row;
+  }
+
   function buildNewsWidgetSamples(){
     const row = document.createElement("div");
     row.className = "psd-news-widget-row";
@@ -1719,6 +1774,7 @@
       hero.classList.add("psd-news-hero");
       page1.appendChild(hero);
     }
+    page1.appendChild(buildNewsFilterCells());
     const title1 = document.createElement("div");
     title1.className = "psd-news-card-title";
     title1.textContent = "Top News Boxes";
