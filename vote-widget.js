@@ -456,6 +456,107 @@ function psdCreateVoteWidget(){
 }
 
 
+
+function psdClearPdfLayoutMarks(){
+  document.body.classList.remove("psd-dashboard-pdf");
+  document.querySelectorAll(".psd-dashboard-hero,.psd-dashboard-summary-card,.psd-dashboard-summary-grid,.psd-dashboard-skyline,.psd-dashboard-radar,.psd-dashboard-heatwave,.psd-dashboard-ranking,.psd-dashboard-footer")
+    .forEach(el => {
+      el.classList.remove(
+        "psd-dashboard-hero",
+        "psd-dashboard-summary-card",
+        "psd-dashboard-summary-grid",
+        "psd-dashboard-skyline",
+        "psd-dashboard-radar",
+        "psd-dashboard-heatwave",
+        "psd-dashboard-ranking",
+        "psd-dashboard-footer"
+      );
+    });
+}
+
+function psdTextContent(el){
+  return String(el && el.textContent ? el.textContent : "").replace(/\s+/g," ").trim();
+}
+
+function psdFindTextElement(text){
+  const target = String(text || "").toLowerCase();
+  const nodes = Array.from(document.querySelectorAll("h1,h2,h3,h4,.panel-title,.section-title,.card-title,.title,strong,b,span,div"));
+  return nodes.find(el => psdTextContent(el).toLowerCase().includes(target)) || null;
+}
+
+function psdClosestPrintBlock(el){
+  if(!el) return null;
+  return el.closest(".panel,.dynamic-card,.card,.instrument-card,.market-card,.summary-card,.chart-card,.ranking-card,.heatwave-card,.radar-card,.skyline-card,section,article") || el.closest("div") || el;
+}
+
+function psdCommonAncestor(nodes){
+  const clean = nodes.filter(Boolean);
+  if(!clean.length) return null;
+  let node = clean[0].parentElement;
+  while(node){
+    if(clean.every(item => node.contains(item))) return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
+function psdMarkDashboardPdfLayout(){
+  psdClearPdfLayoutMarks();
+
+  const pageKey = (window.location.pathname + " " + document.title + " " + psdTextContent(document.querySelector("h1"))).toLowerCase();
+  if(!pageKey.includes("dashboard")) return;
+  if(pageKey.includes("sentiment-history") || pageKey.includes("news-articles")) return;
+
+  document.body.classList.add("psd-dashboard-pdf");
+
+  const heroHeading = psdFindTextElement("Interactive Market Sentiment Dashboard") || psdFindTextElement("Interactive Dashboard");
+  const hero = psdClosestPrintBlock(heroHeading);
+  if(hero) hero.classList.add("psd-dashboard-hero");
+
+  const marketNames = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
+  const marketCards = [];
+
+  marketNames.forEach(name => {
+    const label = psdFindTextElement(name);
+    const card = psdClosestPrintBlock(label);
+    if(card && !marketCards.includes(card)){
+      card.classList.add("psd-dashboard-summary-card");
+      marketCards.push(card);
+    }
+  });
+
+  const summaryGrid = psdCommonAncestor(marketCards);
+  if(summaryGrid) summaryGrid.classList.add("psd-dashboard-summary-grid");
+
+  const skyline = psdClosestPrintBlock(psdFindTextElement("Sentiment Skyline"));
+  if(skyline) skyline.classList.add("psd-dashboard-skyline");
+
+  const radar = psdClosestPrintBlock(psdFindTextElement("Radar Comparison"));
+  if(radar) radar.classList.add("psd-dashboard-radar");
+
+  const heatwave = psdClosestPrintBlock(psdFindTextElement("Sentiment Heatwave"));
+  if(heatwave) heatwave.classList.add("psd-dashboard-heatwave");
+
+  const ranking = psdClosestPrintBlock(psdFindTextElement("Strength Ranking"));
+  if(ranking) ranking.classList.add("psd-dashboard-ranking");
+
+  const footer = document.querySelector(".footer");
+  if(footer) footer.classList.add("psd-dashboard-footer");
+}
+
+function psdPreparePdfPrint(){
+  psdMarkDashboardPdfLayout();
+  document.body.classList.add("psd-print-requested");
+}
+
+function psdFinishPdfPrint(){
+  document.body.classList.remove("psd-print-requested");
+  psdClearPdfLayoutMarks();
+}
+
+window.addEventListener("beforeprint", psdPreparePdfPrint);
+window.addEventListener("afterprint", psdFinishPdfPrint);
+
 function psdCreatePdfWidget(){
   if(document.getElementById("psdPdfWidget")) return;
 
@@ -493,15 +594,17 @@ function psdCreatePdfWidget(){
       page_title: document.title || "Public Sentiment Dash"
     });
 
-    document.body.classList.add("psd-print-requested");
+    psdPreparePdfPrint();
 
     setTimeout(() => {
       window.print();
-    }, 80);
+    }, 120);
 
     setTimeout(() => {
-      document.body.classList.remove("psd-print-requested");
-    }, 1500);
+      if(document.body.classList.contains("psd-print-requested")){
+        psdFinishPdfPrint();
+      }
+    }, 3500);
   });
 }
 
