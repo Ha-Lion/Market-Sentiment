@@ -398,7 +398,7 @@ function psdCreateVoteWidget(){
   wrap.innerHTML = `
     <button class="psd-vote-tab" type="button" aria-label="Open voting widget">
       <span class="psd-vote-tab-icon">↕</span>
-      <span class="psd-vote-tab-text">Vote</span>
+      <span class="psd-vote-tab-text">Vote<br>Here</span>
     </button>
 
     <div class="psd-vote-panel" id="psdVotePanel">
@@ -492,7 +492,7 @@ function psdLoadPdfReportEngine(){
 
     const script = document.createElement("script");
     script.id = "psdPdfReportScript";
-    script.src = "pdf-report.js?v=14";
+    script.src = "pdf-report.js?v=15";
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("PDF report engine failed to load."));
