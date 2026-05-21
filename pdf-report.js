@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "21";
+  const PSD_PDF_VERSION = "22";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -1112,32 +1112,71 @@
       #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-icon{font-size:21px!important;line-height:1!important;}
       #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-text{font-size:12px!important;line-height:1.05!important;font-weight:700!important;text-align:center!important;color:#ffe7a8!important;}
       #psdPdfCaptureRoot .psd-news-ad-space{
-        flex:1 1 auto!important;
-        min-height:0!important;
-        display:grid!important;
-        place-items:center!important;
-        border-radius:24px!important;
-        padding:28px!important;
-        background:radial-gradient(circle at top left,rgba(210,153,34,.22),transparent 430px),radial-gradient(circle at bottom right,rgba(88,166,255,.16),transparent 420px),linear-gradient(135deg,#101826,#090e16)!important;
-        border:1px solid rgba(210,153,34,.24)!important;
-        box-shadow:0 18px 44px rgba(0,0,0,.30)!important;
+        display:none!important;
+      }
+      #psdPdfCaptureRoot .psd-news-ad-space strong{font-size:0!important;}
+      #psdPdfCaptureRoot .psd-news-ad-space span{font-size:0!important;}
+
+      #psdPdfCaptureRoot .psd-news-source-row{
+        display:flex!important;
+        align-items:center!important;
+        gap:8px!important;
+        margin:0 0 8px!important;
         color:#fff!important;
-        text-align:center!important;
+        font-size:12.5px!important;
+        font-weight:900!important;
+        line-height:1.2!important;
       }
-      #psdPdfCaptureRoot .psd-news-ad-space strong{
-        color:#ffd780!important;
-        font-size:36px!important;
-        line-height:1.08!important;
-        display:block!important;
-        margin-bottom:12px!important;
+      #psdPdfCaptureRoot .psd-news-source-dot{
+        width:18px!important;
+        height:18px!important;
+        border-radius:6px!important;
+        display:inline-grid!important;
+        place-items:center!important;
+        background:rgba(88,166,255,.14)!important;
+        border:1px solid rgba(88,166,255,.28)!important;
+        color:#dbeafe!important;
+        font-size:10px!important;
+        font-weight:900!important;
+        flex:0 0 auto!important;
       }
-      #psdPdfCaptureRoot .psd-news-ad-space span{
+      #psdPdfCaptureRoot .psd-news-source-name{
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+      }
+      #psdPdfCaptureRoot .psd-news-report-card .psd-news-report-source{
+        margin-bottom:10px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-report-card .psd-news-pill{
+        font-size:10px!important;
+        padding:5px 8px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-meta-block{
+        margin-top:auto!important;
+        display:grid!important;
+        gap:3px!important;
+        color:#aeb8c7!important;
+        font-size:10.5px!important;
+        line-height:1.26!important;
+      }
+      #psdPdfCaptureRoot .psd-news-meta-block div{
+        white-space:normal!important;
+        overflow:hidden!important;
+        display:-webkit-box!important;
+        -webkit-line-clamp:2!important;
+        -webkit-box-orient:vertical!important;
+      }
+      #psdPdfCaptureRoot .psd-news-meta-label{
         color:#c9d1d9!important;
-        font-size:18px!important;
-        line-height:1.45!important;
-        max-width:760px!important;
-        display:block!important;
+        font-weight:800!important;
       }
+      #psdPdfCaptureRoot .psd-news-date{
+        color:#8b949e!important;
+        font-size:10px!important;
+        margin-top:2px!important;
+      }
+
       #psdPdfCaptureRoot .psd-news-page3 .psd-pdf-footer{
         margin-top:0!important;
         flex:0 0 auto!important;
@@ -1442,31 +1481,102 @@
     return "";
   }
 
-  function extractNewsCardData(card, index){
+  function cleanNewsText(text){
+    return safeText(text)
+      .replace(/Open article\s*→?/ig, " Open article →")
+      .replace(/\s+Markets:/ig, " Markets:")
+      .replace(/\s+Instruments:/ig, " Instruments:");
+  }
+
+  function betweenText(text, startPattern, endPattern){
+    const start = text.search(startPattern);
+    if(start < 0) return "";
+    const startMatch = text.match(startPattern);
+    const from = start + (startMatch ? startMatch[0].length : 0);
+    const rest = text.slice(from);
+    const end = rest.search(endPattern);
+    return safeText((end >= 0 ? rest.slice(0, end) : rest));
+  }
+
+  function sourceFromNewsText(text){
+    const techIdx = text.search(/Tech Daily\s*:/i);
+    if(techIdx > 0){
+      const raw = safeText(text.slice(0, techIdx));
+      if(raw && raw.length <= 60) return raw;
+    }
+    return "";
+  }
+
+  function titleFromNewsText(text){
+    const marketsIdx = text.search(/\bMarkets\s*:/i);
+    const beforeMarkets = marketsIdx >= 0 ? text.slice(0, marketsIdx) : text.replace(/Open article\s*→?.*$/i, "");
+    let start = 0;
+    const impactMatch = [...beforeMarkets.matchAll(/(?:High|Medium|Normal|Low)\s+Impact/ig)].pop();
+    if(impactMatch) start = impactMatch.index + impactMatch[0].length;
+    else{
+      const techMatch = beforeMarkets.match(/Tech Daily\s*:\s*[^\s]+(?:\s+[^\s]+)?/i);
+      if(techMatch) start = techMatch.index + techMatch[0].length;
+    }
+    return safeText(beforeMarkets.slice(start)).replace(/^[-–—•\s]+/, "");
+  }
+
+  function parseNewsBits(card, index){
+    const full = cleanNewsText(card.innerText || card.textContent || "");
+
+    const sourceSelectors = [
+      ".headline-source-name", ".news-source-name", ".article-source-name", ".source-name",
+      ".publisher-name", ".publisher", ".news-provider", ".provider", ".site-name"
+    ];
+    let source = firstText(card, sourceSelectors) || sourceFromNewsText(full) || `News Source ${index}`;
+    if(/^(Bullish|Bearish|Neutral|Mixed|High Impact|Normal Impact|Low Impact|Tech Daily)/i.test(source)){
+      source = sourceFromNewsText(full) || `News Source ${index}`;
+    }
+
+    const title = firstText(card, [".headline-title", ".news-title", ".article-title", "h3", "h2"]) || titleFromNewsText(full) || `News article ${index}`;
     const href = card.getAttribute("href") || qs("a", card)?.getAttribute("href") || "#";
-    const source = firstText(card, [".tag", ".headline-source-name", ".source", ".news-source"]) || `News Source ${index}`;
-    const title = firstText(card, [".headline-title", ".news-title", ".article-title", "h3", "h2"]);
-    const top = firstText(card, [".headline-top", ".headline-source-row", ".article-top"]);
-    const metaEl = qs(".headline-meta, .news-meta, .article-meta", card);
-    let meta = metaEl ? (metaEl.innerText || metaEl.textContent || "") : "";
-    meta = safeText(meta).replace(/ Markets:/g, "\nMarkets:").replace(/ Instruments:/g, "\nInstruments:").replace(/ Wed,/g, "\nWed,").replace(/ Thu,/g, "\nThu,").replace(/ Fri,/g, "\nFri,").replace(/ Sat,/g, "\nSat,").replace(/ Sun,/g, "\nSun,").replace(/ Mon,/g, "\nMon,").replace(/ Tue,/g, "\nTue,");
-    const fullText = safeText(card.innerText || card.textContent || "");
-    const fallbackTitle = fullText.split("Markets:")[0].replace(top, "").replace(source, "").trim().slice(0, 180);
-    return { href, source, top, title: title || fallbackTitle || `News article ${index}`, meta: meta || fullText.slice(0, 260) };
+
+    const techMatch = full.match(/Tech Daily\s*:\s*(N\/A|Bullish|Bearish|Neutral|Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Mixed)/i);
+    const impactMatch = full.match(/(?:High|Medium|Normal|Low)\s+Impact/i);
+    let sentiment = "";
+    if(techMatch){
+      const afterTech = full.slice(techMatch.index + techMatch[0].length, Math.max(techMatch.index + techMatch[0].length, full.search(/\bMarkets\s*:/i) >= 0 ? full.search(/\bMarkets\s*:/i) : full.length));
+      const sentimentMatch = afterTech.match(/\b(Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Bullish|Bearish|Neutral|Mixed)\b/i);
+      if(sentimentMatch) sentiment = sentimentMatch[1];
+    }
+    if(!sentiment){
+      const sentimentMatch = full.match(/\b(Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Bullish|Bearish|Neutral|Mixed)\b/i);
+      if(sentimentMatch) sentiment = sentimentMatch[1];
+    }
+
+    const markets = betweenText(full, /Markets\s*:/i, /Instruments\s*:|(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|Open article/i);
+    const instruments = betweenText(full, /Instruments\s*:/i, /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|Open article/i);
+    const dateMatch = full.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+\d{1,2}\s+\w+\s+\d{4}\s+[^\s]+\s+GMT/i);
+    const date = dateMatch ? dateMatch[0] : "";
+
+    const chips = [];
+    if(sentiment) chips.push(sentiment);
+    if(techMatch) chips.push("Tech Daily: " + techMatch[1]);
+    if(impactMatch) chips.push(impactMatch[0]);
+
+    return {href, source, title, chips, markets, instruments, date};
   }
 
   function buildNewsReportCard(card, index){
-    const data = extractNewsCardData(card, index);
+    const data = parseNewsBits(card, index);
     const out = document.createElement("div");
     out.className = "psd-news-report-card";
-    const topBits = safeText(data.top).split(/\s{2,}|(?=Bullish|Bearish|Neutral|Mixed|High Impact|Normal Impact)/).map(x => safeText(x)).filter(Boolean).slice(0,4);
+    const initials = safeText(data.source).slice(0,1).toUpperCase() || "N";
     out.innerHTML = `
+      <div class="psd-news-source-row"><span class="psd-news-source-dot">${psdEscape(initials)}</span><span class="psd-news-source-name">${psdEscape(data.source)}</span></div>
       <div class="psd-news-report-source">
-        <span class="psd-news-pill">${psdEscape(data.source)}</span>
-        ${topBits.filter(x => x !== data.source).map(x => `<span class="psd-news-pill">${psdEscape(x)}</span>`).join("")}
+        ${data.chips.slice(0,4).map(x => `<span class="psd-news-pill">${psdEscape(x)}</span>`).join("")}
       </div>
       <div class="psd-news-report-title">${psdEscape(data.title)}</div>
-      <div class="psd-news-report-meta">${psdEscape(data.meta)}</div>
+      <div class="psd-news-meta-block">
+        ${data.markets ? `<div><span class="psd-news-meta-label">Markets:</span> ${psdEscape(data.markets)}</div>` : ""}
+        ${data.instruments ? `<div><span class="psd-news-meta-label">Instruments:</span> ${psdEscape(data.instruments)}</div>` : ""}
+        ${data.date ? `<div class="psd-news-date">${psdEscape(data.date)}</div>` : ""}
+      </div>
       <div class="psd-news-report-open">Open article →</div>
     `;
     return out;
@@ -1480,7 +1590,7 @@
     while(grid.children.length < count){
       const ph = document.createElement("div");
       ph.className = "psd-news-report-card";
-      ph.innerHTML = `<div class="psd-news-report-source"><span class="psd-news-pill">News Feed</span></div><div class="psd-news-report-title">Live article feed still loading</div><div class="psd-news-report-meta">Wait until the article cards are visible on the page, then click Save PDF again.</div><div class="psd-news-report-open">Public Sentiment Dash</div>`;
+      ph.innerHTML = `<div class="psd-news-source-row"><span class="psd-news-source-dot">N</span><span class="psd-news-source-name">News Feed</span></div><div class="psd-news-report-title">Live article feed still loading</div><div class="psd-news-meta-block"><div>Wait until the article cards are visible on the page, then click Save PDF again.</div></div><div class="psd-news-report-open">Public Sentiment Dash</div>`;
       grid.appendChild(ph);
     }
     return grid;
@@ -1526,7 +1636,6 @@
     const page2 = createPage("News & Articles", "Advertising + More News");
     page2.classList.add("psd-news-page", "psd-news-page2");
     page2.appendChild(buildAdBannerClone());
-    page2.appendChild(buildNewsAdSpace("Advertising / Business Opportunities", "Reach market-focused readers interested in sentiment, financial news, trading, investing, and macro themes."));
     const title2 = document.createElement("div");
     title2.className = "psd-news-card-title";
     title2.textContent = "More Recent Articles";
@@ -1536,7 +1645,6 @@
     const page3 = createPage("News & Articles", "Advertising + Footer");
     page3.classList.add("psd-news-page", "psd-news-page3", "psd-final-page");
     page3.appendChild(buildAdBannerClone());
-    page3.appendChild(buildNewsAdSpace("Partner with Public Sentiment Dash", "Business opportunities, investor visibility, advertising placements, and market sentiment partnerships."));
     const title3 = document.createElement("div");
     title3.className = "psd-news-card-title";
     title3.textContent = "Additional Recent Articles";
