@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "23";
+  const PSD_PDF_VERSION = "24";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -1027,7 +1027,8 @@
       #psdPdfCaptureRoot .psd-news-mid-grid{
         display:grid!important;
         grid-template-columns:repeat(3,minmax(0,1fr))!important;
-        gap:12px!important;
+        grid-template-rows:repeat(3,minmax(0,1fr))!important;
+        gap:10px!important;
         flex:1 1 auto!important;
         min-height:0!important;
       }
@@ -1037,7 +1038,7 @@
         min-width:0!important;
         overflow:hidden!important;
         border-radius:18px!important;
-        padding:14px!important;
+        padding:12px!important;
         background:radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 13rem),linear-gradient(180deg,#111927,#0d131d)!important;
         border:1px solid rgba(210,153,34,.18)!important;
         box-shadow:0 16px 34px rgba(0,0,0,.25)!important;
@@ -1068,24 +1069,24 @@
       }
       #psdPdfCaptureRoot .psd-news-report-title{
         color:#fff!important;
-        font-size:17px!important;
+        font-size:14px!important;
         font-weight:850!important;
-        line-height:1.22!important;
+        line-height:1.20!important;
         margin:0 0 10px!important;
         display:block!important;
       }
       #psdPdfCaptureRoot .psd-news-report-meta{
         color:#c9d1d9!important;
-        font-size:11px!important;
-        line-height:1.38!important;
+        font-size:9.5px!important;
+        line-height:1.30!important;
         white-space:pre-line!important;
         margin-top:auto!important;
       }
       #psdPdfCaptureRoot .psd-news-report-open{
         color:#ffd780!important;
-        font-size:11px!important;
+        font-size:9.5px!important;
         font-weight:800!important;
-        margin-top:10px!important;
+        margin-top:6px!important;
       }
       #psdPdfCaptureRoot .psd-news-widget-row{
         display:flex!important;
@@ -1607,7 +1608,7 @@
     const out = document.createElement("div");
     out.className = "psd-news-report-card";
     const initials = safeText(data.source).slice(0,1).toUpperCase() || "N";
-    const logoHtml = data.logo ? `<img src="${psdEscape(data.logo)}" alt="${psdEscape(data.source)} logo">` : psdEscape(initials);
+    const logoHtml = `<span class="psd-news-logo-fallback">${psdEscape(initials)}</span>${data.logo ? `<img crossorigin="anonymous" src="${psdEscape(data.logo)}" alt="${psdEscape(data.source)} logo" onerror="this.style.display='none'">` : ""}`;
     out.innerHTML = `
       <div class="psd-news-source-row"><span class="psd-news-source-dot">${logoHtml}</span><span class="psd-news-source-name">${psdEscape(data.source)}</span></div>
       <div class="psd-news-report-source">
@@ -1632,7 +1633,7 @@
     while(grid.children.length < count){
       const ph = document.createElement("div");
       ph.className = "psd-news-report-card";
-      ph.innerHTML = `<div class="psd-news-source-row"><span class="psd-news-source-dot">N</span><span class="psd-news-source-name">News Feed</span></div><div class="psd-news-report-title">Live article feed still loading</div><div class="psd-news-meta-block"><div>Wait until the article cards are visible on the page, then click Save PDF again.</div></div><div class="psd-news-report-open">Public Sentiment Dash</div>`;
+      ph.innerHTML = `<div class="psd-news-source-row"><span class="psd-news-source-dot"><span class="psd-news-logo-fallback">N</span></span><span class="psd-news-source-name">News Feed</span></div><div class="psd-news-report-title">Live article feed still loading</div><div class="psd-news-meta-block"><div>Wait until the article cards are visible on the page, then click Save PDF again.</div></div><div class="psd-news-report-open">Public Sentiment Dash</div>`;
       grid.appendChild(ph);
     }
     return grid;
@@ -1682,7 +1683,7 @@
     title2.className = "psd-news-card-title";
     title2.textContent = "More Recent Articles";
     page2.appendChild(title2);
-    page2.appendChild(buildNewsCardsGrid(4,6,"psd-news-mid-grid"));
+    page2.appendChild(buildNewsCardsGrid(4,9,"psd-news-mid-grid"));
 
     const page3 = createPage("News & Articles", "Advertising + Footer");
     page3.classList.add("psd-news-page", "psd-news-page3", "psd-final-page");
@@ -1691,7 +1692,7 @@
     title3.className = "psd-news-card-title";
     title3.textContent = "Additional Recent Articles";
     page3.appendChild(title3);
-    page3.appendChild(buildNewsCardsGrid(10,3,"psd-news-mid-grid"));
+    page3.appendChild(buildNewsCardsGrid(13,9,"psd-news-mid-grid"));
     const footer = cloneElement(".footer");
     if(footer){
       footer.classList.add("psd-pdf-footer");
