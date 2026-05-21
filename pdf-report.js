@@ -1,10 +1,10 @@
 /*
-  Public Sentiment Dash - PDF Report Engine v8
+  Public Sentiment Dash - PDF Report Engine v12
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "11";
+  const PSD_PDF_VERSION = "12";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
