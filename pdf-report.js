@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "14";
+  const PSD_PDF_VERSION = "15";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -783,6 +783,65 @@
         min-height:0!important;
         align-items:stretch!important;
       }
+      #psdPdfCaptureRoot .psd-home-page1-main{
+        display:grid!important;
+        grid-template-columns:270px minmax(0,1fr)!important;
+        gap:14px!important;
+        flex:1 1 auto!important;
+        min-height:0!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail{
+        height:auto!important;
+        min-height:0!important;
+        padding:12px!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail .page-chip{
+        font-size:10px!important;
+        padding:6px 9px!important;
+        margin-bottom:7px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail h2{
+        font-size:17px!important;
+        margin-bottom:4px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail .muted{
+        font-size:10px!important;
+        line-height:1.25!important;
+        margin:0 0 6px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-waterfall{
+        height:650px!important;
+        margin-top:6px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-track{
+        gap:5px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-item{
+        padding:5px 7px!important;
+        border-radius:10px!important;
+        grid-template-columns:22px minmax(0,1fr) auto!important;
+        gap:6px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-icon{
+        width:20px!important;
+        height:20px!important;
+        font-size:11px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-name{
+        font-size:10px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-sub,
+      #psdPdfCaptureRoot .psd-home-page1-main .rail-state{
+        font-size:8.5px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-right{
+        display:flex!important;
+        flex-direction:column!important;
+        min-height:0!important;
+        overflow:hidden!important;
+      }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
         padding:19px!important;
       }
@@ -1061,7 +1120,7 @@
     row.innerHTML = `
       <div class="psd-widget-print-sample" aria-label="Vote widget sample">
         <span class="psd-widget-icon">↕</span>
-        <span class="psd-widget-text">Vote</span>
+        <span class="psd-widget-text">Vote<br>Here</span>
       </div>
       <div class="psd-widget-print-sample" aria-label="PDF widget sample">
         <span class="psd-widget-icon">📄</span>
@@ -1081,9 +1140,20 @@
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
+    const page1Main = document.createElement("div");
+    page1Main.className = "psd-home-page1-main";
+
+    const railClone = cloneElement(".instrument-rail");
+    if(railClone) page1Main.appendChild(railClone);
+
+    const page1Right = document.createElement("div");
+    page1Right.className = "psd-home-page1-right";
     const heroClone = enhanceHomeHeroClone(cloneElement(".hero"));
-    if(heroClone) page1.appendChild(heroClone);
-    page1.appendChild(buildHomeWidgetSamples());
+    if(heroClone) page1Right.appendChild(heroClone);
+    page1Right.appendChild(buildHomeWidgetSamples());
+    page1Main.appendChild(page1Right);
+    page1.appendChild(page1Main);
+
     const footer1 = cloneElement(".footer");
     if(footer1){
       footer1.classList.add("psd-pdf-footer");
