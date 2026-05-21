@@ -472,7 +472,7 @@ function psdLoadPdfReportEngine(){
 
     const script = document.createElement("script");
     script.id = "psdPdfReportScript";
-    script.src = "pdf-report.js?v=4";
+    script.src = "pdf-report.js?v=6";
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("PDF report engine failed to load."));
@@ -487,12 +487,12 @@ function psdCreatePdfWidget(){
     const style = document.createElement("style");
     style.id = "psdPdfWidgetCss";
     style.textContent = `
-      .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 106px);transform:translateY(-50%);z-index:999;font-family:Inter,Segoe UI,Arial,sans-serif}
-      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:74px;min-height:86px;border:1px solid rgba(88,166,255,.46);border-radius:18px;background:linear-gradient(180deg,rgba(88,166,255,.22),rgba(13,17,23,.97));color:#d8ebff;cursor:pointer;box-shadow:0 0 24px rgba(88,166,255,.18);animation:psdPdfFloat 3.5s ease-in-out infinite}
-      .psd-pdf-tab:hover{background:linear-gradient(180deg,rgba(88,166,255,.34),rgba(13,17,23,.97));transform:translateX(2px)}
-      .psd-pdf-tab-icon{font-size:18px;line-height:1;font-weight:900}.psd-pdf-tab-text{font-size:10.5px;font-weight:900;line-height:1.05;text-align:center;max-width:64px}
+      .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Inter,Segoe UI,Arial,sans-serif}
+      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:54px;min-height:78px;border:1px solid rgba(88,166,255,.55);border-radius:18px;background:linear-gradient(180deg,rgba(88,166,255,.24),rgba(13,17,23,.97));color:#ffffff;cursor:pointer;box-shadow:0 0 24px rgba(88,166,255,.20);animation:psdPdfFloat 3.5s ease-in-out infinite;padding:7px 5px;text-align:center}
+      .psd-pdf-tab:hover{background:linear-gradient(180deg,rgba(88,166,255,.36),rgba(13,17,23,.97));transform:translateX(2px)}
+      .psd-pdf-tab-icon{font-size:15px;line-height:1;font-weight:700;color:#ffffff;letter-spacing:.2px}.psd-pdf-tab-text{font-size:8.6px;font-weight:600;line-height:1.12;text-align:center;max-width:46px;color:#ffffff;text-shadow:0 0 8px rgba(88,166,255,.42)}
       @keyframes psdPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
-      @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 104px)}.psd-pdf-tab{width:70px;min-height:84px}}
+      @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 96px)}.psd-pdf-tab{width:54px;min-height:78px}}
       @media print{#psdVoteWidget,#psdPdfWidget{display:none!important}}
     `;
     document.head.appendChild(style);
