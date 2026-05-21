@@ -1,10 +1,10 @@
 /*
-  Public Sentiment Dash - PDF Report Engine v5
+  Public Sentiment Dash - PDF Report Engine v6
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "5";
+  const PSD_PDF_VERSION = "6";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -127,8 +127,8 @@
         background:rgba(13,17,23,.94);
         box-shadow:0 12px 28px rgba(0,0,0,.22);
       }
-      #psdPdfCaptureRoot .psd-page-title strong{font-size:18px;color:#ffd780;letter-spacing:.01em}
-      #psdPdfCaptureRoot .psd-page-title span{font-size:12px;color:#c9d1d9;font-weight:700}
+      #psdPdfCaptureRoot .psd-page-title strong{font-size:15px;color:#ffd780;letter-spacing:.01em;white-space:nowrap}
+      #psdPdfCaptureRoot .psd-page-title span{font-size:11.5px;color:#c9d1d9;font-weight:700;text-align:right;white-space:nowrap}
       #psdPdfCaptureRoot .header{
         position:relative!important;
         top:auto!important;
@@ -292,7 +292,9 @@
   function sectionTitle(text, sub){
     const bar = document.createElement("div");
     bar.className = "psd-page-title";
-    bar.innerHTML = `<strong>${text}</strong><span>${sub || ""}</span>`;
+    const reportTitle = `${PSD_SITE_LABEL} - ${pageName()}`;
+    const sectionLabel = [text, sub].filter(Boolean).join(" • ");
+    bar.innerHTML = `<strong>${reportTitle}</strong><span>${sectionLabel}</span>`;
     return bar;
   }
 
@@ -306,7 +308,7 @@
   function buildDashboardPages(root){
     const now = new Date().toLocaleString();
 
-    const page1 = createPage("Interactive Dashboard", `${PSD_SITE_LABEL} • ${now}`);
+    const page1 = createPage("Summary", `Generated ${now}`);
     [".header", "#psdAdvertiseBanner", ".lab-hero", "#snapshotCards"].forEach(sel => {
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
@@ -335,7 +337,7 @@
 
   function buildGenericPages(root){
     const now = new Date().toLocaleString();
-    const page = createPage(pageName(), `${PSD_SITE_LABEL} • ${now}`);
+    const page = createPage("Report", `Generated ${now}`);
     [".header", "#psdAdvertiseBanner", "main", ".footer"].forEach(sel => {
       const clone = cloneElement(sel);
       if(clone) page.appendChild(clone);
