@@ -1,10 +1,10 @@
 /*
-  Public Sentiment Dash - PDF Report Engine v7
+  Public Sentiment Dash - PDF Report Engine v8
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "7";
+  const PSD_PDF_VERSION = "8";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -430,9 +430,69 @@
         display:flex!important;
         flex-direction:column!important;
       }
+      #psdPdfCaptureRoot .psd-history-page1 .header{
+        display:none!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title,
+      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title{
+        min-height:42px!important;
+        padding:8px 13px!important;
+        margin-bottom:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title strong,
+      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title strong{
+        font-size:13px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title span,
+      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title span{
+        font-size:10.5px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-history-page1 .psd-ad-banner{
+        margin:0 0 12px!important;
+        min-height:34px!important;
+        padding:9px 13px!important;
+        font-size:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .history-dashboard-hero{
+        margin:0 0 12px!important;
+        padding:14px 17px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .history-dashboard-hero h1{
+        font-size:31px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .history-lead{
+        font-size:12.5px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .dash-stage-shell{
+        padding:8px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .dash-stage{
+        height:790px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-page1 .dash-layout{
+        inset:22px!important;
+        gap:13px!important;
+      }
       #psdPdfCaptureRoot .psd-history-record-page .section.panel{
         flex:1 1 auto!important;
         min-height:0!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-history-record-page .history-table-wrap{
+        max-height:650px!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-history-record-page .history-table{
+        font-size:10.5px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-record-page .history-table th,
+      #psdPdfCaptureRoot .psd-history-record-page .history-table td{
+        padding:7px 9px!important;
+      }
+      #psdPdfCaptureRoot .psd-history-record-page .psd-pdf-footer{
+        margin-top:12px!important;
+        flex:0 0 auto!important;
       }
     `;
     document.head.appendChild(style);
@@ -523,16 +583,23 @@
     const now = new Date().toLocaleString();
 
     const page1 = createPage("Historical Sentiment", `Generated ${now}`);
-    [".header", "#psdAdvertiseBanner", ".history-dashboard-hero", ".dash-stage-shell"].forEach(sel => {
+    page1.classList.add("psd-history-page1");
+    ["#psdAdvertiseBanner", ".history-dashboard-hero", ".dash-stage-shell"].forEach(sel => {
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
 
-    const page2 = createPage("Records", "Stats + Filtered Historical Records + Disclaimer");
+    const page2 = createPage("Historical Sentiment", "Stats + Filtered Historical Records + Disclaimer");
     page2.classList.add("psd-history-record-page");
     [".stats-strip", ".section.panel"].forEach(sel => {
       const clone = cloneElement(sel);
-      if(clone) page2.appendChild(clone);
+      if(clone){
+        if(clone.matches && clone.matches(".section.panel")){
+          const rows = qsa("tbody tr", clone);
+          rows.forEach((row, idx) => { if(idx > 11) row.remove(); });
+        }
+        page2.appendChild(clone);
+      }
     });
     const footer = cloneElement(".footer");
     if(footer){
