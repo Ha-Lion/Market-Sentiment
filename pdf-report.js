@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "24";
+  const PSD_PDF_VERSION = "25";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -1019,8 +1019,9 @@
       }
       #psdPdfCaptureRoot .psd-news-top-grid{
         display:grid!important;
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:12px!important;
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        grid-template-rows:repeat(2,minmax(0,1fr))!important;
+        gap:10px!important;
         flex:1 1 auto!important;
         min-height:0!important;
       }
@@ -1038,7 +1039,7 @@
         min-width:0!important;
         overflow:hidden!important;
         border-radius:18px!important;
-        padding:12px!important;
+        padding:11px!important;
         background:radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 13rem),linear-gradient(180deg,#111927,#0d131d)!important;
         border:1px solid rgba(210,153,34,.18)!important;
         box-shadow:0 16px 34px rgba(0,0,0,.25)!important;
@@ -1058,21 +1059,46 @@
         align-items:center!important;
         max-width:100%!important;
         border-radius:999px!important;
-        padding:5px 7px!important;
+        padding:5px 8px!important;
         background:rgba(210,153,34,.13)!important;
         border:1px solid rgba(210,153,34,.26)!important;
         color:#ffd780!important;
-        font-weight:800!important;
+        font-weight:850!important;
         white-space:nowrap!important;
         overflow:hidden!important;
         text-overflow:ellipsis!important;
       }
+      #psdPdfCaptureRoot .psd-news-pill.tech{
+        color:#b7f7c8!important;
+        background:rgba(46,160,67,.18)!important;
+        border-color:rgba(46,160,67,.42)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-pill.bullish{
+        color:#d8ebff!important;
+        background:rgba(88,166,255,.18)!important;
+        border-color:rgba(88,166,255,.42)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-pill.bearish{
+        color:#ffc2bd!important;
+        background:rgba(248,81,73,.18)!important;
+        border-color:rgba(248,81,73,.42)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-pill.neutral{
+        color:#d8ebff!important;
+        background:rgba(88,166,255,.13)!important;
+        border-color:rgba(88,166,255,.30)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-pill.impact{
+        color:#ffd780!important;
+        background:rgba(210,153,34,.18)!important;
+        border-color:rgba(210,153,34,.42)!important;
+      }
       #psdPdfCaptureRoot .psd-news-report-title{
         color:#fff!important;
-        font-size:14px!important;
+        font-size:13.2px!important;
         font-weight:850!important;
-        line-height:1.20!important;
-        margin:0 0 10px!important;
+        line-height:1.18!important;
+        margin:0 0 8px!important;
         display:block!important;
       }
       #psdPdfCaptureRoot .psd-news-report-meta{
@@ -1138,14 +1164,25 @@
         border-radius:8px!important;
         display:inline-grid!important;
         place-items:center!important;
-        background:rgba(255,255,255,.92)!important;
-        border:1px solid rgba(210,153,34,.38)!important;
-        color:#05070b!important;
+        background:linear-gradient(180deg,rgba(255,215,128,.28),rgba(13,17,23,.98))!important;
+        border:1px solid rgba(210,153,34,.48)!important;
+        color:#ffd780!important;
         font-size:12px!important;
-        font-weight:900!important;
+        font-weight:950!important;
         flex:0 0 26px!important;
         overflow:hidden!important;
         box-shadow:0 0 12px rgba(210,153,34,.16)!important;
+        position:relative!important;
+      }
+      #psdPdfCaptureRoot .psd-news-logo-fallback{
+        position:absolute!important;
+        inset:0!important;
+        display:grid!important;
+        place-items:center!important;
+        color:#ffd780!important;
+        font-size:12px!important;
+        font-weight:950!important;
+        z-index:1!important;
       }
       #psdPdfCaptureRoot .psd-news-source-dot img{
         width:100%!important;
@@ -1153,6 +1190,9 @@
         object-fit:contain!important;
         display:block!important;
         border-radius:7px!important;
+        position:relative!important;
+        z-index:2!important;
+        background:rgba(255,255,255,.92)!important;
       }
       #psdPdfCaptureRoot .psd-news-source-name{
         display:block!important;
@@ -1174,8 +1214,8 @@
         display:grid!important;
         gap:3px!important;
         color:#aeb8c7!important;
-        font-size:10.5px!important;
-        line-height:1.26!important;
+        font-size:10.2px!important;
+        line-height:1.24!important;
       }
       #psdPdfCaptureRoot .psd-news-meta-block div{
         white-space:normal!important;
@@ -1603,6 +1643,16 @@
     return {href, source, logo, title, chips, markets, instruments, date};
   }
 
+  function newsPillClass(value){
+    const t = safeText(value).toLowerCase();
+    if(t.includes("tech daily")) return "tech";
+    if(t.includes("high impact") || t.includes("medium impact") || t.includes("normal impact") || t.includes("low impact")) return "impact";
+    if(t.includes("bearish")) return "bearish";
+    if(t.includes("bullish")) return "bullish";
+    if(t.includes("neutral") || t.includes("mixed")) return "neutral";
+    return "";
+  }
+
   function buildNewsReportCard(card, index){
     const data = parseNewsBits(card, index);
     const out = document.createElement("div");
@@ -1612,7 +1662,7 @@
     out.innerHTML = `
       <div class="psd-news-source-row"><span class="psd-news-source-dot">${logoHtml}</span><span class="psd-news-source-name">${psdEscape(data.source)}</span></div>
       <div class="psd-news-report-source">
-        ${data.chips.slice(0,4).map(x => `<span class="psd-news-pill">${psdEscape(x)}</span>`).join("")}
+        ${data.chips.slice(0,4).map(x => `<span class="psd-news-pill ${newsPillClass(x)}">${psdEscape(x)}</span>`).join("")}
       </div>
       <div class="psd-news-report-title">${psdEscape(data.title)}</div>
       <div class="psd-news-meta-block">
@@ -1671,9 +1721,9 @@
     }
     const title1 = document.createElement("div");
     title1.className = "psd-news-card-title";
-    title1.textContent = "Top 4 News Boxes";
+    title1.textContent = "Top News Boxes";
     page1.appendChild(title1);
-    page1.appendChild(buildNewsCardsGrid(0,4,"psd-news-top-grid"));
+    page1.appendChild(buildNewsCardsGrid(0,6,"psd-news-top-grid"));
     page1.appendChild(buildNewsWidgetSamples());
 
     const page2 = createPage("News & Articles", "Advertising + More News");
@@ -1683,7 +1733,7 @@
     title2.className = "psd-news-card-title";
     title2.textContent = "More Recent Articles";
     page2.appendChild(title2);
-    page2.appendChild(buildNewsCardsGrid(4,9,"psd-news-mid-grid"));
+    page2.appendChild(buildNewsCardsGrid(6,9,"psd-news-mid-grid"));
 
     const page3 = createPage("News & Articles", "Advertising + Footer");
     page3.classList.add("psd-news-page", "psd-news-page3", "psd-final-page");
@@ -1692,7 +1742,7 @@
     title3.className = "psd-news-card-title";
     title3.textContent = "Additional Recent Articles";
     page3.appendChild(title3);
-    page3.appendChild(buildNewsCardsGrid(13,9,"psd-news-mid-grid"));
+    page3.appendChild(buildNewsCardsGrid(15,9,"psd-news-mid-grid"));
     const footer = cloneElement(".footer");
     if(footer){
       footer.classList.add("psd-pdf-footer");
