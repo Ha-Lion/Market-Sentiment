@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "18";
+  const PSD_PDF_VERSION = "19";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -729,154 +729,6 @@
         font-size:11px!important;
       }
 
-      /* News & Articles PDF support - built from locked v15 baseline */
-      #psdPdfCaptureRoot .psd-news-page1,
-      #psdPdfCaptureRoot .psd-news-page2,
-      #psdPdfCaptureRoot .psd-news-page3{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-news-page1 .header{
-        display:grid!important;
-        grid-template-columns:auto 1fr auto!important;
-        padding:10px 18px!important;
-        margin:0 0 12px!important;
-        min-height:88px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-page1 .header .nav{gap:7px!important}
-      #psdPdfCaptureRoot .psd-news-page1 .header .nav a{font-size:12px!important;padding:5px 6px!important}
-      #psdPdfCaptureRoot .psd-news-page1 .brand-stamp{font-size:11px!important;padding:7px 11px!important}
-      #psdPdfCaptureRoot .psd-news-page1 .site-subtitle{font-size:10.5px!important}
-      #psdPdfCaptureRoot .psd-news-page1 .header-pill{font-size:11px!important;padding:7px 11px!important}
-      #psdPdfCaptureRoot .psd-news-page1 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-news-page1 .psd-ad-banner,
-      #psdPdfCaptureRoot .psd-news-page2 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-news-page2 .psd-ad-banner,
-      #psdPdfCaptureRoot .psd-news-page3 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-news-page3 .psd-ad-banner{
-        margin:0 0 12px!important;
-        min-height:34px!important;
-        padding:9px 14px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-hero{
-        margin:0 0 14px!important;
-        padding:22px!important;
-        border-radius:22px!important;
-        background:radial-gradient(circle at top right,rgba(210,153,34,.14),transparent 18rem),linear-gradient(180deg,#101826,#0d131d)!important;
-        border:1px solid rgba(255,215,128,.15)!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.28)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-hero h1{font-size:38px!important;margin:0 0 10px!important;line-height:1.06!important;color:#fff!important}
-      #psdPdfCaptureRoot .psd-news-hero p{font-size:13px!important;line-height:1.4!important;margin:6px 0!important;color:#c9d1d9!important}
-      #psdPdfCaptureRoot .psd-news-hero input,
-      #psdPdfCaptureRoot .psd-news-hero select,
-      #psdPdfCaptureRoot .psd-news-hero button{display:none!important}
-      #psdPdfCaptureRoot .psd-news-top-title{
-        margin:0 0 10px!important;
-        color:#ffd780!important;
-        font-size:17px!important;
-        font-weight:800!important;
-      }
-      #psdPdfCaptureRoot .psd-news-grid{
-        display:grid!important;
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:14px!important;
-        margin:0 0 14px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-print-card{
-        min-height:250px!important;
-        padding:18px!important;
-        border-radius:20px!important;
-        background:radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 11rem),linear-gradient(180deg,#111927,#0c121c)!important;
-        border:1px solid rgba(255,215,128,.15)!important;
-        box-shadow:0 15px 34px rgba(0,0,0,.30)!important;
-        overflow:hidden!important;
-        color:#e6edf3!important;
-      }
-      #psdPdfCaptureRoot .psd-news-print-source{
-        color:#fff!important;
-        font-size:13px!important;
-        font-weight:800!important;
-        margin-bottom:12px!important;
-        white-space:nowrap!important;
-        overflow:hidden!important;
-        text-overflow:ellipsis!important;
-      }
-      #psdPdfCaptureRoot .psd-news-print-chips{
-        display:flex!important;
-        flex-wrap:wrap!important;
-        gap:6px!important;
-        margin-bottom:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-print-chip{
-        display:inline-flex!important;
-        padding:5px 8px!important;
-        border-radius:999px!important;
-        border:1px solid rgba(255,255,255,.12)!important;
-        background:rgba(255,255,255,.06)!important;
-        color:#ffd780!important;
-        font-size:10px!important;
-        font-weight:800!important;
-      }
-      #psdPdfCaptureRoot .psd-news-print-title{
-        color:#fff!important;
-        font-size:18px!important;
-        line-height:1.22!important;
-        font-weight:800!important;
-        margin-bottom:12px!important;
-        display:-webkit-box!important;
-        -webkit-line-clamp:4!important;
-        -webkit-box-orient:vertical!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-news-print-meta{
-        color:#8b949e!important;
-        font-size:11px!important;
-        line-height:1.35!important;
-        display:-webkit-box!important;
-        -webkit-line-clamp:4!important;
-        -webkit-box-orient:vertical!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-news-widget-row{
-        display:flex!important;
-        align-items:center!important;
-        gap:14px!important;
-        margin:12px 0 0!important;
-      }
-      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-print-sample{
-        width:62px!important;
-        height:86px!important;
-        border-radius:18px!important;
-        display:flex!important;
-        flex-direction:column!important;
-        align-items:center!important;
-        justify-content:center!important;
-        gap:4px!important;
-        border:1px solid rgba(210,153,34,.45)!important;
-        background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96))!important;
-        color:#ffd780!important;
-        box-shadow:0 0 24px rgba(210,153,34,.18)!important;
-        font-family:Inter,Segoe UI,Arial,sans-serif!important;
-      }
-      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-icon{font-size:21px!important;line-height:1!important}
-      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-text{font-size:12px!important;line-height:1.05!important;font-weight:700!important;text-align:center!important;color:#ffe7a8!important}
-      #psdPdfCaptureRoot .psd-news-ad-space{
-        flex:1 1 auto!important;
-        min-height:0!important;
-        border:1px dashed rgba(255,215,128,.20)!important;
-        border-radius:22px!important;
-        display:grid!important;
-        place-items:center!important;
-        color:#c9d1d9!important;
-        font-size:22px!important;
-        font-weight:800!important;
-        background:radial-gradient(circle at center,rgba(210,153,34,.10),transparent 12rem),rgba(13,17,23,.45)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-page3 .psd-pdf-footer{margin-top:auto!important;flex:0 0 auto!important}
-
-
       /* Home PDF v11 requested layout */
       #psdPdfCaptureRoot .psd-home-page1,
       #psdPdfCaptureRoot .psd-home-page2,
@@ -1104,6 +956,181 @@
         grid-template-columns:repeat(4,minmax(0,1fr))!important;
         gap:11px!important;
       }
+
+
+      /* News & Articles PDF support - built from locked v15 baseline */
+      #psdPdfCaptureRoot .psd-news-page1,
+      #psdPdfCaptureRoot .psd-news-page2,
+      #psdPdfCaptureRoot .psd-news-page3{
+        display:flex!important;
+        flex-direction:column!important;
+        gap:0!important;
+      }
+      #psdPdfCaptureRoot .psd-news-page1 .header{
+        display:grid!important;
+        margin:0 0 10px!important;
+        padding:10px 18px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-page1 .header .nav{gap:7px!important}
+      #psdPdfCaptureRoot .psd-news-page1 .header .nav a{font-size:12px!important;padding:5px 6px!important}
+      #psdPdfCaptureRoot .psd-news-page1 .brand-stamp{font-size:11px!important;padding:7px 11px!important}
+      #psdPdfCaptureRoot .psd-news-page1 .site-subtitle{font-size:10.5px!important}
+      #psdPdfCaptureRoot .psd-news-page1 .header-pill{font-size:11px!important;padding:7px 11px!important}
+      #psdPdfCaptureRoot .psd-news-page1 #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-news-page1 .psd-ad-banner,
+      #psdPdfCaptureRoot .psd-news-page2 #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-news-page2 .psd-ad-banner,
+      #psdPdfCaptureRoot .psd-news-page3 #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-news-page3 .psd-ad-banner{
+        margin:0 0 12px!important;
+        min-height:36px!important;
+        padding:9px 14px!important;
+        font-size:12px!important;
+        flex:0 0 auto!important;
+      }
+      #psdPdfCaptureRoot .psd-news-hero{
+        margin:0 0 12px!important;
+        padding:16px 18px!important;
+        border-radius:20px!important;
+        max-height:174px!important;
+        overflow:hidden!important;
+        background:radial-gradient(circle at top right,rgba(210,153,34,.15),transparent 14rem),linear-gradient(180deg,#101826,#0d131d)!important;
+        border:1px solid rgba(210,153,34,.18)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-hero h1{font-size:32px!important;margin:0 0 8px!important;line-height:1.06!important;color:#fff!important}
+      #psdPdfCaptureRoot .psd-news-hero h2{font-size:22px!important;margin:0 0 6px!important;color:#fff!important}
+      #psdPdfCaptureRoot .psd-news-hero p{font-size:12px!important;line-height:1.34!important;margin:5px 0!important;color:#c9d1d9!important}
+      #psdPdfCaptureRoot .psd-news-hero input,
+      #psdPdfCaptureRoot .psd-news-hero select,
+      #psdPdfCaptureRoot .psd-news-hero button{display:none!important}
+      #psdPdfCaptureRoot .psd-news-top-title{
+        color:#ffd780!important;
+        font-size:17px!important;
+        font-weight:800!important;
+        margin:2px 0 10px!important;
+        letter-spacing:.01em!important;
+      }
+      #psdPdfCaptureRoot .psd-news-grid{
+        display:grid!important;
+        grid-template-columns:repeat(4,minmax(0,1fr))!important;
+        gap:13px!important;
+        flex:1 1 auto!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .psd-news-print-card{
+        display:flex!important;
+        flex-direction:column!important;
+        min-height:330px!important;
+        max-height:405px!important;
+        overflow:hidden!important;
+        padding:15px!important;
+        border-radius:18px!important;
+        border:1px solid rgba(210,153,34,.22)!important;
+        background:radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 12rem),linear-gradient(180deg,#111821,#0d131d)!important;
+        box-shadow:0 16px 34px rgba(0,0,0,.28)!important;
+      }
+      #psdPdfCaptureRoot .psd-news-print-source{
+        color:#ffd780!important;
+        font-size:13px!important;
+        line-height:1.2!important;
+        font-weight:900!important;
+        margin-bottom:8px!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+      }
+      #psdPdfCaptureRoot .psd-news-print-chips{
+        display:flex!important;
+        flex-wrap:wrap!important;
+        gap:6px!important;
+        margin-bottom:10px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-print-chip{
+        display:inline-flex!important;
+        padding:4px 7px!important;
+        border-radius:999px!important;
+        border:1px solid rgba(88,166,255,.25)!important;
+        background:rgba(88,166,255,.10)!important;
+        color:#d8ebff!important;
+        font-size:9.5px!important;
+        line-height:1!important;
+        font-weight:800!important;
+      }
+      #psdPdfCaptureRoot .psd-news-print-title{
+        color:#fff!important;
+        font-size:20px!important;
+        line-height:1.22!important;
+        font-weight:800!important;
+        margin:0 0 12px!important;
+        display:-webkit-box!important;
+        -webkit-line-clamp:5!important;
+        -webkit-box-orient:vertical!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-news-print-meta{
+        color:#c9d1d9!important;
+        font-size:11px!important;
+        line-height:1.42!important;
+        margin-top:auto!important;
+        display:-webkit-box!important;
+        -webkit-line-clamp:5!important;
+        -webkit-box-orient:vertical!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-news-widget-row{
+        display:flex!important;
+        gap:10px!important;
+        align-items:center!important;
+        justify-content:flex-start!important;
+        margin-top:12px!important;
+        flex:0 0 auto!important;
+      }
+      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-print-sample{
+        width:54px!important;
+        min-height:78px!important;
+        border:1px solid rgba(210,153,34,.45)!important;
+        border-radius:18px!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:4px!important;
+        background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96))!important;
+        color:#ffd780!important;
+        box-shadow:0 0 24px rgba(210,153,34,.18)!important;
+        font-family:Inter,Segoe UI,Arial,sans-serif!important;
+      }
+      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-icon{font-size:21px!important;line-height:1!important}
+      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-text{font-size:12px!important;line-height:1.05!important;font-weight:700!important;text-align:center!important;color:#ffe7a8!important}
+      #psdPdfCaptureRoot .psd-news-ad-space{
+        flex:1 1 auto!important;
+        min-height:0!important;
+        display:grid!important;
+        place-items:center!important;
+        padding:28px!important;
+        border:1px solid rgba(210,153,34,.24)!important;
+        border-radius:24px!important;
+        background:radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 26rem),linear-gradient(180deg,#101826,#0d131d)!important;
+        box-shadow:0 16px 34px rgba(0,0,0,.28)!important;
+        color:#ffd780!important;
+        font-size:34px!important;
+        line-height:1.18!important;
+        font-weight:900!important;
+        text-align:center!important;
+      }
+      #psdPdfCaptureRoot .psd-news-ad-space span{
+        display:block!important;
+        max-width:900px!important;
+      }
+      #psdPdfCaptureRoot .psd-news-ad-space small{
+        display:block!important;
+        margin-top:12px!important;
+        color:#c9d1d9!important;
+        font-size:18px!important;
+        line-height:1.4!important;
+        font-weight:600!important;
+      }
+      #psdPdfCaptureRoot .psd-news-page3 .psd-pdf-footer{margin-top:12px!important;flex:0 0 auto!important}
 
 
     `;
@@ -1342,129 +1369,162 @@
     root.appendChild(page3);
   }
 
+
   function isNewsPage(){
     const path = window.location.pathname.toLowerCase();
-    return path.endsWith("/news-articles.html") || path.endsWith("news-articles.html") || !!qs(".news-card") || safeText(document.title).toLowerCase().includes("news & articles");
+    return path.endsWith("/news-articles.html") || path.endsWith("news-articles.html") || safeText(document.title).toLowerCase().includes("news & articles") || !!qs(".news-card,.article-card,.article-item,#newsFeed,#articleFeed,#articlesFeed");
   }
 
   async function waitForNewsContent(){
     if(!isNewsPage()) return;
-    for(let i=0;i<30;i++){
-      const cards = findNewsSourceCards();
-      if(cards.length >= 4) return;
+    for(let i=0;i<36;i++){
+      if(findNewsItems().length >= 4) return;
       await wait(250);
     }
   }
 
-  function newsCardLooksUseful(el){
-    if(!el || !el.textContent) return false;
-    const text = safeText(el.textContent);
-    if(text.length < 55) return false;
-    if(text.length > 1400) return false;
-    const tag = (el.tagName || "").toLowerCase();
-    if(["body","main","section","header","footer","nav","script","style"].includes(tag)) return false;
-    return true;
+  function psdPdfEsc(value){
+    return String(value ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
   }
 
-  function findNewsSourceCards(){
-    const selectors = [
-      ".news-card",
-      ".article-card",
-      ".article-item",
-      ".feed-card",
-      ".result-card",
-      ".story-card",
-      ".published-card",
-      "[data-article-card]",
-      "[data-news-card]",
-      "#articlesGrid > *",
-      "#articleGrid > *",
-      "#newsGrid > *",
-      "#articleFeed > *",
-      "#articlesFeed > *",
-      "#newsFeed > *",
-      ".articles-grid > *",
-      ".news-grid > *",
-      ".article-grid > *",
-      ".feed-grid > *",
-      ".published-articles-feed > *"
-    ];
+  function visibleText(el){
+    return safeText((el && (el.innerText || el.textContent)) || "");
+  }
 
+  function findSmallestArticleParent(link){
+    let node = link;
+    let best = null;
+    for(let depth=0; depth<9 && node && node !== document.body; depth++, node = node.parentElement){
+      const text = visibleText(node);
+      const lower = text.toLowerCase();
+      if(text.length >= 85 && text.length <= 1700 &&
+         (lower.includes("open article") || lower.includes("tech daily") || lower.includes("markets:") || lower.includes("instruments:") || lower.includes("high impact")) &&
+         !node.closest("header") && !node.closest("footer") && !node.closest("nav")){
+        best = node;
+        break;
+      }
+    }
+    return best;
+  }
+
+  function newsCardCandidateElements(){
     const seen = new Set();
-    let cards = [];
-    selectors.forEach(sel => {
-      qsa(sel).forEach(el => {
-        if(seen.has(el)) return;
-        if(!newsCardLooksUseful(el)) return;
-        seen.add(el);
-        cards.push(el);
-      });
+    const out = [];
+    const add = el => {
+      if(!el || seen.has(el)) return;
+      const text = visibleText(el);
+      if(text.length < 70 || text.length > 1800) return;
+      if(el.closest && (el.closest("header") || el.closest("footer") || el.closest("nav"))) return;
+      seen.add(el);
+      out.push(el);
+    };
+
+    qsa("a").forEach(a => {
+      const t = visibleText(a).toLowerCase();
+      const href = String(a.getAttribute("href") || "").toLowerCase();
+      if(t.includes("open article") || (href && !href.includes("publicsentimentdash.com") && !href.endsWith("#"))){
+        add(findSmallestArticleParent(a));
+      }
     });
 
-    // Fallback: find repeated article-like boxes inside the published feed.
-    if(cards.length < 4){
-      const all = qsa("main *").filter(el => newsCardLooksUseful(el));
-      const articleLike = all.filter(el => {
-        const t = safeText(el.textContent).toLowerCase();
-        const cls = String(el.className || "").toLowerCase();
-        const hasArticleWords = t.includes("open article") || t.includes("tech daily") || t.includes("high impact") || t.includes("markets:") || t.includes("instruments:");
-        const hasClassWords = cls.includes("news") || cls.includes("article") || cls.includes("feed") || cls.includes("card");
-        const nestedUseful = qsa("*", el).filter(child => child !== el && newsCardLooksUseful(child)).length;
-        return (hasArticleWords || hasClassWords) && nestedUseful < 2;
-      });
-      articleLike.forEach(el => {
-        if(!seen.has(el)){
-          seen.add(el);
-          cards.push(el);
-        }
-      });
-    }
+    [
+      ".news-card", ".article-card", ".article-item", ".feed-card", ".result-card", ".story-card", ".published-card",
+      "[data-article-card]", "[data-news-card]",
+      "#articlesGrid > *", "#articleGrid > *", "#newsGrid > *", "#articleFeed > *", "#articlesFeed > *", "#newsFeed > *",
+      ".articles-grid > *", ".news-grid > *", ".article-grid > *", ".feed-grid > *", ".published-articles-feed > *"
+    ].forEach(sel => qsa(sel).forEach(add));
 
-    // Prefer cards with article/source indicators, then stable DOM order.
-    cards = cards.filter(el => !el.closest("header") && !el.closest("footer") && !el.closest("nav"));
-    return cards.slice(0, 24);
+    return out;
   }
 
-  function extractNewsItem(el){
-    const raw = safeText(el.textContent);
-    const lines = raw.split(/\s{2,}|\n+/).map(s => safeText(s)).filter(Boolean);
+  function extractNewsItemFromElement(el){
+    const raw = visibleText(el);
+    const lines = raw.split(/\n+/).map(s => safeText(s)).filter(Boolean);
+    const one = raw.replace(/\s+/g, " ").trim();
 
-    const source = safeText(
-      qs(".source,.news-source,.article-source,.publisher,.source-name", el)?.textContent ||
-      qs("img", el)?.alt ||
-      lines[0] ||
-      "Market News"
-    ).replace(/ logo$/i, "");
-
-    const chipTexts = qsa(".chip,.tech-chip,.badge,.tag,.pill", el)
-      .map(x => safeText(x.textContent))
-      .filter(Boolean)
-      .slice(0,3);
-
-    const heading = safeText(qs("h1,h2,h3,h4,.title,.headline,.article-title,.news-title", el)?.textContent || "");
-    let title = heading;
-    if(!title){
-      const candidates = lines.filter(x => x.length > 22 && !/^markets?:/i.test(x) && !/^instruments?:/i.test(x) && !/^tech daily/i.test(x));
-      title = candidates[0] || raw.slice(0,160);
+    let source = safeText(qs(".source,.news-source,.article-source,.publisher,.source-name", el)?.textContent || qs("img", el)?.alt || "").replace(/ logo$/i, "");
+    if(!source){
+      const srcLine = lines.find(x => x.length < 55 && !/^(tech daily|markets?:|instruments?:|open article|search|clear|all markets|all instruments|all sources)/i.test(x));
+      source = srcLine || "Market News";
     }
 
-    const metaParts = [];
-    const marketLine = lines.find(x => /^markets?:/i.test(x));
-    const instrumentLine = lines.find(x => /^instruments?:/i.test(x));
-    const dateLine = lines.find(x => /\b\d{4}\b|GMT|AM|PM|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar|Apr/i.test(x) && x.length < 90);
-    if(marketLine) metaParts.push(marketLine);
-    if(instrumentLine) metaParts.push(instrumentLine);
-    if(dateLine) metaParts.push(dateLine);
-
-    let chips = chipTexts.length ? chipTexts : [];
+    const chips = qsa(".chip,.tech-chip,.badge,.tag,.pill", el).map(x => safeText(x.textContent)).filter(Boolean).slice(0,3);
     if(!chips.length){
-      if(/bullish/i.test(raw)) chips.push("Bullish");
-      if(/bearish/i.test(raw)) chips.push("Bearish");
-      if(/high impact/i.test(raw)) chips.push("High Impact");
+      const techLine = lines.find(x => /tech daily|high impact|bullish|bearish|neutral|mixed/i.test(x));
+      if(techLine){
+        ["Bullish","Bearish","Neutral","Mixed","High Impact"].forEach(word => { if(new RegExp(word,"i").test(techLine)) chips.push(word); });
+      }
     }
-    if(!chips.length) chips = ["Market News"];
 
-    return {source, title, chips:chips.slice(0,3), meta:metaParts.join(" • ") || raw.replace(title, "").slice(0,220)};
+    let title = safeText(qs("h1,h2,h3,h4,.title,.headline,.article-title,.news-title", el)?.textContent || "");
+    if(!title){
+      const afterTech = one.match(/Tech Daily:\s*[^A-Z]*(?:N\/A|Bullish|Bearish|Neutral|Mixed\/Bullish|Mixed\/Bearish|Mixed)?\s*(?:Bullish|Bearish|Neutral|Mixed\/Bullish|Mixed\/Bearish|Mixed)?\s*(?:High Impact|Medium Impact|Low Impact)?\s+(.+?)(?:\s+Markets:|\s+Instruments:|\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|\s+Open article|$)/i);
+      if(afterTech && afterTech[1]) title = safeText(afterTech[1]);
+    }
+    if(!title){
+      const candidates = lines.filter(x => x.length > 24 && x.length < 240 && !/^(markets?:|instruments?:|tech daily|open article|published articles feed|search|all markets|all instruments|all sources)/i.test(x));
+      title = candidates[0] || one.slice(0,180);
+    }
+
+    const marketLine = lines.find(x => /^markets?:/i.test(x)) || (one.match(/Markets:\s*.+?(?=\s+Instruments:|\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|\s+Open article|$)/i) || [""])[0];
+    const instrumentLine = lines.find(x => /^instruments?:/i.test(x)) || (one.match(/Instruments:\s*.+?(?=\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|\s+Open article|$)/i) || [""])[0];
+    const dateLine = lines.find(x => /\b\d{4}\b|GMT|AM|PM|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar|Apr/i.test(x) && x.length < 110) || "";
+    const meta = [marketLine, instrumentLine, dateLine].map(safeText).filter(Boolean).join(" • ") || "Latest published article feed.";
+
+    return {source, title, chips:chips.length ? chips.slice(0,3) : ["Market News"], meta};
+  }
+
+  function parseNewsItemsFromLargeText(text){
+    const normalized = String(text || "").replace(/\r/g, "\n");
+    let chunks = normalized.split(/Open article\s*→?/i).map(s => safeText(s)).filter(s => s.length > 80);
+    if(chunks.length < 4){
+      chunks = normalized.split(/(?=\b[A-Z][A-Za-z0-9.'& -]{2,50}\s+Tech Daily:)/g).map(s => safeText(s)).filter(s => s.length > 80);
+    }
+    return chunks.slice(0,12).map(chunk => extractNewsItemFromTextChunk(chunk)).filter(x => x && x.title);
+  }
+
+  function extractNewsItemFromTextChunk(chunk){
+    const one = safeText(chunk);
+    const beforeTech = one.split(/Tech Daily:/i)[0] || "";
+    const source = safeText(beforeTech.split(/Search|Clear|All Sources|All Markets|All Instruments/i).pop()).slice(-70).trim() || "Market News";
+    let title = "";
+    const m = one.match(/Tech Daily:\s*.*?(?:High Impact|Medium Impact|Low Impact)?\s+(.+?)(?:\s+Markets:|\s+Instruments:|\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|$)/i);
+    if(m && m[1]) title = safeText(m[1]);
+    if(!title){
+      const parts = one.split(/Markets:|Instruments:/i);
+      title = safeText((parts[0] || one).replace(/.*Tech Daily:\s*/i, "")).slice(0,180);
+    }
+    const chips = [];
+    ["Bullish","Bearish","Neutral","Mixed/Bullish","Mixed/Bearish","High Impact"].forEach(word => { if(one.toLowerCase().includes(word.toLowerCase())) chips.push(word); });
+    const marketLine = (one.match(/Markets:\s*.+?(?=\s+Instruments:|\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|$)/i) || [""])[0];
+    const instrumentLine = (one.match(/Instruments:\s*.+?(?=\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|$)/i) || [""])[0];
+    return {source:source || "Market News", title, chips:chips.slice(0,3).length ? chips.slice(0,3) : ["Market News"], meta:[marketLine, instrumentLine].filter(Boolean).join(" • ") || "Latest article."};
+  }
+
+  function dedupeNewsItems(items){
+    const seen = new Set();
+    const out = [];
+    items.forEach(item => {
+      const key = safeText(item.title).toLowerCase().slice(0,90);
+      if(!key || seen.has(key)) return;
+      seen.add(key);
+      out.push(item);
+    });
+    return out;
+  }
+
+  function findNewsItems(){
+    let items = newsCardCandidateElements().map(extractNewsItemFromElement);
+    if(items.length < 4){
+      const feed = qsa("main, .page, body").sort((a,b) => visibleText(b).length - visibleText(a).length)[0];
+      items = items.concat(parseNewsItemsFromLargeText(visibleText(feed)));
+    }
+    return dedupeNewsItems(items).slice(0,8);
   }
 
   function buildNewsPrintCard(item){
@@ -1479,43 +1539,36 @@
     return card;
   }
 
-  function psdPdfEsc(value){
-    return String(value ?? "")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#039;");
-  }
-
   function buildNewsWidgetSamples(){
     const row = document.createElement("div");
     row.className = "psd-news-widget-row";
     row.innerHTML = `
-      <div class="psd-widget-print-sample" aria-label="Vote widget sample">
-        <span class="psd-widget-icon">↕</span>
-        <span class="psd-widget-text">Vote<br>Here</span>
-      </div>
-      <div class="psd-widget-print-sample" aria-label="PDF widget sample">
-        <span class="psd-widget-icon">📄</span>
-        <span class="psd-widget-text">Save<br>PDF</span>
-      </div>
+      <div class="psd-widget-print-sample" aria-label="Vote widget sample"><span class="psd-widget-icon">↕</span><span class="psd-widget-text">Vote<br>Here</span></div>
+      <div class="psd-widget-print-sample" aria-label="PDF widget sample"><span class="psd-widget-icon">📄</span><span class="psd-widget-text">Save<br>PDF</span></div>
     `;
     return row;
   }
 
+  function buildAdSpace(text, sub){
+    const box = document.createElement("div");
+    box.className = "psd-news-ad-space";
+    box.innerHTML = `<span>${psdPdfEsc(text)}<small>${psdPdfEsc(sub || "")}</small></span>`;
+    return box;
+  }
+
   function buildNewsPages(root){
     const now = new Date().toLocaleString();
+
     const page1 = createPage("News & Articles", `Generated ${now}`);
     page1.classList.add("psd-news-page1");
-
     [".header", "#psdAdvertiseBanner"].forEach(sel => {
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
 
     const panels = qsa("main .panel, .page > .panel, section.panel");
-    const hero = cloneElement(panels[0] || "main section");
+    const firstPanel = panels.find(p => visibleText(p).length < 2200) || panels[0];
+    const hero = cloneElement(firstPanel || "main section");
     if(hero){
       hero.classList.add("psd-news-hero");
       page1.appendChild(hero);
@@ -1528,9 +1581,9 @@
 
     const grid = document.createElement("div");
     grid.className = "psd-news-grid";
-    const items = findNewsSourceCards().slice(0,4).map(extractNewsItem);
+    const items = findNewsItems();
     while(items.length < 4){
-      items.push({source:"Market News", title:"News item loading from the latest published article feed.", chips:["News"], meta:"Open the live News & Articles page for the full article list."});
+      items.push({source:"Market News", title:"Latest article still loading from the live News & Articles feed.", chips:["News"], meta:"Refresh the page, wait for the article feed, then Save PDF again."});
     }
     items.slice(0,4).forEach(item => grid.appendChild(buildNewsPrintCard(item)));
     page1.appendChild(grid);
@@ -1540,19 +1593,13 @@
     page2.classList.add("psd-news-page2");
     const ad2 = cloneElement("#psdAdvertiseBanner");
     if(ad2) page2.appendChild(ad2);
-    const space2 = document.createElement("div");
-    space2.className = "psd-news-ad-space";
-    space2.textContent = "Advertising / Business Opportunities";
-    page2.appendChild(space2);
+    page2.appendChild(buildAdSpace("Advertising / Business Opportunities", "Reach market-focused readers interested in sentiment, financial news, trading, investing, and macro themes."));
 
     const page3 = createPage("News & Articles", "Advertising + Disclaimer");
     page3.classList.add("psd-news-page3", "psd-final-page");
     const ad3 = cloneElement("#psdAdvertiseBanner");
     if(ad3) page3.appendChild(ad3);
-    const space3 = document.createElement("div");
-    space3.className = "psd-news-ad-space";
-    space3.textContent = "Advertising / Business Opportunities";
-    page3.appendChild(space3);
+    page3.appendChild(buildAdSpace("Advertising / Business Opportunities", "Partner with Public Sentiment Dash for visibility across market sentiment pages."));
     const footer = cloneElement(".footer");
     if(footer){
       footer.classList.add("psd-pdf-footer");
@@ -1563,7 +1610,6 @@
     root.appendChild(page2);
     root.appendChild(page3);
   }
-
 
   function buildGenericPages(root){
     const now = new Date().toLocaleString();
