@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "9";
+  const PSD_PDF_VERSION = "10";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -496,6 +496,232 @@
         margin-top:12px!important;
         flex:0 0 auto!important;
       }
+
+      /* Home page PDF support */
+      #psdPdfCaptureRoot .psd-home-page .header{
+        display:none!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-home-page .psd-ad-banner{
+        margin:0 0 14px!important;
+        min-height:36px!important;
+        padding:9px 14px!important;
+        font-size:12px!important;
+      }
+      #psdPdfCaptureRoot .home-layout{
+        display:block!important;
+        width:100%!important;
+      }
+      #psdPdfCaptureRoot .hero{
+        display:grid!important;
+        grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr)!important;
+        gap:18px!important;
+        margin:0!important;
+      }
+      #psdPdfCaptureRoot .hero-copy{
+        padding:22px!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .hero-copy h1{
+        font-size:42px!important;
+        line-height:1.06!important;
+        margin-bottom:12px!important;
+      }
+      #psdPdfCaptureRoot .hero-copy p{
+        font-size:13.5px!important;
+        line-height:1.48!important;
+        margin:0 0 10px!important;
+      }
+      #psdPdfCaptureRoot .hero-points{
+        display:grid!important;
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        gap:10px!important;
+        margin-top:14px!important;
+      }
+      #psdPdfCaptureRoot .hero-point{
+        padding:12px!important;
+        border-radius:14px!important;
+      }
+      #psdPdfCaptureRoot .hero-point strong{
+        font-size:13px!important;
+        margin-bottom:5px!important;
+      }
+      #psdPdfCaptureRoot .hero-point span{
+        font-size:11.5px!important;
+        line-height:1.35!important;
+      }
+      #psdPdfCaptureRoot .score-panel{
+        padding:20px!important;
+      }
+      #psdPdfCaptureRoot .score-ring{
+        width:210px!important;
+        height:210px!important;
+        margin:7px auto 13px!important;
+      }
+      #psdPdfCaptureRoot .score-inner{
+        width:156px!important;
+        height:156px!important;
+      }
+      #psdPdfCaptureRoot .score-number{
+        font-size:48px!important;
+      }
+      #psdPdfCaptureRoot .score-word{
+        font-size:17px!important;
+      }
+      #psdPdfCaptureRoot .score-desc{
+        font-size:12px!important;
+        line-height:1.4!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page2{
+        display:grid!important;
+        grid-template-rows:auto 1fr!important;
+      }
+      #psdPdfCaptureRoot .psd-home-combo{
+        display:grid!important;
+        grid-template-columns:320px minmax(0,1fr)!important;
+        gap:16px!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .instrument-rail{
+        position:relative!important;
+        top:auto!important;
+        padding:14px!important;
+        margin:0!important;
+        height:100%!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .instrument-rail h2{
+        font-size:18px!important;
+        margin-bottom:5px!important;
+      }
+      #psdPdfCaptureRoot .instrument-rail .muted{
+        font-size:11px!important;
+        line-height:1.35!important;
+        margin-bottom:8px!important;
+      }
+      #psdPdfCaptureRoot .rail-waterfall{
+        height:820px!important;
+        margin-top:8px!important;
+      }
+      #psdPdfCaptureRoot .rail-track{
+        transform:none!important;
+        animation:none!important;
+        gap:6px!important;
+      }
+      #psdPdfCaptureRoot .rail-item{
+        padding:6px 8px!important;
+        border-radius:11px!important;
+        grid-template-columns:24px minmax(0,1fr) auto!important;
+        gap:7px!important;
+      }
+      #psdPdfCaptureRoot .rail-icon{
+        width:21px!important;
+        height:21px!important;
+        font-size:12px!important;
+      }
+      #psdPdfCaptureRoot .rail-name{
+        font-size:11px!important;
+      }
+      #psdPdfCaptureRoot .rail-sub,
+      #psdPdfCaptureRoot .rail-state{
+        font-size:9px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-main-stack{
+        display:grid!important;
+        gap:14px!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .sources-layout{
+        display:grid!important;
+        grid-template-columns:280px minmax(0,1fr)!important;
+        gap:16px!important;
+      }
+      #psdPdfCaptureRoot .sources-layout h2{
+        font-size:24px!important;
+      }
+      #psdPdfCaptureRoot .sources-layout p{
+        font-size:12px!important;
+        line-height:1.42!important;
+      }
+      #psdPdfCaptureRoot .sources-waterfall{
+        height:370px!important;
+        min-height:370px!important;
+      }
+      #psdPdfCaptureRoot .waterfall-track{
+        transform:none!important;
+        animation:none!important;
+        gap:8px!important;
+      }
+      #psdPdfCaptureRoot .source-chip{
+        min-height:42px!important;
+        padding:8px 10px!important;
+        border-radius:12px!important;
+      }
+      #psdPdfCaptureRoot .source-chip img{
+        width:20px!important;
+        height:20px!important;
+      }
+      #psdPdfCaptureRoot .source-chip-name{
+        font-size:12px!important;
+      }
+      #psdPdfCaptureRoot .summary-lines{
+        gap:8px!important;
+      }
+      #psdPdfCaptureRoot .summary-line{
+        padding:10px 12px!important;
+        font-size:12px!important;
+        line-height:1.35!important;
+      }
+      #psdPdfCaptureRoot .focus-grid{
+        display:grid!important;
+        grid-template-columns:repeat(4,minmax(0,1fr))!important;
+        gap:10px!important;
+      }
+      #psdPdfCaptureRoot .focus-card{
+        min-height:116px!important;
+      }
+      #psdPdfCaptureRoot .mini-card{
+        padding:12px!important;
+        border-radius:13px!important;
+      }
+      #psdPdfCaptureRoot .mini-title{
+        font-size:13px!important;
+        margin-bottom:6px!important;
+      }
+      #psdPdfCaptureRoot .mini-meta,
+      #psdPdfCaptureRoot .mini-headline,
+      #psdPdfCaptureRoot .focus-open{
+        font-size:10.5px!important;
+        line-height:1.3!important;
+      }
+      #psdPdfCaptureRoot .action-grid{
+        display:grid!important;
+        grid-template-columns:repeat(4,minmax(0,1fr))!important;
+        gap:10px!important;
+        margin-top:10px!important;
+      }
+      #psdPdfCaptureRoot .action-card{
+        padding:14px!important;
+        border-radius:14px!important;
+      }
+      #psdPdfCaptureRoot .action-label{
+        font-size:9.5px!important;
+        padding:5px 8px!important;
+        margin-bottom:8px!important;
+      }
+      #psdPdfCaptureRoot .action-card h3{
+        font-size:17px!important;
+        margin-bottom:6px!important;
+      }
+      #psdPdfCaptureRoot .action-card p{
+        font-size:11px!important;
+        line-height:1.34!important;
+        margin-bottom:8px!important;
+      }
+      #psdPdfCaptureRoot .action-cta{
+        font-size:11px!important;
+      }
+
     `;
     document.head.appendChild(style);
   }
@@ -613,6 +839,49 @@
     root.appendChild(page2);
   }
 
+
+
+  function buildHomePages(root){
+    const now = new Date().toLocaleString();
+
+    const page1 = createPage("Home", `Generated ${now}`);
+    page1.classList.add("psd-home-page", "psd-home-page1");
+    ["#psdAdvertiseBanner", ".hero"].forEach(sel => {
+      const clone = cloneElement(sel);
+      if(clone) page1.appendChild(clone);
+    });
+
+    const page2 = createPage("Home", "Market Direction + Sources + Daily Brief");
+    page2.classList.add("psd-home-page", "psd-home-page2");
+    const combo = document.createElement("div");
+    combo.className = "psd-home-combo";
+    const rail = cloneElement(".instrument-rail");
+    if(rail) combo.appendChild(rail);
+    const stack = document.createElement("div");
+    stack.className = "psd-home-main-stack";
+    const sections = qsa(".section.panel");
+    [sections[0], sections[1], sections[2]].forEach(el => {
+      const clone = cloneElement(el);
+      if(clone) stack.appendChild(clone);
+    });
+    combo.appendChild(stack);
+    page2.appendChild(combo);
+
+    const page3 = createPage("Home", "Explore the Site + Disclaimer");
+    page3.classList.add("psd-home-page", "psd-final-page");
+    const explore = cloneElement(sections[3]);
+    if(explore) page3.appendChild(explore);
+    const footer = cloneElement(".footer");
+    if(footer){
+      footer.classList.add("psd-pdf-footer");
+      page3.appendChild(footer);
+    }
+
+    root.appendChild(page1);
+    root.appendChild(page2);
+    root.appendChild(page3);
+  }
+
   function buildGenericPages(root){
     const now = new Date().toLocaleString();
     const page = createPage("Report", `Generated ${now}`);
@@ -634,7 +903,9 @@
     document.body.appendChild(root);
 
     const path = window.location.pathname.toLowerCase();
-    if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html") || qs("#snapshotCards")){
+    if(path === "/" || path.endsWith("/index.html") || path.endsWith("index.html") || qs(".home-layout")){
+      buildHomePages(root);
+    }else if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html") || qs("#snapshotCards")){
       buildDashboardPages(root);
     }else if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html") || qs(".dash-stage-shell") || qs("#historyRows")){
       buildHistoricalPages(root);
