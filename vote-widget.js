@@ -1,4 +1,3 @@
-c/* Public Sentiment Dash vote-widget v12 - recovery stable */
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
 const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
@@ -457,6 +456,11 @@ function psdCreateVoteWidget(){
 }
 
 
+/*
+  PSD PDF Widget
+  - Built cleanly on top of the stable vote-widget.js file.
+  - Does not touch vote logic, Supabase logic, GA4, structured data, ad banner, footer links, or live update logic.
+*/
 function psdLoadPdfReportEngine(){
   return new Promise((resolve, reject) => {
     if(typeof window.psdOpenPdfReport === "function"){
@@ -473,7 +477,7 @@ function psdLoadPdfReportEngine(){
 
     const script = document.createElement("script");
     script.id = "psdPdfReportScript";
-    script.src = "pdf-report.js?v=12";
+    script.src = "pdf-report.js?v=13";
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("PDF report engine failed to load."));
@@ -489,9 +493,10 @@ function psdCreatePdfWidget(){
     style.id = "psdPdfWidgetCss";
     style.textContent = `
       .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Arial,Segoe UI,sans-serif}
-      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:54px;min-height:78px;border:1px solid rgba(115,176,255,.72);border-radius:18px;background:#132844;color:#ffffff;cursor:pointer;box-shadow:0 0 14px rgba(88,166,255,.20);animation:psdPdfFloat 3.5s ease-in-out infinite;padding:8px 5px;text-align:center;-webkit-font-smoothing:auto;text-rendering:optimizeLegibility}
+      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:54px;min-height:78px;border:1px solid rgba(115,176,255,.72);border-radius:18px;background:#132844;color:#ffffff;cursor:pointer;box-shadow:0 0 14px rgba(88,166,255,.20);animation:psdPdfFloat 3.5s ease-in-out infinite;padding:8px 5px;text-align:center;-webkit-font-smoothing:auto;text-rendering:geometricPrecision}
       .psd-pdf-tab:hover{background:#18365c;transform:translateX(2px)}
-      .psd-pdf-tab-icon{font-size:18px;line-height:1;font-weight:800;color:#ffffff;letter-spacing:0}.psd-pdf-tab-text{font-size:10.5px;font-weight:700;line-height:1.05;text-align:center;max-width:48px;color:#ffffff;text-shadow:0 1px 1px rgba(0,0,0,.55);letter-spacing:0}
+      .psd-pdf-tab-icon{font-size:18px;line-height:1;font-weight:800;color:#ffffff;letter-spacing:0}
+      .psd-pdf-tab-text{font-size:10.5px;font-weight:700;line-height:1.05;text-align:center;max-width:48px;color:#ffffff;text-shadow:0 1px 1px rgba(0,0,0,.55);letter-spacing:0}
       @keyframes psdPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
       @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 96px)}.psd-pdf-tab{width:54px;min-height:78px}}
       @media print{#psdVoteWidget,#psdPdfWidget{display:none!important}}
@@ -503,7 +508,7 @@ function psdCreatePdfWidget(){
   wrap.id = "psdPdfWidget";
   wrap.className = "psd-pdf-widget";
   wrap.innerHTML = `
-    <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF report">
+    <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF report" title="Save this page as PDF report">
       <span class="psd-pdf-tab-icon">PDF</span>
       <span class="psd-pdf-tab-text">Save<br>PDF</span>
     </button>
