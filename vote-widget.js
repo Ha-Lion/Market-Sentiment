@@ -455,6 +455,85 @@ function psdCreateVoteWidget(){
   });
 }
 
+
+function psdLoadPdfReportEngine(){
+  return new Promise((resolve, reject) => {
+    if(typeof window.psdOpenPdfReport === "function"){
+      resolve();
+      return;
+    }
+
+    const existing = document.getElementById("psdPdfReportScript");
+    if(existing){
+      existing.addEventListener("load", () => resolve(), { once:true });
+      existing.addEventListener("error", () => reject(new Error("PDF report engine failed to load.")), { once:true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "psdPdfReportScript";
+    script.src = "pdf-report.js?v=1";
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("PDF report engine failed to load."));
+    document.head.appendChild(script);
+  });
+}
+
+function psdCreatePdfWidget(){
+  if(document.getElementById("psdPdfWidget")) return;
+
+  if(!document.getElementById("psdPdfWidgetCss")){
+    const style = document.createElement("style");
+    style.id = "psdPdfWidgetCss";
+    style.textContent = `
+      .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Inter,Segoe UI,Arial,sans-serif}
+      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:54px;min-height:78px;border:1px solid rgba(88,166,255,.42);border-radius:18px;background:linear-gradient(180deg,rgba(88,166,255,.20),rgba(13,17,23,.96));color:#d8ebff;cursor:pointer;box-shadow:0 0 24px rgba(88,166,255,.16);animation:psdPdfFloat 3.5s ease-in-out infinite}
+      .psd-pdf-tab:hover{background:linear-gradient(180deg,rgba(88,166,255,.31),rgba(13,17,23,.96));transform:translateX(2px)}
+      .psd-pdf-tab-icon{font-size:19px;line-height:1}.psd-pdf-tab-text{font-size:11px;font-weight:800;line-height:1.05;text-align:center}
+      @keyframes psdPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
+      @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 92px)}}
+      @media print{#psdVoteWidget,#psdPdfWidget{display:none!important}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  const wrap = document.createElement("div");
+  wrap.id = "psdPdfWidget";
+  wrap.className = "psd-pdf-widget";
+  wrap.innerHTML = `
+    <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF report">
+      <span class="psd-pdf-tab-icon">PDF</span>
+      <span class="psd-pdf-tab-text">Save</span>
+    </button>
+  `;
+
+  document.body.appendChild(wrap);
+
+  const btn = wrap.querySelector(".psd-pdf-tab");
+  btn.addEventListener("click", async () => {
+    const original = btn.innerHTML;
+    btn.innerHTML = `<span class="psd-pdf-tab-icon">…</span><span class="psd-pdf-tab-text">Prep</span>`;
+    btn.disabled = true;
+
+    try{
+      await psdLoadPdfReportEngine();
+      if(typeof window.psdOpenPdfReport === "function"){
+        psdTrack("pdf_report_open", { page_path: window.location.pathname });
+        await window.psdOpenPdfReport();
+      }else{
+        window.print();
+      }
+    }catch(error){
+      console.warn("PDF report failed", error);
+      alert("PDF report failed to load. Please refresh and try again.");
+    }finally{
+      btn.innerHTML = original;
+      btn.disabled = false;
+    }
+  });
+}
+
 function psdSafe(name, fn){
   try{
     return fn();
@@ -466,6 +545,7 @@ function psdSafe(name, fn){
 
 function psdInit(){
   psdSafe("create vote widget", psdCreateVoteWidget);
+  psdSafe("create PDF widget", psdCreatePdfWidget);
   psdSafe("load GA4", psdLoadGA4);
   psdSafe("inject structured data", psdInjectStructuredData);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
@@ -487,6 +567,7 @@ if(document.readyState === "loading"){
 
 window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
+  psdSafe("create PDF widget on load", psdCreatePdfWidget);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
   psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links on load", psdEnhanceSocialLinks);
