@@ -461,6 +461,21 @@ function psdCreateVoteWidget(){
   - Built cleanly on top of the stable vote-widget.js file.
   - Does not touch vote logic, Supabase logic, GA4, structured data, ad banner, footer links, or live update logic.
 */
+function psdShouldShowPdfWidget(){
+  const path = window.location.pathname.toLowerCase();
+  return (
+    path === "/" ||
+    path.endsWith("/index.html") ||
+    path.endsWith("index.html") ||
+    path.endsWith("/dashboard.html") ||
+    path.endsWith("dashboard.html") ||
+    path.endsWith("/sentiment-history.html") ||
+    path.endsWith("sentiment-history.html") ||
+    path.endsWith("/news-articles.html") ||
+    path.endsWith("news-articles.html")
+  );
+}
+
 function psdLoadPdfReportEngine(){
   return new Promise((resolve, reject) => {
     if(typeof window.psdOpenPdfReport === "function"){
@@ -477,7 +492,7 @@ function psdLoadPdfReportEngine(){
 
     const script = document.createElement("script");
     script.id = "psdPdfReportScript";
-    script.src = "pdf-report.js?v=13";
+    script.src = "pdf-report.js?v=14";
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("PDF report engine failed to load."));
@@ -486,6 +501,12 @@ function psdLoadPdfReportEngine(){
 }
 
 function psdCreatePdfWidget(){
+  if(!psdShouldShowPdfWidget()){
+    const existing = document.getElementById("psdPdfWidget");
+    if(existing) existing.remove();
+    return;
+  }
+
   if(document.getElementById("psdPdfWidget")) return;
 
   if(!document.getElementById("psdPdfWidgetCss")){
