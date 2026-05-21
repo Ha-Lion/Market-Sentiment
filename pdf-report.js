@@ -1,10 +1,10 @@
 /*
-  Public Sentiment Dash - PDF Report Engine v4
+  Public Sentiment Dash - PDF Report Engine v5
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "4";
+  const PSD_PDF_VERSION = "5";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -225,6 +225,56 @@
       #psdPdfCaptureRoot .footer-links a{font-size:11px!important;padding:3px 4px!important}
       #psdPdfCaptureRoot .legal{font-size:11px!important;line-height:1.34!important;padding:9px 11px!important;margin-top:8px!important;border-radius:12px!important}
       #psdPdfCaptureRoot .footer p{font-size:10.5px!important;margin:7px 0 0!important;line-height:1.25!important}
+
+      /* PDF capture fixes: live SVG lines use draw animations; disable animation must also reset dash offsets. */
+      #psdPdfCaptureRoot .skyline-line,
+      #psdPdfCaptureRoot .spark-path,
+      #psdPdfCaptureRoot svg path,
+      #psdPdfCaptureRoot svg polyline{
+        stroke-dasharray:none!important;
+        stroke-dashoffset:0!important;
+        opacity:1!important;
+        visibility:visible!important;
+      }
+      #psdPdfCaptureRoot .skyline-line{stroke-width:4.8!important;filter:drop-shadow(0 0 8px currentColor)!important}
+      #psdPdfCaptureRoot .spark-path{stroke-width:3.2!important;filter:drop-shadow(0 0 5px currentColor)!important}
+      #psdPdfCaptureRoot .radar-poly{opacity:.62!important;visibility:visible!important}
+      #psdPdfCaptureRoot .radar-wrap text,
+      #psdPdfCaptureRoot .skyline-wrap text{
+        opacity:1!important;
+        fill:#e6edf3!important;
+      }
+      #psdPdfCaptureRoot .chart-watermark{opacity:.16!important;color:rgba(255,255,255,.16)!important}
+      #psdPdfCaptureRoot .psd-final-page{
+        display:flex!important;
+        flex-direction:column!important;
+      }
+      #psdPdfCaptureRoot .psd-final-page > .chart-grid{
+        flex:1 1 auto!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .psd-pdf-footer{
+        margin-top:auto!important;
+        padding:11px 13px!important;
+        border:1px solid rgba(210,153,34,.24)!important;
+        border-radius:14px!important;
+        background:rgba(13,17,23,.94)!important;
+        box-shadow:0 10px 24px rgba(0,0,0,.22)!important;
+      }
+      #psdPdfCaptureRoot .psd-pdf-footer .footer-links{
+        gap:10px!important;
+        margin-bottom:7px!important;
+      }
+      #psdPdfCaptureRoot .psd-pdf-footer .footer-links a{
+        color:#d8dee9!important;
+        font-size:11.5px!important;
+        font-weight:700!important;
+      }
+      #psdPdfCaptureRoot .psd-pdf-footer .legal{
+        color:#f0d59a!important;
+        background:rgba(248,81,73,.08)!important;
+        border-color:rgba(248,81,73,.24)!important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -269,10 +319,14 @@
     if(grid1) page2.appendChild(grid1);
 
     const page3 = createPage("Heatwave & Ranking", "Sentiment Heatwave + Strength Ranking + Disclaimer");
+    page3.classList.add("psd-final-page");
     const grid2 = cloneElement(grids[1]);
     if(grid2) page3.appendChild(grid2);
     const footer = cloneElement(".footer");
-    if(footer) page3.appendChild(footer);
+    if(footer){
+      footer.classList.add("psd-pdf-footer");
+      page3.appendChild(footer);
+    }
 
     root.appendChild(page1);
     root.appendChild(page2);
