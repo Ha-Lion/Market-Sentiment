@@ -1,1143 +1,744 @@
-/*
-  Public Sentiment Dash - PDF Report Engine v12
-  Method: live-section capture -> 3-page landscape PDF.
-  Keeps the PDF visually close to the actual page and reduces future maintenance.
-*/
-(function(){
-  const PSD_PDF_VERSION = "12";
-  const PSD_SITE_LABEL = "publicsentimentdash.com";
-  const PSD_CAPTURE_WIDTH = 1600;
-  const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
-  const PSD_CAPTURE_SCALE = 3;
-  const PSD_EXPORT_IMAGE_TYPE = "PNG";
+c/* Public Sentiment Dash vote-widget v12 - recovery stable */
+const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
+const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
+const PSD_GA4_ID = "G-BZMQQZ2SVC";
+const PSD_SITE_URL = "https://publicsentimentdash.com";
+const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
 
-  function qs(selector, root=document){ return root.querySelector(selector); }
-  function qsa(selector, root=document){ return Array.from(root.querySelectorAll(selector)); }
+const PSD_VOTE_INSTRUMENTS = [
+  "S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX",
+  "DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40",
+  "US 2Y Treasury","US 10Y Treasury","Treasury Yields",
+  "US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF",
+  "CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY",
+  "AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY",
+  "USDTRY","USDMXN","USDZAR",
+  "Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA",
+  "Dogecoin / DOGE","General Crypto",
+  "Gold","Silver","Copper","Crude Oil","Natural Gas",
+  "Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","US GDP / Growth","Geopolitical / Tariffs"
+];
 
-  function safeText(value){
-    return String(value || "").replace(/\s+/g, " ").trim();
+window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
+
+function psdLoadGA4(){
+  if(!PSD_GA4_ID || window.PSD_GA4_LOADED) return;
+  window.PSD_GA4_LOADED = true;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ window.dataLayer.push(arguments); };
+
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(PSD_GA4_ID);
+  document.head.appendChild(script);
+
+  window.gtag("js", new Date());
+  window.gtag("config", PSD_GA4_ID, {
+    page_title: document.title,
+    page_path: window.location.pathname
+  });
+}
+
+function psdTrack(eventName, params){
+  if(typeof window.gtag === "function"){
+    window.gtag("event", eventName, params || {});
   }
+}
 
-  function pageName(){
-    const chip = qs(".page-chip");
-    if(chip && safeText(chip.textContent)) return safeText(chip.textContent);
+function psdCanonicalURL(){
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if(canonical && canonical.href) return canonical.href;
+  const path = window.location.pathname === "/" ? "/" : window.location.pathname;
+  return PSD_SITE_URL + path;
+}
 
-    const active = qs(".nav a.active");
-    if(active && safeText(active.textContent)) return safeText(active.textContent);
+function psdMetaDescription(){
+  const meta = document.querySelector('meta[name="description"]');
+  return meta ? meta.getAttribute("content") || "" : "";
+}
 
-    const h1 = qs("h1");
-    if(h1 && safeText(h1.textContent)) return safeText(h1.textContent);
+function psdInjectStructuredData(){
+  if(document.getElementById("psdStructuredData")) return;
 
-    return safeText(document.title || "Public Sentiment Dash").replace(/Public Sentiment Dash|—|-/g, "").trim() || "Report";
-  }
+  const currentUrl = psdCanonicalURL();
+  const description = psdMetaDescription();
+  const title = document.title || "Public Sentiment Dash";
 
-  function fileName(){
-    const name = pageName().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
-    return `${PSD_SITE_LABEL} - ${name || "Report"}.pdf`;
-  }
-
-  function loadScript(id, src){
-    return new Promise((resolve, reject) => {
-      if(document.getElementById(id)){
-        const existing = document.getElementById(id);
-        if(existing.getAttribute("data-loaded") === "1") return resolve();
-        existing.addEventListener("load", () => resolve(), { once:true });
-        existing.addEventListener("error", () => reject(new Error("Failed to load " + src)), { once:true });
-        return;
+  const schema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": PSD_SITE_URL + "/#organization",
+        "name": "Public Sentiment Dash",
+        "url": PSD_SITE_URL + "/",
+        "logo": PSD_SITE_URL + "/logo.png",
+        "sameAs": [PSD_X_PROFILE_URL],
+        "description": "AI-assisted public market sentiment dashboard for stocks, forex, crypto, commodities, bonds, macro headlines, and financial news."
+      },
+      {
+        "@type": "WebSite",
+        "@id": PSD_SITE_URL + "/#website",
+        "url": PSD_SITE_URL + "/",
+        "name": "Public Sentiment Dash",
+        "publisher": {"@id": PSD_SITE_URL + "/#organization"},
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "WebPage",
+        "@id": currentUrl + "#webpage",
+        "url": currentUrl,
+        "name": title,
+        "description": description,
+        "isPartOf": {"@id": PSD_SITE_URL + "/#website"},
+        "publisher": {"@id": PSD_SITE_URL + "/#organization"},
+        "inLanguage": "en-US"
       }
+    ]
+  };
 
-      const script = document.createElement("script");
-      script.id = id;
-      script.src = src;
-      script.async = true;
-      script.onload = () => { script.setAttribute("data-loaded", "1"); resolve(); };
-      script.onerror = () => reject(new Error("Failed to load " + src));
-      document.head.appendChild(script);
+  const script = document.createElement("script");
+  script.id = "psdStructuredData";
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
+}
+
+function psdEscape(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function psdClass(value){
+  const clean = String(value || "N/A").replace(/[^a-zA-Z]/g,"");
+  return clean || "NA";
+}
+
+function psdCreateAdvertiseBanner(){
+  if(document.getElementById("psdAdvertiseBanner")) return;
+
+  const header = document.querySelector(".header");
+  if(!header) return;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .psd-ad-banner{
+      max-width:1120px;
+      margin:14px auto 0;
+      padding:11px 14px;
+      border:1px solid rgba(210,153,34,.28);
+      border-radius:999px;
+      background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.08));
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      text-align:center;
+      font-size:13px;
+      line-height:1.45;
+      box-shadow:0 10px 26px rgba(0,0,0,.16);
+    }
+    .psd-ad-banner strong{color:#ffd780;font-weight:800}
+    .psd-ad-banner a{
+      color:#fff;
+      font-weight:800;
+      text-decoration:none;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      padding:6px 10px;
+      border-radius:999px;
+      white-space:nowrap;
+      transition:.18s ease;
+    }
+    .psd-ad-banner a:hover{border-color:rgba(210,153,34,.55);transform:translateY(-1px)}
+    @media(max-width:760px){
+      .psd-ad-banner{border-radius:18px;flex-direction:column;margin:12px 14px 0}
+    }
+  `;
+  document.head.appendChild(style);
+
+  const banner = document.createElement("div");
+  banner.id = "psdAdvertiseBanner";
+  banner.className = "psd-ad-banner";
+  banner.innerHTML = `
+    <span>📣 <strong>Partner with Public Sentiment Dash</strong> — advertising, investor, and business opportunities in market sentiment.</span>
+    <a href="advertise.html">Learn More</a>
+  `;
+
+  header.insertAdjacentElement("afterend", banner);
+}
+
+function psdGetVoterId(){
+  let id = localStorage.getItem("psd_voter_id");
+  if(!id){
+    id = window.crypto && crypto.randomUUID
+      ? crypto.randomUUID()
+      : "voter_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("psd_voter_id", id);
+  }
+  return id;
+}
+
+function psdHeaders(){
+  return {
+    "apikey": PSD_SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + PSD_SUPABASE_ANON_KEY,
+    "Content-Type": "application/json"
+  };
+}
+
+function psdEnhanceFooterLegalLinks(){
+  document.querySelectorAll(".footer-links").forEach(footer => {
+    const extraLinks = [
+      ["advertise.html", "Business Opportunities"],
+      ["privacy.html", "Privacy"],
+      ["terms.html", "Terms"],
+      ["disclaimer.html", "Disclaimer"]
+    ];
+
+    extraLinks.forEach(([href, label]) => {
+      const exists = Array.from(footer.querySelectorAll("a")).some(a => (a.getAttribute("href") || "") === href);
+      if(!exists){
+        const a = document.createElement("a");
+        a.href = href;
+        a.textContent = label;
+        if(window.location.pathname.toLowerCase().endsWith("/" + href.toLowerCase())){
+          a.className = "active";
+        }
+        footer.appendChild(a);
+      }
     });
+  });
+}
+
+function psdEnhanceSocialLinks(){
+  document.querySelectorAll(".social-links").forEach(social => {
+    const xPill = Array.from(social.querySelectorAll(".social-pill")).find(el =>
+      el.textContent.trim().toLowerCase() === "x"
+    );
+
+    if(xPill && xPill.tagName.toLowerCase() !== "a"){
+      const a = document.createElement("a");
+      a.className = xPill.className;
+      a.textContent = "X";
+      a.href = PSD_X_PROFILE_URL;
+      a.target = "_blank";
+      a.rel = "noopener";
+      xPill.replaceWith(a);
+    }else if(xPill){
+      xPill.href = PSD_X_PROFILE_URL;
+      xPill.target = "_blank";
+      xPill.rel = "noopener";
+    }
+  });
+}
+
+function psdFallbackFromElement(el){
+  const card = el.closest(".instrument-card");
+  if(card){
+    const dailyRow = Array.from(card.querySelectorAll(".info-row")).find(row =>
+      row.textContent.trim().toLowerCase().startsWith("daily:")
+    );
+    if(dailyRow){
+      const text = dailyRow.textContent.toLowerCase();
+      if(text.includes("bullish")) return "Bullish";
+      if(text.includes("bearish")) return "Bearish";
+      if(text.includes("neutral")) return "Neutral";
+    }
   }
 
-  async function ensureLibraries(){
-    if(typeof window.html2canvas !== "function"){
-      await loadScript("psdHtml2CanvasLib", "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+  const rail = el.closest(".rail-item");
+  if(rail){
+    if(rail.classList.contains("direction-up")) return "Bullish";
+    if(rail.classList.contains("direction-down")) return "Bearish";
+    if(rail.classList.contains("direction-neutral")) return "Neutral";
+  }
+
+  const newsCard = el.closest(".news-card");
+  if(newsCard){
+    const tech = newsCard.querySelector(".tech-chip");
+    const text = tech ? tech.textContent.toLowerCase() : "";
+    if(text.includes("bullish")) return "Bullish";
+    if(text.includes("bearish")) return "Bearish";
+    if(text.includes("neutral")) return "Neutral";
+  }
+
+  return "N/A";
+}
+
+function psdEffectiveSentiment(instrument, fallback){
+  const voted = window.PSD_USER_SENTIMENT?.[instrument];
+  if(voted && voted !== "N/A") return voted;
+  return fallback || "N/A";
+}
+
+async function psdLoadUserSentiment(){
+  if(!PSD_SUPABASE_URL || !PSD_SUPABASE_ANON_KEY) return;
+
+  try{
+    const response = await fetch(`${PSD_SUPABASE_URL}/rest/v1/rpc/get_user_sentiment`, {
+      method:"POST",
+      headers:psdHeaders(),
+      body:"{}"
+    });
+
+    if(!response.ok){
+      console.warn("User sentiment load failed:", response.status);
+      return;
     }
 
-    if(!window.jspdf || !window.jspdf.jsPDF){
-      await loadScript("psdJsPdfLib", "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+    const rows = await response.json();
+    const map = {};
+    rows.forEach(row => {
+      map[row.instrument] = row.user_sentiment || "N/A";
+    });
+
+    window.PSD_USER_SENTIMENT = map;
+    psdApplyUserSentiment();
+    window.dispatchEvent(new CustomEvent("psdUserSentimentReady", { detail: map }));
+  }catch(error){
+    console.warn("User sentiment load failed", error);
+  }
+}
+
+function psdApplyUserSentiment(){
+  document.querySelectorAll("[data-user-sentiment]").forEach(el => {
+    const instrument = el.getAttribute("data-user-sentiment");
+    const fallback = psdFallbackFromElement(el);
+    const value = psdEffectiveSentiment(instrument, fallback);
+
+    if(el.classList.contains("user-chip")){
+      el.textContent = "User: " + value;
+      el.className = "chip user-chip " + psdClass(value);
+    }else{
+      el.textContent = value;
+      el.className = "psd-user-sentiment-value " + psdClass(value);
     }
+  });
+}
+
+async function psdSubmitVote(instrument, vote){
+  const status = document.getElementById("psdVoteStatus");
+  if(!status) return;
+
+  status.textContent = "Submitting...";
+  status.className = "psd-vote-status";
+
+  try{
+    const response = await fetch(`${PSD_SUPABASE_URL}/rest/v1/rpc/submit_instrument_vote`, {
+      method:"POST",
+      headers:psdHeaders(),
+      body:JSON.stringify({
+        p_instrument: instrument,
+        p_vote: vote,
+        p_voter_id: psdGetVoterId()
+      })
+    });
+
+    let result = {};
+    try{ result = await response.json(); }catch(e){ result = {}; }
+
+    if(!response.ok || !result.ok){
+      status.textContent = result.error || `Vote failed. Error ${response.status}`;
+      status.className = "psd-vote-status error";
+      console.warn("Vote failed:", response.status, result);
+      return;
+    }
+
+    window.PSD_USER_SENTIMENT[instrument] = result.user_sentiment || "N/A";
+    psdApplyUserSentiment();
+
+    psdTrack("instrument_vote", {
+      instrument: instrument,
+      vote: vote,
+      result_sentiment: result.user_sentiment || "N/A"
+    });
+
+    status.textContent = "Vote saved.";
+    status.className = "psd-vote-status success";
+
+    setTimeout(() => {
+      const panel = document.getElementById("psdVotePanel");
+      if(panel) panel.classList.remove("open");
+    }, 700);
+  }catch(error){
+    status.textContent = "Vote failed.";
+    status.className = "psd-vote-status error";
+    console.warn("Vote failed:", error);
   }
+}
 
-  function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+function psdCreateVoteWidget(){
+  if(document.getElementById("psdVoteWidget")) return;
 
-  async function waitForFontsAndImages(root){
-    try{
-      if(document.fonts && document.fonts.ready) await document.fonts.ready;
-    }catch(e){}
-
-    const images = qsa("img", root);
-    await Promise.all(images.map(img => new Promise(resolve => {
-      if(img.complete) return resolve();
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-      setTimeout(resolve, 2500);
-    })));
-  }
-
-  function addStyleOnce(){
-    if(document.getElementById("psdPdfCaptureStyle")) return;
-
+  if(!document.getElementById("psdVoteWidgetFallbackCss")){
     const style = document.createElement("style");
-    style.id = "psdPdfCaptureStyle";
+    style.id = "psdVoteWidgetFallbackCss";
     style.textContent = `
-      #psdPdfCaptureRoot{
-        position:absolute;
-        left:-6000px;
-        top:0;
-        width:${PSD_CAPTURE_WIDTH}px;
-        z-index:-1;
-        pointer-events:none;
-        opacity:1;
-        font-family:Inter,Segoe UI,Arial,sans-serif;
-      }
-      #psdPdfCaptureRoot,
-      #psdPdfCaptureRoot *{
-        animation:none!important;
-        transition:none!important;
-        caret-color:transparent!important;
-      }
-      #psdPdfCaptureRoot .psd-capture-page{
-        width:${PSD_CAPTURE_WIDTH}px;
-        height:${PSD_CAPTURE_HEIGHT}px;
-        overflow:hidden;
-        box-sizing:border-box;
-        padding:28px;
-        color:#e6edf3;
-        background:
-          radial-gradient(circle at top left, rgba(210,153,34,.18), transparent 440px),
-          radial-gradient(circle at top right, rgba(88,166,255,.14), transparent 430px),
-          linear-gradient(180deg,#070a10 0%,#05070b 100%);
-      }
-      #psdPdfCaptureRoot .psd-capture-page + .psd-capture-page{margin-top:30px}
-      #psdPdfCaptureRoot .psd-page-title{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:18px;
-        margin:0 0 14px;
-        padding:10px 14px;
-        border:1px solid rgba(210,153,34,.28);
-        border-radius:18px;
-        background:rgba(13,17,23,.94);
-        box-shadow:0 12px 28px rgba(0,0,0,.22);
-      }
-      #psdPdfCaptureRoot .psd-page-title strong{font-size:15px;color:#ffd780;letter-spacing:.01em;white-space:nowrap}
-      #psdPdfCaptureRoot .psd-page-title span{font-size:11.5px;color:#c9d1d9;font-weight:700;text-align:right;white-space:nowrap}
-      #psdPdfCaptureRoot .header{
-        position:relative!important;
-        top:auto!important;
-        width:100%!important;
-        margin:0 0 14px!important;
-        border:1px solid rgba(210,153,34,.18)!important;
-        border-radius:22px!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.24)!important;
-        background:rgba(6,9,15,.96)!important;
-      }
-      #psdPdfCaptureRoot .header .nav a,
-      #psdPdfCaptureRoot .header .social-pill{font-size:13px!important}
-      #psdPdfCaptureRoot .logo{width:64px!important;height:64px!important}
-      #psdPdfCaptureRoot #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-ad-banner{
-        max-width:none!important;
-        margin:0 0 14px!important;
-        border-radius:999px!important;
-        box-shadow:0 10px 26px rgba(0,0,0,.20)!important;
-      }
-      #psdPdfCaptureRoot .lab-hero{
-        margin:0 0 14px!important;
-        padding:18px 20px!important;
-        border-radius:20px!important;
-      }
-      #psdPdfCaptureRoot .lab-hero h1{font-size:38px!important;white-space:nowrap!important;margin-bottom:8px!important}
-      #psdPdfCaptureRoot .lab-hero-main{font-size:14px!important;line-height:1.42!important;max-width:1350px!important}
-      #psdPdfCaptureRoot .lab-small{font-size:12px!important;line-height:1.38!important;max-width:1350px!important;margin-bottom:0!important}
-      #psdPdfCaptureRoot .lab-controls{display:none!important}
-      #psdPdfCaptureRoot .lab-card-grid{
-        display:grid!important;
-        grid-template-columns:repeat(5,minmax(0,1fr))!important;
-        gap:13px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .sentiment-card{
-        min-height:220px!important;
-        padding:16px!important;
-        border-radius:20px!important;
-        box-shadow:0 15px 34px rgba(0,0,0,.30)!important;
-      }
-      #psdPdfCaptureRoot .market-name{font-size:14px!important}
-      #psdPdfCaptureRoot .sentiment-badge{font-size:10px!important;padding:5px 8px!important}
-      #psdPdfCaptureRoot .gauge-row{grid-template-columns:96px 1fr!important;gap:10px!important}
-      #psdPdfCaptureRoot .mini-gauge{width:96px!important;height:96px!important}
-      #psdPdfCaptureRoot .mini-gauge-inner{width:68px!important;height:68px!important}
-      #psdPdfCaptureRoot .psi-big{font-size:25px!important}
-      #psdPdfCaptureRoot .metric-line{font-size:11px!important;padding-bottom:5px!important}
-      #psdPdfCaptureRoot .sparkline{height:48px!important;margin-top:12px!important}
-      #psdPdfCaptureRoot .chart-grid{
-        display:grid!important;
-        grid-template-columns:minmax(0,1.45fr) minmax(365px,.55fr)!important;
-        gap:18px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .panel,
-      #psdPdfCaptureRoot .lab-panel{
-        border-radius:22px!important;
-        padding:18px!important;
-        margin:0!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.28)!important;
-        background:radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 14rem),linear-gradient(180deg,#101826,#0d131d)!important;
-      }
-      #psdPdfCaptureRoot .panel h2,
-      #psdPdfCaptureRoot .lab-panel h2{font-size:23px!important;margin-bottom:6px!important;color:#fff!important}
-      #psdPdfCaptureRoot .panel-kicker{font-size:12px!important;line-height:1.38!important;color:#c9d1d9!important}
-      #psdPdfCaptureRoot .pill-row{display:none!important}
-      #psdPdfCaptureRoot .skyline-wrap,
-      #psdPdfCaptureRoot .radar-wrap{height:690px!important;border-radius:20px!important}
-      #psdPdfCaptureRoot #skylineChart,
-      #psdPdfCaptureRoot #radarChart{height:100%!important;max-height:none!important}
-      #psdPdfCaptureRoot .preview-note{font-size:11px!important;line-height:1.35!important;margin-top:10px!important;padding:10px 12px!important}
-      #psdPdfCaptureRoot .radar-legend span{font-size:10px!important;padding:5px 8px!important}
-      #psdPdfCaptureRoot .heat-legend{gap:7px!important;margin:8px 0!important}
-      #psdPdfCaptureRoot .heat-legend span{font-size:10px!important;padding:5px 8px!important}
-      #psdPdfCaptureRoot .heatmap{gap:8px!important;margin-top:12px!important}
-      #psdPdfCaptureRoot .heat-row{grid-template-columns:162px repeat(12,minmax(0,1fr))!important;gap:6px!important}
-      #psdPdfCaptureRoot .heat-name{font-size:12px!important}
-      #psdPdfCaptureRoot .heat-head{font-size:10px!important}
-      #psdPdfCaptureRoot .heat-cell{height:31px!important;font-size:10px!important;border-radius:8px!important}
-      #psdPdfCaptureRoot .ranking-list{gap:8px!important}
-      #psdPdfCaptureRoot .rank-item{padding:10px!important;border-radius:14px!important;grid-template-columns:30px minmax(0,1fr) auto!important;gap:10px!important}
-      #psdPdfCaptureRoot .rank-num{width:26px!important;height:26px!important;font-size:11px!important}
-      #psdPdfCaptureRoot .rank-title{font-size:13px!important}
-      #psdPdfCaptureRoot .rank-meta{font-size:10.5px!important;line-height:1.25!important}
-      #psdPdfCaptureRoot .rank-score{font-size:17px!important}
-      #psdPdfCaptureRoot .footer{
-        margin:14px 0 0!important;
-        padding:14px 0 0!important;
-        border-top:1px solid rgba(210,153,34,.18)!important;
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .footer-links{gap:9px!important;margin-bottom:8px!important}
-      #psdPdfCaptureRoot .footer-links a{font-size:11px!important;padding:3px 4px!important}
-      #psdPdfCaptureRoot .legal{font-size:11px!important;line-height:1.34!important;padding:9px 11px!important;margin-top:8px!important;border-radius:12px!important}
-      #psdPdfCaptureRoot .footer p{font-size:10.5px!important;margin:7px 0 0!important;line-height:1.25!important}
-
-      /* PDF capture fixes: live SVG lines use draw animations; disable animation must also reset dash offsets. */
-      #psdPdfCaptureRoot .skyline-line,
-      #psdPdfCaptureRoot .spark-path,
-      #psdPdfCaptureRoot svg path,
-      #psdPdfCaptureRoot svg polyline{
-        stroke-dasharray:none!important;
-        stroke-dashoffset:0!important;
-        opacity:1!important;
-        visibility:visible!important;
-      }
-      #psdPdfCaptureRoot .skyline-line{stroke-width:4.8!important;filter:drop-shadow(0 0 8px currentColor)!important}
-      #psdPdfCaptureRoot .spark-path{stroke-width:3.2!important;filter:drop-shadow(0 0 5px currentColor)!important}
-      #psdPdfCaptureRoot .radar-poly{opacity:.62!important;visibility:visible!important}
-      #psdPdfCaptureRoot .radar-wrap text,
-      #psdPdfCaptureRoot .skyline-wrap text{
-        opacity:1!important;
-        fill:#e6edf3!important;
-      }
-      #psdPdfCaptureRoot .chart-watermark{opacity:.16!important;color:rgba(255,255,255,.16)!important}
-      #psdPdfCaptureRoot .psd-final-page{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-final-page > .chart-grid{
-        flex:1 1 auto!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer{
-        margin-top:auto!important;
-        padding:11px 13px!important;
-        border:1px solid rgba(210,153,34,.24)!important;
-        border-radius:14px!important;
-        background:rgba(13,17,23,.94)!important;
-        box-shadow:0 10px 24px rgba(0,0,0,.22)!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer .footer-links{
-        gap:10px!important;
-        margin-bottom:7px!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer .footer-links a{
-        color:#d8dee9!important;
-        font-size:11.5px!important;
-        font-weight:700!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer .legal{
-        color:#f0d59a!important;
-        background:rgba(248,81,73,.08)!important;
-        border-color:rgba(248,81,73,.24)!important;
-      }
-
-      /* Historical Sentiment PDF support */
-      #psdPdfCaptureRoot .page{
-        max-width:none!important;
-        width:100%!important;
-        margin:0!important;
-        padding:0!important;
-      }
-      #psdPdfCaptureRoot .history-dashboard-hero{
-        display:block!important;
-        margin:0 0 12px!important;
-        padding:16px 18px!important;
-        border-radius:20px!important;
-        background:rgba(13,17,23,.94)!important;
-      }
-      #psdPdfCaptureRoot .history-dashboard-hero h1{
-        font-size:34px!important;
-        line-height:1.06!important;
-        margin:0 0 8px!important;
-        white-space:nowrap!important;
-      }
-      #psdPdfCaptureRoot .history-kicker{
-        margin-bottom:8px!important;
-        padding:6px 11px!important;
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .history-lead{
-        font-size:13px!important;
-        line-height:1.38!important;
-        max-width:1380px!important;
-      }
-      #psdPdfCaptureRoot .dash-stage-shell{
-        margin:0!important;
-        padding:8px!important;
-        border-radius:24px!important;
-        box-shadow:0 18px 42px rgba(0,0,0,.30)!important;
-      }
-      #psdPdfCaptureRoot .dash-stage{
-        height:640px!important;
-        min-height:0!important;
-        aspect-ratio:auto!important;
-        border-radius:20px!important;
-      }
-      #psdPdfCaptureRoot .dash-layout{
-        position:absolute!important;
-        inset:20px!important;
-        grid-template-columns:132px repeat(24,minmax(0,1fr))!important;
-        grid-template-rows:1fr 1fr 1fr!important;
-        gap:12px!important;
-      }
-      #psdPdfCaptureRoot .dash-side{
-        padding-top:120px!important;
-        gap:7px!important;
-      }
-      #psdPdfCaptureRoot .side-pill{
-        height:31px!important;
-        font-size:9.5px!important;
-      }
-      #psdPdfCaptureRoot .side-note{
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .dash-card{
-        border-radius:10px!important;
-      }
-      #psdPdfCaptureRoot .card-head{
-        height:30px!important;
-        padding:0 11px!important;
-      }
-      #psdPdfCaptureRoot .card-title{
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .card-icons,
-      #psdPdfCaptureRoot .mini-tabs,
-      #psdPdfCaptureRoot .chart-legend,
-      #psdPdfCaptureRoot .driver-meta,
-      #psdPdfCaptureRoot .bias-legend{
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .card-body{
-        inset:30px 10px 10px 10px!important;
-      }
-      #psdPdfCaptureRoot .bias-body{
-        inset:54px 10px 10px 10px!important;
-      }
-      #psdPdfCaptureRoot .metric-big{
-        top:38px!important;
-        left:12px!important;
-        font-size:28px!important;
-      }
-      #psdPdfCaptureRoot .metric-caption{
-        top:47px!important;
-        left:86px!important;
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .driver-list{
-        inset:36px 11px 10px 11px!important;
-        gap:5px!important;
-      }
-      #psdPdfCaptureRoot .driver-item{
-        font-size:8.5px!important;
-        line-height:1.18!important;
-        gap:6px!important;
-        padding-bottom:3px!important;
-      }
-      #psdPdfCaptureRoot .driver-badge{
-        font-size:7px!important;
-        padding:1px 5px!important;
-      }
-      #psdPdfCaptureRoot .stats-strip{
-        display:grid!important;
-        grid-template-columns:repeat(6,minmax(0,1fr))!important;
-        gap:12px!important;
-        margin:0 0 14px!important;
-      }
-      #psdPdfCaptureRoot .stat-tile{
-        border-radius:14px!important;
-        padding:12px!important;
-        min-height:92px!important;
-      }
-      #psdPdfCaptureRoot .stat-label{font-size:11px!important;margin-bottom:5px!important}
-      #psdPdfCaptureRoot .stat-value{font-size:22px!important}
-      #psdPdfCaptureRoot .stat-note{font-size:10px!important;line-height:1.25!important}
-      #psdPdfCaptureRoot .section.panel{
-        padding:18px!important;
-        border-radius:22px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .section.panel h2{
-        font-size:25px!important;
-        margin-bottom:6px!important;
-      }
-      #psdPdfCaptureRoot .section.panel .muted{
-        font-size:12px!important;
-        line-height:1.35!important;
-        margin-bottom:10px!important;
-      }
-      #psdPdfCaptureRoot .history-table-wrap{
-        margin-top:8px!important;
-        border-radius:16px!important;
-      }
-      #psdPdfCaptureRoot .history-table{
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .history-table th,
-      #psdPdfCaptureRoot .history-table td{
-        padding:8px 10px!important;
-      }
-      #psdPdfCaptureRoot .bias-pill{
-        font-size:9px!important;
-        padding:3px 7px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .header{
-        display:none!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title,
-      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title{
-        min-height:42px!important;
-        padding:8px 13px!important;
-        margin-bottom:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title strong,
-      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title strong{
-        font-size:13px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title span,
-      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title span{
-        font-size:10.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-history-page1 .psd-ad-banner{
-        margin:0 0 12px!important;
-        min-height:34px!important;
-        padding:9px 13px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .history-dashboard-hero{
-        margin:0 0 12px!important;
-        padding:14px 17px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .history-dashboard-hero h1{
-        font-size:31px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .history-lead{
-        font-size:12.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .dash-stage-shell{
-        padding:8px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .dash-stage{
-        height:790px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .dash-layout{
-        inset:22px!important;
-        gap:13px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .section.panel{
-        flex:1 1 auto!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .history-table-wrap{
-        max-height:650px!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .history-table{
-        font-size:10.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .history-table th,
-      #psdPdfCaptureRoot .psd-history-record-page .history-table td{
-        padding:7px 9px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .psd-pdf-footer{
-        margin-top:12px!important;
-        flex:0 0 auto!important;
-      }
-
-      /* Home page PDF support */
-      #psdPdfCaptureRoot .psd-home-page .header{
-        display:none!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-home-page .psd-ad-banner{
-        margin:0 0 14px!important;
-        min-height:36px!important;
-        padding:9px 14px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .home-layout{
-        display:block!important;
-        width:100%!important;
-      }
-      #psdPdfCaptureRoot .hero{
-        display:grid!important;
-        grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr)!important;
-        gap:18px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .hero-copy{
-        padding:22px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .hero-copy h1{
-        font-size:42px!important;
-        line-height:1.06!important;
-        margin-bottom:12px!important;
-      }
-      #psdPdfCaptureRoot .hero-copy p{
-        font-size:13.5px!important;
-        line-height:1.48!important;
-        margin:0 0 10px!important;
-      }
-      #psdPdfCaptureRoot .hero-points{
-        display:grid!important;
-        grid-template-columns:repeat(3,minmax(0,1fr))!important;
-        gap:10px!important;
-        margin-top:14px!important;
-      }
-      #psdPdfCaptureRoot .hero-point{
-        padding:12px!important;
-        border-radius:14px!important;
-      }
-      #psdPdfCaptureRoot .hero-point strong{
-        font-size:13px!important;
-        margin-bottom:5px!important;
-      }
-      #psdPdfCaptureRoot .hero-point span{
-        font-size:11.5px!important;
-        line-height:1.35!important;
-      }
-      #psdPdfCaptureRoot .score-panel{
-        padding:20px!important;
-      }
-      #psdPdfCaptureRoot .score-ring{
-        width:210px!important;
-        height:210px!important;
-        margin:7px auto 13px!important;
-      }
-      #psdPdfCaptureRoot .score-inner{
-        width:156px!important;
-        height:156px!important;
-      }
-      #psdPdfCaptureRoot .score-number{
-        font-size:48px!important;
-      }
-      #psdPdfCaptureRoot .score-word{
-        font-size:17px!important;
-      }
-      #psdPdfCaptureRoot .score-desc{
-        font-size:12px!important;
-        line-height:1.4!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2{
-        display:grid!important;
-        grid-template-rows:auto 1fr!important;
-      }
-      #psdPdfCaptureRoot .psd-home-combo{
-        display:grid!important;
-        grid-template-columns:320px minmax(0,1fr)!important;
-        gap:16px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .instrument-rail{
-        position:relative!important;
-        top:auto!important;
-        padding:14px!important;
-        margin:0!important;
-        height:100%!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .instrument-rail h2{
-        font-size:18px!important;
-        margin-bottom:5px!important;
-      }
-      #psdPdfCaptureRoot .instrument-rail .muted{
-        font-size:11px!important;
-        line-height:1.35!important;
-        margin-bottom:8px!important;
-      }
-      #psdPdfCaptureRoot .rail-waterfall{
-        height:820px!important;
-        margin-top:8px!important;
-      }
-      #psdPdfCaptureRoot .rail-track{
-        transform:none!important;
-        animation:none!important;
-        gap:6px!important;
-      }
-      #psdPdfCaptureRoot .rail-item{
-        padding:6px 8px!important;
-        border-radius:11px!important;
-        grid-template-columns:24px minmax(0,1fr) auto!important;
-        gap:7px!important;
-      }
-      #psdPdfCaptureRoot .rail-icon{
-        width:21px!important;
-        height:21px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .rail-name{
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .rail-sub,
-      #psdPdfCaptureRoot .rail-state{
-        font-size:9px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-main-stack{
-        display:grid!important;
-        gap:14px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .sources-layout{
-        display:grid!important;
-        grid-template-columns:280px minmax(0,1fr)!important;
-        gap:16px!important;
-      }
-      #psdPdfCaptureRoot .sources-layout h2{
-        font-size:24px!important;
-      }
-      #psdPdfCaptureRoot .sources-layout p{
-        font-size:12px!important;
-        line-height:1.42!important;
-      }
-      #psdPdfCaptureRoot .sources-waterfall{
-        height:370px!important;
-        min-height:370px!important;
-      }
-      #psdPdfCaptureRoot .waterfall-track{
-        transform:none!important;
-        animation:none!important;
-        gap:8px!important;
-      }
-      #psdPdfCaptureRoot .source-chip{
-        min-height:42px!important;
-        padding:8px 10px!important;
-        border-radius:12px!important;
-      }
-      #psdPdfCaptureRoot .source-chip img{
-        width:20px!important;
-        height:20px!important;
-      }
-      #psdPdfCaptureRoot .source-chip-name{
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .summary-lines{
-        gap:8px!important;
-      }
-      #psdPdfCaptureRoot .summary-line{
-        padding:10px 12px!important;
-        font-size:12px!important;
-        line-height:1.35!important;
-      }
-      #psdPdfCaptureRoot .focus-grid{
-        display:grid!important;
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:10px!important;
-      }
-      #psdPdfCaptureRoot .focus-card{
-        min-height:116px!important;
-      }
-      #psdPdfCaptureRoot .mini-card{
-        padding:12px!important;
-        border-radius:13px!important;
-      }
-      #psdPdfCaptureRoot .mini-title{
-        font-size:13px!important;
-        margin-bottom:6px!important;
-      }
-      #psdPdfCaptureRoot .mini-meta,
-      #psdPdfCaptureRoot .mini-headline,
-      #psdPdfCaptureRoot .focus-open{
-        font-size:10.5px!important;
-        line-height:1.3!important;
-      }
-      #psdPdfCaptureRoot .action-grid{
-        display:grid!important;
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:10px!important;
-        margin-top:10px!important;
-      }
-      #psdPdfCaptureRoot .action-card{
-        padding:14px!important;
-        border-radius:14px!important;
-      }
-      #psdPdfCaptureRoot .action-label{
-        font-size:9.5px!important;
-        padding:5px 8px!important;
-        margin-bottom:8px!important;
-      }
-      #psdPdfCaptureRoot .action-card h3{
-        font-size:17px!important;
-        margin-bottom:6px!important;
-      }
-      #psdPdfCaptureRoot .action-card p{
-        font-size:11px!important;
-        line-height:1.34!important;
-        margin-bottom:8px!important;
-      }
-      #psdPdfCaptureRoot .action-cta{
-        font-size:11px!important;
-      }
-
-      /* Home PDF v11 requested layout */
-      #psdPdfCaptureRoot .psd-home-page1,
-      #psdPdfCaptureRoot .psd-home-page2,
-      #psdPdfCaptureRoot .psd-home-page3{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header,
-      #psdPdfCaptureRoot .psd-home-page3 .header{
-        display:grid!important;
-        grid-template-columns:auto 1fr auto!important;
-        padding:10px 18px!important;
-        margin:0 0 12px!important;
-        min-height:88px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header .nav,
-      #psdPdfCaptureRoot .psd-home-page3 .header .nav{
-        gap:7px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header .nav a,
-      #psdPdfCaptureRoot .psd-home-page3 .header .nav a{
-        font-size:12px!important;
-        padding:5px 6px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .brand-stamp,
-      #psdPdfCaptureRoot .psd-home-page3 .brand-stamp{
-        font-size:11px!important;
-        padding:7px 11px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .site-subtitle,
-      #psdPdfCaptureRoot .psd-home-page3 .site-subtitle{
-        font-size:10.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header-pill,
-      #psdPdfCaptureRoot .psd-home-page3 .header-pill{
-        font-size:11px!important;
-        padding:7px 11px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-home-page1 .psd-ad-banner,
-      #psdPdfCaptureRoot .psd-home-page3 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-home-page3 .psd-ad-banner{
-        margin:0 0 12px!important;
-        min-height:34px!important;
-        padding:9px 14px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero{
-        grid-template-columns:minmax(0,1.25fr) minmax(340px,.75fr)!important;
-        gap:15px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-        align-items:stretch!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
-        padding:19px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
-        font-size:38px!important;
-        line-height:1.06!important;
-        margin-bottom:10px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy p{
-        font-size:12.8px!important;
-        line-height:1.42!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-points{
-        gap:9px!important;
-        margin-top:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-panel{
-        padding:18px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-ring{
-        width:190px!important;
-        height:190px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-inner{
-        width:140px!important;
-        height:140px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row{
-        display:flex!important;
-        align-items:center!important;
-        gap:14px!important;
-        margin:12px 0 0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-print-sample{
-        width:62px!important;
-        height:86px!important;
-        border-radius:18px!important;
-        display:flex!important;
-        flex-direction:column!important;
-        align-items:center!important;
-        justify-content:center!important;
-        gap:4px!important;
-        border:1px solid rgba(210,153,34,.45)!important;
-        background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96))!important;
-        color:#ffd780!important;
-        box-shadow:0 0 24px rgba(210,153,34,.18)!important;
-        font-family:Inter,Segoe UI,Arial,sans-serif!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-icon{
-        font-size:21px!important;
-        line-height:1!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-text{
-        font-size:12px!important;
-        line-height:1.05!important;
-        font-weight:700!important;
-        text-align:center!important;
-        color:#ffe7a8!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-footer,
-      #psdPdfCaptureRoot .psd-home-page2 .psd-pdf-footer,
-      #psdPdfCaptureRoot .psd-home-page3 .psd-pdf-footer{
-        margin-top:auto!important;
-        flex:0 0 auto!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .psd-home-page2-stack{
-        display:grid!important;
-        grid-template-columns:1fr!important;
-        gap:14px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .section.panel{
-        margin:0!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .summary-line{
-        font-size:13px!important;
-        line-height:1.42!important;
-        padding:12px 14px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .focus-grid{
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page3 .section.panel{
-        flex:1 1 auto!important;
-        min-height:0!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page3 .action-grid{
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:11px!important;
-      }
-
-
+      .psd-vote-widget{position:fixed;left:18px;top:50%;transform:translateY(-50%);z-index:1000;font-family:Inter,Segoe UI,Arial,sans-serif}
+      .psd-vote-tab{display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;min-height:78px;border:1px solid rgba(210,153,34,.45);border-radius:18px;background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96));color:#ffd780;cursor:pointer;box-shadow:0 0 24px rgba(210,153,34,.18)}
+      .psd-vote-tab-icon{font-size:20px;line-height:1}.psd-vote-tab-text{font-size:12px;font-weight:700}
+      .psd-vote-panel{position:absolute;left:66px;top:50%;transform:translateY(-50%);width:290px;display:none;padding:16px;border-radius:18px;border:1px solid #263241;background:rgba(13,17,23,.98);box-shadow:0 20px 60px rgba(0,0,0,.42)}
+      .psd-vote-panel.open{display:block}.psd-vote-title{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}.psd-vote-note,.psd-vote-status{color:#8b949e;font-size:12px}.psd-vote-label{display:block;color:#c9d1d9;font-size:12px;font-weight:600;margin:10px 0 6px}
+      .psd-vote-select{width:100%;background:#111821;color:#e6edf3;border:1px solid #263241;border-radius:12px;padding:10px 12px}.psd-vote-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.psd-vote-choice{border:1px solid #263241;border-radius:12px;padding:10px;color:#fff;background:rgba(17,24,33,.88);cursor:pointer;font-weight:600}
+      .psd-vote-choice.bullish.active{border-color:rgba(63,185,80,.65);background:rgba(63,185,80,.16);color:#9ff0aa}.psd-vote-choice.bearish.active{border-color:rgba(248,81,73,.65);background:rgba(248,81,73,.16);color:#ffaaa6}
+      .psd-vote-submit{width:100%;border:0;border-radius:999px;padding:11px 14px;background:#d29922;color:#05070b;cursor:pointer;font-weight:800}.psd-vote-cancel{width:100%;margin-top:8px;border:1px solid #263241;border-radius:999px;padding:10px 14px;background:transparent;color:#c9d1d9;cursor:pointer;font-weight:600}
     `;
     document.head.appendChild(style);
   }
 
-  function cloneElement(selectorOrEl){
-    const el = typeof selectorOrEl === "string" ? qs(selectorOrEl) : selectorOrEl;
-    if(!el) return null;
+  const wrap = document.createElement("div");
+  wrap.id = "psdVoteWidget";
+  wrap.className = "psd-vote-widget";
 
-    const clone = el.cloneNode(true);
+  wrap.innerHTML = `
+    <button class="psd-vote-tab" type="button" aria-label="Open voting widget">
+      <span class="psd-vote-tab-icon">↕</span>
+      <span class="psd-vote-tab-text">Vote</span>
+    </button>
 
-    // Preserve live canvas charts. cloneNode does not copy drawn canvas pixels.
-    const originalCanvases = qsa("canvas", el);
-    const clonedCanvases = qsa("canvas", clone);
-    originalCanvases.forEach((canvas, idx) => {
-      const target = clonedCanvases[idx];
-      if(!target) return;
-      try{
-        const rect = canvas.getBoundingClientRect();
-        const img = document.createElement("img");
-        img.src = canvas.toDataURL("image/png");
-        img.className = canvas.className || "";
-        img.alt = canvas.getAttribute("aria-label") || "Chart";
-        img.style.display = "block";
-        img.style.width = rect.width ? rect.width + "px" : "100%";
-        img.style.height = rect.height ? rect.height + "px" : "100%";
-        img.style.maxWidth = "100%";
-        img.style.objectFit = "fill";
-        target.replaceWith(img);
-      }catch(error){
-        console.warn("PDF canvas capture skipped", error);
-      }
+    <div class="psd-vote-panel" id="psdVotePanel">
+      <div class="psd-vote-title">Your Market Vote</div>
+      <div class="psd-vote-note">Anonymous daily vote. No registration.</div>
+
+      <label class="psd-vote-label" for="psdVoteInstrument">Instrument</label>
+      <select id="psdVoteInstrument" class="psd-vote-select">
+        ${PSD_VOTE_INSTRUMENTS.map(x => `<option value="${psdEscape(x)}">${psdEscape(x)}</option>`).join("")}
+      </select>
+
+      <div class="psd-vote-actions">
+        <button type="button" class="psd-vote-choice bullish active" data-vote="Bullish">Bullish</button>
+        <button type="button" class="psd-vote-choice bearish" data-vote="Bearish">Bearish</button>
+      </div>
+
+      <button type="button" class="psd-vote-submit" id="psdVoteSubmit">Submit Vote</button>
+      <button type="button" class="psd-vote-cancel" id="psdVoteCancel">Cancel</button>
+
+      <div class="psd-vote-status" id="psdVoteStatus"></div>
+    </div>
+  `;
+
+  document.body.appendChild(wrap);
+
+  const tab = wrap.querySelector(".psd-vote-tab");
+  const panel = wrap.querySelector("#psdVotePanel");
+  const submit = wrap.querySelector("#psdVoteSubmit");
+  const cancel = wrap.querySelector("#psdVoteCancel");
+  const choices = wrap.querySelectorAll(".psd-vote-choice");
+
+  let selectedVote = "Bullish";
+
+  tab.addEventListener("click", () => {
+    panel.classList.toggle("open");
+    psdTrack("vote_widget_toggle", { open: panel.classList.contains("open") });
+  });
+
+  cancel.addEventListener("click", () => {
+    panel.classList.remove("open");
+  });
+
+  choices.forEach(btn => {
+    btn.addEventListener("click", () => {
+      choices.forEach(x => x.classList.remove("active"));
+      btn.classList.add("active");
+      selectedVote = btn.getAttribute("data-vote");
     });
+  });
 
-    clone.removeAttribute("id");
-    qsa("[id]", clone).forEach(x => x.removeAttribute("id"));
-    qsa("script", clone).forEach(x => x.remove());
-    return clone;
-  }
+  submit.addEventListener("click", () => {
+    const instrument = document.getElementById("psdVoteInstrument").value;
+    psdSubmitVote(instrument, selectedVote);
+  });
+}
 
-  function sectionTitle(text, sub){
-    const bar = document.createElement("div");
-    bar.className = "psd-page-title";
-    const reportTitle = `${PSD_SITE_LABEL} - ${pageName()}`;
-    const sectionLabel = [text, sub].filter(Boolean).join(" • ");
-    bar.innerHTML = `<strong>${reportTitle}</strong><span>${sectionLabel}</span>`;
-    return bar;
-  }
 
-  function createPage(title, sub){
-    const page = document.createElement("div");
-    page.className = "psd-capture-page";
-    page.appendChild(sectionTitle(title, sub));
-    return page;
-  }
-
-  function buildDashboardPages(root){
-    const now = new Date().toLocaleString();
-
-    const page1 = createPage("Summary", `Generated ${now}`);
-    [".header", "#psdAdvertiseBanner", ".lab-hero", "#snapshotCards"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page1.appendChild(clone);
-    });
-
-    const grids = qsa(".chart-grid");
-
-    const page2 = createPage("Charts", "Sentiment Skyline + Radar Comparison");
-    const grid1 = cloneElement(grids[0]);
-    if(grid1) page2.appendChild(grid1);
-
-    const page3 = createPage("Heatwave & Ranking", "Sentiment Heatwave + Strength Ranking + Disclaimer");
-    page3.classList.add("psd-final-page");
-    const grid2 = cloneElement(grids[1]);
-    if(grid2) page3.appendChild(grid2);
-    const footer = cloneElement(".footer");
-    if(footer){
-      footer.classList.add("psd-pdf-footer");
-      page3.appendChild(footer);
+function psdLoadPdfReportEngine(){
+  return new Promise((resolve, reject) => {
+    if(typeof window.psdOpenPdfReport === "function"){
+      resolve();
+      return;
     }
 
-    root.appendChild(page1);
-    root.appendChild(page2);
-    root.appendChild(page3);
-  }
-
-  function buildHistoricalPages(root){
-    const now = new Date().toLocaleString();
-
-    const page1 = createPage("Historical Sentiment", `Generated ${now}`);
-    page1.classList.add("psd-history-page1");
-    ["#psdAdvertiseBanner", ".history-dashboard-hero", ".dash-stage-shell"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page1.appendChild(clone);
-    });
-
-    const page2 = createPage("Historical Sentiment", "Stats + Filtered Historical Records + Disclaimer");
-    page2.classList.add("psd-history-record-page");
-    [".stats-strip", ".section.panel"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone){
-        if(clone.matches && clone.matches(".section.panel")){
-          const rows = qsa("tbody tr", clone);
-          rows.forEach((row, idx) => { if(idx > 11) row.remove(); });
-        }
-        page2.appendChild(clone);
-      }
-    });
-    const footer = cloneElement(".footer");
-    if(footer){
-      footer.classList.add("psd-pdf-footer");
-      page2.appendChild(footer);
+    const existing = document.getElementById("psdPdfReportScript");
+    if(existing){
+      existing.addEventListener("load", () => resolve(), { once:true });
+      existing.addEventListener("error", () => reject(new Error("PDF report engine failed to load.")), { once:true });
+      return;
     }
 
-    root.appendChild(page1);
-    root.appendChild(page2);
-  }
+    const script = document.createElement("script");
+    script.id = "psdPdfReportScript";
+    script.src = "pdf-report.js?v=12";
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("PDF report engine failed to load."));
+    document.head.appendChild(script);
+  });
+}
 
+function psdCreatePdfWidget(){
+  if(document.getElementById("psdPdfWidget")) return;
 
-
-
-  function buildHomeWidgetSamples(){
-    const row = document.createElement("div");
-    row.className = "psd-home-widget-row";
-    row.innerHTML = `
-      <div class="psd-widget-print-sample" aria-label="Vote widget sample">
-        <span class="psd-widget-icon">↕</span>
-        <span class="psd-widget-text">Vote</span>
-      </div>
-      <div class="psd-widget-print-sample" aria-label="PDF widget sample">
-        <span class="psd-widget-icon">📄</span>
-        <span class="psd-widget-text">Save<br>PDF</span>
-      </div>
+  if(!document.getElementById("psdPdfWidgetCss")){
+    const style = document.createElement("style");
+    style.id = "psdPdfWidgetCss";
+    style.textContent = `
+      .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Arial,Segoe UI,sans-serif}
+      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:54px;min-height:78px;border:1px solid rgba(115,176,255,.72);border-radius:18px;background:#132844;color:#ffffff;cursor:pointer;box-shadow:0 0 14px rgba(88,166,255,.20);animation:psdPdfFloat 3.5s ease-in-out infinite;padding:8px 5px;text-align:center;-webkit-font-smoothing:auto;text-rendering:optimizeLegibility}
+      .psd-pdf-tab:hover{background:#18365c;transform:translateX(2px)}
+      .psd-pdf-tab-icon{font-size:18px;line-height:1;font-weight:800;color:#ffffff;letter-spacing:0}.psd-pdf-tab-text{font-size:10.5px;font-weight:700;line-height:1.05;text-align:center;max-width:48px;color:#ffffff;text-shadow:0 1px 1px rgba(0,0,0,.55);letter-spacing:0}
+      @keyframes psdPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
+      @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 96px)}.psd-pdf-tab{width:54px;min-height:78px}}
+      @media print{#psdVoteWidget,#psdPdfWidget{display:none!important}}
     `;
-    return row;
+    document.head.appendChild(style);
   }
 
-  function buildHomePages(root){
-    const now = new Date().toLocaleString();
-    const sections = qsa(".section.panel");
+  const wrap = document.createElement("div");
+  wrap.id = "psdPdfWidget";
+  wrap.className = "psd-pdf-widget";
+  wrap.innerHTML = `
+    <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF report">
+      <span class="psd-pdf-tab-icon">PDF</span>
+      <span class="psd-pdf-tab-text">Save<br>PDF</span>
+    </button>
+  `;
 
-    const page1 = createPage("Home", `Generated ${now}`);
-    page1.classList.add("psd-home-page", "psd-home-page1");
-    [".header", "#psdAdvertiseBanner", ".hero"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page1.appendChild(clone);
-    });
-    page1.appendChild(buildHomeWidgetSamples());
-    const footer1 = cloneElement(".footer");
-    if(footer1){
-      footer1.classList.add("psd-pdf-footer");
-      page1.appendChild(footer1);
+  document.body.appendChild(wrap);
+
+  const btn = wrap.querySelector(".psd-pdf-tab");
+  btn.addEventListener("click", async () => {
+    const original = btn.innerHTML;
+    btn.innerHTML = `<span class="psd-pdf-tab-icon">…</span><span class="psd-pdf-tab-text">Wait<br>PDF</span>`;
+    btn.disabled = true;
+
+    try{
+      await psdLoadPdfReportEngine();
+      if(typeof window.psdOpenPdfReport === "function"){
+        psdTrack("pdf_report_open", { page_path: window.location.pathname });
+        await window.psdOpenPdfReport();
+      }else{
+        window.print();
+      }
+    }catch(error){
+      console.warn("PDF report failed", error);
+      alert("PDF report failed to load. Please refresh and try again.");
+    }finally{
+      btn.innerHTML = original;
+      btn.disabled = false;
     }
+  });
+}
 
-    const page2 = createPage("Home", "Daily Public Sentiment Brief + Market Focus Today");
-    page2.classList.add("psd-home-page", "psd-home-page2");
-    const stack2 = document.createElement("div");
-    stack2.className = "psd-home-page2-stack";
-    [sections[1], sections[2]].forEach(el => {
-      const clone = cloneElement(el);
-      if(clone) stack2.appendChild(clone);
-    });
-    page2.appendChild(stack2);
-    const footer2 = cloneElement(".footer");
-    if(footer2){
-      footer2.classList.add("psd-pdf-footer");
-      page2.appendChild(footer2);
+function psdSafe(name, fn){
+  try{
+    return fn();
+  }catch(error){
+    console.warn("PSD widget helper failed:", name, error);
+    return null;
+  }
+}
+
+function psdInit(){
+  psdSafe("create vote widget", psdCreateVoteWidget);
+  psdSafe("create PDF widget", psdCreatePdfWidget);
+  psdSafe("load GA4", psdLoadGA4);
+  psdSafe("inject structured data", psdInjectStructuredData);
+  psdSafe("create advertise banner", psdCreateAdvertiseBanner);
+  psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
+  psdSafe("enhance social links", psdEnhanceSocialLinks);
+  psdSafe("apply user sentiment", psdApplyUserSentiment);
+  psdSafe("load user sentiment", psdLoadUserSentiment);
+
+  setTimeout(() => psdSafe("apply user sentiment 500", psdApplyUserSentiment), 500);
+  setTimeout(() => psdSafe("apply user sentiment 1500", psdApplyUserSentiment), 1500);
+  setTimeout(() => psdSafe("apply user sentiment 3000", psdApplyUserSentiment), 3000);
+}
+
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", psdInit);
+}else{
+  psdInit();
+}
+
+window.addEventListener("load", () => {
+  psdSafe("create vote widget on load", psdCreateVoteWidget);
+  psdSafe("create PDF widget on load", psdCreatePdfWidget);
+  psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
+  psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
+  psdSafe("enhance social links on load", psdEnhanceSocialLinks);
+  psdSafe("apply user sentiment on load", psdApplyUserSentiment);
+});
+
+window.psdApplyUserSentiment = psdApplyUserSentiment;
+
+/*
+  PSD Live Update
+  - Shared auto-update layer for every page that loads vote-widget.js.
+  - Adds cache-busting for same-site JSON data files.
+  - Checks /status.json every 5 minutes.
+  - Reloads once when new published data is detected.
+*/
+(function psdSiteLiveUpdateBootstrap(){
+  const PSD_LIVE_STATUS_PATH = "/status.json";
+  const PSD_LIVE_CHECK_MS = 5 * 60 * 1000;
+  const PSD_LIVE_FIRST_CHECK_MS = 15000;
+  const PSD_LIVE_STORAGE_KEY = "psd_live_status_signature_v1";
+  const PSD_LIVE_RELOAD_KEY = "psd_live_reloaded_signature_v1:" + window.location.pathname;
+  const PSD_JSON_DATA_FILE = /\/(?:dashboard_data|dashboard_history|sentiment_history|technical_data|status|news_cache|news_articles|latest_news|articles|news)\.json$/i;
+
+  function psdInstallFreshJsonFetchGuard(){
+    if(window.PSD_FRESH_JSON_FETCH_GUARD_INSTALLED || typeof window.fetch !== "function") return;
+    window.PSD_FRESH_JSON_FETCH_GUARD_INSTALLED = true;
+
+    const originalFetch = window.fetch.bind(window);
+
+    window.fetch = function(input, init){
+      try{
+        const rawUrl = typeof input === "string"
+          ? input
+          : (input instanceof URL ? input.toString() : (input && input.url ? input.url : ""));
+
+        if(rawUrl){
+          const url = new URL(rawUrl, window.location.href);
+
+          if(url.origin === window.location.origin && PSD_JSON_DATA_FILE.test(url.pathname)){
+            url.searchParams.set("_psd_fresh", Date.now().toString());
+
+            const nextInit = Object.assign({}, init || {}, { cache: "no-store" });
+
+            if(typeof input === "string" || input instanceof URL){
+              return originalFetch(url.toString(), nextInit);
+            }
+
+            if(input && input.url){
+              return originalFetch(url.toString(), nextInit);
+            }
+          }
+        }
+      }catch(error){
+        console.warn("PSD fresh JSON fetch guard skipped:", error);
+      }
+
+      return originalFetch(input, init);
+    };
+  }
+
+  function psdStatusSignatureFromText(text){
+    if(!text) return "";
+
+    try{
+      const json = JSON.parse(text);
+      const direct =
+        json.updated ||
+        json.updated_at ||
+        json.generated_at ||
+        json.last_updated ||
+        json.timestamp ||
+        json.time ||
+        json.run_id ||
+        json.workflow_run ||
+        "";
+
+      if(direct) return String(direct);
+
+      return JSON.stringify(json);
+    }catch(error){
+      return String(text);
     }
+  }
 
-    const page3 = createPage("Home", "Explore the Site");
-    page3.classList.add("psd-home-page", "psd-home-page3", "psd-final-page");
-    [".header", "#psdAdvertiseBanner"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page3.appendChild(clone);
-    });
-    const explore = cloneElement(sections[3]);
-    if(explore) page3.appendChild(explore);
-    const footer3 = cloneElement(".footer");
-    if(footer3){
-      footer3.classList.add("psd-pdf-footer");
-      page3.appendChild(footer3);
+  function psdIsPageSafeToReload(){
+    if(document.visibilityState && document.visibilityState !== "visible") return false;
+
+    const votePanel = document.getElementById("psdVotePanel");
+    if(votePanel && votePanel.classList.contains("open")) return false;
+
+    const active = document.activeElement;
+    if(active && ["INPUT","TEXTAREA","SELECT"].includes(active.tagName)) return false;
+
+    return true;
+  }
+
+  async function psdCheckForFreshSiteData(){
+    if(window.PSD_LIVE_UPDATE_CHECKING) return;
+    if(!psdIsPageSafeToReload()) return;
+
+    window.PSD_LIVE_UPDATE_CHECKING = true;
+
+    try{
+      const url = new URL(PSD_LIVE_STATUS_PATH, window.location.origin);
+      url.searchParams.set("_psd_status", Date.now().toString());
+
+      const response = await fetch(url.toString(), { cache: "no-store" });
+      if(!response.ok) return;
+
+      const text = await response.text();
+      const signature = psdStatusSignatureFromText(text);
+      if(!signature) return;
+
+      const previousSignature = localStorage.getItem(PSD_LIVE_STORAGE_KEY);
+      const alreadyReloadedSignature = sessionStorage.getItem(PSD_LIVE_RELOAD_KEY);
+
+      if(!previousSignature){
+        localStorage.setItem(PSD_LIVE_STORAGE_KEY, signature);
+        return;
+      }
+
+      if(previousSignature !== signature && alreadyReloadedSignature !== signature){
+        localStorage.setItem(PSD_LIVE_STORAGE_KEY, signature);
+        sessionStorage.setItem(PSD_LIVE_RELOAD_KEY, signature);
+
+        psdTrack("site_auto_refresh", {
+          page_path: window.location.pathname,
+          status_signature: signature.slice(0, 80)
+        });
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 650);
+
+        return;
+      }
+
+      localStorage.setItem(PSD_LIVE_STORAGE_KEY, signature);
+    }catch(error){
+      console.warn("PSD live update check failed:", error);
+    }finally{
+      window.PSD_LIVE_UPDATE_CHECKING = false;
     }
-
-    root.appendChild(page1);
-    root.appendChild(page2);
-    root.appendChild(page3);
   }
 
-  function buildGenericPages(root){
-    const now = new Date().toLocaleString();
-    const page = createPage("Report", `Generated ${now}`);
-    [".header", "#psdAdvertiseBanner", "main", ".footer"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page.appendChild(clone);
+  function psdStartLiveUpdate(){
+    if(window.PSD_LIVE_UPDATE_STARTED) return;
+    window.PSD_LIVE_UPDATE_STARTED = true;
+
+    setTimeout(psdCheckForFreshSiteData, PSD_LIVE_FIRST_CHECK_MS);
+    setInterval(psdCheckForFreshSiteData, PSD_LIVE_CHECK_MS);
+
+    document.addEventListener("visibilitychange", () => {
+      if(document.visibilityState === "visible"){
+        setTimeout(psdCheckForFreshSiteData, 1500);
+      }
     });
-    root.appendChild(page);
-  }
 
-  function createCaptureRoot(){
-    const old = document.getElementById("psdPdfCaptureRoot");
-    if(old) old.remove();
-
-    addStyleOnce();
-
-    const root = document.createElement("div");
-    root.id = "psdPdfCaptureRoot";
-    document.body.appendChild(root);
-
-    const path = window.location.pathname.toLowerCase();
-    if(path === "/" || path.endsWith("/index.html") || path.endsWith("index.html") || qs(".home-layout")){
-      buildHomePages(root);
-    }else if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html") || qs("#snapshotCards")){
-      buildDashboardPages(root);
-    }else if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html") || qs(".dash-stage-shell") || qs("#historyRows")){
-      buildHistoricalPages(root);
-    }else{
-      buildGenericPages(root);
-    }
-
-    return root;
-  }
-
-  async function canvasForPage(page){
-    await waitForFontsAndImages(page);
-    await wait(250);
-
-    return await window.html2canvas(page, {
-      backgroundColor:null,
-      scale:PSD_CAPTURE_SCALE,
-      useCORS:true,
-      allowTaint:false,
-      logging:false,
-      imageTimeout:15000,
-      windowWidth:PSD_CAPTURE_WIDTH,
-      windowHeight:PSD_CAPTURE_HEIGHT,
-      scrollX:0,
-      scrollY:0,
-      ignoreElements:(el) => el && (el.id === "psdVoteWidget" || el.id === "psdPdfWidget")
+    window.addEventListener("focus", () => {
+      setTimeout(psdCheckForFreshSiteData, 1500);
     });
   }
 
-  async function savePdfFromCapture(){
-    await ensureLibraries();
+  psdInstallFreshJsonFetchGuard();
 
-    const root = createCaptureRoot();
-    const pages = qsa(".psd-capture-page", root);
-    if(!pages.length) throw new Error("No PDF pages were created.");
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:"landscape", unit:"pt", format:"a4", compress:true });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-
-    for(let i=0;i<pages.length;i++){
-      const canvas = await canvasForPage(pages[i]);
-      const img = canvas.toDataURL("image/png");
-      if(i > 0) pdf.addPage("a4", "landscape");
-      pdf.addImage(img, "PNG", 0, 0, pageW, pageH, undefined, "FAST");
-    }
-
-    root.remove();
-    pdf.save(fileName());
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", psdStartLiveUpdate);
+  }else{
+    psdStartLiveUpdate();
   }
 
-  async function psdOpenPdfReport(){
-    await savePdfFromCapture();
-  }
-
-  window.psdOpenPdfReport = psdOpenPdfReport;
-  window.PSD_PDF_REPORT_VERSION = PSD_PDF_VERSION;
+  window.psdCheckForFreshSiteData = psdCheckForFreshSiteData;
 })();
