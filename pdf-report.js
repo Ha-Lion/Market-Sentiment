@@ -1,10 +1,10 @@
 /*
-  Public Sentiment Dash - PDF Report Engine v12
+  Public Sentiment Dash - PDF Report Engine v14
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "13";
+  const PSD_PDF_VERSION = "14";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -19,11 +19,18 @@
   }
 
   function pageName(){
-    const chip = qs(".page-chip");
-    if(chip && safeText(chip.textContent)) return safeText(chip.textContent);
+    const path = window.location.pathname.toLowerCase();
+
+    if(path === "/" || path.endsWith("/index.html") || path.endsWith("index.html")) return "Home Page";
+    if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html")) return "Interactive Dashboard";
+    if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html")) return "Historical Sentiment";
+    if(path.endsWith("/news-articles.html") || path.endsWith("news-articles.html")) return "News & Articles";
 
     const active = qs(".nav a.active");
     if(active && safeText(active.textContent)) return safeText(active.textContent);
+
+    const chip = qs(".page-chip");
+    if(chip && safeText(chip.textContent)) return safeText(chip.textContent);
 
     const h1 = qs("h1");
     if(h1 && safeText(h1.textContent)) return safeText(h1.textContent);
@@ -795,13 +802,34 @@
       #psdPdfCaptureRoot .psd-home-page1 .score-panel{
         padding:18px!important;
       }
+      #psdPdfCaptureRoot .psd-home-page1 .score-panel{
+        display:flex!important;
+        flex-direction:column!important;
+        justify-content:center!important;
+        align-items:center!important;
+        min-height:0!important;
+      }
       #psdPdfCaptureRoot .psd-home-page1 .score-ring{
-        width:190px!important;
-        height:190px!important;
+        width:300px!important;
+        height:300px!important;
+        margin:10px auto 16px!important;
+        background:transparent!important;
+        box-shadow:none!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .score-inner{
-        width:140px!important;
-        height:140px!important;
+        width:220px!important;
+        height:220px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-score-svg{
+        width:300px!important;
+        height:300px!important;
+        display:block!important;
+        overflow:visible!important;
+      }
+      #psdPdfCaptureRoot .psd-home-score-svg text{
+        font-family:Inter,Segoe UI,Arial,sans-serif!important;
+        fill:#e6edf3!important;
+        opacity:1!important;
       }
       #psdPdfCaptureRoot .psd-home-widget-row{
         display:flex!important;
@@ -991,6 +1019,42 @@
 
 
 
+  function enhanceHomeHeroClone(heroClone){
+    if(!heroClone) return heroClone;
+
+    const scoreText = safeText(qs("#scoreNumber")?.textContent || "50");
+    const score = Math.max(0, Math.min(100, parseInt(scoreText, 10) || 50));
+    const label = safeText(qs("#scoreWord")?.textContent || "Mixed/Neutral");
+    const color = score >= 70 ? "#3fb950" : score <= 30 ? "#f85149" : "#d29922";
+    const radius = 112;
+    const stroke = 24;
+    const circumference = 2 * Math.PI * radius;
+    const dash = (score / 100) * circumference;
+
+    const ring = qs(".score-ring", heroClone);
+    if(ring){
+      ring.innerHTML = `
+        <svg class="psd-home-score-svg" viewBox="0 0 300 300" role="img" aria-label="Global Public Sentiment Index ${score}">
+          <defs>
+            <filter id="psdScoreGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+              <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+            </filter>
+          </defs>
+          <circle cx="150" cy="150" r="${radius}" fill="#0d1117" stroke="rgba(255,255,255,.12)" stroke-width="${stroke}"></circle>
+          <circle cx="150" cy="150" r="${radius}" fill="none" stroke="#26313f" stroke-width="${stroke}" stroke-linecap="round"></circle>
+          <circle cx="150" cy="150" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+            stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(-90 150 150)" filter="url(#psdScoreGlow)"></circle>
+          <circle cx="150" cy="150" r="76" fill="#0d1117" stroke="rgba(255,255,255,.14)" stroke-width="2"></circle>
+          <text x="150" y="142" text-anchor="middle" font-size="58" font-weight="800">${score}</text>
+          <text x="150" y="174" text-anchor="middle" font-size="19" font-weight="700" fill="${color}">${label}</text>
+        </svg>
+      `;
+    }
+
+    return heroClone;
+  }
+
   function buildHomeWidgetSamples(){
     const row = document.createElement("div");
     row.className = "psd-home-widget-row";
@@ -1013,10 +1077,12 @@
 
     const page1 = createPage("Home", `Generated ${now}`);
     page1.classList.add("psd-home-page", "psd-home-page1");
-    [".header", "#psdAdvertiseBanner", ".hero"].forEach(sel => {
+    [".header", "#psdAdvertiseBanner"].forEach(sel => {
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
+    const heroClone = enhanceHomeHeroClone(cloneElement(".hero"));
+    if(heroClone) page1.appendChild(heroClone);
     page1.appendChild(buildHomeWidgetSamples());
     const footer1 = cloneElement(".footer");
     if(footer1){
