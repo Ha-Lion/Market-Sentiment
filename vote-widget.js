@@ -488,9 +488,9 @@ function psdCreatePdfWidget(){
     style.id = "psdPdfWidgetCss";
     style.textContent = `
       .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Inter,Segoe UI,Arial,sans-serif}
-      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:54px;min-height:78px;border:1px solid rgba(88,166,255,.55);border-radius:18px;background:linear-gradient(180deg,rgba(88,166,255,.24),rgba(13,17,23,.97));color:#ffffff;cursor:pointer;box-shadow:0 0 24px rgba(88,166,255,.20);animation:psdPdfFloat 3.5s ease-in-out infinite;padding:7px 5px;text-align:center}
-      .psd-pdf-tab:hover{background:linear-gradient(180deg,rgba(88,166,255,.36),rgba(13,17,23,.97));transform:translateX(2px)}
-      .psd-pdf-tab-icon{font-size:15px;line-height:1;font-weight:700;color:#ffffff;letter-spacing:.2px}.psd-pdf-tab-text{font-size:8.6px;font-weight:600;line-height:1.12;text-align:center;max-width:46px;color:#ffffff;text-shadow:0 0 8px rgba(88,166,255,.42)}
+      .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:54px;min-height:78px;border:1px solid rgba(88,166,255,.62);border-radius:18px;background:linear-gradient(180deg,rgba(30,78,135,.88),rgba(13,17,23,.98));color:#ffffff;cursor:pointer;box-shadow:0 0 22px rgba(88,166,255,.18);animation:psdPdfFloat 3.5s ease-in-out infinite;padding:7px 5px;text-align:center;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+      .psd-pdf-tab:hover{background:linear-gradient(180deg,rgba(44,105,176,.94),rgba(13,17,23,.98));transform:translateX(2px)}
+      .psd-pdf-tab-icon{font-size:17px;line-height:1;font-weight:700;color:#ffffff;letter-spacing:.2px}.psd-pdf-tab-text{font-size:9.4px;font-weight:500;line-height:1.12;text-align:center;max-width:48px;color:#ffffff;text-shadow:none;letter-spacing:0}
       @keyframes psdPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
       @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 96px)}.psd-pdf-tab{width:54px;min-height:78px}}
       @media print{#psdVoteWidget,#psdPdfWidget{display:none!important}}
@@ -504,7 +504,7 @@ function psdCreatePdfWidget(){
   wrap.innerHTML = `
     <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF report">
       <span class="psd-pdf-tab-icon">PDF</span>
-      <span class="psd-pdf-tab-text">Save Page as PDF</span>
+      <span class="psd-pdf-tab-text">Save<br>Page<br>as PDF</span>
     </button>
   `;
 
@@ -513,7 +513,7 @@ function psdCreatePdfWidget(){
   const btn = wrap.querySelector(".psd-pdf-tab");
   btn.addEventListener("click", async () => {
     const original = btn.innerHTML;
-    btn.innerHTML = `<span class="psd-pdf-tab-icon">…</span><span class="psd-pdf-tab-text">Preparing PDF</span>`;
+    btn.innerHTML = `<span class="psd-pdf-tab-icon">…</span><span class="psd-pdf-tab-text">Preparing<br>PDF</span>`;
     btn.disabled = true;
 
     try{
