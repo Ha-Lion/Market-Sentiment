@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "10";
+  const PSD_PDF_VERSION = "11";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -722,6 +722,155 @@
         font-size:11px!important;
       }
 
+      /* Home PDF v11 requested layout */
+      #psdPdfCaptureRoot .psd-home-page1,
+      #psdPdfCaptureRoot .psd-home-page2,
+      #psdPdfCaptureRoot .psd-home-page3{
+        display:flex!important;
+        flex-direction:column!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .header,
+      #psdPdfCaptureRoot .psd-home-page3 .header{
+        display:grid!important;
+        grid-template-columns:auto 1fr auto!important;
+        padding:10px 18px!important;
+        margin:0 0 12px!important;
+        min-height:88px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .header .nav,
+      #psdPdfCaptureRoot .psd-home-page3 .header .nav{
+        gap:7px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .header .nav a,
+      #psdPdfCaptureRoot .psd-home-page3 .header .nav a{
+        font-size:12px!important;
+        padding:5px 6px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .brand-stamp,
+      #psdPdfCaptureRoot .psd-home-page3 .brand-stamp{
+        font-size:11px!important;
+        padding:7px 11px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .site-subtitle,
+      #psdPdfCaptureRoot .psd-home-page3 .site-subtitle{
+        font-size:10.5px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .header-pill,
+      #psdPdfCaptureRoot .psd-home-page3 .header-pill{
+        font-size:11px!important;
+        padding:7px 11px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-home-page1 .psd-ad-banner,
+      #psdPdfCaptureRoot .psd-home-page3 #psdAdvertiseBanner,
+      #psdPdfCaptureRoot .psd-home-page3 .psd-ad-banner{
+        margin:0 0 12px!important;
+        min-height:34px!important;
+        padding:9px 14px!important;
+        font-size:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero{
+        grid-template-columns:minmax(0,1.25fr) minmax(340px,.75fr)!important;
+        gap:15px!important;
+        flex:1 1 auto!important;
+        min-height:0!important;
+        align-items:stretch!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
+        padding:19px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
+        font-size:38px!important;
+        line-height:1.06!important;
+        margin-bottom:10px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy p{
+        font-size:12.8px!important;
+        line-height:1.42!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-points{
+        gap:9px!important;
+        margin-top:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .score-panel{
+        padding:18px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .score-ring{
+        width:190px!important;
+        height:190px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .score-inner{
+        width:140px!important;
+        height:140px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-widget-row{
+        display:flex!important;
+        align-items:center!important;
+        gap:14px!important;
+        margin:12px 0 0!important;
+      }
+      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-print-sample{
+        width:62px!important;
+        height:86px!important;
+        border-radius:18px!important;
+        display:flex!important;
+        flex-direction:column!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:4px!important;
+        border:1px solid rgba(210,153,34,.45)!important;
+        background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96))!important;
+        color:#ffd780!important;
+        box-shadow:0 0 24px rgba(210,153,34,.18)!important;
+        font-family:Inter,Segoe UI,Arial,sans-serif!important;
+      }
+      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-icon{
+        font-size:21px!important;
+        line-height:1!important;
+      }
+      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-text{
+        font-size:12px!important;
+        line-height:1.05!important;
+        font-weight:700!important;
+        text-align:center!important;
+        color:#ffe7a8!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-footer,
+      #psdPdfCaptureRoot .psd-home-page2 .psd-pdf-footer,
+      #psdPdfCaptureRoot .psd-home-page3 .psd-pdf-footer{
+        margin-top:auto!important;
+        flex:0 0 auto!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page2 .psd-home-page2-stack{
+        display:grid!important;
+        grid-template-columns:1fr!important;
+        gap:14px!important;
+        flex:1 1 auto!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page2 .section.panel{
+        margin:0!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page2 .summary-line{
+        font-size:13px!important;
+        line-height:1.42!important;
+        padding:12px 14px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page2 .focus-grid{
+        grid-template-columns:repeat(4,minmax(0,1fr))!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page3 .section.panel{
+        flex:1 1 auto!important;
+        min-height:0!important;
+        margin:0!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page3 .action-grid{
+        grid-template-columns:repeat(4,minmax(0,1fr))!important;
+        gap:11px!important;
+      }
+
+
     `;
     document.head.appendChild(style);
   }
@@ -841,40 +990,67 @@
 
 
 
+
+  function buildHomeWidgetSamples(){
+    const row = document.createElement("div");
+    row.className = "psd-home-widget-row";
+    row.innerHTML = `
+      <div class="psd-widget-print-sample" aria-label="Vote widget sample">
+        <span class="psd-widget-icon">↕</span>
+        <span class="psd-widget-text">Vote</span>
+      </div>
+      <div class="psd-widget-print-sample" aria-label="PDF widget sample">
+        <span class="psd-widget-icon">📄</span>
+        <span class="psd-widget-text">Save<br>PDF</span>
+      </div>
+    `;
+    return row;
+  }
+
   function buildHomePages(root){
     const now = new Date().toLocaleString();
+    const sections = qsa(".section.panel");
 
     const page1 = createPage("Home", `Generated ${now}`);
     page1.classList.add("psd-home-page", "psd-home-page1");
-    ["#psdAdvertiseBanner", ".hero"].forEach(sel => {
+    [".header", "#psdAdvertiseBanner", ".hero"].forEach(sel => {
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
+    page1.appendChild(buildHomeWidgetSamples());
+    const footer1 = cloneElement(".footer");
+    if(footer1){
+      footer1.classList.add("psd-pdf-footer");
+      page1.appendChild(footer1);
+    }
 
-    const page2 = createPage("Home", "Market Direction + Sources + Daily Brief");
+    const page2 = createPage("Home", "Daily Public Sentiment Brief + Market Focus Today");
     page2.classList.add("psd-home-page", "psd-home-page2");
-    const combo = document.createElement("div");
-    combo.className = "psd-home-combo";
-    const rail = cloneElement(".instrument-rail");
-    if(rail) combo.appendChild(rail);
-    const stack = document.createElement("div");
-    stack.className = "psd-home-main-stack";
-    const sections = qsa(".section.panel");
-    [sections[0], sections[1], sections[2]].forEach(el => {
+    const stack2 = document.createElement("div");
+    stack2.className = "psd-home-page2-stack";
+    [sections[1], sections[2]].forEach(el => {
       const clone = cloneElement(el);
-      if(clone) stack.appendChild(clone);
+      if(clone) stack2.appendChild(clone);
     });
-    combo.appendChild(stack);
-    page2.appendChild(combo);
+    page2.appendChild(stack2);
+    const footer2 = cloneElement(".footer");
+    if(footer2){
+      footer2.classList.add("psd-pdf-footer");
+      page2.appendChild(footer2);
+    }
 
-    const page3 = createPage("Home", "Explore the Site + Disclaimer");
-    page3.classList.add("psd-home-page", "psd-final-page");
+    const page3 = createPage("Home", "Explore the Site");
+    page3.classList.add("psd-home-page", "psd-home-page3", "psd-final-page");
+    [".header", "#psdAdvertiseBanner"].forEach(sel => {
+      const clone = cloneElement(sel);
+      if(clone) page3.appendChild(clone);
+    });
     const explore = cloneElement(sections[3]);
     if(explore) page3.appendChild(explore);
-    const footer = cloneElement(".footer");
-    if(footer){
-      footer.classList.add("psd-pdf-footer");
-      page3.appendChild(footer);
+    const footer3 = cloneElement(".footer");
+    if(footer3){
+      footer3.classList.add("psd-pdf-footer");
+      page3.appendChild(footer3);
     }
 
     root.appendChild(page1);
