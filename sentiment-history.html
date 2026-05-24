@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="site.css">
 
   <style>
-    /* Historical Sentiment Dashboard v2: rolled back to previous version; background shade changed from pink to gold only. */
+    /* Historical Sentiment Dashboard v3: hourly charts forward-fill missing hours so graphs stay complete when scraper cadence changes. */
     :root{
       --hist-bg:#070b17;
       --hist-card:rgba(19,16,39,.74);
@@ -934,20 +934,60 @@
         if(r.ts > g.lastTs) g.lastTs = r.ts;
       });
 
+      // Forward-fill hourly slots so charts stay complete even when scraper cadence changes.
+      // Example: if the scraper runs every 4 or 6 hours, missing hours reuse the most recent real scan.
+      // If the last scan is very old, the chart anchors to the last scan instead of pretending it is current.
+      const grouped = [...groups.values()].map(g => ({
+        key:g.key,
+        label:g.label,
+        sort:g.lastTs.getTime(),
+        lastTs:g.lastTs,
+        global:avg(g.global),
+        us:avg(g.us)
+      })).sort((a,b)=>a.sort-b.sort);
+
       const latest = clean[clean.length-1].ts;
+      const now = new Date();
+      const recentEnoughMs = 48 * 3600000;
+      const endBase = (now.getTime() > latest.getTime() && now.getTime() - latest.getTime() <= recentEnoughMs) ? now : latest;
+      const endHour = new Date(endBase);
+      endHour.setMinutes(0,0,0);
+
       const slots = [];
       for(let i=7;i>=0;i--){
-        const slotDate = new Date(latest.getTime() - i * 3600000);
+        const slotDate = new Date(endHour.getTime() - i * 3600000);
         const ny = nyHourParts(slotDate);
-        const g = groups.get(ny.key);
+        const exact = groups.get(ny.key);
+        let direct = exact ? {
+          key:ny.key,
+          label:ny.label,
+          sort:slotDate.getTime(),
+          lastTs:exact.lastTs,
+          global:avg(exact.global),
+          us:avg(exact.us),
+          carried:false
+        } : null;
+
+        let carry = null;
+        if(!direct){
+          for(let j=grouped.length-1;j>=0;j--){
+            if(grouped[j].sort <= slotDate.getTime()){ carry = grouped[j]; break; }
+          }
+          if(!carry){
+            carry = grouped.find(g => g.sort >= slotDate.getTime()) || grouped[0] || null;
+          }
+        }
+
+        const chosen = direct || carry;
         slots.push({
           key:ny.key,
           label:ny.label,
           sort:slotDate.getTime(),
-          lastTs:g?.lastTs || slotDate,
-          global:g ? avg(g.global) : null,
-          us:g ? avg(g.us) : null,
-          value:g ? avg(g.global) : null
+          lastTs:chosen?.lastTs || slotDate,
+          global:Number.isFinite(chosen?.global) ? chosen.global : null,
+          us:Number.isFinite(chosen?.us) ? chosen.us : null,
+          value:Number.isFinite(chosen?.global) ? chosen.global : null,
+          carried:!direct
         });
       }
       return slots;
