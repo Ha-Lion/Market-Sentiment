@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "26";
+  const PSD_PDF_VERSION = "28";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -955,6 +955,125 @@
       #psdPdfCaptureRoot .psd-home-page3 .action-grid{
         grid-template-columns:repeat(4,minmax(0,1fr))!important;
         gap:11px!important;
+      }
+
+
+
+      /* Home PDF: first page shows the top two home cards */
+      #psdPdfCaptureRoot .psd-home-page1 .hero{
+        display:grid!important;
+        grid-template-columns:1fr!important;
+        gap:10px!important;
+        margin:0!important;
+        min-height:0!important;
+        align-items:stretch!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
+        padding:14px 17px!important;
+        min-height:0!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
+        font-size:30px!important;
+        line-height:1.03!important;
+        letter-spacing:-.03em!important;
+        margin:0 0 8px!important;
+        white-space:nowrap!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy p,
+      #psdPdfCaptureRoot .psd-home-page1 .hero-compact-note{
+        font-size:11.2px!important;
+        line-height:1.28!important;
+        margin:0 0 5px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-points{
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        gap:7px!important;
+        margin-top:8px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-point{
+        padding:8px 9px!important;
+        border-radius:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-point strong{
+        font-size:11px!important;
+        margin-bottom:3px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hero-point span{
+        font-size:9.5px!important;
+        line-height:1.18!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
+        display:block!important;
+        padding:10px 14px 12px!important;
+        min-height:0!important;
+        height:auto!important;
+        margin:0!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel.score-panel{
+        display:block!important;
+        justify-content:initial!important;
+        align-items:initial!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .scope-pill{
+        top:10px!important;
+        left:12px!important;
+        font-size:10px!important;
+        padding:5px 8px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .score-label{
+        top:10px!important;
+        font-size:11px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .pulse-small{
+        top:11px!important;
+        right:12px!important;
+        font-size:9px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-grid{
+        grid-template-columns:.9fr 1.25fr .9fr!important;
+        gap:16px!important;
+        padding-top:42px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 #pulseUSCard,
+      #psdPdfCaptureRoot .psd-home-page1 #pulseEuropeCard{
+        margin-top:28px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
+        width:144px!important;
+        height:144px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-speedometer{
+        width:186px!important;
+        height:186px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-center{
+        width:68px!important;
+        height:68px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center{
+        width:86px!important;
+        height:86px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-center span{
+        font-size:23px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center span{
+        font-size:31px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-gauge-title{
+        font-size:10px!important;
+        margin-bottom:2px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-bottom{
+        margin-top:5px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .pulse-foot{
+        font-size:8.5px!important;
+        margin-top:4px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .psd-home-widget-row{
+        margin:9px 0 0!important;
       }
 
 
