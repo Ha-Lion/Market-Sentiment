@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "28";
+  const PSD_PDF_VERSION = "29";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -959,29 +959,40 @@
 
 
 
-      /* Home PDF: first page shows the top two home cards */
-      #psdPdfCaptureRoot .psd-home-page1 .hero{
+
+      /* Home PDF page 1: stack the top two cards in the same order as the Home page */
+      #psdPdfCaptureRoot .psd-home-page1-main{
+        display:flex!important;
+        flex-direction:column!important;
+        gap:10px!important;
+        flex:1 1 auto!important;
+        min-height:0!important;
+        overflow:hidden!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1-main > .hero{
         display:grid!important;
         grid-template-columns:1fr!important;
         gap:10px!important;
         margin:0!important;
+        flex:1 1 auto!important;
         min-height:0!important;
+        overflow:hidden!important;
         align-items:stretch!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
-        padding:14px 17px!important;
+        padding:15px 18px!important;
         min-height:0!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
-        font-size:30px!important;
-        line-height:1.03!important;
+        font-size:31px!important;
+        line-height:1.02!important;
         letter-spacing:-.03em!important;
         margin:0 0 8px!important;
         white-space:nowrap!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy p,
       #psdPdfCaptureRoot .psd-home-page1 .hero-compact-note{
-        font-size:11.2px!important;
+        font-size:11.5px!important;
         line-height:1.28!important;
         margin:0 0 5px!important;
       }
@@ -1073,9 +1084,9 @@
         margin-top:4px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .psd-home-widget-row{
-        margin:9px 0 0!important;
+        margin:8px 0 0!important;
+        flex:0 0 auto!important;
       }
-
 
       /* News & Articles PDF support - built from locked v15 */
       #psdPdfCaptureRoot .psd-news-page{
@@ -1568,18 +1579,14 @@
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
+
     const page1Main = document.createElement("div");
     page1Main.className = "psd-home-page1-main";
 
-    const railClone = cloneElement(".instrument-rail");
-    if(railClone) page1Main.appendChild(railClone);
-
-    const page1Right = document.createElement("div");
-    page1Right.className = "psd-home-page1-right";
     const heroClone = enhanceHomeHeroClone(cloneElement(".hero"));
-    if(heroClone) page1Right.appendChild(heroClone);
-    page1Right.appendChild(buildHomeWidgetSamples());
-    page1Main.appendChild(page1Right);
+    if(heroClone) page1Main.appendChild(heroClone);
+
+    page1Main.appendChild(buildHomeWidgetSamples());
     page1.appendChild(page1Main);
 
     const footer1 = cloneElement(".footer");
