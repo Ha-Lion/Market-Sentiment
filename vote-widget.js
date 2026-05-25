@@ -123,40 +123,94 @@ function psdCreateAdvertiseBanner(){
   const header = document.querySelector(".header");
   if(!header) return;
 
+  header.classList.add("psd-ribbon-ad-host");
+
   const style = document.createElement("style");
   style.textContent = `
+    .psd-ribbon-ad-host{
+      position:sticky;
+    }
+
     .psd-ad-banner{
-      max-width:1120px;
-      margin:14px auto 0;
-      padding:11px 14px;
-      border:1px solid rgba(210,153,34,.28);
+      position:absolute;
+      left:50%;
+      bottom:8px;
+      transform:translateX(-50%);
+      width:min(720px,64vw);
+      min-height:40px;
+      padding:0 14px;
+      border:1px solid rgba(210,153,34,.34);
       border-radius:999px;
-      background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.08));
+      background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.07));
       color:#fff;
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:10px;
+      gap:9px;
       text-align:center;
-      font-size:13px;
-      line-height:1.45;
-      box-shadow:0 10px 26px rgba(0,0,0,.16);
+      font-size:11px;
+      line-height:1.15;
+      font-weight:650;
+      white-space:nowrap;
+      overflow:hidden;
+      box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 18px rgba(210,153,34,.14);
+      z-index:5;
     }
-    .psd-ad-banner strong{color:#ffd780;font-weight:800}
+
+    .psd-ad-banner span{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .psd-ad-banner strong{
+      color:#ffd780;
+      font-weight:800;
+    }
+
     .psd-ad-banner a{
       color:#fff;
       font-weight:800;
       text-decoration:none;
       border:1px solid rgba(255,255,255,.16);
       background:rgba(255,255,255,.07);
-      padding:6px 10px;
+      padding:5px 9px;
       border-radius:999px;
       white-space:nowrap;
+      flex-shrink:0;
       transition:.18s ease;
+      font-size:11px;
+      line-height:1;
     }
-    .psd-ad-banner a:hover{border-color:rgba(210,153,34,.55);transform:translateY(-1px)}
+
+    .psd-ad-banner a:hover{
+      border-color:rgba(210,153,34,.55);
+      transform:translateY(-1px);
+    }
+
+    @media(max-width:1180px){
+      .psd-ad-banner{
+        position:static;
+        transform:none;
+        width:100%;
+        margin-top:8px;
+        grid-column:1 / -1;
+      }
+    }
+
     @media(max-width:760px){
-      .psd-ad-banner{border-radius:18px;flex-direction:column;margin:12px 14px 0}
+      .psd-ad-banner{
+        border-radius:18px;
+        flex-direction:column;
+        margin-top:10px;
+        min-height:auto;
+        padding:9px 12px;
+        white-space:normal;
+      }
+      .psd-ad-banner span{
+        white-space:normal;
+      }
     }
   `;
   document.head.appendChild(style);
@@ -165,11 +219,11 @@ function psdCreateAdvertiseBanner(){
   banner.id = "psdAdvertiseBanner";
   banner.className = "psd-ad-banner";
   banner.innerHTML = `
-    <span>📣 <strong>Partner with Public Sentiment Dash</strong> — advertising, investor, and business opportunities in market sentiment.</span>
+    <span>📣 <strong>Partner with Public Sentiment Dash</strong> — advertising, investor, and business opportunities.</span>
     <a href="advertise.html">Learn More</a>
   `;
 
-  header.insertAdjacentElement("afterend", banner);
+  header.appendChild(banner);
 }
 
 function psdGetVoterId(){
