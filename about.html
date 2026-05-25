@@ -93,11 +93,13 @@
       background:rgba(210,153,34,.10);
     }
 
-    /* Ribbon test v10 — smaller page links, top-aligned nav/pill, shorter centered one-line ad banner */
+    /* Ribbon test v11 — compact height, nav/pill pushed up, ad banner centered without adding header height */
     .header{
       grid-template-columns:auto 1fr auto;
       align-items:start;
-      padding:14px 26px 10px;
+      position:sticky;
+      min-height:174px;
+      padding:14px 26px 8px;
       gap:18px;
     }
 
@@ -108,13 +110,13 @@
     .header-center{
       align-self:start;
       justify-content:center;
-      padding-top:54px;
+      padding-top:42px;
     }
 
     .nav{
       align-self:start;
       align-items:flex-start;
-      padding-top:54px;
+      padding-top:42px;
       gap:8px 19px;
     }
 
@@ -124,15 +126,17 @@
     }
 
     .social-links{
-      margin-top:4px;
+      margin-top:2px;
       font-size:12px;
     }
 
     .ribbon-ad-row{
-      grid-column:1 / -1;
-      justify-self:center;
+      position:absolute;
+      left:50%;
+      bottom:14px;
+      transform:translateX(-50%);
       width:min(760px,72vw);
-      margin-top:4px;
+      z-index:2;
     }
 
     .ribbon-ad-banner{
@@ -192,12 +196,18 @@
       .nav{
         padding-top:0;
       }
-      .ribbon-ad-row{width:min(760px,92vw)}
+      .ribbon-ad-row{
+        position:static;
+        transform:none;
+        grid-column:1 / -1;
+        justify-self:start;
+        width:100%;
+        margin-top:8px;
+      }
     }
 
     @media(max-width:980px){
       .header{grid-template-columns:1fr}
-      .ribbon-ad-row{justify-self:start;width:100%}
     }
 
   </style>
