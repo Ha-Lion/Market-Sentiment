@@ -5,7 +5,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "35";
+  const PSD_PDF_VERSION = "37";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -960,19 +960,20 @@
 
 
 
-      /* Home PDF page 1: SVG color-safe Market Pulse gauges only */
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-speedometer-svg{
-        width:100%!important;
-        height:100%!important;
-        display:block!important;
-        overflow:visible!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-speedometer-svg text{
-        font-family:Inter,Segoe UI,Arial,sans-serif!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
+      /* Home PDF: color-safe canvas gauges only */
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host{
         background:transparent!important;
         box-shadow:none!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host::before,
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host::after{
+        display:none!important;
+        content:none!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge{
+        display:block!important;
+        width:100%!important;
+        height:100%!important;
       }
 
       /* News & Articles PDF support - built from locked v15 */
@@ -1442,86 +1443,151 @@
       `;
     }
 
-    function pdfGaugeArc(cx, cy, r, startDeg, endDeg){
-      const toPoint = (deg) => {
-        const rad = (deg - 90) * Math.PI / 180;
-        return {
-          x: cx + r * Math.cos(rad),
-          y: cy + r * Math.sin(rad)
-        };
-      };
+    function drawPdfGaugeCanvas(canvas, score, label){
+      const dpr = 3;
+      const size = 520;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      canvas.className = "psd-pdf-canvas-gauge";
 
-      const start = toPoint(startDeg);
-      const end = toPoint(endDeg);
-      const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
 
-      return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
-    }
-
-    function pdfGaugeSVG(score, label){
       const safeScore = Math.max(0, Math.min(100, Number(score) || 50));
       const safeLabel = safeText(label || "Mixed/Neutral").toUpperCase();
-      const needleAngle = -130 + (safeScore * 2.6);
-      const needleRad = needleAngle * Math.PI / 180;
-      const cx = 150;
-      const cy = 150;
-      const needleX = cx + 92 * Math.cos(needleRad);
-      const needleY = cy + 92 * Math.sin(needleRad);
 
-      return `
-        <svg class="psd-pdf-speedometer-svg" viewBox="0 0 300 300" role="img" aria-label="Market Pulse ${safeScore}">
-          <defs>
-            <radialGradient id="psdPdfGaugeBg${safeScore}" cx="50%" cy="42%" r="60%">
-              <stop offset="0%" stop-color="#17243a"/>
-              <stop offset="70%" stop-color="#07101c"/>
-              <stop offset="100%" stop-color="#030812"/>
-            </radialGradient>
-            <filter id="psdPdfGaugeGlow${safeScore}" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3.2" result="blur"></feGaussianBlur>
-              <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
-            </filter>
-            <linearGradient id="psdPdfNeedle${safeScore}" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#ff4f5d"/>
-              <stop offset="100%" stop-color="#ffb05a"/>
-            </linearGradient>
-          </defs>
+      const cx = size / 2;
+      const cy = size / 2;
+      const r = 178;
 
-          <circle cx="150" cy="150" r="138" fill="url(#psdPdfGaugeBg${safeScore})" stroke="rgba(88,166,255,.30)" stroke-width="2"/>
-          <circle cx="150" cy="150" r="123" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="2"/>
-          <circle cx="150" cy="150" r="106" fill="none" stroke="rgba(88,166,255,.16)" stroke-width="3"/>
+      function arc(startDeg, endDeg, color, width){
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, (startDeg - 90) * Math.PI / 180, (endDeg - 90) * Math.PI / 180);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = "butt";
+        ctx.stroke();
+      }
 
-          <path d="${pdfGaugeArc(cx, cy, 113, -130, -78)}" fill="none" stroke="#ff5454" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
-          <path d="${pdfGaugeArc(cx, cy, 113, -78, -18)}" fill="none" stroke="#ffad4f" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
-          <path d="${pdfGaugeArc(cx, cy, 113, -18, 62)}" fill="none" stroke="#5fd26f" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
-          <path d="${pdfGaugeArc(cx, cy, 113, 62, 130)}" fill="none" stroke="#58a6ff" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+      function ring(radius, color, width, dash){
+        ctx.save();
+        if(dash) ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.restore();
+      }
 
-          <path d="${pdfGaugeArc(cx, cy, 128, -130, 130)}" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="2" stroke-dasharray="2 10"/>
-          <path d="${pdfGaugeArc(cx, cy, 88, -130, 130)}" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="2"/>
+      // Background
+      const bg = ctx.createRadialGradient(cx, cy - 38, 20, cx, cy, 232);
+      bg.addColorStop(0, "#172741");
+      bg.addColorStop(.62, "#07111e");
+      bg.addColorStop(1, "#030812");
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 222, 0, Math.PI * 2);
+      ctx.fill();
 
-          <circle cx="150" cy="150" r="61" fill="#0b1525" stroke="rgba(88,166,255,.30)" stroke-width="2"/>
-          <circle cx="150" cy="150" r="36" fill="rgba(88,166,255,.10)"/>
+      // Glow
+      ctx.save();
+      ctx.shadowColor = "rgba(88,166,255,.45)";
+      ctx.shadowBlur = 18;
+      ring(218, "rgba(88,166,255,.42)", 3);
+      ctx.restore();
 
-          <line x1="150" y1="150" x2="${needleX.toFixed(1)}" y2="${needleY.toFixed(1)}" stroke="url(#psdPdfNeedle${safeScore})" stroke-width="5" stroke-linecap="round" filter="url(#psdPdfGaugeGlow${safeScore})"/>
-          <circle cx="${needleX.toFixed(1)}" cy="${needleY.toFixed(1)}" r="8" fill="#ff6b5a" filter="url(#psdPdfGaugeGlow${safeScore})"/>
-          <circle cx="150" cy="150" r="11" fill="#0b1525" stroke="rgba(255,255,255,.20)" stroke-width="2"/>
+      ring(196, "rgba(255,255,255,.14)", 2);
+      ring(154, "rgba(88,166,255,.23)", 4);
+      ring(205, "rgba(255,255,255,.42)", 2, [2, 13]);
 
-          <text x="150" y="143" text-anchor="middle" font-size="48" font-weight="900" fill="#f4f8ff">${Math.round(safeScore)}</text>
-          <text x="150" y="170" text-anchor="middle" font-size="13" font-weight="900" fill="#9eb6d4">${safeLabel}</text>
-        </svg>
-      `;
+      // Color bands
+      ctx.save();
+      ctx.shadowColor = "rgba(88,166,255,.35)";
+      ctx.shadowBlur = 10;
+      arc(-130, -78, "#ff5454", 38);
+      arc(-78, -18, "#ffae4f", 38);
+      arc(-18, 64, "#62d66e", 38);
+      arc(64, 130, "#58a6ff", 38);
+      ctx.restore();
+
+      // Dark lower masked sector to mimic live HUD speedometer
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, 182, 118 * Math.PI / 180, 62 * Math.PI / 180, true);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(3,8,16,.78)";
+      ctx.fill();
+      ctx.restore();
+
+      // Center disk
+      const centerGrad = ctx.createRadialGradient(cx, cy - 25, 20, cx, cy, 82);
+      centerGrad.addColorStop(0, "#203452");
+      centerGrad.addColorStop(.72, "#0c1728");
+      centerGrad.addColorStop(1, "#07101c");
+      ctx.fillStyle = centerGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 82, 0, Math.PI * 2);
+      ctx.fill();
+      ring(82, "rgba(88,166,255,.34)", 3);
+
+      // Needle
+      const angle = (-130 + safeScore * 2.6) * Math.PI / 180;
+      const nx = cx + Math.cos(angle) * 142;
+      const ny = cy + Math.sin(angle) * 142;
+
+      ctx.save();
+      ctx.shadowColor = "rgba(255,100,90,.70)";
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(nx, ny);
+      ctx.strokeStyle = "#ff7a5c";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      ctx.fillStyle = "#ff6b5a";
+      ctx.beginPath();
+      ctx.arc(nx, ny, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = "#09111f";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ring(13, "rgba(255,255,255,.28)", 2);
+
+      // Text
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#f5f9ff";
+      ctx.font = "900 74px Inter, Segoe UI, Arial";
+      ctx.fillText(String(Math.round(safeScore)), cx, cy - 6);
+
+      ctx.fillStyle = "#9eb6d4";
+      ctx.font = "900 18px Inter, Segoe UI, Arial";
+      ctx.fillText(safeLabel.length > 13 ? safeLabel.slice(0, 13) + "…" : safeLabel, cx, cy + 34);
     }
 
     [
-      {key:"Global", gauge:"#pulseGlobalGauge", value:"#pulseGlobalValue", label:"#pulseGlobalLabel"},
-      {key:"US", gauge:"#pulseUSGauge", value:"#pulseUSValue", label:"#pulseUSLabel"},
-      {key:"Europe", gauge:"#pulseEuropeGauge", value:"#pulseEuropeValue", label:"#pulseEuropeLabel"}
+      {gauge:"#pulseGlobalGauge", value:"#pulseGlobalValue", label:"#pulseGlobalLabel"},
+      {gauge:"#pulseUSGauge", value:"#pulseUSValue", label:"#pulseUSLabel"},
+      {gauge:"#pulseEuropeGauge", value:"#pulseEuropeValue", label:"#pulseEuropeLabel"}
     ].forEach(item => {
       const liveScore = safeText(qs(item.value)?.textContent || "");
       const liveLabel = safeText(qs(item.label)?.textContent || "");
       const clonedGauge = qs(item.gauge, heroClone);
 
       if(clonedGauge){
-        clonedGauge.innerHTML = pdfGaugeSVG(liveScore, liveLabel);
+        clonedGauge.classList.add("psd-pdf-canvas-gauge-host");
+        clonedGauge.innerHTML = "";
+        const canvas = document.createElement("canvas");
+        drawPdfGaugeCanvas(canvas, liveScore, liveLabel);
+        clonedGauge.appendChild(canvas);
       }
     });
 
