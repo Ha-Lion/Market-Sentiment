@@ -680,7 +680,7 @@
   <main class="lab-wrap">
     <section class="panel lab-hero">
       <div>
-        <div class="page-chip">Dashboard Lab • Deep Analysis Test v3</div>
+        <div class="page-chip">Dashboard Lab • Deep Analysis Test v4</div>
         <h1>Interactive Market Sentiment Dashboard Lab</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
         <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
@@ -1137,93 +1137,151 @@
 
     function deepLineSvg(values, color, labelText){
       const clean = (values && values.length ? values : [50,50,50,50]).map(v=>clamp(Number(v)||50,0,100));
+      const w=420,h=132,pad=14,innerW=w-pad*2,innerH=h-pad*2;
       const smooth = clean.map((v,i,arr)=>{
         const prev = arr[i-1] ?? v;
         const next = arr[i+1] ?? v;
         return clamp(Math.round((prev + v*2 + next)/4),0,100);
       });
-      const momentum = clean.map((v,i)=>clamp(Math.round(v + Math.sin(i*0.72)*5 + (i%4===0 ? 2 : -1)),0,100));
-      const pulse = clean.map((v,i)=>clamp(Math.round(Math.abs(v-50)*1.5 + 18 + (i%3)*4),8,82));
-      const w=420,h=128,pad=14,innerW=w-pad*2,innerH=h-pad*2;
+      const hot = clean.map((v,i)=>clamp(Math.round(v + Math.sin(i*0.65)*11 + 8),0,100));
+      const cold = clean.map((v,i)=>clamp(Math.round(v - Math.cos(i*0.72)*10 - 6),0,100));
+      const cloud = clean.map((v,i)=>clamp(Math.round(Math.abs(v-50)*1.7 + 18 + Math.sin(i*0.8)*8),10,88));
       const mkPts = arr => arr.map((v,i)=>{
         const x = pad + (i/(arr.length-1 || 1))*innerW;
         const y = pad + (100-v)/100*innerH;
         return [x,y];
       });
-      const pts = mkPts(clean), pts2 = mkPts(smooth), pts3 = mkPts(momentum);
-      const pathFrom = ptsArr => ptsArr.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-      const path = pathFrom(pts);
-      const smoothPath = pathFrom(pts2);
-      const momentumPath = pathFrom(pts3);
-      const fill = `${path} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
+      const toPath = pts => pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      const pts = mkPts(clean), hotPts = mkPts(hot), coldPts = mkPts(cold);
+      const fillPath = pts => `${toPath(pts)} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
       const last = clean[clean.length-1];
-      const delta = signed(last - clean[0]);
-      const gid = `deepGrad${Math.round(Math.random()*100000)}`;
-      const glow = `deepGlow${Math.round(Math.random()*100000)}`;
-      const bars = pulse.map((v,i)=>{
-        const bw = innerW / pulse.length - 4.2;
-        const x = pad + i*(innerW/pulse.length) + 2.1;
-        const bh = v/100*24;
-        const y = h - pad - bh;
-        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="rgba(88,166,255,.26)"/>`;
+      const change = signed(last - clean[0]);
+      const hi = Math.max(...clean), lo = Math.min(...clean);
+      const gid = `cloudBase${Math.round(Math.random()*100000)}`;
+      const gid2 = `cloudHot${Math.round(Math.random()*100000)}`;
+      const gid3 = `cloudCold${Math.round(Math.random()*100000)}`;
+      const glow = `cloudGlow${Math.round(Math.random()*100000)}`;
+      const blobCount = 8;
+      const blobs = Array.from({length:blobCount}, (_,i)=>{
+        const x = pad + (i/(blobCount-1))*innerW;
+        const y = h - pad - (cloud[i % cloud.length] / 100) * 26;
+        const rx = 18 + (i%3)*8;
+        const ry = 8 + (i%4)*3;
+        const fill = i%3===0 ? 'rgba(255,83,112,.24)' : i%3===1 ? 'rgba(255,186,90,.20)' : 'rgba(88,166,255,.22)';
+        return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx}" ry="${ry}" fill="${fill}" filter="url(#${glow})"><animate attributeName="ry" values="${ry};${ry+5};${ry}" dur="${4 + i*0.3}s" repeatCount="indefinite"/></ellipse>`;
       }).join('');
+      const lowerMountains = clean.map((v,i)=>{
+        const x = pad + (i/(clean.length-1 || 1))*innerW;
+        const peak = h - pad - (cloud[i]/100)*18;
+        return `${i?'L':'M'}${x.toFixed(1)},${peak.toFixed(1)}`;
+      }).join(' ');
+      const lowerFill = `${lowerMountains} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
       return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
         <defs>
           <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="${color}" stop-opacity=".46"/>
+            <stop offset="0" stop-color="${color}" stop-opacity=".42"/>
             <stop offset="1" stop-color="${color}" stop-opacity="0"/>
           </linearGradient>
-          <filter id="${glow}"><feGaussianBlur stdDeviation="3.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <linearGradient id="${gid2}" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(255,186,90,.42)"/>
+            <stop offset="1" stop-color="rgba(255,83,112,.05)"/>
+          </linearGradient>
+          <linearGradient id="${gid3}" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(86,240,255,.28)"/>
+            <stop offset="1" stop-color="rgba(88,166,255,.03)"/>
+          </linearGradient>
+          <filter id="${glow}"><feGaussianBlur stdDeviation="7" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         </defs>
-        <text x="${pad}" y="16" class="deep-chart-label">Live Signal</text>
-        <text x="${w-84}" y="16" class="deep-chart-label">Δ ${delta}</text>
-        <line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.2}" y2="${pad+innerH*.2}"/>
-        <line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.45}" y2="${pad+innerH*.45}"/>
-        <line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.7}" y2="${pad+innerH*.7}"/>
-        ${[0.18,0.36,0.54,0.72,0.9].map(t=>`<line class="deep-grid-line" x1="${(pad+innerW*t).toFixed(1)}" x2="${(pad+innerW*t).toFixed(1)}" y1="${pad}" y2="${h-pad}"/>`).join('')}
-        <g opacity=".7">${bars}</g>
-        <path d="${fill}" fill="url(#${gid})" class="deep-chart-fill"/>
-        <path d="${smoothPath}" fill="none" stroke="rgba(103,232,249,.82)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.6s,4.4s" filter="url(#${glow})"/>
-        <path d="${momentumPath}" fill="none" stroke="rgba(255,94,202,.72)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.9s,5.0s" filter="url(#${glow})"/>
-        <path d="${path}" fill="none" stroke="${color}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#${glow})"/>
-        ${pts.slice(-4).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===3?4.8:2.8}" fill="${i===3?color:'rgba(255,255,255,.46)'}" stroke="${i===3?'#fff':'none'}" stroke-opacity=".8" class="deep-chart-dot" style="animation-delay:${i*0.18}s"/>`).join('')}
-        <text x="${w-48}" y="25" fill="#fff" font-size="17" font-weight="900">${last}</text>
+        <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.24)"/>
+        <text x="${pad}" y="16" class="deep-chart-label">Pressure Cloud</text>
+        <text x="${w-104}" y="16" class="deep-chart-label">Range ${lo}-${hi}</text>
+        ${[0.22,0.44,0.66,0.88].map(t=>`<line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${(pad+innerH*t).toFixed(1)}" y2="${(pad+innerH*t).toFixed(1)}"/>`).join('')}
+        ${[0.17,0.34,0.51,0.68,0.85].map(t=>`<line class="deep-grid-line" x1="${(pad+innerW*t).toFixed(1)}" x2="${(pad+innerW*t).toFixed(1)}" y1="${pad}" y2="${h-pad}"/>`).join('')}
+        <path d="${lowerFill}" fill="url(#${gid2})" opacity=".85" class="deep-chart-fill"/>
+        <path d="${fillPath(coldPts)}" fill="url(#${gid3})" opacity=".65" class="deep-chart-fill"/>
+        <path d="${fillPath(pts)}" fill="url(#${gid})" class="deep-chart-fill"/>
+        ${blobs}
+        <path d="${toPath(coldPts)}" fill="none" stroke="rgba(86,240,255,.82)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.5s,4.8s" filter="url(#${glow})"/>
+        <path d="${toPath(hotPts)}" fill="none" stroke="rgba(255,126,102,.85)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.85s,5.1s" filter="url(#${glow})"/>
+        <path d="${toPath(pts)}" fill="none" stroke="${color}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#${glow})"/>
+        ${pts.slice(-5).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===4?4.8:2.4}" fill="${i===4?color:'rgba(255,255,255,.42)'}" class="deep-chart-dot"><animate attributeName="r" values="${i===4?4.8:2.4};${i===4?6.8:3.8};${i===4?4.8:2.4}" dur="2.6s" repeatCount="indefinite" begin="${i*0.16}s"/></circle>`).join('')}
+        <text x="${w-38}" y="25" fill="#fff" font-size="18" font-weight="900" text-anchor="end">${last}</text>
+        <text x="${w-38}" y="40" fill="#8ba0bc" font-size="10" font-weight="800" text-anchor="end">Δ ${change}</text>
       </svg>`;
     }
 
     function deepBarsSvg(values, color, labelText){
-      const clean = (values && values.length ? values : [50,50,50,50]).slice(-14).map(v=>clamp(Number(v)||50,0,100));
-      const avgLine = clean.map((v,i,arr)=>{
-        const slice = arr.slice(Math.max(0,i-2), i+1);
-        return Math.round(slice.reduce((a,b)=>a+b,0)/slice.length);
-      });
-      const w=420,h=128,pad=14,innerW=w-pad*2,innerH=h-pad*2;
-      const gap=6,barW=(innerW-gap*(clean.length-1))/clean.length;
-      const avgPathPts = avgLine.map((v,i)=>{
-        const x=pad+i*(barW+gap)+barW/2;
-        const y=pad+(100-v)/100*innerH;
-        return [x,y];
-      });
-      const avgPath = avgPathPts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-      const bars=clean.map((v,i)=>{
-        const bh=(v/100)*innerH;
-        const x=pad+i*(barW+gap);
-        const y=h-pad-bh;
-        const c=heatColor(v);
-        const glow = 10 + (v/100)*18;
-        return `<g class="deep-chart-bar" style="animation-delay:${(i*0.045).toFixed(2)}s"><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="6" fill="${c}" opacity=".95"/><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="5" rx="5" fill="rgba(255,255,255,.22)"/><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="6" fill="url(#barGlass)" opacity=".28"/><circle cx="${(x+barW/2).toFixed(1)}" cy="${(y+4).toFixed(1)}" r="1.8" fill="#fff" opacity=".8"><animate attributeName="r" values="1.8;2.8;1.8" dur="3s" repeatCount="indefinite" begin="${i*0.12}s"/></circle></g>`;
+      const clean = (values && values.length ? values : [50,50,50,50]).slice(-12).map(v=>clamp(Number(v)||50,0,100));
+      const w=420,h=132;
+      const cx=116, cy=66, r=50;
+      const avg = Math.round(clean.reduce((a,b)=>a+b,0)/clean.length);
+      const change = signed(clean[clean.length-1] - clean[0]);
+      const vol = Math.round(clean.reduce((a,b)=>a + Math.abs(b-avg), 0) / clean.length);
+      const maxv = Math.max(...clean, 1);
+      const barBaseX = 76, barBaseY = 100, barAreaW = 80;
+      const step = barAreaW / clean.length;
+      const ring1 = `lensRing${Math.round(Math.random()*100000)}`;
+      const ring2 = `lensRingB${Math.round(Math.random()*100000)}`;
+      const globe = `lensGlobe${Math.round(Math.random()*100000)}`;
+      const lines = [-24,-12,0,12,24].map(y=>`<ellipse cx="${cx}" cy="${cy+y*0.22}" rx="${(r - Math.abs(y)*0.4).toFixed(1)}" ry="${(12 - Math.abs(y)*0.08).toFixed(1)}" fill="none" stroke="rgba(255,255,255,.08)"/>`).join('');
+      const longs = [-36,-18,0,18,36].map(x=>`<ellipse cx="${cx+x*0.18}" cy="${cy}" rx="${(8 + Math.abs(x)*0.22).toFixed(1)}" ry="${r.toFixed(1)}" fill="none" stroke="rgba(255,255,255,.06)"/>`).join('');
+      const bars = clean.map((v,i)=>{
+        const bh = 12 + (v/maxv)*42;
+        const x = barBaseX + i*step + 1;
+        const y = barBaseY - bh;
+        const fill = i > clean.length-4 ? 'url(#histHot)' : 'url(#histCool)';
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(4, step-3).toFixed(1)}" height="${bh.toFixed(1)}" rx="3.5" fill="${fill}" opacity=".96" class="deep-chart-bar" style="animation-delay:${(i*0.05).toFixed(2)}s"/>`;
+      }).join('');
+      const orbitDots = [0,72,144,216,288].map((deg,i)=>{
+        const rad = deg * Math.PI/180;
+        const rr = 58 + (i%2)*8;
+        const x = cx + Math.cos(rad) * rr;
+        const y = cy + Math.sin(rad) * rr;
+        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i===0?3.8:2.8}" fill="${i%2===0?'#ffd25a':'#67e8f9'}" opacity=".85"><animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="${12 + i*2}s" repeatCount="indefinite"/></circle>`;
       }).join('');
       return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
         <defs>
-          <linearGradient id="barGlass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.34)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></linearGradient>
+          <radialGradient id="${globe}" cx="50%" cy="50%" r="58%">
+            <stop offset="0" stop-color="rgba(111,190,255,.30)"/>
+            <stop offset="0.55" stop-color="rgba(35,64,115,.18)"/>
+            <stop offset="1" stop-color="rgba(6,10,16,.02)"/>
+          </radialGradient>
+          <linearGradient id="${ring1}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="rgba(88,166,255,.96)"/><stop offset="1" stop-color="rgba(255,94,202,.84)"/></linearGradient>
+          <linearGradient id="${ring2}" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stop-color="rgba(255,208,92,.95)"/><stop offset="1" stop-color="rgba(255,116,88,.84)"/></linearGradient>
+          <linearGradient id="histCool" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(103,232,249,.96)"/><stop offset="1" stop-color="rgba(88,166,255,.68)"/></linearGradient>
+          <linearGradient id="histHot" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(255,210,90,.98)"/><stop offset="1" stop-color="rgba(255,94,202,.70)"/></linearGradient>
         </defs>
-        <text x="${pad}" y="16" class="deep-chart-label">30 Day Flow</text>
-        <line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.25}" y2="${pad+innerH*.25}"/>
-        <line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.5}" y2="${pad+innerH*.5}"/>
-        <line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.75}" y2="${pad+innerH*.75}"/>
-        ${bars}
-        <path d="${avgPath}" fill="none" stroke="rgba(103,232,249,.95)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.5s,4.8s"/>
-        ${avgPathPts.slice(-4).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===3?4.2:2.2}" fill="${i===3?'#67e8f9':'rgba(255,255,255,.45)'}" class="deep-chart-dot"/>`).join('')}
+        <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.20)"/>
+        <text x="14" y="16" class="deep-chart-label">Sentiment Lens</text>
+        <text x="${w-120}" y="16" class="deep-chart-label">30 Day Orbit</text>
+        <g>
+          <circle cx="${cx}" cy="${cy}" r="${r+14}" fill="none" stroke="url(#${ring2})" stroke-width="1.5" opacity=".48"/>
+          <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2"/>
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${globe})" stroke="url(#${ring1})" stroke-width="2.6"/>
+          <circle cx="${cx}" cy="${cy}" r="${r-14}" fill="none" stroke="rgba(255,255,255,.08)"/>
+          ${lines}
+          ${longs}
+          <g clip-path="url(#lensClip)"></g>
+          <clipPath id="lensClip"><circle cx="${cx}" cy="${cy}" r="${r-6}"/></clipPath>
+          <g clip-path="url(#lensClip)">
+            <rect x="${cx-r+6}" y="${cy-r+6}" width="${(r-6)*2}" height="${(r-6)*2}" fill="rgba(5,10,16,.10)"/>
+            ${bars}
+            <path d="M${barBaseX},${barBaseY-22} ${clean.map((v,i)=>`L${(barBaseX + i*step + step/2).toFixed(1)},${(104 - (v/maxv)*34).toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(255,255,255,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.7s,4.5s"/>
+          </g>
+          ${orbitDots}
+          <circle cx="${cx}" cy="${cy}" r="11" fill="rgba(5,8,14,.92)" stroke="rgba(255,255,255,.12)"/>
+          <text x="${cx}" y="${cy+4}" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">${avg}</text>
+        </g>
+        <g transform="translate(228 26)">
+          <rect x="0" y="0" width="168" height="82" rx="14" fill="rgba(8,13,21,.58)" stroke="rgba(255,255,255,.06)"/>
+          <text x="14" y="18" class="deep-chart-label">Lens Readout</text>
+          <text x="14" y="39" fill="#fff" font-size="26" font-weight="900">${clean[clean.length-1]}</text>
+          <text x="72" y="39" fill="#8ba0bc" font-size="10" font-weight="800">CURRENT PSI</text>
+          <text x="14" y="58" fill="#ffd25a" font-size="14" font-weight="900">${change}</text>
+          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">30D CHANGE</text>
+          <text x="14" y="74" fill="#67e8f9" font-size="14" font-weight="900">VOL ${vol}</text>
+          <text x="84" y="74" fill="#8ba0bc" font-size="10" font-weight="800">STABILITY ${Math.max(0,100-vol)}</text>
+        </g>
       </svg>`;
     }
 
@@ -1355,9 +1413,9 @@
           </div>
           <div class="deep-section-grid">
             <div class="deep-section">
-              <h3>24H Sentiment Path</h3>
-              <p>Neon intraday flow with pulse, momentum, and carried-forward slots between scraper runs.</p>
-              ${deepLineSvg(path24, color, "24H Sentiment Path")}
+              <h3>24H Sentiment Cloud</h3>
+              <p>Layered cloud-style intraday flow with glowing pressure zones and carried-forward motion between scraper runs.</p>
+              ${deepLineSvg(path24, color, "24H Sentiment Cloud")}
               <div class="deep-mini-row">
                 <div class="deep-mini-metric"><span>Now</span><b>${data.score ?? "--"}</b></div>
                 <div class="deep-mini-metric"><span>Change</span><b>${stats24.change}</b></div>
@@ -1365,9 +1423,9 @@
               </div>
             </div>
             <div class="deep-section">
-              <h3>30D Sentiment Summary</h3>
-              <p>Hybrid monthly view with daily bars, rolling average, and trend continuation.</p>
-              ${deepBarsSvg(path30, color, "30D Sentiment Summary")}
+              <h3>Sentiment Lens & Histogram</h3>
+              <p>Lens-style monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
+              ${deepBarsSvg(path30, color, "Sentiment Lens & Histogram")}
               <div class="deep-mini-row">
                 <div class="deep-mini-metric"><span>Avg</span><b>${stats30.avg}</b></div>
                 <div class="deep-mini-metric"><span>Change</span><b>${stats30.change}</b></div>
