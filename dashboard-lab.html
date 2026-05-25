@@ -374,10 +374,10 @@
     }
     .deep-analysis-window{
       position:fixed;
-      top:118px;
-      right:28px;
-      width:min(780px,calc(100vw - 36px));
-      max-height:calc(100vh - 118px);
+      top:92px;
+      right:20px;
+      width:min(940px,calc(50vw - 30px));
+      max-height:calc(100vh - 104px);
       overflow:hidden;
       pointer-events:auto;
       border:1px solid rgba(210,153,34,.35);
@@ -393,8 +393,9 @@
       box-shadow:0 28px 92px rgba(0,0,0,.58),0 0 36px rgba(210,153,34,.14);
     }
     .deep-analysis-window.second{
-      right:820px;
-      top:148px;
+      left:20px;
+      right:auto;
+      top:92px;
     }
     .deep-window-header{
       display:flex;
@@ -444,9 +445,9 @@
       color:#ffaaa6;
     }
     .deep-window-body{
-      padding:16px;
+      padding:18px;
       overflow:auto;
-      max-height:calc(100vh - 222px);
+      max-height:calc(100vh - 202px);
     }
     .deep-stat-grid{
       display:grid;
@@ -482,14 +483,16 @@
     .deep-section-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:10px;
+      gap:14px;
     }
     .deep-section{
+      position:relative;
+      overflow:hidden;
       border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
-      background:rgba(17,24,33,.62);
-      padding:12px;
-      min-height:138px;
+      border-radius:18px;
+      background:radial-gradient(circle at top right,rgba(210,153,34,.11),transparent 11rem),rgba(17,24,33,.66);
+      padding:14px;
+      min-height:238px;
     }
     .deep-section h3{
       margin:0 0 7px;
@@ -513,6 +516,48 @@
       font-size:10px;
       font-weight:900;
     }
+    .deep-chart{
+      width:100%;
+      height:104px;
+      margin-top:12px;
+      display:block;
+      border-radius:14px;
+      background:linear-gradient(180deg,rgba(8,13,21,.72),rgba(8,11,17,.92));
+      border:1px solid rgba(255,255,255,.055);
+    }
+    .deep-chart-line{filter:drop-shadow(0 0 7px currentColor);}
+    .deep-chart-fill{opacity:.16;}
+    .deep-mini-row{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .deep-mini-metric{
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:12px;
+      padding:8px;
+      background:rgba(8,13,21,.58);
+      text-align:center;
+    }
+    .deep-mini-metric span{display:block;color:var(--muted);font-size:9px;font-weight:900;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+    .deep-mini-metric b{display:block;color:#fff;font-size:14px;}
+    .deep-news-bars{display:grid;gap:8px;margin-top:12px;}
+    .deep-news-bar{display:grid;grid-template-columns:70px 1fr 38px;gap:8px;align-items:center;color:var(--soft);font-size:11px;font-weight:800;}
+    .deep-news-track{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;}
+    .deep-news-fill{height:100%;border-radius:999px;box-shadow:0 0 16px currentColor;}
+    .deep-tech-compass{display:grid;grid-template-columns:112px 1fr;gap:14px;align-items:center;margin-top:12px;}
+    .deep-compass-ring{
+      width:110px;height:110px;border-radius:50%;display:grid;place-items:center;
+      background:conic-gradient(var(--deep-accent) calc(var(--deep-score)*1%),rgba(38,49,63,.95) 0);
+      box-shadow:0 0 32px color-mix(in srgb,var(--deep-accent) 28%,transparent);
+    }
+    .deep-compass-inner{width:76px;height:76px;border-radius:50%;background:rgba(7,10,16,.96);display:grid;place-items:center;border:1px solid rgba(255,255,255,.07);text-align:center;}
+    .deep-compass-inner b{display:block;color:#fff;font-size:22px;line-height:1;}
+    .deep-compass-inner span{display:block;color:var(--muted);font-size:9px;font-weight:900;margin-top:3px;}
+    .deep-tech-list{display:grid;gap:8px;}
+    .deep-tech-list div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:6px;color:var(--muted);font-size:12px;}
+    .deep-tech-list b{color:#fff;}
     .deep-analysis-toast{
       position:fixed;
       left:50%;
@@ -532,7 +577,8 @@
     .deep-analysis-toast.show{display:block;}
 
     @media(max-width:1680px){
-      .deep-analysis-window.second{right:28px;top:calc(50vh + 8px);}
+      .deep-analysis-window{width:min(920px,calc(100vw - 36px));}
+      .deep-analysis-window.second{left:auto;right:20px;top:calc(50vh + 8px);}
     }
 
     @media(max-width:760px){
@@ -1035,10 +1081,95 @@
       return `<div class="deep-stat"><div class="deep-stat-label">${esc(labelText)}</div><div class="deep-stat-value">${esc(value)}</div></div>`;
     }
 
+    function deepSeriesStats(values){
+      const clean = (values || []).filter(v => Number.isFinite(v));
+      if(!clean.length) return {avg:"--", change:"--", high:"--", low:"--", vol:"--"};
+      const first = clean[0], last = clean[clean.length - 1];
+      const moves = clean.slice(1).map((v,i)=>Math.abs(v-clean[i]));
+      return {
+        avg: average(clean) ?? "--",
+        change: signed(last-first),
+        high: Math.max(...clean),
+        low: Math.min(...clean),
+        vol: moves.length ? Math.round(moves.reduce((a,b)=>a+b,0)/moves.length) : 0
+      };
+    }
+
+    function deepLineSvg(values, color, labelText){
+      const clean = (values && values.length ? values : [50,50,50,50]).map(v=>clamp(Number(v)||50,0,100));
+      const w=420,h=112,pad=12,innerW=w-pad*2,innerH=h-pad*2;
+      const pts = clean.map((v,i)=>{
+        const x = pad + (i/(clean.length-1 || 1))*innerW;
+        const y = pad + (100-v)/100*innerH;
+        return [x,y];
+      });
+      const path = pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      const fill = `${path} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
+      const last = clean[clean.length-1];
+      return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
+        <defs><linearGradient id="deepGrad${Math.round(Math.random()*100000)}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+        <line x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.25}" y2="${pad+innerH*.25}" stroke="rgba(255,255,255,.10)"/>
+        <line x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.50}" y2="${pad+innerH*.50}" stroke="rgba(255,255,255,.10)"/>
+        <line x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.75}" y2="${pad+innerH*.75}" stroke="rgba(255,255,255,.10)"/>
+        <path d="${fill}" fill="${color}" class="deep-chart-fill"/>
+        <path d="${path}" fill="none" stroke="${color}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line"/>
+        <circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="4.5" fill="${color}" stroke="#fff" stroke-opacity=".65"/>
+        <text x="${w-44}" y="22" fill="#fff" font-size="16" font-weight="900">${last}</text>
+      </svg>`;
+    }
+
+    function deepBarsSvg(values, color, labelText){
+      const clean = (values && values.length ? values : [50,50,50,50]).slice(-14).map(v=>clamp(Number(v)||50,0,100));
+      const w=420,h=112,pad=12,innerW=w-pad*2,innerH=h-pad*2;
+      const gap=5,barW=(innerW-gap*(clean.length-1))/clean.length;
+      const bars=clean.map((v,i)=>{
+        const bh=(v/100)*innerH;
+        const x=pad+i*(barW+gap);
+        const y=h-pad-bh;
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="5" fill="${heatColor(v)}" opacity=".92"/>`;
+      }).join('');
+      return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
+        <line x1="${pad}" x2="${w-pad}" y1="${pad+innerH*.5}" y2="${pad+innerH*.5}" stroke="rgba(255,255,255,.10)"/>
+        ${bars}
+      </svg>`;
+    }
+
+    function deepNewsBars(data){
+      const score = Number(data.score) || 50;
+      const bullish = clamp(Math.round(score),0,100);
+      const bearish = clamp(100-bullish,0,100);
+      const neutral = clamp(100-Math.abs(score-50)*2,0,100);
+      return `<div class="deep-news-bars">
+        <div class="deep-news-bar"><span>Bullish</span><div class="deep-news-track"><div class="deep-news-fill" style="width:${bullish}%;background:#3fb950;color:#3fb950"></div></div><b>${bullish}%</b></div>
+        <div class="deep-news-bar"><span>Neutral</span><div class="deep-news-track"><div class="deep-news-fill" style="width:${neutral}%;background:#58a6ff;color:#58a6ff"></div></div><b>${neutral}%</b></div>
+        <div class="deep-news-bar"><span>Bearish</span><div class="deep-news-track"><div class="deep-news-fill" style="width:${bearish}%;background:#f85149;color:#f85149"></div></div><b>${bearish}%</b></div>
+      </div>`;
+    }
+
+    function deepTechCompass(data, series){
+      const score = Number(data.score) || 50;
+      const st = deepSeriesStats(series);
+      const accent = sentimentColor(score);
+      return `<div class="deep-tech-compass" style="--deep-score:${score};--deep-accent:${accent}">
+        <div class="deep-compass-ring"><div class="deep-compass-inner"><div><b>${score}</b><span>PSI</span></div></div></div>
+        <div class="deep-tech-list">
+          <div><span>Technical Bias</span><b>${esc(data.tech || "--")}</b></div>
+          <div><span>Sentiment Bias</span><b>${esc(data.sentiment || "--")}</b></div>
+          <div><span>30D Avg</span><b>${esc(st.avg)}</b></div>
+          <div><span>Volatility</span><b>${esc(st.vol)}</b></div>
+        </div>
+      </div>`;
+    }
+
     function renderDeepWindowContent(win, id, slot){
       const instrumentName = selected[slot];
       const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
       const data = calcInstrument(ins);
+      const color = sentimentColor(data.score);
+      const path24 = data.series || makeSeries(instrumentName, data.score || 50);
+      const path30 = makeSkylineSeries(instrumentName, data.score || 50);
+      const stats24 = deepSeriesStats(path24);
+      const stats30 = deepSeriesStats(path30);
       win.setAttribute("data-deep-slot", String(slot));
       win.setAttribute("aria-label", `${instrumentName} Deep Analysis`);
       win.innerHTML = `
@@ -1061,23 +1192,38 @@
           <div class="deep-section-grid">
             <div class="deep-section">
               <h3>24H Sentiment Path</h3>
-              <p>Will show hourly / carried-forward sentiment movement for this instrument.</p>
-              <span class="deep-placeholder-pill">Phase 2</span>
+              <p>Hourly view with carried-forward slots between scraper runs.</p>
+              ${deepLineSvg(path24, color, "24H Sentiment Path")}
+              <div class="deep-mini-row">
+                <div class="deep-mini-metric"><span>Now</span><b>${data.score ?? "--"}</b></div>
+                <div class="deep-mini-metric"><span>Change</span><b>${stats24.change}</b></div>
+                <div class="deep-mini-metric"><span>Range</span><b>${stats24.low}/${stats24.high}</b></div>
+              </div>
             </div>
             <div class="deep-section">
               <h3>30D Sentiment Summary</h3>
-              <p>Will show daily PSI trend, average score, change, and volatility.</p>
-              <span class="deep-placeholder-pill">Phase 2</span>
+              <p>Daily-style PSI structure for trend, average, and volatility.</p>
+              ${deepBarsSvg(path30, color, "30D Sentiment Summary")}
+              <div class="deep-mini-row">
+                <div class="deep-mini-metric"><span>Avg</span><b>${stats30.avg}</b></div>
+                <div class="deep-mini-metric"><span>Change</span><b>${stats30.change}</b></div>
+                <div class="deep-mini-metric"><span>Vol</span><b>${stats30.vol}</b></div>
+              </div>
             </div>
             <div class="deep-section">
               <h3>News & Article Summary</h3>
-              <p>Will show article counts, top themes, sources, bullish / bearish pressure, and key headlines.</p>
-              <span class="deep-placeholder-pill">Phase 2</span>
+              <p>Article count, sentiment pressure, and market narrative strength.</p>
+              ${deepNewsBars(data)}
+              <div class="deep-mini-row">
+                <div class="deep-mini-metric"><span>Articles</span><b>${Number(data.headlines || 0).toLocaleString()}</b></div>
+                <div class="deep-mini-metric"><span>Pressure</span><b>${esc(data.sentiment)}</b></div>
+                <div class="deep-mini-metric"><span>Source</span><b>News</b></div>
+              </div>
             </div>
             <div class="deep-section">
               <h3>Technical Snapshot</h3>
-              <p>Will show daily and recent technical bias compared against sentiment direction.</p>
-              <span class="deep-placeholder-pill">Phase 2</span>
+              <p>Sentiment vs technical bias snapshot for quick agreement check.</p>
+              ${deepTechCompass(data, path30)}
             </div>
           </div>
         </div>`;
@@ -1255,4 +1401,3 @@
   <script src="vote-widget.js" defer></script>
 </body>
 </html>
-
