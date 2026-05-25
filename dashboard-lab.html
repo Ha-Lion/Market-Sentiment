@@ -595,9 +595,13 @@
       display:block;
       overflow:hidden;
       background:
-        radial-gradient(circle at 25% 0%, rgba(210,153,34,.16), transparent 18rem),
-        radial-gradient(circle at 90% 12%, rgba(88,166,255,.12), transparent 18rem),
-        rgba(13,17,23,.92);
+        radial-gradient(circle at 18% 0%, rgba(255,88,88,.10), transparent 18rem),
+        radial-gradient(circle at 85% 10%, rgba(88,166,255,.14), transparent 18rem),
+        linear-gradient(180deg, rgba(7,12,20,.98), rgba(8,12,18,.96));
+      border:1px solid rgba(88,166,255,.14);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.02),
+        0 20px 36px rgba(0,0,0,.24);
     }
 
     .pulse-heading{
@@ -624,31 +628,38 @@
     .pulse-card-grid{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:10px;
+      gap:12px;
     }
 
     .pulse-card{
       position:relative;
       min-width:0;
-      padding:13px 12px 12px;
-      border:1px solid rgba(255,215,128,.13);
-      border-radius:18px;
+      padding:14px 12px 12px;
+      border:1px solid rgba(88,166,255,.15);
+      border-radius:20px;
       background:
-        linear-gradient(180deg,rgba(17,24,33,.92),rgba(8,12,20,.94));
+        linear-gradient(180deg, rgba(11,18,29,.94), rgba(7,12,20,.98));
       box-shadow:
         inset 0 0 0 1px rgba(255,255,255,.02),
-        0 14px 30px rgba(0,0,0,.18);
+        0 12px 28px rgba(0,0,0,.28);
       overflow:hidden;
     }
 
-    .pulse-card:before{
+    .pulse-card::before{
       content:"";
       position:absolute;
-      inset:-45% -35% auto auto;
-      width:120px;
-      height:120px;
-      border-radius:50%;
-      background:radial-gradient(circle,rgba(210,153,34,.18),transparent 65%);
+      inset:0;
+      background:
+        linear-gradient(90deg, transparent, rgba(88,166,255,.05), transparent);
+      pointer-events:none;
+    }
+
+    .pulse-card::after{
+      content:"";
+      position:absolute;
+      inset:8px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.025);
       pointer-events:none;
     }
 
@@ -659,10 +670,14 @@
       align-items:center;
       justify-content:space-between;
       gap:8px;
-      margin-bottom:10px;
+      margin-bottom:8px;
       color:#fff;
       font-size:13px;
       font-weight:800;
+    }
+
+    .pulse-card-top span{
+      letter-spacing:.03em;
     }
 
     .pulse-card-top b{
@@ -670,69 +685,139 @@
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
-      color:var(--muted);
+      color:#8aa6c7;
       font-size:10px;
       font-weight:800;
       text-transform:uppercase;
-      letter-spacing:.03em;
+      letter-spacing:.05em;
     }
 
     .pulse-gauge{
       --score:50;
-      --accent:var(--gold);
+      --accent:#58a6ff;
       position:relative;
       z-index:1;
-      width:116px;
-      height:116px;
-      margin:0 auto 11px;
+      width:148px;
+      height:148px;
+      margin:0 auto 10px;
       border-radius:50%;
       display:grid;
       place-items:center;
       background:
-        conic-gradient(var(--accent) calc(var(--score) * 1%), rgba(38,49,63,.88) 0);
+        radial-gradient(circle at center, rgba(4,9,16,.98) 0 43%, transparent 44%),
+        conic-gradient(from 220deg,
+          rgba(255,83,83,.95) 0deg,
+          rgba(255,149,0,.96) 72deg,
+          rgba(255,214,86,.96) 126deg,
+          rgba(70,214,131,.96) 198deg,
+          rgba(88,166,255,.98) 250deg,
+          rgba(60,80,104,.35) 250deg 320deg,
+          rgba(28,38,52,.12) 320deg 360deg);
       box-shadow:
-        0 0 26px rgba(210,153,34,.10),
-        inset 0 0 18px rgba(0,0,0,.22);
+        0 0 0 1px rgba(88,166,255,.12),
+        0 0 24px rgba(88,166,255,.12),
+        inset 0 0 28px rgba(0,0,0,.36);
     }
 
-    .pulse-gauge:after{
+    .pulse-gauge::before{
       content:"";
       position:absolute;
-      inset:8px;
+      inset:7px;
       border-radius:50%;
-      border:1px solid rgba(255,255,255,.05);
+      border:1px solid rgba(88,166,255,.18);
+      box-shadow:inset 0 0 18px rgba(88,166,255,.08);
+    }
+
+    .pulse-gauge::after{
+      content:"";
+      position:absolute;
+      width:118px;
+      height:118px;
+      border-radius:50%;
+      background:
+        repeating-conic-gradient(from 220deg,
+          rgba(255,255,255,.48) 0deg 1deg,
+          transparent 1deg 8deg);
+      mask: radial-gradient(circle, transparent 0 68%, #000 69%);
+      opacity:.32;
       pointer-events:none;
     }
 
     .pulse-gauge-inner{
       position:relative;
-      z-index:1;
-      width:76px;
-      height:76px;
+      z-index:2;
+      width:90px;
+      height:90px;
       border-radius:50%;
       display:grid;
       place-items:center;
-      background:linear-gradient(180deg,#0b111b,#070b12);
-      border:1px solid rgba(255,255,255,.05);
-      box-shadow:inset 0 0 18px rgba(0,0,0,.44);
+      background:
+        radial-gradient(circle at 50% 30%, rgba(18,28,42,.95), rgba(5,8,14,.98));
+      border:1px solid rgba(88,166,255,.16);
+      box-shadow:
+        inset 0 0 20px rgba(88,166,255,.08),
+        0 0 18px rgba(0,0,0,.24);
     }
 
     .pulse-gauge-inner span{
-      color:#fff;
+      color:#f4f8ff;
       font-size:30px;
       line-height:1;
       font-weight:900;
       letter-spacing:-.03em;
+      text-shadow:0 0 10px rgba(88,166,255,.18);
+    }
+
+    .pulse-gauge .needle{
+      position:absolute;
+      width:52px;
+      height:3px;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(255,91,91,.98), rgba(255,176,82,.98));
+      left:50%;
+      top:50%;
+      transform-origin:0% 50%;
+      transform:rotate(-130deg);
+      box-shadow:0 0 10px rgba(255,83,83,.34);
+      z-index:3;
+    }
+
+    .pulse-gauge .needle::after{
+      content:"";
+      position:absolute;
+      right:-5px;
+      top:50%;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#ff6b5a;
+      transform:translateY(-50%);
+      box-shadow:0 0 10px rgba(255,107,90,.45);
+    }
+
+    .pulse-gauge .needle::before{
+      content:"";
+      position:absolute;
+      left:-5px;
+      top:50%;
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background:#0d1726;
+      border:1px solid rgba(255,255,255,.12);
+      transform:translateY(-50%);
+      box-shadow:0 0 8px rgba(88,166,255,.12);
     }
 
     .pulse-meter{
       position:relative;
       z-index:1;
-      height:8px;
+      height:7px;
       border-radius:999px;
-      background:rgba(38,49,63,.78);
+      background:rgba(26,36,49,.92);
       overflow:hidden;
       border:1px solid rgba(255,255,255,.04);
+      box-shadow:inset 0 0 10px rgba(0,0,0,.26);
     }
 
     .pulse-meter span{
@@ -740,15 +825,15 @@
       width:50%;
       height:100%;
       border-radius:999px;
-      background:linear-gradient(90deg,var(--red),var(--orange),var(--gold),var(--green));
-      box-shadow:0 0 12px rgba(210,153,34,.28);
+      background:linear-gradient(90deg,#ff5454,#ffb04b,#ffd56a,#55d98d,#59a8ff);
+      box-shadow:0 0 14px rgba(88,166,255,.20);
       transition:width .45s ease;
     }
 
     .pulse-foot{
       position:relative;
       z-index:1;
-      color:var(--muted);
+      color:#90a6c2;
       font-size:10px;
       font-weight:650;
       text-align:center;
@@ -757,7 +842,6 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
-
     @media(max-width:1180px){
       .hero{
         grid-template-columns:1fr;
@@ -870,7 +954,7 @@
                   <b id="pulseGlobalLabel">Loading</b>
                 </div>
                 <div class="pulse-gauge" id="pulseGlobalGauge">
-                  <div class="pulse-gauge-inner">
+                  <div class="needle"></div><div class="pulse-gauge-inner">
                     <span id="pulseGlobalValue">--</span>
                   </div>
                 </div>
@@ -884,7 +968,7 @@
                   <b id="pulseUSLabel">Loading</b>
                 </div>
                 <div class="pulse-gauge" id="pulseUSGauge">
-                  <div class="pulse-gauge-inner">
+                  <div class="needle"></div><div class="pulse-gauge-inner">
                     <span id="pulseUSValue">--</span>
                   </div>
                 </div>
@@ -898,7 +982,7 @@
                   <b id="pulseEuropeLabel">Loading</b>
                 </div>
                 <div class="pulse-gauge" id="pulseEuropeGauge">
-                  <div class="pulse-gauge-inner">
+                  <div class="needle"></div><div class="pulse-gauge-inner">
                     <span id="pulseEuropeValue">--</span>
                   </div>
                 </div>
@@ -1246,6 +1330,11 @@
 
       gauge.style.setProperty("--score", score);
       gauge.style.setProperty("--accent", scoreColor(score));
+      const needle = gauge.querySelector(".needle");
+      if(needle){
+        const angle = -130 + (Math.max(0, Math.min(100, score)) * 2.6);
+        needle.style.transform = `rotate(${angle}deg)`;
+      }
       value.textContent = score;
       labelEl.textContent = label;
       labelEl.className = normalizeClass(label);
