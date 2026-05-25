@@ -683,7 +683,7 @@
               <div class="scale-bar"></div>
               <div class="scale-labels">
                 <span>0 Bearish</span>
-                <span>50 Neutral</span>
+                <span>50 Mixed/Neutral</span>
                 <span>100 Bullish</span>
               </div>
             </div>
@@ -809,8 +809,11 @@
     </footer>
   </main>
 
+  <script src="sentiment-core.js"></script>
+
   <script>
     let dashboardData = null;
+    let statusData = null;
     let technicalData = null;
 
     const TOP_INSTRUMENTS = [
@@ -879,36 +882,51 @@
     }
 
     function scoreLabel(score){
-      if(score >= 70) return "Bullish";
-      if(score <= 30) return "Bearish";
-      if(score >= 56) return "Mixed/Bullish";
-      if(score <= 44) return "Mixed/Bearish";
+      if(window.PSDCore && window.PSDCore.classifySentiment){
+        return window.PSDCore.classifySentiment(score);
+      }
 
-      return "Mixed/Neutral";
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+
+      return "Strong Bearish";
     }
 
     function scoreColor(score){
-      if(score >= 70) return "var(--green)";
-      if(score <= 30) return "var(--red)";
+      const s = Number(score);
+      if(!Number.isFinite(s)) return "var(--gold)";
+      if(s >= 70) return "var(--green)";
+      if(s >= 56) return "var(--green)";
+      if(s >= 45) return "var(--gold)";
+      if(s >= 31) return "var(--orange)";
 
-      return "var(--gold)";
+      return "var(--red)";
     }
 
     function calculateGlobalScore(data){
-      const sources = Array.isArray(data.sources) ? data.sources : [];
+      if(window.PSDCore && window.PSDCore.buildGlobalSummary){
+        const summary = window.PSDCore.buildGlobalSummary({
+          dashboardData:data,
+          statusData:statusData
+        });
 
-      if(!sources.length) return 50;
+        if(Number.isFinite(Number(summary.score))) return Number(summary.score);
+      }
 
-      let totalWeight = 0;
-      let weightedScore = 0;
+      const candidates = [
+        data?.headline_psi_score,
+        data?.trust_layer?.headline_psi_score,
+        statusData?.headline_psi_score
+      ];
 
-      sources.forEach(source => {
-        const weight = Number(source.weight || 1);
-        weightedScore += voteToScore(source.vote) * weight;
-        totalWeight += weight;
-      });
+      for(const value of candidates){
+        const n = Number(value);
+        if(Number.isFinite(n)) return Math.round(Math.max(0, Math.min(100, n)));
+      }
 
-      return totalWeight ? Math.round(weightedScore / totalWeight) : 50;
+      return 50;
     }
 
     function renderScore(data){
@@ -922,7 +940,7 @@
       document.getElementById("scoreNumber").textContent = score;
       document.getElementById("scoreWord").textContent = label;
       document.getElementById("scoreWord").className = "score-word " + normalizeClass(label);
-      document.getElementById("scoreDesc").textContent = "PSI = Public Sentiment Index. 0 is very bearish, 50 is mixed or neutral, and 100 is very bullish.";
+      document.getElementById("scoreDesc").textContent = "PSI = Public Sentiment Index. Official global score uses headline sentiment only, via PSI_CORE_V1.";
     }
 
     function renderStats(data){
@@ -1026,6 +1044,11 @@
     }
 
     function getTechnicalForInstrument(name){
+      if(window.PSDCore && window.PSDCore.getTechnicalBias){
+        const tech = window.PSDCore.getTechnicalBias(technicalData, name, "daily");
+        return tech.direction && tech.direction !== "N/A" ? tech.direction : "Neutral";
+      }
+
       if(!technicalData) return "Neutral";
 
       const techRoot = technicalData.technical || technicalData;
@@ -1034,12 +1057,7 @@
       if(Array.isArray(techRoot)){
         entry = techRoot.find(item => normalize(item?.instrument || item?.name || item?.symbol || "") === normalize(name));
       }else if(typeof techRoot === "object"){
-        const found = Object.entries(techRoot).find(([key, value]) => {
-          const possible = [key, value?.instrument, value?.name, value?.symbol].filter(Boolean).map(normalize);
-          return possible.includes(normalize(name));
-        });
-
-        entry = found ? found[1] : null;
+        entry = techRoot[name] || null;
       }
 
       return entry ? extractTechLabel(entry, "daily") : "Neutral";
@@ -1081,12 +1099,14 @@
 
     async function loadPage(){
       try{
-        const [dashboardRes, technicalRes] = await Promise.all([
+        const [dashboardRes, statusRes, technicalRes] = await Promise.all([
           fetch("dashboard_data.json", {cache:"no-store"}),
+          fetch("status.json", {cache:"no-store"}).catch(() => null),
           fetch("technical_data.json", {cache:"no-store"}).catch(() => null)
         ]);
 
         dashboardData = await dashboardRes.json();
+        statusData = (statusRes && statusRes.ok) ? await statusRes.json() : null;
         technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
 
         renderTopInstruments();
