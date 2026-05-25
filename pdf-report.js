@@ -5,7 +5,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "37";
+  const PSD_PDF_VERSION = "39";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -960,20 +960,19 @@
 
 
 
-      /* Home PDF: color-safe canvas gauges only */
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host{
-        background:transparent!important;
-        box-shadow:none!important;
+      /* Home PDF only: restore Market Pulse gauge color ring */
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-gauge-bg{
+        position:absolute!important;
+        inset:0!important;
+        border-radius:50%!important;
+        z-index:0!important;
+        pointer-events:none!important;
+        overflow:hidden!important;
       }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host::before,
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host::after{
-        display:none!important;
-        content:none!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge{
-        display:block!important;
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-gauge-bg svg{
         width:100%!important;
         height:100%!important;
+        display:block!important;
       }
 
       /* News & Articles PDF support - built from locked v15 */
@@ -1443,152 +1442,54 @@
       `;
     }
 
-    function drawPdfGaugeCanvas(canvas, score, label){
-      const dpr = 3;
-      const size = 520;
-      canvas.width = size * dpr;
-      canvas.height = size * dpr;
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-      canvas.className = "psd-pdf-canvas-gauge";
-
-      const ctx = canvas.getContext("2d");
-      ctx.scale(dpr, dpr);
-
-      const safeScore = Math.max(0, Math.min(100, Number(score) || 50));
-      const safeLabel = safeText(label || "Mixed/Neutral").toUpperCase();
-
-      const cx = size / 2;
-      const cy = size / 2;
-      const r = 178;
-
-      function arc(startDeg, endDeg, color, width){
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, (startDeg - 90) * Math.PI / 180, (endDeg - 90) * Math.PI / 180);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.lineCap = "butt";
-        ctx.stroke();
-      }
-
-      function ring(radius, color, width, dash){
-        ctx.save();
-        if(dash) ctx.setLineDash(dash);
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // Background
-      const bg = ctx.createRadialGradient(cx, cy - 38, 20, cx, cy, 232);
-      bg.addColorStop(0, "#172741");
-      bg.addColorStop(.62, "#07111e");
-      bg.addColorStop(1, "#030812");
-      ctx.fillStyle = bg;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 222, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Glow
-      ctx.save();
-      ctx.shadowColor = "rgba(88,166,255,.45)";
-      ctx.shadowBlur = 18;
-      ring(218, "rgba(88,166,255,.42)", 3);
-      ctx.restore();
-
-      ring(196, "rgba(255,255,255,.14)", 2);
-      ring(154, "rgba(88,166,255,.23)", 4);
-      ring(205, "rgba(255,255,255,.42)", 2, [2, 13]);
-
-      // Color bands
-      ctx.save();
-      ctx.shadowColor = "rgba(88,166,255,.35)";
-      ctx.shadowBlur = 10;
-      arc(-130, -78, "#ff5454", 38);
-      arc(-78, -18, "#ffae4f", 38);
-      arc(-18, 64, "#62d66e", 38);
-      arc(64, 130, "#58a6ff", 38);
-      ctx.restore();
-
-      // Dark lower masked sector to mimic live HUD speedometer
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, 182, 118 * Math.PI / 180, 62 * Math.PI / 180, true);
-      ctx.closePath();
-      ctx.fillStyle = "rgba(3,8,16,.78)";
-      ctx.fill();
-      ctx.restore();
-
-      // Center disk
-      const centerGrad = ctx.createRadialGradient(cx, cy - 25, 20, cx, cy, 82);
-      centerGrad.addColorStop(0, "#203452");
-      centerGrad.addColorStop(.72, "#0c1728");
-      centerGrad.addColorStop(1, "#07101c");
-      ctx.fillStyle = centerGrad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 82, 0, Math.PI * 2);
-      ctx.fill();
-      ring(82, "rgba(88,166,255,.34)", 3);
-
-      // Needle
-      const angle = (-130 + safeScore * 2.6) * Math.PI / 180;
-      const nx = cx + Math.cos(angle) * 142;
-      const ny = cy + Math.sin(angle) * 142;
-
-      ctx.save();
-      ctx.shadowColor = "rgba(255,100,90,.70)";
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(nx, ny);
-      ctx.strokeStyle = "#ff7a5c";
-      ctx.lineWidth = 6;
-      ctx.lineCap = "round";
-      ctx.stroke();
-
-      ctx.fillStyle = "#ff6b5a";
-      ctx.beginPath();
-      ctx.arc(nx, ny, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.fillStyle = "#09111f";
-      ctx.beginPath();
-      ctx.arc(cx, cy, 13, 0, Math.PI * 2);
-      ctx.fill();
-      ring(13, "rgba(255,255,255,.28)", 2);
-
-      // Text
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#f5f9ff";
-      ctx.font = "900 74px Inter, Segoe UI, Arial";
-      ctx.fillText(String(Math.round(safeScore)), cx, cy - 6);
-
-      ctx.fillStyle = "#9eb6d4";
-      ctx.font = "900 18px Inter, Segoe UI, Arial";
-      ctx.fillText(safeLabel.length > 13 ? safeLabel.slice(0, 13) + "…" : safeLabel, cx, cy + 34);
+    function pdfPolarPoint(cx, cy, r, deg){
+      const rad = (deg - 90) * Math.PI / 180;
+      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
     }
 
-    [
-      {gauge:"#pulseGlobalGauge", value:"#pulseGlobalValue", label:"#pulseGlobalLabel"},
-      {gauge:"#pulseUSGauge", value:"#pulseUSValue", label:"#pulseUSLabel"},
-      {gauge:"#pulseEuropeGauge", value:"#pulseEuropeValue", label:"#pulseEuropeLabel"}
-    ].forEach(item => {
-      const liveScore = safeText(qs(item.value)?.textContent || "");
-      const liveLabel = safeText(qs(item.label)?.textContent || "");
-      const clonedGauge = qs(item.gauge, heroClone);
+    function pdfArcPath(cx, cy, r, startDeg, endDeg){
+      const start = pdfPolarPoint(cx, cy, r, startDeg);
+      const end = pdfPolarPoint(cx, cy, r, endDeg);
+      const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+      return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+    }
 
-      if(clonedGauge){
-        clonedGauge.classList.add("psd-pdf-canvas-gauge-host");
-        clonedGauge.innerHTML = "";
-        const canvas = document.createElement("canvas");
-        drawPdfGaugeCanvas(canvas, liveScore, liveLabel);
-        clonedGauge.appendChild(canvas);
-      }
+    function buildPdfGaugeBgSVG(){
+      return `
+        <svg viewBox="0 0 300 300" aria-hidden="true" focusable="false">
+          <defs>
+            <filter id="psdGaugeGlowBg" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+              <feMerge>
+                <feMergeNode in="blur"></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+              </feMerge>
+            </filter>
+            <radialGradient id="psdGaugeCenterShade" cx="50%" cy="30%" r="72%">
+              <stop offset="0%" stop-color="rgba(15,26,41,.18)"></stop>
+              <stop offset="100%" stop-color="rgba(5,10,18,.05)"></stop>
+            </radialGradient>
+          </defs>
+
+          <circle cx="150" cy="150" r="150" fill="transparent"></circle>
+          <path d="${pdfArcPath(150,150,112,180,228)}" fill="none" stroke="#ff5454" stroke-width="38" filter="url(#psdGaugeGlowBg)"></path>
+          <path d="${pdfArcPath(150,150,112,228,298)}" fill="none" stroke="#ff8f4d" stroke-width="38" filter="url(#psdGaugeGlowBg)"></path>
+          <path d="${pdfArcPath(150,150,112,298,360)}" fill="none" stroke="#ffe072" stroke-width="38" filter="url(#psdGaugeGlowBg)"></path>
+          <path d="${pdfArcPath(150,150,112,0,48)}" fill="none" stroke="#9cdf70" stroke-width="38" filter="url(#psdGaugeGlowBg)"></path>
+          <path d="${pdfArcPath(150,150,112,48,108)}" fill="none" stroke="#5ed0cc" stroke-width="38" filter="url(#psdGaugeGlowBg)"></path>
+          <path d="${pdfArcPath(150,150,112,108,180)}" fill="none" stroke="#7eb6ff" stroke-width="38" filter="url(#psdGaugeGlowBg)"></path>
+
+          <circle cx="150" cy="150" r="77" fill="url(#psdGaugeCenterShade)"></circle>
+        </svg>
+      `;
+    }
+
+    qsa(".hud-speedometer", heroClone).forEach(gauge => {
+      if(qs(".psd-pdf-gauge-bg", gauge)) return;
+      const bg = document.createElement("div");
+      bg.className = "psd-pdf-gauge-bg";
+      bg.innerHTML = buildPdfGaugeBgSVG();
+      gauge.insertBefore(bg, gauge.firstChild);
     });
 
     return heroClone;
