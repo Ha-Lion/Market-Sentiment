@@ -1,10 +1,10 @@
-v/*
+/*
   Public Sentiment Dash - PDF Report Engine v14
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "31";
+  const PSD_PDF_VERSION = "32";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -958,16 +958,20 @@ v/*
       }
 
 
-
-
-      /* Home PDF page 1: natural stacked capture of the top two Home cards */
+      /* Home PDF final: page 1 shows the top two Home cards, stacked, with natural live styling */
       #psdPdfCaptureRoot .psd-home-page1-main{
         display:flex!important;
         flex-direction:column!important;
         gap:12px!important;
-        flex:0 0 auto!important;
+        flex:1 1 auto!important;
         min-height:0!important;
-        overflow:visible!important;
+        overflow:hidden!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail,
+      #psdPdfCaptureRoot .psd-home-page1-right,
+      #psdPdfCaptureRoot .psd-home-widget-row{
+        display:none!important;
       }
 
       #psdPdfCaptureRoot .psd-home-page1-main > .hero{
@@ -982,7 +986,7 @@ v/*
       }
 
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
-        padding:15px 18px!important;
+        padding:16px 20px!important;
         min-height:0!important;
         height:auto!important;
         overflow:hidden!important;
@@ -998,8 +1002,8 @@ v/*
 
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy p,
       #psdPdfCaptureRoot .psd-home-page1 .hero-compact-note{
-        font-size:11.7px!important;
-        line-height:1.28!important;
+        font-size:11.8px!important;
+        line-height:1.3!important;
         margin:0 0 5px!important;
       }
 
@@ -1010,7 +1014,7 @@ v/*
       }
 
       #psdPdfCaptureRoot .psd-home-page1 .hero-point{
-        padding:8px 10px!important;
+        padding:9px 10px!important;
         border-radius:12px!important;
       }
 
@@ -1026,9 +1030,9 @@ v/*
 
       #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
         display:block!important;
-        padding:12px 18px 16px!important;
         min-height:360px!important;
         height:360px!important;
+        padding:12px 18px 16px!important;
         margin:0!important;
         overflow:hidden!important;
         -webkit-print-color-adjust:exact!important;
@@ -1039,22 +1043,6 @@ v/*
         display:block!important;
         justify-content:initial!important;
         align-items:initial!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .scope-pill{
-        top:14px!important;
-        left:16px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .score-label{
-        top:14px!important;
-        font-size:14px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .pulse-small{
-        top:14px!important;
-        right:16px!important;
-        font-size:10px!important;
       }
 
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-grid{
@@ -1069,80 +1057,13 @@ v/*
         margin-top:34px!important;
       }
 
-      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-card{
-        padding:10px 8px 11px!important;
-        border-radius:20px!important;
-        background:
-          radial-gradient(circle at 50% 30%, rgba(88,166,255,.10), transparent 9rem),
-          linear-gradient(180deg,rgba(9,16,28,.88),rgba(5,8,14,.96))!important;
-        -webkit-print-color-adjust:exact!important;
-        print-color-adjust:exact!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
-        width:186px!important;
-        height:186px!important;
-        filter:saturate(1.28) brightness(1.12)!important;
-        -webkit-print-color-adjust:exact!important;
-        print-color-adjust:exact!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-speedometer{
-        width:252px!important;
-        height:252px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-arc{
-        opacity:1!important;
-        filter:drop-shadow(0 0 8px rgba(88,166,255,.28)) saturate(1.35)!important;
-        -webkit-print-color-adjust:exact!important;
-        print-color-adjust:exact!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-ring.outer{
-        box-shadow:
-          0 0 18px rgba(88,166,255,.30),
-          inset 0 0 18px rgba(88,166,255,.12)!important;
-      }
-
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-card,
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer,
+      #psdPdfCaptureRoot .psd-home-page1 .hud-arc,
+      #psdPdfCaptureRoot .psd-home-page1 .hud-ring,
       #psdPdfCaptureRoot .psd-home-page1 .hud-ticks{
-        opacity:.62!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-center{
-        width:88px!important;
-        height:88px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center{
-        width:118px!important;
-        height:118px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-center span{
-        font-size:31px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center span{
-        font-size:45px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-gauge-title{
-        font-size:11px!important;
-        margin-bottom:3px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .hud-bottom{
-        margin-top:6px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .pulse-foot{
-        font-size:9px!important;
-        margin-top:4px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-home-page1 .psd-home-widget-row{
-        display:none!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
       }
 
       /* News & Articles PDF support - built from locked v15 */
@@ -1636,14 +1557,11 @@ v/*
       const clone = cloneElement(sel);
       if(clone) page1.appendChild(clone);
     });
-
     const page1Main = document.createElement("div");
     page1Main.className = "psd-home-page1-main";
 
     const heroClone = enhanceHomeHeroClone(cloneElement(".hero"));
     if(heroClone) page1Main.appendChild(heroClone);
-
-    page1Main.appendChild(buildHomeWidgetSamples());
     page1.appendChild(page1Main);
 
     const footer1 = cloneElement(".footer");
