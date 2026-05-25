@@ -1,10 +1,10 @@
-/*
+v/*
   Public Sentiment Dash - PDF Report Engine v14
   Method: live-section capture -> 3-page landscape PDF.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "30";
+  const PSD_PDF_VERSION = "31";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -960,149 +960,189 @@
 
 
 
-      /* Home PDF page 1: stack the top two cards in the same order as the Home page */
+      /* Home PDF page 1: natural stacked capture of the top two Home cards */
       #psdPdfCaptureRoot .psd-home-page1-main{
         display:flex!important;
         flex-direction:column!important;
-        gap:8px!important;
-        flex:1 1 auto!important;
+        gap:12px!important;
+        flex:0 0 auto!important;
         min-height:0!important;
-        overflow:hidden!important;
+        overflow:visible!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1-main > .hero{
         display:grid!important;
         grid-template-columns:1fr!important;
-        gap:8px!important;
+        gap:12px!important;
         margin:0!important;
-        flex:1 1 auto!important;
+        flex:0 0 auto!important;
         min-height:0!important;
-        overflow:hidden!important;
-        align-items:stretch!important;
+        overflow:visible!important;
+        align-items:start!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
-        padding:13px 18px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
-        font-size:30px!important;
-        line-height:1.02!important;
-        letter-spacing:-.03em!important;
-        margin:0 0 7px!important;
-        white-space:nowrap!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy p,
-      #psdPdfCaptureRoot .psd-home-page1 .hero-compact-note{
-        font-size:11.3px!important;
-        line-height:1.24!important;
-        margin:0 0 4px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-points{
-        grid-template-columns:repeat(3,minmax(0,1fr))!important;
-        gap:7px!important;
-        margin-top:7px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-point{
-        padding:8px 9px!important;
-        border-radius:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-point strong{
-        font-size:11px!important;
-        margin-bottom:3px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-point span{
-        font-size:9.5px!important;
-        line-height:1.18!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
-        display:block!important;
-        padding:8px 12px 10px!important;
+        padding:15px 18px!important;
         min-height:0!important;
         height:auto!important;
-        margin:0!important;
         overflow:hidden!important;
       }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
+        font-size:34px!important;
+        line-height:1.02!important;
+        letter-spacing:-.03em!important;
+        margin:0 0 8px!important;
+        white-space:nowrap!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hero-copy p,
+      #psdPdfCaptureRoot .psd-home-page1 .hero-compact-note{
+        font-size:11.7px!important;
+        line-height:1.28!important;
+        margin:0 0 5px!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hero-points{
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        gap:8px!important;
+        margin-top:8px!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hero-point{
+        padding:8px 10px!important;
+        border-radius:12px!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hero-point strong{
+        font-size:11.5px!important;
+        margin-bottom:3px!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hero-point span{
+        font-size:9.8px!important;
+        line-height:1.2!important;
+      }
+
+      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
+        display:block!important;
+        padding:12px 18px 16px!important;
+        min-height:360px!important;
+        height:360px!important;
+        margin:0!important;
+        overflow:hidden!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
+      }
+
       #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel.score-panel{
         display:block!important;
         justify-content:initial!important;
         align-items:initial!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .scope-pill{
-        top:8px!important;
-        left:10px!important;
-        font-size:9.5px!important;
-        padding:5px 8px!important;
+        top:14px!important;
+        left:16px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .score-label{
-        top:8px!important;
-        font-size:11px!important;
+        top:14px!important;
+        font-size:14px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .pulse-small{
-        top:9px!important;
-        right:10px!important;
-        font-size:8.5px!important;
+        top:14px!important;
+        right:16px!important;
+        font-size:10px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-grid{
-        grid-template-columns:.92fr 1.26fr .92fr!important;
-        gap:20px!important;
-        padding-top:36px!important;
+        grid-template-columns:.9fr 1.28fr .9fr!important;
+        gap:26px!important;
+        padding-top:42px!important;
+        align-items:end!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 #pulseUSCard,
       #psdPdfCaptureRoot .psd-home-page1 #pulseEuropeCard{
-        margin-top:18px!important;
+        margin-top:34px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-card{
-        padding:8px 7px 10px!important;
-        border-radius:18px!important;
+        padding:10px 8px 11px!important;
+        border-radius:20px!important;
         background:
-          radial-gradient(circle at 50% 28%, rgba(88,166,255,.11), transparent 8rem),
-          linear-gradient(180deg,rgba(9,16,28,.90),rgba(5,8,14,.96))!important;
+          radial-gradient(circle at 50% 30%, rgba(88,166,255,.10), transparent 9rem),
+          linear-gradient(180deg,rgba(9,16,28,.88),rgba(5,8,14,.96))!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
-        width:164px!important;
-        height:164px!important;
-        filter:saturate(1.22) brightness(1.08)!important;
+        width:186px!important;
+        height:186px!important;
+        filter:saturate(1.28) brightness(1.12)!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-speedometer{
-        width:216px!important;
-        height:216px!important;
+        width:252px!important;
+        height:252px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-arc{
         opacity:1!important;
-        filter:drop-shadow(0 0 8px rgba(88,166,255,.24)) saturate(1.25)!important;
+        filter:drop-shadow(0 0 8px rgba(88,166,255,.28)) saturate(1.35)!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-ring.outer{
         box-shadow:
-          0 0 16px rgba(88,166,255,.26),
-          inset 0 0 18px rgba(88,166,255,.10)!important;
+          0 0 18px rgba(88,166,255,.30),
+          inset 0 0 18px rgba(88,166,255,.12)!important;
       }
+
+      #psdPdfCaptureRoot .psd-home-page1 .hud-ticks{
+        opacity:.62!important;
+      }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-center{
-        width:76px!important;
-        height:76px!important;
+        width:88px!important;
+        height:88px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center{
-        width:96px!important;
-        height:96px!important;
+        width:118px!important;
+        height:118px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-center span{
-        font-size:26px!important;
+        font-size:31px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center span{
-        font-size:35px!important;
+        font-size:45px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-gauge-title{
-        font-size:10px!important;
-        margin-bottom:2px!important;
+        font-size:11px!important;
+        margin-bottom:3px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .hud-bottom{
-        margin-top:4px!important;
+        margin-top:6px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .pulse-foot{
-        font-size:8.5px!important;
+        font-size:9px!important;
         margin-top:4px!important;
       }
+
       #psdPdfCaptureRoot .psd-home-page1 .psd-home-widget-row{
-        margin:8px 0 0!important;
-        flex:0 0 auto!important;
+        display:none!important;
       }
 
       /* News & Articles PDF support - built from locked v15 */
@@ -2004,7 +2044,6 @@
       windowHeight:PSD_CAPTURE_HEIGHT,
       scrollX:0,
       scrollY:0,
-      foreignObjectRendering:true,
       ignoreElements:(el) => el && (el.id === "psdVoteWidget" || el.id === "psdPdfWidget")
     });
   }
