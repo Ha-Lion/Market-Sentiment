@@ -1,2128 +1,1789 @@
-/*
-  Public Sentiment Dash - PDF Report Engine v15
-  Method: live-section capture -> 3-page landscape PDF.
-  Uses live page values; dashboard/history/news pages should source shared PSI_CORE_V1 logic.
-  Keeps the PDF visually close to the actual page and reduces future maintenance.
-*/
-(function(){
-  const PSD_PDF_VERSION = "38";
-  const PSD_SITE_LABEL = "publicsentimentdash.com";
-  const PSD_CAPTURE_WIDTH = 1600;
-  const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
-  const PSD_CAPTURE_SCALE = 3;
-  const PSD_EXPORT_IMAGE_TYPE = "PNG";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  function qs(selector, root=document){ return root.querySelector(selector); }
-  function qsa(selector, root=document){ return Array.from(root.querySelectorAll(selector)); }
+  <title>Public Sentiment Dash — Home</title>
+  <meta name="description" content="Free global market public sentiment dashboard tracking financial headlines, market focus, source votes, user sentiment, and public narrative across major assets.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
 
-  function safeText(value){
-    return String(value || "").replace(/\s+/g, " ").trim();
-  }
+  <style>
+    .home-layout{
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
 
-  function pageName(){
-    const path = window.location.pathname.toLowerCase();
+    .instrument-rail{
+      position:sticky;
+      top:126px;
+      padding:14px;
+      overflow:hidden;
+    }
 
-    if(path === "/" || path.endsWith("/index.html") || path.endsWith("index.html")) return "Home Page";
-    if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html")) return "Interactive Dashboard";
-    if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html")) return "Historical Sentiment";
-    if(path.endsWith("/news-articles.html") || path.endsWith("news-articles.html")) return "News & Articles";
+    .instrument-rail .page-chip{
+      font-size:11px;
+      padding:7px 10px;
+      margin-bottom:10px;
+    }
 
-    const active = qs(".nav a.active");
-    if(active && safeText(active.textContent)) return safeText(active.textContent);
+    .instrument-rail h2{
+      font-size:17px;
+      margin-bottom:6px;
+      font-weight:600;
+    }
 
-    const chip = qs(".page-chip");
-    if(chip && safeText(chip.textContent)) return safeText(chip.textContent);
+    .rail-waterfall{
+      height:650px;
+      overflow:hidden;
+      position:relative;
+      margin-top:12px;
+      border-radius:16px;
+    }
 
-    const h1 = qs("h1");
-    if(h1 && safeText(h1.textContent)) return safeText(h1.textContent);
+    .rail-waterfall:before,.rail-waterfall:after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      height:42px;
+      z-index:2;
+      pointer-events:none;
+    }
 
-    return safeText(document.title || "Public Sentiment Dash").replace(/Public Sentiment Dash|—|-/g, "").trim() || "Report";
-  }
+    .rail-waterfall:before{
+      top:0;
+      background:linear-gradient(to bottom,rgba(13,17,23,1),rgba(13,17,23,0));
+    }
 
-  function fileName(){
-    const name = pageName().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
-    return `${PSD_SITE_LABEL} - ${name || "Report"}.pdf`;
-  }
+    .rail-waterfall:after{
+      bottom:0;
+      background:linear-gradient(to top,rgba(13,17,23,1),rgba(13,17,23,0));
+    }
 
-  function loadScript(id, src){
-    return new Promise((resolve, reject) => {
-      if(document.getElementById(id)){
-        const existing = document.getElementById(id);
-        if(existing.getAttribute("data-loaded") === "1") return resolve();
-        existing.addEventListener("load", () => resolve(), { once:true });
-        existing.addEventListener("error", () => reject(new Error("Failed to load " + src)), { once:true });
+    .rail-track{
+      display:grid;
+      gap:8px;
+      animation:railScroll 46s linear infinite;
+    }
+
+    .rail-waterfall:hover .rail-track{
+      animation-play-state:paused;
+    }
+
+    @keyframes railScroll{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(-50%)}
+    }
+
+    .rail-item{
+      display:grid;
+      grid-template-columns:28px minmax(0,1fr) auto;
+      gap:8px;
+      align-items:center;
+      padding:8px 9px;
+      border:1px solid var(--line);
+      border-radius:13px;
+      background:rgba(17,24,33,.72);
+      transition:.18s ease;
+      color:var(--text);
+    }
+
+    .rail-item:hover{
+      transform:translateX(3px);
+      border-color:rgba(210,153,34,.46);
+      background:rgba(210,153,34,.08);
+    }
+
+    .rail-icon{
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      font-size:14px;
+      font-weight:600;
+      animation:railPulse 2.2s ease-in-out infinite;
+    }
+
+    .rail-name{
+      font-size:12px;
+      font-weight:500;
+      color:#fff;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .rail-sub{
+      font-size:10px;
+      color:var(--muted);
+      margin-top:2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .rail-state{
+      font-size:10px;
+      font-weight:500;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .direction-up .rail-icon{
+      color:var(--green);
+      background:rgba(63,185,80,.12);
+      box-shadow:0 0 12px rgba(63,185,80,.25);
+    }
+
+    .direction-down .rail-icon{
+      color:var(--red);
+      background:rgba(248,81,73,.12);
+      box-shadow:0 0 12px rgba(248,81,73,.25);
+    }
+
+    .direction-neutral .rail-icon{
+      color:var(--gold);
+      background:rgba(210,153,34,.12);
+      box-shadow:0 0 12px rgba(210,153,34,.25);
+    }
+
+    @keyframes railPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.08)}
+    }
+
+    .hero{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .hero-copy{
+      padding:26px 28px 28px;
+    }
+
+    .hero-points{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .hero-point{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .hero-point strong{
+      display:block;
+      color:#fff;
+      margin-bottom:6px;
+      font-weight:600;
+    }
+
+    .hero-point span{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .score-panel{
+      padding:24px;
+      text-align:center;
+      display:grid;
+      place-items:center;
+    }
+
+    .scope-pill{
+      display:inline-flex;
+      margin-bottom:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(88,166,255,.10);
+      border:1px solid rgba(88,166,255,.20);
+      color:#a5cfff;
+      font-size:12px;
+      font-weight:500;
+    }
+
+    .score-label{
+      color:var(--muted);
+      font-size:14px;
+      font-weight:500;
+      margin-bottom:8px;
+    }
+
+    .score-ring{
+      --score:50;
+      --accent:var(--gold);
+      width:230px;
+      height:230px;
+      border-radius:50%;
+      background:conic-gradient(var(--accent) calc(var(--score) * 1%), #26313f 0);
+      display:grid;
+      place-items:center;
+      margin:8px auto 16px;
+      box-shadow:0 0 32px rgba(210,153,34,.12);
+    }
+
+    .score-inner{
+      width:170px;
+      height:170px;
+      border-radius:50%;
+      background:var(--panel);
+      border:1px solid var(--line);
+      display:grid;
+      place-items:center;
+    }
+
+    .score-number{
+      font-size:50px;
+      line-height:1;
+      font-weight:700;
+    }
+
+    .score-word{
+      margin-top:8px;
+      font-size:18px;
+      font-weight:600;
+    }
+
+    .score-desc{
+      max-width:370px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+      margin:0 auto;
+    }
+
+    .scale{
+      width:100%;
+      margin-top:16px;
+    }
+
+    .scale-bar{
+      height:10px;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--red),var(--orange),var(--gold),var(--green));
+    }
+
+    .scale-labels{
+      display:flex;
+      justify-content:space-between;
+      color:var(--muted);
+      font-size:11px;
+      margin-top:6px;
+    }
+
+    .metric{
+      padding:18px;
+    }
+
+    .metric-title{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:500;
+      margin-bottom:8px;
+    }
+
+    .metric-value{
+      color:#fff;
+      font-size:26px;
+      font-weight:600;
+    }
+
+    .metric-note{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .section{
+      padding:22px;
+      margin-bottom:18px;
+    }
+
+    .sources-layout{
+      display:grid;
+      grid-template-columns:300px minmax(0,1fr);
+      gap:18px;
+      align-items:stretch;
+    }
+
+    .sources-pill{
+      display:inline-flex;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.35);
+      color:#f4d17d;
+      font-size:12px;
+      font-weight:500;
+      margin-bottom:12px;
+    }
+
+    .sources-waterfall{
+      position:relative;
+      overflow:hidden;
+      min-height:430px;
+      height:430px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:radial-gradient(circle at top right, rgba(210,153,34,.10), transparent 15rem), linear-gradient(180deg,#101826,#0d131d);
+      padding:14px;
+    }
+
+    .sources-waterfall::before,.sources-waterfall::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      height:48px;
+      z-index:2;
+      pointer-events:none;
+    }
+
+    .sources-waterfall::before{
+      top:0;
+      background:linear-gradient(to bottom, rgba(13,17,23,1), rgba(13,17,23,0));
+    }
+
+    .sources-waterfall::after{
+      bottom:0;
+      background:linear-gradient(to top, rgba(13,17,23,1), rgba(13,17,23,0));
+    }
+
+    .waterfall-grid{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      height:100%;
+    }
+
+    .waterfall-column{
+      overflow:hidden;
+      height:100%;
+      position:relative;
+    }
+
+    .waterfall-track{
+      display:flex;
+      flex-direction:column;
+      gap:26px;
+      will-change:transform;
+    }
+
+    .waterfall-column.column-1 .waterfall-track{
+      animation:scrollUp 44s linear infinite;
+    }
+
+    .waterfall-column.column-2 .waterfall-track{
+      animation:scrollDown 48s linear infinite;
+    }
+
+    .waterfall-column.column-3 .waterfall-track{
+      animation:scrollUp 52s linear infinite;
+    }
+
+    @keyframes scrollUp{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(-50%)}
+    }
+
+    @keyframes scrollDown{
+      0%{transform:translateY(-50%)}
+      100%{transform:translateY(0)}
+    }
+
+    .source-chip{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:52px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(17,24,33,.92);
+      border:1px solid rgba(210,153,34,.14);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(0,0,0,.16);
+      transition:.18s ease;
+    }
+
+    .source-chip:hover{
+      transform:translateY(-2px);
+      border-color:rgba(210,153,34,.48);
+      background:rgba(210,153,34,.08);
+    }
+
+    .source-chip img{
+      width:24px;
+      height:24px;
+      border-radius:6px;
+      object-fit:cover;
+      flex-shrink:0;
+    }
+
+    .source-chip-name{
+      font-size:14px;
+      font-weight:500;
+      line-height:1.3;
+      color:#e6edf3;
+    }
+
+    .source-chip:hover .source-chip-name{
+      color:#ffd780;
+      text-shadow:0 0 10px rgba(210,153,34,.45);
+    }
+
+    .source-chip-status{
+      margin-left:auto;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 10px rgba(63,185,80,.5);
+      flex-shrink:0;
+    }
+
+    .summary-lines{
+      display:grid;
+      gap:10px;
+    }
+
+    .summary-line{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      color:var(--soft);
+      line-height:1.55;
+    }
+
+    .focus-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+      grid-auto-rows:1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+
+    .mini-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      height:100%;
+    }
+
+    .focus-card{
+      min-height:140px;
+      cursor:pointer;
+    }
+
+    .mini-title{
+      color:#fff;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+
+    .mini-meta{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .mini-headline{
+      margin-top:10px;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--soft);
+    }
+
+    .focus-open{
+      margin-top:12px;
+      color:#fff;
+      font-size:12px;
+      font-weight:500;
+    }
+
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+      margin-top:14px;
+    }
+
+    .action-card{
+      padding:20px;
+      color:var(--text);
+    }
+
+    .action-label{
+      display:inline-flex;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.25);
+      color:#f4d17d;
+      font-size:11px;
+      font-weight:500;
+      margin-bottom:12px;
+    }
+
+    .action-card h3{
+      margin:0 0 8px;
+      color:#fff;
+      font-size:22px;
+      font-weight:600;
+    }
+
+    .action-card p{
+      margin:0 0 14px;
+    }
+
+    .action-cta{
+      color:#fff;
+      font-weight:500;
+      font-size:14px;
+    }
+
+    .action-card:hover .action-cta{
+      color:#ffd780;
+      text-shadow:0 0 10px rgba(210,153,34,.55);
+    }
+
+    @media(max-width:1180px){
+      .home-layout,.hero,.sources-layout,.hero-points,.action-grid{
+        grid-template-columns:1fr;
+      }
+
+      .instrument-rail{
+        position:relative;
+        top:auto;
+      }
+
+      .rail-waterfall{
+        height:420px;
+      }
+    }
+
+    @media(max-width:860px){
+      .waterfall-grid{
+        grid-template-columns:1fr;
+      }
+
+      .waterfall-column.column-2,.waterfall-column.column-3{
+        display:none;
+      }
+    }
+
+    @media(max-width:1180px){
+      .hero{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media(max-width:760px){
+      .pulse-card-grid{
+        grid-template-columns:1fr;
+      }
+
+      .pulse-heading{
+        flex-direction:column;
+      }
+
+      .pulse-small{
+        text-align:left;
+        padding-top:0;
+      }
+    }
+
+
+    .market-pulse-panel{
+      position:relative;
+      isolation:isolate;
+      padding:12px 18px 16px;
+      display:block;
+      overflow:hidden;
+      min-height:360px;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(88,166,255,.18), transparent 17rem),
+        radial-gradient(circle at 14% 20%, rgba(248,81,73,.14), transparent 13rem),
+        radial-gradient(circle at 90% 18%, rgba(46,230,214,.12), transparent 13rem),
+        linear-gradient(180deg,#050912,#070b14 58%,#04070d);
+      border:1px solid rgba(88,166,255,.20);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.025),
+        inset 0 0 46px rgba(88,166,255,.04),
+        0 22px 42px rgba(0,0,0,.32);
+    }
+
+    .market-pulse-panel:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(90deg,transparent 0 23%,rgba(88,166,255,.08) 23.2%,transparent 23.5% 58%,rgba(248,81,73,.06) 58.2%,transparent 58.5%),
+        linear-gradient(0deg,transparent 0 34%,rgba(88,166,255,.06) 34.2%,transparent 34.5% 77%,rgba(248,81,73,.05) 77.2%,transparent 77.5%);
+      opacity:.58;
+      pointer-events:none;
+      z-index:-2;
+    }
+
+    .hud-grid-bg{
+      position:absolute;
+      inset:0;
+      background-image:
+        linear-gradient(rgba(88,166,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88,166,255,.04) 1px, transparent 1px);
+      background-size:34px 34px;
+      mask-image:radial-gradient(circle at center,#000 0 68%,transparent 88%);
+      opacity:.7;
+      z-index:-3;
+    }
+
+    .hud-circuit-line{
+      position:absolute;
+      height:2px;
+      background:linear-gradient(90deg,transparent,rgba(88,166,255,.45),rgba(248,81,73,.40),transparent);
+      box-shadow:0 0 12px rgba(88,166,255,.32);
+      opacity:.78;
+      pointer-events:none;
+      z-index:-1;
+    }
+
+    .hud-circuit-line:after{
+      content:"";
+      position:absolute;
+      right:18%;
+      top:50%;
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:#ff6659;
+      transform:translateY(-50%);
+      box-shadow:0 0 12px rgba(255,102,89,.65);
+    }
+
+    .hud-circuit-line.line-a{left:6%;right:18%;top:36%;transform:rotate(-4deg)}
+    .hud-circuit-line.line-b{left:18%;right:6%;top:60%;transform:rotate(3deg)}
+    .hud-circuit-line.line-c{left:30%;right:18%;top:81%;opacity:.45}
+
+    .hud-title-row{
+      position:absolute;
+      inset:0;
+      z-index:6;
+      pointer-events:none;
+    }
+
+    .hud-title-row .scope-pill{
+      position:absolute;
+      top:14px;
+      left:16px;
+      margin:0;
+      pointer-events:auto;
+    }
+
+    .hud-title-row .score-label{
+      position:absolute;
+      top:14px;
+      left:50%;
+      transform:translateX(-50%);
+      text-align:center;
+      color:#9aa8bc;
+      font-size:14px;
+      font-weight:700;
+      white-space:nowrap;
+      pointer-events:none;
+    }
+
+    .pulse-small{
+      position:absolute;
+      top:14px;
+      right:16px;
+      color:#8ca5c4;
+      font-size:11px;
+      font-weight:700;
+      text-align:right;
+      white-space:nowrap;
+      padding:0;
+      pointer-events:none;
+    }
+
+    .hud-speedometer-grid{
+      position:relative;
+      z-index:2;
+      display:grid;
+      grid-template-columns:.9fr 1.28fr .9fr;
+      gap:26px;
+      align-items:end;
+      padding-top:42px;
+    }
+
+    #pulseUSCard{
+      grid-column:1;
+      grid-row:1;
+      margin-top:34px;
+    }
+
+    #pulseGlobalCard{
+      grid-column:2;
+      grid-row:1;
+    }
+
+    #pulseEuropeCard{
+      grid-column:3;
+      grid-row:1;
+      margin-top:34px;
+    }
+
+    .hud-speedometer-card{
+      position:relative;
+      min-width:0;
+      padding:10px 8px 11px;
+      border-radius:20px;
+      border:1px solid rgba(88,166,255,.16);
+      background:
+        radial-gradient(circle at 50% 30%, rgba(88,166,255,.08), transparent 9rem),
+        linear-gradient(180deg,rgba(9,16,28,.82),rgba(5,8,14,.90));
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.025),
+        0 12px 26px rgba(0,0,0,.24);
+    }
+
+    .hud-speedometer-card.primary-gauge{
+      padding-top:8px;
+    }
+
+    .hud-gauge-title{
+      color:#e8f3ff;
+      text-align:center;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      margin-bottom:4px;
+      text-shadow:0 0 12px rgba(88,166,255,.25);
+    }
+
+    .hud-speedometer{
+      --score:50;
+      --needle:270deg;
+      --accent:#58a6ff;
+      position:relative;
+      width:186px;
+      height:186px;
+      margin:0 auto;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at center, #060a12 0 34%, transparent 35%),
+        conic-gradient(from 180deg,
+          #ff5454 0deg,
+          #ff8f4d 48deg,
+          #ffc95e 118deg,
+          #ffe072 180deg,
+          #8cdc6f 228deg,
+          #58d0ca 286deg,
+          #58a6ff 332deg,
+          #ff5454 360deg);
+      box-shadow:
+        0 0 0 1px rgba(88,166,255,.12),
+        0 0 26px rgba(88,166,255,.16),
+        0 0 34px rgba(248,81,73,.08),
+        inset 0 0 32px rgba(0,0,0,.42);
+    }
+
+    .primary-gauge .hud-speedometer{
+      width:252px;
+      height:252px;
+    }
+
+    .hud-ring.outer{
+      position:absolute;
+      inset:4px;
+      border-radius:50%;
+      border:2px solid rgba(88,166,255,.24);
+      box-shadow:
+        0 0 16px rgba(88,166,255,.18),
+        inset 0 0 18px rgba(88,166,255,.08);
+    }
+
+    .hud-ring.mid{
+      position:absolute;
+      inset:17px;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:
+        inset 0 0 18px rgba(0,0,0,.30),
+        0 0 8px rgba(255,255,255,.04);
+    }
+
+    .hud-ticks{
+      position:absolute;
+      inset:10px;
+      border-radius:50%;
+      background:
+        repeating-conic-gradient(from 180deg,
+          rgba(233,247,255,.78) 0deg 1.1deg,
+          transparent 1.1deg 7.2deg);
+      mask:radial-gradient(circle, transparent 0 68%, #000 69% 73%, transparent 74%);
+      opacity:.5;
+      filter:drop-shadow(0 0 4px rgba(88,166,255,.34));
+    }
+
+    .hud-arc{
+      display:none;
+    }
+
+    .hud-needle{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:42%;
+      height:3px;
+      background:linear-gradient(90deg,#ff4f5d,#ff9b54);
+      border-radius:999px;
+      transform-origin:0% 50%;
+      transform:rotate(var(--needle));
+      box-shadow:0 0 11px rgba(255,84,84,.55);
+      z-index:5;
+    }
+
+    .hud-needle:after{
+      content:"";
+      position:absolute;
+      right:-6px;
+      top:50%;
+      width:11px;
+      height:11px;
+      border-radius:50%;
+      background:#ff6659;
+      transform:translateY(-50%);
+      box-shadow:0 0 13px rgba(255,102,89,.75);
+    }
+
+    .hud-needle:before{
+      content:"";
+      position:absolute;
+      left:-7px;
+      top:50%;
+      width:15px;
+      height:15px;
+      border-radius:50%;
+      background:#07101c;
+      border:1px solid rgba(255,255,255,.18);
+      transform:translateY(-50%);
+      box-shadow:0 0 12px rgba(88,166,255,.28);
+    }
+
+    .hud-center{
+      position:relative;
+      z-index:4;
+      width:88px;
+      height:88px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      align-content:center;
+      background:
+        radial-gradient(circle at 50% 25%, rgba(31,45,64,.96), rgba(5,9,16,.98));
+      border:1px solid rgba(88,166,255,.22);
+      box-shadow:
+        inset 0 0 20px rgba(88,166,255,.08),
+        0 0 18px rgba(0,0,0,.30);
+    }
+
+    .primary-gauge .hud-center{
+      width:118px;
+      height:118px;
+    }
+
+    .hud-center span{
+      color:#f7fbff;
+      font-size:31px;
+      font-weight:950;
+      line-height:1;
+      letter-spacing:-.04em;
+      text-shadow:0 0 16px rgba(88,166,255,.24);
+    }
+
+    .primary-gauge .hud-center span{
+      font-size:45px;
+    }
+
+    .hud-center small{
+      max-width:76px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:#8fa9c8;
+      font-size:9px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      margin-top:4px;
+    }
+
+    .hud-bottom{
+      margin-top:8px;
+    }
+
+    .hud-meter{
+      height:6px;
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(31,43,58,.86);
+      border:1px solid rgba(255,255,255,.04);
+      box-shadow:inset 0 0 9px rgba(0,0,0,.24);
+    }
+
+    .hud-meter span{
+      display:block;
+      width:50%;
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#ff4f5d,#ff9b54,#ffd75a,#55d98d,#58a6ff);
+      box-shadow:0 0 12px rgba(88,166,255,.24);
+      transition:width .45s ease;
+    }
+
+    .pulse-foot{
+      color:#8fa3bf;
+      font-size:10px;
+      font-weight:700;
+      text-align:center;
+      margin-top:7px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    @media(max-width:1180px){
+      .hero{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media(max-width:760px){
+      .hud-speedometer-grid{
+        grid-template-columns:1fr;
+      }
+
+      #pulseUSCard,
+      #pulseGlobalCard,
+      #pulseEuropeCard{
+        grid-column:auto;
+        grid-row:auto;
+        margin-top:0;
+      }
+
+      .hud-title-row{
+        flex-direction:column;
+      }
+
+      .pulse-small{
+        text-align:left;
+        padding-top:0;
+      }
+    }
+
+
+    .hero-copy{
+      padding:14px 22px 16px;
+    }
+
+    .hero-copy h1{
+      font-size:clamp(36px,2.55vw,50px);
+      line-height:1.02;
+      letter-spacing:-.03em;
+      margin-bottom:12px;
+      white-space:nowrap;
+    }
+
+    .hero-compact-note{
+      font-size:13px;
+      line-height:1.34;
+      max-width:1080px;
+      margin:0 0 6px;
+    }
+
+    .hero-points{
+      margin-top:10px;
+    }
+
+    .hero-point{
+      padding:10px 12px;
+    }
+
+    .hero-point span{
+      font-size:11px;
+      line-height:1.3;
+    }
+
+
+    /* Clean major-card spacing: one rule, no negative margins */
+    main.page{
+      padding-top:12px;
+    }
+
+    .home-layout > div{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .home-layout > div > .hero,
+    .home-layout > div > .section{
+      margin-top:0;
+      margin-bottom:0;
+    }
+
+    .hero{
+      gap:12px;
+      margin-bottom:0;
+    }
+
+    .hero > .panel,
+    .home-layout > div > .section{
+      margin-bottom:0;
+    }
+
+    .instrument-rail{
+      top:112px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="sentiment-history.html">Historical Sentiment</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="advertise.html">Business Opportunities</a>
+      <a href="contact.html">Get in Touch</a>
+      <a href="about.html">About</a>
+
+      <div class="social-links">
+        <span class="social-label">Follow us</span>
+        <span class="social-pill">X</span>
+        <span class="social-pill linkedin">LinkedIn</span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="home-layout">
+      <aside class="panel instrument-rail">
+        <div class="page-chip">Top 30 Instruments</div>
+        <h2>Market Direction</h2>
+        <p class="muted">Daily technical direction plus anonymous user sentiment. Hover to pause.</p>
+        <div class="rail-waterfall">
+          <div class="rail-track" id="topInstrumentsRail">
+            <div class="muted">Loading instruments...</div>
+          </div>
+        </div>
+      </aside>
+
+      <div>
+        <section class="hero">
+          <div class="panel hero-copy">
+            <h1>Home for Global Market Public Sentiment</h1>
+            <p class="hero-compact-note"><b>Public Sentiment Dash</b> tracks public financial narrative across <b>indexes, bonds, forex, crypto, commodities, and macro themes</b>.</p>
+            <p class="hero-compact-note">The main score is a <b>global all-markets Public Sentiment Index</b>, reflecting the latest published sentiment across the dashboard universe.</p>
+
+            <div class="hero-points">
+              <div class="hero-point">
+                <strong>Global PSI</strong>
+                <span>Fast all-markets public sentiment reading from the latest published scan.</span>
+              </div>
+
+              <div class="hero-point">
+                <strong>User Sentiment</strong>
+                <span>Anonymous daily bullish or bearish voting by instrument.</span>
+              </div>
+
+              <div class="hero-point">
+                <strong>Interactive Pages</strong>
+                <span>Use the dashboard and news pages for deeper filtering and browsing.</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="panel score-panel market-pulse-panel">
+            <div class="hud-grid-bg"></div>
+            <div class="hud-circuit-line line-a"></div>
+            <div class="hud-circuit-line line-b"></div>
+            <div class="hud-circuit-line line-c"></div>
+
+            <div class="hud-title-row">
+              <div class="scope-pill">Market Pulse</div>
+              <div class="score-label">Global · U.S. · Europe Sentiment</div>
+              <div class="pulse-small" id="pulseUpdated">Loading...</div>
+            </div>
+
+            <div class="hud-speedometer-grid">
+              <div class="hud-speedometer-card primary-gauge" id="pulseGlobalCard">
+                <div class="hud-gauge-title">Global</div>
+                <div class="hud-speedometer" id="pulseGlobalGauge">
+                  <div class="hud-ring outer"></div>
+                  <div class="hud-ring mid"></div>
+                  <div class="hud-ticks"></div>
+                  <div class="hud-arc"></div>
+                  <div class="hud-needle"></div>
+                  <div class="hud-center">
+                    <span id="pulseGlobalValue">--</span>
+                    <small id="pulseGlobalLabel">Loading</small>
+                  </div>
+                </div>
+                <div class="hud-bottom">
+                  <div class="hud-meter"><span id="pulseGlobalMeter"></span></div>
+                  <div class="pulse-foot" id="pulseGlobalCount">All markets</div>
+                </div>
+              </div>
+
+              <div class="hud-speedometer-card" id="pulseUSCard">
+                <div class="hud-gauge-title">U.S.</div>
+                <div class="hud-speedometer" id="pulseUSGauge">
+                  <div class="hud-ring outer"></div>
+                  <div class="hud-ring mid"></div>
+                  <div class="hud-ticks"></div>
+                  <div class="hud-arc"></div>
+                  <div class="hud-needle"></div>
+                  <div class="hud-center">
+                    <span id="pulseUSValue">--</span>
+                    <small id="pulseUSLabel">Loading</small>
+                  </div>
+                </div>
+                <div class="hud-bottom">
+                  <div class="hud-meter"><span id="pulseUSMeter"></span></div>
+                  <div class="pulse-foot" id="pulseUSCount">U.S. markets</div>
+                </div>
+              </div>
+
+              <div class="hud-speedometer-card" id="pulseEuropeCard">
+                <div class="hud-gauge-title">Europe</div>
+                <div class="hud-speedometer" id="pulseEuropeGauge">
+                  <div class="hud-ring outer"></div>
+                  <div class="hud-ring mid"></div>
+                  <div class="hud-ticks"></div>
+                  <div class="hud-arc"></div>
+                  <div class="hud-needle"></div>
+                  <div class="hud-center">
+                    <span id="pulseEuropeValue">--</span>
+                    <small id="pulseEuropeLabel">Loading</small>
+                  </div>
+                </div>
+                <div class="hud-bottom">
+                  <div class="hud-meter"><span id="pulseEuropeMeter"></span></div>
+                  <div class="pulse-foot" id="pulseEuropeCount">European markets</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+
+        <section class="panel section">
+          <div class="sources-layout">
+            <div>
+              <div class="sources-pill">These are our sources for sentiment</div>
+              <h2>Live Sentiment Sources</h2>
+              <p>We scan trusted public financial and macro sources, organize the headline flow, and turn that public narrative into a cleaner sentiment view.</p>
+              <p class="muted">Each source below is clickable. The moving wall updates dynamically from the current source list.</p>
+            </div>
+
+            <div class="sources-waterfall">
+              <div class="waterfall-grid" id="sourcesWaterfall">
+                <div class="waterfall-column column-1"><div class="waterfall-track"></div></div>
+                <div class="waterfall-column column-2"><div class="waterfall-track"></div></div>
+                <div class="waterfall-column column-3"><div class="waterfall-track"></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section">
+          <h2>Daily Public Sentiment Brief</h2>
+          <div class="summary-lines" id="dailySummary">
+            <div class="summary-line">Loading daily brief...</div>
+          </div>
+        </section>
+
+        <section class="panel section">
+          <h2>Market Focus Today</h2>
+          <p>Most discussed markets and instruments in the latest published scan.</p>
+          <div class="focus-grid" id="marketFocus">
+            <div class="mini-card dynamic-card focus-card">Loading market focus...</div>
+          </div>
+        </section>
+
+        <section class="panel section">
+          <h2>Explore the Site</h2>
+          <p>Start with the main dashboard, the global Public Sentiment Index, the article browser, and the core business pages.</p>
+
+          <div class="action-grid">
+            <a href="dashboard.html" class="action-card dynamic-card">
+              <div class="action-label">Main Tool</div>
+              <h3>Interactive Dashboard</h3>
+              <p>Filter by market and instrument, compare instruments, view source votes, user sentiment, and relevant news.</p>
+              <div class="action-cta">Open Dashboard →</div>
+            </a>
+
+            <a href="public-sentiment-index.html" class="action-card dynamic-card">
+              <div class="action-label">Global Index</div>
+              <h3>Public Sentiment Index</h3>
+              <p>Understand the global all-markets PSI score and how public financial sentiment is summarized.</p>
+              <div class="action-cta">Open Public Sentiment Index →</div>
+            </a>
+
+
+
+            <a href="sentiment-history.html" class="action-card dynamic-card">
+              <div class="action-label">History</div>
+              <h3>Historical Sentiment</h3>
+              <p>Track Global PSI and U.S. market sentiment over time with daily, weekly, and monthly views.</p>
+              <div class="action-cta">Open Historical Sentiment →</div>
+            </a>
+
+            <a href="news-articles.html" class="action-card dynamic-card">
+              <div class="action-label">Search Page</div>
+              <h3>News & Articles</h3>
+              <p>Browse all published relevant articles and search by keyword, source, market, and instrument.</p>
+              <div class="action-cta">Open News & Articles →</div>
+            </a>
+
+            <a href="market-sentiment.html" class="action-card dynamic-card">
+              <div class="action-label">Learning</div>
+              <h3>Guides</h3>
+              <p>Read educational pages covering market sentiment, forex sentiment, crypto sentiment, stocks, and commodities.</p>
+              <div class="action-cta">Open Guides →</div>
+            </a>
+
+            <a href="advertise.html" class="action-card dynamic-card">
+              <div class="action-label">Business</div>
+              <h3>Advertise</h3>
+              <p>Reach market-focused readers interested in sentiment, financial news, trading, investing, and macro themes.</p>
+              <div class="action-cta">Open Advertise →</div>
+            </a>
+
+            <a href="contact.html" class="action-card dynamic-card">
+              <div class="action-label">Contact</div>
+              <h3>Get in Touch</h3>
+              <p>Contact Public Sentiment Dash for business inquiries, feedback, partnerships, or site questions.</p>
+              <div class="action-cta">Open Contact →</div>
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="public-sentiment-index.html">Public Sentiment Index</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">How the Dashboard Works</a>
+        <a href="advertise.html">Business Opportunities</a>
+        <a href="about.html">About</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script src="sentiment-core.js"></script>
+
+  <script>
+    let dashboardData = null;
+    let statusData = null;
+    let technicalData = null;
+
+    const TOP_INSTRUMENTS = [
+      {name:"S&P 500 / ES",label:"S&P 500",url:"https://www.spglobal.com/spdji/en/indices/equity/sp-500/"},
+      {name:"Nasdaq / NQ",label:"Nasdaq",url:"https://www.nasdaq.com/market-activity/index/ndx"},
+      {name:"Dow / YM",label:"Dow Jones",url:"https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/"},
+      {name:"Russell / RTY",label:"Russell 2000",url:"https://www.lseg.com/en/ftse-russell/indices/russell-us"},
+      {name:"VIX",label:"VIX",url:"https://www.cboe.com/tradable_products/vix/"},
+      {name:"DAX",label:"DAX",url:"https://www.dax-indices.com/"},
+      {name:"FTSE 100",label:"FTSE 100",url:"https://www.lseg.com/en/ftse-russell/indices/uk"},
+      {name:"Nikkei 225",label:"Nikkei 225",url:"https://indexes.nikkei.co.jp/en/nkave"},
+      {name:"Hang Seng",label:"Hang Seng",url:"https://www.hsi.com.hk/"},
+      {name:"Euro Stoxx 50",label:"Euro Stoxx",url:"https://www.stoxx.com/index-details?symbol=sx5e"},
+      {name:"CAC 40",label:"CAC 40",url:"https://live.euronext.com/en/product/indices/FR0003500008-XPAR"},
+      {name:"Treasury Yields",label:"Treasury Yields",url:"https://home.treasury.gov/"},
+      {name:"CHF / USDCHF",label:"USD/CHF",url:"https://www.snb.ch/"},
+      {name:"NZD / NZDUSD",label:"NZD/USD",url:"https://www.rbnz.govt.nz/"},
+      {name:"Copper",label:"Copper",url:"https://www.cmegroup.com/markets/metals/base/copper.html"},
+      {name:"US 10Y Treasury",label:"US 10Y",url:"https://home.treasury.gov/"},
+      {name:"US 2Y Treasury",label:"US 2Y",url:"https://home.treasury.gov/"},
+      {name:"US Dollar / DXY",label:"DXY",url:"https://www.ice.com/products/194/US-Dollar-Index-Futures"},
+      {name:"EUR / EURUSD",label:"EUR/USD",url:"https://www.ecb.europa.eu/"},
+      {name:"GBP / GBPUSD",label:"GBP/USD",url:"https://www.bankofengland.co.uk/"},
+      {name:"JPY / USDJPY",label:"USD/JPY",url:"https://www.boj.or.jp/en/"},
+      {name:"CAD / USDCAD",label:"USD/CAD",url:"https://www.bankofcanada.ca/"},
+      {name:"AUD / AUDUSD",label:"AUD/USD",url:"https://www.rba.gov.au/"},
+      {name:"Bitcoin / BTC",label:"Bitcoin",url:"https://bitcoin.org/"},
+      {name:"Ethereum / ETH",label:"Ethereum",url:"https://ethereum.org/"},
+      {name:"Solana / SOL",label:"Solana",url:"https://solana.com/"},
+      {name:"Gold",label:"Gold",url:"https://www.cmegroup.com/markets/metals/precious/gold.html"},
+      {name:"Silver",label:"Silver",url:"https://www.cmegroup.com/markets/metals/precious/silver.html"},
+      {name:"Crude Oil",label:"Crude Oil",url:"https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html"},
+      {name:"Natural Gas",label:"Natural Gas",url:"https://www.cmegroup.com/markets/energy/natural-gas/natural-gas.html"}
+    ];
+
+    function escapeHTML(value){
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function normalizeClass(value){
+      const clean = String(value || "Neutral").replace(/[^a-zA-Z]/g, "");
+      return clean || "Neutral";
+    }
+
+    function normalize(text){
+      return String(text || "").toLowerCase().replace(/[^a-z0-9]/g,"");
+    }
+
+    function userSentimentFor(instrument){
+      return window.PSD_USER_SENTIMENT?.[instrument] || "N/A";
+    }
+
+    function voteToScore(vote){
+      const v = String(vote || "").toLowerCase();
+
+      if(v.includes("bullish") && !v.includes("bearish")) return 100;
+      if(v.includes("bearish") && !v.includes("bullish")) return 0;
+      if(v.includes("mixed")) return 55;
+
+      return 50;
+    }
+
+    function scoreLabel(score){
+      if(window.PSDCore && window.PSDCore.classifySentiment){
+        return window.PSDCore.classifySentiment(score);
+      }
+
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+
+      return "Strong Bearish";
+    }
+
+    function scoreColor(score){
+      const s = Number(score);
+      if(!Number.isFinite(s)) return "var(--gold)";
+      if(s >= 70) return "var(--green)";
+      if(s >= 56) return "var(--green)";
+      if(s >= 45) return "var(--gold)";
+      if(s >= 31) return "var(--orange)";
+
+      return "var(--red)";
+    }
+
+    function calculateGlobalScore(data){
+      if(window.PSDCore && window.PSDCore.buildGlobalSummary){
+        const summary = window.PSDCore.buildGlobalSummary({
+          dashboardData:data,
+          statusData:statusData
+        });
+
+        if(Number.isFinite(Number(summary.score))) return Number(summary.score);
+      }
+
+      const candidates = [
+        data?.headline_psi_score,
+        data?.trust_layer?.headline_psi_score,
+        statusData?.headline_psi_score
+      ];
+
+      for(const value of candidates){
+        const n = Number(value);
+        if(Number.isFinite(n)) return Math.round(Math.max(0, Math.min(100, n)));
+      }
+
+      return 50;
+    }
+
+    function clampScore(value){
+      const n = Number(value);
+      if(!Number.isFinite(n)) return 50;
+      return Math.round(Math.max(0, Math.min(100, n)));
+    }
+
+    function headlineRows(data){
+      const rows = [];
+      if(Array.isArray(data?.psi_headlines)) rows.push(...data.psi_headlines);
+      if(!rows.length && Array.isArray(data?.top_headlines)) rows.push(...data.top_headlines);
+      return rows.filter(item => item && typeof item === "object");
+    }
+
+    function textBlob(item){
+      const parts = [
+        item.title,
+        item.description,
+        item.query,
+        item.source,
+        ...(Array.isArray(item.markets) ? item.markets : []),
+        ...(Array.isArray(item.instruments) ? item.instruments : [])
+      ];
+      return parts.filter(Boolean).join(" ").toLowerCase();
+    }
+
+    function regionMatch(item, region){
+      const instruments = Array.isArray(item.instruments) ? item.instruments.map(x => String(x || "").toLowerCase()) : [];
+      const blob = " " + textBlob(item) + " ";
+
+      if(region === "us"){
+        const exact = [
+          "s&p 500 / es","nasdaq / nq","dow / ym","russell / rty","vix",
+          "us 10y treasury","us 2y treasury","treasury yields","us dollar / dxy",
+          "fed / fomc","cpi / inflation","ppi","jobs / nfp","us gdp / growth",
+          "stocks / company news","technology stocks"
+        ];
+
+        if(instruments.some(x => exact.includes(x))) return true;
+
+        return /\b(s&p|spx|sp500|nasdaq|dow|russell|vix|wall street|treasury|treasuries|dxy|us dollar|federal reserve|fed|fomc|cpi|ppi|nfp|jobs report|gdp|u\.s\.|united states|us stocks)\b/i.test(blob);
+      }
+
+      if(region === "europe"){
+        const exact = ["dax","ftse 100","cac 40","euro stoxx 50"];
+
+        if(instruments.some(x => exact.includes(x))) return true;
+
+        return /\b(dax|ftse|cac 40|stoxx|euro stoxx|european stocks|european markets|europe|eurozone|euro area|ecb|germany|france|uk market|uk stocks|london stocks)\b/i.test(blob);
+      }
+
+      return false;
+    }
+
+    function weightedHeadlineScore(item){
+      const voteScore = voteToScore(item.vote);
+      let weight = Number(item.freshness_weight || 1);
+
+      if(!Number.isFinite(weight) || weight <= 0) weight = 0.25;
+      if(String(item.impact || "").toLowerCase() === "high") weight *= 1.15;
+      if(String(item.relevance_level || "").toLowerCase() === "high") weight *= 1.10;
+      if(item.is_major_outlet) weight *= 1.18;
+
+      return { score:voteScore, weight:weight };
+    }
+
+    function calculateRegionalScore(data, region){
+      const rows = headlineRows(data).filter(item => regionMatch(item, region));
+
+      if(!rows.length){
+        return { score:50, count:0 };
+      }
+
+      let total = 0;
+      let weightTotal = 0;
+
+      rows.forEach(item => {
+        const part = weightedHeadlineScore(item);
+        total += part.score * part.weight;
+        weightTotal += part.weight;
+      });
+
+      return {
+        score:weightTotal ? clampScore(total / weightTotal) : 50,
+        count:rows.length
+      };
+    }
+
+    function updatePulseCard(key, score, label, countText){
+      const gauge = document.getElementById(`pulse${key}Gauge`);
+      const value = document.getElementById(`pulse${key}Value`);
+      const labelEl = document.getElementById(`pulse${key}Label`);
+      const meter = document.getElementById(`pulse${key}Meter`);
+      const count = document.getElementById(`pulse${key}Count`);
+
+      if(!gauge || !value || !labelEl || !meter || !count) return;
+
+      const safeScore = Math.max(0, Math.min(100, Number(score) || 50));
+      const angle = 90 + (safeScore * 3.6);
+
+      gauge.style.setProperty("--score", safeScore);
+      gauge.style.setProperty("--needle", `${angle}deg`);
+      gauge.style.setProperty("--accent", scoreColor(safeScore));
+      value.textContent = Math.round(safeScore);
+      labelEl.textContent = label;
+      labelEl.className = normalizeClass(label);
+      meter.style.width = `${safeScore}%`;
+      count.textContent = countText;
+    }
+
+    function cleanPulseTimestamp(value){
+      const raw = String(value || "").trim();
+      if(!raw) return "Last Scan: Latest data";
+
+      const dateMatch = raw.match(/(\d{4}-\d{2}-\d{2})/);
+      const ampmMatch = raw.match(/(\d{1,2}):\d{2}(?::\d{2})?\s*(AM|PM)/i);
+
+      if(dateMatch && ampmMatch){
+        return `Last Scan: ${dateMatch[1]} ${ampmMatch[1].padStart(2, "0")}:00 ${ampmMatch[2].toUpperCase()} NY`;
+      }
+
+      const twentyFour = raw.match(/(\d{4}-\d{2}-\d{2}).*?(\d{1,2}):\d{2}(?::\d{2})?/);
+      if(twentyFour){
+        const hour = String(Number(twentyFour[2])).padStart(2, "0");
+        return `Last Scan: ${twentyFour[1]} ${hour}:00 NY`;
+      }
+
+      return `Last Scan: ${raw}`;
+    }
+
+    function renderScore(data){
+      const globalScore = calculateGlobalScore(data);
+      const globalLabel = scoreLabel(globalScore);
+      const globalCount = Number(data?.psi_headlines_used || statusData?.psi_headlines_used || data?.psi_headline_limit || statusData?.psi_headline_limit || 0);
+
+      const us = calculateRegionalScore(data, "us");
+      const europe = calculateRegionalScore(data, "europe");
+
+      updatePulseCard("Global", globalScore, globalLabel, globalCount ? `${globalCount} PSI headline sample` : "Latest scan");
+      updatePulseCard("US", us.score, scoreLabel(us.score), us.count ? `${us.count} U.S. PSI headline sample` : "Latest scan");
+      updatePulseCard("Europe", europe.score, scoreLabel(europe.score), europe.count ? `${europe.count} Europe PSI headline sample` : "Latest scan");
+
+      const updated = document.getElementById("pulseUpdated");
+      if(updated) updated.textContent = cleanPulseTimestamp(data?.updated_ny || statusData?.updated || "Latest scan");
+    }
+
+    function renderStats(data){
+      const trust = data.trust_layer || {};
+      const lastUpdated = document.getElementById("lastUpdated");
+      const relevantHeadlines = document.getElementById("relevantHeadlines");
+      const sourcesWorking = document.getElementById("sourcesWorking");
+
+      if(lastUpdated) lastUpdated.textContent = data.updated_ny || "N/A";
+      if(relevantHeadlines) relevantHeadlines.textContent = trust.relevant_headlines ?? ((data.top_headlines || []).length || "N/A");
+      if(sourcesWorking) sourcesWorking.textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
+    }
+
+    function renderDailySummary(data){
+      const items = Array.isArray(data.daily_summary) ? data.daily_summary : [];
+
+      document.getElementById("dailySummary").innerHTML = items.length
+        ? items.map(item => `<div class="summary-line">${escapeHTML(item)}</div>`).join("")
+        : `<div class="summary-line">No daily summary available yet.</div>`;
+    }
+
+    function focusCard(item, type){
+      const headline = Array.isArray(item.headlines) && item.headlines[0] ? item.headlines[0] : null;
+
+      return `<div class="mini-card dynamic-card focus-card" onclick="window.location.href='dashboard.html'">
+        <div class="mini-title">${escapeHTML(item.name || "Unknown")}</div>
+        <div class="mini-meta">${escapeHTML(type)} • ${escapeHTML(item.count ?? 0)} mentions • <span class="${normalizeClass(item.vote)}">${escapeHTML(item.vote || "Neutral")}</span></div>
+        ${headline ? `<div class="mini-headline">${escapeHTML(headline.title || "")}</div>` : ""}
+        <div class="focus-open">Open dashboard →</div>
+      </div>`;
+    }
+
+    function renderMarketFocus(data){
+      const focus = data.top_market_focus || {};
+      const markets = Array.isArray(focus.top_markets) ? focus.top_markets : [];
+      const instruments = Array.isArray(focus.top_instruments) ? focus.top_instruments : [];
+      const cards = [];
+
+      markets.slice(0,4).forEach(item => cards.push({item,type:"Market"}));
+      instruments.slice(0,4).forEach(item => cards.push({item,type:"Instrument"}));
+
+      document.getElementById("marketFocus").innerHTML = cards.length
+        ? cards.map(card => focusCard(card.item, card.type)).join("")
+        : `<div class="mini-card dynamic-card focus-card">No market focus data available.</div>`;
+    }
+
+    function domainFromURL(url){
+      try{
+        return new URL(url).hostname.replace(/^www\./,"");
+      }catch(e){
+        return "";
+      }
+    }
+
+    function chunkIntoColumns(items, columnCount){
+      const cols = Array.from({length:columnCount},()=>[]);
+
+      items.forEach((item,index)=>{
+        cols[index%columnCount].push(item);
+      });
+
+      return cols;
+    }
+
+    function sourceChip(source){
+      const domain = domainFromURL(source.url || "");
+      const favicon = domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
+
+      return `<a class="source-chip" href="${escapeHTML(source.url || "#")}" target="_blank" rel="noopener">
+        ${favicon ? `<img src="${favicon}" alt="${escapeHTML(source.name || "Source")} logo" loading="lazy">` : ""}
+        <span class="source-chip-name">${escapeHTML(source.name || "Source")}</span>
+        <span class="source-chip-status"></span>
+      </a>`;
+    }
+
+    function renderSourcesWaterfall(data){
+      const sources = Array.isArray(data.sources) ? data.sources.filter(s => s.name && s.url) : [];
+      const fallback = document.getElementById("sourcesWaterfall");
+
+      if(!sources.length){
+        fallback.innerHTML = `<div class="muted">Source list unavailable.</div>`;
         return;
       }
 
-      const script = document.createElement("script");
-      script.id = id;
-      script.src = src;
-      script.async = true;
-      script.onload = () => { script.setAttribute("data-loaded", "1"); resolve(); };
-      script.onerror = () => reject(new Error("Failed to load " + src));
-      document.head.appendChild(script);
-    });
-  }
-
-  async function ensureLibraries(){
-    if(typeof window.html2canvas !== "function"){
-      await loadScript("psdHtml2CanvasLib", "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-    }
-
-    if(!window.jspdf || !window.jspdf.jsPDF){
-      await loadScript("psdJsPdfLib", "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-    }
-  }
-
-  function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
-
-  async function waitForFontsAndImages(root){
-    try{
-      if(document.fonts && document.fonts.ready) await document.fonts.ready;
-    }catch(e){}
-
-    const images = qsa("img", root);
-    await Promise.all(images.map(img => new Promise(resolve => {
-      if(img.complete) return resolve();
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-      setTimeout(resolve, 2500);
-    })));
-  }
-
-  function addStyleOnce(){
-    if(document.getElementById("psdPdfCaptureStyle")) return;
-
-    const style = document.createElement("style");
-    style.id = "psdPdfCaptureStyle";
-    style.textContent = `
-      #psdPdfCaptureRoot{
-        position:absolute;
-        left:-6000px;
-        top:0;
-        width:${PSD_CAPTURE_WIDTH}px;
-        z-index:-1;
-        pointer-events:none;
-        opacity:1;
-        font-family:Inter,Segoe UI,Arial,sans-serif;
-      }
-      #psdPdfCaptureRoot,
-      #psdPdfCaptureRoot *{
-        animation:none!important;
-        transition:none!important;
-        caret-color:transparent!important;
-      }
-      #psdPdfCaptureRoot .psd-capture-page{
-        width:${PSD_CAPTURE_WIDTH}px;
-        height:${PSD_CAPTURE_HEIGHT}px;
-        overflow:hidden;
-        box-sizing:border-box;
-        padding:28px;
-        color:#e6edf3;
-        background:
-          radial-gradient(circle at top left, rgba(210,153,34,.18), transparent 440px),
-          radial-gradient(circle at top right, rgba(88,166,255,.14), transparent 430px),
-          linear-gradient(180deg,#070a10 0%,#05070b 100%);
-      }
-      #psdPdfCaptureRoot .psd-capture-page + .psd-capture-page{margin-top:30px}
-      #psdPdfCaptureRoot .psd-page-title{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:18px;
-        margin:0 0 14px;
-        padding:10px 14px;
-        border:1px solid rgba(210,153,34,.28);
-        border-radius:18px;
-        background:rgba(13,17,23,.94);
-        box-shadow:0 12px 28px rgba(0,0,0,.22);
-      }
-      #psdPdfCaptureRoot .psd-page-title strong{font-size:15px;color:#ffd780;letter-spacing:.01em;white-space:nowrap}
-      #psdPdfCaptureRoot .psd-page-title span{font-size:11.5px;color:#c9d1d9;font-weight:700;text-align:right;white-space:nowrap}
-      #psdPdfCaptureRoot .header{
-        position:relative!important;
-        top:auto!important;
-        width:100%!important;
-        margin:0 0 14px!important;
-        border:1px solid rgba(210,153,34,.18)!important;
-        border-radius:22px!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.24)!important;
-        background:rgba(6,9,15,.96)!important;
-      }
-      #psdPdfCaptureRoot .header .nav a,
-      #psdPdfCaptureRoot .header .social-pill{font-size:13px!important}
-      #psdPdfCaptureRoot .logo{width:64px!important;height:64px!important}
-      #psdPdfCaptureRoot #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-ad-banner{
-        max-width:none!important;
-        margin:0 0 14px!important;
-        border-radius:999px!important;
-        box-shadow:0 10px 26px rgba(0,0,0,.20)!important;
-      }
-      #psdPdfCaptureRoot .lab-hero{
-        margin:0 0 14px!important;
-        padding:18px 20px!important;
-        border-radius:20px!important;
-      }
-      #psdPdfCaptureRoot .lab-hero h1{font-size:38px!important;white-space:nowrap!important;margin-bottom:8px!important}
-      #psdPdfCaptureRoot .lab-hero-main{font-size:14px!important;line-height:1.42!important;max-width:1350px!important}
-      #psdPdfCaptureRoot .lab-small{font-size:12px!important;line-height:1.38!important;max-width:1350px!important;margin-bottom:0!important}
-      #psdPdfCaptureRoot .lab-controls{display:none!important}
-      #psdPdfCaptureRoot .lab-card-grid{
-        display:grid!important;
-        grid-template-columns:repeat(5,minmax(0,1fr))!important;
-        gap:13px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .sentiment-card{
-        min-height:220px!important;
-        padding:16px!important;
-        border-radius:20px!important;
-        box-shadow:0 15px 34px rgba(0,0,0,.30)!important;
-      }
-      #psdPdfCaptureRoot .market-name{font-size:14px!important}
-      #psdPdfCaptureRoot .sentiment-badge{font-size:10px!important;padding:5px 8px!important}
-      #psdPdfCaptureRoot .gauge-row{grid-template-columns:96px 1fr!important;gap:10px!important}
-      #psdPdfCaptureRoot .mini-gauge{width:96px!important;height:96px!important}
-      #psdPdfCaptureRoot .mini-gauge-inner{width:68px!important;height:68px!important}
-      #psdPdfCaptureRoot .psi-big{font-size:25px!important}
-      #psdPdfCaptureRoot .metric-line{font-size:11px!important;padding-bottom:5px!important}
-      #psdPdfCaptureRoot .sparkline{height:48px!important;margin-top:12px!important}
-      #psdPdfCaptureRoot .chart-grid{
-        display:grid!important;
-        grid-template-columns:minmax(0,1.45fr) minmax(365px,.55fr)!important;
-        gap:18px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .panel,
-      #psdPdfCaptureRoot .lab-panel{
-        border-radius:22px!important;
-        padding:18px!important;
-        margin:0!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.28)!important;
-        background:radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 14rem),linear-gradient(180deg,#101826,#0d131d)!important;
-      }
-      #psdPdfCaptureRoot .panel h2,
-      #psdPdfCaptureRoot .lab-panel h2{font-size:23px!important;margin-bottom:6px!important;color:#fff!important}
-      #psdPdfCaptureRoot .panel-kicker{font-size:12px!important;line-height:1.38!important;color:#c9d1d9!important}
-      #psdPdfCaptureRoot .pill-row{display:none!important}
-      #psdPdfCaptureRoot .skyline-wrap,
-      #psdPdfCaptureRoot .radar-wrap{height:690px!important;border-radius:20px!important}
-      #psdPdfCaptureRoot #skylineChart,
-      #psdPdfCaptureRoot #radarChart{height:100%!important;max-height:none!important}
-      #psdPdfCaptureRoot .preview-note{font-size:11px!important;line-height:1.35!important;margin-top:10px!important;padding:10px 12px!important}
-      #psdPdfCaptureRoot .radar-legend span{font-size:10px!important;padding:5px 8px!important}
-      #psdPdfCaptureRoot .heat-legend{gap:7px!important;margin:8px 0!important}
-      #psdPdfCaptureRoot .heat-legend span{font-size:10px!important;padding:5px 8px!important}
-      #psdPdfCaptureRoot .heatmap{gap:8px!important;margin-top:12px!important}
-      #psdPdfCaptureRoot .heat-row{grid-template-columns:162px repeat(12,minmax(0,1fr))!important;gap:6px!important}
-      #psdPdfCaptureRoot .heat-name{font-size:12px!important}
-      #psdPdfCaptureRoot .heat-head{font-size:10px!important}
-      #psdPdfCaptureRoot .heat-cell{height:31px!important;font-size:10px!important;border-radius:8px!important}
-      #psdPdfCaptureRoot .ranking-list{gap:8px!important}
-      #psdPdfCaptureRoot .rank-item{padding:10px!important;border-radius:14px!important;grid-template-columns:30px minmax(0,1fr) auto!important;gap:10px!important}
-      #psdPdfCaptureRoot .rank-num{width:26px!important;height:26px!important;font-size:11px!important}
-      #psdPdfCaptureRoot .rank-title{font-size:13px!important}
-      #psdPdfCaptureRoot .rank-meta{font-size:10.5px!important;line-height:1.25!important}
-      #psdPdfCaptureRoot .rank-score{font-size:17px!important}
-      #psdPdfCaptureRoot .footer{
-        margin:14px 0 0!important;
-        padding:14px 0 0!important;
-        border-top:1px solid rgba(210,153,34,.18)!important;
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .footer-links{gap:9px!important;margin-bottom:8px!important}
-      #psdPdfCaptureRoot .footer-links a{font-size:11px!important;padding:3px 4px!important}
-      #psdPdfCaptureRoot .legal{font-size:11px!important;line-height:1.34!important;padding:9px 11px!important;margin-top:8px!important;border-radius:12px!important}
-      #psdPdfCaptureRoot .footer p{font-size:10.5px!important;margin:7px 0 0!important;line-height:1.25!important}
-
-      /* PDF capture fixes: live SVG lines use draw animations; disable animation must also reset dash offsets. */
-      #psdPdfCaptureRoot .skyline-line,
-      #psdPdfCaptureRoot .spark-path,
-      #psdPdfCaptureRoot svg path,
-      #psdPdfCaptureRoot svg polyline{
-        stroke-dasharray:none!important;
-        stroke-dashoffset:0!important;
-        opacity:1!important;
-        visibility:visible!important;
-      }
-      #psdPdfCaptureRoot .skyline-line{stroke-width:4.8!important;filter:drop-shadow(0 0 8px currentColor)!important}
-      #psdPdfCaptureRoot .spark-path{stroke-width:3.2!important;filter:drop-shadow(0 0 5px currentColor)!important}
-      #psdPdfCaptureRoot .radar-poly{opacity:.62!important;visibility:visible!important}
-      #psdPdfCaptureRoot .radar-wrap text,
-      #psdPdfCaptureRoot .skyline-wrap text{
-        opacity:1!important;
-        fill:#e6edf3!important;
-      }
-      #psdPdfCaptureRoot .chart-watermark{opacity:.16!important;color:rgba(255,255,255,.16)!important}
-      #psdPdfCaptureRoot .psd-final-page{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-final-page > .chart-grid{
-        flex:1 1 auto!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer{
-        margin-top:auto!important;
-        padding:11px 13px!important;
-        border:1px solid rgba(210,153,34,.24)!important;
-        border-radius:14px!important;
-        background:rgba(13,17,23,.94)!important;
-        box-shadow:0 10px 24px rgba(0,0,0,.22)!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer .footer-links{
-        gap:10px!important;
-        margin-bottom:7px!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer .footer-links a{
-        color:#d8dee9!important;
-        font-size:11.5px!important;
-        font-weight:700!important;
-      }
-      #psdPdfCaptureRoot .psd-pdf-footer .legal{
-        color:#f0d59a!important;
-        background:rgba(248,81,73,.08)!important;
-        border-color:rgba(248,81,73,.24)!important;
-      }
-
-      /* Historical Sentiment PDF support */
-      #psdPdfCaptureRoot .page{
-        max-width:none!important;
-        width:100%!important;
-        margin:0!important;
-        padding:0!important;
-      }
-      #psdPdfCaptureRoot .history-dashboard-hero{
-        display:block!important;
-        margin:0 0 12px!important;
-        padding:16px 18px!important;
-        border-radius:20px!important;
-        background:rgba(13,17,23,.94)!important;
-      }
-      #psdPdfCaptureRoot .history-dashboard-hero h1{
-        font-size:34px!important;
-        line-height:1.06!important;
-        margin:0 0 8px!important;
-        white-space:nowrap!important;
-      }
-      #psdPdfCaptureRoot .history-kicker{
-        margin-bottom:8px!important;
-        padding:6px 11px!important;
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .history-lead{
-        font-size:13px!important;
-        line-height:1.38!important;
-        max-width:1380px!important;
-      }
-      #psdPdfCaptureRoot .dash-stage-shell{
-        margin:0!important;
-        padding:8px!important;
-        border-radius:24px!important;
-        box-shadow:0 18px 42px rgba(0,0,0,.30)!important;
-      }
-      #psdPdfCaptureRoot .dash-stage{
-        height:640px!important;
-        min-height:0!important;
-        aspect-ratio:auto!important;
-        border-radius:20px!important;
-      }
-      #psdPdfCaptureRoot .dash-layout{
-        position:absolute!important;
-        inset:20px!important;
-        grid-template-columns:132px repeat(24,minmax(0,1fr))!important;
-        grid-template-rows:1fr 1fr 1fr!important;
-        gap:12px!important;
-      }
-      #psdPdfCaptureRoot .dash-side{
-        padding-top:120px!important;
-        gap:7px!important;
-      }
-      #psdPdfCaptureRoot .side-pill{
-        height:31px!important;
-        font-size:9.5px!important;
-      }
-      #psdPdfCaptureRoot .side-note{
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .dash-card{
-        border-radius:10px!important;
-      }
-      #psdPdfCaptureRoot .card-head{
-        height:30px!important;
-        padding:0 11px!important;
-      }
-      #psdPdfCaptureRoot .card-title{
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .card-icons,
-      #psdPdfCaptureRoot .mini-tabs,
-      #psdPdfCaptureRoot .chart-legend,
-      #psdPdfCaptureRoot .driver-meta,
-      #psdPdfCaptureRoot .bias-legend{
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .card-body{
-        inset:30px 10px 10px 10px!important;
-      }
-      #psdPdfCaptureRoot .bias-body{
-        inset:54px 10px 10px 10px!important;
-      }
-      #psdPdfCaptureRoot .metric-big{
-        top:38px!important;
-        left:12px!important;
-        font-size:28px!important;
-      }
-      #psdPdfCaptureRoot .metric-caption{
-        top:47px!important;
-        left:86px!important;
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .driver-list{
-        inset:36px 11px 10px 11px!important;
-        gap:5px!important;
-      }
-      #psdPdfCaptureRoot .driver-item{
-        font-size:8.5px!important;
-        line-height:1.18!important;
-        gap:6px!important;
-        padding-bottom:3px!important;
-      }
-      #psdPdfCaptureRoot .driver-badge{
-        font-size:7px!important;
-        padding:1px 5px!important;
-      }
-      #psdPdfCaptureRoot .stats-strip{
-        display:grid!important;
-        grid-template-columns:repeat(6,minmax(0,1fr))!important;
-        gap:12px!important;
-        margin:0 0 14px!important;
-      }
-      #psdPdfCaptureRoot .stat-tile{
-        border-radius:14px!important;
-        padding:12px!important;
-        min-height:92px!important;
-      }
-      #psdPdfCaptureRoot .stat-label{font-size:11px!important;margin-bottom:5px!important}
-      #psdPdfCaptureRoot .stat-value{font-size:22px!important}
-      #psdPdfCaptureRoot .stat-note{font-size:10px!important;line-height:1.25!important}
-      #psdPdfCaptureRoot .section.panel{
-        padding:18px!important;
-        border-radius:22px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .section.panel h2{
-        font-size:25px!important;
-        margin-bottom:6px!important;
-      }
-      #psdPdfCaptureRoot .section.panel .muted{
-        font-size:12px!important;
-        line-height:1.35!important;
-        margin-bottom:10px!important;
-      }
-      #psdPdfCaptureRoot .history-table-wrap{
-        margin-top:8px!important;
-        border-radius:16px!important;
-      }
-      #psdPdfCaptureRoot .history-table{
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .history-table th,
-      #psdPdfCaptureRoot .history-table td{
-        padding:8px 10px!important;
-      }
-      #psdPdfCaptureRoot .bias-pill{
-        font-size:9px!important;
-        padding:3px 7px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .header{
-        display:none!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title,
-      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title{
-        min-height:42px!important;
-        padding:8px 13px!important;
-        margin-bottom:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title strong,
-      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title strong{
-        font-size:13px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .psd-page-title span,
-      #psdPdfCaptureRoot .psd-history-record-page .psd-page-title span{
-        font-size:10.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-history-page1 .psd-ad-banner{
-        margin:0 0 12px!important;
-        min-height:34px!important;
-        padding:9px 13px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .history-dashboard-hero{
-        margin:0 0 12px!important;
-        padding:14px 17px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .history-dashboard-hero h1{
-        font-size:31px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .history-lead{
-        font-size:12.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .dash-stage-shell{
-        padding:8px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .dash-stage{
-        height:790px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-page1 .dash-layout{
-        inset:22px!important;
-        gap:13px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .section.panel{
-        flex:1 1 auto!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .history-table-wrap{
-        max-height:650px!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .history-table{
-        font-size:10.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .history-table th,
-      #psdPdfCaptureRoot .psd-history-record-page .history-table td{
-        padding:7px 9px!important;
-      }
-      #psdPdfCaptureRoot .psd-history-record-page .psd-pdf-footer{
-        margin-top:12px!important;
-        flex:0 0 auto!important;
-      }
-
-      /* Home page PDF support */
-      #psdPdfCaptureRoot .psd-home-page .header{
-        display:none!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-home-page .psd-ad-banner{
-        margin:0 0 14px!important;
-        min-height:36px!important;
-        padding:9px 14px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .home-layout{
-        display:block!important;
-        width:100%!important;
-      }
-      #psdPdfCaptureRoot .hero{
-        display:grid!important;
-        grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr)!important;
-        gap:18px!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .hero-copy{
-        padding:22px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .hero-copy h1{
-        font-size:42px!important;
-        line-height:1.06!important;
-        margin-bottom:12px!important;
-      }
-      #psdPdfCaptureRoot .hero-copy p{
-        font-size:13.5px!important;
-        line-height:1.48!important;
-        margin:0 0 10px!important;
-      }
-      #psdPdfCaptureRoot .hero-points{
-        display:grid!important;
-        grid-template-columns:repeat(3,minmax(0,1fr))!important;
-        gap:10px!important;
-        margin-top:14px!important;
-      }
-      #psdPdfCaptureRoot .hero-point{
-        padding:12px!important;
-        border-radius:14px!important;
-      }
-      #psdPdfCaptureRoot .hero-point strong{
-        font-size:13px!important;
-        margin-bottom:5px!important;
-      }
-      #psdPdfCaptureRoot .hero-point span{
-        font-size:11.5px!important;
-        line-height:1.35!important;
-      }
-      #psdPdfCaptureRoot .score-panel{
-        padding:20px!important;
-      }
-      #psdPdfCaptureRoot .score-ring{
-        width:210px!important;
-        height:210px!important;
-        margin:7px auto 13px!important;
-      }
-      #psdPdfCaptureRoot .score-inner{
-        width:156px!important;
-        height:156px!important;
-      }
-      #psdPdfCaptureRoot .score-number{
-        font-size:48px!important;
-      }
-      #psdPdfCaptureRoot .score-word{
-        font-size:17px!important;
-      }
-      #psdPdfCaptureRoot .score-desc{
-        font-size:12px!important;
-        line-height:1.4!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2{
-        display:grid!important;
-        grid-template-rows:auto 1fr!important;
-      }
-      #psdPdfCaptureRoot .psd-home-combo{
-        display:grid!important;
-        grid-template-columns:320px minmax(0,1fr)!important;
-        gap:16px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .instrument-rail{
-        position:relative!important;
-        top:auto!important;
-        padding:14px!important;
-        margin:0!important;
-        height:100%!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .instrument-rail h2{
-        font-size:18px!important;
-        margin-bottom:5px!important;
-      }
-      #psdPdfCaptureRoot .instrument-rail .muted{
-        font-size:11px!important;
-        line-height:1.35!important;
-        margin-bottom:8px!important;
-      }
-      #psdPdfCaptureRoot .rail-waterfall{
-        height:820px!important;
-        margin-top:8px!important;
-      }
-      #psdPdfCaptureRoot .rail-track{
-        transform:none!important;
-        animation:none!important;
-        gap:6px!important;
-      }
-      #psdPdfCaptureRoot .rail-item{
-        padding:6px 8px!important;
-        border-radius:11px!important;
-        grid-template-columns:24px minmax(0,1fr) auto!important;
-        gap:7px!important;
-      }
-      #psdPdfCaptureRoot .rail-icon{
-        width:21px!important;
-        height:21px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .rail-name{
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .rail-sub,
-      #psdPdfCaptureRoot .rail-state{
-        font-size:9px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-main-stack{
-        display:grid!important;
-        gap:14px!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .sources-layout{
-        display:grid!important;
-        grid-template-columns:280px minmax(0,1fr)!important;
-        gap:16px!important;
-      }
-      #psdPdfCaptureRoot .sources-layout h2{
-        font-size:24px!important;
-      }
-      #psdPdfCaptureRoot .sources-layout p{
-        font-size:12px!important;
-        line-height:1.42!important;
-      }
-      #psdPdfCaptureRoot .sources-waterfall{
-        height:370px!important;
-        min-height:370px!important;
-      }
-      #psdPdfCaptureRoot .waterfall-track{
-        transform:none!important;
-        animation:none!important;
-        gap:8px!important;
-      }
-      #psdPdfCaptureRoot .source-chip{
-        min-height:42px!important;
-        padding:8px 10px!important;
-        border-radius:12px!important;
-      }
-      #psdPdfCaptureRoot .source-chip img{
-        width:20px!important;
-        height:20px!important;
-      }
-      #psdPdfCaptureRoot .source-chip-name{
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .summary-lines{
-        gap:8px!important;
-      }
-      #psdPdfCaptureRoot .summary-line{
-        padding:10px 12px!important;
-        font-size:12px!important;
-        line-height:1.35!important;
-      }
-      #psdPdfCaptureRoot .focus-grid{
-        display:grid!important;
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:10px!important;
-      }
-      #psdPdfCaptureRoot .focus-card{
-        min-height:116px!important;
-      }
-      #psdPdfCaptureRoot .mini-card{
-        padding:12px!important;
-        border-radius:13px!important;
-      }
-      #psdPdfCaptureRoot .mini-title{
-        font-size:13px!important;
-        margin-bottom:6px!important;
-      }
-      #psdPdfCaptureRoot .mini-meta,
-      #psdPdfCaptureRoot .mini-headline,
-      #psdPdfCaptureRoot .focus-open{
-        font-size:10.5px!important;
-        line-height:1.3!important;
-      }
-      #psdPdfCaptureRoot .action-grid{
-        display:grid!important;
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:10px!important;
-        margin-top:10px!important;
-      }
-      #psdPdfCaptureRoot .action-card{
-        padding:14px!important;
-        border-radius:14px!important;
-      }
-      #psdPdfCaptureRoot .action-label{
-        font-size:9.5px!important;
-        padding:5px 8px!important;
-        margin-bottom:8px!important;
-      }
-      #psdPdfCaptureRoot .action-card h3{
-        font-size:17px!important;
-        margin-bottom:6px!important;
-      }
-      #psdPdfCaptureRoot .action-card p{
-        font-size:11px!important;
-        line-height:1.34!important;
-        margin-bottom:8px!important;
-      }
-      #psdPdfCaptureRoot .action-cta{
-        font-size:11px!important;
-      }
-
-      /* Home PDF v11 requested layout */
-      #psdPdfCaptureRoot .psd-home-page1,
-      #psdPdfCaptureRoot .psd-home-page2,
-      #psdPdfCaptureRoot .psd-home-page3{
-        display:flex!important;
-        flex-direction:column!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header,
-      #psdPdfCaptureRoot .psd-home-page3 .header{
-        display:grid!important;
-        grid-template-columns:auto 1fr auto!important;
-        padding:10px 18px!important;
-        margin:0 0 12px!important;
-        min-height:88px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header .nav,
-      #psdPdfCaptureRoot .psd-home-page3 .header .nav{
-        gap:7px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header .nav a,
-      #psdPdfCaptureRoot .psd-home-page3 .header .nav a{
-        font-size:12px!important;
-        padding:5px 6px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .brand-stamp,
-      #psdPdfCaptureRoot .psd-home-page3 .brand-stamp{
-        font-size:11px!important;
-        padding:7px 11px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .site-subtitle,
-      #psdPdfCaptureRoot .psd-home-page3 .site-subtitle{
-        font-size:10.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .header-pill,
-      #psdPdfCaptureRoot .psd-home-page3 .header-pill{
-        font-size:11px!important;
-        padding:7px 11px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-home-page1 .psd-ad-banner,
-      #psdPdfCaptureRoot .psd-home-page3 #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-home-page3 .psd-ad-banner{
-        margin:0 0 12px!important;
-        min-height:34px!important;
-        padding:9px 14px!important;
-        font-size:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero{
-        grid-template-columns:1fr!important;
-        gap:15px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-        align-items:stretch!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main{
-        display:grid!important;
-        grid-template-columns:270px minmax(0,1fr)!important;
-        gap:14px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail{
-        height:auto!important;
-        min-height:0!important;
-        padding:12px!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail .page-chip{
-        font-size:10px!important;
-        padding:6px 9px!important;
-        margin-bottom:7px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail h2{
-        font-size:17px!important;
-        margin-bottom:4px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .instrument-rail .muted{
-        font-size:10px!important;
-        line-height:1.25!important;
-        margin:0 0 6px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-waterfall{
-        height:650px!important;
-        margin-top:6px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-track{
-        gap:5px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-item{
-        padding:5px 7px!important;
-        border-radius:10px!important;
-        grid-template-columns:22px minmax(0,1fr) auto!important;
-        gap:6px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-icon{
-        width:20px!important;
-        height:20px!important;
-        font-size:11px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-name{
-        font-size:10px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-sub,
-      #psdPdfCaptureRoot .psd-home-page1-main .rail-state{
-        font-size:8.5px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1-right{
-        display:flex!important;
-        flex-direction:column!important;
-        min-height:0!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
-        padding:19px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
-        font-size:38px!important;
-        line-height:1.06!important;
-        margin-bottom:10px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-copy p{
-        font-size:12.8px!important;
-        line-height:1.42!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hero-points{
-        gap:9px!important;
-        margin-top:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-panel{
-        padding:18px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-panel{
-        display:flex!important;
-        flex-direction:column!important;
-        justify-content:center!important;
-        align-items:center!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-ring{
-        width:300px!important;
-        height:300px!important;
-        margin:10px auto 16px!important;
-        background:transparent!important;
-        box-shadow:none!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .score-inner{
-        width:220px!important;
-        height:220px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-score-svg{
-        width:300px!important;
-        height:300px!important;
-        display:block!important;
-        overflow:visible!important;
-      }
-      #psdPdfCaptureRoot .psd-home-score-svg text{
-        font-family:Inter,Segoe UI,Arial,sans-serif!important;
-        fill:#e6edf3!important;
-        opacity:1!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row{
-        display:flex!important;
-        align-items:center!important;
-        gap:14px!important;
-        margin:12px 0 0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-print-sample{
-        width:62px!important;
-        height:86px!important;
-        border-radius:18px!important;
-        display:flex!important;
-        flex-direction:column!important;
-        align-items:center!important;
-        justify-content:center!important;
-        gap:4px!important;
-        border:1px solid rgba(210,153,34,.45)!important;
-        background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96))!important;
-        color:#ffd780!important;
-        box-shadow:0 0 24px rgba(210,153,34,.18)!important;
-        font-family:Inter,Segoe UI,Arial,sans-serif!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-icon{
-        font-size:21px!important;
-        line-height:1!important;
-      }
-      #psdPdfCaptureRoot .psd-home-widget-row .psd-widget-text{
-        font-size:12px!important;
-        line-height:1.05!important;
-        font-weight:700!important;
-        text-align:center!important;
-        color:#ffe7a8!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-footer,
-      #psdPdfCaptureRoot .psd-home-page2 .psd-pdf-footer,
-      #psdPdfCaptureRoot .psd-home-page3 .psd-pdf-footer{
-        margin-top:auto!important;
-        flex:0 0 auto!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .psd-home-page2-stack{
-        display:grid!important;
-        grid-template-columns:1fr!important;
-        gap:14px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .section.panel{
-        margin:0!important;
-        overflow:hidden!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .summary-line{
-        font-size:13px!important;
-        line-height:1.42!important;
-        padding:12px 14px!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page2 .focus-grid{
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page3 .section.panel{
-        flex:1 1 auto!important;
-        min-height:0!important;
-        margin:0!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page3 .action-grid{
-        grid-template-columns:repeat(4,minmax(0,1fr))!important;
-        gap:11px!important;
-      }
-
-
-
-      /* Home PDF: color-safe canvas gauges only */
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host{
-        background:transparent!important;
-        box-shadow:none!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host::before,
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge-host::after{
-        display:none!important;
-        content:none!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-canvas-gauge{
-        display:block!important;
-        width:100%!important;
-        height:100%!important;
-      }
-
-      /* News & Articles PDF support - built from locked v15 */
-      #psdPdfCaptureRoot .psd-news-page{
-        display:flex!important;
-        flex-direction:column!important;
-        gap:12px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-page .psd-page-title{
-        min-height:42px!important;
-        padding:8px 13px!important;
-        margin-bottom:0!important;
-      }
-      #psdPdfCaptureRoot .psd-news-page .psd-page-title strong{font-size:13px!important;}
-      #psdPdfCaptureRoot .psd-news-page .psd-page-title span{font-size:10.5px!important;}
-      #psdPdfCaptureRoot .psd-news-page .header{
-        position:relative!important;
-        top:auto!important;
-        margin:0!important;
-        min-height:84px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-page .logo{width:58px!important;height:58px!important;}
-      #psdPdfCaptureRoot .psd-news-page .header .nav{gap:7px!important;}
-      #psdPdfCaptureRoot .psd-news-page .header .nav a{font-size:12px!important;padding:5px 6px!important;}
-      #psdPdfCaptureRoot .psd-news-page .brand-stamp{font-size:11px!important;padding:7px 11px!important;}
-      #psdPdfCaptureRoot .psd-news-page .site-subtitle{font-size:10.5px!important;}
-      #psdPdfCaptureRoot .psd-news-page .header-pill{font-size:11px!important;padding:7px 11px!important;}
-      #psdPdfCaptureRoot .psd-news-page #psdAdvertiseBanner,
-      #psdPdfCaptureRoot .psd-news-page .psd-ad-banner{
-        margin:0!important;
-        min-height:38px!important;
-        padding:9px 13px!important;
-        font-size:12px!important;
-        max-width:none!important;
-        border-radius:999px!important;
-        flex:0 0 auto!important;
-      }
-      #psdPdfCaptureRoot .psd-news-hero{
-        margin:0!important;
-        padding:16px 18px!important;
-        border-radius:20px!important;
-        background:radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 14rem),linear-gradient(180deg,#101826,#0d131d)!important;
-        border:1px solid rgba(210,153,34,.18)!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.24)!important;
-        flex:0 0 auto!important;
-      }
-      #psdPdfCaptureRoot .psd-news-hero h1{font-size:31px!important;margin:0 0 7px!important;line-height:1.06!important;color:#fff!important;}
-      #psdPdfCaptureRoot .psd-news-hero h2{font-size:21px!important;margin:0 0 6px!important;color:#fff!important;}
-      #psdPdfCaptureRoot .psd-news-hero p{font-size:12.5px!important;line-height:1.34!important;margin:5px 0!important;color:#c9d1d9!important;}
-      #psdPdfCaptureRoot .psd-news-hero .controls,
-      #psdPdfCaptureRoot .psd-news-hero input,
-      #psdPdfCaptureRoot .psd-news-hero select,
-      #psdPdfCaptureRoot .psd-news-hero button,
-      #psdPdfCaptureRoot .psd-news-hero .source-summary{display:none!important;}
-      #psdPdfCaptureRoot .psd-news-filter-row{
-        display:grid!important;
-        grid-template-columns:1.45fr 1fr 1fr 1fr!important;
-        gap:10px!important;
-        margin:-2px 0 0!important;
-        flex:0 0 auto!important;
-      }
-      #psdPdfCaptureRoot .psd-news-filter-cell{
-        min-height:42px!important;
-        display:flex!important;
-        align-items:center!important;
-        padding:0 14px!important;
-        border-radius:13px!important;
-        border:1px solid rgba(88,166,255,.24)!important;
-        background:linear-gradient(180deg,#111821,#0d131d)!important;
-        color:#e6edf3!important;
-        font-size:13px!important;
-        font-weight:650!important;
-        overflow:hidden!important;
-        white-space:nowrap!important;
-        text-overflow:ellipsis!important;
-        box-shadow:0 10px 22px rgba(0,0,0,.18)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-filter-cell.placeholder{
-        color:#8b949e!important;
-        font-weight:600!important;
-      }
-      #psdPdfCaptureRoot .psd-news-card-title{
-        color:#ffd780!important;
-        font-weight:900!important;
-        font-size:15px!important;
-        margin:0 0 8px!important;
-        letter-spacing:.01em!important;
-      }
-      #psdPdfCaptureRoot .psd-news-top-grid{
-        display:grid!important;
-        grid-template-columns:repeat(3,minmax(0,1fr))!important;
-        grid-template-rows:repeat(2,minmax(0,1fr))!important;
-        gap:10px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-news-mid-grid{
-        display:grid!important;
-        grid-template-columns:repeat(3,minmax(0,1fr))!important;
-        grid-template-rows:repeat(3,minmax(0,1fr))!important;
-        gap:10px!important;
-        flex:1 1 auto!important;
-        min-height:0!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-card{
-        display:flex!important;
-        flex-direction:column!important;
-        min-width:0!important;
-        overflow:hidden!important;
-        border-radius:18px!important;
-        padding:11px!important;
-        background:radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 13rem),linear-gradient(180deg,#111927,#0d131d)!important;
-        border:1px solid rgba(210,153,34,.18)!important;
-        box-shadow:0 16px 34px rgba(0,0,0,.25)!important;
-        color:#e6edf3!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-source{
-        display:flex!important;
-        gap:7px!important;
-        flex-wrap:wrap!important;
-        align-items:center!important;
-        margin-bottom:10px!important;
-        font-size:10.5px!important;
-        line-height:1.2!important;
-      }
-      #psdPdfCaptureRoot .psd-news-pill{
-        display:inline-flex!important;
-        align-items:center!important;
-        max-width:100%!important;
-        border-radius:999px!important;
-        padding:5px 8px!important;
-        background:rgba(210,153,34,.13)!important;
-        border:1px solid rgba(210,153,34,.26)!important;
-        color:#ffd780!important;
-        font-weight:850!important;
-        white-space:nowrap!important;
-        overflow:hidden!important;
-        text-overflow:ellipsis!important;
-      }
-      #psdPdfCaptureRoot .psd-news-pill.tech{
-        color:#b7f7c8!important;
-        background:rgba(46,160,67,.18)!important;
-        border-color:rgba(46,160,67,.42)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-pill.bullish{
-        color:#d8ebff!important;
-        background:rgba(88,166,255,.18)!important;
-        border-color:rgba(88,166,255,.42)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-pill.bearish{
-        color:#ffc2bd!important;
-        background:rgba(248,81,73,.18)!important;
-        border-color:rgba(248,81,73,.42)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-pill.neutral{
-        color:#d8ebff!important;
-        background:rgba(88,166,255,.13)!important;
-        border-color:rgba(88,166,255,.30)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-pill.impact{
-        color:#ffd780!important;
-        background:rgba(210,153,34,.18)!important;
-        border-color:rgba(210,153,34,.42)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-title{
-        color:#fff!important;
-        font-size:13.2px!important;
-        font-weight:850!important;
-        line-height:1.18!important;
-        margin:0 0 8px!important;
-        display:block!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-meta{
-        color:#c9d1d9!important;
-        font-size:9.5px!important;
-        line-height:1.30!important;
-        white-space:pre-line!important;
-        margin-top:auto!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-open{
-        color:#ffd780!important;
-        font-size:9.5px!important;
-        font-weight:800!important;
-        margin-top:6px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-widget-row{
-        display:flex!important;
-        justify-content:flex-start!important;
-        gap:10px!important;
-        flex:0 0 auto!important;
-        margin-top:0!important;
-      }
-      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-print-sample{
-        width:62px!important;
-        height:86px!important;
-        border-radius:18px!important;
-        display:flex!important;
-        flex-direction:column!important;
-        align-items:center!important;
-        justify-content:center!important;
-        gap:4px!important;
-        border:1px solid rgba(210,153,34,.45)!important;
-        background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(13,17,23,.96))!important;
-        color:#ffd780!important;
-        box-shadow:0 0 24px rgba(210,153,34,.18)!important;
-        font-family:Inter,Segoe UI,Arial,sans-serif!important;
-      }
-      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-icon{font-size:21px!important;line-height:1!important;}
-      #psdPdfCaptureRoot .psd-news-widget-row .psd-widget-text{font-size:12px!important;line-height:1.05!important;font-weight:700!important;text-align:center!important;color:#ffe7a8!important;}
-      #psdPdfCaptureRoot .psd-news-ad-space{
-        display:none!important;
-      }
-      #psdPdfCaptureRoot .psd-news-ad-space strong{font-size:0!important;}
-      #psdPdfCaptureRoot .psd-news-ad-space span{font-size:0!important;}
-
-      #psdPdfCaptureRoot .psd-news-source-row{
-        display:flex!important;
-        align-items:center!important;
-        gap:9px!important;
-        min-height:28px!important;
-        margin:0 0 9px!important;
-        color:#fff!important;
-        font-size:14px!important;
-        font-weight:900!important;
-        line-height:1.2!important;
-        opacity:1!important;
-        visibility:visible!important;
-        flex:0 0 auto!important;
-      }
-      #psdPdfCaptureRoot .psd-news-source-dot{
-        width:26px!important;
-        height:26px!important;
-        border-radius:8px!important;
-        display:inline-grid!important;
-        place-items:center!important;
-        background:linear-gradient(180deg,rgba(255,215,128,.28),rgba(13,17,23,.98))!important;
-        border:1px solid rgba(210,153,34,.48)!important;
-        color:#ffd780!important;
-        font-size:12px!important;
-        font-weight:950!important;
-        flex:0 0 26px!important;
-        overflow:hidden!important;
-        box-shadow:0 0 12px rgba(210,153,34,.16)!important;
-        position:relative!important;
-      }
-      #psdPdfCaptureRoot .psd-news-logo-fallback{
-        position:absolute!important;
-        inset:0!important;
-        display:grid!important;
-        place-items:center!important;
-        color:#ffd780!important;
-        font-size:12px!important;
-        font-weight:950!important;
-        z-index:1!important;
-      }
-      #psdPdfCaptureRoot .psd-news-source-dot img{
-        width:100%!important;
-        height:100%!important;
-        object-fit:contain!important;
-        display:block!important;
-        border-radius:7px!important;
-        position:relative!important;
-        z-index:2!important;
-        background:rgba(255,255,255,.92)!important;
-      }
-      #psdPdfCaptureRoot .psd-news-source-name{
-        display:block!important;
-        color:#fff!important;
-        white-space:nowrap!important;
-        overflow:hidden!important;
-        text-overflow:ellipsis!important;
-        max-width:100%!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-card .psd-news-report-source{
-        margin-bottom:10px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-report-card .psd-news-pill{
-        font-size:10px!important;
-        padding:5px 8px!important;
-      }
-      #psdPdfCaptureRoot .psd-news-meta-block{
-        margin-top:auto!important;
-        display:grid!important;
-        gap:3px!important;
-        color:#aeb8c7!important;
-        font-size:10.2px!important;
-        line-height:1.24!important;
-      }
-      #psdPdfCaptureRoot .psd-news-meta-block div{
-        white-space:normal!important;
-        overflow:hidden!important;
-        display:-webkit-box!important;
-        -webkit-line-clamp:2!important;
-        -webkit-box-orient:vertical!important;
-      }
-      #psdPdfCaptureRoot .psd-news-meta-label{
-        color:#c9d1d9!important;
-        font-weight:800!important;
-      }
-      #psdPdfCaptureRoot .psd-news-date{
-        color:#8b949e!important;
-        font-size:10px!important;
-        margin-top:2px!important;
-      }
-
-      #psdPdfCaptureRoot .psd-news-page3 .psd-pdf-footer{
-        margin-top:0!important;
-        flex:0 0 auto!important;
-      }
-
-
-    `;
-    document.head.appendChild(style);
-  }
-
-  function cloneElement(selectorOrEl){
-    const el = typeof selectorOrEl === "string" ? qs(selectorOrEl) : selectorOrEl;
-    if(!el) return null;
-
-    const clone = el.cloneNode(true);
-
-    // Preserve live canvas charts. cloneNode does not copy drawn canvas pixels.
-    const originalCanvases = qsa("canvas", el);
-    const clonedCanvases = qsa("canvas", clone);
-    originalCanvases.forEach((canvas, idx) => {
-      const target = clonedCanvases[idx];
-      if(!target) return;
-      try{
-        const rect = canvas.getBoundingClientRect();
-        const img = document.createElement("img");
-        img.src = canvas.toDataURL("image/png");
-        img.className = canvas.className || "";
-        img.alt = canvas.getAttribute("aria-label") || "Chart";
-        img.style.display = "block";
-        img.style.width = rect.width ? rect.width + "px" : "100%";
-        img.style.height = rect.height ? rect.height + "px" : "100%";
-        img.style.maxWidth = "100%";
-        img.style.objectFit = "fill";
-        target.replaceWith(img);
-      }catch(error){
-        console.warn("PDF canvas capture skipped", error);
-      }
-    });
-
-    clone.removeAttribute("id");
-    qsa("[id]", clone).forEach(x => x.removeAttribute("id"));
-    qsa("script", clone).forEach(x => x.remove());
-    return clone;
-  }
-
-  function coreFormulaVersion(){
-    return safeText((window.PSDCore && window.PSDCore.VERSION) || window.PSD_SENTIMENT_CORE_VERSION || "");
-  }
-
-  function sectionTitle(text, sub){
-    const bar = document.createElement("div");
-    bar.className = "psd-page-title";
-    const reportTitle = `${PSD_SITE_LABEL} - ${pageName()}`;
-    const version = coreFormulaVersion();
-    const sectionLabel = [text, sub, version ? `Formula ${version}` : ""].filter(Boolean).join(" • ");
-    bar.innerHTML = `<strong>${reportTitle}</strong><span>${sectionLabel}</span>`;
-    return bar;
-  }
-
-  function createPage(title, sub){
-    const page = document.createElement("div");
-    page.className = "psd-capture-page";
-    page.appendChild(sectionTitle(title, sub));
-    return page;
-  }
-
-  function buildDashboardPages(root){
-    const now = new Date().toLocaleString();
-
-    const page1 = createPage("Summary", `Generated ${now}`);
-    [".header", "#psdAdvertiseBanner", ".lab-hero", "#snapshotCards"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page1.appendChild(clone);
-    });
-
-    const grids = qsa(".chart-grid");
-
-    const page2 = createPage("Charts", "Sentiment Skyline + Radar Comparison");
-    const grid1 = cloneElement(grids[0]);
-    if(grid1) page2.appendChild(grid1);
-
-    const page3 = createPage("Heatwave & Ranking", "Sentiment Heatwave + Strength Ranking + Disclaimer");
-    page3.classList.add("psd-final-page");
-    const grid2 = cloneElement(grids[1]);
-    if(grid2) page3.appendChild(grid2);
-    const footer = cloneElement(".footer");
-    if(footer){
-      footer.classList.add("psd-pdf-footer");
-      page3.appendChild(footer);
-    }
-
-    root.appendChild(page1);
-    root.appendChild(page2);
-    root.appendChild(page3);
-  }
-
-  function buildHistoricalPages(root){
-    const now = new Date().toLocaleString();
-
-    const page1 = createPage("Historical Sentiment", `Generated ${now}`);
-    page1.classList.add("psd-history-page1");
-    ["#psdAdvertiseBanner", ".history-dashboard-hero", ".dash-stage-shell"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page1.appendChild(clone);
-    });
-
-    const page2 = createPage("Historical Sentiment", "Stats + Filtered Historical Records + Disclaimer");
-    page2.classList.add("psd-history-record-page");
-    [".stats-strip", ".section.panel"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone){
-        if(clone.matches && clone.matches(".section.panel")){
-          const rows = qsa("tbody tr", clone);
-          rows.forEach((row, idx) => { if(idx > 11) row.remove(); });
-        }
-        page2.appendChild(clone);
-      }
-    });
-    const footer = cloneElement(".footer");
-    if(footer){
-      footer.classList.add("psd-pdf-footer");
-      page2.appendChild(footer);
-    }
-
-    root.appendChild(page1);
-    root.appendChild(page2);
-  }
-
-
-
-
-  function enhanceHomeHeroClone(heroClone){
-    if(!heroClone) return heroClone;
-
-    const scoreText = safeText(qs("#scoreNumber")?.textContent || "50");
-    const score = Math.max(0, Math.min(100, parseInt(scoreText, 10) || 50));
-    const label = safeText(qs("#scoreWord")?.textContent || "Mixed/Neutral");
-    const color = score >= 70 ? "#3fb950" : score <= 30 ? "#f85149" : "#d29922";
-    const radius = 112;
-    const stroke = 24;
-    const circumference = 2 * Math.PI * radius;
-    const dash = (score / 100) * circumference;
-
-    const ring = qs(".score-ring", heroClone);
-    if(ring){
-      ring.innerHTML = `
-        <svg class="psd-home-score-svg" viewBox="0 0 300 300" role="img" aria-label="Global Public Sentiment Index ${score}">
-          <defs>
-            <filter id="psdScoreGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
-              <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
-            </filter>
-          </defs>
-          <circle cx="150" cy="150" r="${radius}" fill="#0d1117" stroke="rgba(255,255,255,.12)" stroke-width="${stroke}"></circle>
-          <circle cx="150" cy="150" r="${radius}" fill="none" stroke="#26313f" stroke-width="${stroke}" stroke-linecap="round"></circle>
-          <circle cx="150" cy="150" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
-            stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(-90 150 150)" filter="url(#psdScoreGlow)"></circle>
-          <circle cx="150" cy="150" r="76" fill="#0d1117" stroke="rgba(255,255,255,.14)" stroke-width="2"></circle>
-          <text x="150" y="142" text-anchor="middle" font-size="58" font-weight="800">${score}</text>
-          <text x="150" y="174" text-anchor="middle" font-size="19" font-weight="700" fill="${color}">${label}</text>
-        </svg>
-      `;
-    }
-
-    function drawPdfGaugeCanvas(canvas, score, label){
-      const dpr = 3;
-      const size = 520;
-      canvas.width = size * dpr;
-      canvas.height = size * dpr;
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-      canvas.className = "psd-pdf-canvas-gauge";
-
-      const ctx = canvas.getContext("2d");
-      ctx.scale(dpr, dpr);
-
-      const safeScore = Math.max(0, Math.min(100, Number(score) || 50));
-      const safeLabel = safeText(label || "Mixed/Neutral").toUpperCase();
-
-      const cx = size / 2;
-      const cy = size / 2;
-      const outerR = 178;
-      const ringW = 38;
-
-      function degToRad(deg){
-        return (deg - 90) * Math.PI / 180;
-      }
-
-      function arc(radius, startDeg, endDeg, color, width, cap = "butt"){
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, degToRad(startDeg), degToRad(endDeg), false);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.lineCap = cap;
-        ctx.stroke();
-      }
-
-      function ring(radius, color, width, dash){
-        ctx.save();
-        if(dash) ctx.setLineDash(dash);
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      function hexToRgb(hex){
-        const clean = hex.replace("#", "");
-        return {
-          r: parseInt(clean.slice(0,2),16),
-          g: parseInt(clean.slice(2,4),16),
-          b: parseInt(clean.slice(4,6),16)
-        };
-      }
-
-      function mixColor(a, b, t){
-        const c1 = hexToRgb(a);
-        const c2 = hexToRgb(b);
-        const r = Math.round(c1.r + (c2.r - c1.r) * t);
-        const g = Math.round(c1.g + (c2.g - c1.g) * t);
-        const bch = Math.round(c1.b + (c2.b - c1.b) * t);
-        return `rgb(${r},${g},${bch})`;
-      }
-
-      const colorStops = [
-        {t:0.00, c:"#ff5454"},   // score 0 area
-        {t:0.18, c:"#ff8d4b"},
-        {t:0.32, c:"#ffc95c"},
-        {t:0.375, c:"#ffe072"},  // 50 at top center
-        {t:0.52, c:"#91db6a"},
-        {t:0.70, c:"#56c7b7"},
-        {t:0.84, c:"#58a6ff"},
-        {t:1.00, c:"#ff5454"}    // close the circle
-      ];
-
-      function colorAt(t){
-        for(let i = 0; i < colorStops.length - 1; i++){
-          const a = colorStops[i];
-          const b = colorStops[i + 1];
-          if(t >= a.t && t <= b.t){
-            const lt = (t - a.t) / (b.t - a.t || 1);
-            return mixColor(a.c, b.c, lt);
-          }
-        }
-        return colorStops[colorStops.length - 1].c;
-      }
-
-      // Background
-      const bg = ctx.createRadialGradient(cx, cy - 38, 18, cx, cy, 232);
-      bg.addColorStop(0, "#182942");
-      bg.addColorStop(.62, "#08111f");
-      bg.addColorStop(1, "#030812");
-      ctx.fillStyle = bg;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 222, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Soft outer glow and structure
-      ctx.save();
-      ctx.shadowColor = "rgba(88,166,255,.45)";
-      ctx.shadowBlur = 18;
-      ring(218, "rgba(88,166,255,.34)", 3);
-      ctx.restore();
-
-      ring(197, "rgba(255,255,255,.12)", 2);
-      ring(154, "rgba(88,166,255,.18)", 4);
-
-      // Full color circle (no black dead-zone)
-      ctx.save();
-      ctx.shadowColor = "rgba(88,166,255,.26)";
-      ctx.shadowBlur = 10;
-      const segs = 180;
-      for(let i = 0; i < segs; i++){
-        const t1 = i / segs;
-        const t2 = (i + 1) / segs;
-        // Start at 135deg so score 0 is lower-left, and 50 maps to top center.
-        const d1 = 135 + (t1 * 360);
-        const d2 = 135 + (t2 * 360);
-        arc(outerR, d1, d2, colorAt(t1), ringW, "butt");
-      }
-      ctx.restore();
-
-      // Outer dashed ticks
-      ctx.save();
-      for(let i = 0; i < 48; i++){
-        const deg = i * 7.5;
-        const rad = degToRad(deg);
-        const x1 = cx + Math.cos(rad) * 196;
-        const y1 = cy + Math.sin(rad) * 196;
-        const x2 = cx + Math.cos(rad) * 202;
-        const y2 = cy + Math.sin(rad) * 202;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = "rgba(255,255,255,.45)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-      ctx.restore();
-
-      // Center disk
-      const centerGrad = ctx.createRadialGradient(cx, cy - 25, 20, cx, cy, 82);
-      centerGrad.addColorStop(0, "#203452");
-      centerGrad.addColorStop(.72, "#0c1728");
-      centerGrad.addColorStop(1, "#07101c");
-      ctx.fillStyle = centerGrad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 82, 0, Math.PI * 2);
-      ctx.fill();
-      ring(82, "rgba(88,166,255,.34)", 3);
-
-      // Needle: 50 is at 12 o'clock.
-      const angleDeg = 135 - (safeScore * 4.5);
-      const angle = angleDeg * Math.PI / 180;
-      const nx = cx + Math.cos(angle) * 142;
-      const ny = cy + Math.sin(angle) * 142;
-
-      ctx.save();
-      ctx.shadowColor = "rgba(255,100,90,.70)";
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(nx, ny);
-      ctx.strokeStyle = "#ff7a5c";
-      ctx.lineWidth = 6;
-      ctx.lineCap = "round";
-      ctx.stroke();
-
-      ctx.fillStyle = "#ff6b5a";
-      ctx.beginPath();
-      ctx.arc(nx, ny, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.fillStyle = "#09111f";
-      ctx.beginPath();
-      ctx.arc(cx, cy, 13, 0, Math.PI * 2);
-      ctx.fill();
-      ring(13, "rgba(255,255,255,.28)", 2);
-
-      // Center score and label only. No perimeter numbers.
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#f5f9ff";
-      ctx.font = "900 74px Inter, Segoe UI, Arial";
-      ctx.fillText(String(Math.round(safeScore)), cx, cy - 6);
-
-      ctx.fillStyle = "#9eb6d4";
-      ctx.font = "900 18px Inter, Segoe UI, Arial";
-      ctx.fillText(safeLabel.length > 13 ? safeLabel.slice(0, 13) + "…" : safeLabel, cx, cy + 34);
-    }
-
-    [
-      {gauge:"#pulseGlobalGauge", value:"#pulseGlobalValue", label:"#pulseGlobalLabel"},
-      {gauge:"#pulseUSGauge", value:"#pulseUSValue", label:"#pulseUSLabel"},
-      {gauge:"#pulseEuropeGauge", value:"#pulseEuropeValue", label:"#pulseEuropeLabel"}
-    ].forEach(item => {
-      const liveScore = safeText(qs(item.value)?.textContent || "");
-      const liveLabel = safeText(qs(item.label)?.textContent || "");
-      const clonedGauge = qs(item.gauge, heroClone);
-
-      if(clonedGauge){
-        clonedGauge.classList.add("psd-pdf-canvas-gauge-host");
-        clonedGauge.innerHTML = "";
-        const canvas = document.createElement("canvas");
-        drawPdfGaugeCanvas(canvas, liveScore, liveLabel);
-        clonedGauge.appendChild(canvas);
-      }
-    });
-
-    return heroClone;
-  }
-
-  function buildHomeWidgetSamples(){
-    const row = document.createElement("div");
-    row.className = "psd-home-widget-row";
-    row.innerHTML = `
-      <div class="psd-widget-print-sample" aria-label="Vote widget sample">
-        <span class="psd-widget-icon">↕</span>
-        <span class="psd-widget-text">Vote<br>Here</span>
-      </div>
-      <div class="psd-widget-print-sample" aria-label="PDF widget sample">
-        <span class="psd-widget-icon">📄</span>
-        <span class="psd-widget-text">Save<br>PDF</span>
-      </div>
-    `;
-    return row;
-  }
-
-  function buildHomePages(root){
-    const now = new Date().toLocaleString();
-    const sections = qsa(".section.panel");
-
-    const page1 = createPage("Home", `Generated ${now}`);
-    page1.classList.add("psd-home-page", "psd-home-page1");
-    [".header", "#psdAdvertiseBanner"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page1.appendChild(clone);
-    });
-    const page1Main = document.createElement("div");
-    page1Main.className = "psd-home-page1-main";
-
-    const railClone = cloneElement(".instrument-rail");
-    if(railClone) page1Main.appendChild(railClone);
-
-    const page1Right = document.createElement("div");
-    page1Right.className = "psd-home-page1-right";
-    const heroClone = enhanceHomeHeroClone(cloneElement(".hero"));
-    if(heroClone) page1Right.appendChild(heroClone);
-    page1Right.appendChild(buildHomeWidgetSamples());
-    page1Main.appendChild(page1Right);
-    page1.appendChild(page1Main);
-
-    const footer1 = cloneElement(".footer");
-    if(footer1){
-      footer1.classList.add("psd-pdf-footer");
-      page1.appendChild(footer1);
-    }
-
-    const page2 = createPage("Home", "Daily Public Sentiment Brief + Market Focus Today");
-    page2.classList.add("psd-home-page", "psd-home-page2");
-    const stack2 = document.createElement("div");
-    stack2.className = "psd-home-page2-stack";
-    [sections[1], sections[2]].forEach(el => {
-      const clone = cloneElement(el);
-      if(clone) stack2.appendChild(clone);
-    });
-    page2.appendChild(stack2);
-    const footer2 = cloneElement(".footer");
-    if(footer2){
-      footer2.classList.add("psd-pdf-footer");
-      page2.appendChild(footer2);
-    }
-
-    const page3 = createPage("Home", "Explore the Site");
-    page3.classList.add("psd-home-page", "psd-home-page3", "psd-final-page");
-    [".header", "#psdAdvertiseBanner"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page3.appendChild(clone);
-    });
-    const explore = cloneElement(sections[3]);
-    if(explore) page3.appendChild(explore);
-    const footer3 = cloneElement(".footer");
-    if(footer3){
-      footer3.classList.add("psd-pdf-footer");
-      page3.appendChild(footer3);
-    }
-
-    root.appendChild(page1);
-    root.appendChild(page2);
-    root.appendChild(page3);
-  }
-
-
-  function isNewsPage(){
-    const path = window.location.pathname.toLowerCase();
-    return path.endsWith("/news-articles.html") || path.endsWith("news-articles.html") || safeText(document.title).toLowerCase().includes("news & articles") || !!qs("#headlineList");
-  }
-
-  async function waitForNewsCardsReady(){
-    if(!isNewsPage()) return;
-    const start = Date.now();
-    while(Date.now() - start < 12000){
-      const list = qs("#headlineList");
-      const cards = qsa("#headlineList .headline-card, .headline-list .headline-card, .headline-card").filter(el => safeText(el.textContent).length > 40);
-      if(cards.length >= 4) return;
-      if(list && !/loading/i.test(safeText(list.textContent)) && safeText(list.textContent).length > 80) return;
-      await wait(250);
-    }
-  }
-
-  function buildAdBannerClone(){
-    const existing = cloneElement("#psdAdvertiseBanner") || cloneElement(".psd-ad-banner");
-    if(existing) return existing;
-    const banner = document.createElement("div");
-    banner.className = "psd-ad-banner";
-    banner.innerHTML = `<span>📣 <strong>Partner with Public Sentiment Dash</strong> — advertising, investor, and business opportunities in market sentiment.</span><a href="advertise.html">Learn More</a>`;
-    return banner;
-  }
-
-  function newsHeroClone(){
-    return cloneElement(".news-search-panel") || cloneElement("main .panel") || cloneElement("main section");
-  }
-
-  function newsCardsFromDom(){
-    const selectors = [
-      "#headlineList .headline-card",
-      ".headline-list .headline-card",
-      ".headline-card",
-      "#headlineList > a",
-      "#headlineList > div",
-      ".news-card",
-      ".article-card",
-      ".article-item",
-      ".feed-card"
-    ];
-    for(const sel of selectors){
-      const cards = qsa(sel).filter(el => {
-        const text = safeText(el.textContent || "");
-        return text.length > 45 && !/loading published articles/i.test(text) && !/no articles matched/i.test(text) && !el.closest("header") && !el.closest("footer");
+      const cols = chunkIntoColumns(sources, 3);
+      const columns = fallback.querySelectorAll(".waterfall-track");
+
+      columns.forEach((track,index)=>{
+        const list = cols[index] && cols[index].length ? cols[index] : sources;
+        track.innerHTML = [...list,...list].map(sourceChip).join("");
       });
-      if(cards.length) return cards;
-    }
-    return [];
-  }
-
-  function firstText(root, selectors){
-    for(const sel of selectors){
-      const el = qs(sel, root);
-      const text = el ? safeText(el.textContent || "") : "";
-      if(text) return text;
-    }
-    return "";
-  }
-
-  function cleanNewsText(text){
-    return safeText(text)
-      .replace(/Open article\s*→?/ig, " Open article →")
-      .replace(/\s+Markets:/ig, " Markets:")
-      .replace(/\s+Instruments:/ig, " Instruments:");
-  }
-
-  function betweenText(text, startPattern, endPattern){
-    const start = text.search(startPattern);
-    if(start < 0) return "";
-    const startMatch = text.match(startPattern);
-    const from = start + (startMatch ? startMatch[0].length : 0);
-    const rest = text.slice(from);
-    const end = rest.search(endPattern);
-    return safeText((end >= 0 ? rest.slice(0, end) : rest));
-  }
-
-  function domainFromHref(href){
-    try{ return new URL(href, window.location.href).hostname.replace(/^www\./i, ""); }catch(e){ return ""; }
-  }
-
-  function cleanSourceName(value){
-    return safeText(value)
-      .replace(/\s+logo$/i, "")
-      .replace(/\s+favicon$/i, "")
-      .replace(/^Source\s*:\s*/i, "")
-      .trim();
-  }
-
-  function sourceLogoFromCard(card, href){
-    const img = qs("img", card);
-    const src = img ? (img.currentSrc || img.src || img.getAttribute("src") || "") : "";
-    if(src) return src;
-    const domain = domainFromHref(href);
-    return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
-  }
-
-  function sourceFromNewsText(text){
-    const techIdx = text.search(/Tech Daily\s*:/i);
-    if(techIdx > 0){
-      const raw = safeText(text.slice(0, techIdx));
-      if(raw && raw.length <= 60) return raw;
-    }
-    return "";
-  }
-
-  function titleFromNewsText(text){
-    const marketsIdx = text.search(/\bMarkets\s*:/i);
-    const beforeMarkets = marketsIdx >= 0 ? text.slice(0, marketsIdx) : text.replace(/Open article\s*→?.*$/i, "");
-    let start = 0;
-    const impactMatch = [...beforeMarkets.matchAll(/(?:High|Medium|Normal|Low)\s+Impact/ig)].pop();
-    if(impactMatch) start = impactMatch.index + impactMatch[0].length;
-    else{
-      const techMatch = beforeMarkets.match(/Tech Daily\s*:\s*[^\s]+(?:\s+[^\s]+)?/i);
-      if(techMatch) start = techMatch.index + techMatch[0].length;
-    }
-    return safeText(beforeMarkets.slice(start)).replace(/^[-–—•\s]+/, "");
-  }
-
-  function parseNewsBits(card, index){
-    const full = cleanNewsText(card.innerText || card.textContent || "");
-
-    const href = card.getAttribute("href") || qs("a", card)?.getAttribute("href") || "#";
-    const sourceSelectors = [
-      ".headline-source-name", ".headline-source", ".news-source-name", ".news-source",
-      ".article-source-name", ".article-source", ".source-name", ".source", ".card-source",
-      ".publisher-name", ".publisher", ".news-provider", ".provider", ".site-name",
-      "[data-source]"
-    ];
-    const logoImg = qs("img", card);
-    const logoAlt = cleanSourceName(logoImg ? (logoImg.getAttribute("alt") || "") : "");
-    let source = cleanSourceName(firstText(card, sourceSelectors)) || logoAlt || sourceFromNewsText(full) || domainFromHref(href) || `News Source ${index}`;
-    if(/^(Bullish|Bearish|Neutral|Mixed|High Impact|Normal Impact|Low Impact|Tech Daily|Open article)/i.test(source)){
-      source = logoAlt || sourceFromNewsText(full) || domainFromHref(href) || `News Source ${index}`;
     }
 
-    const title = firstText(card, [".headline-title", ".news-title", ".article-title", "h3", "h2"]) || titleFromNewsText(full) || `News article ${index}`;
-    const logo = sourceLogoFromCard(card, href);
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
 
-    const techMatch = full.match(/Tech Daily\s*:\s*(N\/A|Bullish|Bearish|Neutral|Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Mixed)/i);
-    const impactMatch = full.match(/(?:High|Medium|Normal|Low)\s+Impact/i);
-    let sentiment = "";
-    if(techMatch){
-      const afterTech = full.slice(techMatch.index + techMatch[0].length, Math.max(techMatch.index + techMatch[0].length, full.search(/\bMarkets\s*:/i) >= 0 ? full.search(/\bMarkets\s*:/i) : full.length));
-      const sentimentMatch = afterTech.match(/\b(Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Bullish|Bearish|Neutral|Mixed)\b/i);
-      if(sentimentMatch) sentiment = sentimentMatch[1];
-    }
-    if(!sentiment){
-      const sentimentMatch = full.match(/\b(Mixed\/Bullish|Mixed\/Bearish|Mixed Bullish|Mixed Bearish|Bullish|Bearish|Neutral|Mixed)\b/i);
-      if(sentimentMatch) sentiment = sentimentMatch[1];
+      if(raw === null || raw === undefined) return "Neutral";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "Neutral";
     }
 
-    const markets = betweenText(full, /Markets\s*:/i, /Instruments\s*:|(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|Open article/i);
-    const instruments = betweenText(full, /Instruments\s*:/i, /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),|Open article/i);
-    const dateMatch = full.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+\d{1,2}\s+\w+\s+\d{4}\s+[^\s]+\s+GMT/i);
-    const date = dateMatch ? dateMatch[0] : "";
+    function getTechnicalForInstrument(name){
+      if(window.PSDCore && window.PSDCore.getTechnicalBias){
+        const tech = window.PSDCore.getTechnicalBias(technicalData, name, "daily");
+        return tech.direction && tech.direction !== "N/A" ? tech.direction : "Neutral";
+      }
 
-    const chips = [];
-    if(sentiment) chips.push(sentiment);
-    if(techMatch) chips.push("Tech Daily: " + techMatch[1]);
-    if(impactMatch) chips.push(impactMatch[0]);
+      if(!technicalData) return "Neutral";
 
-    return {href, source, logo, title, chips, markets, instruments, date};
-  }
+      const techRoot = technicalData.technical || technicalData;
+      let entry = null;
 
-  function newsPillClass(value){
-    const t = safeText(value).toLowerCase();
-    if(t.includes("tech daily")) return "tech";
-    if(t.includes("high impact") || t.includes("medium impact") || t.includes("normal impact") || t.includes("low impact")) return "impact";
-    if(t.includes("bearish")) return "bearish";
-    if(t.includes("bullish")) return "bullish";
-    if(t.includes("neutral") || t.includes("mixed")) return "neutral";
-    return "";
-  }
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => normalize(item?.instrument || item?.name || item?.symbol || "") === normalize(name));
+      }else if(typeof techRoot === "object"){
+        entry = techRoot[name] || null;
+      }
 
-  function buildNewsReportCard(card, index){
-    const data = parseNewsBits(card, index);
-    const out = document.createElement("div");
-    out.className = "psd-news-report-card";
-    const initials = safeText(data.source).slice(0,1).toUpperCase() || "N";
-    const logoHtml = `<span class="psd-news-logo-fallback">${psdEscape(initials)}</span>${data.logo ? `<img crossorigin="anonymous" src="${psdEscape(data.logo)}" alt="${psdEscape(data.source)} logo" onerror="this.style.display='none'">` : ""}`;
-    out.innerHTML = `
-      <div class="psd-news-source-row"><span class="psd-news-source-dot">${logoHtml}</span><span class="psd-news-source-name">${psdEscape(data.source)}</span></div>
-      <div class="psd-news-report-source">
-        ${data.chips.slice(0,4).map(x => `<span class="psd-news-pill ${newsPillClass(x)}">${psdEscape(x)}</span>`).join("")}
-      </div>
-      <div class="psd-news-report-title">${psdEscape(data.title)}</div>
-      <div class="psd-news-meta-block">
-        ${data.markets ? `<div><span class="psd-news-meta-label">Markets:</span> ${psdEscape(data.markets)}</div>` : ""}
-        ${data.instruments ? `<div><span class="psd-news-meta-label">Instruments:</span> ${psdEscape(data.instruments)}</div>` : ""}
-        ${data.date ? `<div class="psd-news-date">${psdEscape(data.date)}</div>` : ""}
-      </div>
-      <div class="psd-news-report-open">Open article →</div>
-    `;
-    return out;
-  }
-
-  function buildNewsCardsGrid(start, count, className){
-    const grid = document.createElement("div");
-    grid.className = className;
-    const cards = newsCardsFromDom().slice(start, start + count);
-    cards.forEach((card, idx) => grid.appendChild(buildNewsReportCard(card, start + idx + 1)));
-    while(grid.children.length < count){
-      const ph = document.createElement("div");
-      ph.className = "psd-news-report-card";
-      ph.innerHTML = `<div class="psd-news-source-row"><span class="psd-news-source-dot"><span class="psd-news-logo-fallback">N</span></span><span class="psd-news-source-name">News Feed</span></div><div class="psd-news-report-title">Live article feed still loading</div><div class="psd-news-meta-block"><div>Wait until the article cards are visible on the page, then click Save PDF again.</div></div><div class="psd-news-report-open">Public Sentiment Dash</div>`;
-      grid.appendChild(ph);
-    }
-    return grid;
-  }
-
-  function buildNewsFilterCells(){
-    const row = document.createElement("div");
-    row.className = "psd-news-filter-row";
-
-    const hero = qs(".news-search-panel") || qs("main .panel") || document;
-    const input = qs('input[type="search"], input[type="text"], input:not([type])', hero) || qs('input[type="search"], input[type="text"], input:not([type])');
-    const selects = qsa("select", hero).concat(qsa("select")).filter((el, idx, arr) => arr.indexOf(el) === idx).slice(0, 3);
-
-    function addCell(text, isPlaceholder){
-      const cell = document.createElement("div");
-      cell.className = "psd-news-filter-cell" + (isPlaceholder ? " placeholder" : "");
-      cell.textContent = text;
-      row.appendChild(cell);
+      return entry ? extractTechLabel(entry, "daily") : "Neutral";
     }
 
-    const searchText = safeText(input && (input.value || input.getAttribute("placeholder"))) || "Search keywords, headlines, markets, instruments, or source";
-    addCell(searchText, true);
+    function directionType(direction){
+      const d = String(direction || "").toLowerCase();
 
-    const defaults = ["All Markets", "All Instruments", "All Sources"];
-    defaults.forEach((fallback, idx) => {
-      const sel = selects[idx];
-      const selectedText = sel && sel.options && sel.selectedIndex >= 0 ? safeText(sel.options[sel.selectedIndex].textContent) : "";
-      addCell(selectedText || fallback, false);
-    });
+      if(d.includes("bullish") && !d.includes("bearish")) return "up";
+      if(d.includes("bearish") && !d.includes("bullish")) return "down";
 
-    return row;
-  }
-
-  function buildNewsWidgetSamples(){
-    const row = document.createElement("div");
-    row.className = "psd-news-widget-row";
-    row.innerHTML = `
-      <div class="psd-widget-print-sample" aria-label="Vote widget sample"><span class="psd-widget-icon">↕</span><span class="psd-widget-text">Vote<br>Here</span></div>
-      <div class="psd-widget-print-sample" aria-label="PDF widget sample"><span class="psd-widget-icon">📄</span><span class="psd-widget-text">Save<br>PDF</span></div>
-    `;
-    return row;
-  }
-
-  function buildNewsAdSpace(title, sub){
-    const box = document.createElement("div");
-    box.className = "psd-news-ad-space";
-    box.innerHTML = `<div><strong>${psdEscape(title)}</strong><span>${psdEscape(sub)}</span></div>`;
-    return box;
-  }
-
-  function buildNewsPages(root){
-    const now = new Date().toLocaleString();
-
-    const page1 = createPage("News & Articles", `Generated ${now}`);
-    page1.classList.add("psd-news-page", "psd-news-page1");
-    const header = cloneElement(".header");
-    if(header) page1.appendChild(header);
-    page1.appendChild(buildAdBannerClone());
-    const hero = newsHeroClone();
-    if(hero){
-      hero.classList.add("psd-news-hero");
-      page1.appendChild(hero);
-    }
-    page1.appendChild(buildNewsFilterCells());
-    const title1 = document.createElement("div");
-    title1.className = "psd-news-card-title";
-    title1.textContent = "Top News Boxes";
-    page1.appendChild(title1);
-    page1.appendChild(buildNewsCardsGrid(0,6,"psd-news-top-grid"));
-    page1.appendChild(buildNewsWidgetSamples());
-
-    const page2 = createPage("News & Articles", "Advertising + More News");
-    page2.classList.add("psd-news-page", "psd-news-page2");
-    page2.appendChild(buildAdBannerClone());
-    const title2 = document.createElement("div");
-    title2.className = "psd-news-card-title";
-    title2.textContent = "More Recent Articles";
-    page2.appendChild(title2);
-    page2.appendChild(buildNewsCardsGrid(6,9,"psd-news-mid-grid"));
-
-    const page3 = createPage("News & Articles", "Advertising + Footer");
-    page3.classList.add("psd-news-page", "psd-news-page3", "psd-final-page");
-    page3.appendChild(buildAdBannerClone());
-    const title3 = document.createElement("div");
-    title3.className = "psd-news-card-title";
-    title3.textContent = "Additional Recent Articles";
-    page3.appendChild(title3);
-    page3.appendChild(buildNewsCardsGrid(15,9,"psd-news-mid-grid"));
-    const footer = cloneElement(".footer");
-    if(footer){
-      footer.classList.add("psd-pdf-footer");
-      page3.appendChild(footer);
+      return "neutral";
     }
 
-    root.appendChild(page1);
-    root.appendChild(page2);
-    root.appendChild(page3);
-  }
+    function renderTopInstruments(){
+      const rail = document.getElementById("topInstrumentsRail");
 
-  function buildGenericPages(root){
-    const now = new Date().toLocaleString();
-    const page = createPage("Report", `Generated ${now}`);
-    [".header", "#psdAdvertiseBanner", "main", ".footer"].forEach(sel => {
-      const clone = cloneElement(sel);
-      if(clone) page.appendChild(clone);
-    });
-    root.appendChild(page);
-  }
+      const rows = TOP_INSTRUMENTS.map(item => {
+        const direction = getTechnicalForInstrument(item.name);
+        const type = directionType(direction);
+        const icon = type === "up" ? "↗" : type === "down" ? "↘" : "•";
+        const label = type === "up" ? "Up" : type === "down" ? "Down" : "Neutral";
+        const userValue = userSentimentFor(item.name);
 
-  function createCaptureRoot(){
-    const old = document.getElementById("psdPdfCaptureRoot");
-    if(old) old.remove();
+        return `<a class="rail-item direction-${type}" href="${escapeHTML(item.url)}" target="_blank" rel="noopener">
+          <span class="rail-icon">${icon}</span>
+          <span>
+            <span class="rail-name">${escapeHTML(item.label)}</span>
+            <span class="rail-sub">User: <span data-user-sentiment="${escapeHTML(item.name)}" class="psd-user-sentiment-value ${normalizeClass(userValue)}">${escapeHTML(userValue)}</span></span>
+          </span>
+          <span class="rail-state">${label}</span>
+        </a>`;
+      }).join("");
 
-    addStyleOnce();
+      rail.innerHTML = rows + rows;
 
-    const root = document.createElement("div");
-    root.id = "psdPdfCaptureRoot";
-    document.body.appendChild(root);
-
-    const path = window.location.pathname.toLowerCase();
-    if(path === "/" || path.endsWith("/index.html") || path.endsWith("index.html") || qs(".home-layout")){
-      buildHomePages(root);
-    }else if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html") || qs("#snapshotCards")){
-      buildDashboardPages(root);
-    }else if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html") || qs(".dash-stage-shell") || qs("#historyRows")){
-      buildHistoricalPages(root);
-    }else if(isNewsPage()){
-      buildNewsPages(root);
-    }else{
-      buildGenericPages(root);
+      if(window.psdApplyUserSentiment) window.psdApplyUserSentiment();
     }
 
-    return root;
-  }
+    async function loadPage(){
+      try{
+        const [dashboardRes, statusRes, technicalRes] = await Promise.all([
+          fetch("dashboard_data.json", {cache:"no-store"}),
+          fetch("status.json", {cache:"no-store"}).catch(() => null),
+          fetch("technical_data.json", {cache:"no-store"}).catch(() => null)
+        ]);
 
-  async function canvasForPage(page){
-    await waitForFontsAndImages(page);
-    await wait(250);
+        dashboardData = await dashboardRes.json();
+        statusData = (statusRes && statusRes.ok) ? await statusRes.json() : null;
+        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
 
-    return await window.html2canvas(page, {
-      backgroundColor:null,
-      scale:PSD_CAPTURE_SCALE,
-      useCORS:true,
-      allowTaint:false,
-      logging:false,
-      imageTimeout:15000,
-      windowWidth:PSD_CAPTURE_WIDTH,
-      windowHeight:PSD_CAPTURE_HEIGHT,
-      scrollX:0,
-      scrollY:0,
-      ignoreElements:(el) => el && (el.id === "psdVoteWidget" || el.id === "psdPdfWidget")
-    });
-  }
-
-  async function savePdfFromCapture(){
-    await ensureLibraries();
-    await waitForNewsCardsReady();
-
-    const root = createCaptureRoot();
-    const pages = qsa(".psd-capture-page", root);
-    if(!pages.length) throw new Error("No PDF pages were created.");
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:"landscape", unit:"pt", format:"a4", compress:true });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-
-    for(let i=0;i<pages.length;i++){
-      const canvas = await canvasForPage(pages[i]);
-      const img = canvas.toDataURL("image/png");
-      if(i > 0) pdf.addPage("a4", "landscape");
-      pdf.addImage(img, "PNG", 0, 0, pageW, pageH, undefined, "FAST");
+        renderTopInstruments();
+        renderScore(dashboardData);
+        renderStats(dashboardData);
+        renderDailySummary(dashboardData);
+        renderMarketFocus(dashboardData);
+        renderSourcesWaterfall(dashboardData);
+      }catch(error){
+        console.error(error);
+        renderTopInstruments();
+        document.getElementById("dailySummary").innerHTML = `<div class="summary-line">Dashboard data could not be loaded right now.</div>`;
+        document.getElementById("marketFocus").innerHTML = `<div class="mini-card dynamic-card focus-card">Dashboard data could not be loaded right now.</div>`;
+        document.getElementById("sourcesWaterfall").innerHTML = `<div class="muted">Source list could not be loaded right now.</div>`;
+      }
     }
 
-    root.remove();
-    pdf.save(fileName());
-  }
+    window.addEventListener("psdUserSentimentReady", renderTopInstruments);
+    loadPage();
+  </script>
 
-  async function psdOpenPdfReport(){
-    await savePdfFromCapture();
-  }
-
-  window.psdOpenPdfReport = psdOpenPdfReport;
-  window.PSD_PDF_REPORT_VERSION = PSD_PDF_VERSION;
-})();
+  <script src="vote-widget.js" defer></script>
+</body>
+</html>
