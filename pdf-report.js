@@ -5,7 +5,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "34";
+  const PSD_PDF_VERSION = "35";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -960,43 +960,20 @@
 
 
 
-      /* Home PDF page 1: color fidelity boost for Market Pulse only */
-      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel,
-      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel *{
-        -webkit-print-color-adjust:exact!important;
-        print-color-adjust:exact!important;
+      /* Home PDF page 1: SVG color-safe Market Pulse gauges only */
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-speedometer-svg{
+        width:100%!important;
+        height:100%!important;
+        display:block!important;
+        overflow:visible!important;
       }
-      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
-        filter:saturate(1.18) contrast(1.04) brightness(1.03)!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-grid-bg{
-        opacity:.82!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-circuit-line{
-        opacity:.92!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-card{
-        background:
-          radial-gradient(circle at 50% 30%, rgba(88,166,255,.10), transparent 9rem),
-          linear-gradient(180deg,rgba(9,16,28,.88),rgba(5,8,14,.96))!important;
+      #psdPdfCaptureRoot .psd-home-page1 .psd-pdf-speedometer-svg text{
+        font-family:Inter,Segoe UI,Arial,sans-serif!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
-        filter:saturate(1.28) brightness(1.08)!important;
+        background:transparent!important;
+        box-shadow:none!important;
       }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-arc{
-        opacity:1!important;
-        filter:drop-shadow(0 0 7px rgba(88,166,255,.20)) saturate(1.28)!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-ring.outer{
-        box-shadow:
-          0 0 16px rgba(88,166,255,.22),
-          inset 0 0 18px rgba(88,166,255,.10)!important;
-      }
-      #psdPdfCaptureRoot .psd-home-page1 .hud-meter span,
-      #psdPdfCaptureRoot .psd-home-page1 .hud-needle{
-        filter:saturate(1.20) brightness(1.06)!important;
-      }
-
 
       /* News & Articles PDF support - built from locked v15 */
       #psdPdfCaptureRoot .psd-news-page{
@@ -1464,6 +1441,89 @@
         </svg>
       `;
     }
+
+    function pdfGaugeArc(cx, cy, r, startDeg, endDeg){
+      const toPoint = (deg) => {
+        const rad = (deg - 90) * Math.PI / 180;
+        return {
+          x: cx + r * Math.cos(rad),
+          y: cy + r * Math.sin(rad)
+        };
+      };
+
+      const start = toPoint(startDeg);
+      const end = toPoint(endDeg);
+      const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+
+      return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+    }
+
+    function pdfGaugeSVG(score, label){
+      const safeScore = Math.max(0, Math.min(100, Number(score) || 50));
+      const safeLabel = safeText(label || "Mixed/Neutral").toUpperCase();
+      const needleAngle = -130 + (safeScore * 2.6);
+      const needleRad = needleAngle * Math.PI / 180;
+      const cx = 150;
+      const cy = 150;
+      const needleX = cx + 92 * Math.cos(needleRad);
+      const needleY = cy + 92 * Math.sin(needleRad);
+
+      return `
+        <svg class="psd-pdf-speedometer-svg" viewBox="0 0 300 300" role="img" aria-label="Market Pulse ${safeScore}">
+          <defs>
+            <radialGradient id="psdPdfGaugeBg${safeScore}" cx="50%" cy="42%" r="60%">
+              <stop offset="0%" stop-color="#17243a"/>
+              <stop offset="70%" stop-color="#07101c"/>
+              <stop offset="100%" stop-color="#030812"/>
+            </radialGradient>
+            <filter id="psdPdfGaugeGlow${safeScore}" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3.2" result="blur"></feGaussianBlur>
+              <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+            </filter>
+            <linearGradient id="psdPdfNeedle${safeScore}" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ff4f5d"/>
+              <stop offset="100%" stop-color="#ffb05a"/>
+            </linearGradient>
+          </defs>
+
+          <circle cx="150" cy="150" r="138" fill="url(#psdPdfGaugeBg${safeScore})" stroke="rgba(88,166,255,.30)" stroke-width="2"/>
+          <circle cx="150" cy="150" r="123" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="2"/>
+          <circle cx="150" cy="150" r="106" fill="none" stroke="rgba(88,166,255,.16)" stroke-width="3"/>
+
+          <path d="${pdfGaugeArc(cx, cy, 113, -130, -78)}" fill="none" stroke="#ff5454" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+          <path d="${pdfGaugeArc(cx, cy, 113, -78, -18)}" fill="none" stroke="#ffad4f" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+          <path d="${pdfGaugeArc(cx, cy, 113, -18, 62)}" fill="none" stroke="#5fd26f" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+          <path d="${pdfGaugeArc(cx, cy, 113, 62, 130)}" fill="none" stroke="#58a6ff" stroke-width="25" stroke-linecap="butt" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+
+          <path d="${pdfGaugeArc(cx, cy, 128, -130, 130)}" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="2" stroke-dasharray="2 10"/>
+          <path d="${pdfGaugeArc(cx, cy, 88, -130, 130)}" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="2"/>
+
+          <circle cx="150" cy="150" r="61" fill="#0b1525" stroke="rgba(88,166,255,.30)" stroke-width="2"/>
+          <circle cx="150" cy="150" r="36" fill="rgba(88,166,255,.10)"/>
+
+          <line x1="150" y1="150" x2="${needleX.toFixed(1)}" y2="${needleY.toFixed(1)}" stroke="url(#psdPdfNeedle${safeScore})" stroke-width="5" stroke-linecap="round" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+          <circle cx="${needleX.toFixed(1)}" cy="${needleY.toFixed(1)}" r="8" fill="#ff6b5a" filter="url(#psdPdfGaugeGlow${safeScore})"/>
+          <circle cx="150" cy="150" r="11" fill="#0b1525" stroke="rgba(255,255,255,.20)" stroke-width="2"/>
+
+          <text x="150" y="143" text-anchor="middle" font-size="48" font-weight="900" fill="#f4f8ff">${Math.round(safeScore)}</text>
+          <text x="150" y="170" text-anchor="middle" font-size="13" font-weight="900" fill="#9eb6d4">${safeLabel}</text>
+        </svg>
+      `;
+    }
+
+    [
+      {key:"Global", gauge:"#pulseGlobalGauge", value:"#pulseGlobalValue", label:"#pulseGlobalLabel"},
+      {key:"US", gauge:"#pulseUSGauge", value:"#pulseUSValue", label:"#pulseUSLabel"},
+      {key:"Europe", gauge:"#pulseEuropeGauge", value:"#pulseEuropeValue", label:"#pulseEuropeLabel"}
+    ].forEach(item => {
+      const liveScore = safeText(qs(item.value)?.textContent || "");
+      const liveLabel = safeText(qs(item.label)?.textContent || "");
+      const clonedGauge = qs(item.gauge, heroClone);
+
+      if(clonedGauge){
+        clonedGauge.innerHTML = pdfGaugeSVG(liveScore, liveLabel);
+      }
+    });
 
     return heroClone;
   }
