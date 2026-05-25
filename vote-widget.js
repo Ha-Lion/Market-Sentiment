@@ -134,11 +134,11 @@ function psdCreateAdvertiseBanner(){
     .psd-ad-banner{
       position:absolute;
       left:50%;
-      bottom:8px;
+      bottom:16px;
       transform:translateX(-50%);
-      width:min(720px,64vw);
-      min-height:40px;
-      padding:0 14px;
+      width:min(620px,54vw);
+      min-height:34px;
+      padding:0 12px;
       border:1px solid rgba(210,153,34,.34);
       border-radius:999px;
       background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.07));
@@ -146,7 +146,7 @@ function psdCreateAdvertiseBanner(){
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:9px;
+      gap:8px;
       text-align:center;
       font-size:11px;
       line-height:1.15;
@@ -175,7 +175,7 @@ function psdCreateAdvertiseBanner(){
       text-decoration:none;
       border:1px solid rgba(255,255,255,.16);
       background:rgba(255,255,255,.07);
-      padding:5px 9px;
+      padding:4px 8px;
       border-radius:999px;
       white-space:nowrap;
       flex-shrink:0;
