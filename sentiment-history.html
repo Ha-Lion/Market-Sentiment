@@ -803,6 +803,7 @@
     </footer>
   </main>
 
+  <script src="sentiment-core.js"></script>
   <script>
     const state = {
       raw:[],
@@ -995,11 +996,15 @@
 
     function bias(v){
       if(!Number.isFinite(v)) return {text:"Unknown", color:COLORS.text, cls:""};
-      if(v >= 70) return {text:"Strong Bullish", color:COLORS.green, cls:"bull"};
-      if(v >= 56) return {text:"Bullish", color:COLORS.cyan, cls:"bull"};
-      if(v >= 45) return {text:"Neutral", color:COLORS.gold, cls:"neutral"};
-      if(v >= 31) return {text:"Bearish", color:COLORS.orange, cls:"bear"};
-      return {text:"Strong Bearish", color:COLORS.red, cls:"bear"};
+      const label = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
+        ? window.PSDCore.classifySentiment(v)
+        : (v >= 70 ? "Strong Bullish" : v >= 56 ? "Bullish" : v >= 45 ? "Mixed/Neutral" : v >= 31 ? "Bearish" : "Strong Bearish");
+      if(label === "Strong Bullish") return {text:label, color:COLORS.green, cls:"bull"};
+      if(label === "Bullish") return {text:label, color:COLORS.cyan, cls:"bull"};
+      if(label === "Mixed/Neutral") return {text:label, color:COLORS.gold, cls:"neutral"};
+      if(label === "Bearish") return {text:label, color:COLORS.orange, cls:"bear"};
+      if(label === "Strong Bearish") return {text:label, color:COLORS.red, cls:"bear"};
+      return {text:label, color:COLORS.text, cls:""};
     }
 
     function filterByRange(records){
@@ -1440,7 +1445,7 @@
       const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
       const biasItems=[
         {label:"Bullish",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
-        {label:"Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
+        {label:"Mixed/Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
         {label:"Bearish",value:vals.filter(v=>v<45).length,color:COLORS.pink}
       ];
       updateBiasLegend(biasItems);
@@ -1516,7 +1521,7 @@
       const s = Number.isFinite(d.score) ? d.score : 0;
       if(s > .15 || s > 15) return {text:"Bullish", color:COLORS.green};
       if(s < -.15 || s < -15) return {text:"Bearish", color:COLORS.red};
-      return {text:"Mixed", color:COLORS.gold};
+      return {text:"Mixed/Neutral", color:COLORS.gold};
     }
 
     function driverSourceText(d){
