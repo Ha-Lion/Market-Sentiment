@@ -4,7 +4,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "29";
+  const PSD_PDF_VERSION = "30";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -964,7 +964,7 @@
       #psdPdfCaptureRoot .psd-home-page1-main{
         display:flex!important;
         flex-direction:column!important;
-        gap:10px!important;
+        gap:8px!important;
         flex:1 1 auto!important;
         min-height:0!important;
         overflow:hidden!important;
@@ -972,7 +972,7 @@
       #psdPdfCaptureRoot .psd-home-page1-main > .hero{
         display:grid!important;
         grid-template-columns:1fr!important;
-        gap:10px!important;
+        gap:8px!important;
         margin:0!important;
         flex:1 1 auto!important;
         min-height:0!important;
@@ -980,26 +980,26 @@
         align-items:stretch!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy{
-        padding:15px 18px!important;
+        padding:13px 18px!important;
         min-height:0!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy h1{
-        font-size:31px!important;
+        font-size:30px!important;
         line-height:1.02!important;
         letter-spacing:-.03em!important;
-        margin:0 0 8px!important;
+        margin:0 0 7px!important;
         white-space:nowrap!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-copy p,
       #psdPdfCaptureRoot .psd-home-page1 .hero-compact-note{
-        font-size:11.5px!important;
-        line-height:1.28!important;
-        margin:0 0 5px!important;
+        font-size:11.3px!important;
+        line-height:1.24!important;
+        margin:0 0 4px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-points{
         grid-template-columns:repeat(3,minmax(0,1fr))!important;
         gap:7px!important;
-        margin-top:8px!important;
+        margin-top:7px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hero-point{
         padding:8px 9px!important;
@@ -1015,7 +1015,7 @@
       }
       #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
         display:block!important;
-        padding:10px 14px 12px!important;
+        padding:8px 12px 10px!important;
         min-height:0!important;
         height:auto!important;
         margin:0!important;
@@ -1027,57 +1027,74 @@
         align-items:initial!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .scope-pill{
-        top:10px!important;
-        left:12px!important;
-        font-size:10px!important;
+        top:8px!important;
+        left:10px!important;
+        font-size:9.5px!important;
         padding:5px 8px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-title-row .score-label{
-        top:10px!important;
+        top:8px!important;
         font-size:11px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .pulse-small{
-        top:11px!important;
-        right:12px!important;
-        font-size:9px!important;
+        top:9px!important;
+        right:10px!important;
+        font-size:8.5px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-grid{
-        grid-template-columns:.9fr 1.25fr .9fr!important;
-        gap:16px!important;
-        padding-top:42px!important;
+        grid-template-columns:.92fr 1.26fr .92fr!important;
+        gap:20px!important;
+        padding-top:36px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 #pulseUSCard,
       #psdPdfCaptureRoot .psd-home-page1 #pulseEuropeCard{
-        margin-top:28px!important;
+        margin-top:18px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-card{
+        padding:8px 7px 10px!important;
+        border-radius:18px!important;
+        background:
+          radial-gradient(circle at 50% 28%, rgba(88,166,255,.11), transparent 8rem),
+          linear-gradient(180deg,rgba(9,16,28,.90),rgba(5,8,14,.96))!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
-        width:144px!important;
-        height:144px!important;
+        width:164px!important;
+        height:164px!important;
+        filter:saturate(1.22) brightness(1.08)!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-speedometer{
-        width:186px!important;
-        height:186px!important;
+        width:216px!important;
+        height:216px!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-arc{
+        opacity:1!important;
+        filter:drop-shadow(0 0 8px rgba(88,166,255,.24)) saturate(1.25)!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-ring.outer{
+        box-shadow:
+          0 0 16px rgba(88,166,255,.26),
+          inset 0 0 18px rgba(88,166,255,.10)!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-center{
-        width:68px!important;
-        height:68px!important;
+        width:76px!important;
+        height:76px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center{
-        width:86px!important;
-        height:86px!important;
+        width:96px!important;
+        height:96px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-center span{
-        font-size:23px!important;
+        font-size:26px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .primary-gauge .hud-center span{
-        font-size:31px!important;
+        font-size:35px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-gauge-title{
         font-size:10px!important;
         margin-bottom:2px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .hud-bottom{
-        margin-top:5px!important;
+        margin-top:4px!important;
       }
       #psdPdfCaptureRoot .psd-home-page1 .pulse-foot{
         font-size:8.5px!important;
@@ -1987,6 +2004,7 @@
       windowHeight:PSD_CAPTURE_HEIGHT,
       scrollX:0,
       scrollY:0,
+      foreignObjectRendering:true,
       ignoreElements:(el) => el && (el.id === "psdVoteWidget" || el.id === "psdPdfWidget")
     });
   }
