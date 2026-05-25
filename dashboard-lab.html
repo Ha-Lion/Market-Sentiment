@@ -317,7 +317,7 @@
 
 
 
-    /* Deep Analysis Lab - Phase 1 */
+    /* Deep Analysis Lab - Phase 2 */
     .lab-control-slot{
       display:grid;
       grid-template-rows:auto auto;
@@ -327,6 +327,25 @@
     .lab-control-slot .lab-select{
       width:100%;
       min-width:0;
+    }
+    .card-control-strip{
+      position:relative;
+      z-index:4;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      margin-bottom:13px;
+    }
+    .card-control-strip .lab-select{
+      width:100%;
+      min-width:0;
+      padding:9px 10px;
+      border-radius:11px;
+      font-size:13px;
+    }
+    .card-control-strip .deep-analysis-btn{
+      width:100%;
+      min-height:36px;
     }
     .deep-analysis-btn{
       border:1px solid rgba(210,153,34,.38);
@@ -357,8 +376,8 @@
       position:fixed;
       top:118px;
       right:28px;
-      width:min(520px,calc(100vw - 36px));
-      max-height:calc(100vh - 150px);
+      width:min(650px,calc(100vw - 36px));
+      max-height:calc(100vh - 118px);
       overflow:hidden;
       pointer-events:auto;
       border:1px solid rgba(210,153,34,.35);
@@ -374,7 +393,7 @@
       box-shadow:0 28px 92px rgba(0,0,0,.58),0 0 36px rgba(210,153,34,.14);
     }
     .deep-analysis-window.second{
-      right:570px;
+      right:700px;
       top:148px;
     }
     .deep-window-header{
@@ -427,7 +446,7 @@
     .deep-window-body{
       padding:16px;
       overflow:auto;
-      max-height:calc(100vh - 250px);
+      max-height:calc(100vh - 222px);
     }
     .deep-stat-grid{
       display:grid;
@@ -470,7 +489,7 @@
       border-radius:16px;
       background:rgba(17,24,33,.62);
       padding:12px;
-      min-height:112px;
+      min-height:138px;
     }
     .deep-section h3{
       margin:0 0 7px;
@@ -511,6 +530,17 @@
       box-shadow:0 14px 38px rgba(0,0,0,.35);
     }
     .deep-analysis-toast.show{display:block;}
+
+    @media(max-width:1450px){
+      .deep-analysis-window.second{right:28px;top:calc(50vh + 8px);}
+    }
+
+    @media(max-width:760px){
+      .deep-analysis-window{left:10px!important;right:auto!important;width:calc(100vw - 20px);}
+      .deep-analysis-window.second{top:calc(50vh + 8px);}
+      .deep-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .deep-section-grid{grid-template-columns:1fr;}
+    }
 
     @media(max-width:1300px){
       .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -568,7 +598,7 @@
   <main class="lab-wrap">
     <section class="panel lab-hero">
       <div>
-        <div class="page-chip">Dashboard Lab • Deep Analysis Test</div>
+        <div class="page-chip">Dashboard Lab • Deep Analysis Test v2</div>
         <h1>Interactive Market Sentiment Dashboard Lab</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
         <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
@@ -965,6 +995,10 @@
       if(idx >= 0) deepWindows.splice(idx, 1);
       const win = document.querySelector(`[data-deep-id="${id}"]`);
       if(win) win.remove();
+      reflowDeepWindows();
+    }
+
+    function reflowDeepWindows(){
       document.querySelectorAll(".deep-analysis-window").forEach((w,i) => w.classList.toggle("second", i === 1));
     }
 
@@ -1001,37 +1035,18 @@
       return `<div class="deep-stat"><div class="deep-stat-label">${esc(labelText)}</div><div class="deep-stat-value">${esc(value)}</div></div>`;
     }
 
-    function openDeepAnalysis(slot){
+    function renderDeepWindowContent(win, id, slot){
       const instrumentName = selected[slot];
-      const existing = deepWindows.find(x => x.instrument === instrumentName);
-      if(existing){
-        const current = document.querySelector(`[data-deep-id="${existing.id}"]`);
-        if(current) focusDeepWindow(current);
-        showDeepToast(`${instrumentName} analysis is already open.`);
-        return;
-      }
-      if(deepWindows.length >= 2){
-        showDeepToast("Maximum 2 Deep Analysis windows can be open at once.");
-        return;
-      }
-
-      const layer = document.getElementById("deepAnalysisLayer") || document.body;
       const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
       const data = calcInstrument(ins);
-      const id = "deep-" + Date.now() + "-" + slot;
-      deepWindows.push({id, instrument:instrumentName});
-
-      const win = document.createElement("section");
-      win.className = "deep-analysis-window" + (deepWindows.length === 2 ? " second" : "");
-      win.setAttribute("data-deep-id", id);
-      win.setAttribute("role", "dialog");
+      win.setAttribute("data-deep-slot", String(slot));
       win.setAttribute("aria-label", `${instrumentName} Deep Analysis`);
       win.innerHTML = `
         <div class="deep-window-header">
           <div>
             <div class="deep-window-kicker">Deep Analysis Lab</div>
             <div class="deep-window-title">${esc(instrumentName)}</div>
-            <div class="deep-window-sub">Phase 1 placeholder window. Real 24h / 30d data modules come later.</div>
+            <div class="deep-window-sub">Phase 1 placeholder window. This updates automatically when the card instrument changes.</div>
           </div>
           <button class="deep-window-close" type="button" aria-label="Close Deep Analysis" onclick="closeDeepAnalysis('${id}')">×</button>
         </div>
@@ -1066,24 +1081,90 @@
             </div>
           </div>
         </div>`;
-      layer.appendChild(win);
       makeDeepWindowDraggable(win);
+    }
+
+    function updateDeepWindowForSlot(slot){
+      const open = deepWindows.find(x => x.slot === slot);
+      if(!open) return;
+      const win = document.querySelector(`[data-deep-id="${open.id}"]`);
+      if(!win) return;
+      open.instrument = selected[slot];
+      renderDeepWindowContent(win, open.id, slot);
       focusDeepWindow(win);
+    }
+
+    function updateAllDeepWindows(){
+      deepWindows.slice().forEach(open => {
+        const win = document.querySelector(`[data-deep-id="${open.id}"]`);
+        if(win){
+          open.instrument = selected[open.slot];
+          renderDeepWindowContent(win, open.id, open.slot);
+        }
+      });
+      reflowDeepWindows();
+    }
+
+    function handleInstrumentChange(slot, value){
+      selected[Number(slot)] = value;
+      renderAll();
+      updateDeepWindowForSlot(Number(slot));
+    }
+
+    function openDeepAnalysis(slot){
+      const existing = deepWindows.find(x => x.slot === slot);
+      if(existing){
+        const current = document.querySelector(`[data-deep-id="${existing.id}"]`);
+        if(current){
+          renderDeepWindowContent(current, existing.id, slot);
+          focusDeepWindow(current);
+        }
+        showDeepToast(`Slot ${slot + 1} Deep Analysis is already open.`);
+        return;
+      }
+      if(deepWindows.length >= 2){
+        showDeepToast("Maximum 2 Deep Analysis windows can be open at once.");
+        return;
+      }
+
+      const layer = document.getElementById("deepAnalysisLayer") || document.body;
+      const id = "deep-" + Date.now() + "-" + slot;
+      deepWindows.push({id, slot, instrument:selected[slot]});
+
+      const win = document.createElement("section");
+      win.className = "deep-analysis-window" + (deepWindows.length === 2 ? " second" : "");
+      win.setAttribute("data-deep-id", id);
+      win.setAttribute("role", "dialog");
+      renderDeepWindowContent(win, id, slot);
+      layer.appendChild(win);
+      focusDeepWindow(win);
+      reflowDeepWindows();
     }
 
     window.openDeepAnalysis = openDeepAnalysis;
     window.closeDeepAnalysis = closeDeepAnalysis;
+    window.handleInstrumentChange = handleInstrumentChange;
 
     function renderControls(){
       const box = document.getElementById("marketControls");
-      box.innerHTML = selected.map((name,idx) => `<div class="lab-control-slot"><select class="lab-select" data-slot="${idx}">${INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===name?" selected":""}>${esc(i.name)}</option>`).join("")}</select><button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button></div>`).join("");
-      box.querySelectorAll("select").forEach(sel => sel.addEventListener("change", e => {selected[Number(e.target.dataset.slot)] = e.target.value; renderAll();}));
+      if(box) box.innerHTML = "";
+    }
+    function instrumentOptions(selectedName){
+      return INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
     }
     function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
     function renderCards(data){
       document.getElementById("snapshotCards").innerHTML = data.map((d, idx) => {
         const c = sentimentColor(d.score);
-        return `<article class="sentiment-card"><div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div><div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div><svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg></article>`;
+        return `<article class="sentiment-card">
+          <div class="card-control-strip">
+            <select class="lab-select" data-slot="${idx}" onchange="handleInstrumentChange(${idx}, this.value)">${instrumentOptions(selected[idx])}</select>
+            <button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button>
+          </div>
+          <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div>
+          <div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div>
+          <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg>
+        </article>`;
       }).join("");
     }
     function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
@@ -1157,7 +1238,7 @@
     }
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
     function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
-    function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data)}
+    function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
     async function load(){
       try{
         const [res, techRes] = await Promise.all([
