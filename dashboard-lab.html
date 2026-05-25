@@ -615,10 +615,10 @@
     .market-pulse-panel{
       position:relative;
       isolation:isolate;
-      padding:12px 18px 16px;
+      padding:10px 18px 14px;
       display:block;
       overflow:hidden;
-      min-height:360px;
+      min-height:342px;
       background:
         radial-gradient(circle at 50% 44%, rgba(88,166,255,.18), transparent 17rem),
         radial-gradient(circle at 14% 20%, rgba(248,81,73,.14), transparent 13rem),
@@ -685,18 +685,30 @@
     .hud-title-row{
       position:relative;
       z-index:2;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      align-items:start;
       gap:12px;
-      margin-bottom:2px;
+      margin-bottom:-4px;
     }
 
     .hud-title-row .scope-pill{
-      margin-bottom:7px;
+      justify-self:start;
+      margin-bottom:0;
+    }
+
+    .hud-title-row .score-label{
+      justify-self:center;
+      text-align:center;
+      padding-top:8px;
+      color:#9aa8bc;
+      font-size:14px;
+      font-weight:700;
+      white-space:nowrap;
     }
 
     .pulse-small{
+      justify-self:end;
       color:#8ca5c4;
       font-size:11px;
       font-weight:700;
@@ -1076,10 +1088,8 @@
             <div class="hud-circuit-line line-c"></div>
 
             <div class="hud-title-row">
-              <div>
-                <div class="scope-pill">Market Pulse</div>
-                <div class="score-label">Global · U.S. · Europe Sentiment</div>
-              </div>
+              <div class="scope-pill">Market Pulse</div>
+              <div class="score-label">Global · U.S. · Europe Sentiment</div>
               <div class="pulse-small" id="pulseUpdated">Loading...</div>
             </div>
 
@@ -1492,6 +1502,26 @@
       count.textContent = countText;
     }
 
+    function cleanPulseTimestamp(value){
+      const raw = String(value || "").trim();
+      if(!raw) return "Latest scan";
+
+      const dateMatch = raw.match(/(\d{4}-\d{2}-\d{2})/);
+      const ampmMatch = raw.match(/(\d{1,2}):\d{2}(?::\d{2})?\s*(AM|PM)/i);
+
+      if(dateMatch && ampmMatch){
+        return `${dateMatch[1]} ${ampmMatch[1].padStart(2, "0")}:00 ${ampmMatch[2].toUpperCase()} NY Time`;
+      }
+
+      const twentyFour = raw.match(/(\d{4}-\d{2}-\d{2}).*?(\d{1,2}):\d{2}(?::\d{2})?/);
+      if(twentyFour){
+        const hour = String(Number(twentyFour[2])).padStart(2, "0");
+        return `${twentyFour[1]} ${hour}:00 NY Time`;
+      }
+
+      return raw.replace(/:(\d{2})(\s*(AM|PM))/i, "$2");
+    }
+
     function renderScore(data){
       const globalScore = calculateGlobalScore(data);
       const globalLabel = scoreLabel(globalScore);
@@ -1505,7 +1535,7 @@
       updatePulseCard("Europe", europe.score, scoreLabel(europe.score), europe.count ? `${europe.count} Europe PSI headline sample` : "Latest scan");
 
       const updated = document.getElementById("pulseUpdated");
-      if(updated) updated.textContent = data?.updated_ny || statusData?.updated || "Latest scan";
+      if(updated) updated.textContent = cleanPulseTimestamp(data?.updated_ny || statusData?.updated || "Latest scan");
     }
 
     function renderStats(data){
