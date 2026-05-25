@@ -462,9 +462,12 @@
 
   <button class="page-up" id="pageUpBtn" type="button" aria-label="Go back to top">↑</button>
 
+  <script src="sentiment-core.js"></script>
+
   <script>
     let dashboardData = null;
     let technicalData = null;
+    let newsCacheData = null;
     let allArticles = [];
 
     const marketLabels = {
@@ -488,8 +491,25 @@
       stocks:["Stocks / Company News","Airlines","Banks","Technology Stocks","Energy Stocks","Retail Stocks","Market Movers"]
     };
 
+    function normalizeInstrumentName(value){
+      if(window.PSDCore && typeof window.PSDCore.normalizeInstrumentName === "function"){
+        return window.PSDCore.normalizeInstrumentName(value);
+      }
+      return String(value || "").replace(/\s+/g, " ").trim();
+    }
+
     function allInstruments(){
-      return [...new Set(Object.values(instrumentGroups).flat())];
+      const coreInstruments = window.PSDCore && Array.isArray(window.PSDCore.INSTRUMENTS)
+        ? window.PSDCore.INSTRUMENTS.map(item => item.name)
+        : [];
+
+      return [...new Set([...coreInstruments, ...Object.values(instrumentGroups).flat()].map(normalizeInstrumentName).filter(Boolean))];
+    }
+
+    function itemInstrumentNames(item){
+      return (Array.isArray(item?.instruments) ? item.instruments : [])
+        .map(normalizeInstrumentName)
+        .filter(Boolean);
     }
 
     function escapeHTML(value){
@@ -523,42 +543,20 @@
       return found?.url || "";
     }
 
-    function getTechnicalEntry(name){
-      if(!technicalData) return null;
-
-      const root = technicalData.technical || technicalData;
-
-      if(!root || !name) return null;
-
-      if(Array.isArray(root)){
-        return root.find(item => String(item.instrument || item.name || item.symbol || "") === name) || null;
-      }
-
-      return root[name] || null;
-    }
-
-    function extractTechLabel(entry){
-      if(!entry) return "N/A";
-
-      const daily = entry.daily || entry.Daily;
-
-      if(typeof daily === "string") return daily;
-
-      if(typeof daily === "object" && daily){
-        return daily.direction || daily.signal || daily.label || daily.trend || daily.value || "N/A";
-      }
-
-      return "N/A";
-    }
-
     function headlineTech(item){
-      const instruments = Array.isArray(item?.instruments) ? item.instruments : [];
+      const instruments = itemInstrumentNames(item);
 
       for(const name of instruments){
-        const entry = getTechnicalEntry(name);
-        const daily = extractTechLabel(entry);
+        if(window.PSDCore && typeof window.PSDCore.getTechnicalBias === "function"){
+          const tech = window.PSDCore.getTechnicalBias(technicalData, name, "daily");
+          if(tech && tech.direction && tech.direction !== "N/A") return `Tech Daily: ${tech.direction}`;
+        }
 
-        if(daily !== "N/A") return `Tech Daily: ${daily}`;
+        const root = technicalData && (technicalData.technical || technicalData);
+        const entry = root && root[name];
+        const daily = entry && (entry.daily || entry.Daily);
+        const label = typeof daily === "string" ? daily : (daily && (daily.direction || daily.signal || daily.label || daily.trend || daily.value));
+        if(label) return `Tech Daily: ${label}`;
       }
 
       return "Tech Daily: N/A";
@@ -623,7 +621,7 @@
         ].join(" ").toLowerCase();
 
         const marketOk = market === "all" || (item.markets || []).includes(market);
-        const instrumentOk = instrument === "all" || (item.instruments || []).includes(instrument);
+        const instrumentOk = instrument === "all" || itemInstrumentNames(item).includes(normalizeInstrumentName(instrument));
         const sourceOk = source === "all" || item.source === source;
         const keywordOk = !keyword || text.includes(keyword);
 
@@ -670,10 +668,16 @@
 
       renderSourceSummary(headlines);
 
-      const cacheInfo = allArticles.length ? ` Searching ${allArticles.length} cached article(s).` : "";
+      const archiveCount = window.PSDCore
+        ? window.PSDCore.getHeadlineCount("newsArchive", dashboardData, null, newsCacheData)
+        : allArticles.length;
+      const relevantCount = window.PSDCore
+        ? window.PSDCore.getHeadlineCount("relevantHeadlines", dashboardData, null, newsCacheData)
+        : (Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines.length : 0);
 
-      document.getElementById("resultsCount").textContent =
-        `${headlines.length} article(s) matched your search and filters.${cacheInfo}`;
+      document.getElementById("resultsCount").textContent = hasActiveSearch()
+        ? `Instrument Articles matched: ${headlines.length}. News Archive searched: ${archiveCount}. Relevant Headlines: ${relevantCount}.`
+        : `Showing ${headlines.length} article(s). News Archive: ${archiveCount}. Relevant Headlines: ${relevantCount}.`;
 
       document.getElementById("headlineList").innerHTML = headlines.length
         ? headlines.slice(0,300).map(item => {
@@ -734,8 +738,8 @@
         let cacheItems = [];
 
         if(cacheRes && cacheRes.ok){
-          const cacheData = await cacheRes.json();
-          cacheItems = Array.isArray(cacheData.articles) ? cacheData.articles : [];
+          newsCacheData = await cacheRes.json();
+          cacheItems = Array.isArray(newsCacheData.articles) ? newsCacheData.articles : [];
         }
 
         const latestItems = Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : [];
