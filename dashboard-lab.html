@@ -680,7 +680,7 @@
   <main class="lab-wrap">
     <section class="panel lab-hero">
       <div>
-        <div class="page-chip">Dashboard Lab • Deep Analysis Test v4</div>
+        <div class="page-chip">Dashboard Lab • Deep Analysis Test v5</div>
         <h1>Interactive Market Sentiment Dashboard Lab</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
         <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
@@ -1136,77 +1136,106 @@
     }
 
     function deepLineSvg(values, color, labelText){
-      const clean = (values && values.length ? values : [50,50,50,50]).map(v=>clamp(Number(v)||50,0,100));
-      const w=420,h=132,pad=14,innerW=w-pad*2,innerH=h-pad*2;
-      const smooth = clean.map((v,i,arr)=>{
-        const prev = arr[i-1] ?? v;
-        const next = arr[i+1] ?? v;
-        return clamp(Math.round((prev + v*2 + next)/4),0,100);
-      });
-      const hot = clean.map((v,i)=>clamp(Math.round(v + Math.sin(i*0.65)*11 + 8),0,100));
-      const cold = clean.map((v,i)=>clamp(Math.round(v - Math.cos(i*0.72)*10 - 6),0,100));
-      const cloud = clean.map((v,i)=>clamp(Math.round(Math.abs(v-50)*1.7 + 18 + Math.sin(i*0.8)*8),10,88));
-      const mkPts = arr => arr.map((v,i)=>{
+      const clean = (values && values.length ? values : [50,50,50,50,50,50,50,50]).map(v=>clamp(Number(v)||50,0,100));
+      const w = 420, h = 132, pad = 12, innerW = w - pad*2, innerH = h - pad*2;
+      const toPts = arr => arr.map((v,i)=>{
         const x = pad + (i/(arr.length-1 || 1))*innerW;
         const y = pad + (100-v)/100*innerH;
         return [x,y];
       });
-      const toPath = pts => pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-      const pts = mkPts(clean), hotPts = mkPts(hot), coldPts = mkPts(cold);
-      const fillPath = pts => `${toPath(pts)} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
-      const last = clean[clean.length-1];
-      const change = signed(last - clean[0]);
-      const hi = Math.max(...clean), lo = Math.min(...clean);
-      const gid = `cloudBase${Math.round(Math.random()*100000)}`;
-      const gid2 = `cloudHot${Math.round(Math.random()*100000)}`;
-      const gid3 = `cloudCold${Math.round(Math.random()*100000)}`;
+      const pathFromPts = pts => pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      const areaFromPts = pts => `${pathFromPts(pts)} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
+
+      const lineSeries = clean.map((v,i,arr)=>{
+        const prev = arr[i-1] ?? v;
+        const next = arr[i+1] ?? v;
+        return clamp(Math.round((prev + v*2 + next)/4),0,100);
+      });
+      const mountainSeries = clean.map((v,i)=>clamp(Math.round(18 + Math.abs(v-48)*0.45 + 8*Math.sin(i*0.7) + (i%3)*2),8,46));
+      const heatSeries = clean.map((v,i)=>clamp(Math.round(16 + Math.abs(v-45)*0.72 + 12*Math.cos(i*0.5) + 8),10,70));
+      const hazeSeries = clean.map((v,i)=>clamp(Math.round(10 + Math.abs(v-50)*0.55 + 6*Math.sin(i*0.4+1.2)),8,42));
+
+      const linePts = toPts(lineSeries);
+      const mountainPts = mountainSeries.map((v,i)=>{
+        const x = pad + (i/(mountainSeries.length-1 || 1))*innerW;
+        const y = h - pad - (v/100)*(innerH*0.92);
+        return [x,y];
+      });
+      const heatPts = heatSeries.map((v,i)=>{
+        const x = pad + (i/(heatSeries.length-1 || 1))*innerW;
+        const y = h - pad - (v/100)*(innerH*0.80);
+        return [x,y];
+      });
+      const hazePts = hazeSeries.map((v,i)=>{
+        const x = pad + (i/(hazeSeries.length-1 || 1))*innerW;
+        const y = h - pad - (v/100)*(innerH*0.70);
+        return [x,y];
+      });
+
+      const last = lineSeries[lineSeries.length-1];
+      const change = signed(last - lineSeries[0]);
+      const hi = Math.max(...lineSeries), lo = Math.min(...lineSeries);
+      const gradBg = `cloudBg${Math.round(Math.random()*100000)}`;
+      const gradMountain = `cloudMountain${Math.round(Math.random()*100000)}`;
+      const gradHeat = `cloudHeat${Math.round(Math.random()*100000)}`;
+      const gradHaze = `cloudHaze${Math.round(Math.random()*100000)}`;
+      const gradLine = `cloudLine${Math.round(Math.random()*100000)}`;
       const glow = `cloudGlow${Math.round(Math.random()*100000)}`;
-      const blobCount = 8;
-      const blobs = Array.from({length:blobCount}, (_,i)=>{
-        const x = pad + (i/(blobCount-1))*innerW;
-        const y = h - pad - (cloud[i % cloud.length] / 100) * 26;
-        const rx = 18 + (i%3)*8;
-        const ry = 8 + (i%4)*3;
-        const fill = i%3===0 ? 'rgba(255,83,112,.24)' : i%3===1 ? 'rgba(255,186,90,.20)' : 'rgba(88,166,255,.22)';
-        return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx}" ry="${ry}" fill="${fill}" filter="url(#${glow})"><animate attributeName="ry" values="${ry};${ry+5};${ry}" dur="${4 + i*0.3}s" repeatCount="indefinite"/></ellipse>`;
-      }).join('');
-      const lowerMountains = clean.map((v,i)=>{
-        const x = pad + (i/(clean.length-1 || 1))*innerW;
-        const peak = h - pad - (cloud[i]/100)*18;
-        return `${i?'L':'M'}${x.toFixed(1)},${peak.toFixed(1)}`;
-      }).join(' ');
-      const lowerFill = `${lowerMountains} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
+      const blur = `cloudBlur${Math.round(Math.random()*100000)}`;
+      const scan = `cloudScan${Math.round(Math.random()*100000)}`;
+      const horizonY = h - pad - innerH*0.46;
+
       return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
         <defs>
-          <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="${color}" stop-opacity=".42"/>
-            <stop offset="1" stop-color="${color}" stop-opacity="0"/>
+          <linearGradient id="${gradBg}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(12,17,26,.98)"/>
+            <stop offset="0.58" stop-color="rgba(11,15,22,.94)"/>
+            <stop offset="1" stop-color="rgba(7,10,15,.98)"/>
           </linearGradient>
-          <linearGradient id="${gid2}" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,186,90,.42)"/>
-            <stop offset="1" stop-color="rgba(255,83,112,.05)"/>
+          <linearGradient id="${gradMountain}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(167,178,196,.52)"/>
+            <stop offset="0.45" stop-color="rgba(105,116,132,.28)"/>
+            <stop offset="1" stop-color="rgba(30,36,46,.02)"/>
           </linearGradient>
-          <linearGradient id="${gid3}" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(86,240,255,.28)"/>
-            <stop offset="1" stop-color="rgba(88,166,255,.03)"/>
+          <linearGradient id="${gradHeat}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(255,109,109,.78)"/>
+            <stop offset="0.45" stop-color="rgba(255,71,87,.42)"/>
+            <stop offset="1" stop-color="rgba(255,71,87,0)"/>
           </linearGradient>
-          <filter id="${glow}"><feGaussianBlur stdDeviation="7" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <linearGradient id="${gradHaze}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(232,239,247,.18)"/>
+            <stop offset="1" stop-color="rgba(232,239,247,0)"/>
+          </linearGradient>
+          <linearGradient id="${gradLine}" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="rgba(255,199,199,.80)"/>
+            <stop offset="0.55" stop-color="rgba(255,93,93,.95)"/>
+            <stop offset="1" stop-color="rgba(255,146,146,.82)"/>
+          </linearGradient>
+          <filter id="${glow}" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="5.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="${blur}" x="-20%" y="-20%" width="140%" height="180%"><feGaussianBlur stdDeviation="10"/></filter>
         </defs>
-        <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.24)"/>
-        <text x="${pad}" y="16" class="deep-chart-label">Pressure Cloud</text>
-        <text x="${w-104}" y="16" class="deep-chart-label">Range ${lo}-${hi}</text>
-        ${[0.22,0.44,0.66,0.88].map(t=>`<line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${(pad+innerH*t).toFixed(1)}" y2="${(pad+innerH*t).toFixed(1)}"/>`).join('')}
-        ${[0.17,0.34,0.51,0.68,0.85].map(t=>`<line class="deep-grid-line" x1="${(pad+innerW*t).toFixed(1)}" x2="${(pad+innerW*t).toFixed(1)}" y1="${pad}" y2="${h-pad}"/>`).join('')}
-        <path d="${lowerFill}" fill="url(#${gid2})" opacity=".85" class="deep-chart-fill"/>
-        <path d="${fillPath(coldPts)}" fill="url(#${gid3})" opacity=".65" class="deep-chart-fill"/>
-        <path d="${fillPath(pts)}" fill="url(#${gid})" class="deep-chart-fill"/>
-        ${blobs}
-        <path d="${toPath(coldPts)}" fill="none" stroke="rgba(86,240,255,.82)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.5s,4.8s" filter="url(#${glow})"/>
-        <path d="${toPath(hotPts)}" fill="none" stroke="rgba(255,126,102,.85)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.85s,5.1s" filter="url(#${glow})"/>
-        <path d="${toPath(pts)}" fill="none" stroke="${color}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#${glow})"/>
-        ${pts.slice(-5).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===4?4.8:2.4}" fill="${i===4?color:'rgba(255,255,255,.42)'}" class="deep-chart-dot"><animate attributeName="r" values="${i===4?4.8:2.4};${i===4?6.8:3.8};${i===4?4.8:2.4}" dur="2.6s" repeatCount="indefinite" begin="${i*0.16}s"/></circle>`).join('')}
-        <text x="${w-38}" y="25" fill="#fff" font-size="18" font-weight="900" text-anchor="end">${last}</text>
-        <text x="${w-38}" y="40" fill="#8ba0bc" font-size="10" font-weight="800" text-anchor="end">Δ ${change}</text>
+        <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="url(#${gradBg})"/>
+        <text x="${pad}" y="16" class="deep-chart-label">24H CLOUD</text>
+        <text x="${w-116}" y="16" class="deep-chart-label">Range ${lo}-${hi}</text>
+        ${[0.24,0.48,0.72].map(t=>`<line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${(pad+innerH*t).toFixed(1)}" y2="${(pad+innerH*t).toFixed(1)}"/>`).join('')}
+        <line x1="${pad}" x2="${w-pad}" y1="${horizonY.toFixed(1)}" y2="${horizonY.toFixed(1)}" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 6"/>
+        <path d="${areaFromPts(hazePts)}" fill="url(#${gradHaze})" opacity=".85" filter="url(#${blur})" class="deep-chart-fill"/>
+        <path d="${areaFromPts(heatPts)}" fill="url(#${gradHeat})" opacity=".92" filter="url(#${glow})" class="deep-chart-fill"/>
+        <path d="${areaFromPts(mountainPts)}" fill="url(#${gradMountain})" opacity=".95" class="deep-chart-fill"/>
+        <path d="${pathFromPts(mountainPts)}" fill="none" stroke="rgba(232,239,247,.34)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="${pathFromPts(heatPts)}" fill="none" stroke="rgba(255,87,87,.58)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#${glow})"/>
+        <path d="${pathFromPts(linePts)}" fill="none" stroke="url(#${gradLine})" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#${glow})" style="animation-duration:1.8s,5s"/>
+        <rect x="${pad}" y="${h-28}" width="${innerW}" height="12" rx="6" fill="rgba(255,255,255,.03)"/>
+        <rect x="${pad}" y="${h-28}" width="${(innerW*0.58).toFixed(1)}" height="12" rx="6" fill="rgba(255,82,82,.14)">
+          <animate attributeName="width" values="${(innerW*0.42).toFixed(1)};${(innerW*0.64).toFixed(1)};${(innerW*0.58).toFixed(1)}" dur="5.5s" repeatCount="indefinite"/>
+        </rect>
+        ${linePts.slice(-4).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===3?4.4:2.4}" fill="${i===3?'#ffffff':'rgba(255,190,190,.55)'}" class="deep-chart-dot"><animate attributeName="opacity" values=".35;1;.35" dur="${2.3 + i*0.2}s" repeatCount="indefinite"/></circle>`).join('')}
+        <g transform="translate(${w-96} 22)">
+          <rect x="0" y="0" width="76" height="44" rx="10" fill="rgba(9,14,22,.72)" stroke="rgba(255,255,255,.08)"/>
+          <text x="38" y="18" fill="#8ba0bc" font-size="9" font-weight="800" text-anchor="middle">LIVE SIGNAL</text>
+          <text x="38" y="33" fill="#fff" font-size="18" font-weight="900" text-anchor="middle">${last}</text>
+          <text x="38" y="42" fill="#ff8f8f" font-size="9" font-weight="800" text-anchor="middle">Δ ${change}</text>
+        </g>
       </svg>`;
     }
 
