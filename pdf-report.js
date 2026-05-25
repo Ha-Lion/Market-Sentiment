@@ -5,7 +5,7 @@
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
-  const PSD_PDF_VERSION = "33";
+  const PSD_PDF_VERSION = "34";
   const PSD_SITE_LABEL = "publicsentimentdash.com";
   const PSD_CAPTURE_WIDTH = 1600;
   const PSD_CAPTURE_HEIGHT = 1131; // A4 landscape ratio
@@ -956,6 +956,45 @@
       #psdPdfCaptureRoot .psd-home-page3 .action-grid{
         grid-template-columns:repeat(4,minmax(0,1fr))!important;
         gap:11px!important;
+      }
+
+
+
+      /* Home PDF page 1: color fidelity boost for Market Pulse only */
+      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel,
+      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel *{
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .market-pulse-panel{
+        filter:saturate(1.18) contrast(1.04) brightness(1.03)!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-grid-bg{
+        opacity:.82!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-circuit-line{
+        opacity:.92!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer-card{
+        background:
+          radial-gradient(circle at 50% 30%, rgba(88,166,255,.10), transparent 9rem),
+          linear-gradient(180deg,rgba(9,16,28,.88),rgba(5,8,14,.96))!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-speedometer{
+        filter:saturate(1.28) brightness(1.08)!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-arc{
+        opacity:1!important;
+        filter:drop-shadow(0 0 7px rgba(88,166,255,.20)) saturate(1.28)!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-ring.outer{
+        box-shadow:
+          0 0 16px rgba(88,166,255,.22),
+          inset 0 0 18px rgba(88,166,255,.10)!important;
+      }
+      #psdPdfCaptureRoot .psd-home-page1 .hud-meter span,
+      #psdPdfCaptureRoot .psd-home-page1 .hud-needle{
+        filter:saturate(1.20) brightness(1.06)!important;
       }
 
 
