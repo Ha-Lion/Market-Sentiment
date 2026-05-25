@@ -576,17 +576,42 @@
     .deep-news-velocity i{flex:1;display:block;min-width:0;border-radius:999px 999px 3px 3px;background:linear-gradient(180deg,rgba(255,210,90,.95),rgba(88,166,255,.72));box-shadow:0 0 16px rgba(88,166,255,.20);transform-origin:center bottom;animation:deepBarRise .95s ease-out both,deepBarPulse 3.4s ease-in-out infinite;}
     .deep-news-fusion{display:grid;gap:12px;margin-top:12px;}
     .deep-news-holo{border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(8,12,18,.84),rgba(5,9,15,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 16px 40px rgba(0,0,0,.24);}
-    .deep-news-holo svg{display:block;width:100%;height:188px;}
-    .deep-news-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+    .deep-news-holo svg{display:block;width:100%;height:166px;}
+    .deep-news-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
     .deep-news-kpi{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 11px;background:linear-gradient(180deg,rgba(9,14,22,.84),rgba(6,10,16,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.04);}
     .deep-news-kpi span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
-    .deep-news-kpi b{display:block;color:#fff;font-size:20px;line-height:1.05;}
-    .deep-news-kpi small{display:block;color:var(--soft);font-size:11px;margin-top:4px;}
+    .deep-news-kpi b{display:block;color:#fff;font-size:16px;line-height:1.08;overflow-wrap:anywhere;}
+    .deep-news-kpi small{display:block;color:var(--soft);font-size:10px;margin-top:4px;line-height:1.25;}
+
+    .deep-news-kpi-button{
+      width:100%;
+      min-height:100%;
+      font-family:inherit;
+      text-align:left;
+      color:inherit;
+      cursor:pointer;
+      appearance:none;
+    }
+    .deep-news-kpi-button:hover{
+      border-color:rgba(255,215,128,.42);
+      background:linear-gradient(180deg,rgba(210,153,34,.16),rgba(7,10,16,.98));
+      box-shadow:0 0 22px rgba(210,153,34,.12),inset 0 1px 0 rgba(255,255,255,.06);
+      transform:translateY(-1px);
+    }
+    .deep-news-kpi-button .deep-click-note{
+      color:#ffd780;
+      font-size:9px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.07em;
+      margin-top:6px;
+    }
+
     .deep-news-themes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
     .deep-news-theme-pill{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;background:linear-gradient(180deg,rgba(10,15,23,.92),rgba(6,10,15,.98));}
     .deep-news-theme-pill:before{content:"";position:absolute;inset:-40% auto auto -20%;width:70%;height:160%;background:radial-gradient(circle,rgba(88,166,255,.22),transparent 68%);pointer-events:none;}
     .deep-news-theme-pill span{display:block;color:#dfe8f5;font-size:12px;font-weight:800;}
-    .deep-news-theme-pill b{display:block;color:#fff;font-size:20px;line-height:1.05;margin-top:3px;}
+    .deep-news-theme-pill b{display:block;color:#fff;font-size:16px;line-height:1.05;margin-top:3px;}
     .deep-news-theme-pill small{display:block;color:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
     @keyframes deepShimmer{to{transform:translateX(120%)}}
     .deep-radar-wrap{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center;margin-top:12px;}
@@ -609,6 +634,117 @@
       .deep-news-meta,.deep-news-themes{grid-template-columns:1fr 1fr;}
       .deep-radar-wrap{grid-template-columns:1fr;}
     }
+
+    .deep-article-page{
+      position:fixed;
+      top:116px;
+      left:50%;
+      transform:translateX(-50%);
+      width:min(820px,calc(100vw - 38px));
+      max-height:calc(100vh - 150px);
+      overflow:hidden;
+      z-index:1700;
+      pointer-events:auto;
+      border:1px solid rgba(210,153,34,.44);
+      border-radius:22px;
+      background:
+        radial-gradient(circle at top left,rgba(88,166,255,.14),transparent 18rem),
+        radial-gradient(circle at top right,rgba(210,153,34,.14),transparent 16rem),
+        linear-gradient(180deg,rgba(13,17,23,.98),rgba(6,10,16,.98));
+      box-shadow:0 30px 100px rgba(0,0,0,.62),0 0 40px rgba(210,153,34,.12);
+      backdrop-filter:blur(12px);
+    }
+    .deep-article-header{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .deep-article-kicker{color:#ffd780;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
+    .deep-article-title{color:#fff;font-size:20px;font-weight:900;line-height:1.2;}
+    .deep-article-sub{color:var(--muted);font-size:12px;line-height:1.4;margin-top:4px;}
+    .deep-article-close{
+      flex:0 0 auto;
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(17,24,33,.88);
+      color:#fff;
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+    }
+    .deep-article-body{padding:16px 18px 18px;overflow:auto;max-height:calc(100vh - 250px);}
+    .deep-article-tools{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+    .deep-article-tools label{color:var(--soft);font-size:12px;font-weight:800;}
+    .deep-article-tools select{
+      background:rgba(17,24,33,.88);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:9px 12px;
+      outline:none;
+      font-weight:700;
+    }
+    .deep-article-note{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+      border:1px solid rgba(255,255,255,.07);
+      background:rgba(8,13,21,.54);
+      border-radius:14px;
+      padding:10px 12px;
+      margin-bottom:12px;
+    }
+    .deep-article-list{display:grid;gap:10px;}
+    .deep-article-row{
+      display:grid;
+      grid-template-columns:72px minmax(0,1fr) 90px;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(13,19,29,.88),rgba(8,12,18,.96));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .deep-article-score{
+      width:58px;
+      height:58px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:radial-gradient(circle at 30% 20%,rgba(255,215,128,.24),rgba(88,166,255,.10)),rgba(7,10,16,.8);
+      border:1px solid rgba(255,255,255,.08);
+      color:#fff;
+      font-size:18px;
+      font-weight:900;
+    }
+    .deep-article-headline{color:#fff;font-size:13px;font-weight:850;line-height:1.35;}
+    .deep-article-meta{color:var(--muted);font-size:11px;line-height:1.35;margin-top:5px;}
+    .deep-article-pill{
+      justify-self:end;
+      display:inline-flex;
+      justify-content:center;
+      min-width:76px;
+      padding:7px 9px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:900;
+      border:1px solid rgba(255,255,255,.09);
+      color:#fff;
+      background:rgba(88,166,255,.12);
+    }
+    @media(max-width:760px){
+      .deep-article-page{top:80px;width:calc(100vw - 20px);}
+      .deep-article-row{grid-template-columns:1fr;}
+      .deep-article-score{width:100%;height:42px;}
+      .deep-article-pill{justify-self:start;}
+    }
+
     .deep-analysis-toast{
       position:fixed;
       left:50%;
@@ -695,7 +831,7 @@
   <main class="lab-wrap">
     <section class="panel lab-hero">
       <div>
-        <div class="page-chip">Dashboard Lab • Deep Analysis Test v6</div>
+        <div class="page-chip">Dashboard Lab • Deep Analysis Test v7</div>
         <h1>Interactive Market Sentiment Dashboard Lab</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
         <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
@@ -1345,86 +1481,76 @@
       const bear = clamp(100 - bull, 0, 100);
       const neutral = clamp(100 - Math.abs(score - 50) * 2, 0, 100);
       const intensity = stats.intensity;
-      const pulse = Array.from({length: 14}, (_, i) => clamp(Math.round(26 + Math.sin(i*0.55 + score/16) * 16 + Math.cos(i*0.35) * 10 + (i%4)*3 + score*0.22), 12, 92));
-      const barSeries = Array.from({length: 10}, (_, i) => clamp(Math.round(22 + Math.abs(Math.cos(i*0.62 + score/19))*46 + (i%3)*5), 14, 96));
       const uid = Math.round(Math.random()*100000);
-      const step = 17;
-      const linePts = pulse.map((v,i)=>{
-        const x = 215 + i * step;
-        const y = 108 - (v/100) * 64;
-        return [x,y];
-      });
+      const pulse = Array.from({length: 13}, (_, i) => clamp(Math.round(28 + Math.sin(i*0.58 + score/17) * 14 + Math.cos(i*0.35) * 9 + score*0.22), 14, 90));
+      const barSeries = Array.from({length: 9}, (_, i) => clamp(Math.round(20 + Math.abs(Math.cos(i*0.62 + score/19))*44 + (i%3)*5), 14, 92));
+      const linePts = pulse.map((v,i)=>[210 + i * 15, 104 - (v/100) * 58]);
       const linePath = linePts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-      const areaPath = `${linePath} L${linePts[linePts.length-1][0]},140 L215,140 Z`;
+      const areaPath = `${linePath} L${linePts[linePts.length-1][0]},134 L210,134 Z`;
       const bars = barSeries.map((v,i)=>{
-        const x = 218 + i*18;
-        const h = (v/100)*34;
-        const y = 155 - h;
-        return `<rect x="${x}" y="${y.toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="4" fill="url(#orbBar${uid})" opacity="${(0.65 + i*0.03).toFixed(2)}"/>`;
+        const x = 216 + i*19;
+        const h = (v/100)*32;
+        const y = 146 - h;
+        return `<rect x="${x}" y="${y.toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="4" fill="url(#orbBar${uid})" opacity="${(0.66 + i*0.03).toFixed(2)}"/>`;
       }).join('');
       const themes = deepInstrumentThemes(instrumentName);
-      const dots = themes.map((t,i)=>`<g transform="translate(${36 + i*42} 160)"><circle r="7" fill="rgba(6,10,16,.88)" stroke="rgba(255,255,255,.14)"/><circle r="3.2" fill="${['#67e8f9','#f472b6','#facc15','#60a5fa'][i%4]}" filter="url(#orbGlow${uid})"/><text x="0" y="20" fill="#aab7cb" font-size="8" font-weight="800" text-anchor="middle">${esc(t.slice(0,4).toUpperCase())}</text></g>`).join('');
-      const ringLabels = [`BULL ${bull}`, `NEUT ${neutral}`, `BEAR ${bear}`];
-      return `<svg viewBox="0 0 420 188" preserveAspectRatio="none" aria-label="News and article fusion chart">
+      const dots = themes.map((t,i)=>`<g transform="translate(${34 + i*42} 146)"><circle r="6.5" fill="rgba(6,10,16,.88)" stroke="rgba(255,255,255,.14)"/><circle r="3" fill="${['#67e8f9','#f472b6','#facc15','#60a5fa'][i%4]}" filter="url(#orbGlow${uid})"/><text x="0" y="18" fill="#aab7cb" font-size="7.5" font-weight="800" text-anchor="middle">${esc(t.slice(0,4).toUpperCase())}</text></g>`).join('');
+      return `<svg viewBox="0 0 420 166" preserveAspectRatio="none" aria-label="News and article fusion chart">
         <defs>
-          <linearGradient id="orbBg${uid}" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(10,14,21,.98)"/>
-            <stop offset="0.55" stop-color="rgba(8,13,20,.96)"/>
-            <stop offset="1" stop-color="rgba(6,9,15,.99)"/>
-          </linearGradient>
-          <radialGradient id="orbCore${uid}" cx="50%" cy="45%" r="60%">
-            <stop offset="0" stop-color="rgba(255,103,103,.98)"/>
-            <stop offset="0.28" stop-color="rgba(255,140,82,.88)"/>
-            <stop offset="0.55" stop-color="rgba(66,205,255,.34)"/>
+          <radialGradient id="orbCore${uid}" cx="50%" cy="45%" r="62%">
+            <stop offset="0" stop-color="rgba(255,116,92,.95)"/>
+            <stop offset="0.34" stop-color="rgba(255,151,83,.78)"/>
+            <stop offset="0.62" stop-color="rgba(66,205,255,.28)"/>
             <stop offset="1" stop-color="rgba(8,12,18,0)"/>
           </radialGradient>
           <linearGradient id="orbLine${uid}" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stop-color="rgba(255,118,118,.65)"/>
+            <stop offset="0" stop-color="rgba(255,118,118,.60)"/>
             <stop offset="0.55" stop-color="rgba(255,74,74,.98)"/>
-            <stop offset="1" stop-color="rgba(255,184,184,.78)"/>
+            <stop offset="1" stop-color="rgba(255,184,184,.72)"/>
           </linearGradient>
           <linearGradient id="orbArea${uid}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,84,84,.42)"/>
+            <stop offset="0" stop-color="rgba(255,84,84,.34)"/>
             <stop offset="1" stop-color="rgba(255,84,84,0)"/>
           </linearGradient>
           <linearGradient id="orbBar${uid}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,173,82,.96)"/>
-            <stop offset="1" stop-color="rgba(255,90,90,.68)"/>
+            <stop offset="0" stop-color="rgba(255,210,90,.96)"/>
+            <stop offset="1" stop-color="rgba(255,88,106,.68)"/>
           </linearGradient>
-          <filter id="orbGlow${uid}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <clipPath id="orbClip${uid}"><circle cx="95" cy="92" r="46"/></clipPath>
+          <filter id="orbGlow${uid}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <clipPath id="orbClip${uid}"><circle cx="91" cy="80" r="43"/></clipPath>
         </defs>
-        <rect x="0" y="0" width="420" height="188" rx="18" fill="url(#orbBg${uid})"/>
-        <text x="16" y="18" fill="#8ea1bc" font-size="10" font-weight="900" letter-spacing=".08em">NARRATIVE CORE</text>
-        <text x="214" y="18" fill="#8ea1bc" font-size="10" font-weight="900" letter-spacing=".08em">FLOW SPECTRUM</text>
+        <rect x="0" y="0" width="420" height="166" rx="18" fill="rgba(6,10,16,.98)"/>
+        <text x="16" y="17" fill="#8ea1bc" font-size="9.5" font-weight="900" letter-spacing=".08em">NARRATIVE ORB</text>
+        <text x="208" y="17" fill="#8ea1bc" font-size="9.5" font-weight="900" letter-spacing=".08em">ARTICLE FLOW</text>
+
         <g>
-          <circle cx="95" cy="92" r="72" fill="none" stroke="rgba(86,168,255,.16)" stroke-width="2"/>
-          <circle cx="95" cy="92" r="61" fill="none" stroke="rgba(255,86,86,.16)" stroke-width="2"/>
-          <circle cx="95" cy="92" r="51" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.4" stroke-dasharray="4 6"/>
-          <circle cx="95" cy="92" r="46" fill="url(#orbCore${uid})" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+          <circle cx="91" cy="80" r="67" fill="none" stroke="rgba(86,168,255,.14)" stroke-width="2"/>
+          <circle cx="91" cy="80" r="56" fill="none" stroke="rgba(255,86,86,.14)" stroke-width="2"/>
+          <circle cx="91" cy="80" r="47" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2" stroke-dasharray="4 6"/>
+          <circle cx="91" cy="80" r="43" fill="url(#orbCore${uid})" stroke="rgba(255,255,255,.13)" stroke-width="1.4"/>
           <g clip-path="url(#orbClip${uid})">
-            ${Array.from({length:8},(_,i)=>{ const h = 18 + (i%4)*8 + Math.round(score/10); const x = 61 + i*9; const y = 118 - h; return `<rect x="${x}" y="${y}" width="6" height="${h}" rx="2" fill="url(#orbBar${uid})" opacity="${(0.58+i*0.05).toFixed(2)}"/>`; }).join('')}
-            <path d="M49,107 C68,95 84,84 95,86 C108,88 120,80 140,63" fill="none" stroke="rgba(255,255,255,.72)" stroke-width="2.2" stroke-linecap="round" filter="url(#orbGlow${uid})"/>
+            ${Array.from({length:7},(_,i)=>{ const h = 16 + (i%4)*7 + Math.round(score/12); const x = 60 + i*9; const y = 111 - h; return `<rect x="${x}" y="${y}" width="6" height="${h}" rx="2" fill="url(#orbBar${uid})" opacity="${(0.58+i*0.05).toFixed(2)}"/>`; }).join('')}
+            <path d="M49,99 C66,88 80,78 91,80 C105,82 117,76 135,59" fill="none" stroke="rgba(255,255,255,.68)" stroke-width="2" stroke-linecap="round" filter="url(#orbGlow${uid})"/>
           </g>
-          <text x="95" y="87" fill="#ffffff" font-size="22" font-weight="900" text-anchor="middle">${pressureLabel(score)}</text>
-          <text x="95" y="104" fill="#d6deeb" font-size="11" font-weight="800" text-anchor="middle">${headlines.toLocaleString()} ARTICLES</text>
-          <text x="95" y="119" fill="#ffd76b" font-size="10" font-weight="900" text-anchor="middle">INTENSITY ${intensity}</text>
-          ${ringLabels.map((txt,i)=>`<text x="95" y="${34 + i*13}" fill="${['#67e8f9','#ffd76b','#ff8b8b'][i]}" font-size="8.5" font-weight="800" text-anchor="middle">${txt}</text>`).join('')}
+          <text x="91" y="76" fill="#ffffff" font-size="18" font-weight="900" text-anchor="middle">${pressureLabel(score)}</text>
+          <text x="91" y="92" fill="#d6deeb" font-size="9.5" font-weight="800" text-anchor="middle">${headlines.toLocaleString()} ARTICLES</text>
+          <text x="91" y="106" fill="#ffd76b" font-size="9" font-weight="900" text-anchor="middle">INTENSITY ${intensity}</text>
           ${dots}
         </g>
+
         <g>
-          ${[0,1,2,3].map(i=>`<line x1="214" x2="402" y1="${40 + i*28}" y2="${40 + i*28}" stroke="rgba(255,255,255,.07)"/>`).join('')}
+          ${[0,1,2,3].map(i=>`<line x1="208" x2="402" y1="${36 + i*25}" y2="${36 + i*25}" stroke="rgba(255,255,255,.065)"/>`).join('')}
           <path d="${areaPath}" fill="url(#orbArea${uid})"/>
-          <path d="${linePath}" fill="none" stroke="url(#orbLine${uid})" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#orbGlow${uid})" style="animation-duration:1.7s,4.6s"/>
-          ${linePts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===linePts.length-1?4:2.2}" fill="${i===linePts.length-1?'#fff':'rgba(255,170,170,.65)'}" class="deep-chart-dot"><animate attributeName="opacity" values=".35;1;.35" dur="${2.5 + i*0.12}s" repeatCount="indefinite"/></circle>`).join('')}
+          <path d="${linePath}" fill="none" stroke="url(#orbLine${uid})" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#orbGlow${uid})" style="animation-duration:1.7s,4.6s"/>
+          ${linePts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===linePts.length-1?3.8:2}" fill="${i===linePts.length-1?'#fff':'rgba(255,170,170,.60)'}" class="deep-chart-dot"/>`).join('')}
           ${bars}
-          <rect x="214" y="26" width="188" height="142" rx="14" fill="none" stroke="rgba(255,255,255,.07)"/>
-          <g transform="translate(300 22)">
-            <rect x="0" y="0" width="94" height="32" rx="12" fill="rgba(8,13,21,.78)" stroke="rgba(255,255,255,.08)"/>
-            <text x="47" y="13" fill="#8ea1bc" font-size="8" font-weight="900" text-anchor="middle">NARRATIVE VELOCITY</text>
-            <text x="47" y="24" fill="#fff" font-size="14" font-weight="900" text-anchor="middle">${intensity}/100</text>
+          <rect x="208" y="27" width="194" height="126" rx="14" fill="none" stroke="rgba(255,255,255,.07)"/>
+          <g transform="translate(300 24)">
+            <rect x="0" y="0" width="86" height="30" rx="12" fill="rgba(8,13,21,.76)" stroke="rgba(255,255,255,.08)"/>
+            <text x="43" y="12" fill="#8ea1bc" font-size="7.5" font-weight="900" text-anchor="middle">VELOCITY</text>
+            <text x="43" y="23" fill="#fff" font-size="13" font-weight="900" text-anchor="middle">${intensity}/100</text>
           </g>
-          <text x="216" y="180" fill="#7f93af" font-size="8.5" font-weight="800">source pulse + theme pressure + article flow</text>
+          <text x="212" y="160" fill="#7f93af" font-size="8" font-weight="800">source pulse + theme pressure + article flow</text>
         </g>
       </svg>`;
     }
@@ -1433,7 +1559,7 @@
       return score > 58 ? 'BULL' : score < 44 ? 'BEAR' : 'BAL';
     }
 
-    function deepNewsBars(data, instrumentName){
+    function deepNewsBars(data, instrumentName, slot){
       const score = Number(data.score) || 50;
       const headlines = Number(data.headlines || 0);
       const bullish = clamp(Math.round(score),0,100);
@@ -1450,7 +1576,7 @@
         <div class="deep-news-holo">${deepNewsFusionSvg(data, instrumentName, { intensity })}</div>
         <div class="deep-news-meta">
           <div class="deep-news-kpi"><span>Pressure</span><b>${pressure}</b><small>${bullish}% bull / ${bearish}% bear</small></div>
-          <div class="deep-news-kpi"><span>Article Load</span><b>${headlines.toLocaleString()}</b><small>Intensity ${intensity}/100</small></div>
+          <button class="deep-news-kpi deep-news-kpi-button" type="button" onclick="openArticleLoadPageFromSlot(${slot})"><span>Article Load</span><b>${headlines.toLocaleString()}</b><small>Intensity ${intensity}/100</small><small class="deep-click-note">Click to open articles</small></button>
           <div class="deep-news-kpi"><span>Source Bias</span><b>${esc(data.user || 'Mixed')}</b><small>${esc(data.sentiment || 'Neutral')} narrative</small></div>
           <div class="deep-news-kpi"><span>Neutrality</span><b>${neutral}%</b><small>Balance between bullish and bearish pressure</small></div>
         </div>
@@ -1570,7 +1696,7 @@
             <div class="deep-section">
               <h3>News & Article Summary</h3>
               <p>Pressure spectrum, article velocity, and theme balance for the selected instrument.</p>
-              ${deepNewsBars(data, instrumentName)}
+              ${deepNewsBars(data, instrumentName, slot)}
             </div>
             <div class="deep-section">
               <h3>Signal Confluence Radar</h3>
@@ -1580,6 +1706,96 @@
           </div>
         </div>`;
       makeDeepWindowDraggable(win);
+    }
+
+    function articleSentimentFromScore(score, index){
+      const s = clamp(Math.round(Number(score || 50) + Math.sin(index * .9) * 18 + (index % 3 - 1) * 7), 0, 100);
+      if(s >= 60) return {label:"Bullish", score:s, cls:"badge-bullish"};
+      if(s <= 40) return {label:"Bearish", score:s, cls:"badge-bearish"};
+      return {label:"Neutral", score:s, cls:"badge-neutral"};
+    }
+
+    function buildArticleRows(slot, sortMode){
+      const instrumentName = selected[slot] || "Selected Instrument";
+      const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
+      const data = calcInstrument(ins);
+      const themes = deepInstrumentThemes(instrumentName);
+      const sources = ["Reuters Pulse","CNBC Markets","MarketWatch Flow","Kitco News","Yahoo Finance","Investing.com","Bloomberg Wire","FXStreet"];
+      let rows = Array.from({length:10}, (_,i)=>{
+        const sent = articleSentimentFromScore(data.score, i);
+        const theme = themes[i % themes.length];
+        const source = sources[(i + instrumentName.length) % sources.length];
+        const age = i === 0 ? "Latest" : `${i * 2 + 1}h ago`;
+        return {
+          title:`${instrumentName} ${theme.toLowerCase()} narrative ${sent.label.toLowerCase()} pressure signal #${i+1}`,
+          source,
+          theme,
+          age,
+          sentiment:sent.label,
+          score:sent.score
+        };
+      });
+      if(sortMode === "bullish") rows.sort((a,b)=>b.score-a.score);
+      if(sortMode === "bearish") rows.sort((a,b)=>a.score-b.score);
+      if(sortMode === "source") rows.sort((a,b)=>a.source.localeCompare(b.source));
+      if(sortMode === "theme") rows.sort((a,b)=>a.theme.localeCompare(b.theme));
+      return {instrumentName, data, rows};
+    }
+
+    function renderArticleLoadPage(slot, sortMode){
+      const {instrumentName, data, rows} = buildArticleRows(slot, sortMode || "newest");
+      const page = document.getElementById("deepArticlePage");
+      if(!page) return;
+      page.setAttribute("data-article-slot", String(slot));
+      page.innerHTML = `
+        <div class="deep-article-header">
+          <div>
+            <div class="deep-article-kicker">Article Load Drilldown</div>
+            <div class="deep-article-title">${esc(instrumentName)}</div>
+            <div class="deep-article-sub">Lab preview page. Live article connection and exact article data will come in Phase 2.</div>
+          </div>
+          <button class="deep-article-close" type="button" onclick="closeArticleLoadPage()" aria-label="Close article drilldown">×</button>
+        </div>
+        <div class="deep-article-body">
+          <div class="deep-article-tools">
+            <label>Showing ${Number(data.headlines || 0).toLocaleString()} article-load signal(s)</label>
+            <select onchange="renderArticleLoadPage(${slot}, this.value)">
+              <option value="newest"${sortMode==="newest"?" selected":""}>Sort: Newest</option>
+              <option value="bullish"${sortMode==="bullish"?" selected":""}>Sort: Bullish pressure</option>
+              <option value="bearish"${sortMode==="bearish"?" selected":""}>Sort: Bearish pressure</option>
+              <option value="source"${sortMode==="source"?" selected":""}>Sort: Source</option>
+              <option value="theme"${sortMode==="theme"?" selected":""}>Sort: Theme</option>
+            </select>
+          </div>
+          <div class="deep-article-note">This is the correct structure for Phase 2: click Article Load → open article list → sort by source, theme, freshness, or sentiment pressure.</div>
+          <div class="deep-article-list">
+            ${rows.map(r=>`<article class="deep-article-row">
+              <div class="deep-article-score">${r.score}</div>
+              <div>
+                <div class="deep-article-headline">${esc(r.title)}</div>
+                <div class="deep-article-meta">${esc(r.source)} • ${esc(r.theme)} • ${esc(r.age)}</div>
+              </div>
+              <div class="deep-article-pill ${r.sentiment === "Bullish" ? "badge-bullish" : r.sentiment === "Bearish" ? "badge-bearish" : "badge-neutral"}">${esc(r.sentiment)}</div>
+            </article>`).join("")}
+          </div>
+        </div>`;
+    }
+
+    function openArticleLoadPageFromSlot(slot){
+      let page = document.getElementById("deepArticlePage");
+      if(!page){
+        page = document.createElement("section");
+        page.id = "deepArticlePage";
+        page.className = "deep-article-page";
+        page.setAttribute("role","dialog");
+        document.body.appendChild(page);
+      }
+      renderArticleLoadPage(Number(slot), "newest");
+    }
+
+    function closeArticleLoadPage(){
+      const page = document.getElementById("deepArticlePage");
+      if(page) page.remove();
     }
 
     function updateDeepWindowForSlot(slot){
@@ -1607,6 +1823,10 @@
       selected[Number(slot)] = value;
       renderAll();
       updateDeepWindowForSlot(Number(slot));
+      const articlePage = document.getElementById("deepArticlePage");
+      if(articlePage && Number(articlePage.getAttribute("data-article-slot")) === Number(slot)){
+        renderArticleLoadPage(Number(slot), "newest");
+      }
     }
 
     function openDeepAnalysis(slot){
@@ -1642,6 +1862,9 @@
     window.openDeepAnalysis = openDeepAnalysis;
     window.closeDeepAnalysis = closeDeepAnalysis;
     window.handleInstrumentChange = handleInstrumentChange;
+    window.openArticleLoadPageFromSlot = openArticleLoadPageFromSlot;
+    window.closeArticleLoadPage = closeArticleLoadPage;
+    window.renderArticleLoadPage = renderArticleLoadPage;
 
     function renderControls(){
       const box = document.getElementById("marketControls");
