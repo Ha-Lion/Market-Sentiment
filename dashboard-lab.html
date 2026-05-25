@@ -1576,22 +1576,22 @@
 
     function cleanPulseTimestamp(value){
       const raw = String(value || "").trim();
-      if(!raw) return "Latest scan";
+      if(!raw) return "Last Scan: Latest data";
 
       const dateMatch = raw.match(/(\d{4}-\d{2}-\d{2})/);
       const ampmMatch = raw.match(/(\d{1,2}):\d{2}(?::\d{2})?\s*(AM|PM)/i);
 
       if(dateMatch && ampmMatch){
-        return `${dateMatch[1]} ${ampmMatch[1].padStart(2, "0")}:00 ${ampmMatch[2].toUpperCase()} NY Time`;
+        return `Last Scan: ${dateMatch[1]} ${ampmMatch[1].padStart(2, "0")}:00 ${ampmMatch[2].toUpperCase()} NY`;
       }
 
       const twentyFour = raw.match(/(\d{4}-\d{2}-\d{2}).*?(\d{1,2}):\d{2}(?::\d{2})?/);
       if(twentyFour){
         const hour = String(Number(twentyFour[2])).padStart(2, "0");
-        return `${twentyFour[1]} ${hour}:00 NY Time`;
+        return `Last Scan: ${twentyFour[1]} ${hour}:00 NY`;
       }
 
-      return raw.replace(/:(\d{2})(\s*(AM|PM))/i, "$2");
+      return `Last Scan: ${raw}`;
     }
 
     function renderScore(data){
