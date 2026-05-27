@@ -1,6 +1,6 @@
 /*
   Public Sentiment Dash — sentiment-core.js
-  Version: PSI_CORE_V1
+  Version: PSI_CORE_V2_UNIVERSAL
 
   OFFICIAL DEFINITIONS V1
   ---------------------------------------------------------------------------
@@ -37,11 +37,19 @@
   7) Timestamp:
      - Prefer dashboard_data.json updated_ny.
      - Fallback to status.json updated, then updated_utc fields.
+
+  8) Regional pulse:
+     - Use backend regional_pulse from dashboard_data.json/status.json.
+     - Do not recalculate U.S./Europe PSI inside page scripts.
+
+  9) Instrument dashboard:
+     - Prefer backend instrument_history.json for instrument PSI and chart series.
+     - Use dashboard_data.json headlines only as a legacy fallback when official history is missing.
 */
 (function(){
   "use strict";
 
-  const VERSION = "PSI_CORE_V1";
+  const VERSION = "PSI_CORE_V2_UNIVERSAL";
   const MIN_INSTRUMENT_PSI_HEADLINES = 3;
 
   const INSTRUMENTS = [
@@ -402,6 +410,8 @@
     const newsCacheData = opts.newsCacheData || null;
     const userVotes = opts.userVotes || (typeof window !== "undefined" ? window.PSD_USER_SENTIMENT : null) || {};
     const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
+    const officialHistorySummary = buildInstrumentSummaryFromHistory(opts);
+    if(officialHistorySummary) return officialHistorySummary;
     const buckets = headlineBuckets(dashboardData, newsCacheData);
 
     const psiMatches = filterInstrumentItems(buckets.psiHeadlines, instrument);
@@ -456,6 +466,180 @@
     };
   }
 
+
+
+  function pulseEntryFromOfficial(entry, fallback){
+    const item = entry && typeof entry === "object" ? entry : {};
+    const fb = fallback || {};
+    const score = roundScore(item.score != null ? item.score : fb.score);
+    const rawScore = roundScore(item.raw_score != null ? item.raw_score : (item.rawScore != null ? item.rawScore : (fb.raw_score != null ? fb.raw_score : score)));
+    const count = Number.isFinite(Number(item.count)) ? Number(item.count) : (Number.isFinite(Number(fb.count)) ? Number(fb.count) : 0);
+    const availableCount = Number.isFinite(Number(item.available_count)) ? Number(item.available_count) : (Number.isFinite(Number(item.availableCount)) ? Number(item.availableCount) : count);
+    const confidence = cleanText(item.confidence || fb.confidence || (count >= 100 ? "High" : count >= 50 ? "Medium" : count >= 25 ? "Low-Medium" : count > 0 ? "Low" : "Pending"));
+    const label = cleanText(item.label || fb.label || (score == null ? "Pending Backend Pulse" : classifySentiment(score)));
+
+    return {
+      score: score == null ? 50 : score,
+      raw_score: rawScore == null ? (score == null ? 50 : score) : rawScore,
+      rawScore: rawScore == null ? (score == null ? 50 : score) : rawScore,
+      count,
+      available_count: availableCount,
+      availableCount,
+      confidence,
+      confidence_factor: Number.isFinite(Number(item.confidence_factor)) ? Number(item.confidence_factor) : null,
+      confidenceFactor: Number.isFinite(Number(item.confidence_factor)) ? Number(item.confidence_factor) : null,
+      label,
+      weighted_headline_total: Number.isFinite(Number(item.weighted_headline_total)) ? Number(item.weighted_headline_total) : null,
+      headline_limit: Number.isFinite(Number(item.headline_limit)) ? Number(item.headline_limit) : null,
+      source: item.source || fb.source || "backend_regional_pulse",
+      formulaVersion: VERSION
+    };
+  }
+
+  function getOfficialRegionalPulseRoot(dashboardData, statusData){
+    if(dashboardData && dashboardData.regional_pulse && typeof dashboardData.regional_pulse === "object") return dashboardData.regional_pulse;
+    if(dashboardData && dashboardData.trust_layer && dashboardData.trust_layer.regional_pulse && typeof dashboardData.trust_layer.regional_pulse === "object") return dashboardData.trust_layer.regional_pulse;
+    if(statusData && statusData.regional_pulse && typeof statusData.regional_pulse === "object") return statusData.regional_pulse;
+    return null;
+  }
+
+  function buildRegionalPulse(options){
+    const opts = options || {};
+    const dashboardData = opts.dashboardData || null;
+    const statusData = opts.statusData || null;
+    const newsCacheData = opts.newsCacheData || null;
+    const root = getOfficialRegionalPulseRoot(dashboardData, statusData);
+    const globalSummary = buildGlobalSummary({dashboardData, statusData, newsCacheData});
+    const globalFallback = {
+      score: globalSummary.score,
+      raw_score: globalSummary.score,
+      count: globalSummary.psiHeadlines,
+      confidence: globalSummary.psiHeadlines >= 100 ? "High" : globalSummary.psiHeadlines > 0 ? "Low" : "Pending",
+      label: globalSummary.sentiment,
+      source: globalSummary.source
+    };
+
+    if(!root){
+      return {
+        global: pulseEntryFromOfficial(null, globalFallback),
+        us: pulseEntryFromOfficial(null, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
+        europe: pulseEntryFromOfficial(null, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
+        source: "missing_regional_pulse",
+        formulaVersion: VERSION
+      };
+    }
+
+    return {
+      global: pulseEntryFromOfficial(root.global, globalFallback),
+      us: pulseEntryFromOfficial(root.us, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
+      europe: pulseEntryFromOfficial(root.europe, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
+      source: "backend_regional_pulse",
+      formulaVersion: VERSION
+    };
+  }
+
+  function historyRecords(instrumentHistoryData){
+    const records = instrumentHistoryData && Array.isArray(instrumentHistoryData.records) ? instrumentHistoryData.records.slice() : [];
+    records.sort((a,b) => String(a.date || a.updated_utc || "").localeCompare(String(b.date || b.updated_utc || "")));
+    return records;
+  }
+
+  function instrumentEntryFromRecord(record, instrumentName){
+    if(!record || typeof record !== "object") return null;
+    const canonical = normalizeInstrumentName(instrumentName);
+    const instruments = record.instruments && typeof record.instruments === "object" ? record.instruments : {};
+    if(instruments[canonical]) return instruments[canonical];
+
+    const found = Object.entries(instruments).find(([key]) => normalizeInstrumentName(key) === canonical);
+    return found ? found[1] : null;
+  }
+
+  function latestInstrumentHistoryEntry(instrumentHistoryData, instrumentName){
+    const records = historyRecords(instrumentHistoryData).reverse();
+    for(const record of records){
+      const entry = instrumentEntryFromRecord(record, instrumentName);
+      const score = roundScore(entry && (entry.psi != null ? entry.psi : (entry.score != null ? entry.score : entry.headline_psi_score)));
+      if(entry && score != null) return {record, entry, score};
+    }
+    return null;
+  }
+
+  function technicalDirectionFromHistory(entry, fallbackTechnical){
+    const tech = entry && entry.technical ? entry.technical : null;
+    if(tech){
+      const daily = tech.daily || tech.Daily || tech;
+      if(typeof daily === "string") return daily;
+      if(daily && typeof daily === "object") return cleanText(daily.direction || daily.signal || daily.label || daily.trend || daily.value || "N/A");
+      if(tech.direction) return cleanText(tech.direction);
+    }
+    return fallbackTechnical && fallbackTechnical.direction ? fallbackTechnical.direction : "N/A";
+  }
+
+  function buildInstrumentSummaryFromHistory(options){
+    const opts = options || {};
+    const instrumentHistoryData = opts.instrumentHistoryData || opts.instrument_history || null;
+    const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
+    const found = latestInstrumentHistoryEntry(instrumentHistoryData, instrument);
+    if(!found) return null;
+
+    const entry = found.entry || {};
+    const record = found.record || {};
+    const score = found.score;
+    const technical = getTechnicalBias(opts.technicalData || null, instrument, opts.period || "daily");
+    const techDirection = technicalDirectionFromHistory(entry, technical);
+    const label = cleanText(entry.sentiment_label || entry.sentiment || entry.label || classifySentiment(score));
+    const userVotes = opts.userVotes || (typeof window !== "undefined" ? window.PSD_USER_SENTIMENT : null) || {};
+
+    return {
+      name: instrument,
+      score,
+      sentiment: label,
+      label,
+      badgeClass: badgeClass(score),
+      color: sentimentColor(score),
+      user: userVotes && userVotes[instrument] ? userVotes[instrument] : "N/A",
+      tech: techDirection,
+      technical: entry.technical || technical,
+      headlines: Number.isFinite(Number(entry.headline_count)) ? Number(entry.headline_count) : 0,
+      headlineCount: Number.isFinite(Number(entry.headline_count)) ? Number(entry.headline_count) : 0,
+      psiHeadlineCount: Number.isFinite(Number(entry.headline_count)) ? Number(entry.headline_count) : 0,
+      archiveArticleCount: 0,
+      bullishCount: Number.isFinite(Number(entry.bullish_count)) ? Number(entry.bullish_count) : 0,
+      bearishCount: Number.isFinite(Number(entry.bearish_count)) ? Number(entry.bearish_count) : 0,
+      neutralCount: Number.isFinite(Number(entry.neutral_count)) ? Number(entry.neutral_count) : 0,
+      mixedCount: Number.isFinite(Number(entry.mixed_count)) ? Number(entry.mixed_count) : 0,
+      countBasis: "instrument_history.json",
+      psiMethod: "backend_instrument_history",
+      signedAverage: null,
+      lastUpdated: cleanText(record.updated_ny || record.updated_utc || record.date || ""),
+      topHeadlines: Array.isArray(entry.top_headlines) ? entry.top_headlines : [],
+      source: "instrument_history.json",
+      formulaVersion: VERSION
+    };
+  }
+
+  function buildInstrumentSeries(options){
+    const opts = options || {};
+    const instrumentHistoryData = opts.instrumentHistoryData || opts.instrument_history || null;
+    const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
+    const period = opts.period || "daily";
+    const fallbackScore = roundScore(opts.fallbackScore != null ? opts.fallbackScore : opts.score);
+    const targetLength = period === "weekly" ? 7 : period === "monthly" ? 12 : 12;
+    const values = [];
+
+    historyRecords(instrumentHistoryData).forEach(record => {
+      const entry = instrumentEntryFromRecord(record, instrument);
+      const score = roundScore(entry && (entry.psi != null ? entry.psi : (entry.score != null ? entry.score : entry.headline_psi_score)));
+      if(score != null) values.push(score);
+    });
+
+    let out = values.length ? values.slice(-targetLength) : [];
+    const fill = out.length ? out[0] : (fallbackScore == null ? 50 : fallbackScore);
+    while(out.length < targetLength) out.unshift(fill);
+    if(out.length < 2) out = [fill, fill];
+    return out;
+  }
+
   function buildAuditSnapshot(options){
     const opts = options || {};
     const instrumentName = opts.instrumentName || opts.instrument || "";
@@ -506,7 +690,10 @@
     getTechnicalBias,
     getLastUpdated,
     buildInstrumentSummary,
+    buildInstrumentSummaryFromHistory,
+    buildInstrumentSeries,
     buildGlobalSummary,
+    buildRegionalPulse,
     buildAuditSnapshot,
     carryForwardHourlyData
   };
