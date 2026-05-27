@@ -88,7 +88,7 @@
       background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(9,14,22,.96));
       padding:9px;
       box-shadow:0 14px 34px rgba(0,0,0,.20);
-      max-height:calc(100vh - 105px);
+      max-height:calc(100vh - 86px);
       overflow:auto;
     }
 
@@ -290,20 +290,6 @@
 
     <section class="charts-layout">
       <aside class="charts-panel">
-        <label class="panel-label" for="instrumentSelect">Instrument</label>
-        <select id="instrumentSelect" class="charts-select"></select>
-
-        <label class="panel-label" for="timeframeSelect">Timeframe</label>
-        <select id="timeframeSelect" class="charts-select">
-          <option value="15">15m</option>
-          <option value="30">30m</option>
-          <option value="60">1H</option>
-          <option value="240">4H</option>
-          <option value="D" selected>Daily</option>
-          <option value="W">Weekly</option>
-          <option value="M">Monthly</option>
-        </select>
-
         <div id="quickGrid" class="quick-grid"></div>
 
         <div class="provider-copy">
@@ -335,7 +321,9 @@
           { label:"Dow Jones", short:"Dow", symbol:"AMEX:DIA" },
           { label:"Russell 2000", short:"Russell", symbol:"AMEX:IWM" },
           { label:"VIX", short:"VIX", symbol:"AMEX:VXX" },
-          { label:"US Dollar Index", short:"DXY", symbol:"TVC:DXY" }
+          { label:"US Dollar Index", short:"DXY", symbol:"TVC:DXY" },
+          { label:"20+ Year Treasury Bonds", short:"TLT", symbol:"NASDAQ:TLT" },
+          { label:"Emerging Markets", short:"EEM", symbol:"AMEX:EEM" }
         ]
       },
       {
@@ -361,6 +349,17 @@
         ]
       },
       {
+        name: "Stocks",
+        items: [
+          { label:"Nvidia", short:"NVDA", symbol:"NASDAQ:NVDA" },
+          { label:"Tesla", short:"TSLA", symbol:"NASDAQ:TSLA" },
+          { label:"Apple", short:"AAPL", symbol:"NASDAQ:AAPL" },
+          { label:"Microsoft", short:"MSFT", symbol:"NASDAQ:MSFT" },
+          { label:"Amazon", short:"AMZN", symbol:"NASDAQ:AMZN" },
+          { label:"Meta", short:"META", symbol:"NASDAQ:META" }
+        ]
+      },
+      {
         name: "Crypto",
         items: [
           { label:"Bitcoin", short:"BTC", symbol:"BINANCE:BTCUSDT" },
@@ -372,7 +371,9 @@
           { label:"Cardano", short:"ADA", symbol:"BINANCE:ADAUSDT" },
           { label:"Chainlink", short:"LINK", symbol:"BINANCE:LINKUSDT" },
           { label:"Litecoin", short:"LTC", symbol:"BINANCE:LTCUSDT" },
-          { label:"Avalanche", short:"AVAX", symbol:"BINANCE:AVAXUSDT" }
+          { label:"Avalanche", short:"AVAX", symbol:"BINANCE:AVAXUSDT" },
+          { label:"Polkadot", short:"DOT", symbol:"BINANCE:DOTUSDT" },
+          { label:"Bitcoin Cash", short:"BCH", symbol:"BINANCE:BCHUSDT" }
         ]
       }
     ];
@@ -389,8 +390,6 @@
       "M":"Monthly"
     };
 
-    const instrumentSelect = document.getElementById("instrumentSelect");
-    const timeframeSelect = document.getElementById("timeframeSelect");
     const quickGrid = document.getElementById("quickGrid");
     const chartTitle = document.getElementById("chartTitle");
     const chartSubtitle = document.getElementById("chartSubtitle");
@@ -404,20 +403,12 @@
 
     function initControls(){
       GROUPS.forEach(group => {
-        const optGroup = document.createElement("optgroup");
-        optGroup.label = group.name;
-
         const groupTitle = document.createElement("div");
         groupTitle.className = "group-title";
         groupTitle.textContent = group.name;
         quickGrid.appendChild(groupTitle);
 
         group.items.forEach(item => {
-          const opt = document.createElement("option");
-          opt.value = item.symbol;
-          opt.textContent = item.label + " — " + item.symbol;
-          optGroup.appendChild(opt);
-
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = "quick-btn" + (item.symbol === currentSymbol ? " active" : "");
@@ -426,16 +417,11 @@
           btn.addEventListener("click", () => selectChart(item.symbol));
           quickGrid.appendChild(btn);
         });
-
-        instrumentSelect.appendChild(optGroup);
       });
-
-      instrumentSelect.value = currentSymbol;
     }
 
     function selectChart(symbol){
       currentSymbol = symbol;
-      instrumentSelect.value = symbol;
 
       document.querySelectorAll(".quick-btn").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.symbol === symbol);
@@ -446,7 +432,7 @@
 
     function renderChart(){
       const item = findChart(currentSymbol);
-      const interval = timeframeSelect.value;
+      const interval = "D";
 
       chartTitle.textContent = item.label;
       chartSubtitle.textContent = item.symbol + " · " + (INTERVAL_LABELS[interval] || interval);
@@ -489,9 +475,6 @@
       container.appendChild(script);
       tvShell.appendChild(container);
     }
-
-    instrumentSelect.addEventListener("change", () => selectChart(instrumentSelect.value));
-    timeframeSelect.addEventListener("change", renderChart);
 
     initControls();
     renderChart();
