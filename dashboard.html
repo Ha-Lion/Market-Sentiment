@@ -337,19 +337,128 @@
       z-index:4;
       display:grid;
       grid-template-columns:1fr;
-      gap:8px;
-      margin-bottom:13px;
+      gap:7px;
+      margin-bottom:11px;
     }
     .card-control-strip .lab-select{
       width:100%;
       min-width:0;
-      padding:9px 10px;
+      padding:8px 10px;
       border-radius:11px;
-      font-size:13px;
+      font-size:12px;
     }
-    .card-control-strip .deep-analysis-btn{
+    .card-action-row{
+      display:grid;
+      grid-template-columns:1fr .72fr;
+      gap:7px;
+    }
+    .card-control-strip .deep-analysis-btn,
+    .card-control-strip .chart-open-btn{
       width:100%;
-      min-height:36px;
+      min-height:30px;
+      padding:6px 8px;
+      font-size:11px;
+      border-radius:11px;
+    }
+    .chart-open-btn{
+      border:1px solid rgba(88,166,255,.38);
+      border-radius:12px;
+      padding:8px 10px;
+      background:linear-gradient(180deg,rgba(88,166,255,.16),rgba(17,24,33,.92));
+      color:#cfe5ff;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.01em;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.18);
+      transition:transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .chart-open-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(88,166,255,.70);
+      background:linear-gradient(180deg,rgba(88,166,255,.26),rgba(17,24,33,.96));
+    }
+    .chart-modal-layer{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(0,0,0,.70);
+      backdrop-filter:blur(6px);
+      z-index:1800;
+    }
+    .chart-modal-layer.open{
+      display:flex;
+    }
+    .chart-modal-card{
+      width:min(1480px,96vw);
+      height:min(820px,90vh);
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(16,24,36,.98),rgba(7,11,18,.98));
+      box-shadow:0 28px 90px rgba(0,0,0,.55);
+    }
+    .chart-modal-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      min-height:40px;
+      padding:8px 12px;
+      border-bottom:1px solid rgba(148,163,184,.16);
+    }
+    .chart-modal-title-row{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      min-width:0;
+      flex-wrap:wrap;
+    }
+    .chart-modal-title{
+      margin:0;
+      color:#fff;
+      font-size:16px;
+      line-height:1;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .chart-modal-subtitle{
+      color:var(--muted);
+      font-size:11px;
+      line-height:1;
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .chart-modal-close{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(148,163,184,.26);
+      border-radius:10px;
+      background:rgba(13,19,29,.86);
+      color:#fff;
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+    }
+    .chart-modal-close:hover{
+      border-color:rgba(210,153,34,.55);
+      background:rgba(210,153,34,.12);
+    }
+    .chart-modal-body{
+      height:calc(100% - 41px);
+      padding:8px;
+    }
+    .chart-modal-body .tradingview-widget-container,
+    .chart-modal-body .tradingview-widget-container__widget{
+      width:100%;
+      height:100%;
+      min-height:520px;
     }
     .deep-analysis-btn{
       border:1px solid rgba(210,153,34,.38);
@@ -1010,6 +1119,18 @@
     </section>
 
     <div id="deepAnalysisLayer" class="deep-analysis-layer" aria-live="polite"></div>
+    <div id="chartModalLayer" class="chart-modal-layer" role="dialog" aria-modal="true" aria-label="Instrument chart" onclick="if(event.target===this) closeChartModal();">
+      <section class="chart-modal-card">
+        <div class="chart-modal-head">
+          <div class="chart-modal-title-row">
+            <h2 id="chartModalTitle" class="chart-modal-title">Market Chart</h2>
+            <div id="chartModalSubtitle" class="chart-modal-subtitle">TradingView · Daily</div>
+          </div>
+          <button class="chart-modal-close" type="button" aria-label="Close chart" onclick="closeChartModal()">×</button>
+        </div>
+        <div id="chartModalBody" class="chart-modal-body"></div>
+      </section>
+    </div>
     <div id="deepAnalysisToast" class="deep-analysis-toast"></div>
 
     <footer class="footer">
@@ -2075,7 +2196,137 @@
       reflowDeepWindows();
     }
 
+
+    const CHART_SYMBOLS = {
+      "S&P 500 / ES": "AMEX:SPY",
+      "Nasdaq / NQ": "NASDAQ:QQQ",
+      "Dow / YM": "AMEX:DIA",
+      "Russell / RTY": "AMEX:IWM",
+      "VIX": "AMEX:VXX",
+      "DAX": "OANDA:DE30EUR",
+      "FTSE 100": "OANDA:UK100GBP",
+      "Nikkei 225": "OANDA:JP225USD",
+      "Hang Seng": "OANDA:HK33HKD",
+      "Euro Stoxx 50": "OANDA:EU50EUR",
+      "CAC 40": "OANDA:FR40EUR",
+      "US 2Y Treasury": "NASDAQ:SHY",
+      "US 10Y Treasury": "NASDAQ:IEF",
+      "Treasury Yields": "NASDAQ:TLT",
+      "US Dollar / DXY": "TVC:DXY",
+      "EUR / EURUSD": "OANDA:EURUSD",
+      "GBP / GBPUSD": "OANDA:GBPUSD",
+      "JPY / USDJPY": "OANDA:USDJPY",
+      "CHF / USDCHF": "OANDA:USDCHF",
+      "CAD / USDCAD": "OANDA:USDCAD",
+      "AUD / AUDUSD": "OANDA:AUDUSD",
+      "NZD / NZDUSD": "OANDA:NZDUSD",
+      "EURJPY": "OANDA:EURJPY",
+      "EURGBP": "OANDA:EURGBP",
+      "GBPJPY": "OANDA:GBPJPY",
+      "AUDJPY": "OANDA:AUDJPY",
+      "CADJPY": "OANDA:CADJPY",
+      "EURCHF": "OANDA:EURCHF",
+      "EURCAD": "OANDA:EURCAD",
+      "AUDCAD": "OANDA:AUDCAD",
+      "AUDNZD": "OANDA:AUDNZD",
+      "NZDJPY": "OANDA:NZDJPY",
+      "USDTRY": "OANDA:USDTRY",
+      "USDMXN": "OANDA:USDMXN",
+      "USDZAR": "OANDA:USDZAR",
+      "Bitcoin / BTC": "BINANCE:BTCUSDT",
+      "Ethereum / ETH": "BINANCE:ETHUSDT",
+      "Solana / SOL": "BINANCE:SOLUSDT",
+      "XRP": "BINANCE:XRPUSDT",
+      "BNB": "BINANCE:BNBUSDT",
+      "Cardano / ADA": "BINANCE:ADAUSDT",
+      "Dogecoin / DOGE": "BINANCE:DOGEUSDT",
+      "General Crypto": "BINANCE:BTCUSDT",
+      "Gold": "AMEX:GLD",
+      "Silver": "AMEX:SLV",
+      "Copper": "COMEX:HG1!",
+      "Crude Oil": "AMEX:USO",
+      "Natural Gas": "AMEX:UNG",
+      "Fed / FOMC": "NASDAQ:TLT",
+      "CPI / Inflation": "AMEX:SPY",
+      "PPI": "AMEX:SPY",
+      "Jobs / NFP": "AMEX:SPY",
+      "US GDP / Growth": "AMEX:SPY",
+      "Geopolitical / Tariffs": "AMEX:SPY"
+    };
+
+    function chartSymbolForInstrument(name){
+      return CHART_SYMBOLS[name] || "AMEX:SPY";
+    }
+
+    function openChartModal(slot){
+      const instrumentName = selected[slot] || "S&P 500 / ES";
+      const symbol = chartSymbolForInstrument(instrumentName);
+      const layer = document.getElementById("chartModalLayer");
+      const title = document.getElementById("chartModalTitle");
+      const subtitle = document.getElementById("chartModalSubtitle");
+      const body = document.getElementById("chartModalBody");
+      if(!layer || !body) return;
+
+      title.textContent = instrumentName;
+      subtitle.textContent = `${symbol} · Daily`;
+
+      body.innerHTML = "";
+
+      const container = document.createElement("div");
+      container.className = "tradingview-widget-container";
+
+      const widget = document.createElement("div");
+      widget.className = "tradingview-widget-container__widget";
+
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      script.async = true;
+      script.textContent = JSON.stringify({
+        autosize: true,
+        symbol: symbol,
+        interval: "D",
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        allow_symbol_change: false,
+        calendar: false,
+        support_host: "https://www.tradingview.com",
+        hide_side_toolbar: true,
+        details: false,
+        hotlist: false,
+        withdateranges: true,
+        hide_legend: false,
+        save_image: false,
+        studies: [],
+        backgroundColor: "rgba(13, 19, 29, 1)",
+        gridColor: "rgba(148, 163, 184, 0.12)"
+      });
+
+      container.appendChild(widget);
+      container.appendChild(script);
+      body.appendChild(container);
+
+      layer.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeChartModal(){
+      const layer = document.getElementById("chartModalLayer");
+      const body = document.getElementById("chartModalBody");
+      if(layer) layer.classList.remove("open");
+      if(body) body.innerHTML = "";
+      document.body.style.overflow = "";
+    }
+
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape") closeChartModal();
+    });
+
     window.openDeepAnalysis = openDeepAnalysis;
+    window.openChartModal = openChartModal;
+    window.closeChartModal = closeChartModal;
     window.closeDeepAnalysis = closeDeepAnalysis;
     window.handleInstrumentChange = handleInstrumentChange;
     window.openArticleLoadPageFromSlot = openArticleLoadPageFromSlot;
@@ -2096,7 +2347,10 @@
         return `<article class="sentiment-card">
           <div class="card-control-strip">
             <select class="lab-select" data-slot="${idx}" onchange="handleInstrumentChange(${idx}, this.value)">${instrumentOptions(selected[idx])}</select>
-            <button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button>
+            <div class="card-action-row">
+              <button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button>
+              <button class="chart-open-btn" type="button" onclick="openChartModal(${idx})">Chart</button>
+            </div>
           </div>
           <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div>
           <div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div>
