@@ -3,405 +3,409 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Market Charts DEV — Public Sentiment Dash</title>
-  <meta name="description" content="Development test page for embedded market charts on Public Sentiment Dash.">
+  <title>Public Sentiment Dash — Market Charts</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
 
   <style>
+    :root{
+      --charts-bg:#070b12;
+      --charts-card:#0d131d;
+      --charts-card2:#101824;
+      --charts-line:rgba(148,163,184,.22);
+      --charts-text:#f3f7ff;
+      --charts-muted:#94a3b8;
+      --charts-gold:#d29922;
+      --charts-gold2:#f4d17d;
+      --charts-blue:#58a6ff;
+    }
+
+    body{
+      background:
+        radial-gradient(circle at 12% 0%,rgba(210,153,34,.10),transparent 28rem),
+        radial-gradient(circle at 92% 15%,rgba(88,166,255,.08),transparent 32rem),
+        var(--charts-bg);
+      color:var(--charts-text);
+    }
+
     .charts-wrap{
-      max-width:1500px;
+      max-width:1680px;
       margin:0 auto;
-      padding:26px;
+      padding:20px 22px 28px;
     }
 
     .charts-hero{
-      padding:20px 22px;
-      margin-bottom:16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:18px;
+      padding:18px 22px;
+      margin-bottom:14px;
+      border:1px solid var(--charts-line);
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(16,24,36,.92),rgba(9,14,22,.92));
+      box-shadow:0 18px 48px rgba(0,0,0,.28);
     }
 
     .charts-hero h1{
-      margin:0 0 10px;
-      font-size:clamp(34px,3vw,46px);
-      line-height:1.05;
-      letter-spacing:-.025em;
+      margin:0 0 8px;
+      font-size:clamp(34px,3.2vw,54px);
+      line-height:1;
+      letter-spacing:-.035em;
+      font-weight:900;
     }
 
     .charts-hero p{
-      max-width:1000px;
-      margin:0 0 10px;
-      color:var(--soft);
+      margin:0;
+      color:var(--charts-muted);
+      font-size:15px;
       line-height:1.45;
+      max-width:900px;
     }
 
     .charts-note{
-      display:inline-flex;
-      width:max-content;
-      max-width:100%;
-      padding:7px 12px;
-      border-radius:999px;
-      background:rgba(210,153,34,.12);
-      border:1px solid rgba(210,153,34,.35);
       color:#f4d17d;
+      border:1px solid rgba(210,153,34,.35);
+      background:rgba(210,153,34,.10);
+      border-radius:999px;
+      padding:8px 12px;
       font-size:12px;
-      font-weight:700;
-      margin-top:4px;
+      font-weight:800;
+      white-space:nowrap;
     }
 
     .charts-layout{
       display:grid;
-      grid-template-columns:320px minmax(0,1fr);
-      gap:16px;
-      align-items:start;
+      grid-template-columns:250px minmax(0,1fr);
+      gap:14px;
+      min-height:760px;
     }
 
-    .chart-controls{
-      position:sticky;
-      top:126px;
-      padding:16px;
+    .charts-panel{
+      border:1px solid var(--charts-line);
+      border-radius:20px;
+      background:linear-gradient(180deg,rgba(17,24,39,.92),rgba(9,14,22,.94));
+      padding:14px;
+      box-shadow:0 18px 48px rgba(0,0,0,.24);
     }
 
-    .control-block{
-      margin-bottom:14px;
-    }
-
-    .control-block label{
+    .panel-label{
       display:block;
-      color:var(--muted);
-      font-size:12px;
-      font-weight:700;
-      margin-bottom:7px;
+      color:var(--charts-muted);
+      font-size:11px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin:0 0 8px;
     }
 
-    .chart-select{
+    .charts-select{
       width:100%;
-      background:var(--card);
-      color:var(--text);
-      border:1px solid var(--line);
+      background:#121a26;
+      color:var(--charts-text);
+      border:1px solid var(--charts-line);
       border-radius:12px;
-      padding:11px 12px;
+      padding:9px 10px;
       outline:none;
-      font-weight:600;
+      font-size:13px;
+      font-weight:750;
+      margin-bottom:12px;
     }
 
-    .chart-select:focus{
-      border-color:rgba(210,153,34,.65);
+    .charts-select:focus{
+      border-color:rgba(210,153,34,.70);
       box-shadow:0 0 0 3px rgba(210,153,34,.10);
     }
 
     .quick-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:8px;
+      gap:7px;
+      margin-top:8px;
     }
 
     .quick-btn{
+      appearance:none;
+      border:1px solid var(--charts-line);
+      background:#111927;
+      color:#dbe7f8;
+      border-radius:11px;
+      padding:8px 7px;
+      min-height:34px;
+      font-size:11.5px;
+      line-height:1.05;
+      font-weight:850;
       cursor:pointer;
-      border:1px solid var(--line);
-      background:rgba(17,24,33,.72);
-      color:var(--soft);
-      border-radius:12px;
-      padding:10px 9px;
-      font-size:12px;
-      font-weight:800;
-      transition:.18s ease;
+      transition:.16s ease;
+      text-align:center;
     }
 
-    .quick-btn:hover,.quick-btn.active{
+    .quick-btn:hover{
       transform:translateY(-1px);
-      border-color:rgba(210,153,34,.58);
-      background:rgba(210,153,34,.13);
+      border-color:rgba(210,153,34,.55);
+      background:rgba(210,153,34,.10);
       color:#fff;
     }
 
-    .chart-shell{
-      overflow:hidden;
-      padding:12px;
-      min-height:760px;
+    .quick-btn.active{
+      border-color:rgba(210,153,34,.78);
+      background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(210,153,34,.08));
+      color:#fff3c8;
     }
 
-    .chart-topline{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:center;
-      margin-bottom:10px;
-      padding:0 2px;
-    }
-
-    .chart-title{
-      color:#fff;
-      font-weight:900;
-      font-size:18px;
-    }
-
-    .chart-meta{
-      color:var(--muted);
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .tradingview-widget-container{
-      height:700px;
-      width:100%;
-      border-radius:18px;
-      overflow:hidden;
-      background:#0d1117;
-      border:1px solid rgba(255,255,255,.08);
-    }
-
-    .tradingview-widget-container__widget{
-      height:calc(100% - 32px);
-      width:100%;
-    }
-
-    .tradingview-widget-copyright{
-      height:32px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:4px;
+    .provider-copy{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid rgba(148,163,184,.16);
+      color:var(--charts-muted);
       font-size:11px;
-      color:var(--muted);
-      background:rgba(8,12,18,.92);
-    }
-
-    .tradingview-widget-copyright a{
-      color:var(--blue);
-      text-decoration:none;
-      font-weight:700;
-    }
-
-    .small-warning{
-      margin-top:12px;
-      color:var(--muted);
-      font-size:12px;
       line-height:1.45;
     }
 
-    @media(max-width:980px){
-      .charts-layout{grid-template-columns:1fr;}
-      .chart-controls{position:relative;top:auto;}
-      .chart-shell{min-height:640px;}
-      .tradingview-widget-container{height:600px;}
+    .chart-card{
+      position:relative;
+      overflow:hidden;
+      min-height:760px;
+      border:1px solid var(--charts-line);
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(16,24,36,.96),rgba(7,11,18,.98));
+      box-shadow:0 18px 54px rgba(0,0,0,.28);
     }
 
-    @media(max-width:640px){
-      .charts-wrap{padding:16px;}
-      .quick-grid{grid-template-columns:1fr;}
-      .chart-topline{align-items:flex-start;flex-direction:column;}
-      .tradingview-widget-container{height:560px;}
+    .chart-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      padding:14px 16px 10px;
+      border-bottom:1px solid rgba(148,163,184,.14);
+    }
+
+    .chart-title{
+      margin:0;
+      font-size:20px;
+      line-height:1.1;
+      font-weight:900;
+    }
+
+    .chart-subtitle{
+      margin-top:4px;
+      color:var(--charts-muted);
+      font-size:12px;
+      font-weight:750;
+    }
+
+    .chart-chip{
+      color:#cdd9ec;
+      border:1px solid rgba(148,163,184,.22);
+      background:rgba(13,19,29,.85);
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:850;
+      white-space:nowrap;
+    }
+
+    .tv-shell{
+      height:690px;
+      padding:10px;
+    }
+
+    .tradingview-widget-container,
+    .tradingview-widget-container__widget{
+      width:100%;
+      height:100%;
+      min-height:690px;
+    }
+
+    .fallback-link{
+      display:none;
+      padding:12px 16px;
+      color:var(--charts-muted);
+      font-size:13px;
+    }
+
+    @media(max-width:1100px){
+      .charts-layout{grid-template-columns:1fr;}
+      .quick-grid{grid-template-columns:repeat(4,1fr);}
+      .chart-card,.charts-layout{min-height:auto;}
+    }
+
+    @media(max-width:720px){
+      .charts-wrap{padding:14px;}
+      .charts-hero{display:block;}
+      .charts-note{display:inline-flex;margin-top:12px;}
+      .quick-grid{grid-template-columns:repeat(2,1fr);}
+      .tv-shell{height:560px;}
+      .tradingview-widget-container,
+      .tradingview-widget-container__widget{min-height:560px;}
     }
   </style>
 </head>
+
 <body>
-  <header class="header">
-    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
-        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
-      </span>
-      <div class="brand-copy">
-        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
-        <div class="site-subtitle">Global market public sentiment dashboard</div>
-      </div>
-    </a>
-
-    <div class="header-center">
-      <div class="header-pill">✨ Constantly learning & improving</div>
-    </div>
-
-    <nav class="nav">
-      <a href="dashboard.html">Interactive Dashboard</a>
-      <a href="sentiment-history.html">Historical Sentiment</a>
-      <a href="news-articles.html">News & Articles</a>
-      <a href="charts-dev.html" class="active">Charts DEV</a>
-      <a href="market-sentiment.html">Guides</a>
-      <a href="advertise.html">Business Opportunities</a>
-      <a href="contact.html">Get in Touch</a>
-      <a href="about.html">About</a>
-
-      <div class="social-links">
-        <span class="social-label">Follow us</span>
-        <span class="social-pill">X</span>
-        <span class="social-pill linkedin">LinkedIn</span>
-      </div>
-    </nav>
-  </header>
-
   <main class="charts-wrap">
-    <section class="panel charts-hero">
-      <h1>Market Charts DEV</h1>
-      <p>Test page for an embedded TradingView chart. This page is separate from the main sentiment pages and does not change PSI calculations or website data.</p>
-      <div class="charts-note">DEV test only — not indexed by search engines</div>
+    <section class="charts-hero">
+      <div>
+        <h1>Market Charts</h1>
+        <p>View major markets with embedded TradingView charts for quick technical context beside Public Sentiment Dash research.</p>
+      </div>
+      <div class="charts-note">Charts by TradingView</div>
     </section>
 
     <section class="charts-layout">
-      <aside class="panel chart-controls">
-        <div class="control-block">
-          <label for="symbolSelect">Instrument</label>
-          <select id="symbolSelect" class="chart-select"></select>
-        </div>
+      <aside class="charts-panel">
+        <label class="panel-label" for="instrumentSelect">Instrument</label>
+        <select id="instrumentSelect" class="charts-select"></select>
 
-        <div class="control-block">
-          <label for="intervalSelect">Timeframe</label>
-          <select id="intervalSelect" class="chart-select">
-            <option value="5">5 minutes</option>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-            <option value="60">1 hour</option>
-            <option value="240">4 hours</option>
-            <option value="D" selected>Daily</option>
-            <option value="W">Weekly</option>
-            <option value="M">Monthly</option>
-          </select>
-        </div>
+        <label class="panel-label" for="timeframeSelect">Timeframe</label>
+        <select id="timeframeSelect" class="charts-select">
+          <option value="15">15 Minutes</option>
+          <option value="30">30 Minutes</option>
+          <option value="60">1 Hour</option>
+          <option value="240">4 Hours</option>
+          <option value="D" selected>Daily</option>
+          <option value="W">Weekly</option>
+          <option value="M">Monthly</option>
+        </select>
 
-        <div class="control-block">
-          <label>Quick picks</label>
-          <div class="quick-grid" id="quickGrid"></div>
-        </div>
+        <span class="panel-label">Quick Markets</span>
+        <div id="quickGrid" class="quick-grid"></div>
 
-        <p class="small-warning">Charts are provided by TradingView. Do not remove attribution, scrape chart data, or use this as a trade signal.</p>
+        <div class="provider-copy">
+          Charts are provided by TradingView. Do not remove attribution or scrape chart data.
+        </div>
       </aside>
 
-      <section class="panel chart-shell">
-        <div class="chart-topline">
+      <section class="chart-card">
+        <div class="chart-header">
           <div>
-            <div class="chart-title" id="chartTitle">Loading chart...</div>
-            <div class="chart-meta" id="chartMeta">TradingView embedded chart</div>
+            <h2 id="chartTitle" class="chart-title">S&P 500</h2>
+            <div id="chartSubtitle" class="chart-subtitle">SP:SPX · Daily</div>
           </div>
-          <div class="chart-meta">External widget test</div>
+          <div class="chart-chip">Live market chart</div>
         </div>
 
-        <div id="tvWidgetHost" class="tradingview-widget-container"></div>
+        <div id="tvShell" class="tv-shell"></div>
+        <div class="fallback-link">If the chart does not load, refresh the page or disable ad/script blockers for TradingView widgets.</div>
       </section>
     </section>
   </main>
 
   <script>
-    const CHART_SYMBOLS = [
-      { label:"S&P 500", symbol:"SP:SPX", group:"Indexes" },
-      { label:"Nasdaq 100", symbol:"NASDAQ:NDX", group:"Indexes" },
-      { label:"Dow Jones", symbol:"DJ:DJI", group:"Indexes" },
-      { label:"Russell 2000", symbol:"TVC:RUT", group:"Indexes" },
-      { label:"VIX", symbol:"TVC:VIX", group:"Indexes" },
-      { label:"DAX", symbol:"XETR:DAX", group:"Europe" },
-      { label:"FTSE 100", symbol:"TVC:UKX", group:"Europe" },
-      { label:"Nikkei 225", symbol:"TVC:NI225", group:"Asia" },
-      { label:"US Dollar / DXY", symbol:"TVC:DXY", group:"Forex" },
-      { label:"EUR/USD", symbol:"FX:EURUSD", group:"Forex" },
-      { label:"GBP/USD", symbol:"FX:GBPUSD", group:"Forex" },
-      { label:"USD/JPY", symbol:"FX:USDJPY", group:"Forex" },
-      { label:"Gold", symbol:"TVC:GOLD", group:"Commodities" },
-      { label:"Silver", symbol:"TVC:SILVER", group:"Commodities" },
-      { label:"Crude Oil WTI", symbol:"TVC:USOIL", group:"Commodities" },
-      { label:"Natural Gas", symbol:"TVC:NATGAS", group:"Commodities" },
-      { label:"Bitcoin", symbol:"BINANCE:BTCUSDT", group:"Crypto" },
-      { label:"Ethereum", symbol:"BINANCE:ETHUSDT", group:"Crypto" },
-      { label:"US 10Y Yield", symbol:"TVC:US10Y", group:"Bonds" },
-      { label:"US 2Y Yield", symbol:"TVC:US02Y", group:"Bonds" }
+    const CHARTS = [
+      { label:"S&P 500", short:"S&P 500", symbol:"SP:SPX" },
+      { label:"Nasdaq 100", short:"Nasdaq", symbol:"NASDAQ:NDX" },
+      { label:"Dow Jones", short:"Dow", symbol:"DJ:DJI" },
+      { label:"Russell 2000", short:"Russell", symbol:"TVC:RUT" },
+      { label:"VIX", short:"VIX", symbol:"TVC:VIX" },
+      { label:"DAX", short:"DAX", symbol:"XETR:DAX" },
+      { label:"FTSE 100", short:"FTSE", symbol:"TVC:UKX" },
+      { label:"CAC 40", short:"CAC 40", symbol:"TVC:CAC40" },
+      { label:"Euro Stoxx 50", short:"EuroStoxx", symbol:"TVC:SX5E" },
+      { label:"Nikkei 225", short:"Nikkei", symbol:"TVC:NI225" },
+      { label:"Hang Seng", short:"Hang Seng", symbol:"TVC:HSI" },
+      { label:"US Dollar Index", short:"DXY", symbol:"TVC:DXY" },
+      { label:"EUR/USD", short:"EUR/USD", symbol:"FX:EURUSD" },
+      { label:"GBP/USD", short:"GBP/USD", symbol:"FX:GBPUSD" },
+      { label:"USD/JPY", short:"USD/JPY", symbol:"FX:USDJPY" },
+      { label:"Gold", short:"Gold", symbol:"TVC:GOLD" },
+      { label:"Silver", short:"Silver", symbol:"TVC:SILVER" },
+      { label:"Crude Oil WTI", short:"WTI Oil", symbol:"TVC:USOIL" },
+      { label:"Bitcoin", short:"Bitcoin", symbol:"COINBASE:BTCUSD" },
+      { label:"US 10Y Yield", short:"US 10Y", symbol:"TVC:US10Y" }
     ];
 
-    const QUICK_SYMBOLS = ["SP:SPX", "NASDAQ:NDX", "TVC:DXY", "FX:EURUSD", "TVC:GOLD", "TVC:USOIL", "BINANCE:BTCUSDT", "TVC:US10Y"];
+    const INTERVAL_LABELS = {"15":"15m","30":"30m","60":"1H","240":"4H","D":"Daily","W":"Weekly","M":"Monthly"};
 
-    const symbolSelect = document.getElementById("symbolSelect");
-    const intervalSelect = document.getElementById("intervalSelect");
+    const instrumentSelect = document.getElementById("instrumentSelect");
+    const timeframeSelect = document.getElementById("timeframeSelect");
     const quickGrid = document.getElementById("quickGrid");
-    const host = document.getElementById("tvWidgetHost");
     const chartTitle = document.getElementById("chartTitle");
-    const chartMeta = document.getElementById("chartMeta");
+    const chartSubtitle = document.getElementById("chartSubtitle");
+    const tvShell = document.getElementById("tvShell");
 
-    function buildControls(){
-      const groups = [...new Set(CHART_SYMBOLS.map(item => item.group))];
-      groups.forEach(group => {
-        const optGroup = document.createElement("optgroup");
-        optGroup.label = group;
-        CHART_SYMBOLS.filter(item => item.group === group).forEach(item => {
-          const option = document.createElement("option");
-          option.value = item.symbol;
-          option.textContent = item.label + " — " + item.symbol;
-          optGroup.appendChild(option);
-        });
-        symbolSelect.appendChild(optGroup);
-      });
+    let currentIndex = 0;
 
-      QUICK_SYMBOLS.forEach(symbol => {
-        const item = CHART_SYMBOLS.find(x => x.symbol === symbol);
-        if(!item) return;
+    function initControls(){
+      CHARTS.forEach((item, index) => {
+        const opt = document.createElement("option");
+        opt.value = String(index);
+        opt.textContent = `${item.label} — ${item.symbol}`;
+        instrumentSelect.appendChild(opt);
+
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "quick-btn";
-        btn.dataset.symbol = item.symbol;
-        btn.textContent = item.label;
-        btn.addEventListener("click", () => {
-          symbolSelect.value = item.symbol;
-          renderChart();
-        });
+        btn.className = "quick-btn" + (index === currentIndex ? " active" : "");
+        btn.textContent = item.short;
+        btn.addEventListener("click", () => selectChart(index));
         quickGrid.appendChild(btn);
       });
+
+      instrumentSelect.value = String(currentIndex);
     }
 
-    function selectedItem(){
-      return CHART_SYMBOLS.find(item => item.symbol === symbolSelect.value) || CHART_SYMBOLS[0];
-    }
+    function selectChart(index){
+      currentIndex = index;
+      instrumentSelect.value = String(index);
 
-    function setActiveQuick(symbol){
-      document.querySelectorAll(".quick-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.symbol === symbol);
+      document.querySelectorAll(".quick-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === index);
       });
+
+      renderChart();
     }
 
     function renderChart(){
-      const item = selectedItem();
-      const interval = intervalSelect.value || "D";
+      const item = CHARTS[currentIndex];
+      const interval = timeframeSelect.value;
 
       chartTitle.textContent = item.label;
-      chartMeta.textContent = item.symbol + " • " + interval + " timeframe";
-      setActiveQuick(item.symbol);
+      chartSubtitle.textContent = `${item.symbol} · ${INTERVAL_LABELS[interval] || interval}`;
+      tvShell.innerHTML = "";
 
-      host.innerHTML = "";
+      const container = document.createElement("div");
+      container.className = "tradingview-widget-container";
 
-      const widgetDiv = document.createElement("div");
-      widgetDiv.className = "tradingview-widget-container__widget";
-      host.appendChild(widgetDiv);
-
-      const copyright = document.createElement("div");
-      copyright.className = "tradingview-widget-copyright";
-      copyright.innerHTML = '<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">Chart</a><span> by TradingView</span>';
-      host.appendChild(copyright);
+      const widget = document.createElement("div");
+      widget.className = "tradingview-widget-container__widget";
 
       const script = document.createElement("script");
       script.type = "text/javascript";
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.async = true;
       script.textContent = JSON.stringify({
-        autosize: true,
-        symbol: item.symbol,
-        interval: interval,
-        timezone: "Etc/UTC",
-        theme: "dark",
-        style: "1",
-        locale: "en",
-        backgroundColor: "rgba(13, 17, 23, 1)",
-        gridColor: "rgba(255, 255, 255, 0.06)",
-        withdateranges: true,
-        hide_side_toolbar: false,
-        allow_symbol_change: true,
-        save_image: false,
-        calendar: false,
-        support_host: "https://www.tradingview.com"
+        autosize:true,
+        symbol:item.symbol,
+        interval:interval,
+        timezone:"Etc/UTC",
+        theme:"dark",
+        style:"1",
+        locale:"en",
+        allow_symbol_change:true,
+        calendar:false,
+        support_host:"https://www.tradingview.com",
+        hide_side_toolbar:false,
+        details:false,
+        hotlist:false,
+        withdateranges:true,
+        hide_legend:false,
+        save_image:false,
+        studies:[],
+        backgroundColor:"rgba(13, 19, 29, 1)",
+        gridColor:"rgba(148, 163, 184, 0.12)"
       });
-      host.appendChild(script);
+
+      container.appendChild(widget);
+      container.appendChild(script);
+      tvShell.appendChild(container);
     }
 
-    symbolSelect.addEventListener("change", renderChart);
-    intervalSelect.addEventListener("change", renderChart);
+    instrumentSelect.addEventListener("change", () => selectChart(Number(instrumentSelect.value || 0)));
+    timeframeSelect.addEventListener("change", renderChart);
 
-    buildControls();
-    symbolSelect.value = "SP:SPX";
+    initControls();
     renderChart();
   </script>
 </body>
