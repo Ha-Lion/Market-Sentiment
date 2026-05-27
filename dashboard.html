@@ -938,7 +938,7 @@
       <div>
         <h1>Interactive Market Sentiment Dashboard</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-        <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI and chart movement read the shared backend JSON outputs; user sentiment stays separate from PSI.</p>
         <div class="lab-controls" id="marketControls"></div>
       </div>
     </section>
@@ -962,7 +962,7 @@
           <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
           <div class="chart-watermark">PSI</div>
         </div>
-        <div class="preview-note" id="skylineNote">Preview mode uses generated trend shape when real instrument history is not available.</div>
+        <div class="preview-note" id="skylineNote">Charts read instrument_history.json. When history is short, the latest official PSI is held flat instead of generating fake movement.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -1038,60 +1038,60 @@
 
   <script>
     const INSTRUMENTS = [
-      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"], fallback:54},
-      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"], fallback:75},
-      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"], fallback:56},
-      {name:"Russell / RTY", aliases:["russell","rty","russell 2000","russell / rty"], fallback:50},
-      {name:"VIX", aliases:["vix","volatility"], fallback:55},
-      {name:"DAX", aliases:["dax"], fallback:62},
-      {name:"FTSE 100", aliases:["ftse","ftse 100"], fallback:52},
-      {name:"Nikkei 225", aliases:["nikkei","nikkei 225"], fallback:57},
-      {name:"Hang Seng", aliases:["hang seng","hsi"], fallback:53},
-      {name:"Euro Stoxx 50", aliases:["euro stoxx","euro stoxx 50","stoxx"], fallback:51},
-      {name:"CAC 40", aliases:["cac","cac 40"], fallback:52},
-      {name:"US 2Y Treasury", aliases:["us 2y","2y treasury","2-year yield","2 year yield"], fallback:50},
-      {name:"US 10Y Treasury", aliases:["10y","us 10y","10y treasury","10-year yield","10 year yield"], fallback:50},
-      {name:"Treasury Yields", aliases:["treasury yields","yields","bond yields","treasury"], fallback:50},
-      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index","usd index"], fallback:50},
-      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro","eur"], fallback:58},
-      {name:"GBP / GBPUSD", aliases:["gbpusd","gbp/usd","pound","gbp"], fallback:56},
-      {name:"JPY / USDJPY", aliases:["usdjpy","usd/jpy","yen","jpy"], fallback:47},
-      {name:"CHF / USDCHF", aliases:["usdchf","usd/chf","swiss franc","chf"], fallback:50},
-      {name:"CAD / USDCAD", aliases:["usdcad","usd/cad","canadian dollar","cad"], fallback:50},
-      {name:"AUD / AUDUSD", aliases:["audusd","aud/usd","australian dollar","aud"], fallback:56},
-      {name:"NZD / NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","nzd"], fallback:53},
-      {name:"EURJPY", aliases:["eurjpy","eur/jpy"], fallback:52},
-      {name:"EURGBP", aliases:["eurgbp","eur/gbp"], fallback:50},
-      {name:"GBPJPY", aliases:["gbpjpy","gbp/jpy"], fallback:51},
-      {name:"AUDJPY", aliases:["audjpy","aud/jpy"], fallback:54},
-      {name:"CADJPY", aliases:["cadjpy","cad/jpy"], fallback:50},
-      {name:"EURCHF", aliases:["eurchf","eur/chf"], fallback:50},
-      {name:"EURCAD", aliases:["eurcad","eur/cad"], fallback:50},
-      {name:"AUDCAD", aliases:["audcad","aud/cad"], fallback:52},
-      {name:"AUDNZD", aliases:["audnzd","aud/nzd"], fallback:52},
-      {name:"NZDJPY", aliases:["nzdjpy","nzd/jpy"], fallback:51},
-      {name:"USDTRY", aliases:["usdtry","usd/try","turkish lira"], fallback:48},
-      {name:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso"], fallback:50},
-      {name:"USDZAR", aliases:["usdzar","usd/zar","rand"], fallback:49},
-      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"], fallback:64},
-      {name:"Ethereum / ETH", aliases:["ethereum","eth"], fallback:61},
-      {name:"Solana / SOL", aliases:["solana","sol"], fallback:58},
-      {name:"XRP", aliases:["xrp","ripple"], fallback:53},
-      {name:"BNB", aliases:["bnb","binance coin"], fallback:51},
-      {name:"Cardano / ADA", aliases:["cardano","ada"], fallback:50},
-      {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"], fallback:50},
-      {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"], fallback:57},
-      {name:"Gold", aliases:["gold","xau"], fallback:48},
-      {name:"Silver", aliases:["silver","xag"], fallback:51},
-      {name:"Copper", aliases:["copper"], fallback:54},
-      {name:"Crude Oil", aliases:["crude oil","oil","wti"], fallback:57},
-      {name:"Natural Gas", aliases:["natural gas","nat gas"], fallback:52},
-      {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"], fallback:50},
-      {name:"CPI / Inflation", aliases:["cpi","inflation"], fallback:50},
-      {name:"PPI", aliases:["ppi","producer price"], fallback:50},
-      {name:"Jobs / NFP", aliases:["jobs","nfp","nonfarm payrolls","payrolls"], fallback:50},
-      {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"], fallback:50},
-      {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"], fallback:50}
+      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"]},
+      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"]},
+      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"]},
+      {name:"Russell / RTY", aliases:["russell","rty","russell 2000","russell / rty"]},
+      {name:"VIX", aliases:["vix","volatility"]},
+      {name:"DAX", aliases:["dax"]},
+      {name:"FTSE 100", aliases:["ftse","ftse 100"]},
+      {name:"Nikkei 225", aliases:["nikkei","nikkei 225"]},
+      {name:"Hang Seng", aliases:["hang seng","hsi"]},
+      {name:"Euro Stoxx 50", aliases:["euro stoxx","euro stoxx 50","stoxx"]},
+      {name:"CAC 40", aliases:["cac","cac 40"]},
+      {name:"US 2Y Treasury", aliases:["us 2y","2y treasury","2-year yield","2 year yield"]},
+      {name:"US 10Y Treasury", aliases:["10y","us 10y","10y treasury","10-year yield","10 year yield"]},
+      {name:"Treasury Yields", aliases:["treasury yields","yields","bond yields","treasury"]},
+      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index","usd index"]},
+      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro","eur"]},
+      {name:"GBP / GBPUSD", aliases:["gbpusd","gbp/usd","pound","gbp"]},
+      {name:"JPY / USDJPY", aliases:["usdjpy","usd/jpy","yen","jpy"]},
+      {name:"CHF / USDCHF", aliases:["usdchf","usd/chf","swiss franc","chf"]},
+      {name:"CAD / USDCAD", aliases:["usdcad","usd/cad","canadian dollar","cad"]},
+      {name:"AUD / AUDUSD", aliases:["audusd","aud/usd","australian dollar","aud"]},
+      {name:"NZD / NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","nzd"]},
+      {name:"EURJPY", aliases:["eurjpy","eur/jpy"]},
+      {name:"EURGBP", aliases:["eurgbp","eur/gbp"]},
+      {name:"GBPJPY", aliases:["gbpjpy","gbp/jpy"]},
+      {name:"AUDJPY", aliases:["audjpy","aud/jpy"]},
+      {name:"CADJPY", aliases:["cadjpy","cad/jpy"]},
+      {name:"EURCHF", aliases:["eurchf","eur/chf"]},
+      {name:"EURCAD", aliases:["eurcad","eur/cad"]},
+      {name:"AUDCAD", aliases:["audcad","aud/cad"]},
+      {name:"AUDNZD", aliases:["audnzd","aud/nzd"]},
+      {name:"NZDJPY", aliases:["nzdjpy","nzd/jpy"]},
+      {name:"USDTRY", aliases:["usdtry","usd/try","turkish lira"]},
+      {name:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso"]},
+      {name:"USDZAR", aliases:["usdzar","usd/zar","rand"]},
+      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"]},
+      {name:"Ethereum / ETH", aliases:["ethereum","eth"]},
+      {name:"Solana / SOL", aliases:["solana","sol"]},
+      {name:"XRP", aliases:["xrp","ripple"]},
+      {name:"BNB", aliases:["bnb","binance coin"]},
+      {name:"Cardano / ADA", aliases:["cardano","ada"]},
+      {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"]},
+      {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"]},
+      {name:"Gold", aliases:["gold","xau"]},
+      {name:"Silver", aliases:["silver","xag"]},
+      {name:"Copper", aliases:["copper"]},
+      {name:"Crude Oil", aliases:["crude oil","oil","wti"]},
+      {name:"Natural Gas", aliases:["natural gas","nat gas"]},
+      {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"]},
+      {name:"CPI / Inflation", aliases:["cpi","inflation"]},
+      {name:"PPI", aliases:["ppi","producer price"]},
+      {name:"Jobs / NFP", aliases:["jobs","nfp","nonfarm payrolls","payrolls"]},
+      {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"]},
+      {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"]}
     ];
 
     const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
@@ -1100,6 +1100,7 @@
     let dashboardData = null;
     let technicalData = null;
     let statusData = null;
+    let instrumentHistoryData = null;
 
     function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
     function norm(v){return String(v||"").toLowerCase()}
@@ -1240,7 +1241,7 @@
     function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
     function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : "Now"}
     function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
-    function seriesForPeriod(d){return makeSkylineSeries(d.name, d.score)}
+    function seriesForPeriod(d){return Array.isArray(d.series) && d.series.length ? d.series.slice() : makeSkylineSeries(d.name, d.score)}
     function periodScoreFor(d){
       const values = seriesForPeriod(d);
       if(!values.length) return d.score ?? null;
@@ -1272,20 +1273,18 @@
       return clamp(Math.round(100 - avgMove*7), 25, 95);
     }
     function makeSkylineSeries(name, score){
-      const base = score == null ? 50 : score;
-      const len = periodLength();
-      let seed = Array.from(name + selectedPeriod).reduce((a,c)=>a+c.charCodeAt(0),0);
-      const values = [];
-      const amp = selectedPeriod === "daily" ? 7 : selectedPeriod === "weekly" ? 10 : 13;
-      for(let i=0;i<len;i++){
-        seed = (seed * 9301 + 49297) % 233280;
-        const wave = Math.sin((i/Math.max(len-1,1))*Math.PI*2 + seed/65000) * amp;
-        const drift = (i-(len*.7)) * ((base-50)/(selectedPeriod === "monthly" ? 70 : 85));
-        const noise = ((seed/233280)-.5) * (selectedPeriod === "daily" ? 5 : 7);
-        values.push(clamp(Math.round(base - 4 + (i/Math.max(len-1,1))*8 + wave + drift + noise), 8, 94));
+      if(window.PSDCore?.buildInstrumentSeries){
+        return window.PSDCore.buildInstrumentSeries({
+          instrumentName:name,
+          instrumentHistoryData,
+          period:selectedPeriod,
+          fallbackScore:score
+        });
       }
-      values[values.length-1] = score == null ? 50 : score;
-      return values;
+
+      const len = periodLength();
+      const value = score == null ? 50 : score;
+      return Array.from({length:Math.max(2,len)}, () => value);
     }
     function calcInstrument(ins){
       if(window.PSDCore?.buildInstrumentSummary){
@@ -1294,6 +1293,7 @@
           dashboardData,
           statusData,
           technicalData,
+          instrumentHistoryData,
           userVotes: window.PSD_USER_SENTIMENT || {}
         });
         const score = summary.score;
@@ -1320,38 +1320,37 @@
         };
       }
 
-      const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
-      const scores = [];
-      headlines.forEach(h => {
-        const direct = validDirectScore(h);
-        if(direct != null) scores.push(clamp(direct,0,100));
-        else{
-          const s = scoreFromText(textFromItem(h));
-          if(s != null) scores.push(s);
-        }
-      });
-      let score = null;
-      if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
-      else score = ins.fallback;
-      const liveTech = getTechnicalForInstrument(ins);
-      const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
-      const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
-      const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
-      return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
+      const tech = getTechnicalForInstrument(ins);
+      return {
+        name: ins.name,
+        score: null,
+        sentiment: "No PSI Match",
+        headlines: 0,
+        psiHeadlineCount: 0,
+        archiveArticleCount: 0,
+        bullishCount: 0,
+        bearishCount: 0,
+        neutralCount: 0,
+        countBasis: "backend_source_unavailable",
+        formulaVersion: "missing_PSDCore",
+        user: window.PSD_USER_SENTIMENT?.[ins.name] || "N/A",
+        tech,
+        series: makeSeries(ins.name, null)
+      };
     }
     function makeSeries(name, score){
-      const base = score == null ? 50 : score;
-      let seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
-      const values = [];
-      for(let i=0;i<24;i++){
-        seed = (seed * 9301 + 49297) % 233280;
-        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 8;
-        const drift = (i-18) * ((base-50)/85);
-        const noise = ((seed/233280)-.5) * 7;
-        values.push(clamp(Math.round(base - 5 + (i/23)*10 + wave + drift + noise), 8, 94));
+      if(window.PSDCore?.buildInstrumentSeries){
+        return window.PSDCore.buildInstrumentSeries({
+          instrumentName:name,
+          instrumentHistoryData,
+          period:selectedPeriod,
+          fallbackScore:score
+        });
       }
-      values[values.length-1] = score == null ? 50 : score;
-      return values;
+
+      const len = periodLength();
+      const value = score == null ? 50 : score;
+      return Array.from({length:Math.max(2,len)}, () => value);
     }
     function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
     function bindPeriodButtons(){
@@ -2175,18 +2174,20 @@
       }).join("");
     }
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
-    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
+    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Charts read instrument_history.json; when history is short, the official latest PSI is held flat instead of generating fake movement. ${legend}`}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
     async function load(){
       try{
-        const [res, techRes, statusRes] = await Promise.all([
+        const [res, techRes, statusRes, instrumentHistoryRes] = await Promise.all([
           fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
           fetch("technical_data.json",{cache:"no-store"}).catch(() => null),
-          fetch("status.json",{cache:"no-store"}).catch(() => null)
+          fetch("status.json",{cache:"no-store"}).catch(() => null),
+          fetch("instrument_history.json",{cache:"no-store"}).catch(() => null)
         ]);
         if(res && res.ok) dashboardData = await res.json();
         if(techRes && techRes.ok) technicalData = await techRes.json();
         if(statusRes && statusRes.ok) statusData = await statusRes.json();
+        if(instrumentHistoryRes && instrumentHistoryRes.ok) instrumentHistoryData = await instrumentHistoryRes.json();
       }catch(e){}
       renderAll();
     }
