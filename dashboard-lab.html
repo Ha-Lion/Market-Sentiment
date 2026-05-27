@@ -10,68 +10,68 @@
 
   <style>
     :root{
-      --charts-bg:#070b12;
-      --charts-card:#0d131d;
-      --charts-card2:#101824;
-      --charts-line:rgba(148,163,184,.22);
-      --charts-text:#f3f7ff;
-      --charts-muted:#94a3b8;
-      --charts-gold:#d29922;
-      --charts-gold2:#f4d17d;
-      --charts-blue:#58a6ff;
+      --bg:#070b12;
+      --card:#0d131d;
+      --card2:#111927;
+      --line:rgba(148,163,184,.22);
+      --text:#f3f7ff;
+      --muted:#94a3b8;
+      --gold:#d29922;
+      --gold2:#f4d17d;
     }
 
     body{
+      margin:0;
       background:
         radial-gradient(circle at 12% 0%,rgba(210,153,34,.10),transparent 28rem),
-        radial-gradient(circle at 92% 15%,rgba(88,166,255,.08),transparent 32rem),
-        var(--charts-bg);
-      color:var(--charts-text);
+        radial-gradient(circle at 92% 12%,rgba(88,166,255,.07),transparent 30rem),
+        var(--bg);
+      color:var(--text);
     }
 
     .charts-wrap{
-      max-width:1940px;
+      max-width:1880px;
       margin:0 auto;
-      padding:10px 12px 18px;
+      padding:12px;
     }
 
     .charts-hero{
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
-      gap:18px;
-      padding:10px 14px;
-      margin-bottom:8px;
-      border:1px solid var(--charts-line);
-      border-radius:22px;
+      gap:14px;
+      padding:12px 16px;
+      margin-bottom:10px;
+      border:1px solid var(--line);
+      border-radius:18px;
       background:linear-gradient(180deg,rgba(16,24,36,.92),rgba(9,14,22,.92));
-      box-shadow:0 18px 48px rgba(0,0,0,.28);
+      box-shadow:0 14px 34px rgba(0,0,0,.24);
     }
 
     .charts-hero h1{
-      margin:0 0 8px;
-      font-size:clamp(28px,2.4vw,42px);
+      margin:0 0 4px;
+      font-size:clamp(28px,2.4vw,40px);
       line-height:1;
-      letter-spacing:-.035em;
+      letter-spacing:-.03em;
       font-weight:800;
     }
 
     .charts-hero p{
       margin:0;
-      color:var(--charts-muted);
+      color:var(--muted);
       font-size:13px;
-      line-height:1.45;
+      line-height:1.35;
       max-width:900px;
     }
 
-    .charts-note{
+    .provider-pill{
       color:#f4d17d;
       border:1px solid rgba(210,153,34,.35);
       background:rgba(210,153,34,.10);
       border-radius:999px;
-      padding:8px 12px;
-      font-size:10.5px;
-      font-weight:800;
+      padding:6px 10px;
+      font-size:11px;
+      font-weight:700;
       white-space:nowrap;
     }
 
@@ -79,65 +79,72 @@
       display:grid;
       grid-template-columns:190px minmax(0,1fr);
       gap:10px;
-      min-height:835px;
+      align-items:stretch;
     }
 
     .charts-panel{
-      border:1px solid var(--charts-line);
-      border-radius:20px;
-      background:linear-gradient(180deg,rgba(17,24,39,.92),rgba(9,14,22,.94));
-      padding:8px;
-      box-shadow:0 18px 48px rgba(0,0,0,.24);
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(9,14,22,.96));
+      padding:9px;
+      box-shadow:0 14px 34px rgba(0,0,0,.20);
+      max-height:calc(100vh - 105px);
+      overflow:auto;
     }
 
     .panel-label{
       display:block;
-      color:var(--charts-muted);
-      font-size:11px;
-      font-weight:800;
+      color:var(--muted);
+      font-size:10px;
+      font-weight:700;
       text-transform:uppercase;
       letter-spacing:.06em;
-      margin:0 0 8px;
+      margin:4px 0 6px;
     }
 
     .charts-select{
       width:100%;
       background:#121a26;
-      color:var(--charts-text);
-      border:1px solid var(--charts-line);
-      border-radius:12px;
-      padding:9px 10px;
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:7px 8px;
       outline:none;
-      font-size:10px;
+      font-size:11px;
       font-weight:500;
       margin-bottom:9px;
     }
 
-    .charts-select:focus{
-      border-color:rgba(210,153,34,.70);
-      box-shadow:0 0 0 3px rgba(210,153,34,.10);
+    .group-title{
+      grid-column:1/-1;
+      margin:7px 0 2px;
+      color:var(--muted);
+      font-size:9px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      opacity:.9;
     }
 
     .quick-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:5px;
-      margin-top:8px;
     }
 
     .quick-btn{
       appearance:none;
-      border:1px solid var(--charts-line);
+      border:1px solid var(--line);
       background:#111927;
       color:#dbe7f8;
-      border-radius:11px;
+      border-radius:9px;
       padding:5px 4px;
       min-height:25px;
       font-size:10px;
       line-height:1.05;
-      font-weight:500;
+      font-weight:400;
       cursor:pointer;
-      transition:.16s ease;
+      transition:.14s ease;
       text-align:center;
     }
 
@@ -154,42 +161,29 @@
       color:#fff3c8;
     }
 
-
-    .quick-sep{
-      grid-column:1/-1;
-      margin:5px 0 1px;
-      color:var(--charts-muted);
-      font-size:9.5px;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      opacity:.8;
-    }
-
     .provider-copy{
-      margin-top:14px;
-      padding-top:12px;
+      margin-top:10px;
+      padding-top:9px;
       border-top:1px solid rgba(148,163,184,.16);
-      color:var(--charts-muted);
-      font-size:11px;
-      line-height:1.45;
+      color:var(--muted);
+      font-size:10px;
+      line-height:1.35;
     }
 
     .chart-card{
-      position:relative;
       overflow:hidden;
-      min-height:835px;
-      border:1px solid var(--charts-line);
-      border-radius:22px;
+      min-height:calc(100vh - 92px);
+      border:1px solid var(--line);
+      border-radius:18px;
       background:linear-gradient(180deg,rgba(16,24,36,.96),rgba(7,11,18,.98));
-      box-shadow:0 18px 54px rgba(0,0,0,.28);
+      box-shadow:0 14px 38px rgba(0,0,0,.24);
     }
 
     .chart-header{
       display:flex;
       justify-content:space-between;
       align-items:flex-start;
-      gap:12px;
+      gap:10px;
       padding:8px 12px 6px;
       border-bottom:1px solid rgba(148,163,184,.14);
     }
@@ -198,29 +192,30 @@
       margin:0;
       font-size:16px;
       line-height:1.1;
-      font-weight:800;
+      font-weight:700;
     }
 
     .chart-subtitle{
-      margin-top:4px;
-      color:var(--charts-muted);
+      margin-top:2px;
+      color:var(--muted);
       font-size:10.5px;
-      font-weight:750;
+      font-weight:500;
     }
 
     .chart-chip{
       color:#cdd9ec;
       border:1px solid rgba(148,163,184,.22);
       background:rgba(13,19,29,.85);
-      padding:5px 8px;
+      padding:4px 8px;
       border-radius:999px;
-      font-size:11px;
+      font-size:10px;
       font-weight:500;
       white-space:nowrap;
     }
 
     .tv-shell{
-      height:795px;
+      height:calc(100vh - 150px);
+      min-height:720px;
       padding:8px;
     }
 
@@ -228,30 +223,46 @@
     .tradingview-widget-container__widget{
       width:100%;
       height:100%;
-      min-height:795px;
+      min-height:720px;
     }
 
-    .fallback-link{
-      display:none;
-      padding:12px 16px;
-      color:var(--charts-muted);
-      font-size:13px;
+    @media(max-width:1050px){
+      .charts-layout{
+        grid-template-columns:1fr;
+      }
+      .charts-panel{
+        max-height:none;
+      }
+      .quick-grid{
+        grid-template-columns:repeat(4,1fr);
+      }
+      .tv-shell{
+        height:650px;
+      }
     }
 
-    @media(max-width:1100px){
-      .charts-layout{grid-template-columns:1fr;}
-      .quick-grid{grid-template-columns:repeat(4,1fr);}
-      .chart-card,.charts-layout{min-height:auto;}
-    }
-
-    @media(max-width:720px){
-      .charts-wrap{padding:14px;}
-      .charts-hero{display:block;}
-      .charts-note{display:inline-flex;margin-top:12px;}
-      .quick-grid{grid-template-columns:repeat(2,1fr);}
-      .tv-shell{height:560px;}
+    @media(max-width:700px){
+      .charts-wrap{
+        padding:8px;
+      }
+      .charts-hero{
+        display:block;
+      }
+      .provider-pill{
+        display:inline-flex;
+        margin-top:8px;
+      }
+      .quick-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+      .tv-shell{
+        height:560px;
+        min-height:560px;
+      }
       .tradingview-widget-container,
-      .tradingview-widget-container__widget{min-height:560px;}
+      .tradingview-widget-container__widget{
+        min-height:560px;
+      }
     }
   </style>
 </head>
@@ -261,9 +272,9 @@
     <section class="charts-hero">
       <div>
         <h1>Market Charts</h1>
-        <p>View major markets with embedded TradingView charts for quick technical context beside Public Sentiment Dash research.</p>
+        <p>Embedded market charts for quick technical context beside Public Sentiment Dash research.</p>
       </div>
-      <div class="charts-note">Charts by TradingView</div>
+      <div class="provider-pill">Charts by TradingView</div>
     </section>
 
     <section class="charts-layout">
@@ -273,20 +284,19 @@
 
         <label class="panel-label" for="timeframeSelect">Timeframe</label>
         <select id="timeframeSelect" class="charts-select">
-          <option value="15">15 Minutes</option>
-          <option value="30">30 Minutes</option>
-          <option value="60">1 Hour</option>
-          <option value="240">4 Hours</option>
+          <option value="15">15m</option>
+          <option value="30">30m</option>
+          <option value="60">1H</option>
+          <option value="240">4H</option>
           <option value="D" selected>Daily</option>
           <option value="W">Weekly</option>
           <option value="M">Monthly</option>
         </select>
 
-        <span class="panel-label">Quick Markets</span>
         <div id="quickGrid" class="quick-grid"></div>
 
         <div class="provider-copy">
-          Charts are provided by TradingView. Do not remove attribution or scrape chart data.
+          Chart data is displayed through TradingView’s embedded widget. Attribution remains visible.
         </div>
       </aside>
 
@@ -294,65 +304,75 @@
         <div class="chart-header">
           <div>
             <h2 id="chartTitle" class="chart-title">S&P 500</h2>
-            <div id="chartSubtitle" class="chart-subtitle">SP:SPX · Daily</div>
+            <div id="chartSubtitle" class="chart-subtitle">AMEX:SPY · Daily</div>
           </div>
           <div class="chart-chip">TradingView</div>
         </div>
 
         <div id="tvShell" class="tv-shell"></div>
-        <div class="fallback-link">If the chart does not load, refresh the page or disable ad/script blockers for TradingView widgets.</div>
       </section>
     </section>
   </main>
 
   <script>
-    const CHARTS = [
-      { type:"sep", label:"U.S. Index CFDs" },
-      { label:"S&P 500", short:"S&P", symbol:"OANDA:SPX500USD" },
-      { label:"Nasdaq 100", short:"Nasdaq", symbol:"OANDA:NAS100USD" },
-      { label:"Dow Jones", short:"Dow", symbol:"OANDA:US30USD" },
-      { label:"Russell 2000", short:"Russell", symbol:"OANDA:US2000USD" },
-      { label:"VIX", short:"VIX", symbol:"TVC:VIX" },
-
-      { type:"sep", label:"Global Index CFDs" },
-      { label:"Germany 40", short:"DAX", symbol:"OANDA:DE30EUR" },
-      { label:"UK 100", short:"FTSE", symbol:"OANDA:UK100GBP" },
-      { label:"France 40", short:"CAC", symbol:"OANDA:FR40EUR" },
-      { label:"Europe 50", short:"EU50", symbol:"OANDA:EU50EUR" },
-      { label:"Japan 225", short:"Nikkei", symbol:"OANDA:JP225USD" },
-      { label:"Hong Kong 33", short:"HK33", symbol:"OANDA:HK33HKD" },
-
-      { type:"sep", label:"Major Forex" },
-      { label:"EUR/USD", short:"EUR/USD", symbol:"OANDA:EURUSD" },
-      { label:"GBP/USD", short:"GBP/USD", symbol:"OANDA:GBPUSD" },
-      { label:"USD/JPY", short:"USD/JPY", symbol:"OANDA:USDJPY" },
-      { label:"USD/CHF", short:"USD/CHF", symbol:"OANDA:USDCHF" },
-      { label:"USD/CAD", short:"USD/CAD", symbol:"OANDA:USDCAD" },
-      { label:"AUD/USD", short:"AUD/USD", symbol:"OANDA:AUDUSD" },
-      { label:"NZD/USD", short:"NZD/USD", symbol:"OANDA:NZDUSD" },
-
-      { type:"sep", label:"Forex Crosses" },
-      { label:"EUR/JPY", short:"EUR/JPY", symbol:"OANDA:EURJPY" },
-      { label:"GBP/JPY", short:"GBP/JPY", symbol:"OANDA:GBPJPY" },
-      { label:"EUR/GBP", short:"EUR/GBP", symbol:"OANDA:EURGBP" },
-      { label:"AUD/JPY", short:"AUD/JPY", symbol:"OANDA:AUDJPY" },
-      { label:"CAD/JPY", short:"CAD/JPY", symbol:"OANDA:CADJPY" },
-      { label:"EUR/CHF", short:"EUR/CHF", symbol:"OANDA:EURCHF" },
-      { label:"GBP/CHF", short:"GBP/CHF", symbol:"OANDA:GBPCHF" },
-
-      { type:"sep", label:"Commodities" },
-      { label:"Gold", short:"Gold", symbol:"OANDA:XAUUSD" },
-      { label:"Silver", short:"Silver", symbol:"OANDA:XAGUSD" },
-      { label:"WTI Crude Oil", short:"WTI", symbol:"OANDA:WTICOUSD" },
-      { label:"Brent Crude Oil", short:"Brent", symbol:"OANDA:BCOUSD" },
-      { label:"Natural Gas", short:"NatGas", symbol:"OANDA:NATGASUSD" },
-
-      { type:"sep", label:"Crypto" },
-      { label:"Bitcoin", short:"BTC", symbol:"BINANCE:BTCUSDT" },
-      { label:"Ethereum", short:"ETH", symbol:"BINANCE:ETHUSDT" }
+    const GROUPS = [
+      {
+        name: "U.S. Index ETFs",
+        items: [
+          { label:"S&P 500", short:"S&P", symbol:"AMEX:SPY" },
+          { label:"Nasdaq 100", short:"Nasdaq", symbol:"NASDAQ:QQQ" },
+          { label:"Dow Jones", short:"Dow", symbol:"AMEX:DIA" },
+          { label:"Russell 2000", short:"Russell", symbol:"AMEX:IWM" },
+          { label:"VIX", short:"VIX", symbol:"AMEX:VXX" }
+        ]
+      },
+      {
+        name: "Major Forex",
+        items: [
+          { label:"EUR/USD", short:"EUR/USD", symbol:"OANDA:EURUSD" },
+          { label:"GBP/USD", short:"GBP/USD", symbol:"OANDA:GBPUSD" },
+          { label:"USD/JPY", short:"USD/JPY", symbol:"OANDA:USDJPY" },
+          { label:"USD/CHF", short:"USD/CHF", symbol:"OANDA:USDCHF" },
+          { label:"USD/CAD", short:"USD/CAD", symbol:"OANDA:USDCAD" },
+          { label:"AUD/USD", short:"AUD/USD", symbol:"OANDA:AUDUSD" },
+          { label:"NZD/USD", short:"NZD/USD", symbol:"OANDA:NZDUSD" }
+        ]
+      },
+      {
+        name: "Forex Crosses",
+        items: [
+          { label:"EUR/JPY", short:"EUR/JPY", symbol:"OANDA:EURJPY" },
+          { label:"GBP/JPY", short:"GBP/JPY", symbol:"OANDA:GBPJPY" },
+          { label:"EUR/GBP", short:"EUR/GBP", symbol:"OANDA:EURGBP" },
+          { label:"AUD/JPY", short:"AUD/JPY", symbol:"OANDA:AUDJPY" },
+          { label:"CAD/JPY", short:"CAD/JPY", symbol:"OANDA:CADJPY" },
+          { label:"EUR/CHF", short:"EUR/CHF", symbol:"OANDA:EURCHF" }
+        ]
+      },
+      {
+        name: "Commodities & Crypto",
+        items: [
+          { label:"Gold", short:"Gold", symbol:"AMEX:GLD" },
+          { label:"Silver", short:"Silver", symbol:"AMEX:SLV" },
+          { label:"Crude Oil WTI", short:"WTI", symbol:"AMEX:USO" },
+          { label:"Natural Gas", short:"NatGas", symbol:"AMEX:UNG" },
+          { label:"Bitcoin", short:"BTC", symbol:"BINANCE:BTCUSDT" },
+          { label:"Ethereum", short:"ETH", symbol:"BINANCE:ETHUSDT" }
+        ]
+      }
     ];
 
-    const INTERVAL_LABELS = {"15":"15m","30":"30m","60":"1H","240":"4H","D":"Daily","W":"Weekly","M":"Monthly"};
+    const CHARTS = GROUPS.flatMap(group => group.items);
+
+    const INTERVAL_LABELS = {
+      "15":"15m",
+      "30":"30m",
+      "60":"1H",
+      "240":"4H",
+      "D":"Daily",
+      "W":"Weekly",
+      "M":"Monthly"
+    };
 
     const instrumentSelect = document.getElementById("instrumentSelect");
     const timeframeSelect = document.getElementById("timeframeSelect");
@@ -361,54 +381,61 @@
     const chartSubtitle = document.getElementById("chartSubtitle");
     const tvShell = document.getElementById("tvShell");
 
-    let currentIndex = 1;
+    let currentSymbol = "AMEX:SPY";
 
-    function initControls(){
-      CHARTS.forEach((item, index) => {
-        if(item.type === "sep"){
-          const sep = document.createElement("div");
-          sep.className = "quick-sep";
-          sep.textContent = item.label;
-          quickGrid.appendChild(sep);
-          return;
-        }
-
-        const opt = document.createElement("option");
-        opt.value = String(index);
-        opt.textContent = optionText(item);
-        instrumentSelect.appendChild(opt);
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "quick-btn" + (index === currentIndex ? " active" : "");
-        btn.textContent = item.short;
-        btn.addEventListener("click", () => selectChart(index));
-        quickGrid.appendChild(btn);
-      });
-
-      instrumentSelect.value = String(currentIndex);
+    function findChart(symbol){
+      return CHARTS.find(item => item.symbol === symbol) || CHARTS[0];
     }
 
-    function selectChart(index){
-      if(!CHARTS[index] || CHARTS[index].type === "sep") return;
+    function initControls(){
+      GROUPS.forEach(group => {
+        const optGroup = document.createElement("optgroup");
+        optGroup.label = group.name;
 
-      currentIndex = index;
-      instrumentSelect.value = String(index);
+        const groupTitle = document.createElement("div");
+        groupTitle.className = "group-title";
+        groupTitle.textContent = group.name;
+        quickGrid.appendChild(groupTitle);
 
-      document.querySelectorAll(".quick-btn").forEach((btn) => {
-        const btnLabel = btn.textContent;
-        btn.classList.toggle("active", btnLabel === CHARTS[index].short);
+        group.items.forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.symbol;
+          opt.textContent = item.label + " — " + item.symbol;
+          optGroup.appendChild(opt);
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "quick-btn" + (item.symbol === currentSymbol ? " active" : "");
+          btn.textContent = item.short;
+          btn.dataset.symbol = item.symbol;
+          btn.addEventListener("click", () => selectChart(item.symbol));
+          quickGrid.appendChild(btn);
+        });
+
+        instrumentSelect.appendChild(optGroup);
+      });
+
+      instrumentSelect.value = currentSymbol;
+    }
+
+    function selectChart(symbol){
+      currentSymbol = symbol;
+      instrumentSelect.value = symbol;
+
+      document.querySelectorAll(".quick-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.symbol === symbol);
       });
 
       renderChart();
     }
 
     function renderChart(){
-      const item = CHARTS[currentIndex];
+      const item = findChart(currentSymbol);
       const interval = timeframeSelect.value;
 
       chartTitle.textContent = item.label;
-      chartSubtitle.textContent = `${item.symbol} · ${INTERVAL_LABELS[interval] || interval}`;
+      chartSubtitle.textContent = item.symbol + " · " + (INTERVAL_LABELS[interval] || interval);
+
       tvShell.innerHTML = "";
 
       const container = document.createElement("div");
@@ -422,25 +449,25 @@
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.async = true;
       script.textContent = JSON.stringify({
-        autosize:true,
-        symbol:item.symbol,
-        interval:interval,
-        timezone:"Etc/UTC",
-        theme:"dark",
-        style:"1",
-        locale:"en",
-        allow_symbol_change:true,
-        calendar:false,
-        support_host:"https://www.tradingview.com",
-        hide_side_toolbar:false,
-        details:false,
-        hotlist:false,
-        withdateranges:true,
-        hide_legend:false,
-        save_image:false,
-        studies:[],
-        backgroundColor:"rgba(13, 19, 29, 1)",
-        gridColor:"rgba(148, 163, 184, 0.12)"
+        autosize: true,
+        symbol: item.symbol,
+        interval: interval,
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        allow_symbol_change: false,
+        calendar: false,
+        support_host: "https://www.tradingview.com",
+        hide_side_toolbar: true,
+        details: false,
+        hotlist: false,
+        withdateranges: true,
+        hide_legend: false,
+        save_image: false,
+        studies: [],
+        backgroundColor: "rgba(13, 19, 29, 1)",
+        gridColor: "rgba(148, 163, 184, 0.12)"
       });
 
       container.appendChild(widget);
@@ -448,7 +475,7 @@
       tvShell.appendChild(container);
     }
 
-    instrumentSelect.addEventListener("change", () => selectChart(Number(instrumentSelect.value || 0)));
+    instrumentSelect.addEventListener("change", () => selectChart(instrumentSelect.value));
     timeframeSelect.addEventListener("change", renderChart);
 
     initControls();
