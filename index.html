@@ -1470,85 +1470,30 @@
       return Math.round(Math.max(0, Math.min(100, n)));
     }
 
-    function headlineRows(data){
-      const rows = [];
-      if(Array.isArray(data?.psi_headlines)) rows.push(...data.psi_headlines);
-      if(!rows.length && Array.isArray(data?.top_headlines)) rows.push(...data.top_headlines);
-      return rows.filter(item => item && typeof item === "object");
-    }
-
-    function textBlob(item){
-      const parts = [
-        item.title,
-        item.description,
-        item.query,
-        item.source,
-        ...(Array.isArray(item.markets) ? item.markets : []),
-        ...(Array.isArray(item.instruments) ? item.instruments : [])
-      ];
-      return parts.filter(Boolean).join(" ").toLowerCase();
-    }
-
-    function regionMatch(item, region){
-      const instruments = Array.isArray(item.instruments) ? item.instruments.map(x => String(x || "").toLowerCase()) : [];
-      const blob = " " + textBlob(item) + " ";
-
-      if(region === "us"){
-        const exact = [
-          "s&p 500 / es","nasdaq / nq","dow / ym","russell / rty","vix",
-          "us 10y treasury","us 2y treasury","treasury yields","us dollar / dxy",
-          "fed / fomc","cpi / inflation","ppi","jobs / nfp","us gdp / growth",
-          "stocks / company news","technology stocks"
-        ];
-
-        if(instruments.some(x => exact.includes(x))) return true;
-
-        return /\b(s&p|spx|sp500|nasdaq|dow|russell|vix|wall street|treasury|treasuries|dxy|us dollar|federal reserve|fed|fomc|cpi|ppi|nfp|jobs report|gdp|u\.s\.|united states|us stocks)\b/i.test(blob);
+    function getUniversalRegionalPulse(data){
+      if(window.PSDCore && window.PSDCore.buildRegionalPulse){
+        return window.PSDCore.buildRegionalPulse({
+          dashboardData:data,
+          statusData:statusData
+        });
       }
-
-      if(region === "europe"){
-        const exact = ["dax","ftse 100","cac 40","euro stoxx 50"];
-
-        if(instruments.some(x => exact.includes(x))) return true;
-
-        return /\b(dax|ftse|cac 40|stoxx|euro stoxx|european stocks|european markets|europe|eurozone|euro area|ecb|germany|france|uk market|uk stocks|london stocks)\b/i.test(blob);
-      }
-
-      return false;
-    }
-
-    function weightedHeadlineScore(item){
-      const voteScore = voteToScore(item.vote);
-      let weight = Number(item.freshness_weight || 1);
-
-      if(!Number.isFinite(weight) || weight <= 0) weight = 0.25;
-      if(String(item.impact || "").toLowerCase() === "high") weight *= 1.15;
-      if(String(item.relevance_level || "").toLowerCase() === "high") weight *= 1.10;
-      if(item.is_major_outlet) weight *= 1.18;
-
-      return { score:voteScore, weight:weight };
-    }
-
-    function calculateRegionalScore(data, region){
-      const rows = headlineRows(data).filter(item => regionMatch(item, region));
-
-      if(!rows.length){
-        return { score:50, count:0 };
-      }
-
-      let total = 0;
-      let weightTotal = 0;
-
-      rows.forEach(item => {
-        const part = weightedHeadlineScore(item);
-        total += part.score * part.weight;
-        weightTotal += part.weight;
-      });
 
       return {
-        score:weightTotal ? clampScore(total / weightTotal) : 50,
-        count:rows.length
+        global:{score:calculateGlobalScore(data), label:scoreLabel(calculateGlobalScore(data)), count:Number(data?.psi_headlines_used || statusData?.psi_headlines_used || 0), confidence:"Pending"},
+        us:{score:50, label:"Pending Backend Pulse", count:0, confidence:"Pending"},
+        europe:{score:50, label:"Pending Backend Pulse", count:0, confidence:"Pending"}
       };
+    }
+
+    function pulseCountText(regionLabel, pulse){
+      const count = Number(pulse?.count || 0);
+      const confidence = String(pulse?.confidence || "").trim();
+
+      if(!count && confidence === "Pending") return "Backend regional pulse pending";
+      if(!count) return "No fresh backend sample";
+
+      const sampleLabel = regionLabel === "Global" ? "PSI headlines" : `${regionLabel} headlines`;
+      return confidence ? `${count.toLocaleString()} ${sampleLabel} · ${confidence} confidence` : `${count.toLocaleString()} ${sampleLabel}`;
     }
 
     function updatePulseCard(key, score, label, countText){
@@ -1594,16 +1539,14 @@
     }
 
     function renderScore(data){
-      const globalScore = calculateGlobalScore(data);
-      const globalLabel = scoreLabel(globalScore);
-      const globalCount = Number(data?.psi_headlines_used || statusData?.psi_headlines_used || data?.psi_headline_limit || statusData?.psi_headline_limit || 0);
+      const pulse = getUniversalRegionalPulse(data);
+      const global = pulse.global || {};
+      const us = pulse.us || {};
+      const europe = pulse.europe || {};
 
-      const us = calculateRegionalScore(data, "us");
-      const europe = calculateRegionalScore(data, "europe");
-
-      updatePulseCard("Global", globalScore, globalLabel, globalCount ? `${globalCount} PSI headline sample` : "Latest scan");
-      updatePulseCard("US", us.score, scoreLabel(us.score), us.count ? `${us.count} U.S. PSI headline sample` : "Latest scan");
-      updatePulseCard("Europe", europe.score, scoreLabel(europe.score), europe.count ? `${europe.count} Europe PSI headline sample` : "Latest scan");
+      updatePulseCard("Global", global.score, global.label || scoreLabel(global.score), pulseCountText("Global", global));
+      updatePulseCard("US", us.score, us.label || scoreLabel(us.score), pulseCountText("U.S.", us));
+      updatePulseCard("Europe", europe.score, europe.label || scoreLabel(europe.score), pulseCountText("Europe", europe));
 
       const updated = document.getElementById("pulseUpdated");
       if(updated) updated.textContent = cleanPulseTimestamp(data?.updated_ny || statusData?.updated || "Latest scan");
