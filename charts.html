@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Sentiment Dash — Market Charts</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+
+  <style>
+    :root{
+      --bg:#070b12;
+      --card:#0d131d;
+      --card2:#111927;
+      --line:rgba(148,163,184,.22);
+      --text:#f3f7ff;
+      --muted:#94a3b8;
+      --gold:#d29922;
+      --gold2:#f4d17d;
+    }
+
+    body{
+      margin:0;
+      background:
+        radial-gradient(circle at 12% 0%,rgba(210,153,34,.10),transparent 28rem),
+        radial-gradient(circle at 92% 12%,rgba(88,166,255,.07),transparent 30rem),
+        var(--bg);
+      color:var(--text);
+    }
+
+    .charts-wrap{
+      max-width:1880px;
+      margin:0 auto;
+      padding:10px;
+    }
+
+    .charts-hero{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:14px;
+      padding:10px 14px;
+      margin-bottom:8px;
+      border:1px solid var(--line);
+      border-radius:17px;
+      background:linear-gradient(180deg,rgba(16,24,36,.92),rgba(9,14,22,.92));
+      box-shadow:0 14px 34px rgba(0,0,0,.24);
+    }
+
+    .charts-hero h1{
+      margin:0 0 4px;
+      font-size:clamp(28px,2.4vw,40px);
+      line-height:1;
+      letter-spacing:-.03em;
+      font-weight:800;
+    }
+
+    .charts-hero p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+      max-width:900px;
+    }
+
+    .provider-pill{
+      color:#f4d17d;
+      border:1px solid rgba(210,153,34,.35);
+      background:rgba(210,153,34,.10);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:11px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .charts-layout{
+      display:grid;
+      grid-template-columns:190px minmax(0,1fr);
+      gap:8px;
+      align-items:stretch;
+    }
+
+    .charts-panel{
+      border:1px solid var(--line);
+      border-radius:17px;
+      background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(9,14,22,.96));
+      padding:9px;
+      box-shadow:0 14px 34px rgba(0,0,0,.20);
+      max-height:calc(100vh - 86px);
+      overflow:auto;
+    }
+
+    .panel-label{
+      display:block;
+      color:var(--muted);
+      font-size:10px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin:4px 0 6px;
+    }
+
+    .charts-select{
+      width:100%;
+      background:#121a26;
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:7px 8px;
+      outline:none;
+      font-size:11px;
+      font-weight:500;
+      margin-bottom:9px;
+    }
+
+    .group-title{
+      grid-column:1/-1;
+      margin:7px 0 2px;
+      color:var(--muted);
+      font-size:9px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      opacity:.9;
+    }
+
+    .quick-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:5px;
+    }
+
+    .quick-btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#111927;
+      color:#dbe7f8;
+      border-radius:9px;
+      padding:5px 4px;
+      min-height:25px;
+      font-size:10px;
+      line-height:1.05;
+      font-weight:400;
+      cursor:pointer;
+      transition:.14s ease;
+      text-align:center;
+    }
+
+    .quick-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(210,153,34,.55);
+      background:rgba(210,153,34,.10);
+      color:#fff;
+    }
+
+    .quick-btn.active{
+      border-color:rgba(210,153,34,.78);
+      background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(210,153,34,.08));
+      color:#fff3c8;
+    }
+
+    .provider-copy{
+      margin-top:10px;
+      padding-top:9px;
+      border-top:1px solid rgba(148,163,184,.16);
+      color:var(--muted);
+      font-size:10px;
+      line-height:1.35;
+    }
+
+    .chart-card{
+      overflow:hidden;
+      min-height:calc(100vh - 92px);
+      border:1px solid var(--line);
+      border-radius:17px;
+      background:linear-gradient(180deg,rgba(16,24,36,.96),rgba(7,11,18,.98));
+      box-shadow:0 14px 38px rgba(0,0,0,.24);
+    }
+
+    .chart-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      padding:4px 9px 3px;
+      border-bottom:1px solid rgba(148,163,184,.14);
+      min-height:28px;
+    }
+
+    .chart-title-row{
+      display:flex;
+      align-items:baseline;
+      gap:7px;
+      min-width:0;
+      flex-wrap:wrap;
+    }
+
+    .chart-title{
+      margin:0;
+      font-size:13.5px;
+      line-height:1;
+      font-weight:650;
+      white-space:nowrap;
+    }
+
+    .chart-subtitle{
+      color:var(--muted);
+      font-size:10px;
+      line-height:1;
+      font-weight:400;
+      white-space:nowrap;
+    }
+
+    .chart-chip{
+      color:#cdd9ec;
+      border:1px solid rgba(148,163,184,.22);
+      background:rgba(13,19,29,.85);
+      padding:3px 7px;
+      border-radius:999px;
+      font-size:9.5px;
+      font-weight:400;
+      white-space:nowrap;
+    }
+
+    .tv-shell{
+      height:calc(100vh - 150px);
+      min-height:720px;
+      padding:8px;
+    }
+
+    .tradingview-widget-container,
+    .tradingview-widget-container__widget{
+      width:100%;
+      height:100%;
+      min-height:720px;
+    }
+
+    @media(max-width:1050px){
+      .charts-layout{
+        grid-template-columns:1fr;
+      }
+      .charts-panel{
+        max-height:none;
+      }
+      .quick-grid{
+        grid-template-columns:repeat(4,1fr);
+      }
+      .tv-shell{
+        height:650px;
+      }
+    }
+
+    @media(max-width:700px){
+      .charts-wrap{
+        padding:8px;
+      }
+      .charts-hero{
+        display:block;
+      }
+      .provider-pill{
+        display:inline-flex;
+        margin-top:8px;
+      }
+      .quick-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+      .tv-shell{
+        height:560px;
+        min-height:560px;
+      }
+      .tradingview-widget-container,
+      .tradingview-widget-container__widget{
+        min-height:560px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="charts-wrap">
+    <section class="charts-hero">
+      <div>
+        <h1>Market Charts</h1>
+        <p>Embedded market charts for quick technical context beside Public Sentiment Dash research.</p>
+      </div>
+      <div class="provider-pill">Charts by TradingView</div>
+    </section>
+
+    <section class="charts-layout">
+      <aside class="charts-panel">
+        <div id="quickGrid" class="quick-grid"></div>
+
+        <div class="provider-copy">
+          Chart data is displayed through TradingView’s embedded widget. Attribution remains visible.
+        </div>
+      </aside>
+
+      <section class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-row">
+            <h2 id="chartTitle" class="chart-title">S&P 500</h2>
+            <div id="chartSubtitle" class="chart-subtitle">AMEX:SPY · Daily</div>
+          </div>
+          <div class="chart-chip">TradingView</div>
+        </div>
+
+        <div id="tvShell" class="tv-shell"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const GROUPS = [
+      {
+        name: "Index ETFs",
+        items: [
+          { label:"S&P 500", short:"S&P", symbol:"AMEX:SPY" },
+          { label:"Nasdaq 100", short:"Nasdaq", symbol:"NASDAQ:QQQ" },
+          { label:"Dow Jones", short:"Dow", symbol:"AMEX:DIA" },
+          { label:"Russell 2000", short:"Russell", symbol:"AMEX:IWM" },
+          { label:"VIX", short:"VIX", symbol:"AMEX:VXX" },
+          { label:"US Dollar Index", short:"DXY", symbol:"TVC:DXY" },
+          { label:"20+ Year Treasury Bonds", short:"TLT", symbol:"NASDAQ:TLT" },
+          { label:"Emerging Markets", short:"EEM", symbol:"AMEX:EEM" }
+        ]
+      },
+      {
+        name: "Forex",
+        items: [
+          { label:"EUR/USD", short:"EUR/USD", symbol:"OANDA:EURUSD" },
+          { label:"GBP/USD", short:"GBP/USD", symbol:"OANDA:GBPUSD" },
+          { label:"USD/JPY", short:"USD/JPY", symbol:"OANDA:USDJPY" },
+          { label:"USD/CHF", short:"USD/CHF", symbol:"OANDA:USDCHF" },
+          { label:"USD/CAD", short:"USD/CAD", symbol:"OANDA:USDCAD" },
+          { label:"AUD/USD", short:"AUD/USD", symbol:"OANDA:AUDUSD" },
+          { label:"NZD/USD", short:"NZD/USD", symbol:"OANDA:NZDUSD" },
+          { label:"EUR/JPY", short:"EUR/JPY", symbol:"OANDA:EURJPY" }
+        ]
+      },
+      {
+        name: "Commodities",
+        items: [
+          { label:"Gold", short:"Gold", symbol:"AMEX:GLD" },
+          { label:"Silver", short:"Silver", symbol:"AMEX:SLV" },
+          { label:"Crude Oil WTI", short:"WTI", symbol:"AMEX:USO" },
+          { label:"Natural Gas", short:"NatGas", symbol:"AMEX:UNG" }
+        ]
+      },
+      {
+        name: "Stocks",
+        items: [
+          { label:"Nvidia", short:"NVDA", symbol:"NASDAQ:NVDA" },
+          { label:"Tesla", short:"TSLA", symbol:"NASDAQ:TSLA" },
+          { label:"Apple", short:"AAPL", symbol:"NASDAQ:AAPL" },
+          { label:"Microsoft", short:"MSFT", symbol:"NASDAQ:MSFT" },
+          { label:"Amazon", short:"AMZN", symbol:"NASDAQ:AMZN" },
+          { label:"Meta", short:"META", symbol:"NASDAQ:META" }
+        ]
+      },
+      {
+        name: "Crypto",
+        items: [
+          { label:"Bitcoin", short:"BTC", symbol:"BINANCE:BTCUSDT" },
+          { label:"Ethereum", short:"ETH", symbol:"BINANCE:ETHUSDT" },
+          { label:"Solana", short:"SOL", symbol:"BINANCE:SOLUSDT" },
+          { label:"XRP", short:"XRP", symbol:"BINANCE:XRPUSDT" },
+          { label:"BNB", short:"BNB", symbol:"BINANCE:BNBUSDT" },
+          { label:"Dogecoin", short:"DOGE", symbol:"BINANCE:DOGEUSDT" },
+          { label:"Cardano", short:"ADA", symbol:"BINANCE:ADAUSDT" },
+          { label:"Chainlink", short:"LINK", symbol:"BINANCE:LINKUSDT" },
+          { label:"Litecoin", short:"LTC", symbol:"BINANCE:LTCUSDT" },
+          { label:"Avalanche", short:"AVAX", symbol:"BINANCE:AVAXUSDT" },
+          { label:"Polkadot", short:"DOT", symbol:"BINANCE:DOTUSDT" },
+          { label:"Bitcoin Cash", short:"BCH", symbol:"BINANCE:BCHUSDT" }
+        ]
+      }
+    ];
+
+    const CHARTS = GROUPS.flatMap(group => group.items);
+
+    const INTERVAL_LABELS = {
+      "15":"15m",
+      "30":"30m",
+      "60":"1H",
+      "240":"4H",
+      "D":"Daily",
+      "W":"Weekly",
+      "M":"Monthly"
+    };
+
+    const quickGrid = document.getElementById("quickGrid");
+    const chartTitle = document.getElementById("chartTitle");
+    const chartSubtitle = document.getElementById("chartSubtitle");
+    const tvShell = document.getElementById("tvShell");
+
+    let currentSymbol = "AMEX:SPY";
+
+    function findChart(symbol){
+      return CHARTS.find(item => item.symbol === symbol) || CHARTS[0];
+    }
+
+    function initControls(){
+      GROUPS.forEach(group => {
+        const groupTitle = document.createElement("div");
+        groupTitle.className = "group-title";
+        groupTitle.textContent = group.name;
+        quickGrid.appendChild(groupTitle);
+
+        group.items.forEach(item => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "quick-btn" + (item.symbol === currentSymbol ? " active" : "");
+          btn.textContent = item.short;
+          btn.dataset.symbol = item.symbol;
+          btn.addEventListener("click", () => selectChart(item.symbol));
+          quickGrid.appendChild(btn);
+        });
+      });
+    }
+
+    function selectChart(symbol){
+      currentSymbol = symbol;
+
+      document.querySelectorAll(".quick-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.symbol === symbol);
+      });
+
+      renderChart();
+    }
+
+    function renderChart(){
+      const item = findChart(currentSymbol);
+      const interval = "D";
+
+      chartTitle.textContent = item.label;
+      chartSubtitle.textContent = item.symbol + " · " + (INTERVAL_LABELS[interval] || interval);
+
+      tvShell.innerHTML = "";
+
+      const container = document.createElement("div");
+      container.className = "tradingview-widget-container";
+
+      const widget = document.createElement("div");
+      widget.className = "tradingview-widget-container__widget";
+
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      script.async = true;
+      script.textContent = JSON.stringify({
+        autosize: true,
+        symbol: item.symbol,
+        interval: interval,
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        allow_symbol_change: false,
+        calendar: false,
+        support_host: "https://www.tradingview.com",
+        hide_side_toolbar: true,
+        details: false,
+        hotlist: false,
+        withdateranges: true,
+        hide_legend: false,
+        save_image: false,
+        studies: [],
+        backgroundColor: "rgba(13, 19, 29, 1)",
+        gridColor: "rgba(148, 163, 184, 0.12)"
+      });
+
+      container.appendChild(widget);
+      container.appendChild(script);
+      tvShell.appendChild(container);
+    }
+
+    initControls();
+    renderChart();
+  </script>
+</body>
+</html>
