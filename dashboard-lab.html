@@ -266,11 +266,13 @@
 
     .crypto-panels{
       display:grid;
-      grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);
+      grid-template-columns:1fr;
       gap:16px;
+      width:100%;
     }
 
     .crypto-panel{
+      width:100%;
       padding:20px;
       border:1px solid var(--line);
       border-radius:22px;
@@ -299,20 +301,66 @@
 
     .headline-row{
       display:grid;
-      grid-template-columns:minmax(0,1fr) auto;
-      gap:12px;
+      grid-template-columns:72px minmax(0,1fr);
+      gap:14px;
       align-items:center;
-      padding:12px;
+      width:100%;
+      min-height:88px;
+      padding:12px 14px;
       border:1px solid rgba(255,255,255,.07);
       border-radius:15px;
       background:linear-gradient(180deg,rgba(17,24,33,.78),rgba(8,13,21,.90));
     }
 
+    .headline-logo{
+      width:56px;
+      height:56px;
+      max-width:56px;
+      max-height:56px;
+      object-fit:contain;
+      justify-self:center;
+      align-self:center;
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      padding:4px;
+    }
+
+    .headline-logo-fallback{
+      width:56px;
+      height:56px;
+      display:grid;
+      place-items:center;
+      justify-self:center;
+      align-self:center;
+      border-radius:12px;
+      background:linear-gradient(135deg,rgba(210,153,34,.20),rgba(88,166,255,.16));
+      border:1px solid rgba(255,255,255,.08);
+      color:#ffd780;
+      font-size:18px;
+      font-weight:900;
+    }
+
+    .headline-body{
+      min-width:0;
+    }
+
+    .headline-source{
+      color:#58a6ff;
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
     .headline-title{
       color:#fff;
       font-size:13px;
-      line-height:1.35;
+      line-height:1.32;
       font-weight:800;
+      max-width:100%;
     }
 
     .headline-meta{
@@ -527,99 +575,12 @@
       .crypto-hero-grid{grid-template-columns:1fr}
       .crypto-top-grid{grid-template-columns:1fr}
       .headline-list{grid-template-columns:1fr}
+      .headline-row{grid-template-columns:62px minmax(0,1fr);gap:12px}
+      .headline-logo,.headline-logo-fallback{width:48px;height:48px;max-width:48px;max-height:48px}
       .crypto-score-wrap{grid-template-columns:82px 1fr}
       .history-grid{grid-template-columns:1fr}
       .history-card{height:92vh}
     }
-  
-    /* v03 rollback-safe headline width fix only */
-    .crypto-news-panel,
-    .headlines-panel,
-    .headline-panel{
-      max-width:1420px;
-      width:100%;
-    }
-
-    #cryptoHeadlineList,
-    #headlineList,
-    .headline-list{
-      width:100%;
-    }
-
-    #cryptoHeadlineList .headline,
-    #headlineList .headline,
-    .headline-list .headline,
-    #cryptoHeadlineList .dynamic-card,
-    #headlineList .dynamic-card,
-    .headline-list .dynamic-card{
-      width:100%;
-      max-width:none;
-      min-height:86px;
-      padding:12px 14px;
-      display:grid;
-      grid-template-columns:78px minmax(0,1fr);
-      column-gap:16px;
-      align-items:center;
-    }
-
-    #cryptoHeadlineList img,
-    #headlineList img,
-    .headline-list img,
-    #cryptoHeadlineList .source-logo,
-    #headlineList .source-logo,
-    .headline-list .source-logo{
-      width:58px;
-      height:58px;
-      max-width:58px;
-      max-height:58px;
-      object-fit:contain;
-      justify-self:center;
-      align-self:center;
-      position:static;
-      display:block;
-      flex:0 0 auto;
-      margin:0;
-    }
-
-    #cryptoHeadlineList .headline h3,
-    #headlineList .headline h3,
-    .headline-list .headline h3,
-    #cryptoHeadlineList .dynamic-card h3,
-    #headlineList .dynamic-card h3,
-    .headline-list .dynamic-card h3{
-      margin-top:0;
-      line-height:1.28;
-    }
-
-    #cryptoHeadlineList .meta,
-    #headlineList .meta,
-    .headline-list .meta{
-      line-height:1.35;
-    }
-
-    @media(max-width:760px){
-      #cryptoHeadlineList .headline,
-      #headlineList .headline,
-      .headline-list .headline,
-      #cryptoHeadlineList .dynamic-card,
-      #headlineList .dynamic-card,
-      .headline-list .dynamic-card{
-        grid-template-columns:62px minmax(0,1fr);
-        column-gap:12px;
-      }
-      #cryptoHeadlineList img,
-      #headlineList img,
-      .headline-list img,
-      #cryptoHeadlineList .source-logo,
-      #headlineList .source-logo,
-      .headline-list .source-logo{
-        width:48px;
-        height:48px;
-        max-width:48px;
-        max-height:48px;
-      }
-    }
-
   </style>
 </head>
 
@@ -933,7 +894,7 @@
 
     function sourceLogoUrl(h){
       const domain = domainFromUrl(h.source_url || h.link || "");
-      return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "logo.png";
+      return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
     }
 
     function renderHeadlines(){
@@ -952,17 +913,25 @@
         return;
       }
 
-      list.innerHTML = headlines.map(h => `
-        <a class="headline-row" href="${esc(h.link || "#")}" target="_blank" rel="noopener">
-          <img class="headline-logo" src="${esc(sourceLogoUrl(h))}" alt="${esc(h.source || "Source")} logo" loading="lazy" onerror="this.src='logo.png'">
-          <div>
-            <div class="headline-source">${esc(h.source || "Source")}</div>
-            <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
-            <div class="headline-meta">${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
-            <div class="headline-open">Open →</div>
-          </div>
-        </a>
-      `).join("");
+      list.innerHTML = headlines.map(h => {
+        const logo = sourceLogoUrl(h);
+        const sourceInitial = esc(String(h.source || "N").trim().slice(0,1).toUpperCase() || "N");
+        const logoHtml = logo
+          ? `<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source || "Source")} logo" loading="lazy" onerror="this.outerHTML='<div class=&quot;headline-logo-fallback&quot;>${sourceInitial}</div>'">`
+          : `<div class="headline-logo-fallback">${sourceInitial}</div>`;
+
+        return `
+          <a class="headline-row" href="${esc(h.link || "#")}" target="_blank" rel="noopener">
+            ${logoHtml}
+            <div class="headline-body">
+              <div class="headline-source">${esc(h.source || "Source")}</div>
+              <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
+              <div class="headline-meta">${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+              <div class="headline-open">Open →</div>
+            </div>
+          </a>
+        `;
+      }).join("");
     }
 
     function renderHero(){
