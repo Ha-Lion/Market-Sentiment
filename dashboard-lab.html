@@ -699,6 +699,23 @@
       .history-grid{grid-template-columns:1fr}
       .history-card{height:92vh}
     }
+  
+    .energy-card,
+    .crypto-card{
+      display:flex;
+      flex-direction:column;
+    }
+
+    .energy-card .history-btn,
+    .crypto-card .history-btn{
+      margin-top:auto;
+    }
+
+    .energy-card .compare-control,
+    .crypto-card .compare-control{
+      margin-top:8px;
+    }
+
   </style>
 </head>
 
@@ -803,8 +820,8 @@
       {name:"Oil Inventories / EIA", symbol:"EIA", aliases:["oil inventory","oil inventories","eia","crude stockpiles","gasoline inventories","distillate inventories"], official:false},
       {name:"Brent Oil", symbol:"Brent", aliases:["brent","brent crude","brent oil"], official:false},
       {name:"WTI Oil", symbol:"WTI", aliases:["wti","wti crude","west texas intermediate"], official:false},
-      {name:"Gasoline", symbol:"Gasoline", aliases:["gasoline","gasoline futures","rbob","pump prices","fuel prices"], official:false},
-      {name:"Heating Oil", symbol:"Heating", aliases:["heating oil","distillates","diesel","diesel prices"], official:false},
+      {name:"Gasoline", symbol:"Gasoline", aliases:["gasoline","gasoline futures","rbob","pump prices","fuel prices","gas prices","refinery","refineries","crack spread","eia gasoline","gasoline inventories"], official:false},
+      {name:"Heating Oil", symbol:"Heating", aliases:["heating oil","distillates","distillate inventories","diesel","diesel prices","fuel oil","refinery","refineries","eia distillate"], official:false},
       {name:"Energy Stocks", symbol:"Stocks", aliases:["energy stocks","oil stocks","gas stocks","exxon","chevron","shell","bp","energy shares"], official:true}
     ];
 
@@ -1155,9 +1172,44 @@
       return out;
     }
 
+    function proxyHistoryRowForEnergy(record, item){
+      const instruments = record?.instruments || {};
+      const candidatesByName = {
+        "Gasoline": ["Crude Oil", "Oil Inventories / EIA", "General Energy"],
+        "Heating Oil": ["Crude Oil", "Natural Gas", "Oil Inventories / EIA", "General Energy"],
+        "Brent Oil": ["Crude Oil"],
+        "WTI Oil": ["Crude Oil"],
+        "OPEC / Supply": ["Crude Oil", "General Energy"],
+        "Oil Inventories / EIA": ["Crude Oil", "Natural Gas", "General Energy"],
+        "General Energy": ["Crude Oil", "Natural Gas", "Energy Stocks"]
+      };
+
+      const candidates = candidatesByName[item?.name] || [];
+      const rows = candidates
+        .map(name => instruments[name])
+        .filter(row => row && row.psi != null);
+
+      if(!rows.length) return null;
+
+      const avgPsi = Math.round(rows.reduce((sum,row) => sum + Number(row.psi || 50), 0) / rows.length);
+      const count = rows.reduce((sum,row) => sum + Number(row.headline_count || 0), 0);
+
+      return {
+        date:record.date,
+        label:record.date,
+        value:avgPsi,
+        count:count,
+        bullish:rows.reduce((sum,row) => sum + Number(row.bullish_count || 0), 0),
+        bearish:rows.reduce((sum,row) => sum + Number(row.bearish_count || 0), 0),
+        neutral:rows.reduce((sum,row) => sum + Number(row.neutral_count || 0) + Number(row.mixed_count || 0), 0),
+        sentiment:labelForScore(avgPsi),
+        source:"proxy"
+      };
+    }
+
     function derivedHistoryRowForItem(record, item){
       const matches = savedHeadlinesForRecord(record).filter(h => itemMatchesHeadline(item, h));
-      if(!matches.length) return null;
+      if(!matches.length) return proxyHistoryRowForEnergy(record, item);
 
       let total = 0;
       let bullish = 0;
