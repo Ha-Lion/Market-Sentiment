@@ -15,14 +15,14 @@
     .crypto-page{
       max-width:1480px;
       margin:0 auto;
-      padding:26px;
+      padding:14px 26px 26px;
     }
 
     .crypto-hero{
       position:relative;
       overflow:hidden;
-      padding:24px;
-      margin-bottom:16px;
+      padding:15px 18px;
+      margin-bottom:12px;
       border:1px solid var(--line);
       border-radius:24px;
       background:
@@ -40,8 +40,8 @@
     }
 
     .crypto-hero h1{
-      margin:0 0 9px;
-      font-size:clamp(36px,3.6vw,56px);
+      margin:0 0 5px;
+      font-size:clamp(30px,3vw,46px);
       line-height:1;
       letter-spacing:-.035em;
       color:#fff;
@@ -51,8 +51,8 @@
       max-width:980px;
       margin:0;
       color:var(--soft);
-      font-size:15px;
-      line-height:1.5;
+      font-size:13.5px;
+      line-height:1.38;
     }
 
     .crypto-live-pill{
@@ -61,8 +61,8 @@
       gap:7px;
       width:max-content;
       max-width:100%;
-      padding:8px 12px;
-      margin-bottom:12px;
+      padding:6px 10px;
+      margin-bottom:7px;
       border-radius:999px;
       background:rgba(210,153,34,.12);
       border:1px solid rgba(210,153,34,.38);
@@ -72,8 +72,8 @@
     }
 
     .crypto-updated{
-      min-width:230px;
-      padding:13px 15px;
+      min-width:210px;
+      padding:10px 12px;
       border:1px solid rgba(255,255,255,.08);
       border-radius:18px;
       background:rgba(8,13,21,.62);
@@ -85,9 +85,9 @@
     .crypto-updated b{
       display:block;
       color:#fff;
-      font-size:20px;
+      font-size:17px;
       line-height:1;
-      margin-bottom:5px;
+      margin-bottom:4px;
     }
 
     .crypto-top-grid{
@@ -519,12 +519,14 @@
     @media(max-width:1240px){
       .crypto-top-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
       .crypto-panels{grid-template-columns:1fr}
+      .headline-list{grid-template-columns:repeat(3,minmax(0,1fr))}
     }
 
     @media(max-width:760px){
       .crypto-page{padding:14px}
       .crypto-hero-grid{grid-template-columns:1fr}
       .crypto-top-grid{grid-template-columns:1fr}
+      .headline-list{grid-template-columns:1fr}
       .crypto-score-wrap{grid-template-columns:82px 1fr}
       .history-grid{grid-template-columns:1fr}
       .history-card{height:92vh}
@@ -566,7 +568,7 @@
         <div>
           <div class="crypto-live-pill">Crypto Sentiment Today</div>
           <h1>Top Crypto Sentiment</h1>
-          <p>Track current public sentiment across major crypto assets and digital-asset themes using the same Public Sentiment Dash headline data and saved instrument history.</p>
+          <p>Track current public sentiment across crypto assets, regulation, ETF flows, and digital-asset headlines.</p>
         </div>
         <div class="crypto-updated">
           <b id="overallScore">--</b>
@@ -582,17 +584,6 @@
         <h2>Latest Crypto Headlines</h2>
         <p id="headlineStatus">Loading crypto headlines...</p>
         <div class="headline-list" id="headlineList"></div>
-      </div>
-
-      <div class="crypto-panel">
-        <h2>How This Page Reads Data</h2>
-        <p>This page is built to test the crypto category page before publishing it as an official public page.</p>
-        <div class="method-list">
-          <div><b>Current sentiment:</b> uses saved instrument_history.json where available, then dashboard_data.json headline fallback for extra crypto themes.</div>
-          <div><b>History:</b> daily, weekly, and monthly views read saved instrument_history.json records.</div>
-          <div><b>PSI rule:</b> user votes and technical direction are not blended into PSI.</div>
-          <div><b>Publishing:</b> after approval, this can become crypto.html and be added to sitemap/menu later.</div>
-        </div>
       </div>
     </section>
 
@@ -637,16 +628,16 @@
 
   <script>
     const CRYPTO_ITEMS = [
+      {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins","blockchain","token"], official:true},
+      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization","crypto rules","digital assets regulation"], official:false},
+      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:false},
       {name:"Bitcoin / BTC", symbol:"BTC", aliases:["bitcoin","btc"], official:true},
       {name:"Ethereum / ETH", symbol:"ETH", aliases:["ethereum","eth"], official:true},
       {name:"Solana / SOL", symbol:"SOL", aliases:["solana","sol"], official:true},
       {name:"XRP", symbol:"XRP", aliases:["xrp","ripple"], official:true},
       {name:"BNB", symbol:"BNB", aliases:["bnb","binance coin"], official:true},
       {name:"Cardano / ADA", symbol:"ADA", aliases:["cardano","ada"], official:true},
-      {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin","doge"], official:true},
-      {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins"], official:true},
-      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:false},
-      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization"], official:false}
+      {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin","doge"], official:true}
     ];
 
     let dashboardData = null;
@@ -796,13 +787,7 @@
     }
 
     function buildRows(){
-      const rows = CRYPTO_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item));
-      return rows.sort((a,b) => {
-        const ca = Number(a.headlineCount || 0);
-        const cb = Number(b.headlineCount || 0);
-        if(cb !== ca) return cb - ca;
-        return Number(b.score ?? -1) - Number(a.score ?? -1);
-      }).slice(0,10);
+      return CRYPTO_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item)).slice(0,10);
     }
 
     function renderTopCards(){
@@ -821,12 +806,9 @@
         return `
           <article class="crypto-card">
             <div class="crypto-card-top">
-              <div style="display:flex;gap:9px;align-items:flex-start;min-width:0;">
-                <div class="crypto-rank">${idx + 1}</div>
-                <div style="min-width:0;">
-                  <div class="crypto-name">${esc(row.name)}</div>
-                  <div class="crypto-symbol">${esc(row.symbol)} • ${sourceText}</div>
-                </div>
+              <div style="min-width:0;">
+                <div class="crypto-name">${esc(row.name)}</div>
+                <div class="crypto-symbol">${esc(row.symbol)} • ${sourceText}</div>
               </div>
               <span class="sentiment-pill" style="${pillStyle(row.score)}">${esc(row.label)}</span>
             </div>
@@ -855,13 +837,23 @@
       }).join("");
     }
 
+    function domainFromUrl(url){
+      try{ return new URL(url).hostname.replace(/^www\./, ""); }
+      catch(e){ return ""; }
+    }
+
+    function sourceLogoUrl(h){
+      const domain = domainFromUrl(h.source_url || h.link || "");
+      return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "logo.png";
+    }
+
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
       const status = document.getElementById("headlineStatus");
-      const headlines = getCryptoHeadlines().slice(0,10);
+      const headlines = getCryptoHeadlines().slice(0,25);
 
       if(status){
-        status.textContent = `${headlines.length} recent crypto headline(s) shown from dashboard_data.json.`;
+        status.textContent = `${headlines.length} latest crypto headline(s) shown from dashboard_data.json.`;
       }
 
       if(!list) return;
@@ -873,11 +865,13 @@
 
       list.innerHTML = headlines.map(h => `
         <a class="headline-row" href="${esc(h.link || "#")}" target="_blank" rel="noopener">
+          <img class="headline-logo" src="${esc(sourceLogoUrl(h))}" alt="${esc(h.source || "Source")} logo" loading="lazy" onerror="this.src='logo.png'">
           <div>
+            <div class="headline-source">${esc(h.source || "Source")}</div>
             <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
-            <div class="headline-meta">${esc(h.source || "Source")} • ${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+            <div class="headline-meta">${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+            <div class="headline-open">Open →</div>
           </div>
-          <div class="headline-open">Open →</div>
         </a>
       `).join("");
     }
@@ -953,10 +947,10 @@
 
       const w = 900;
       const h = 420;
-      const padL = 54;
-      const padR = 24;
-      const padT = 24;
-      const padB = 48;
+      const padL = 58;
+      const padR = 28;
+      const padT = 30;
+      const padB = 50;
       const innerW = w - padL - padR;
       const innerH = h - padT - padB;
       const n = series.length;
@@ -974,35 +968,56 @@
 
       const yTicks = [0,25,50,75,100].map(v => {
         const y = padT + (100 - v) / 100 * innerH;
-        return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="rgba(255,255,255,.10)" stroke-dasharray="4 7"></line>
-                <text x="${padL-12}" y="${y+4}" text-anchor="end" fill="#8b949e" font-size="11" font-weight="700">${v}</text>`;
+        return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="rgba(45,212,191,.16)" stroke-dasharray="3 9"></line>
+                <text x="${padL-12}" y="${y+4}" text-anchor="end" fill="#78a6c8" font-size="11" font-weight="800">${v}</text>`;
+      }).join("");
+
+      const vLines = points.map((p,i) => {
+        if(n > 10 && i % Math.ceil(n/6) !== 0 && i !== n-1) return "";
+        return `<line x1="${p.x}" y1="${padT}" x2="${p.x}" y2="${padT+innerH}" stroke="rgba(88,166,255,.08)" stroke-dasharray="2 10"></line>`;
       }).join("");
 
       const labels = points.map((p,i) => {
         if(n > 8 && i % Math.ceil(n/6) !== 0 && i !== n-1) return "";
-        return `<text x="${p.x}" y="${h-19}" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="700">${esc(p.row.label).slice(5)}</text>`;
+        return `<text x="${p.x}" y="${h-18}" text-anchor="middle" fill="#8fb8d8" font-size="10" font-weight="800">${esc(p.row.label).slice(5)}</text>`;
       }).join("");
 
-      const circles = points.map(p => `
-        <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1.2">
-          <title>${esc(p.row.label)}: ${p.row.value}/100 • ${esc(p.row.sentiment)}</title>
-        </circle>
+      const circles = points.map((p,i) => `
+        <g>
+          <circle cx="${p.x}" cy="${p.y}" r="9" fill="${color}" opacity=".10"></circle>
+          <circle cx="${p.x}" cy="${p.y}" r="4.2" fill="#07101d" stroke="${color}" stroke-width="2.2">
+            <title>${esc(p.row.label)}: ${p.row.value}/100 • ${esc(p.row.sentiment)}</title>
+          </circle>
+        </g>
       `).join("");
 
       svg.innerHTML = `
         <defs>
-          <linearGradient id="histFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="${color}" stop-opacity=".28"></stop>
-            <stop offset="100%" stop-color="${color}" stop-opacity=".02"></stop>
+          <linearGradient id="neonFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity=".34"></stop>
+            <stop offset="46%" stop-color="#2dd4bf" stop-opacity=".12"></stop>
+            <stop offset="100%" stop-color="#050b12" stop-opacity=".02"></stop>
           </linearGradient>
-          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur><feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+          <linearGradient id="neonLine" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#2dd4bf"></stop>
+            <stop offset="50%" stop-color="${color}"></stop>
+            <stop offset="100%" stop-color="#ffd780"></stop>
+          </linearGradient>
+          <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+            <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+          </filter>
         </defs>
+        <rect x="${padL}" y="${padT}" width="${innerW}" height="${innerH}" fill="rgba(3,10,18,.30)" stroke="rgba(88,166,255,.10)"></rect>
+        ${vLines}
         ${yTicks}
-        <path d="${area}" fill="url(#histFill)"></path>
-        <path d="${d}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"></path>
+        <path d="${area}" fill="url(#neonFill)"></path>
+        <path d="${d}" fill="none" stroke="rgba(45,212,191,.20)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="${d}" fill="none" stroke="url(#neonLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)"></path>
         ${circles}
         ${labels}
-        <text x="${w-padR}" y="${padT+16}" text-anchor="end" fill="#ffd780" font-size="12" font-weight="900">Latest ${last.value}/100</text>
+        <text x="${w-padR}" y="${padT+16}" text-anchor="end" fill="#ffd780" font-size="12" font-weight="950">LATEST ${last.value}/100</text>
+        <text x="${padL}" y="${padT-10}" text-anchor="start" fill="#2dd4bf" font-size="10" font-weight="900" letter-spacing="2">SENTIMENT SIGNAL</text>
       `;
     }
 
