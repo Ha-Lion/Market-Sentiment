@@ -3,481 +3,1100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Public Sentiment Dash — Market Charts</title>
+
+  <title>Crypto Sentiment Today — Public Sentiment Dash</title>
+  <meta name="description" content="Top crypto sentiment today across Bitcoin, Ethereum, Solana, XRP, BNB, Cardano, Dogecoin, crypto ETFs, regulation, and broader digital asset headlines.">
   <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
 
   <style>
-    :root{
-      --bg:#070b12;
-      --card:#0d131d;
-      --card2:#111927;
-      --line:rgba(148,163,184,.22);
-      --text:#f3f7ff;
-      --muted:#94a3b8;
-      --gold:#d29922;
-      --gold2:#f4d17d;
-    }
-
-    body{
-      margin:0;
-      background:
-        radial-gradient(circle at 12% 0%,rgba(210,153,34,.10),transparent 28rem),
-        radial-gradient(circle at 92% 12%,rgba(88,166,255,.07),transparent 30rem),
-        var(--bg);
-      color:var(--text);
-    }
-
-    .charts-wrap{
-      max-width:1880px;
+    .crypto-page{
+      max-width:1480px;
       margin:0 auto;
-      padding:10px;
+      padding:26px;
     }
 
-    .charts-hero{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:14px;
-      padding:10px 14px;
-      margin-bottom:8px;
+    .crypto-hero{
+      position:relative;
+      overflow:hidden;
+      padding:24px;
+      margin-bottom:16px;
       border:1px solid var(--line);
-      border-radius:17px;
-      background:linear-gradient(180deg,rgba(16,24,36,.92),rgba(9,14,22,.92));
-      box-shadow:0 14px 34px rgba(0,0,0,.24);
+      border-radius:24px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 18rem),
+        radial-gradient(circle at bottom left,rgba(88,166,255,.12),transparent 22rem),
+        linear-gradient(180deg,rgba(17,24,33,.92),rgba(8,13,21,.96));
+      box-shadow:0 22px 60px rgba(0,0,0,.26);
     }
 
-    .charts-hero h1{
-      margin:0 0 4px;
-      font-size:clamp(28px,2.4vw,40px);
+    .crypto-hero-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:18px;
+      align-items:end;
+    }
+
+    .crypto-hero h1{
+      margin:0 0 9px;
+      font-size:clamp(36px,3.6vw,56px);
       line-height:1;
-      letter-spacing:-.03em;
-      font-weight:800;
-    }
-
-    .charts-hero p{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.35;
-      max-width:900px;
-    }
-
-    .provider-pill{
-      color:#f4d17d;
-      border:1px solid rgba(210,153,34,.35);
-      background:rgba(210,153,34,.10);
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:11px;
-      font-weight:700;
-      white-space:nowrap;
-    }
-
-    .charts-layout{
-      display:grid;
-      grid-template-columns:190px minmax(0,1fr);
-      gap:8px;
-      align-items:stretch;
-    }
-
-    .charts-panel{
-      border:1px solid var(--line);
-      border-radius:17px;
-      background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(9,14,22,.96));
-      padding:9px;
-      box-shadow:0 14px 34px rgba(0,0,0,.20);
-      max-height:calc(100vh - 86px);
-      overflow:auto;
-    }
-
-    .panel-label{
-      display:block;
-      color:var(--muted);
-      font-size:10px;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      margin:4px 0 6px;
-    }
-
-    .charts-select{
-      width:100%;
-      background:#121a26;
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:10px;
-      padding:7px 8px;
-      outline:none;
-      font-size:11px;
-      font-weight:500;
-      margin-bottom:9px;
-    }
-
-    .group-title{
-      grid-column:1/-1;
-      margin:7px 0 2px;
-      color:var(--muted);
-      font-size:9px;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      opacity:.9;
-    }
-
-    .quick-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:5px;
-    }
-
-    .quick-btn{
-      appearance:none;
-      border:1px solid var(--line);
-      background:#111927;
-      color:#dbe7f8;
-      border-radius:9px;
-      padding:5px 4px;
-      min-height:25px;
-      font-size:10px;
-      line-height:1.05;
-      font-weight:400;
-      cursor:pointer;
-      transition:.14s ease;
-      text-align:center;
-    }
-
-    .quick-btn:hover{
-      transform:translateY(-1px);
-      border-color:rgba(210,153,34,.55);
-      background:rgba(210,153,34,.10);
+      letter-spacing:-.035em;
       color:#fff;
     }
 
-    .quick-btn.active{
-      border-color:rgba(210,153,34,.78);
-      background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(210,153,34,.08));
-      color:#fff3c8;
+    .crypto-hero p{
+      max-width:980px;
+      margin:0;
+      color:var(--soft);
+      font-size:15px;
+      line-height:1.5;
     }
 
-    .provider-copy{
-      margin-top:10px;
-      padding-top:9px;
-      border-top:1px solid rgba(148,163,184,.16);
+    .crypto-live-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      width:max-content;
+      max-width:100%;
+      padding:8px 12px;
+      margin-bottom:12px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.38);
+      color:#ffd780;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .crypto-updated{
+      min-width:230px;
+      padding:13px 15px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:rgba(8,13,21,.62);
       color:var(--muted);
-      font-size:10px;
-      line-height:1.35;
+      font-size:12px;
+      line-height:1.5;
     }
 
-    .chart-card{
+    .crypto-updated b{
+      display:block;
+      color:#fff;
+      font-size:20px;
+      line-height:1;
+      margin-bottom:5px;
+    }
+
+    .crypto-top-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:13px;
+      margin-bottom:18px;
+    }
+
+    .crypto-card{
+      position:relative;
       overflow:hidden;
-      min-height:calc(100vh - 92px);
+      min-height:238px;
       border:1px solid var(--line);
-      border-radius:17px;
-      background:linear-gradient(180deg,rgba(16,24,36,.96),rgba(7,11,18,.98));
-      box-shadow:0 14px 38px rgba(0,0,0,.24);
+      border-radius:20px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.15),transparent 10rem),
+        linear-gradient(180deg,#111927,#0c121c);
+      box-shadow:0 18px 42px rgba(0,0,0,.24);
+      padding:15px;
     }
 
-    .chart-header{
+    .crypto-card:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      border-radius:20px;
+      padding:1px;
+      background:linear-gradient(135deg,rgba(210,153,34,.32),transparent 40%,rgba(88,166,255,.18));
+      pointer-events:none;
+      opacity:.30;
+      mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+    }
+
+    .crypto-card-top{
+      position:relative;
+      z-index:1;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .crypto-rank{
+      width:28px;
+      height:28px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:rgba(210,153,34,.16);
+      color:#ffd780;
+      font-weight:900;
+      font-size:12px;
+      border:1px solid rgba(210,153,34,.28);
+    }
+
+    .crypto-name{
+      color:#fff;
+      font-size:15px;
+      line-height:1.25;
+      font-weight:900;
+    }
+
+    .crypto-symbol{
+      margin-top:2px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .sentiment-pill{
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      padding:5px 8px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:900;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .crypto-score-wrap{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:88px 1fr;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+
+    .crypto-gauge{
+      --score:50;
+      --accent:#58a6ff;
+      width:88px;
+      height:88px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
+      box-shadow:0 0 30px rgba(210,153,34,.10);
+    }
+
+    .crypto-gauge-inner{
+      width:62px;
+      height:62px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.06);
+      text-align:center;
+    }
+
+    .crypto-score{
+      color:#fff;
+      font-size:23px;
+      line-height:1;
+      font-weight:950;
+    }
+
+    .crypto-score-label{
+      color:var(--muted);
+      font-size:9px;
+      font-weight:800;
+      margin-top:2px;
+    }
+
+    .crypto-metrics{
+      display:grid;
+      gap:6px;
+    }
+
+    .crypto-line{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      color:var(--muted);
+      font-size:11px;
+      border-bottom:1px solid rgba(255,255,255,.05);
+      padding-bottom:5px;
+    }
+
+    .crypto-line b{
+      color:#fff;
+      font-weight:800;
+      text-align:right;
+    }
+
+    .history-btn{
+      position:relative;
+      z-index:1;
+      width:100%;
+      border:1px solid rgba(210,153,34,.38);
+      border-radius:12px;
+      padding:8px 10px;
+      background:linear-gradient(180deg,rgba(210,153,34,.18),rgba(17,24,33,.92));
+      color:#ffd780;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+
+    .history-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(210,153,34,.70);
+      background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(17,24,33,.96));
+    }
+
+    .crypto-panels{
+      display:grid;
+      grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);
+      gap:16px;
+    }
+
+    .crypto-panel{
+      padding:20px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:rgba(13,17,23,.82);
+      box-shadow:0 18px 46px rgba(0,0,0,.22);
+    }
+
+    .crypto-panel h2{
+      margin:0 0 8px;
+      color:#fff;
+      font-size:22px;
+      letter-spacing:-.015em;
+    }
+
+    .crypto-panel p{
+      margin:0 0 14px;
+      color:var(--muted);
+      line-height:1.5;
+      font-size:13px;
+    }
+
+    .headline-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .headline-row{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:15px;
+      background:linear-gradient(180deg,rgba(17,24,33,.78),rgba(8,13,21,.90));
+    }
+
+    .headline-title{
+      color:#fff;
+      font-size:13px;
+      line-height:1.35;
+      font-weight:800;
+    }
+
+    .headline-meta{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .headline-open{
+      color:#ffd780;
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .method-list{
+      display:grid;
+      gap:9px;
+      color:var(--soft);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .method-list div{
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:14px;
+      background:rgba(17,24,33,.62);
+    }
+
+    .history-layer{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(0,0,0,.70);
+      backdrop-filter:blur(7px);
+      z-index:1800;
+    }
+
+    .history-layer.open{
+      display:flex;
+    }
+
+    .history-card{
+      width:min(1180px,96vw);
+      height:min(760px,90vh);
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:24px;
+      background:linear-gradient(180deg,rgba(16,24,36,.98),rgba(7,11,18,.98));
+      box-shadow:0 30px 100px rgba(0,0,0,.60);
+    }
+
+    .history-head{
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:8px;
-      padding:4px 9px 3px;
-      border-bottom:1px solid rgba(148,163,184,.14);
-      min-height:28px;
+      gap:14px;
+      min-height:48px;
+      padding:10px 14px;
+      border-bottom:1px solid rgba(148,163,184,.16);
     }
 
-    .chart-title-row{
+    .history-title-row{
       display:flex;
       align-items:baseline;
-      gap:7px;
-      min-width:0;
+      gap:10px;
       flex-wrap:wrap;
+      min-width:0;
     }
 
-    .chart-title{
+    .history-title{
       margin:0;
-      font-size:13.5px;
+      color:#fff;
+      font-size:18px;
       line-height:1;
-      font-weight:650;
+      font-weight:900;
       white-space:nowrap;
     }
 
-    .chart-subtitle{
+    .history-subtitle{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .history-close{
+      width:32px;
+      height:32px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(148,163,184,.26);
+      border-radius:10px;
+      background:rgba(13,19,29,.86);
+      color:#fff;
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+    }
+
+    .history-close:hover{
+      border-color:rgba(210,153,34,.55);
+      background:rgba(210,153,34,.12);
+    }
+
+    .history-body{
+      height:calc(100% - 49px);
+      padding:16px;
+      overflow:auto;
+    }
+
+    .history-controls{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .history-period{
+      border:1px solid rgba(255,255,255,.11);
+      border-radius:999px;
+      padding:7px 10px;
+      background:rgba(17,24,33,.80);
+      color:var(--soft);
+      font-family:inherit;
+      font-size:11px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .history-period.active,
+    .history-period:hover{
+      color:#ffd780;
+      border-color:rgba(210,153,34,.45);
+      background:rgba(210,153,34,.13);
+    }
+
+    .history-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 250px;
+      gap:14px;
+      align-items:stretch;
+    }
+
+    .history-chart-wrap{
+      min-height:420px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.10),transparent 14rem),
+        linear-gradient(180deg,rgba(8,13,21,.88),rgba(6,10,16,.98));
+      padding:10px;
+    }
+
+    #historyChart{
+      width:100%;
+      height:420px;
+      display:block;
+    }
+
+    .history-stats{
+      display:grid;
+      gap:10px;
+    }
+
+    .history-stat{
+      padding:12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:15px;
+      background:rgba(17,24,33,.74);
+    }
+
+    .history-stat span{
+      display:block;
       color:var(--muted);
       font-size:10px;
-      line-height:1;
-      font-weight:400;
-      white-space:nowrap;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      margin-bottom:5px;
     }
 
-    .chart-chip{
-      color:#cdd9ec;
-      border:1px solid rgba(148,163,184,.22);
-      background:rgba(13,19,29,.85);
-      padding:3px 7px;
-      border-radius:999px;
-      font-size:9.5px;
-      font-weight:400;
-      white-space:nowrap;
+    .history-stat b{
+      display:block;
+      color:#fff;
+      font-size:20px;
+      line-height:1.05;
     }
 
-    .tv-shell{
-      height:calc(100vh - 150px);
-      min-height:720px;
-      padding:8px;
+    .empty-note{
+      padding:14px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:rgba(17,24,33,.70);
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
     }
 
-    .tradingview-widget-container,
-    .tradingview-widget-container__widget{
-      width:100%;
-      height:100%;
-      min-height:720px;
+    @media(max-width:1240px){
+      .crypto-top-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .crypto-panels{grid-template-columns:1fr}
     }
 
-    @media(max-width:1050px){
-      .charts-layout{
-        grid-template-columns:1fr;
-      }
-      .charts-panel{
-        max-height:none;
-      }
-      .quick-grid{
-        grid-template-columns:repeat(4,1fr);
-      }
-      .tv-shell{
-        height:650px;
-      }
-    }
-
-    @media(max-width:700px){
-      .charts-wrap{
-        padding:8px;
-      }
-      .charts-hero{
-        display:block;
-      }
-      .provider-pill{
-        display:inline-flex;
-        margin-top:8px;
-      }
-      .quick-grid{
-        grid-template-columns:repeat(2,1fr);
-      }
-      .tv-shell{
-        height:560px;
-        min-height:560px;
-      }
-      .tradingview-widget-container,
-      .tradingview-widget-container__widget{
-        min-height:560px;
-      }
+    @media(max-width:760px){
+      .crypto-page{padding:14px}
+      .crypto-hero-grid{grid-template-columns:1fr}
+      .crypto-top-grid{grid-template-columns:1fr}
+      .crypto-score-wrap{grid-template-columns:82px 1fr}
+      .history-grid{grid-template-columns:1fr}
+      .history-card{height:92vh}
     }
   </style>
 </head>
 
 <body>
-  <main class="charts-wrap">
-    <section class="charts-hero">
-      <div>
-        <h1>Market Charts</h1>
-        <p>Embedded market charts for quick technical context beside Public Sentiment Dash research.</p>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
       </div>
-      <div class="provider-pill">Charts by TradingView</div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">Interactive Dashboard</a>
+      <a href="sentiment-history.html">Historical Sentiment</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="market-sentiment.html" class="active">Guides</a>
+      <a href="advertise.html">Business Opportunities</a>
+      <a href="contact.html">Get in Touch</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main class="crypto-page">
+    <section class="crypto-hero">
+      <div class="crypto-hero-grid">
+        <div>
+          <div class="crypto-live-pill">Crypto Sentiment Today</div>
+          <h1>Top Crypto Sentiment</h1>
+          <p>Track current public sentiment across major crypto assets and digital-asset themes using the same Public Sentiment Dash headline data and saved instrument history.</p>
+        </div>
+        <div class="crypto-updated">
+          <b id="overallScore">--</b>
+          <span id="updatedText">Loading latest crypto sentiment...</span>
+        </div>
+      </div>
     </section>
 
-    <section class="charts-layout">
-      <aside class="charts-panel">
-        <div id="quickGrid" class="quick-grid"></div>
+    <section class="crypto-top-grid" id="cryptoTopGrid"></section>
 
-        <div class="provider-copy">
-          Chart data is displayed through TradingView’s embedded widget. Attribution remains visible.
+    <section class="crypto-panels">
+      <div class="crypto-panel">
+        <h2>Latest Crypto Headlines</h2>
+        <p id="headlineStatus">Loading crypto headlines...</p>
+        <div class="headline-list" id="headlineList"></div>
+      </div>
+
+      <div class="crypto-panel">
+        <h2>How This Page Reads Data</h2>
+        <p>This page is built to test the crypto category page before publishing it as an official public page.</p>
+        <div class="method-list">
+          <div><b>Current sentiment:</b> uses saved instrument_history.json where available, then dashboard_data.json headline fallback for extra crypto themes.</div>
+          <div><b>History:</b> daily, weekly, and monthly views read saved instrument_history.json records.</div>
+          <div><b>PSI rule:</b> user votes and technical direction are not blended into PSI.</div>
+          <div><b>Publishing:</b> after approval, this can become crypto.html and be added to sitemap/menu later.</div>
         </div>
-      </aside>
+      </div>
+    </section>
 
-      <section class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title-row">
-            <h2 id="chartTitle" class="chart-title">S&P 500</h2>
-            <div id="chartSubtitle" class="chart-subtitle">AMEX:SPY · Daily</div>
+    <div id="historyLayer" class="history-layer" role="dialog" aria-modal="true" aria-label="Crypto history" onclick="if(event.target===this) closeHistory();">
+      <section class="history-card">
+        <div class="history-head">
+          <div class="history-title-row">
+            <h2 id="historyTitle" class="history-title">Crypto History</h2>
+            <div id="historySubtitle" class="history-subtitle">Daily</div>
           </div>
-          <div class="chart-chip">TradingView</div>
+          <button class="history-close" type="button" aria-label="Close history" onclick="closeHistory()">×</button>
         </div>
-
-        <div id="tvShell" class="tv-shell"></div>
+        <div class="history-body">
+          <div class="history-controls">
+            <button class="history-period active" type="button" data-period="daily" onclick="setHistoryPeriod('daily')">Daily</button>
+            <button class="history-period" type="button" data-period="weekly" onclick="setHistoryPeriod('weekly')">Weekly</button>
+            <button class="history-period" type="button" data-period="monthly" onclick="setHistoryPeriod('monthly')">Monthly</button>
+          </div>
+          <div class="history-grid">
+            <div class="history-chart-wrap">
+              <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="history-stats" id="historyStats"></div>
+          </div>
+        </div>
       </section>
-    </section>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html" class="active">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="about.html">About</a>
+      </div>
+      <div class="legal"><b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.</div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
   </main>
 
   <script>
-    const GROUPS = [
-      {
-        name: "Index ETFs",
-        items: [
-          { label:"S&P 500", short:"S&P", symbol:"AMEX:SPY" },
-          { label:"Nasdaq 100", short:"Nasdaq", symbol:"NASDAQ:QQQ" },
-          { label:"Dow Jones", short:"Dow", symbol:"AMEX:DIA" },
-          { label:"Russell 2000", short:"Russell", symbol:"AMEX:IWM" },
-          { label:"VIX", short:"VIX", symbol:"AMEX:VXX" },
-          { label:"US Dollar Index", short:"DXY", symbol:"TVC:DXY" },
-          { label:"20+ Year Treasury Bonds", short:"TLT", symbol:"NASDAQ:TLT" },
-          { label:"Emerging Markets", short:"EEM", symbol:"AMEX:EEM" }
-        ]
-      },
-      {
-        name: "Forex",
-        items: [
-          { label:"EUR/USD", short:"EUR/USD", symbol:"OANDA:EURUSD" },
-          { label:"GBP/USD", short:"GBP/USD", symbol:"OANDA:GBPUSD" },
-          { label:"USD/JPY", short:"USD/JPY", symbol:"OANDA:USDJPY" },
-          { label:"USD/CHF", short:"USD/CHF", symbol:"OANDA:USDCHF" },
-          { label:"USD/CAD", short:"USD/CAD", symbol:"OANDA:USDCAD" },
-          { label:"AUD/USD", short:"AUD/USD", symbol:"OANDA:AUDUSD" },
-          { label:"NZD/USD", short:"NZD/USD", symbol:"OANDA:NZDUSD" },
-          { label:"EUR/JPY", short:"EUR/JPY", symbol:"OANDA:EURJPY" }
-        ]
-      },
-      {
-        name: "Commodities",
-        items: [
-          { label:"Gold", short:"Gold", symbol:"AMEX:GLD" },
-          { label:"Silver", short:"Silver", symbol:"AMEX:SLV" },
-          { label:"Crude Oil WTI", short:"WTI", symbol:"AMEX:USO" },
-          { label:"Natural Gas", short:"NatGas", symbol:"AMEX:UNG" }
-        ]
-      },
-      {
-        name: "Stocks",
-        items: [
-          { label:"Nvidia", short:"NVDA", symbol:"NASDAQ:NVDA" },
-          { label:"Tesla", short:"TSLA", symbol:"NASDAQ:TSLA" },
-          { label:"Apple", short:"AAPL", symbol:"NASDAQ:AAPL" },
-          { label:"Microsoft", short:"MSFT", symbol:"NASDAQ:MSFT" },
-          { label:"Amazon", short:"AMZN", symbol:"NASDAQ:AMZN" },
-          { label:"Meta", short:"META", symbol:"NASDAQ:META" }
-        ]
-      },
-      {
-        name: "Crypto",
-        items: [
-          { label:"Bitcoin", short:"BTC", symbol:"BINANCE:BTCUSDT" },
-          { label:"Ethereum", short:"ETH", symbol:"BINANCE:ETHUSDT" },
-          { label:"Solana", short:"SOL", symbol:"BINANCE:SOLUSDT" },
-          { label:"XRP", short:"XRP", symbol:"BINANCE:XRPUSDT" },
-          { label:"BNB", short:"BNB", symbol:"BINANCE:BNBUSDT" },
-          { label:"Dogecoin", short:"DOGE", symbol:"BINANCE:DOGEUSDT" },
-          { label:"Cardano", short:"ADA", symbol:"BINANCE:ADAUSDT" },
-          { label:"Chainlink", short:"LINK", symbol:"BINANCE:LINKUSDT" },
-          { label:"Litecoin", short:"LTC", symbol:"BINANCE:LTCUSDT" },
-          { label:"Avalanche", short:"AVAX", symbol:"BINANCE:AVAXUSDT" },
-          { label:"Polkadot", short:"DOT", symbol:"BINANCE:DOTUSDT" },
-          { label:"Bitcoin Cash", short:"BCH", symbol:"BINANCE:BCHUSDT" }
-        ]
-      }
+    const CRYPTO_ITEMS = [
+      {name:"Bitcoin / BTC", symbol:"BTC", aliases:["bitcoin","btc"], official:true},
+      {name:"Ethereum / ETH", symbol:"ETH", aliases:["ethereum","eth"], official:true},
+      {name:"Solana / SOL", symbol:"SOL", aliases:["solana","sol"], official:true},
+      {name:"XRP", symbol:"XRP", aliases:["xrp","ripple"], official:true},
+      {name:"BNB", symbol:"BNB", aliases:["bnb","binance coin"], official:true},
+      {name:"Cardano / ADA", symbol:"ADA", aliases:["cardano","ada"], official:true},
+      {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin","doge"], official:true},
+      {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins"], official:true},
+      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:false},
+      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization"], official:false}
     ];
 
-    const CHARTS = GROUPS.flatMap(group => group.items);
+    let dashboardData = null;
+    let historyData = null;
+    let currentRows = [];
+    let activeHistoryName = "Bitcoin / BTC";
+    let activeHistoryPeriod = "daily";
 
-    const INTERVAL_LABELS = {
-      "15":"15m",
-      "30":"30m",
-      "60":"1H",
-      "240":"4H",
-      "D":"Daily",
-      "W":"Weekly",
-      "M":"Monthly"
-    };
-
-    const quickGrid = document.getElementById("quickGrid");
-    const chartTitle = document.getElementById("chartTitle");
-    const chartSubtitle = document.getElementById("chartSubtitle");
-    const tvShell = document.getElementById("tvShell");
-
-    let currentSymbol = "AMEX:SPY";
-
-    function findChart(symbol){
-      return CHARTS.find(item => item.symbol === symbol) || CHARTS[0];
+    function esc(v){
+      return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
     }
 
-    function initControls(){
-      GROUPS.forEach(group => {
-        const groupTitle = document.createElement("div");
-        groupTitle.className = "group-title";
-        groupTitle.textContent = group.name;
-        quickGrid.appendChild(groupTitle);
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
 
-        group.items.forEach(item => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "quick-btn" + (item.symbol === currentSymbol ? " active" : "");
-          btn.textContent = item.short;
-          btn.dataset.symbol = item.symbol;
-          btn.addEventListener("click", () => selectChart(item.symbol));
-          quickGrid.appendChild(btn);
-        });
+    function normalizeText(v){ return String(v || "").toLowerCase(); }
+
+    function labelForScore(score){
+      if(score == null) return "No PSI";
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+      return "Strong Bearish";
+    }
+
+    function colorForScore(score){
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#14b8a6";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f97316";
+      return "#ef4444";
+    }
+
+    function pillStyle(score){
+      const c = colorForScore(score);
+      return `color:#fff;background:${c}26;border-color:${c}70;`;
+    }
+
+    function headlineText(h){
+      return normalizeText([
+        h.title,
+        h.description,
+        h.source,
+        ...(Array.isArray(h.instruments) ? h.instruments : []),
+        ...(Array.isArray(h.markets) ? h.markets : [])
+      ].join(" "));
+    }
+
+    function itemMatchesHeadline(item, h){
+      const text = headlineText(h);
+      const instruments = Array.isArray(h.instruments) ? h.instruments.map(x => normalizeText(x)) : [];
+      if(instruments.some(x => x === normalizeText(item.name))) return true;
+      return item.aliases.some(alias => text.includes(normalizeText(alias)));
+    }
+
+    function currentLatestRecord(){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      return records[records.length - 1] || null;
+    }
+
+    function getOfficialCurrent(item){
+      const latest = currentLatestRecord();
+      const row = latest?.instruments?.[item.name];
+      if(!row) return null;
+      return {
+        name:item.name,
+        symbol:item.symbol,
+        score:Number(row.psi),
+        label:row.sentiment_label || labelForScore(Number(row.psi)),
+        headlineCount:Number(row.headline_count || 0),
+        bullish:Number(row.bullish_count || 0),
+        bearish:Number(row.bearish_count || 0),
+        neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
+        source:"official",
+        topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
+      };
+    }
+
+    function getDerivedCurrent(item){
+      const headlines = getCryptoHeadlines().filter(h => itemMatchesHeadline(item, h));
+      if(!headlines.length){
+        return {
+          name:item.name,
+          symbol:item.symbol,
+          score:null,
+          label:"No PSI",
+          headlineCount:0,
+          bullish:0,
+          bearish:0,
+          neutral:0,
+          source:"derived",
+          topHeadlines:[]
+        };
+      }
+
+      let total = 0;
+      let bullish = 0;
+      let bearish = 0;
+      let neutral = 0;
+
+      headlines.forEach(h => {
+        const s = Number(h.weighted_score ?? h.score ?? 0);
+        total += Number.isFinite(s) ? s : 0;
+        const vote = normalizeText(h.vote);
+        if(vote.includes("bull")) bullish++;
+        else if(vote.includes("bear")) bearish++;
+        else neutral++;
+      });
+
+      const avg = total / headlines.length;
+      const score = Math.round(clamp(50 + avg * 6, 0, 100));
+
+      return {
+        name:item.name,
+        symbol:item.symbol,
+        score,
+        label:labelForScore(score),
+        headlineCount:headlines.length,
+        bullish,
+        bearish,
+        neutral,
+        source:"derived",
+        topHeadlines:headlines.slice(0,5)
+      };
+    }
+
+    function getCryptoHeadlines(){
+      const all = [
+        ...(Array.isArray(dashboardData?.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : []),
+        ...(Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [])
+      ];
+
+      const seen = new Set();
+      const cryptoWords = ["crypto","cryptocurrency","bitcoin","btc","ethereum","eth","solana","xrp","bnb","cardano","dogecoin","doge","altcoin","stablecoin","blockchain","token","etf flows","spot etf"];
+
+      return all.filter(h => {
+        const key = h.link || `${h.source}|${h.title}`;
+        if(seen.has(key)) return false;
+        const text = headlineText(h);
+        const isCrypto = cryptoWords.some(w => text.includes(w));
+        if(!isCrypto) return false;
+        seen.add(key);
+        return true;
       });
     }
 
-    function selectChart(symbol){
-      currentSymbol = symbol;
-
-      document.querySelectorAll(".quick-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.symbol === symbol);
-      });
-
-      renderChart();
+    function buildRows(){
+      const rows = CRYPTO_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item));
+      return rows.sort((a,b) => {
+        const ca = Number(a.headlineCount || 0);
+        const cb = Number(b.headlineCount || 0);
+        if(cb !== ca) return cb - ca;
+        return Number(b.score ?? -1) - Number(a.score ?? -1);
+      }).slice(0,10);
     }
 
-    function renderChart(){
-      const item = findChart(currentSymbol);
-      const interval = "D";
+    function renderTopCards(){
+      const grid = document.getElementById("cryptoTopGrid");
+      if(!grid) return;
 
-      chartTitle.textContent = item.label;
-      chartSubtitle.textContent = item.symbol + " · " + (INTERVAL_LABELS[interval] || interval);
+      if(!currentRows.length){
+        grid.innerHTML = `<div class="empty-note">No crypto sentiment data loaded yet.</div>`;
+        return;
+      }
 
-      tvShell.innerHTML = "";
+      grid.innerHTML = currentRows.map((row, idx) => {
+        const score = row.score == null ? 0 : row.score;
+        const color = colorForScore(row.score);
+        const sourceText = row.source === "official" ? "Saved PSI" : "Headline fallback";
+        return `
+          <article class="crypto-card">
+            <div class="crypto-card-top">
+              <div style="display:flex;gap:9px;align-items:flex-start;min-width:0;">
+                <div class="crypto-rank">${idx + 1}</div>
+                <div style="min-width:0;">
+                  <div class="crypto-name">${esc(row.name)}</div>
+                  <div class="crypto-symbol">${esc(row.symbol)} • ${sourceText}</div>
+                </div>
+              </div>
+              <span class="sentiment-pill" style="${pillStyle(row.score)}">${esc(row.label)}</span>
+            </div>
 
-      const container = document.createElement("div");
-      container.className = "tradingview-widget-container";
+            <div class="crypto-score-wrap">
+              <div class="crypto-gauge" style="--score:${score};--accent:${color};">
+                <div class="crypto-gauge-inner">
+                  <div>
+                    <div class="crypto-score">${row.score == null ? "--" : row.score}</div>
+                    <div class="crypto-score-label">PSI</div>
+                  </div>
+                </div>
+              </div>
 
-      const widget = document.createElement("div");
-      widget.className = "tradingview-widget-container__widget";
+              <div class="crypto-metrics">
+                <div class="crypto-line"><span>Headlines</span><b>${row.headlineCount}</b></div>
+                <div class="crypto-line"><span>Bullish</span><b>${row.bullish}</b></div>
+                <div class="crypto-line"><span>Bearish</span><b>${row.bearish}</b></div>
+                <div class="crypto-line"><span>Neutral/Mixed</span><b>${row.neutral}</b></div>
+              </div>
+            </div>
 
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-      script.async = true;
-      script.textContent = JSON.stringify({
-        autosize: true,
-        symbol: item.symbol,
-        interval: interval,
-        timezone: "Etc/UTC",
-        theme: "dark",
-        style: "1",
-        locale: "en",
-        allow_symbol_change: false,
-        calendar: false,
-        support_host: "https://www.tradingview.com",
-        hide_side_toolbar: true,
-        details: false,
-        hotlist: false,
-        withdateranges: true,
-        hide_legend: false,
-        save_image: false,
-        studies: [],
-        backgroundColor: "rgba(13, 19, 29, 1)",
-        gridColor: "rgba(148, 163, 184, 0.12)"
-      });
-
-      container.appendChild(widget);
-      container.appendChild(script);
-      tvShell.appendChild(container);
+            <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
+          </article>
+        `;
+      }).join("");
     }
 
-    initControls();
-    renderChart();
+    function renderHeadlines(){
+      const list = document.getElementById("headlineList");
+      const status = document.getElementById("headlineStatus");
+      const headlines = getCryptoHeadlines().slice(0,10);
+
+      if(status){
+        status.textContent = `${headlines.length} recent crypto headline(s) shown from dashboard_data.json.`;
+      }
+
+      if(!list) return;
+
+      if(!headlines.length){
+        list.innerHTML = `<div class="empty-note">No crypto headlines found in the latest data file.</div>`;
+        return;
+      }
+
+      list.innerHTML = headlines.map(h => `
+        <a class="headline-row" href="${esc(h.link || "#")}" target="_blank" rel="noopener">
+          <div>
+            <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
+            <div class="headline-meta">${esc(h.source || "Source")} • ${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+          </div>
+          <div class="headline-open">Open →</div>
+        </a>
+      `).join("");
+    }
+
+    function renderHero(){
+      const overall = currentRows.length
+        ? Math.round(currentRows.filter(r => r.score != null).reduce((a,r) => a + r.score, 0) / Math.max(1,currentRows.filter(r => r.score != null).length))
+        : null;
+
+      const overallEl = document.getElementById("overallScore");
+      const updatedEl = document.getElementById("updatedText");
+
+      if(overallEl) overallEl.textContent = overall == null ? "--" : `${overall}/100`;
+      if(updatedEl){
+        updatedEl.textContent = `${labelForScore(overall)} • Updated: ${dashboardData?.updated_ny || historyData?.updated_ny || "latest scan"}`;
+      }
+    }
+
+    function dailySeries(name){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      return records.map(r => {
+        const row = r.instruments?.[name];
+        if(!row || row.psi == null) return null;
+        return {
+          date:r.date,
+          label:r.date,
+          value:Number(row.psi),
+          count:Number(row.headline_count || 0),
+          sentiment:row.sentiment_label || labelForScore(Number(row.psi))
+        };
+      }).filter(Boolean);
+    }
+
+    function weekKey(dateText){
+      const d = new Date(dateText + "T00:00:00");
+      const oneJan = new Date(d.getFullYear(),0,1);
+      const week = Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
+      return `${d.getFullYear()} W${String(week).padStart(2,"0")}`;
+    }
+
+    function monthKey(dateText){
+      const d = new Date(dateText + "T00:00:00");
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    }
+
+    function aggregateSeries(series, mode){
+      if(mode === "daily") return series;
+      const map = new Map();
+      series.forEach(row => {
+        const key = mode === "weekly" ? weekKey(row.date) : monthKey(row.date);
+        if(!map.has(key)) map.set(key, {label:key, total:0, count:0, headlines:0});
+        const item = map.get(key);
+        item.total += Number(row.value || 0);
+        item.count += 1;
+        item.headlines += Number(row.count || 0);
+      });
+      return Array.from(map.values()).map(x => ({
+        label:x.label,
+        value:Math.round(x.total / Math.max(1,x.count)),
+        count:x.headlines,
+        sentiment:labelForScore(Math.round(x.total / Math.max(1,x.count)))
+      }));
+    }
+
+    function drawHistoryChart(series){
+      const svg = document.getElementById("historyChart");
+      if(!svg) return;
+
+      if(!series.length){
+        svg.innerHTML = `<text x="450" y="210" text-anchor="middle" fill="#8b949e" font-size="18" font-weight="800">No saved history yet</text>`;
+        return;
+      }
+
+      const w = 900;
+      const h = 420;
+      const padL = 54;
+      const padR = 24;
+      const padT = 24;
+      const padB = 48;
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+      const n = series.length;
+
+      const points = series.map((row, i) => {
+        const x = n === 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW;
+        const y = padT + (100 - clamp(row.value,0,100)) / 100 * innerH;
+        return {x,y,row};
+      });
+
+      const d = points.map((p,i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+      const area = `${d} L ${points[points.length-1].x.toFixed(1)} ${padT + innerH} L ${points[0].x.toFixed(1)} ${padT + innerH} Z`;
+      const last = series[series.length - 1];
+      const color = colorForScore(last.value);
+
+      const yTicks = [0,25,50,75,100].map(v => {
+        const y = padT + (100 - v) / 100 * innerH;
+        return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="rgba(255,255,255,.10)" stroke-dasharray="4 7"></line>
+                <text x="${padL-12}" y="${y+4}" text-anchor="end" fill="#8b949e" font-size="11" font-weight="700">${v}</text>`;
+      }).join("");
+
+      const labels = points.map((p,i) => {
+        if(n > 8 && i % Math.ceil(n/6) !== 0 && i !== n-1) return "";
+        return `<text x="${p.x}" y="${h-19}" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="700">${esc(p.row.label).slice(5)}</text>`;
+      }).join("");
+
+      const circles = points.map(p => `
+        <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1.2">
+          <title>${esc(p.row.label)}: ${p.row.value}/100 • ${esc(p.row.sentiment)}</title>
+        </circle>
+      `).join("");
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="histFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity=".28"></stop>
+            <stop offset="100%" stop-color="${color}" stop-opacity=".02"></stop>
+          </linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur><feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+        </defs>
+        ${yTicks}
+        <path d="${area}" fill="url(#histFill)"></path>
+        <path d="${d}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"></path>
+        ${circles}
+        ${labels}
+        <text x="${w-padR}" y="${padT+16}" text-anchor="end" fill="#ffd780" font-size="12" font-weight="900">Latest ${last.value}/100</text>
+      `;
+    }
+
+    function renderHistoryStats(series, name, mode){
+      const box = document.getElementById("historyStats");
+      if(!box) return;
+
+      if(!series.length){
+        box.innerHTML = `<div class="empty-note">No saved history exists yet for ${esc(name)}. This will fill in as the backend saves more records.</div>`;
+        return;
+      }
+
+      const latest = series[series.length - 1];
+      const avg = Math.round(series.reduce((a,x) => a + x.value, 0) / series.length);
+      const high = Math.max(...series.map(x => x.value));
+      const low = Math.min(...series.map(x => x.value));
+
+      box.innerHTML = `
+        <div class="history-stat"><span>Latest</span><b>${latest.value}/100</b></div>
+        <div class="history-stat"><span>Average</span><b>${avg}/100</b></div>
+        <div class="history-stat"><span>High</span><b>${high}/100</b></div>
+        <div class="history-stat"><span>Low</span><b>${low}/100</b></div>
+        <div class="history-stat"><span>Records</span><b>${series.length}</b></div>
+        <div class="history-stat"><span>View</span><b>${mode.charAt(0).toUpperCase()+mode.slice(1)}</b></div>
+      `;
+    }
+
+    function openHistory(name){
+      activeHistoryName = name;
+      activeHistoryPeriod = "daily";
+
+      const layer = document.getElementById("historyLayer");
+      if(layer) layer.classList.add("open");
+      document.body.style.overflow = "hidden";
+
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
+      renderHistory();
+    }
+
+    function closeHistory(){
+      const layer = document.getElementById("historyLayer");
+      if(layer) layer.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    function setHistoryPeriod(period){
+      activeHistoryPeriod = period;
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === period));
+      renderHistory();
+    }
+
+    function renderHistory(){
+      const title = document.getElementById("historyTitle");
+      const subtitle = document.getElementById("historySubtitle");
+
+      const base = dailySeries(activeHistoryName);
+      const series = aggregateSeries(base, activeHistoryPeriod);
+
+      if(title) title.textContent = activeHistoryName;
+      if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} • ${series.length} record(s)`;
+
+      drawHistoryChart(series);
+      renderHistoryStats(series, activeHistoryName, activeHistoryPeriod);
+    }
+
+    document.addEventListener("keydown", e => {
+      if(e.key === "Escape") closeHistory();
+    });
+
+    async function init(){
+      try{
+        const [dashResp, histResp] = await Promise.all([
+          fetch("dashboard_data.json", {cache:"no-store"}),
+          fetch("instrument_history.json", {cache:"no-store"})
+        ]);
+
+        dashboardData = await dashResp.json();
+        historyData = await histResp.json();
+
+        currentRows = buildRows();
+        renderHero();
+        renderTopCards();
+        renderHeadlines();
+      }catch(err){
+        document.getElementById("updatedText").textContent = "Data could not be loaded.";
+        document.getElementById("cryptoTopGrid").innerHTML = `<div class="empty-note">Crypto data could not be loaded. Confirm dashboard_data.json and instrument_history.json are available.</div>`;
+      }
+    }
+
+    window.openHistory = openHistory;
+    window.closeHistory = closeHistory;
+    window.setHistoryPeriod = setHistoryPeriod;
+
+    init();
   </script>
 </body>
 </html>
