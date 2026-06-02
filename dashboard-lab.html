@@ -700,19 +700,16 @@
       .history-card{height:92vh}
     }
   
-    .energy-card,
-    .crypto-card{
+    .energy-card{
       display:flex;
       flex-direction:column;
     }
 
-    .energy-card .history-btn,
-    .crypto-card .history-btn{
+    .energy-card .history-btn .history-btn{
       margin-top:auto;
     }
 
-    .energy-card .compare-control,
-    .crypto-card .compare-control{
+    .energy-card .compare-control .compare-control{
       margin-top:8px;
     }
 
@@ -812,7 +809,7 @@
   </main>
 
   <script>
-    const CRYPTO_ITEMS = [
+    const ENERGY_ITEMS = [
       {name:"General Energy", symbol:"Energy", aliases:["energy market","energy markets","energy sector","energy prices","energy demand","energy supply","power market","utilities"], official:false},
       {name:"Crude Oil", symbol:"Oil", aliases:["crude oil","oil price","oil prices","wti","west texas intermediate","brent","crude","oil market"], official:true},
       {name:"Natural Gas", symbol:"NatGas", aliases:["natural gas","nat gas","gas prices","lng","henry hub","gas market"], official:true},
@@ -828,7 +825,7 @@
     let dashboardData = null;
     let historyData = null;
     let currentRows = [];
-    let activeHistoryName = "Bitcoin / BTC";
+    let activeHistoryName = "Crude Oil";
     let activeHistoryPeriod = "daily";
     let selectedCompareNames = [];
     let activeCompareNames = [];
@@ -869,17 +866,101 @@
         h.title,
         h.description,
         h.source,
+        h.query,
         ...(Array.isArray(h.instruments) ? h.instruments : []),
         ...(Array.isArray(h.markets) ? h.markets : [])
       ].join(" "));
     }
 
+    const ENERGY_BACKEND_INSTRUMENTS = new Set([
+      "Crude Oil",
+      "Natural Gas",
+      "Energy Stocks",
+      "General Energy",
+      "OPEC / Supply",
+      "Oil Inventories / EIA",
+      "Brent Oil",
+      "WTI Oil",
+      "Gasoline",
+      "Heating Oil"
+    ].map(x => normalizeText(x)));
+
+    const ENERGY_STRONG_TERMS = [
+      "crude oil","oil price","oil prices","oil market","oil futures","wti","brent",
+      "natural gas","nat gas","lng","henry hub","opec","opec+","oil output",
+      "oil production","oil supply","supply cut","production cut","oil inventory",
+      "oil inventories","crude stockpiles","eia","gasoline","gasoline inventories",
+      "rbob","heating oil","distillate","distillates","diesel","fuel prices",
+      "energy stocks","oil stocks","gas stocks","exxon","chevron","shell"," bp "
+    ];
+
+    const ENERGY_SOFT_TERMS = [
+      "energy market","energy markets","energy sector","energy prices","energy demand","energy supply","power market","utilities","refinery","refineries","jet fuel"
+    ];
+
+    const NON_ENERGY_FOCUS_TERMS = [
+      "bitcoin"," btc","ethereum"," eth ","crypto","cryptocurrency","digital asset",
+      "solana"," xrp","dogecoin","cardano","bnb","coindesk","cointelegraph",
+      "decrypt","the block","cryptoslate"
+    ];
+
+    function headlineInstruments(h){
+      return Array.isArray(h.instruments) ? h.instruments.map(x => normalizeText(x)) : [];
+    }
+
+    function headlineMarkets(h){
+      return Array.isArray(h.markets) ? h.markets.map(x => normalizeText(x)) : [];
+    }
+
+    function titleDescriptionText(h){
+      return normalizeText([h.title, h.description].join(" "));
+    }
+
+    function hasTerm(text, terms){
+      return terms.some(term => text.includes(term));
+    }
+
+    function hasExactEnergyInstrument(h){
+      return headlineInstruments(h).some(x => ENERGY_BACKEND_INSTRUMENTS.has(x));
+    }
+
+    function hasCryptoOrNonEnergyFocus(h){
+      const text = headlineText(h);
+      const markets = headlineMarkets(h);
+      const instruments = headlineInstruments(h);
+
+      if(markets.includes("crypto")) return true;
+      if(instruments.some(x => ["bitcoin / btc","ethereum / eth","general crypto","solana / sol","xrp","bnb","cardano / ada","dogecoin / doge"].includes(x))) return true;
+      return hasTerm(text, NON_ENERGY_FOCUS_TERMS);
+    }
+
+    function isEnergyHeadline(h){
+      const fullText = headlineText(h);
+      const titleText = titleDescriptionText(h);
+      const markets = headlineMarkets(h);
+      const strongEnergy = hasTerm(titleText, ENERGY_STRONG_TERMS) || hasTerm(fullText, ENERGY_STRONG_TERMS);
+      const softEnergy = hasTerm(titleText, ENERGY_SOFT_TERMS);
+      const exactEnergy = hasExactEnergyInstrument(h);
+      const commoditiesContext = markets.includes("commodities") || markets.includes("bonds") || markets.includes("macro");
+
+      if(hasCryptoOrNonEnergyFocus(h)){
+        return false;
+      }
+
+      if(exactEnergy || strongEnergy) return true;
+      if(softEnergy && commoditiesContext) return true;
+
+      return false;
+    }
+
     function exactInstrumentMatch(item, h){
-      const instruments = Array.isArray(h.instruments) ? h.instruments.map(x => normalizeText(x)) : [];
+      if(!isEnergyHeadline(h)) return false;
+      const instruments = headlineInstruments(h);
       return instruments.some(x => x === normalizeText(item.name));
     }
 
     function itemMatchesHeadline(item, h){
+      if(!isEnergyHeadline(h)) return false;
       if(exactInstrumentMatch(item, h)) return true;
       const text = headlineText(h);
       return item.aliases.some(alias => text.includes(normalizeText(alias)));
@@ -977,19 +1058,32 @@
         ...(Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [])
       ];
 
-      return all.filter(h => {
-        const text = [
-          h.title, h.description, h.source, h.query,
-          ...(Array.isArray(h.markets) ? h.markets : []),
-          ...(Array.isArray(h.instruments) ? h.instruments : [])
-        ].join(" ").toLowerCase();
+      const seen = new Set();
+      const filtered = [];
 
-        return text.includes("energy") || text.includes("crude oil") || text.includes("oil") || text.includes("natural gas") || text.includes("nat gas") || text.includes("gasoline") || text.includes("brent") || text.includes("wti") || text.includes("opec") || text.includes("eia") || text.includes("lng") || text.includes("diesel") || text.includes("heating oil") || text.includes("fuel prices") || text.includes("energy stocks");
+      all.forEach(h => {
+        if(!isEnergyHeadline(h)) return;
+        const key = h.link || `${h.source || ""}|${h.title || ""}`;
+        if(key && seen.has(key)) return;
+        if(key) seen.add(key);
+        filtered.push(h);
       });
+
+      filtered.sort((a,b) => {
+        const aFresh = Number(a.freshness_weight || 0);
+        const bFresh = Number(b.freshness_weight || 0);
+        const aRel = Number(a.relevance_score || 0);
+        const bRel = Number(b.relevance_score || 0);
+        const aHigh = a.impact === "High" ? 1 : 0;
+        const bHigh = b.impact === "High" ? 1 : 0;
+        return (bFresh - aFresh) || (bRel - aRel) || (bHigh - aHigh);
+      });
+
+      return filtered;
     }
 
     function buildRows(){
-      return CRYPTO_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item)).slice(0,10);
+      return ENERGY_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item)).slice(0,10);
     }
 
     function renderTopCards(){
@@ -1004,7 +1098,7 @@
       grid.innerHTML = currentRows.map((row, idx) => {
         const score = row.score == null ? 0 : row.score;
         const color = colorForScore(row.score);
-        const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend tagged PSI" : "Headline fallback");
+        const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : "Headline PSI");
         return `
           <article class="energy-card">
             <div class="energy-card-top">
@@ -1112,7 +1206,7 @@
       const headlines = getEnergyHeadlines().slice(0,30);
 
       if(status){
-        status.textContent = `30 latest energy headline(s) shown from dashboard_data.json.`;
+        status.textContent = `30 latest strict energy headline(s) shown from dashboard_data.json.`;
       }
 
       if(!list) return;
@@ -1237,13 +1331,14 @@
         bullish:bullish,
         bearish:bearish,
         neutral:neutral,
-        sentiment:labelForScore(value)
+        sentiment:labelForScore(value),
+        source:"derived"
       };
     }
 
     function dailySeries(name){
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
-      const item = CRYPTO_ITEMS.find(x => x.name === name);
+      const item = ENERGY_ITEMS.find(x => x.name === name);
 
       return records.map(r => {
         const row = r.instruments?.[name];
