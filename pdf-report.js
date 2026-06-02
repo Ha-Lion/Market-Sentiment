@@ -26,6 +26,10 @@
     if(path.endsWith("/dashboard.html") || path.endsWith("dashboard.html")) return "Interactive Dashboard";
     if(path.endsWith("/sentiment-history.html") || path.endsWith("sentiment-history.html")) return "Historical Sentiment";
     if(path.endsWith("/news-articles.html") || path.endsWith("news-articles.html")) return "News & Articles";
+    if(path.endsWith("/crypto.html") || path.endsWith("crypto.html")) return "Crypto Sentiment";
+    if(path.endsWith("/energy.html") || path.endsWith("energy.html")) return "Energy Sentiment";
+    if(path.endsWith("/precious-metals.html") || path.endsWith("precious-metals.html")) return "Precious Metals Sentiment";
+    if(path.endsWith("/indices.html") || path.endsWith("indices.html")) return "Market Indices Sentiment";
 
     const active = qs(".nav a.active");
     if(active && safeText(active.textContent)) return safeText(active.textContent);
@@ -974,6 +978,154 @@
         height:100%!important;
         display:block!important;
       }
+
+
+      /* Category sentiment pages PDF support */
+      #psdPdfCaptureRoot .psd-category-page{
+        display:flex!important;
+        flex-direction:column!important;
+        gap:12px!important;
+      }
+      #psdPdfCaptureRoot .psd-category-page .header{
+        position:relative!important;
+        top:auto!important;
+        margin:0!important;
+        min-height:86px!important;
+      }
+      #psdPdfCaptureRoot .psd-category-page .header .nav{
+        gap:7px!important;
+      }
+      #psdPdfCaptureRoot .psd-category-page .header .nav a{
+        font-size:11.5px!important;
+        padding:5px 6px!important;
+      }
+      #psdPdfCaptureRoot .crypto-hero,
+      #psdPdfCaptureRoot .energy-hero,
+      #psdPdfCaptureRoot .metal-hero,
+      #psdPdfCaptureRoot .index-hero{
+        margin:0!important;
+        padding:16px 18px!important;
+        border-radius:20px!important;
+        flex:0 0 auto!important;
+      }
+      #psdPdfCaptureRoot .crypto-hero h1,
+      #psdPdfCaptureRoot .energy-hero h1,
+      #psdPdfCaptureRoot .metal-hero h1,
+      #psdPdfCaptureRoot .index-hero h1{
+        font-size:34px!important;
+        line-height:1.04!important;
+        margin:0 0 7px!important;
+      }
+      #psdPdfCaptureRoot .crypto-hero p,
+      #psdPdfCaptureRoot .energy-hero p,
+      #psdPdfCaptureRoot .metal-hero p,
+      #psdPdfCaptureRoot .index-hero p{
+        font-size:12.5px!important;
+        line-height:1.35!important;
+      }
+      #psdPdfCaptureRoot .crypto-grid,
+      #psdPdfCaptureRoot .energy-grid,
+      #psdPdfCaptureRoot .metal-grid,
+      #psdPdfCaptureRoot .index-grid{
+        display:grid!important;
+        grid-template-columns:repeat(5,minmax(0,1fr))!important;
+        gap:10px!important;
+        margin:0!important;
+        flex:1 1 auto!important;
+      }
+      #psdPdfCaptureRoot .crypto-card,
+      #psdPdfCaptureRoot .energy-card,
+      #psdPdfCaptureRoot .metal-card,
+      #psdPdfCaptureRoot .index-card{
+        min-height:0!important;
+        padding:12px!important;
+        border-radius:17px!important;
+      }
+      #psdPdfCaptureRoot .crypto-card-title h3,
+      #psdPdfCaptureRoot .energy-card-title h3,
+      #psdPdfCaptureRoot .metal-card-title h3,
+      #psdPdfCaptureRoot .index-card-title h3{
+        font-size:12.5px!important;
+        line-height:1.12!important;
+      }
+      #psdPdfCaptureRoot .crypto-gauge,
+      #psdPdfCaptureRoot .energy-gauge,
+      #psdPdfCaptureRoot .metal-gauge,
+      #psdPdfCaptureRoot .index-gauge{
+        width:74px!important;
+        height:74px!important;
+      }
+      #psdPdfCaptureRoot .crypto-gauge-inner,
+      #psdPdfCaptureRoot .energy-gauge-inner,
+      #psdPdfCaptureRoot .metal-gauge-inner,
+      #psdPdfCaptureRoot .index-gauge-inner{
+        width:52px!important;
+        height:52px!important;
+      }
+      #psdPdfCaptureRoot .crypto-score-wrap,
+      #psdPdfCaptureRoot .energy-score-wrap,
+      #psdPdfCaptureRoot .metal-score-wrap,
+      #psdPdfCaptureRoot .index-score-wrap{
+        grid-template-columns:74px minmax(0,1fr)!important;
+        gap:8px!important;
+      }
+      #psdPdfCaptureRoot .crypto-psi,
+      #psdPdfCaptureRoot .energy-psi,
+      #psdPdfCaptureRoot .metal-psi,
+      #psdPdfCaptureRoot .index-psi{
+        font-size:20px!important;
+      }
+      #psdPdfCaptureRoot .crypto-metric,
+      #psdPdfCaptureRoot .energy-metric,
+      #psdPdfCaptureRoot .metal-metric,
+      #psdPdfCaptureRoot .index-metric{
+        font-size:10px!important;
+        padding-bottom:4px!important;
+      }
+      #psdPdfCaptureRoot .history-btn,
+      #psdPdfCaptureRoot .compare-control{
+        display:none!important;
+      }
+      #psdPdfCaptureRoot .crypto-panel,
+      #psdPdfCaptureRoot .energy-news-panel,
+      #psdPdfCaptureRoot .metal-news-panel,
+      #psdPdfCaptureRoot .index-news-panel{
+        margin:0!important;
+        padding:16px!important;
+        border-radius:20px!important;
+        flex:1 1 auto!important;
+      }
+      #psdPdfCaptureRoot .headline-list{
+        gap:8px!important;
+      }
+      #psdPdfCaptureRoot .headline-row{
+        min-height:58px!important;
+        grid-template-columns:52px minmax(0,1fr)!important;
+        gap:10px!important;
+        padding:8px 10px!important;
+        border-radius:12px!important;
+      }
+      #psdPdfCaptureRoot .headline-logo,
+      #psdPdfCaptureRoot .headline-logo-fallback{
+        width:40px!important;
+        height:40px!important;
+        max-width:40px!important;
+        max-height:40px!important;
+      }
+      #psdPdfCaptureRoot .headline-source{
+        font-size:11px!important;
+        margin-bottom:2px!important;
+      }
+      #psdPdfCaptureRoot .headline-title{
+        font-size:11px!important;
+        line-height:1.22!important;
+      }
+      #psdPdfCaptureRoot .headline-meta,
+      #psdPdfCaptureRoot .headline-open{
+        font-size:9px!important;
+        margin-top:2px!important;
+      }
+
 
       /* News & Articles PDF support - built from locked v15 */
       #psdPdfCaptureRoot .psd-news-page{
@@ -1959,6 +2111,46 @@
 
     root.remove();
     pdf.save(fileName());
+  }
+
+
+  function isCategorySentimentPage(){
+    const path = window.location.pathname.toLowerCase();
+    return (
+      path.endsWith("/crypto.html") || path.endsWith("crypto.html") ||
+      path.endsWith("/energy.html") || path.endsWith("energy.html") ||
+      path.endsWith("/precious-metals.html") || path.endsWith("precious-metals.html") ||
+      path.endsWith("/indices.html") || path.endsWith("indices.html")
+    );
+  }
+
+  function cloneWithoutFloatingWidgets(root){
+    qsa("#psdVoteWidget,#psdPdfWidget,#psdAdvertiseBanner,.psd-ad-banner", root).forEach(el => el.remove());
+    qsa("script", root).forEach(el => el.remove());
+    return root;
+  }
+
+  function buildCategoryPdfPages(){
+    const header = qs(".header") ? qs(".header").cloneNode(true) : null;
+    const hero = qs(".crypto-hero,.energy-hero,.metal-hero,.index-hero") || qs("main section");
+    const cards = qs(".crypto-grid,.energy-grid,.metal-grid,.index-grid");
+    const news = qs(".crypto-panel,.energy-news-panel,.metal-news-panel,.index-news-panel");
+    const footer = qs(".footer") ? qs(".footer").cloneNode(true) : null;
+
+    const page1 = document.createElement("section");
+    page1.className = "psd-capture-page psd-category-page psd-category-page1";
+    page1.innerHTML = `<div class="psd-page-title"><strong>${safeText(pageName())}</strong><span>${PSD_SITE_LABEL} • ${new Date().toLocaleString()}</span></div>`;
+    if(header) page1.appendChild(header);
+    if(hero) page1.appendChild(hero.cloneNode(true));
+    if(cards) page1.appendChild(cards.cloneNode(true));
+
+    const page2 = document.createElement("section");
+    page2.className = "psd-capture-page psd-category-page psd-category-page2";
+    page2.innerHTML = `<div class="psd-page-title"><strong>${safeText(pageName())} — Headlines</strong><span>${PSD_SITE_LABEL}</span></div>`;
+    if(news) page2.appendChild(news.cloneNode(true));
+    if(footer) page2.appendChild(footer);
+
+    return [cloneWithoutFloatingWidgets(page1), cloneWithoutFloatingWidgets(page2)];
   }
 
   async function psdOpenPdfReport(){
