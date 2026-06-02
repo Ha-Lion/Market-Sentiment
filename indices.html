@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Market Indices Sentiment Today — Public Sentiment Dash</title>
+  <meta name="description" content="Track today’s market indices sentiment across S&P 500, Nasdaq, Dow, Russell 2000, VIX, DAX, FTSE 100, Nikkei 225, Hang Seng, and Euro Stoxx 50 using Public Sentiment Dash PSI data.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/indices.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+
+  <style>
+    :root{
+      --index-bg:#05070b;
+      --index-card:#101722;
+      --index-card2:#0b111a;
+      --index-line:rgba(148,163,184,.22);
+      --index-text:#f3f7ff;
+      --index-muted:#94a3b8;
+      --index-soft:#cbd5e1;
+      --index-gold:#d29922;
+      --index-gold2:#ffd780;
+      --index-cyan:#2dd4bf;
+      --index-blue:#58a6ff;
+      --index-red:#f85149;
+      --index-green:#3fb950;
+    }
+
+    body{
+      background:
+        radial-gradient(circle at 10% 0%,rgba(210,153,34,.12),transparent 34rem),
+        radial-gradient(circle at 90% 10%,rgba(88,166,255,.08),transparent 34rem),
+        var(--index-bg);
+      color:var(--index-text);
+    }
+
+    .index-wrap{
+      max-width:1500px;
+      margin:0 auto;
+      padding:14px 26px 28px;
+    }
+
+    .index-hero{
+      position:relative;
+      overflow:hidden;
+      padding:14px 18px;
+      margin:8px 0 14px;
+      border:1px solid var(--index-line);
+      border-radius:22px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 18rem),
+        linear-gradient(180deg,rgba(16,24,36,.88),rgba(9,14,22,.92));
+      box-shadow:0 18px 46px rgba(0,0,0,.26);
+    }
+
+    .index-chip{
+      display:inline-flex;
+      align-items:center;
+      width:max-content;
+      max-width:100%;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.36);
+      color:var(--index-gold2);
+      font-size:12px;
+      font-weight:800;
+      line-height:1;
+      margin-bottom:8px;
+    }
+
+    .index-hero h1{
+      margin:0 0 7px;
+      font-size:clamp(32px,3vw,50px);
+      line-height:1;
+      letter-spacing:-.035em;
+      font-weight:900;
+    }
+
+    .index-hero p{
+      margin:0;
+      max-width:1050px;
+      color:var(--index-soft);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .index-status{
+      margin-top:8px;
+      color:var(--index-muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .index-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:14px;
+      margin:14px 0 18px;
+    }
+
+    .index-card{
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:236px;
+      padding:14px;
+      border:1px solid var(--index-line);
+      border-radius:20px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 9rem),
+        linear-gradient(180deg,#111927,#0c121c);
+      box-shadow:0 18px 42px rgba(0,0,0,.24);
+    }
+
+    .index-card.compare-selected{
+      border-color:rgba(210,153,34,.82);
+      box-shadow:0 18px 46px rgba(0,0,0,.28),0 0 24px rgba(210,153,34,.18);
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.26),transparent 10rem),
+        linear-gradient(180deg,#141e2d,#0c121c);
+    }
+
+    .index-card-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .index-card-title{
+      min-width:0;
+    }
+
+    .index-card-title h3{
+      margin:0;
+      color:#fff;
+      font-size:14px;
+      line-height:1.12;
+      font-weight:900;
+      white-space:normal;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-height:31px;
+    }
+
+    .index-card-title div{
+      margin-top:4px;
+      color:#9fb2ca;
+      font-size:10.5px;
+      font-weight:800;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .index-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:5px 8px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:900;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .badge-strongbullish{color:#d8ffe2;background:rgba(34,197,94,.20);border-color:rgba(34,197,94,.48)}
+    .badge-bullish{color:#baf7c5;background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.34)}
+    .badge-mixedneutral{color:#d8ebff;background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.30)}
+    .badge-bearish{color:#ffc0bc;background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.34)}
+    .badge-strongbearish{color:#ffd0cc;background:rgba(239,68,68,.20);border-color:rgba(239,68,68,.48)}
+    .badge-nopsi{color:#d8ebff;background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.28)}
+
+    .index-score-wrap{
+      display:grid;
+      grid-template-columns:88px minmax(0,1fr);
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+
+    .index-gauge{
+      --score:50;
+      --accent:var(--index-cyan);
+      width:88px;
+      height:88px;
+      border-radius:50%;
+      background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
+      display:grid;
+      place-items:center;
+      box-shadow:0 0 30px rgba(45,212,191,.12);
+    }
+
+    .index-gauge-inner{
+      width:62px;
+      height:62px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      background:#0b111a;
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    .index-psi{
+      color:#fff;
+      font-size:23px;
+      font-weight:950;
+      line-height:1;
+    }
+
+    .index-psi-label{
+      color:var(--index-muted);
+      font-size:9px;
+      font-weight:900;
+      margin-top:3px;
+    }
+
+    .index-metrics{
+      display:grid;
+      gap:6px;
+      min-width:0;
+    }
+
+    .index-metric{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding-bottom:5px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:11px;
+    }
+
+    .index-metric span:first-child{color:#9fb2ca}
+    .index-metric span:last-child{color:#fff;font-weight:900}
+
+    .history-btn{
+      width:100%;
+      margin-top:auto;
+      min-height:31px;
+      border:1px solid rgba(210,153,34,.38);
+      border-radius:12px;
+      background:linear-gradient(180deg,rgba(210,153,34,.18),rgba(17,24,33,.92));
+      color:#ffd780;
+      font-family:inherit;
+      font-size:11px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .history-btn:hover{
+      border-color:rgba(210,153,34,.70);
+      background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(17,24,33,.96));
+      transform:translateY(-1px);
+    }
+
+    .compare-control{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      width:max-content;
+      margin-top:8px;
+      color:var(--index-muted);
+      font-size:10px;
+      line-height:1;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .compare-control input{
+      width:12px;
+      height:12px;
+      margin:0;
+      accent-color:var(--index-gold);
+      cursor:pointer;
+    }
+
+    .compare-selected .compare-control{
+      color:#ffd780;
+    }
+
+    .index-news-panel{
+      width:100%;
+      margin-top:18px;
+      padding:20px;
+      border:1px solid var(--index-line);
+      border-radius:22px;
+      background:rgba(13,17,23,.82);
+      box-shadow:0 18px 46px rgba(0,0,0,.22);
+    }
+
+    .index-news-panel h2{
+      margin:0 0 8px;
+      color:#fff;
+      font-size:22px;
+      line-height:1.1;
+    }
+
+    .index-news-panel p{
+      margin:0;
+      color:var(--index-muted);
+      font-size:13px;
+    }
+
+    .headline-list{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-top:16px;
+    }
+
+    .headline-row{
+      display:grid;
+      grid-template-columns:72px minmax(0,1fr);
+      gap:14px;
+      align-items:center;
+      width:100%;
+      min-height:88px;
+      padding:12px 14px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:15px;
+      background:linear-gradient(180deg,rgba(17,24,33,.78),rgba(8,13,21,.90));
+      color:inherit;
+    }
+
+    .headline-logo{
+      width:56px;
+      height:56px;
+      max-width:56px;
+      max-height:56px;
+      object-fit:contain;
+      justify-self:center;
+      align-self:center;
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      padding:4px;
+    }
+
+    .headline-logo-fallback{
+      width:56px;
+      height:56px;
+      display:grid;
+      place-items:center;
+      justify-self:center;
+      align-self:center;
+      border-radius:12px;
+      background:linear-gradient(135deg,rgba(210,153,34,.20),rgba(88,166,255,.16));
+      border:1px solid rgba(255,255,255,.08);
+      color:#ffd780;
+      font-size:18px;
+      font-weight:900;
+    }
+
+    .headline-body{min-width:0}
+
+    .headline-source{
+      color:#58a6ff;
+      font-size:13px;
+      font-weight:800;
+      margin-bottom:4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .headline-title{
+      color:#fff;
+      font-size:13px;
+      line-height:1.32;
+      font-weight:900;
+      max-width:100%;
+    }
+
+    .headline-meta{
+      color:#9fb2ca;
+      font-size:11px;
+      line-height:1.35;
+      margin-top:5px;
+    }
+
+    .headline-open{
+      color:#ffd780;
+      font-size:11px;
+      font-weight:900;
+      margin-top:4px;
+    }
+
+    .history-layer{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(7px);
+      z-index:1800;
+    }
+
+    .history-layer.open{display:flex}
+
+    .history-card{
+      width:min(1040px,96vw);
+      max-height:90vh;
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:24px;
+      background:
+        radial-gradient(circle at top right,rgba(45,212,191,.14),transparent 18rem),
+        radial-gradient(circle at bottom left,rgba(210,153,34,.14),transparent 16rem),
+        linear-gradient(180deg,rgba(16,24,36,.98),rgba(7,11,18,.98));
+      box-shadow:0 28px 90px rgba(0,0,0,.58),0 0 45px rgba(45,212,191,.08);
+    }
+
+    .history-card.compare-card{
+      width:min(1420px,96vw);
+    }
+
+    .history-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      padding:14px 16px;
+      border-bottom:1px solid rgba(148,163,184,.16);
+    }
+
+    .history-title{
+      margin:0;
+      color:#fff;
+      font-size:18px;
+      font-weight:950;
+      line-height:1.1;
+    }
+
+    .history-subtitle{
+      margin-top:4px;
+      color:var(--index-muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .history-close{
+      width:32px;
+      height:32px;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.28);
+      background:rgba(13,19,29,.86);
+      color:#fff;
+      font-size:20px;
+      cursor:pointer;
+    }
+
+    .history-body{
+      padding:14px;
+      overflow:auto;
+      max-height:calc(90vh - 70px);
+    }
+
+    .history-periods{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .history-period{
+      border:1px solid rgba(210,153,34,.28);
+      border-radius:999px;
+      background:rgba(210,153,34,.08);
+      color:#ffd780;
+      padding:7px 11px;
+      font-size:11px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .history-period.active{
+      background:rgba(210,153,34,.22);
+      border-color:rgba(210,153,34,.62);
+      color:#fff;
+    }
+
+    .history-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr);
+      gap:14px;
+    }
+
+    .history-grid.compare-mode{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .history-chart-wrap,.history-compare-chart-wrap{
+      min-height:360px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at top right,rgba(45,212,191,.12),transparent 16rem),
+        linear-gradient(180deg,rgba(8,13,21,.88),rgba(6,10,16,.98));
+      padding:8px;
+      overflow:hidden;
+    }
+
+    #historyChart,.history-compare-chart{
+      width:100%;
+      height:360px;
+      display:block;
+    }
+
+    .history-stats{
+      display:grid;
+      gap:10px;
+      align-content:start;
+    }
+
+    .history-stat{
+      padding:12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(13,19,29,.78),rgba(8,13,21,.94));
+    }
+
+    .history-stat span{
+      display:block;
+      color:var(--index-muted);
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      margin-bottom:4px;
+    }
+
+    .history-stat b{
+      color:#fff;
+      font-size:18px;
+      line-height:1.1;
+    }
+
+    .history-compare-item{
+      min-width:0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at top right,rgba(45,212,191,.09),transparent 14rem),
+        linear-gradient(180deg,rgba(8,13,21,.76),rgba(6,10,16,.94));
+      padding:10px;
+    }
+
+    .history-compare-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+      margin-bottom:8px;
+      min-width:0;
+    }
+
+    .history-compare-title b{
+      color:#fff;
+      font-size:13px;
+      line-height:1.1;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .history-compare-title span{
+      color:var(--index-muted);
+      font-size:10px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .history-compare-stats{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:8px;
+    }
+
+    .history-compare-stats .history-stat{
+      padding:9px;
+    }
+
+    .history-compare-stats .history-stat b{
+      font-size:15px;
+    }
+
+    @media(max-width:1280px){
+      .index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+
+    @media(max-width:900px){
+      .index-wrap{padding:12px}
+      .index-grid{grid-template-columns:1fr}
+      .history-grid,.history-grid.compare-mode{grid-template-columns:1fr}
+      .headline-row{grid-template-columns:62px minmax(0,1fr);gap:12px}
+      .headline-logo,.headline-logo-fallback{width:48px;height:48px;max-width:48px;max-height:48px}
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html">📊 Interactive Dashboard</a>
+      <a href="sentiment-history.html">📈 Historical Sentiment</a>
+      <a href="news-articles.html">📰 News & Articles</a>
+      <a href="market-sentiment.html" class="active">📘 Guides</a>
+      <a href="advertise.html">💼 Business Opportunities</a>
+      <a href="contact.html">✉️ Get in Touch</a>
+      <a href="about.html">ℹ️ About</a>
+    </nav>
+  </header>
+
+  <main class="index-wrap">
+    <section class="index-hero">
+      <div class="index-chip">Market Indices Sentiment Today</div>
+      <h1>Top Market Indices Sentiment</h1>
+      <p>Track current public sentiment across major U.S., European, and Asian market indices using the standard PSI calculation.</p>
+      <div class="index-status" id="statusText">Loading latest market indices sentiment...</div>
+    </section>
+
+    <section class="index-grid" id="indexCards"></section>
+
+    <section class="index-news-panel">
+      <h2>Latest Market Indices Headlines</h2>
+      <p id="headlineStatus">Loading market indices headlines...</p>
+      <div class="headline-list" id="headlineList"></div>
+    </section>
+
+    <div id="historyLayer" class="history-layer" onclick="if(event.target===this) closeHistory();">
+      <section class="history-card">
+        <div class="history-head">
+          <div>
+            <h2 id="historyTitle" class="history-title">Gold</h2>
+            <div id="historySubtitle" class="history-subtitle">Daily</div>
+          </div>
+          <button class="history-close" type="button" onclick="closeHistory()">×</button>
+        </div>
+        <div class="history-body">
+          <div class="history-periods">
+            <button class="history-period active" type="button" data-period="daily" onclick="setHistoryPeriod('daily')">Daily</button>
+            <button class="history-period" type="button" data-period="weekly" onclick="setHistoryPeriod('weekly')">Weekly</button>
+            <button class="history-period" type="button" data-period="monthly" onclick="setHistoryPeriod('monthly')">Monthly</button>
+          </div>
+          <div class="history-grid">
+            <div class="history-chart-wrap">
+              <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="history-stats" id="historyStats"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html" class="active">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="about.html">About</a>
+      </div>
+      <div class="legal"><b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.</div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script>
+    const INDEX_ITEMS = [
+      {name:"S&P 500 / ES", symbol:"S&P", aliases:["s&p 500","sp 500","s&p","spx","es futures","s&p futures","s&p 500 futures"], official:true},
+      {name:"Nasdaq / NQ", symbol:"Nasdaq", aliases:["nasdaq","nasdaq 100","nasdaq futures","nq futures","ndx","tech index"], official:true},
+      {name:"Dow / YM", symbol:"Dow", aliases:["dow","dow jones","dow futures","ym futures","djia"], official:true},
+      {name:"Russell / RTY", symbol:"Russell", aliases:["russell","russell 2000","rty futures","small caps","small-cap index"], official:true},
+      {name:"VIX", symbol:"VIX", aliases:["vix","volatility index","market volatility","fear gauge"], official:true},
+      {name:"DAX", symbol:"DAX", aliases:["dax","germany dax","german stocks","de40"], official:true},
+      {name:"FTSE 100", symbol:"FTSE", aliases:["ftse","ftse 100","uk stocks","london stocks","uk100"], official:true},
+      {name:"Nikkei 225", symbol:"Nikkei", aliases:["nikkei","nikkei 225","japan stocks","japanese stocks"], official:true},
+      {name:"Hang Seng", symbol:"HSI", aliases:["hang seng","hsi","hong kong stocks","hk stocks"], official:true},
+      {name:"Euro Stoxx 50", symbol:"Stoxx", aliases:["euro stoxx","euro stoxx 50","stoxx 50","european stocks"], official:true}
+    ];
+
+    const INDEX_BACKEND_INSTRUMENTS = new Set([
+      "S&P 500 / ES",
+      "Nasdaq / NQ",
+      "Dow / YM",
+      "Russell / RTY",
+      "VIX",
+      "DAX",
+      "FTSE 100",
+      "Nikkei 225",
+      "Hang Seng",
+      "Euro Stoxx 50"
+    ].map(x => normalizeText(x)));
+
+    const INDEX_STRONG_TERMS = [
+      "s&p 500","sp 500","s&p futures","spx","es futures","nasdaq","nasdaq 100",
+      "nasdaq futures","nq futures","ndx","dow jones","dow futures","ym futures",
+      "russell 2000","rty futures","small caps","small-cap index","vix",
+      "volatility index","fear gauge","dax","ftse 100","nikkei 225","hang seng",
+      "euro stoxx","euro stoxx 50","stoxx 50","stock futures","equity futures",
+      "wall street","european stocks","asian stocks","japan stocks","hong kong stocks"
+    ];
+
+    const INDEX_SOFT_TERMS = [
+      "stocks","stock market","equities","equity market","market rally","market selloff",
+      "risk appetite","risk off","risk-on","risk-off","global markets"
+    ];
+
+    const NON_INDEX_FOCUS_TERMS = [
+      "bitcoin"," btc","ethereum"," eth ","crypto","cryptocurrency","digital asset",
+      "crude oil","natural gas","opec","gasoline","diesel","heating oil","wti","brent","lng",
+      "gold price","silver price","platinum","palladium","central bank gold","gold etf"
+    ];
+
+    let dashboardData = {};
+    let historyData = {};
+    let activeHistoryName = "S&P 500 / ES";
+    let activeHistoryPeriod = "daily";
+    let selectedCompareNames = [];
+    let activeCompareNames = [];
+
+    function esc(v){
+      return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    function normalizeText(v){
+      return String(v ?? "").toLowerCase().replace(/\s+/g," ").trim();
+    }
+
+    function clamp(n,min,max){
+      return Math.max(min,Math.min(max,n));
+    }
+
+    function labelForScore(score){
+      if(score == null || !Number.isFinite(Number(score))) return "No PSI";
+      score = Number(score);
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+      return "Strong Bearish";
+    }
+
+    function badgeClass(label){
+      return "badge-" + normalizeText(label).replaceAll("/","").replaceAll(" ","");
+    }
+
+    function headlineText(h){
+      return normalizeText([
+        h.title,
+        h.description,
+        h.source,
+        h.query,
+        ...(Array.isArray(h.instruments) ? h.instruments : []),
+        ...(Array.isArray(h.markets) ? h.markets : [])
+      ].join(" "));
+    }
+
+    function titleDescriptionText(h){
+      return normalizeText([h.title, h.description].join(" "));
+    }
+
+    function headlineInstruments(h){
+      return Array.isArray(h.instruments) ? h.instruments.map(x => normalizeText(x)) : [];
+    }
+
+    function headlineMarkets(h){
+      return Array.isArray(h.markets) ? h.markets.map(x => normalizeText(x)) : [];
+    }
+
+    function hasTerm(text, terms){
+      return terms.some(term => text.includes(term));
+    }
+
+    function hasExactIndexInstrument(h){
+      return headlineInstruments(h).some(x => INDEX_BACKEND_INSTRUMENTS.has(x));
+    }
+
+    function hasNonIndexFocus(h){
+      const text = headlineText(h);
+      const markets = headlineMarkets(h);
+      const instruments = headlineInstruments(h);
+
+      if(markets.includes("crypto")) return true;
+      if(markets.includes("commodities") && !markets.includes("indexes")) return true;
+
+      if(instruments.some(x => [
+        "bitcoin / btc","ethereum / eth","general crypto","solana / sol","xrp","bnb","cardano / ada","dogecoin / doge",
+        "crude oil","natural gas","gold","silver","copper","general market indices"
+      ].includes(x))) return true;
+
+      return hasTerm(text, NON_INDEX_FOCUS_TERMS);
+    }
+
+    function isIndexHeadline(h){
+      const fullText = headlineText(h);
+      const titleText = titleDescriptionText(h);
+      const markets = headlineMarkets(h);
+      const strongIndex = hasTerm(titleText, INDEX_STRONG_TERMS) || hasTerm(fullText, INDEX_STRONG_TERMS);
+      const softIndex = hasTerm(titleText, INDEX_SOFT_TERMS);
+      const exactIndex = hasExactIndexInstrument(h);
+      const indexContext = markets.includes("indexes") || markets.includes("stocks") || markets.includes("macro");
+
+      if(hasNonIndexFocus(h)) return false;
+      if(exactIndex || strongIndex) return true;
+      if(softIndex && indexContext) return true;
+
+      return false;
+    }
+
+    function exactInstrumentMatch(item,h){
+      if(!isIndexHeadline(h)) return false;
+      return headlineInstruments(h).some(x => x === normalizeText(item.name));
+    }
+
+    function itemMatchesHeadline(item,h){
+      if(!isIndexHeadline(h)) return false;
+      if(exactInstrumentMatch(item,h)) return true;
+      const text = headlineText(h);
+      return item.aliases.some(alias => text.includes(normalizeText(alias)));
+    }
+
+    function getAllHeadlines(){
+      return [
+        ...(Array.isArray(dashboardData?.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : []),
+        ...(Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [])
+      ];
+    }
+
+    function getIndexHeadlines(){
+      const seen = new Set();
+      const filtered = [];
+
+      getAllHeadlines().forEach(h => {
+        if(!isIndexHeadline(h)) return;
+        const key = h.link || `${h.source || ""}|${h.title || ""}`;
+        if(key && seen.has(key)) return;
+        if(key) seen.add(key);
+        filtered.push(h);
+      });
+
+      filtered.sort((a,b) => {
+        const aFresh = Number(a.freshness_weight || 0);
+        const bFresh = Number(b.freshness_weight || 0);
+        const aRel = Number(a.relevance_score || 0);
+        const bRel = Number(b.relevance_score || 0);
+        const aHigh = a.impact === "High" ? 1 : 0;
+        const bHigh = b.impact === "High" ? 1 : 0;
+        return (bFresh - aFresh) || (bRel - aRel) || (bHigh - aHigh);
+      });
+
+      return filtered;
+    }
+
+    function currentLatestRecord(){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      return records.length ? records[records.length - 1] : null;
+    }
+
+    function scoreFromHeadlineSet(name,symbol,headlines,source){
+      if(!headlines.length){
+        return {name,symbol,score:null,label:"No PSI",headlineCount:0,bullish:0,bearish:0,neutral:0,source,topHeadlines:[]};
+      }
+
+      let total = 0;
+      let bullish = 0;
+      let bearish = 0;
+      let neutral = 0;
+
+      headlines.forEach(h => {
+        const s = Number(h.weighted_score ?? h.score ?? 0);
+        total += Number.isFinite(s) ? s : 0;
+
+        const vote = normalizeText(h.vote);
+        if(vote.includes("bull")) bullish++;
+        else if(vote.includes("bear")) bearish++;
+        else neutral++;
+      });
+
+      const avg = total / headlines.length;
+      const score = Math.round(clamp(50 + avg * 6,0,100));
+
+      return {
+        name,
+        symbol,
+        score,
+        label:labelForScore(score),
+        headlineCount:headlines.length,
+        bullish,
+        bearish,
+        neutral,
+        source,
+        topHeadlines:headlines.slice(0,5)
+      };
+    }
+
+    function getOfficialCurrent(item){
+      const latest = currentLatestRecord();
+      const row = latest?.instruments?.[item.name];
+
+      if(row && row.psi != null){
+        return {
+          name:item.name,
+          symbol:item.symbol,
+          score:Number(row.psi),
+          label:row.sentiment_label || labelForScore(Number(row.psi)),
+          headlineCount:Number(row.headline_count || 0),
+          bullish:Number(row.bullish_count || 0),
+          bearish:Number(row.bearish_count || 0),
+          neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
+          source:"official",
+          topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
+        };
+      }
+
+      const backendTagged = getIndexHeadlines().filter(h => exactInstrumentMatch(item,h));
+      if(backendTagged.length){
+        return scoreFromHeadlineSet(item.name,item.symbol,backendTagged,"backend");
+      }
+
+      return null;
+    }
+
+    function getDerivedCurrent(item){
+      const headlines = getIndexHeadlines().filter(h => itemMatchesHeadline(item,h));
+      return scoreFromHeadlineSet(item.name,item.symbol,headlines,"derived");
+    }
+
+    function rows(){
+      return INDEX_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item));
+    }
+
+    function gaugeAccent(score){
+      if(score == null) return "#58a6ff";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#2dd4bf";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f59e0b";
+      return "#ef4444";
+    }
+
+    function renderCards(){
+      const box = document.getElementById("indexCards");
+      const data = rows();
+
+      box.innerHTML = data.map(row => {
+        const scoreDisplay = row.score == null ? "--" : row.score;
+        const scoreStyle = row.score == null ? 50 : row.score;
+        const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : "Headline PSI");
+
+        return `
+          <article class="index-card">
+            <div class="index-card-head">
+              <div class="index-card-title">
+                <h3>${esc(row.name)}</h3>
+                <div>${esc(row.symbol)} • ${esc(sourceText)}</div>
+              </div>
+              <span class="index-badge ${badgeClass(row.label)}">${esc(row.label)}</span>
+            </div>
+
+            <div class="index-score-wrap">
+              <div class="index-gauge" style="--score:${scoreStyle};--accent:${gaugeAccent(row.score)}">
+                <div class="index-gauge-inner">
+                  <div>
+                    <div class="index-psi">${scoreDisplay}</div>
+                    <div class="index-psi-label">PSI</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="index-metrics">
+                <div class="index-metric"><span>Headlines</span><span>${row.headlineCount}</span></div>
+                <div class="index-metric"><span>Bullish</span><span>${row.bullish}</span></div>
+                <div class="index-metric"><span>Bearish</span><span>${row.bearish}</span></div>
+                <div class="index-metric"><span>Neutral/Mixed</span><span>${row.neutral}</span></div>
+              </div>
+            </div>
+
+            <button class="history-btn" type="button" onclick='openHistory(${JSON.stringify(row.name)})'>Historical View</button>
+            <label class="compare-control">
+              <input class="compare-checkbox" type="checkbox" data-name="${esc(row.name)}" onchange='toggleCompare(${JSON.stringify(row.name)}, this.checked, this)'>
+              <span>Compare</span>
+            </label>
+          </article>
+        `;
+      }).join("");
+
+      updateCompareVisuals();
+
+      const status = document.getElementById("statusText");
+      if(status){
+        status.textContent = `Updated: ${dashboardData.updated_ny || historyData.updated_ny || "latest scan"} • Standard PSI scale • Official data first.`;
+      }
+    }
+
+    function domainFromUrl(url){
+      try{
+        return new URL(url).hostname.replace(/^www\./,"");
+      }catch(err){
+        return "";
+      }
+    }
+
+    function sourceLogoUrl(h){
+      const domain = domainFromUrl(h.source_url || h.link || "");
+      return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
+    }
+
+    function releaseDateText(h){
+      const raw = h.published_utc || h.published || h.date || "";
+      if(!raw) return "Release date: latest scan";
+      return "Release date: " + String(raw).replace(" UTC","").replace(" GMT","");
+    }
+
+    function renderHeadlines(){
+      const list = document.getElementById("headlineList");
+      const status = document.getElementById("headlineStatus");
+      const headlines = getIndexHeadlines().slice(0,30);
+
+      if(status) status.textContent = `30 latest strict market indices headline(s) shown from dashboard_data.json.`;
+
+      list.innerHTML = headlines.map(h => {
+        const logo = sourceLogoUrl(h);
+        const sourceInitial = esc(String(h.source || "N").trim().slice(0,1).toUpperCase() || "N");
+        const logoHtml = logo
+          ? `<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source || "Source")} logo" loading="lazy" onerror="this.outerHTML='<div class=&quot;headline-logo-fallback&quot;>${sourceInitial}</div>'">`
+          : `<div class="headline-logo-fallback">${sourceInitial}</div>`;
+
+        return `
+          <a class="headline-row" href="${esc(h.link || "#")}" target="_blank" rel="noopener">
+            ${logoHtml}
+            <div class="headline-body">
+              <div class="headline-source">${esc(h.source || "Source")}</div>
+              <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
+              <div class="headline-meta">${esc(releaseDateText(h))} • ${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+              <div class="headline-open">Open →</div>
+            </div>
+          </a>
+        `;
+      }).join("") || `<div class="headline-row"><div class="headline-logo-fallback">M</div><div class="headline-body"><div class="headline-title">No strict market indices headlines found yet.</div><div class="headline-meta">This will update after the next data scan.</div></div></div>`;
+    }
+
+    function savedHeadlinesForRecord(record){
+      const out = [];
+      const seen = new Set();
+      const instruments = record?.instruments || {};
+
+      Object.values(instruments).forEach(row => {
+        (Array.isArray(row?.top_headlines) ? row.top_headlines : []).forEach(h => {
+          const key = h.link || `${h.source || ""}|${h.title || ""}`;
+          if(!key || seen.has(key)) return;
+          seen.add(key);
+          out.push(h);
+        });
+      });
+
+      return out;
+    }
+
+    function proxyHistoryRowForIndices(record,item){
+      const instruments = record?.instruments || {};
+      const candidatesByName = {
+        "S&P 500 / ES":["S&P 500 / ES"],
+        "Nasdaq / NQ":["Nasdaq / NQ"],
+        "Dow / YM":["Dow / YM"],
+        "Russell / RTY":["Russell / RTY"],
+        "VIX":["VIX"],
+        "DAX":["DAX","Euro Stoxx 50"],
+        "FTSE 100":["FTSE 100","Euro Stoxx 50"],
+        "Nikkei 225":["Nikkei 225"],
+        "Hang Seng":["Hang Seng"],
+        "Euro Stoxx 50":["Euro Stoxx 50","DAX","FTSE 100"]
+      };
+
+      const rows = (candidatesByName[item?.name] || [])
+        .map(name => instruments[name])
+        .filter(row => row && row.psi != null);
+
+      if(!rows.length) return null;
+
+      const avgPsi = Math.round(rows.reduce((sum,row) => sum + Number(row.psi || 50),0) / rows.length);
+      const count = rows.reduce((sum,row) => sum + Number(row.headline_count || 0),0);
+
+      return {
+        date:record.date,
+        label:record.date,
+        value:avgPsi,
+        count,
+        bullish:rows.reduce((sum,row) => sum + Number(row.bullish_count || 0),0),
+        bearish:rows.reduce((sum,row) => sum + Number(row.bearish_count || 0),0),
+        neutral:rows.reduce((sum,row) => sum + Number(row.neutral_count || 0) + Number(row.mixed_count || 0),0),
+        sentiment:labelForScore(avgPsi),
+        source:"proxy"
+      };
+    }
+
+    function derivedHistoryRowForItem(record,item){
+      const matches = savedHeadlinesForRecord(record).filter(h => itemMatchesHeadline(item,h));
+      if(!matches.length) return proxyHistoryRowForIndices(record,item);
+
+      const data = scoreFromHeadlineSet(item.name,item.symbol,matches,"derived");
+      return {
+        date:record.date,
+        label:record.date,
+        value:data.score,
+        count:data.headlineCount,
+        bullish:data.bullish,
+        bearish:data.bearish,
+        neutral:data.neutral,
+        sentiment:data.label,
+        source:"derived"
+      };
+    }
+
+    function dailySeries(name){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      const item = INDEX_ITEMS.find(x => x.name === name);
+
+      return records.map(r => {
+        const row = r.instruments?.[name];
+
+        if(row && row.psi != null){
+          return {
+            date:r.date,
+            label:r.date,
+            value:Number(row.psi),
+            count:Number(row.headline_count || 0),
+            sentiment:row.sentiment_label || labelForScore(Number(row.psi)),
+            source:"official"
+          };
+        }
+
+        if(item) return derivedHistoryRowForItem(r,item);
+
+        return null;
+      }).filter(Boolean);
+    }
+
+    function aggregateSeries(base,period){
+      if(period === "daily") return base;
+
+      const groups = new Map();
+
+      base.forEach((row,idx) => {
+        const key = period === "weekly" ? `Week ${Math.floor(idx / 7) + 1}` : String(row.date || "").slice(0,7);
+        if(!groups.has(key)) groups.set(key,[]);
+        groups.get(key).push(row);
+      });
+
+      return Array.from(groups.entries()).map(([key,rows]) => {
+        const avg = Math.round(rows.reduce((s,r) => s + Number(r.value || 50),0) / rows.length);
+        return {
+          date:key,
+          label:key,
+          value:avg,
+          count:rows.reduce((s,r) => s + Number(r.count || 0),0),
+          sentiment:labelForScore(avg)
+        };
+      });
+    }
+
+    function drawHistoryChart(series,svgId = "historyChart"){
+      const svg = document.getElementById(svgId);
+      if(!svg) return;
+
+      if(!series.length){
+        svg.innerHTML = `<text x="450" y="210" text-anchor="middle" fill="#94a3b8" font-size="18" font-weight="800">No saved history yet</text>`;
+        return;
+      }
+
+      const width = 900;
+      const height = 420;
+      const pad = 44;
+      const innerW = width - pad * 2;
+      const innerH = height - pad * 2;
+
+      const points = series.map((row,i) => {
+        const x = series.length === 1 ? width / 2 : pad + (i / (series.length - 1)) * innerW;
+        const y = pad + (1 - Number(row.value || 50) / 100) * innerH;
+        return {x,y,row};
+      });
+
+      const path = points.map((p,i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+      const area = `${path} L ${points[points.length - 1].x.toFixed(1)} ${height - pad} L ${points[0].x.toFixed(1)} ${height - pad} Z`;
+
+      const grid = [0,25,50,75,100].map(v => {
+        const y = pad + (1 - v / 100) * innerH;
+        return `<line x1="${pad}" y1="${y}" x2="${width-pad}" y2="${y}" stroke="rgba(148,163,184,.14)" stroke-dasharray="5 7"/><text x="12" y="${y+4}" fill="#94a3b8" font-size="11" font-weight="800">${v}</text>`;
+      }).join("");
+
+      const circles = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#ffd780" stroke="#2dd4bf" stroke-width="2"><title>${esc(p.row.label)} • ${p.row.value}/100</title></circle>`).join("");
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="${svgId}Line" x1="0" x2="1">
+            <stop offset="0%" stop-color="#ffd780"/>
+            <stop offset="48%" stop-color="#2dd4bf"/>
+            <stop offset="100%" stop-color="#58a6ff"/>
+          </linearGradient>
+          <linearGradient id="${svgId}Fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#2dd4bf" stop-opacity=".30"/>
+            <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="${svgId}Glow">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(6,10,16,.78)"/>
+        ${grid}
+        <path d="${area}" fill="url(#${svgId}Fill)"/>
+        <path d="${path}" fill="none" stroke="url(#${svgId}Line)" stroke-width="4" filter="url(#${svgId}Glow)" stroke-linecap="round" stroke-linejoin="round"/>
+        ${circles}
+        <text x="${width-pad}" y="24" text-anchor="end" fill="#ffd780" font-size="12" font-weight="900">PSI HISTORY</text>
+      `;
+    }
+
+    function renderHistoryStats(series,name,mode,boxId = "historyStats"){
+      const box = document.getElementById(boxId);
+      if(!box) return;
+
+      if(!series.length){
+        box.innerHTML = `<div class="history-stat"><span>Status</span><b>No history yet</b></div>`;
+        return;
+      }
+
+      const latest = series[series.length - 1];
+      const avg = Math.round(series.reduce((s,r) => s + Number(r.value || 50),0) / series.length);
+      const high = Math.max(...series.map(r => Number(r.value || 0)));
+      const low = Math.min(...series.map(r => Number(r.value || 100)));
+      const count = series.reduce((s,r) => s + Number(r.count || 0),0);
+
+      box.innerHTML = `
+        <div class="history-stat"><span>Latest</span><b>${latest.value}/100</b></div>
+        <div class="history-stat"><span>Average</span><b>${avg}/100</b></div>
+        <div class="history-stat"><span>High / Low</span><b>${high} / ${low}</b></div>
+        <div class="history-stat"><span>Headline Count</span><b>${count}</b></div>
+        <div class="history-stat"><span>Sentiment</span><b>${esc(labelForScore(latest.value))}</b></div>
+        <div class="history-stat"><span>Period</span><b>${esc(mode)}</b></div>
+      `;
+    }
+
+    function openHistory(name){
+      activeCompareNames = [];
+      activeHistoryName = name;
+      activeHistoryPeriod = "daily";
+
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.add("open");
+      if(card) card.classList.remove("compare-card");
+      document.body.style.overflow = "hidden";
+
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
+      renderHistory();
+    }
+
+    function closeHistory(){
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.remove("open");
+      if(card) card.classList.remove("compare-card");
+      document.body.style.overflow = "";
+    }
+
+    function setHistoryPeriod(period){
+      activeHistoryPeriod = period;
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === period));
+      renderHistory();
+    }
+
+    function restoreSingleHistoryGrid(){
+      const grid = document.querySelector(".history-grid");
+      if(!grid) return;
+      grid.classList.remove("compare-mode");
+      grid.innerHTML = `
+        <div class="history-chart-wrap">
+          <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="history-stats" id="historyStats"></div>
+      `;
+    }
+
+    function renderCompareHistory(){
+      const title = document.getElementById("historyTitle");
+      const subtitle = document.getElementById("historySubtitle");
+      const grid = document.querySelector(".history-grid");
+      const card = document.querySelector(".history-card");
+      if(!grid || activeCompareNames.length !== 2) return;
+
+      if(card) card.classList.add("compare-card");
+      grid.classList.add("compare-mode");
+
+      const periodLabel = activeHistoryPeriod.charAt(0).toUpperCase() + activeHistoryPeriod.slice(1);
+      if(title) title.textContent = "Market Indices Comparison";
+      if(subtitle) subtitle.textContent = `${periodLabel} • ${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
+
+      grid.innerHTML = activeCompareNames.map((name,idx) => {
+        const series = aggregateSeries(dailySeries(name),activeHistoryPeriod);
+        const latest = series.length ? `${series[series.length - 1].value}/100` : "No history";
+        return `
+          <div class="history-compare-item">
+            <div class="history-compare-title">
+              <b>${esc(name)}</b>
+              <span>${latest}</span>
+            </div>
+            <div class="history-compare-chart-wrap">
+              <svg id="historyCompareChart${idx}" class="history-compare-chart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="history-stats history-compare-stats" id="historyCompareStats${idx}"></div>
+          </div>
+        `;
+      }).join("");
+
+      activeCompareNames.forEach((name,idx) => {
+        const series = aggregateSeries(dailySeries(name),activeHistoryPeriod);
+        drawHistoryChart(series,`historyCompareChart${idx}`);
+        renderHistoryStats(series,name,activeHistoryPeriod,`historyCompareStats${idx}`);
+      });
+    }
+
+    function renderHistory(){
+      if(activeCompareNames.length === 2){
+        renderCompareHistory();
+        return;
+      }
+
+      const title = document.getElementById("historyTitle");
+      const subtitle = document.getElementById("historySubtitle");
+      const card = document.querySelector(".history-card");
+      if(card) card.classList.remove("compare-card");
+
+      restoreSingleHistoryGrid();
+
+      const series = aggregateSeries(dailySeries(activeHistoryName),activeHistoryPeriod);
+
+      if(title) title.textContent = activeHistoryName;
+      if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} • ${series.length} record(s)`;
+
+      drawHistoryChart(series);
+      renderHistoryStats(series,activeHistoryName,activeHistoryPeriod);
+    }
+
+    function updateCompareVisuals(){
+      document.querySelectorAll(".compare-checkbox").forEach(cb => {
+        const isSelected = selectedCompareNames.includes(cb.dataset.name);
+        cb.checked = isSelected;
+        const card = cb.closest(".index-card");
+        if(card) card.classList.toggle("compare-selected", isSelected);
+      });
+    }
+
+    function toggleCompare(name,checked,input){
+      if(checked){
+        if(!selectedCompareNames.includes(name)){
+          if(selectedCompareNames.length >= 2){
+            input.checked = false;
+            return;
+          }
+          selectedCompareNames.push(name);
+        }
+      }else{
+        selectedCompareNames = selectedCompareNames.filter(x => x !== name);
+      }
+
+      updateCompareVisuals();
+
+      if(selectedCompareNames.length === 2){
+        openCompareHistory();
+      }
+    }
+
+    function openCompareHistory(){
+      if(selectedCompareNames.length !== 2) return;
+
+      activeCompareNames = [...selectedCompareNames];
+      activeHistoryPeriod = "daily";
+
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.add("open");
+      if(card) card.classList.add("compare-card");
+      document.body.style.overflow = "hidden";
+
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
+      renderHistory();
+    }
+
+    async function loadPage(){
+      try{
+        const [dashboardRes, historyRes] = await Promise.all([
+          fetch("dashboard_data.json",{cache:"no-store"}),
+          fetch("instrument_history.json",{cache:"no-store"})
+        ]);
+
+        dashboardData = await dashboardRes.json();
+        historyData = await historyRes.json();
+
+        renderCards();
+        renderHeadlines();
+      }catch(err){
+        const status = document.getElementById("statusText");
+        if(status) status.textContent = "Data could not be loaded.";
+        console.error(err);
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if(e.key === "Escape") closeHistory();
+    });
+
+    window.openHistory = openHistory;
+    window.closeHistory = closeHistory;
+    window.setHistoryPeriod = setHistoryPeriod;
+    window.toggleCompare = toggleCompare;
+    window.openCompareHistory = openCompareHistory;
+
+    loadPage();
+  </script>
+
+  <script src="vote-widget.js" defer></script>
+</body>
+</html>
