@@ -955,18 +955,77 @@
       }
     }
 
+    function savedHeadlinesForRecord(record){
+      const out = [];
+      const seen = new Set();
+      const instruments = record?.instruments || {};
+      Object.values(instruments).forEach(row => {
+        (Array.isArray(row?.top_headlines) ? row.top_headlines : []).forEach(h => {
+          const key = h.link || `${h.source || ""}|${h.title || ""}`;
+          if(!key || seen.has(key)) return;
+          seen.add(key);
+          out.push(h);
+        });
+      });
+      return out;
+    }
+
+    function derivedHistoryRowForItem(record, item){
+      const matches = savedHeadlinesForRecord(record).filter(h => itemMatchesHeadline(item, h));
+      if(!matches.length) return null;
+
+      let total = 0;
+      let bullish = 0;
+      let bearish = 0;
+      let neutral = 0;
+
+      matches.forEach(h => {
+        const s = Number(h.weighted_score ?? h.score ?? 0);
+        total += Number.isFinite(s) ? s : 0;
+
+        const vote = normalizeText(h.vote);
+        if(vote.includes("bull")) bullish++;
+        else if(vote.includes("bear")) bearish++;
+        else neutral++;
+      });
+
+      const avg = total / matches.length;
+      const value = Math.round(clamp(50 + avg * 6, 0, 100));
+
+      return {
+        date:record.date,
+        label:record.date,
+        value:value,
+        count:matches.length,
+        bullish:bullish,
+        bearish:bearish,
+        neutral:neutral,
+        sentiment:labelForScore(value)
+      };
+    }
+
     function dailySeries(name){
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      const item = CRYPTO_ITEMS.find(x => x.name === name);
+
       return records.map(r => {
         const row = r.instruments?.[name];
-        if(!row || row.psi == null) return null;
-        return {
-          date:r.date,
-          label:r.date,
-          value:Number(row.psi),
-          count:Number(row.headline_count || 0),
-          sentiment:row.sentiment_label || labelForScore(Number(row.psi))
-        };
+
+        if(row && row.psi != null){
+          return {
+            date:r.date,
+            label:r.date,
+            value:Number(row.psi),
+            count:Number(row.headline_count || 0),
+            sentiment:row.sentiment_label || labelForScore(Number(row.psi))
+          };
+        }
+
+        if(item && item.official === false){
+          return derivedHistoryRowForItem(r, item);
+        }
+
+        return null;
       }).filter(Boolean);
     }
 
@@ -1091,7 +1150,7 @@
       if(!box) return;
 
       if(!series.length){
-        box.innerHTML = `<div class="empty-note">No saved history exists yet for ${esc(name)}. This will fill in as the backend saves more records.</div>`;
+        box.innerHTML = `<div class="empty-note">No saved or derived history exists yet for ${esc(name)}. This will fill in as matching headlines are saved over time.</div>`;
         return;
       }
 
