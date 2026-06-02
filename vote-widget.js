@@ -15,6 +15,22 @@ const PSD_VOTE_INSTRUMENTS = [
   "Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA",
   "Dogecoin / DOGE","General Crypto",
   "Gold","Silver","Copper","Crude Oil","Natural Gas",
+  "Crypto Regulation",
+  "Crypto ETFs / Flows",
+  "General Energy",
+  "OPEC / Supply",
+  "Oil Inventories / EIA",
+  "Brent Oil",
+  "WTI Oil",
+  "Gasoline",
+  "Heating Oil",
+  "General Precious Metals",
+  "Platinum",
+  "Palladium",
+  "Gold ETFs / Flows",
+  "Central Bank Gold",
+  "Mining Stocks",
+  "Inflation / Real Yields",
   "Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","US GDP / Growth","Geopolitical / Tariffs"
 ];
 
@@ -526,7 +542,15 @@ function psdShouldShowPdfWidget(){
     path.endsWith("/sentiment-history.html") ||
     path.endsWith("sentiment-history.html") ||
     path.endsWith("/news-articles.html") ||
-    path.endsWith("news-articles.html")
+    path.endsWith("news-articles.html") ||
+    path.endsWith("/crypto.html") ||
+    path.endsWith("crypto.html") ||
+    path.endsWith("/energy.html") ||
+    path.endsWith("energy.html") ||
+    path.endsWith("/precious-metals.html") ||
+    path.endsWith("precious-metals.html") ||
+    path.endsWith("/indices.html") ||
+    path.endsWith("indices.html")
   );
 }
 
@@ -546,7 +570,7 @@ function psdLoadPdfReportEngine(){
 
     const script = document.createElement("script");
     script.id = "psdPdfReportScript";
-    script.src = "pdf-report.js?v=15";
+    script.src = "pdf-report.js?v=40";
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("PDF report engine failed to load."));
