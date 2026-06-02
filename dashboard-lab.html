@@ -892,6 +892,13 @@
       catch(e){ return ""; }
     }
 
+
+    function releaseDateText(h){
+      const raw = h.published_utc || h.published || h.date || "";
+      if(!raw) return "Release date: latest scan";
+      return "Release date: " + String(raw).replace(" UTC","").replace(" GMT","");
+    }
+
     function sourceLogoUrl(h){
       const domain = domainFromUrl(h.source_url || h.link || "");
       return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
@@ -900,10 +907,10 @@
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
       const status = document.getElementById("headlineStatus");
-      const headlines = getCryptoHeadlines().slice(0,25);
+      const headlines = getCryptoHeadlines().slice(0,30);
 
       if(status){
-        status.textContent = `${headlines.length} latest crypto headline(s) shown from dashboard_data.json.`;
+        status.textContent = `30 latest crypto headline(s) shown from dashboard_data.json.`;
       }
 
       if(!list) return;
@@ -926,7 +933,7 @@
             <div class="headline-body">
               <div class="headline-source">${esc(h.source || "Source")}</div>
               <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
-              <div class="headline-meta">${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+              <div class="headline-meta">${esc(releaseDateText(h))} • ${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
               <div class="headline-open">Open →</div>
             </div>
           </a>
