@@ -263,6 +263,125 @@
       border-color:rgba(210,153,34,.70);
       background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(17,24,33,.96));
     }
+    .compare-control{
+      position:relative;
+      z-index:2;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      width:max-content;
+      margin-top:8px;
+      color:var(--muted);
+      font-size:10px;
+      line-height:1;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .compare-control input{
+      width:12px;
+      height:12px;
+      margin:0;
+      accent-color:var(--gold);
+      cursor:pointer;
+    }
+
+    .crypto-card.compare-selected{
+      border-color:rgba(210,153,34,.82);
+      box-shadow:0 18px 46px rgba(0,0,0,.28),0 0 24px rgba(210,153,34,.18);
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.24),transparent 10rem),
+        linear-gradient(180deg,#141e2d,#0c121c);
+    }
+
+    .crypto-card.compare-selected .compare-control{
+      color:#ffd780;
+    }
+
+    .history-card.compare-card{
+      width:min(1420px,96vw);
+    }
+
+    .history-grid.compare-mode{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .history-compare-item{
+      min-width:0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at top right,rgba(45,212,191,.09),transparent 14rem),
+        linear-gradient(180deg,rgba(8,13,21,.76),rgba(6,10,16,.94));
+      padding:10px;
+    }
+
+    .history-compare-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+      margin-bottom:8px;
+      min-width:0;
+    }
+
+    .history-compare-title b{
+      color:#fff;
+      font-size:13px;
+      line-height:1.1;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .history-compare-title span{
+      color:var(--muted);
+      font-size:10px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .history-compare-chart-wrap{
+      min-height:330px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.08),transparent 12rem),
+        linear-gradient(180deg,rgba(8,13,21,.88),rgba(6,10,16,.98));
+      padding:8px;
+    }
+
+    .history-compare-chart{
+      width:100%;
+      height:330px;
+      display:block;
+    }
+
+    .history-compare-stats{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:8px;
+    }
+
+    .history-compare-stats .history-stat{
+      padding:9px;
+    }
+
+    .history-compare-stats .history-stat b{
+      font-size:15px;
+    }
+
+    @media(max-width:900px){
+      .history-grid.compare-mode{
+        grid-template-columns:1fr;
+      }
+    }
+
 
     .crypto-panels{
       display:grid;
@@ -695,6 +814,8 @@
     let currentRows = [];
     let activeHistoryName = "Bitcoin / BTC";
     let activeHistoryPeriod = "daily";
+    let selectedCompareNames = [];
+    let activeCompareNames = [];
 
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -882,9 +1003,59 @@
             </div>
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
+            <label class="compare-control">
+              <input class="compare-checkbox" type="checkbox" data-name="${esc(row.name)}" onchange='toggleCompare(${JSON.stringify(row.name).replace(/</g,"\\u003c")}, this.checked, this)'>
+              <span>Compare</span>
+            </label>
           </article>
         `;
       }).join("");
+      updateCompareVisuals();
+    }
+
+    function updateCompareVisuals(){
+      document.querySelectorAll(".compare-checkbox").forEach(cb => {
+        const isSelected = selectedCompareNames.includes(cb.dataset.name);
+        cb.checked = isSelected;
+        const card = cb.closest(".crypto-card");
+        if(card) card.classList.toggle("compare-selected", isSelected);
+      });
+    }
+
+    function toggleCompare(name, checked, input){
+      if(checked){
+        if(!selectedCompareNames.includes(name)){
+          if(selectedCompareNames.length >= 2){
+            input.checked = false;
+            return;
+          }
+          selectedCompareNames.push(name);
+        }
+      }else{
+        selectedCompareNames = selectedCompareNames.filter(x => x !== name);
+      }
+
+      updateCompareVisuals();
+
+      if(selectedCompareNames.length === 2){
+        openCompareHistory();
+      }
+    }
+
+    function openCompareHistory(){
+      if(selectedCompareNames.length !== 2) return;
+
+      activeCompareNames = [...selectedCompareNames];
+      activeHistoryPeriod = "daily";
+
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.add("open");
+      if(card) card.classList.add("compare-card");
+      document.body.style.overflow = "hidden";
+
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
+      renderHistory();
     }
 
     function domainFromUrl(url){
@@ -1060,8 +1231,8 @@
       }));
     }
 
-    function drawHistoryChart(series){
-      const svg = document.getElementById("historyChart");
+    function drawHistoryChart(series, svgId = "historyChart"){
+      const svg = document.getElementById(svgId);
       if(!svg) return;
 
       if(!series.length){
@@ -1145,8 +1316,8 @@
       `;
     }
 
-    function renderHistoryStats(series, name, mode){
-      const box = document.getElementById("historyStats");
+    function renderHistoryStats(series, name, mode, boxId = "historyStats"){
+      const box = document.getElementById(boxId);
       if(!box) return;
 
       if(!series.length){
@@ -1170,11 +1341,14 @@
     }
 
     function openHistory(name){
+      activeCompareNames = [];
       activeHistoryName = name;
       activeHistoryPeriod = "daily";
 
       const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
       if(layer) layer.classList.add("open");
+      if(card) card.classList.remove("compare-card");
       document.body.style.overflow = "hidden";
 
       document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
@@ -1183,7 +1357,9 @@
 
     function closeHistory(){
       const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
       if(layer) layer.classList.remove("open");
+      if(card) card.classList.remove("compare-card");
       document.body.style.overflow = "";
     }
 
@@ -1193,9 +1369,69 @@
       renderHistory();
     }
 
-    function renderHistory(){
+    function restoreSingleHistoryGrid(){
+      const grid = document.querySelector(".history-grid");
+      if(!grid) return;
+      grid.classList.remove("compare-mode");
+      grid.innerHTML = `
+        <div class="history-chart-wrap">
+          <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="history-stats" id="historyStats"></div>
+      `;
+    }
+
+    function renderCompareHistory(){
       const title = document.getElementById("historyTitle");
       const subtitle = document.getElementById("historySubtitle");
+      const grid = document.querySelector(".history-grid");
+      const card = document.querySelector(".history-card");
+      if(!grid || activeCompareNames.length !== 2) return;
+
+      if(card) card.classList.add("compare-card");
+      grid.classList.add("compare-mode");
+
+      const periodLabel = activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1);
+      if(title) title.textContent = "Crypto Comparison";
+      if(subtitle) subtitle.textContent = `${periodLabel} • ${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
+
+      grid.innerHTML = activeCompareNames.map((name, idx) => {
+        const base = dailySeries(name);
+        const series = aggregateSeries(base, activeHistoryPeriod);
+        const latest = series.length ? `${series[series.length - 1].value}/100` : "No history";
+        return `
+          <div class="history-compare-item">
+            <div class="history-compare-title">
+              <b>${esc(name)}</b>
+              <span>${latest}</span>
+            </div>
+            <div class="history-compare-chart-wrap">
+              <svg id="historyCompareChart${idx}" class="history-compare-chart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="history-stats history-compare-stats" id="historyCompareStats${idx}"></div>
+          </div>
+        `;
+      }).join("");
+
+      activeCompareNames.forEach((name, idx) => {
+        const series = aggregateSeries(dailySeries(name), activeHistoryPeriod);
+        drawHistoryChart(series, `historyCompareChart${idx}`);
+        renderHistoryStats(series, name, activeHistoryPeriod, `historyCompareStats${idx}`);
+      });
+    }
+
+    function renderHistory(){
+      if(activeCompareNames.length === 2){
+        renderCompareHistory();
+        return;
+      }
+
+      const title = document.getElementById("historyTitle");
+      const subtitle = document.getElementById("historySubtitle");
+      const card = document.querySelector(".history-card");
+      if(card) card.classList.remove("compare-card");
+
+      restoreSingleHistoryGrid();
 
       const base = dailySeries(activeHistoryName);
       const series = aggregateSeries(base, activeHistoryPeriod);
@@ -1234,6 +1470,8 @@
     window.openHistory = openHistory;
     window.closeHistory = closeHistory;
     window.setHistoryPeriod = setHistoryPeriod;
+    window.toggleCompare = toggleCompare;
+    window.openCompareHistory = openCompareHistory;
 
     init();
   </script>
