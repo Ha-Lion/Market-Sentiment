@@ -532,122 +532,91 @@
       .history-card{height:92vh}
     }
   
-    .crypto-news-panel{
+    /* v03 rollback-safe headline width fix only */
+    .crypto-news-panel,
+    .headlines-panel,
+    .headline-panel{
       max-width:1420px;
-      margin-top:18px;
-    }
-    .crypto-news-list{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:12px;
-      margin-top:14px;
-    }
-    .crypto-news-card{
-      display:grid;
-      grid-template-columns:86px minmax(0,1fr) 112px;
-      gap:16px;
-      align-items:center;
       width:100%;
-      min-height:108px;
-      padding:14px 16px;
-      border:1px solid rgba(148,163,184,.18);
-      border-radius:16px;
-      background:linear-gradient(180deg,rgba(17,24,39,.78),rgba(8,13,21,.94));
-      color:inherit;
-      overflow:hidden;
     }
-    .crypto-news-logo{
-      width:64px;
-      height:64px;
-      border-radius:14px;
+
+    #cryptoHeadlineList,
+    #headlineList,
+    .headline-list{
+      width:100%;
+    }
+
+    #cryptoHeadlineList .headline,
+    #headlineList .headline,
+    .headline-list .headline,
+    #cryptoHeadlineList .dynamic-card,
+    #headlineList .dynamic-card,
+    .headline-list .dynamic-card{
+      width:100%;
+      max-width:none;
+      min-height:86px;
+      padding:12px 14px;
+      display:grid;
+      grid-template-columns:78px minmax(0,1fr);
+      column-gap:16px;
+      align-items:center;
+    }
+
+    #cryptoHeadlineList img,
+    #headlineList img,
+    .headline-list img,
+    #cryptoHeadlineList .source-logo,
+    #headlineList .source-logo,
+    .headline-list .source-logo{
+      width:58px;
+      height:58px;
+      max-width:58px;
+      max-height:58px;
       object-fit:contain;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      padding:6px;
       justify-self:center;
+      align-self:center;
+      position:static;
+      display:block;
+      flex:0 0 auto;
+      margin:0;
     }
-    .crypto-news-logo-fallback{
-      width:64px;
-      height:64px;
-      border-radius:14px;
-      display:grid;
-      place-items:center;
-      background:linear-gradient(135deg,rgba(210,153,34,.26),rgba(88,166,255,.16));
-      border:1px solid rgba(255,255,255,.12);
-      color:#ffd780;
-      font-size:18px;
-      font-weight:900;
-      justify-self:center;
+
+    #cryptoHeadlineList .headline h3,
+    #headlineList .headline h3,
+    .headline-list .headline h3,
+    #cryptoHeadlineList .dynamic-card h3,
+    #headlineList .dynamic-card h3,
+    .headline-list .dynamic-card h3{
+      margin-top:0;
+      line-height:1.28;
     }
-    .crypto-news-main{
-      min-width:0;
-      overflow:hidden;
-    }
-    .crypto-news-source{
-      color:#58a6ff;
-      font-size:13px;
-      font-weight:750;
-      margin-bottom:4px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .crypto-news-title{
-      color:#fff;
-      font-size:14px;
-      line-height:1.3;
-      font-weight:850;
-      margin:0 0 6px;
-    }
-    .crypto-news-desc{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.35;
-      margin:0 0 7px;
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-    }
-    .crypto-news-meta{
-      color:var(--soft);
-      font-size:11px;
+
+    #cryptoHeadlineList .meta,
+    #headlineList .meta,
+    .headline-list .meta{
       line-height:1.35;
     }
-    .crypto-news-action{
-      justify-self:end;
-      display:grid;
-      gap:7px;
-      text-align:right;
-      color:#ffd780;
-      font-size:12px;
-      font-weight:800;
-      white-space:nowrap;
-    }
-    .crypto-news-pill{
-      display:inline-flex;
-      justify-content:center;
-      min-width:82px;
-      padding:6px 9px;
-      border-radius:999px;
-      border:1px solid rgba(210,153,34,.32);
-      background:rgba(210,153,34,.10);
-      color:#ffd780;
-      font-size:11px;
-      font-weight:800;
-    }
-    @media(max-width:820px){
-      .crypto-news-card{
-        grid-template-columns:58px minmax(0,1fr);
+
+    @media(max-width:760px){
+      #cryptoHeadlineList .headline,
+      #headlineList .headline,
+      .headline-list .headline,
+      #cryptoHeadlineList .dynamic-card,
+      #headlineList .dynamic-card,
+      .headline-list .dynamic-card{
+        grid-template-columns:62px minmax(0,1fr);
+        column-gap:12px;
       }
-      .crypto-news-action{
-        grid-column:2;
-        justify-self:start;
-        text-align:left;
-      }
-      .crypto-news-logo,.crypto-news-logo-fallback{
+      #cryptoHeadlineList img,
+      #headlineList img,
+      .headline-list img,
+      #cryptoHeadlineList .source-logo,
+      #headlineList .source-logo,
+      .headline-list .source-logo{
         width:48px;
         height:48px;
+        max-width:48px;
+        max-height:48px;
       }
     }
 
@@ -703,7 +672,7 @@
       <div class="crypto-panel">
         <h2>Latest Crypto Headlines</h2>
         <p id="headlineStatus">Loading crypto headlines...</p>
-        <div class="crypto-news-list" id="cryptoHeadlineList"></div>
+        <div class="headline-list" id="headlineList"></div>
       </div>
     </section>
 
@@ -747,73 +716,6 @@
   </main>
 
   <script>
-
-    function sourceLogoUrl(source){
-      const s = String(source || "").toLowerCase();
-      if(s.includes("coindesk")) return "https://www.google.com/s2/favicons?domain=coindesk.com&sz=64";
-      if(s.includes("cointelegraph")) return "https://www.google.com/s2/favicons?domain=cointelegraph.com&sz=64";
-      if(s.includes("the block")) return "https://www.google.com/s2/favicons?domain=theblock.co&sz=64";
-      if(s.includes("decrypt")) return "https://www.google.com/s2/favicons?domain=decrypt.co&sz=64";
-      if(s.includes("cryptoslate")) return "https://www.google.com/s2/favicons?domain=cryptoslate.com&sz=64";
-      if(s.includes("crypto briefing")) return "https://www.google.com/s2/favicons?domain=cryptobriefing.com&sz=64";
-      if(s.includes("yahoo")) return "https://www.google.com/s2/favicons?domain=finance.yahoo.com&sz=64";
-      if(s.includes("investing")) return "https://www.google.com/s2/favicons?domain=investing.com&sz=64";
-      if(s.includes("fxstreet")) return "https://www.google.com/s2/favicons?domain=fxstreet.com&sz=64";
-      if(s.includes("cnbc")) return "https://www.google.com/s2/favicons?domain=cnbc.com&sz=64";
-      if(s.includes("reuters")) return "https://www.google.com/s2/favicons?domain=reuters.com&sz=64";
-      if(s.includes("bloomberg")) return "https://www.google.com/s2/favicons?domain=bloomberg.com&sz=64";
-      return "";
-    }
-
-    function cryptoNewsDetails(x){
-      const parts = [];
-      if(x.published_utc) parts.push(x.published_utc.replace(" UTC",""));
-      if(x.vote) parts.push(x.vote);
-      if(x.impact) parts.push(x.impact + " impact");
-      if(Array.isArray(x.instruments) && x.instruments.length) parts.push(x.instruments.slice(0,4).join(", "));
-      return parts.join(" • ");
-    }
-
-    function renderCryptoHeadlines(items){
-      const list = document.getElementById("cryptoHeadlineList") || document.getElementById("headlineList");
-      const status = document.getElementById("cryptoHeadlineStatus") || document.getElementById("statusText");
-      if(!list) return;
-
-      const cryptoItems = (items || []).filter(x => {
-        const text = [
-          x.title, x.description, x.source,
-          ...(Array.isArray(x.markets) ? x.markets : []),
-          ...(Array.isArray(x.instruments) ? x.instruments : [])
-        ].join(" ").toLowerCase();
-        return text.includes("crypto") || text.includes("bitcoin") || text.includes("btc") || text.includes("ethereum") || text.includes("eth") || text.includes("solana") || text.includes("xrp") || text.includes("bnb") || text.includes("dogecoin") || text.includes("cardano");
-      }).slice(0,25);
-
-      if(status) status.textContent = `${cryptoItems.length} latest crypto headline(s) shown from dashboard_data.json.`;
-
-      list.className = "crypto-news-list";
-      list.innerHTML = cryptoItems.map(x => {
-        const logo = sourceLogoUrl(x.source);
-        const fallback = esc(String(x.source || "N").trim().slice(0,1).toUpperCase() || "N");
-        const desc = x.description || x.summary || "";
-        const meta = cryptoNewsDetails(x);
-        return `
-          <a class="crypto-news-card" href="${esc(x.link || "#")}" target="_blank" rel="noopener">
-            ${logo ? `<img class="crypto-news-logo" src="${esc(logo)}" alt="${esc(x.source || "Source")} logo" loading="lazy">` : `<div class="crypto-news-logo-fallback">${fallback}</div>`}
-            <div class="crypto-news-main">
-              <div class="crypto-news-source">${esc(x.source || "Source")}</div>
-              <h3 class="crypto-news-title">${esc(x.title || "Untitled headline")}</h3>
-              ${desc ? `<p class="crypto-news-desc">${esc(desc)}</p>` : ""}
-              <div class="crypto-news-meta">${esc(meta || "Latest crypto headline")}</div>
-            </div>
-            <div class="crypto-news-action">
-              <span class="crypto-news-pill">${esc(x.vote || "Open")}</span>
-              <span>Open →</span>
-            </div>
-          </a>
-        `;
-      }).join("") || `<div class="muted">No crypto headlines found yet.</div>`;
-    }
-
     const CRYPTO_ITEMS = [
       {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins","blockchain","token"], official:true},
       {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization","crypto rules","digital assets regulation"], official:false},
@@ -1299,24 +1201,6 @@
     window.setHistoryPeriod = setHistoryPeriod;
 
     init();
-  
-    async function refreshCryptoHeadlineCards(){
-      try{
-        const r = await fetch("dashboard_data.json",{cache:"no-store"});
-        const d = await r.json();
-        const all = [
-          ...(Array.isArray(d.psi_headlines) ? d.psi_headlines : []),
-          ...(Array.isArray(d.top_headlines) ? d.top_headlines : []),
-          ...(Array.isArray(d.headlines) ? d.headlines : [])
-        ];
-        renderCryptoHeadlines(all);
-      }catch(err){
-        const status = document.getElementById("cryptoHeadlineStatus") || document.getElementById("statusText");
-        if(status) status.textContent = "Crypto headlines could not be loaded.";
-      }
-    }
-    window.addEventListener("load", refreshCryptoHeadlineCards);
-
   </script>
 </body>
 </html>
