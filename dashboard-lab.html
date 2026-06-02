@@ -798,8 +798,8 @@
   <script>
     const CRYPTO_ITEMS = [
       {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins","blockchain","token"], official:true},
-      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization","crypto rules","digital assets regulation"], official:false},
-      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:false},
+      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization","crypto rules","digital assets regulation"], official:true},
+      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:true},
       {name:"Bitcoin / BTC", symbol:"BTC", aliases:["bitcoin","btc"], official:true},
       {name:"Ethereum / ETH", symbol:"ETH", aliases:["ethereum","eth"], official:true},
       {name:"Solana / SOL", symbol:"SOL", aliases:["solana","sol"], official:true},
@@ -858,49 +858,29 @@
       ].join(" "));
     }
 
-    function itemMatchesHeadline(item, h){
-      const text = headlineText(h);
+    function exactInstrumentMatch(item, h){
       const instruments = Array.isArray(h.instruments) ? h.instruments.map(x => normalizeText(x)) : [];
-      if(instruments.some(x => x === normalizeText(item.name))) return true;
+      return instruments.some(x => x === normalizeText(item.name));
+    }
+
+    function itemMatchesHeadline(item, h){
+      if(exactInstrumentMatch(item, h)) return true;
+      const text = headlineText(h);
       return item.aliases.some(alias => text.includes(normalizeText(alias)));
     }
 
-    function currentLatestRecord(){
-      const records = Array.isArray(historyData?.records) ? historyData.records : [];
-      return records[records.length - 1] || null;
-    }
-
-    function getOfficialCurrent(item){
-      const latest = currentLatestRecord();
-      const row = latest?.instruments?.[item.name];
-      if(!row) return null;
-      return {
-        name:item.name,
-        symbol:item.symbol,
-        score:Number(row.psi),
-        label:row.sentiment_label || labelForScore(Number(row.psi)),
-        headlineCount:Number(row.headline_count || 0),
-        bullish:Number(row.bullish_count || 0),
-        bearish:Number(row.bearish_count || 0),
-        neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
-        source:"official",
-        topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
-      };
-    }
-
-    function getDerivedCurrent(item){
-      const headlines = getCryptoHeadlines().filter(h => itemMatchesHeadline(item, h));
+    function scoreFromHeadlineSet(name, symbol, headlines, source){
       if(!headlines.length){
         return {
-          name:item.name,
-          symbol:item.symbol,
+          name,
+          symbol,
           score:null,
           label:"No PSI",
           headlineCount:0,
           bullish:0,
           bearish:0,
           neutral:0,
-          source:"derived",
+          source,
           topHeadlines:[]
         };
       }
@@ -913,6 +893,7 @@
       headlines.forEach(h => {
         const s = Number(h.weighted_score ?? h.score ?? 0);
         total += Number.isFinite(s) ? s : 0;
+
         const vote = normalizeText(h.vote);
         if(vote.includes("bull")) bullish++;
         else if(vote.includes("bear")) bearish++;
@@ -923,17 +904,54 @@
       const score = Math.round(clamp(50 + avg * 6, 0, 100));
 
       return {
-        name:item.name,
-        symbol:item.symbol,
+        name,
+        symbol,
         score,
         label:labelForScore(score),
         headlineCount:headlines.length,
         bullish,
         bearish,
         neutral,
-        source:"derived",
+        source,
         topHeadlines:headlines.slice(0,5)
       };
+    }
+
+    function currentLatestRecord(){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      return records[records.length - 1] || null;
+    }
+
+    function getOfficialCurrent(item){
+      const latest = currentLatestRecord();
+      const row = latest?.instruments?.[item.name];
+
+      if(row && row.psi != null){
+        return {
+          name:item.name,
+          symbol:item.symbol,
+          score:Number(row.psi),
+          label:row.sentiment_label || labelForScore(Number(row.psi)),
+          headlineCount:Number(row.headline_count || 0),
+          bullish:Number(row.bullish_count || 0),
+          bearish:Number(row.bearish_count || 0),
+          neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
+          source:"official",
+          topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
+        };
+      }
+
+      const backendTagged = getCryptoHeadlines().filter(h => exactInstrumentMatch(item, h));
+      if(backendTagged.length){
+        return scoreFromHeadlineSet(item.name, item.symbol, backendTagged, "backend");
+      }
+
+      return null;
+    }
+
+    function getDerivedCurrent(item){
+      const headlines = getCryptoHeadlines().filter(h => itemMatchesHeadline(item, h));
+      return scoreFromHeadlineSet(item.name, item.symbol, headlines, "derived");
     }
 
     function getCryptoHeadlines(){
@@ -973,7 +991,7 @@
       grid.innerHTML = currentRows.map((row, idx) => {
         const score = row.score == null ? 0 : row.score;
         const color = colorForScore(row.score);
-        const sourceText = row.source === "official" ? "Saved PSI" : "Headline fallback";
+        const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend tagged PSI" : "Headline fallback");
         return `
           <article class="crypto-card">
             <div class="crypto-card-top">
@@ -1188,11 +1206,12 @@
             label:r.date,
             value:Number(row.psi),
             count:Number(row.headline_count || 0),
-            sentiment:row.sentiment_label || labelForScore(Number(row.psi))
+            sentiment:row.sentiment_label || labelForScore(Number(row.psi)),
+            source:"official"
           };
         }
 
-        if(item && item.official === false){
+        if(item){
           return derivedHistoryRowForItem(r, item);
         }
 
