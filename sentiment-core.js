@@ -624,7 +624,10 @@
     const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
     const period = opts.period || "daily";
     const fallbackScore = roundScore(opts.fallbackScore != null ? opts.fallbackScore : opts.score);
-    const targetLength = period === "weekly" ? 7 : period === "monthly" ? 12 : 12;
+    let targetLength = 12;
+    if(period === "weekly") targetLength = 7;
+    else if(period === "monthly") targetLength = 30;
+    else if(period === "sixmonth" || period === "6m" || period === "six_month") targetLength = 180;
     const values = [];
 
     historyRecords(instrumentHistoryData).forEach(record => {
