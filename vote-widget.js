@@ -185,12 +185,12 @@ function psdCreateAdvertiseBanner(){
         left:50%;
         bottom:16px;
         transform:translateX(-50%);
-        width:min(760px,60vw);
+        width:min(620px,54vw);
         min-height:34px;
         padding:0 12px;
-        border:1px solid rgba(210,153,34,.42);
+        border:1px solid rgba(210,153,34,.34);
         border-radius:999px;
-        background:linear-gradient(90deg,rgba(210,153,34,.18),rgba(88,166,255,.08));
+        background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.07));
         color:#fff;
         display:flex;
         align-items:center;
@@ -202,7 +202,7 @@ function psdCreateAdvertiseBanner(){
         font-weight:650;
         white-space:nowrap;
         overflow:hidden;
-        box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 18px rgba(210,153,34,.16);
+        box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 18px rgba(210,153,34,.14);
         z-index:5;
       }
 
@@ -219,24 +219,23 @@ function psdCreateAdvertiseBanner(){
       }
 
       .psd-ad-banner a{
-        color:#071019;
-        font-weight:850;
+        color:#fff;
+        font-weight:800;
         text-decoration:none;
-        border:1px solid rgba(255,215,128,.48);
-        background:linear-gradient(180deg,#ffd780,#d29922);
-        padding:5px 10px;
+        border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.07);
+        padding:4px 8px;
         border-radius:999px;
         white-space:nowrap;
         flex-shrink:0;
         transition:.18s ease;
         font-size:11px;
         line-height:1;
-        box-shadow:0 0 14px rgba(210,153,34,.18);
       }
 
       .psd-ad-banner a:hover{
+        border-color:rgba(210,153,34,.55);
         transform:translateY(-1px);
-        filter:brightness(1.06);
       }
 
       @media(max-width:1180px){
@@ -292,7 +291,7 @@ function psdCreateAdvertiseBanner(){
     banner.style.left = "50%";
     banner.style.top = "12px";
     banner.style.bottom = "auto";
-    banner.style.width = "min(760px, calc(100vw - 24px))";
+    banner.style.width = "min(620px, calc(100vw - 24px))";
     banner.style.zIndex = "2000";
     document.body.appendChild(banner);
   }
@@ -315,6 +314,31 @@ function psdHeaders(){
     "Authorization": "Bearer " + PSD_SUPABASE_ANON_KEY,
     "Content-Type": "application/json"
   };
+}
+
+
+function psdNormalizeTopNavIcons(){
+  const topNavIconMap = {
+    "dashboard.html": "📊",
+    "sentiment-history.html": "📈",
+    "news-articles.html": "📰",
+    "market-sentiment.html": "📘",
+    "advertise.html": "💼",
+    "contact.html": "✉️",
+    "about.html": "ℹ️"
+  };
+
+  document.querySelectorAll(".nav a[href]").forEach(link => {
+    const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
+    const icon = topNavIconMap[href];
+    if(!icon) return;
+
+    const text = link.textContent || "";
+    const normalized = text.trimStart();
+    if(normalized.startsWith(icon)){
+      link.textContent = normalized.slice(icon.length).trimStart();
+    }
+  });
 }
 
 function psdEnhanceFooterLegalLinks(){
@@ -710,6 +734,7 @@ function psdInit(){
   psdSafe("load GA4", psdLoadGA4);
   psdSafe("inject structured data", psdInjectStructuredData);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
+  psdSafe("normalize top nav icons", psdNormalizeTopNavIcons);
   psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment", psdApplyUserSentiment);
@@ -730,6 +755,7 @@ window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
   psdSafe("create PDF widget on load", psdCreatePdfWidget);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
+  psdSafe("normalize top nav icons on load", psdNormalizeTopNavIcons);
   psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links on load", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment on load", psdApplyUserSentiment);
