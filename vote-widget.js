@@ -136,7 +136,7 @@ function psdClass(value){
 function psdCreateAdvertiseBanner(){
   const supportUrl = "https://gofund.me/0d687f045";
   const supportMarkup = `
-    <span>🚀 <strong>Help take Public Sentiment Dash to the next level</strong> — support the free market-sentiment project.</span>
+    <span>🚀 <strong>Help take Public Sentiment Dash to the next level</strong> — support the free project.</span>
     <a href="${supportUrl}" target="_blank" rel="noopener">Support Project</a>
   `;
 
@@ -185,9 +185,9 @@ function psdCreateAdvertiseBanner(){
         left:50%;
         bottom:16px;
         transform:translateX(-50%);
-        width:min(620px,54vw);
-        min-height:34px;
-        padding:0 12px;
+        width:min(590px,48vw);
+        min-height:31px;
+        padding:0 10px;
         border:1px solid rgba(210,153,34,.34);
         border-radius:999px;
         background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.07));
@@ -197,8 +197,8 @@ function psdCreateAdvertiseBanner(){
         justify-content:center;
         gap:8px;
         text-align:center;
-        font-size:11px;
-        line-height:1.15;
+        font-size:10.5px;
+        line-height:1.12;
         font-weight:650;
         white-space:nowrap;
         overflow:hidden;
@@ -224,7 +224,7 @@ function psdCreateAdvertiseBanner(){
         text-decoration:none;
         border:1px solid rgba(255,255,255,.16);
         background:rgba(255,255,255,.07);
-        padding:4px 8px;
+        padding:4px 7px;
         border-radius:999px;
         white-space:nowrap;
         flex-shrink:0;
@@ -317,28 +317,168 @@ function psdHeaders(){
 }
 
 
+function psdApplyCompactRibbonLayout(){
+  if(document.getElementById("psdCompactRibbonCss")) return;
+
+  const style = document.createElement("style");
+  style.id = "psdCompactRibbonCss";
+  style.textContent = `
+    .header{
+      padding:8px 22px 7px !important;
+      gap:14px !important;
+      min-height:148px !important;
+    }
+
+    .logo{
+      width:112px !important;
+      height:112px !important;
+      padding:6px !important;
+    }
+
+    .brand{
+      gap:11px !important;
+    }
+
+    .brand-stamp,
+    .header-pill,
+    .page-chip{
+      padding:7px 12px !important;
+      font-size:12px !important;
+    }
+
+    .site-subtitle{
+      font-size:12px !important;
+    }
+
+    .header-center{
+      min-width:200px !important;
+      transform:translateY(-5px) !important;
+    }
+
+    .nav{
+      gap:7px 11px !important;
+      transform:translateY(-5px) !important;
+      align-content:flex-start !important;
+    }
+
+    .nav a{
+      font-size:12px !important;
+      line-height:1.05 !important;
+      padding:6px 7px !important;
+      gap:5px !important;
+      white-space:nowrap !important;
+    }
+
+    .nav a::before{
+      width:13px !important;
+      min-width:13px !important;
+      font-size:11px !important;
+    }
+
+    .social-links{
+      gap:6px !important;
+      margin-left:6px !important;
+      margin-top:0 !important;
+    }
+
+    .social-label{
+      font-size:11px !important;
+    }
+
+    .social-pill{
+      min-width:38px !important;
+      padding:6px 10px !important;
+      font-size:11px !important;
+    }
+
+    .social-pill.linkedin{
+      min-width:68px !important;
+    }
+
+    @media(max-width:1180px){
+      .header{
+        min-height:auto !important;
+      }
+      .header-center,
+      .nav{
+        transform:none !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function psdNormalizeTopNavIcons(){
-  const topNavIconMap = {
-    "dashboard.html": "📊",
-    "sentiment-history.html": "📈",
-    "news-articles.html": "📰",
-    "market-sentiment.html": "📘",
-    "advertise.html": "💼",
-    "contact.html": "✉️",
-    "about.html": "ℹ️"
+  const navLinkMap = {
+    "dashboard.html": { label:"Interactive Dashboard", icon:"📊" },
+    "charts.html": { label:"Market Charts", icon:"📈" },
+    "sentiment-history.html": { label:"Historical Sentiment", icon:"📈" },
+    "news-articles.html": { label:"News & Articles", icon:"📰" },
+    "market-sentiment.html": { label:"Guides", icon:"📘" },
+    "advertise.html": { label:"Business Opportunities", icon:"💼" },
+    "contact.html": { label:"Get in Touch", icon:"✉️" },
+    "about.html": { label:"About", icon:"ℹ️" },
+    "crypto.html": { label:"Crypto Sentiment", icon:"🪙" },
+    "energy.html": { label:"Energy Sentiment", icon:"⚡" },
+    "precious-metals.html": { label:"Precious Metals Sentiment", icon:"🥇" },
+    "indices.html": { label:"Indices Sentiment", icon:"📊" }
   };
+
+  if(!document.getElementById("psdRibbonIconCss")){
+    const style = document.createElement("style");
+    style.id = "psdRibbonIconCss";
+    style.textContent = Object.entries(navLinkMap).map(([href, item]) =>
+      `.nav a[href="${href}"]::before{content:"${item.icon}"!important;}`
+    ).join("\n");
+    document.head.appendChild(style);
+  }
 
   document.querySelectorAll(".nav a[href]").forEach(link => {
     const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
-    const icon = topNavIconMap[href];
-    if(!icon) return;
+    const key = href.split("/").pop();
+    const item = navLinkMap[key];
+    if(!item) return;
 
-    const text = link.textContent || "";
-    const normalized = text.trimStart();
-    if(normalized.startsWith(icon)){
-      link.textContent = normalized.slice(icon.length).trimStart();
-    }
+    link.href = key;
+    link.textContent = item.label;
   });
+}
+
+function psdEnsureMarketChartsNavLink(){
+  const nav = document.querySelector(".nav");
+  if(!nav) return;
+
+  const currentPath = window.location.pathname.toLowerCase();
+  const isChartsPage = currentPath.endsWith("/charts.html") || currentPath.endsWith("charts.html");
+
+  let chartsLink = Array.from(nav.querySelectorAll("a[href]")).find(link => {
+    const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
+    return href === "charts.html" || href.endsWith("/charts.html");
+  });
+
+  if(!chartsLink){
+    chartsLink = document.createElement("a");
+    chartsLink.href = "charts.html";
+
+    const dashboardLink = Array.from(nav.querySelectorAll("a[href]")).find(link => {
+      const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
+      return href === "dashboard.html" || href.endsWith("/dashboard.html");
+    });
+
+    const rowBreak = nav.querySelector(".nav-row-break");
+
+    if(dashboardLink){
+      dashboardLink.insertAdjacentElement("afterend", chartsLink);
+    }else if(rowBreak){
+      nav.insertBefore(chartsLink, rowBreak);
+    }else{
+      nav.insertBefore(chartsLink, nav.firstChild);
+    }
+  }
+
+  chartsLink.href = "charts.html";
+  chartsLink.textContent = "Market Charts";
+  chartsLink.classList.toggle("active", isChartsPage);
 }
 
 function psdEnhanceFooterLegalLinks(){
@@ -733,7 +873,9 @@ function psdInit(){
   psdSafe("create PDF widget", psdCreatePdfWidget);
   psdSafe("load GA4", psdLoadGA4);
   psdSafe("inject structured data", psdInjectStructuredData);
+  psdSafe("apply compact ribbon layout", psdApplyCompactRibbonLayout);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
+  psdSafe("ensure market charts nav link", psdEnsureMarketChartsNavLink);
   psdSafe("normalize top nav icons", psdNormalizeTopNavIcons);
   psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links", psdEnhanceSocialLinks);
@@ -754,7 +896,9 @@ if(document.readyState === "loading"){
 window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
   psdSafe("create PDF widget on load", psdCreatePdfWidget);
+  psdSafe("apply compact ribbon layout on load", psdApplyCompactRibbonLayout);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
+  psdSafe("ensure market charts nav link on load", psdEnsureMarketChartsNavLink);
   psdSafe("normalize top nav icons on load", psdNormalizeTopNavIcons);
   psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
   psdSafe("enhance social links on load", psdEnhanceSocialLinks);
