@@ -3,7 +3,6 @@ const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJz
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
-const PSD_SUPPORT_URL = "https://gofund.me/0d687f045";
 
 const PSD_VOTE_INSTRUMENTS = [
   "S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX",
@@ -135,122 +134,168 @@ function psdClass(value){
 }
 
 function psdCreateAdvertiseBanner(){
-  if(document.getElementById("psdAdvertiseBanner")) return;
-
-  const header = document.querySelector(".header");
-  if(!header) return;
-
-  header.classList.add("psd-ribbon-ad-host");
-
-  const style = document.createElement("style");
-  style.textContent = `
-    .psd-ribbon-ad-host{
-      position:sticky;
-    }
-
-    .psd-ad-banner{
-      position:absolute;
-      left:50%;
-      bottom:16px;
-      transform:translateX(-50%);
-      width:min(620px,54vw);
-      min-height:34px;
-      padding:0 12px;
-      border:1px solid rgba(210,153,34,.34);
-      border-radius:999px;
-      background:linear-gradient(90deg,rgba(210,153,34,.14),rgba(88,166,255,.07));
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      text-align:center;
-      font-size:11px;
-      line-height:1.15;
-      font-weight:650;
-      white-space:nowrap;
-      overflow:hidden;
-      box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 18px rgba(210,153,34,.14);
-      z-index:5;
-    }
-
-    .psd-ad-banner span{
-      min-width:0;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-
-    .psd-ad-banner strong{
-      color:#ffd780;
-      font-weight:800;
-    }
-
-    .psd-ad-banner a{
-      color:#fff;
-      font-weight:800;
-      text-decoration:none;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(255,255,255,.07);
-      padding:4px 8px;
-      border-radius:999px;
-      white-space:nowrap;
-      flex-shrink:0;
-      transition:.18s ease;
-      font-size:11px;
-      line-height:1;
-    }
-
-    .psd-ad-banner a:hover{
-      border-color:rgba(210,153,34,.55);
-      transform:translateY(-1px);
-    }
-
-    @media(max-width:1180px){
-      .psd-ad-banner{
-        position:static;
-        transform:none;
-        width:100%;
-        margin-top:8px;
-        grid-column:1 / -1;
-      }
-    }
-
-    @media(max-width:760px){
-      .psd-ad-banner{
-        border-radius:18px;
-        flex-direction:column;
-        margin-top:10px;
-        min-height:auto;
-        padding:9px 12px;
-        white-space:normal;
-      }
-      .psd-ad-banner span{
-        white-space:normal;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-
-  const banner = document.createElement("div");
-  banner.id = "psdAdvertiseBanner";
-  banner.className = "psd-ad-banner";
-  banner.innerHTML = `
+  const supportUrl = "https://gofund.me/0d687f045";
+  const supportMarkup = `
     <span>🚀 <strong>Help take Public Sentiment Dash to the next level</strong> — support the free market-sentiment project.</span>
-    <a href="${PSD_SUPPORT_URL}" target="_blank" rel="noopener">Support Project</a>
+    <a href="${supportUrl}" target="_blank" rel="noopener">Support Project</a>
   `;
 
-  const supportLink = banner.querySelector("a");
-  if(supportLink){
-    supportLink.addEventListener("click", () => {
-      psdTrack("support_banner_click", {
-        page_path: window.location.pathname,
-        destination: "gofundme"
+  function psdApplySupportBannerContent(banner){
+    if(!banner) return false;
+
+    banner.id = "psdAdvertiseBanner";
+    banner.classList.add("psd-ad-banner");
+    banner.innerHTML = supportMarkup;
+
+    const link = banner.querySelector("a");
+    if(link && !link.dataset.psdSupportTracked){
+      link.dataset.psdSupportTracked = "1";
+      link.addEventListener("click", () => {
+        psdTrack("support_banner_click", {
+          page_path: window.location.pathname,
+          fundraiser_url: supportUrl
+        });
       });
+    }
+
+    return true;
+  }
+
+  const header =
+    document.querySelector(".header") ||
+    document.querySelector("header") ||
+    document.querySelector(".site-header") ||
+    document.querySelector(".topbar") ||
+    document.querySelector(".top-nav");
+
+  if(header){
+    header.classList.add("psd-ribbon-ad-host");
+  }
+
+  if(!document.getElementById("psdAdvertiseBannerCss")){
+    const style = document.createElement("style");
+    style.id = "psdAdvertiseBannerCss";
+    style.textContent = `
+      .psd-ribbon-ad-host{
+        position:sticky;
+      }
+
+      .psd-ad-banner{
+        position:absolute;
+        left:50%;
+        bottom:16px;
+        transform:translateX(-50%);
+        width:min(760px,60vw);
+        min-height:34px;
+        padding:0 12px;
+        border:1px solid rgba(210,153,34,.42);
+        border-radius:999px;
+        background:linear-gradient(90deg,rgba(210,153,34,.18),rgba(88,166,255,.08));
+        color:#fff;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        text-align:center;
+        font-size:11px;
+        line-height:1.15;
+        font-weight:650;
+        white-space:nowrap;
+        overflow:hidden;
+        box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 18px rgba(210,153,34,.16);
+        z-index:5;
+      }
+
+      .psd-ad-banner span{
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+
+      .psd-ad-banner strong{
+        color:#ffd780;
+        font-weight:800;
+      }
+
+      .psd-ad-banner a{
+        color:#071019;
+        font-weight:850;
+        text-decoration:none;
+        border:1px solid rgba(255,215,128,.48);
+        background:linear-gradient(180deg,#ffd780,#d29922);
+        padding:5px 10px;
+        border-radius:999px;
+        white-space:nowrap;
+        flex-shrink:0;
+        transition:.18s ease;
+        font-size:11px;
+        line-height:1;
+        box-shadow:0 0 14px rgba(210,153,34,.18);
+      }
+
+      .psd-ad-banner a:hover{
+        transform:translateY(-1px);
+        filter:brightness(1.06);
+      }
+
+      @media(max-width:1180px){
+        .psd-ad-banner{
+          position:static;
+          transform:none;
+          width:100%;
+          margin-top:8px;
+          grid-column:1 / -1;
+        }
+      }
+
+      @media(max-width:760px){
+        .psd-ad-banner{
+          border-radius:18px;
+          flex-direction:column;
+          margin-top:10px;
+          min-height:auto;
+          padding:9px 12px;
+          white-space:normal;
+        }
+        .psd-ad-banner span{
+          white-space:normal;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  let banner = document.getElementById("psdAdvertiseBanner");
+
+  if(!banner){
+    banner = Array.from(document.querySelectorAll(".psd-ad-banner")).find(el => {
+      const text = (el.textContent || "").toLowerCase();
+      return text.includes("partner with public sentiment dash") ||
+             text.includes("help take public sentiment dash") ||
+             text.includes("support the free market-sentiment project");
     });
   }
 
-  header.appendChild(banner);
+  if(banner){
+    psdApplySupportBannerContent(banner);
+    return;
+  }
+
+  banner = document.createElement("div");
+  psdApplySupportBannerContent(banner);
+
+  if(header){
+    header.appendChild(banner);
+  }else if(document.body){
+    banner.style.position = "fixed";
+    banner.style.left = "50%";
+    banner.style.top = "12px";
+    banner.style.bottom = "auto";
+    banner.style.width = "min(760px, calc(100vw - 24px))";
+    banner.style.zIndex = "2000";
+    document.body.appendChild(banner);
+  }
 }
 
 function psdGetVoterId(){
