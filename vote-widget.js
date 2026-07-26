@@ -136,8 +136,8 @@ function psdClass(value){
 function psdCreateAdvertiseBanner(){
   const supportUrl = "https://gofund.me/0d687f045";
   const supportMarkup = `
-    <span>🚀 <strong>Help take Public Sentiment Dash to the next level</strong> — support the free project.</span>
-    <a href="${supportUrl}" target="_blank" rel="noopener">Support Project</a>
+    <span>🚀 <strong>Help take Public Sentiment Dash to the next level</strong></span>
+    <a href="${supportUrl}" target="_blank" rel="noopener">Donate Now</a>
   `;
 
   function psdApplySupportBannerContent(banner){
@@ -185,7 +185,7 @@ function psdCreateAdvertiseBanner(){
         left:50%;
         bottom:16px;
         transform:translateX(-50%);
-        width:min(590px,48vw);
+        width:min(560px,46vw);
         min-height:31px;
         padding:0 10px;
         border:1px solid rgba(210,153,34,.34);
@@ -219,12 +219,12 @@ function psdCreateAdvertiseBanner(){
       }
 
       .psd-ad-banner a{
-        color:#fff;
-        font-weight:800;
+        color:#05070b;
+        font-weight:900;
         text-decoration:none;
-        border:1px solid rgba(255,255,255,.16);
-        background:rgba(255,255,255,.07);
-        padding:4px 7px;
+        border:1px solid rgba(210,153,34,.70);
+        background:linear-gradient(180deg,#f4d17d,#d29922);
+        padding:5px 10px;
         border-radius:999px;
         white-space:nowrap;
         flex-shrink:0;
@@ -340,10 +340,18 @@ function psdApplyCompactRibbonLayout(){
     }
 
     .brand-stamp,
-    .header-pill,
     .page-chip{
       padding:7px 12px !important;
       font-size:12px !important;
+    }
+
+    .header-pill{
+      min-width:270px !important;
+      padding:8px 22px !important;
+      font-size:12px !important;
+      justify-content:center !important;
+      text-align:center !important;
+      white-space:nowrap !important;
     }
 
     .site-subtitle{
@@ -351,28 +359,28 @@ function psdApplyCompactRibbonLayout(){
     }
 
     .header-center{
-      min-width:200px !important;
+      min-width:300px !important;
       transform:translateY(-5px) !important;
     }
 
     .nav{
-      gap:7px 11px !important;
+      gap:6px 8px !important;
       transform:translateY(-5px) !important;
       align-content:flex-start !important;
     }
 
     .nav a{
-      font-size:12px !important;
-      line-height:1.05 !important;
-      padding:6px 7px !important;
-      gap:5px !important;
+      font-size:11.5px !important;
+      line-height:1.02 !important;
+      padding:5px 6px !important;
+      gap:4px !important;
       white-space:nowrap !important;
     }
 
     .nav a::before{
-      width:13px !important;
-      min-width:13px !important;
-      font-size:11px !important;
+      width:12px !important;
+      min-width:12px !important;
+      font-size:10.5px !important;
     }
 
     .social-links{
