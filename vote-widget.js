@@ -3,6 +3,7 @@ const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJz
 const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
+const PSD_SUPPORT_URL = "https://gofund.me/0d687f045";
 
 const PSD_VOTE_INSTRUMENTS = [
   "S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX",
@@ -235,9 +236,19 @@ function psdCreateAdvertiseBanner(){
   banner.id = "psdAdvertiseBanner";
   banner.className = "psd-ad-banner";
   banner.innerHTML = `
-    <span>📣 <strong>Partner with Public Sentiment Dash</strong> — advertising, investor, and business opportunities.</span>
-    <a href="advertise.html">Learn More</a>
+    <span>🚀 <strong>Help take Public Sentiment Dash to the next level</strong> — support the free market-sentiment project.</span>
+    <a href="${PSD_SUPPORT_URL}" target="_blank" rel="noopener">Support Project</a>
   `;
+
+  const supportLink = banner.querySelector("a");
+  if(supportLink){
+    supportLink.addEventListener("click", () => {
+      psdTrack("support_banner_click", {
+        page_path: window.location.pathname,
+        destination: "gofundme"
+      });
+    });
+  }
 
   header.appendChild(banner);
 }
