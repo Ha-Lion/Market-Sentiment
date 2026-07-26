@@ -10,7 +10,7 @@
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
-  <script src="sentiment-core.js"></script>
+  <script src="sentiment-core.js?v=3"></script>
 
   <style>
     .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
@@ -1078,6 +1078,7 @@
             <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
             <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
             <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
+            <button class="tiny-pill" type="button" data-period="sixmonth">6M</button>
           </div>
         </div>
         <div class="skyline-wrap">
@@ -1106,7 +1107,7 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, and sampled days for Monthly.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, sampled days for Monthly, and the broader 6M view.</div>
           </div>
         </div>
         <div class="heat-legend" aria-label="Heatwave color scale">
@@ -1370,10 +1371,10 @@
       if(t.includes("down") || t.includes("bear")) return "Bearish";
       return "Neutral";
     }
-    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : 24}
-    function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
-    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
-    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : "Now"}
+    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : selectedPeriod === "sixmonth" ? 180 : 24}
+    function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : selectedPeriod === "sixmonth" ? "6M" : "Daily"}
+    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : selectedPeriod === "sixmonth" ? "180D ago" : "24H ago"}
+    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : selectedPeriod === "sixmonth" ? "180D Avg" : "Now"}
     function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
     function seriesForPeriod(d){return Array.isArray(d.series) && d.series.length ? d.series.slice() : makeSkylineSeries(d.name, d.score)}
     function periodScoreFor(d){
@@ -2392,7 +2393,7 @@
         const path=smoothPath(points);
         const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
         const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
-        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="192" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.2" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="206" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+9}" y="${ly+2}" fill="#fff" font-size="10.8" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
       });
       out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
     }
@@ -2419,13 +2420,14 @@
     function heatLabels(){
       if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
       if(selectedPeriod === "monthly") return ["30D","27D","24D","21D","18D","15D","12D","9D","6D","3D","1D","Now"];
+      if(selectedPeriod === "sixmonth") return ["180D","150D","120D","90D","60D","30D","Now"];
       return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
     }
     function heatValues(d){
       const vals = seriesForPeriod(d);
       const labels = heatLabels();
       if(vals.length <= labels.length) return vals;
-      if(selectedPeriod === "monthly"){
+      if(selectedPeriod === "monthly" || selectedPeriod === "sixmonth"){
         return labels.map((_,i)=>vals[Math.round(i*(vals.length-1)/(labels.length-1))]);
       }
       return vals.slice(-labels.length);
