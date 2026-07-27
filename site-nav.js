@@ -1,4 +1,4 @@
-ac(function(){
+(function(){
   "use strict";
 
   const mainLinks = [
@@ -30,21 +30,6 @@ ac(function(){
     const isActive = link.href === current;
     return '<a href="' + link.href + '"' + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
   }
-
-
-
-  function injectDonationNudge(){
-    if(document.getElementById("psd-donation-nudge-css")) return;
-    const style = document.createElement("style");
-    style.id = "psd-donation-nudge-css";
-    style.textContent = `
-      .psd-ad-banner{
-        bottom:10px !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
 
   function render(){
     const mount = document.getElementById("site-header");
@@ -80,11 +65,6 @@ ac(function(){
   </header>`;
   }
 
-  function boot(){
-    render();
-    injectDonationNudge();
-  }
-
-  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
+  else render();
 })();
