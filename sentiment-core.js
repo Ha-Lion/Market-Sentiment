@@ -1,6 +1,6 @@
 /*
   Public Sentiment Dash — sentiment-core.js
-  Version: PSI_CORE_V2_UNIVERSAL
+  Version: PSI_CORE_V3_UNIVERSAL_PERIODS
 
   OFFICIAL DEFINITIONS V1
   ---------------------------------------------------------------------------
@@ -44,12 +44,14 @@
 
   9) Instrument dashboard:
      - Prefer backend instrument_history.json for instrument PSI and chart series.
+     - Daily/Weekly/Monthly periods are centralized here so all pages can share one rule.
+     - Monthly means calendar month-by-month aggregation when history is available.
      - Use dashboard_data.json headlines only as a legacy fallback when official history is missing.
 */
 (function(){
   "use strict";
 
-  const VERSION = "PSI_CORE_V2_UNIVERSAL";
+  const VERSION = "PSI_CORE_V3_UNIVERSAL_PERIODS";
   const MIN_INSTRUMENT_PSI_HEADLINES = 3;
 
   const INSTRUMENTS = [
@@ -96,11 +98,27 @@
     {name:"Cardano / ADA", aliases:["cardano","ada"]},
     {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"]},
     {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"]},
+    {name:"Crypto Regulation", aliases:["crypto regulation","cryptocurrency regulation","digital asset regulation","stablecoin regulation","crypto rules","crypto lawsuit"]},
+    {name:"Crypto ETFs / Flows", aliases:["crypto etf","crypto etfs","bitcoin etf","bitcoin etfs","btc etf","ethereum etf","ethereum etfs","eth etf","etf flows","etf inflows","etf outflows"]},
     {name:"Gold", aliases:["gold","xau"]},
     {name:"Silver", aliases:["silver","xag"]},
     {name:"Copper", aliases:["copper"]},
+    {name:"General Precious Metals", aliases:["precious metals","precious metal","metals market","bullion","safe haven metals"]},
+    {name:"Platinum", aliases:["platinum","xpt"]},
+    {name:"Palladium", aliases:["palladium","xpd"]},
+    {name:"Gold ETFs / Flows", aliases:["gold etf","gold etfs","gld","gold fund flows","bullion etf"]},
+    {name:"Central Bank Gold", aliases:["central bank gold","gold reserves","official gold reserves","central bank buying"]},
+    {name:"Mining Stocks", aliases:["gold miners","silver miners","mining stocks","gdx","gdxj"]},
+    {name:"Inflation / Real Yields", aliases:["real yields","real yield","inflation gold","fed gold","treasury yields gold","rates gold","dollar gold"]},
     {name:"Crude Oil", aliases:["crude oil","oil","wti"]},
     {name:"Natural Gas", aliases:["natural gas","nat gas"]},
+    {name:"General Energy", aliases:["energy market","energy markets","energy sector","energy prices","energy demand","energy supply"]},
+    {name:"OPEC / Supply", aliases:["opec","opec+","oil output","oil production","oil supply","supply cut","supply cuts","production cut","production cuts"]},
+    {name:"Oil Inventories / EIA", aliases:["eia","oil inventory","oil inventories","crude inventories","crude stockpiles","gasoline inventories","distillate inventories"]},
+    {name:"Brent Oil", aliases:["brent","brent crude","brent oil"]},
+    {name:"WTI Oil", aliases:["wti","wti crude","west texas intermediate"]},
+    {name:"Gasoline", aliases:["gasoline","gasoline futures","rbob","pump prices","fuel prices","gas prices","gasoline inventories"]},
+    {name:"Heating Oil", aliases:["heating oil","distillate","distillates","diesel","diesel prices","fuel oil"]},
     {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"]},
     {name:"CPI / Inflation", aliases:["cpi","inflation"]},
     {name:"PPI", aliases:["ppi","producer price"]},
@@ -618,29 +636,109 @@
     };
   }
 
-  function buildInstrumentSeries(options){
-    const opts = options || {};
-    const instrumentHistoryData = opts.instrumentHistoryData || opts.instrument_history || null;
-    const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
-    const period = opts.period || "daily";
-    const fallbackScore = roundScore(opts.fallbackScore != null ? opts.fallbackScore : opts.score);
-    let targetLength = 12;
-    if(period === "weekly") targetLength = 7;
-    else if(period === "monthly") targetLength = 30;
-    else if(period === "sixmonth" || period === "6m" || period === "six_month") targetLength = 180;
-    const values = [];
+  function periodKey(value){
+    const key = normalizeKey(value || "daily");
+    if(key === "week" || key === "weekly" || key === "7d") return "weekly";
+    if(key === "month" || key === "monthly" || key === "calendar month" || key === "calendar-month") return "monthly";
+    return "daily";
+  }
 
-    historyRecords(instrumentHistoryData).forEach(record => {
+  function dateKeyFromRecord(record){
+    const raw = cleanText(record && (record.date || record.updated_utc || record.updated_ny || record.ts || record.sample_key || ""));
+    const match = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[1]}-${match[2]}-${match[3]}` : "";
+  }
+
+  function monthKeyFromDate(dateKey){
+    const match = cleanText(dateKey).match(/^(\d{4})-(\d{2})-/);
+    return match ? `${match[1]}-${match[2]}` : "";
+  }
+
+  function historyScoreFromEntry(entry){
+    return roundScore(entry && (entry.psi != null ? entry.psi : (entry.score != null ? entry.score : entry.headline_psi_score)));
+  }
+
+  function instrumentHistoryPoints(instrumentHistoryData, instrumentName){
+    const instrument = normalizeInstrumentName(instrumentName);
+    return historyRecords(instrumentHistoryData).map(record => {
       const entry = instrumentEntryFromRecord(record, instrument);
-      const score = roundScore(entry && (entry.psi != null ? entry.psi : (entry.score != null ? entry.score : entry.headline_psi_score)));
-      if(score != null) values.push(score);
-    });
+      const score = historyScoreFromEntry(entry);
+      const date = dateKeyFromRecord(record);
+      return {record, entry, score, date, monthKey: monthKeyFromDate(date)};
+    }).filter(point => point.entry && point.score != null);
+  }
 
-    let out = values.length ? values.slice(-targetLength) : [];
+  function averageRounded(values){
+    const nums = (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite);
+    return nums.length ? Math.round(nums.reduce((a,b) => a + b, 0) / nums.length) : null;
+  }
+
+  function leftFillSeries(values, targetLength, fallbackScore){
+    let out = Array.isArray(values) ? values.slice() : [];
     const fill = out.length ? out[0] : (fallbackScore == null ? 50 : fallbackScore);
     while(out.length < targetLength) out.unshift(fill);
     if(out.length < 2) out = [fill, fill];
     return out;
+  }
+
+  function monthlyCalendarSeries(points, opts){
+    const buckets = new Map();
+    points.forEach(point => {
+      if(!point.monthKey || point.score == null) return;
+      if(!buckets.has(point.monthKey)) buckets.set(point.monthKey, []);
+      buckets.get(point.monthKey).push(point.score);
+    });
+
+    const maxMonths = Math.max(2, Number(opts.maxMonths || opts.monthlyPoints || opts.targetLength || 24) || 24);
+    return Array.from(buckets.entries()).sort((a,b) => a[0].localeCompare(b[0])).slice(-maxMonths).map(([monthKey, scores], index, arr) => ({
+      key: monthKey,
+      label: `Period ${arr.length - index}`,
+      score: averageRounded(scores),
+      sampleCount: scores.length
+    })).filter(row => row.score != null);
+  }
+
+  function buildInstrumentSeriesWithMeta(options){
+    const opts = options || {};
+    const instrumentHistoryData = opts.instrumentHistoryData || opts.instrument_history || null;
+    const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
+    const period = periodKey(opts.period || "daily");
+    const fallbackScore = roundScore(opts.fallbackScore != null ? opts.fallbackScore : opts.score);
+    const points = instrumentHistoryPoints(instrumentHistoryData, instrument);
+
+    if(period === "monthly"){
+      const monthly = monthlyCalendarSeries(points, opts);
+      const values = monthly.map(row => row.score);
+      const filled = leftFillSeries(values, Math.min(Math.max(2, values.length || 2), Math.max(2, Number(opts.maxMonths || opts.monthlyPoints || opts.targetLength || 24) || 24)), fallbackScore);
+      return {
+        period,
+        values: filled,
+        labels: monthly.length ? monthly.map(row => row.label) : filled.map((_, i) => `Period ${filled.length - i}`),
+        calendarMonths: monthly.map(row => row.key),
+        sampleCounts: monthly.map(row => row.sampleCount),
+        basis: monthly.length ? "calendar_month_averages_from_instrument_history" : "fallback_score",
+        formulaVersion: VERSION
+      };
+    }
+
+    const targetLength = period === "weekly" ? 7 : 12;
+    const rawValues = points.map(point => point.score);
+    return {
+      period,
+      values: leftFillSeries(rawValues.slice(-targetLength), targetLength, fallbackScore),
+      labels: Array.from({length:targetLength}, (_, i) => period === "weekly" ? `Day ${targetLength - i}` : `Step ${targetLength - i}`),
+      basis: rawValues.length ? "daily_records_from_instrument_history" : "fallback_score",
+      formulaVersion: VERSION
+    };
+  }
+
+  function buildInstrumentSeries(options){
+    return buildInstrumentSeriesWithMeta(options).values;
+  }
+
+  function buildInstrumentPeriodScore(options){
+    const meta = buildInstrumentSeriesWithMeta(options);
+    return averageRounded(meta.values);
   }
 
   function buildAuditSnapshot(options){
@@ -695,10 +793,13 @@
     buildInstrumentSummary,
     buildInstrumentSummaryFromHistory,
     buildInstrumentSeries,
+    buildInstrumentSeriesWithMeta,
+    buildInstrumentPeriodScore,
     buildGlobalSummary,
     buildRegionalPulse,
     buildAuditSnapshot,
-    carryForwardHourlyData
+    carryForwardHourlyData,
+    periodKey
   };
 
   if(typeof window !== "undefined"){
