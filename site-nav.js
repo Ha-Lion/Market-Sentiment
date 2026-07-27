@@ -1,4 +1,4 @@
-(function(){
+ac(function(){
   "use strict";
 
   const mainLinks = [
@@ -33,23 +33,18 @@
 
 
 
-  function injectDonationPositionFix(){
-    if(document.getElementById("psd-donation-position-fix-css")) return;
+  function injectDonationNudge(){
+    if(document.getElementById("psd-donation-nudge-css")) return;
     const style = document.createElement("style");
-    style.id = "psd-donation-position-fix-css";
+    style.id = "psd-donation-nudge-css";
     style.textContent = `
       .psd-ad-banner{
-        bottom:3px !important;
-      }
-
-      @media(max-width:1180px){
-        .psd-ad-banner{
-          bottom:auto !important;
-        }
+        bottom:10px !important;
       }
     `;
     document.head.appendChild(style);
   }
+
 
   function render(){
     const mount = document.getElementById("site-header");
@@ -87,7 +82,7 @@
 
   function boot(){
     render();
-    injectDonationPositionFix();
+    injectDonationNudge();
   }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
