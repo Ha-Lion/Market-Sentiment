@@ -156,7 +156,7 @@
       flex-direction:column;
       gap:10px;
       min-width:0;
-      padding-top:0;
+      padding-top:45px;
     }
 
     .side-pill{
@@ -700,8 +700,8 @@
             <div class="side-pill" data-period="weekly">Weekly</div>
             <div class="side-pill" data-period="monthly">Monthly</div>
             <div class="side-spacer"></div>
-            <div class="side-pill" data-export="csv" title="Exports the past 180 days of hourly Global/U.S. sentiment data.">Export CSV</div>
-            <div class="side-note">CSV exports past 180 days of hourly data.</div>
+            <div class="side-pill" data-export="csv" title="Exports past 6 months of hourly Global/U.S. history.">Export CSV</div>
+            <div class="side-note">CSV exports past 6 months of hourly history.</div>
           </aside>
 
           <article class="dash-card card-a">
@@ -1467,7 +1467,7 @@
       const divColor = divPts.length && divPts[divPts.length-1].gap > 0 ? COLORS.pink : COLORS.gold;
       drawLine(document.getElementById("chartDivergence"),[
         {points:divPts,color:divColor,fill:"rgba(255,215,128,.12)",width:2.2}
-      ],{dots:true,scan:false,labelAll:true,pad:{l:24,r:10,t:40,b:18}});
+      ],{dots:true,scan:false,labelAll:false,pad:{l:24,r:10,t:40,b:20}});
     }
 
     function renderStats(){
@@ -1640,49 +1640,41 @@
     }
 
     function exportCSV(){
-      const source = state.hourly.length ? state.hourly : state.raw;
-      if(!source.length) return;
+      const source = (state.hourly && state.hourly.length ? state.hourly : state.raw)
+        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()));
 
-      const latest = source.reduce((max,r)=>r.ts && r.ts > max ? r.ts : max, source[0].ts);
-      const cutoff = new Date(latest.getTime() - 180 * 86400000);
+      if(!source.length){
+        alert("No hourly history is available to export yet.");
+        return;
+      }
+
+      const latestTs = Math.max(...source.map(r => r.ts.getTime()));
+      const cutoffTs = latestTs - (180 * 86400000);
       const groups = new Map();
 
-      source.forEach(r => {
-        if(!r.ts || r.ts < cutoff) return;
+      source.filter(r => r.ts.getTime() >= cutoffTs).forEach(r => {
         const ny = nyHourParts(r.ts);
         if(!groups.has(ny.key)){
-          groups.set(ny.key,{key:ny.key,label:ny.label,date:ny.key.slice(0,10),hour:ny.label,global:[],us:[],count:0,lastTs:r.ts});
+          groups.set(ny.key,{key:ny.key, global:[], us:[], count:0});
         }
         const g = groups.get(ny.key);
         if(Number.isFinite(r.global)) g.global.push(r.global);
         if(Number.isFinite(r.us)) g.us.push(r.us);
-        g.count++;
-        if(r.ts > g.lastTs) g.lastTs = r.ts;
+        g.count += 1;
       });
 
-      const rows = [...groups.values()].sort((a,b)=>a.key.localeCompare(b.key)).map(g => ({
-        timestamp_ny:g.key,
-        date:g.date,
-        hour:g.hour,
-        global_psi:round(avg(g.global)),
-        us_psi:round(avg(g.us)),
-        records:g.count
-      }));
-
-      const header = "timestamp_ny,date,hour,global_psi,us_psi,records";
-      const csv = [header].concat(rows.map(r => [
-        r.timestamp_ny,
-        r.date,
-        r.hour,
-        r.global_psi,
-        r.us_psi,
-        r.records
+      const rows = [...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
+      const csv=["ny_hour,global_psi,us_psi,records"].concat(rows.map(r=>[
+        r.key,
+        round(avg(r.global)),
+        round(avg(r.us)),
+        r.count
       ].map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(","))).join("\n");
 
       const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
       const url=URL.createObjectURL(blob);
       const a=document.createElement("a");
-      a.href=url; a.download="public-sentiment-history-hourly-180d.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      a.href=url; a.download="public-sentiment-hourly-6months.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
     async function fetchJSON(path){
