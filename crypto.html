@@ -815,6 +815,8 @@
     </footer>
   </main>
 
+  <script src="sentiment-core.js?v=5"></script>
+
   <script>
     const CRYPTO_ITEMS = [
       {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins","blockchain","token"], official:true},
@@ -828,6 +830,8 @@
       {name:"Cardano / ADA", symbol:"ADA", aliases:["cardano","ada"], official:true},
       {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin","doge"], official:true}
     ];
+
+    const HISTORY_RETENTION_DAYS = 180;
 
     let dashboardData = null;
     let historyData = null;
@@ -1213,11 +1217,25 @@
       };
     }
 
+    function keepRecentHistoryDays(series){
+      const clean = series.filter(row => row && row.date);
+      if(!clean.length) return clean;
+      const latest = clean.reduce((max,row) => {
+        const d = new Date(row.date + "T00:00:00");
+        return Number.isNaN(d.getTime()) || d <= max ? max : d;
+      }, new Date(0));
+      const cutoff = new Date(latest.getTime() - (HISTORY_RETENTION_DAYS - 1) * 86400000);
+      return clean.filter(row => {
+        const d = new Date(row.date + "T00:00:00");
+        return !Number.isNaN(d.getTime()) && d >= cutoff;
+      });
+    }
+
     function dailySeries(name){
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
       const item = CRYPTO_ITEMS.find(x => x.name === name);
 
-      return records.map(r => {
+      return keepRecentHistoryDays(records.map(r => {
         const row = r.instruments?.[name];
 
         if(row && row.psi != null){
@@ -1236,7 +1254,7 @@
         }
 
         return null;
-      }).filter(Boolean);
+      }).filter(Boolean));
     }
 
     function weekKey(dateText){
@@ -1374,7 +1392,7 @@
         <div class="history-stat"><span>Average</span><b>${avg}/100</b></div>
         <div class="history-stat"><span>High</span><b>${high}/100</b></div>
         <div class="history-stat"><span>Low</span><b>${low}/100</b></div>
-        <div class="history-stat"><span>Records</span><b>${series.length}</b></div>
+        <div class="history-stat"><span>Chart Points</span><b>${series.length}</b></div>
         <div class="history-stat"><span>View</span><b>${mode.charAt(0).toUpperCase()+mode.slice(1)}</b></div>
       `;
     }
@@ -1476,7 +1494,7 @@
       const series = aggregateSeries(base, activeHistoryPeriod);
 
       if(title) title.textContent = activeHistoryName;
-      if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} • ${series.length} record(s)`;
+      if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} view`;
 
       drawHistoryChart(series);
       renderHistoryStats(series, activeHistoryName, activeHistoryPeriod);
