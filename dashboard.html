@@ -10,7 +10,7 @@
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
-  <script src="sentiment-core.js?v=3"></script>
+  <script src="sentiment-core.js?v=5"></script>
 
   <style>
     .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
@@ -1078,14 +1078,12 @@
             <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
             <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
             <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
-            <button class="tiny-pill" type="button" data-period="sixmonth">6M</button>
           </div>
         </div>
         <div class="skyline-wrap">
           <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
           <div class="chart-watermark">PSI</div>
         </div>
-        <div class="preview-note" id="skylineNote">Charts read instrument_history.json. When history is short, the latest official PSI is held flat instead of generating fake movement.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -1107,7 +1105,7 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, sampled days for Monthly, and the broader 6M view.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Daily uses recent readings, Weekly uses daily readings, and Monthly uses calendar-month grouped readings.</div>
           </div>
         </div>
         <div class="heat-legend" aria-label="Heatwave color scale">
@@ -1118,7 +1116,7 @@
           <span><i style="background:#16a34a;color:#16a34a"></i>70–100 Bullish</span>
         </div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled historical points. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -1371,10 +1369,10 @@
       if(t.includes("down") || t.includes("bear")) return "Bearish";
       return "Neutral";
     }
-    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : selectedPeriod === "sixmonth" ? 180 : 24}
-    function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : selectedPeriod === "sixmonth" ? "6M" : "Daily"}
-    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : selectedPeriod === "sixmonth" ? "180D ago" : "24H ago"}
-    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : selectedPeriod === "sixmonth" ? "180D Avg" : "Now"}
+    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 12 : 24}
+    function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
+    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "Earlier" : "24H ago"}
+    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "Monthly Avg" : "Now"}
     function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
     function seriesForPeriod(d){return Array.isArray(d.series) && d.series.length ? d.series.slice() : makeSkylineSeries(d.name, d.score)}
     function periodScoreFor(d){
@@ -1473,17 +1471,18 @@
         series: makeSeries(ins.name, null)
       };
     }
-    function makeSeries(name, score){
+    function makeSeries(name, score, periodOverride){
+      const periodToUse = periodOverride || selectedPeriod;
       if(window.PSDCore?.buildInstrumentSeries){
         return window.PSDCore.buildInstrumentSeries({
           instrumentName:name,
           instrumentHistoryData,
-          period:selectedPeriod,
+          period:periodToUse,
           fallbackScore:score
         });
       }
 
-      const len = periodLength();
+      const len = periodToUse === "weekly" ? 7 : periodToUse === "monthly" ? 180 : 24;
       const value = score == null ? 50 : score;
       return Array.from({length:Math.max(2,len)}, () => value);
     }
@@ -1676,7 +1675,7 @@
     }
 
     function deepBarsSvg(values, color, labelText){
-      const clean = (values && values.length ? values : [50,50,50,50]).slice(-12).map(v=>clamp(Number(v)||50,0,100));
+      const clean = (values && values.length ? values : [50,50,50,50]).slice(-24).map(v=>clamp(Number(v)||50,0,100));
       const w=420,h=132;
       const cx=116, cy=66, r=50;
       const avg = Math.round(clean.reduce((a,b)=>a+b,0)/clean.length);
@@ -1718,7 +1717,7 @@
         </defs>
         <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.20)"/>
         <text x="14" y="16" class="deep-chart-label">Sentiment Lens</text>
-        <text x="${w-120}" y="16" class="deep-chart-label">30 Day Orbit</text>
+        <text x="${w-120}" y="16" class="deep-chart-label">Monthly Orbit</text>
         <g>
           <circle cx="${cx}" cy="${cy}" r="${r+14}" fill="none" stroke="url(#${ring2})" stroke-width="1.5" opacity=".48"/>
           <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2"/>
@@ -1743,7 +1742,7 @@
           <text x="14" y="39" fill="#fff" font-size="26" font-weight="900">${clean[clean.length-1]}</text>
           <text x="72" y="39" fill="#8ba0bc" font-size="10" font-weight="800">CURRENT PSI</text>
           <text x="14" y="58" fill="#ffd25a" font-size="14" font-weight="900">${change}</text>
-          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">30D CHANGE</text>
+          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">MONTHLY CHANGE</text>
           <text x="14" y="74" fill="#67e8f9" font-size="14" font-weight="900">VOL ${vol}</text>
           <text x="84" y="74" fill="#8ba0bc" font-size="10" font-weight="800">STABILITY ${Math.max(0,100-vol)}</text>
         </g>
@@ -1986,8 +1985,8 @@
       const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
       const data = calcInstrument(ins);
       const color = sentimentColor(data.score);
-      const path24 = data.series || makeSeries(instrumentName, data.score || 50);
-      const path30 = makeSkylineSeries(instrumentName, data.score || 50);
+      const path24 = makeSeries(instrumentName, data.score || 50, "daily");
+      const path30 = makeSeries(instrumentName, data.score || 50, "monthly");
       const stats24 = deepSeriesStats(path24);
       const stats30 = deepSeriesStats(path30);
       win.setAttribute("data-deep-slot", String(slot));
@@ -2022,7 +2021,7 @@
             </div>
             <div class="deep-section">
               <h3>Sentiment Lens & Histogram</h3>
-              <p>Lens-style monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
+              <p>Lens-style calendar monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
               ${deepBarsSvg(path30, color, "Sentiment Lens & Histogram")}
               <div class="deep-mini-row">
                 <div class="deep-mini-metric"><span>Avg</span><b>${stats30.avg}</b></div>
@@ -2419,31 +2418,39 @@
     }
     function heatLabels(){
       if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
-      if(selectedPeriod === "monthly") return ["30D","27D","24D","21D","18D","15D","12D","9D","6D","3D","1D","Now"];
-      if(selectedPeriod === "sixmonth") return ["180D","150D","120D","90D","60D","30D","Now"];
       return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
+    }
+    function monthlyHeatLabels(count){
+      const n = Math.max(2, Number(count) || 2);
+      if(n === 2) return ["Previous","Current"];
+      return Array.from({length:n}, (_, i) => i === 0 ? "Older" : i === n-1 ? "Current" : "");
+    }
+    function alignHeatValues(values, length){
+      const vals = Array.isArray(values) && values.length ? values.slice() : [50,50];
+      const fill = vals.length ? vals[0] : 50;
+      while(vals.length < length) vals.unshift(fill);
+      return vals.slice(-length);
     }
     function heatValues(d){
       const vals = seriesForPeriod(d);
+      if(selectedPeriod === "monthly") return vals.length ? vals : [d.score ?? 50, d.score ?? 50];
       const labels = heatLabels();
-      if(vals.length <= labels.length) return vals;
-      if(selectedPeriod === "monthly" || selectedPeriod === "sixmonth"){
-        return labels.map((_,i)=>vals[Math.round(i*(vals.length-1)/(labels.length-1))]);
-      }
-      return vals.slice(-labels.length);
+      return alignHeatValues(vals, labels.length);
     }
     function renderHeatmap(data){
       const box=document.getElementById("heatmapGrid");
-      const labels=heatLabels();
+      const rowValues=data.map(d=>heatValues(d));
+      const labels=selectedPeriod === "monthly" ? monthlyHeatLabels(Math.max(2, ...rowValues.map(v=>v.length))) : heatLabels();
       const gridStyle=`grid-template-columns:180px repeat(${labels.length},minmax(0,1fr))`;
       const heads=`<div class="heat-row" style="${gridStyle}"><div></div>${labels.map(x=>`<div class="heat-head">${x}</div>`).join("")}</div>`;
-      box.innerHTML=heads+data.map(d=>{
-        const cells=heatValues(d).map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i]} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
+      box.innerHTML=heads+data.map((d,rowIdx)=>{
+        const vals=alignHeatValues(rowValues[rowIdx], labels.length);
+        const cells=vals.map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i] || 'Period'} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
         return`<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
       }).join("");
     }
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
-    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Charts read instrument_history.json; when history is short, the official latest PSI is held flat instead of generating fake movement. ${legend}`}
+    function renderLegend(data){}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
     async function load(){
       try{
