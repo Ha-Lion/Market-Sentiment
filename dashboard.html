@@ -15,8 +15,9 @@
   <style>
     .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
     .lab-hero{
+      position:relative;
       display:block;
-      padding:20px 22px 18px;
+      padding:20px 245px 18px 22px;
       margin-bottom:14px;
     }
     .lab-hero h1{
@@ -148,7 +149,8 @@
     .panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
     .panel-kicker{color:var(--muted);font-size:13px;line-height:1.55}
     .pill-row{display:flex;gap:8px;flex-wrap:wrap}
-    .tiny-pill{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:700;cursor:pointer;transition:.18s ease}
+    .hero-period-controls{position:absolute;right:22px;bottom:18px;justify-content:flex-end}
+    .tiny-pill{display:inline-flex;padding:7px 11px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:12px;font-weight:800;cursor:pointer;transition:.18s ease}
     .tiny-pill:hover,.tiny-pill.active{color:#ffd780;border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.13);transform:translateY(-1px)}
     button.tiny-pill{font-family:inherit}
     .skyline-wrap{
@@ -998,6 +1000,7 @@
     }
     @media(max-width:900px){
       .lab-hero{padding:18px}
+      .hero-period-controls{position:static;margin-top:12px;justify-content:flex-start}
       .lab-controls{justify-content:flex-start}
       .lab-select{min-width:160px;flex:1 1 180px}
       .lab-card-grid{grid-template-columns:1fr}
@@ -1061,6 +1064,11 @@
         <h1>Interactive Market Sentiment Dashboard</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
         <p class="lab-small">Focused on selected-market sentiment. PSI and chart movement read the shared backend JSON outputs; user sentiment stays separate from PSI.</p>
+        <div class="pill-row hero-period-controls" aria-label="Dashboard time period">
+          <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
+          <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
+          <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
+        </div>
         <div class="lab-controls" id="marketControls"></div>
       </div>
     </section>
@@ -1074,11 +1082,7 @@
             <h2>Sentiment Skyline</h2>
             <div class="panel-kicker">Multi-market PSI movement with glowing trend lines, clear end-point badges, and slow motion drawing.</div>
           </div>
-          <div class="pill-row" aria-label="Skyline time period">
-            <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
-            <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
-            <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
-          </div>
+
         </div>
         <div class="skyline-wrap">
           <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
