@@ -21,6 +21,8 @@
     { href: "ai-assets.html", label: "🤖 AI Assets" }
   ];
 
+  const supportUrl = "https://gofund.me/0d687f045";
+
   function currentFile(){
     const path = (window.location.pathname || "").split("/").pop();
     return path || "index.html";
@@ -51,6 +53,10 @@
     </a>
     <div class="header-center">
       <div class="header-pill">✨ Constantly learning & improving</div>
+      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+        <span>🚀 Help take Public Sentiment Dash to the next level</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
+      </a>
     </div>
     <nav class="nav" aria-label="Main navigation">
       ${linksOne}
