@@ -716,6 +716,8 @@
     </footer>
   </main>
 
+  <script src="sentiment-core.js?v=5"></script>
+
   <script>
     const METAL_ITEMS = [
       {name:"General Precious Metals", symbol:"Metals", aliases:["precious metals","precious metal","metals market","bullion","safe haven metals","metals prices"], official:false},
@@ -1188,13 +1190,27 @@
       }).filter(Boolean);
     }
 
+    function weekKey(dateText){
+      const d = new Date(String(dateText || "") + "T00:00:00");
+      if(Number.isNaN(d.getTime())) return String(dateText || "");
+      const oneJan = new Date(d.getFullYear(),0,1);
+      const week = Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
+      return `${d.getFullYear()} W${String(week).padStart(2,"0")}`;
+    }
+
+    function monthKey(dateText){
+      const d = new Date(String(dateText || "") + "T00:00:00");
+      if(Number.isNaN(d.getTime())) return String(dateText || "").slice(0,7);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    }
+
     function aggregateSeries(base,period){
       if(period === "daily") return base;
 
       const groups = new Map();
 
-      base.forEach((row,idx) => {
-        const key = period === "weekly" ? `Week ${Math.floor(idx / 7) + 1}` : String(row.date || "").slice(0,7);
+      base.forEach(row => {
+        const key = period === "weekly" ? weekKey(row.date) : monthKey(row.date);
         if(!groups.has(key)) groups.set(key,[]);
         groups.get(key).push(row);
       });
