@@ -681,7 +681,7 @@
       <section class="history-card">
         <div class="history-head">
           <div>
-            <h2 id="historyTitle" class="history-title">Gold</h2>
+            <h2 id="historyTitle" class="history-title">Market Indices History</h2>
             <div id="historySubtitle" class="history-subtitle">Daily</div>
           </div>
           <button class="history-close" type="button" onclick="closeHistory()">×</button>
@@ -715,6 +715,8 @@
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
+
+  <script src="sentiment-core.js?v=5"></script>
 
   <script>
     const INDEX_ITEMS = [
@@ -1188,19 +1190,33 @@
       }).filter(Boolean);
     }
 
+    function calendarWeekKey(dateText){
+      const d = new Date(String(dateText || "") + "T00:00:00");
+      if(Number.isNaN(d.getTime())) return "Unknown Week";
+      const oneJan = new Date(d.getFullYear(),0,1);
+      const week = Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
+      return `${d.getFullYear()} W${String(week).padStart(2,"0")}`;
+    }
+
+    function calendarMonthKey(dateText){
+      const d = new Date(String(dateText || "") + "T00:00:00");
+      if(Number.isNaN(d.getTime())) return "Unknown Month";
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    }
+
     function aggregateSeries(base,period){
       if(period === "daily") return base;
 
       const groups = new Map();
 
-      base.forEach((row,idx) => {
-        const key = period === "weekly" ? `Week ${Math.floor(idx / 7) + 1}` : String(row.date || "").slice(0,7);
+      base.forEach(row => {
+        const key = period === "weekly" ? calendarWeekKey(row.date) : calendarMonthKey(row.date);
         if(!groups.has(key)) groups.set(key,[]);
         groups.get(key).push(row);
       });
 
       return Array.from(groups.entries()).map(([key,rows]) => {
-        const avg = Math.round(rows.reduce((s,r) => s + Number(r.value || 50),0) / rows.length);
+        const avg = Math.round(rows.reduce((s,r) => s + Number(r.value || 50),0) / Math.max(1,rows.length));
         return {
           date:key,
           label:key,
