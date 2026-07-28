@@ -622,44 +622,8 @@
 </head>
 
 <body>
-  <header class="header">
-    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
-        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
-      </span>
-      <div class="brand-copy">
-        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
-        <div class="site-subtitle">Global market public sentiment dashboard</div>
-      </div>
-    </a>
-
-    <div class="header-center">
-      <div class="header-pill">✨ Constantly learning & improving</div>
-    </div>
-
-    <nav class="nav">
-      <a href="dashboard.html">📊 Interactive Dashboard</a>
-      <a href="sentiment-history.html">📈 Historical Sentiment</a>
-      <a href="news-articles.html">📰 News & Articles</a>
-      <a href="market-sentiment.html">📘 Guides</a>
-      <a href="advertise.html">💼 Business Opportunities</a>
-      <a href="contact.html">✉️ Get in Touch</a>
-      <a href="about.html">ℹ️ About</a>
-
-      <span class="nav-row-break" aria-hidden="true"></span>
-      <a href="crypto.html">🪙 Crypto Sentiment</a>
-      <a href="energy.html">⚡ Energy Sentiment</a>
-      <a href="precious-metals.html" class="active">🥇 Precious Metals</a>
-      <a href="indices.html">📊 Indices</a>
-
-      <div class="social-links">
-        <span class="social-label">Follow us</span>
-        <span class="social-pill">X</span>
-        <span class="social-pill linkedin">LinkedIn</span>
-      </div>
-    </nav>
-  </header>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=1"></script>
 
   <main class="metal-wrap">
     <section class="metal-hero">
@@ -719,7 +683,7 @@
   <script src="sentiment-core.js?v=5"></script>
 
   <script>
-    const METAL_ITEMS = [
+    let METAL_ITEMS = [
       {name:"General Precious Metals", symbol:"Metals", aliases:["precious metals","precious metal","metals market","bullion","safe haven metals","metals prices"], official:false},
       {name:"Gold", symbol:"Gold", aliases:["gold","gold price","gold prices","xau","xauusd","bullion","spot gold","gold futures"], official:true},
       {name:"Silver", symbol:"Silver", aliases:["silver","silver price","silver prices","xag","xagusd","spot silver","silver futures"], official:true},
@@ -731,6 +695,55 @@
       {name:"Mining Stocks", symbol:"Miners", aliases:["gold miners","silver miners","mining stocks","miners","gold mining stocks","silver mining stocks","gdx","gdxj"], official:false},
       {name:"Inflation / Real Yields", symbol:"Yields", aliases:["real yields","real yield","inflation gold","fed gold","treasury yields gold","rates gold","dollar gold"], official:false}
     ];
+
+    const CATEGORY_KEY = "precious_metals";
+    const DEFAULT_TOP_N = 10;
+
+    function uniqueTerms(values){
+      return Array.from(new Set((values || []).map(x => normalizeText(x)).filter(Boolean)));
+    }
+
+    function categoryEntry(asset, categoryKey){
+      return (Array.isArray(asset?.categories) ? asset.categories : []).find(c => c?.category === categoryKey && c?.enabled !== false);
+    }
+
+    function assetsFromConfig(config, categoryKey, fallbackItems){
+      const assets = Array.isArray(config?.assets) ? config.assets : [];
+      const rows = assets
+        .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
+        .map(asset => {
+          const cat = categoryEntry(asset, categoryKey);
+          return {
+            name: asset.name,
+            symbol: asset.symbol || asset.name,
+            aliases: uniqueTerms([...(asset.aliases || []), asset.name, asset.symbol]),
+            official: asset.official === true,
+            priority: Number(cat?.priority || 999),
+            historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
+          };
+        })
+        .sort((a,b) => a.priority - b.priority)
+        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
+      return rows.length ? rows : fallbackItems;
+    }
+
+    function applyAssetConfig(config){
+      METAL_ITEMS = assetsFromConfig(config, CATEGORY_KEY, METAL_ITEMS);
+      if(typeof activeHistoryName !== "undefined") activeHistoryName = METAL_ITEMS[0]?.name || activeHistoryName;
+      try{
+        if(typeof METAL_BACKEND_INSTRUMENTS !== "undefined" && METAL_BACKEND_INSTRUMENTS?.add){
+          METAL_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.historyKeys || [])]).forEach(term => METAL_BACKEND_INSTRUMENTS.add(normalizeText(term)));
+        }
+      }catch(e){}
+      try{
+        if(typeof METAL_STRONG_TERMS !== "undefined" && Array.isArray(METAL_STRONG_TERMS)){
+          uniqueTerms(METAL_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])).forEach(term => {
+            if(!METAL_STRONG_TERMS.includes(term)) METAL_STRONG_TERMS.push(term);
+          });
+        }
+      }catch(e){}
+    }
+
 
     const METAL_BACKEND_INSTRUMENTS = new Set([
       "Gold",
@@ -1456,13 +1469,16 @@
 
     async function loadPage(){
       try{
-        const [dashboardRes, historyRes] = await Promise.all([
+        const [dashboardRes, historyRes, configRes] = await Promise.all([
           fetch("dashboard_data.json",{cache:"no-store"}),
-          fetch("instrument_history.json",{cache:"no-store"})
+          fetch("instrument_history.json",{cache:"no-store"}),
+          fetch("assets_config.json",{cache:"no-store"}).catch(() => null)
         ]);
 
         dashboardData = await dashboardRes.json();
         historyData = await historyRes.json();
+        const assetConfig = configRes && configRes.ok ? await configRes.json() : null;
+        applyAssetConfig(assetConfig);
 
         renderCards();
         renderHeadlines();
