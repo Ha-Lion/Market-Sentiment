@@ -1083,13 +1083,216 @@
       height:0;
     }
 
-  </style>
+  
+    /* Home welcome popup: gentle, once-per-session invitation */
+    body.home-welcome-open{overflow:hidden}
+
+    .home-welcome-backdrop{
+      position:fixed;
+      inset:0;
+      z-index:2147483000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(2,5,10,.76);
+      backdrop-filter:blur(8px);
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:opacity .28s ease,visibility .28s ease;
+    }
+
+    .home-welcome-backdrop.is-open{
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
+    }
+
+    .home-welcome-box{
+      position:relative;
+      width:min(720px,calc(100vw - 32px));
+      max-height:calc(100vh - 40px);
+      overflow:auto;
+      border:1px solid rgba(255,215,128,.42);
+      border-radius:24px;
+      background:
+        radial-gradient(circle at 85% 8%,rgba(210,153,34,.18),transparent 16rem),
+        linear-gradient(180deg,rgba(17,23,34,.99),rgba(8,12,19,.99));
+      box-shadow:0 30px 100px rgba(0,0,0,.66),0 0 36px rgba(210,153,34,.16);
+      transform:translateY(16px) scale(.98);
+      transition:transform .28s ease;
+    }
+
+    .home-welcome-backdrop.is-open .home-welcome-box{
+      transform:translateY(0) scale(1);
+    }
+
+    .home-welcome-close{
+      position:absolute;
+      top:14px;
+      right:14px;
+      z-index:3;
+      width:46px;
+      height:46px;
+      display:grid;
+      place-items:center;
+      border:2px solid #fff4c7;
+      border-radius:50%;
+      background:#f5b82e;
+      color:#171006;
+      font:inherit;
+      font-size:27px;
+      font-weight:900;
+      line-height:1;
+      cursor:pointer;
+      box-shadow:0 8px 24px rgba(0,0,0,.48),0 0 0 4px rgba(245,184,46,.20);
+      transition:transform .18s ease,background .18s ease;
+    }
+
+    .home-welcome-close:hover,
+    .home-welcome-close:focus-visible{
+      background:#ffd45f;
+      transform:scale(1.06);
+      outline:none;
+    }
+
+    .home-welcome-heading{
+      padding:28px 78px 18px 26px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .home-welcome-heading .page-chip{margin-bottom:10px}
+    .home-welcome-heading h2{margin:0 0 8px;font-size:28px;line-height:1.15}
+    .home-welcome-heading p{margin:0;color:var(--muted);line-height:1.5}
+
+    .home-welcome-part{
+      display:grid;
+      grid-template-columns:56px minmax(0,1fr) auto;
+      gap:16px;
+      align-items:center;
+      padding:22px 26px;
+    }
+
+    .home-welcome-part + .home-welcome-part{
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+
+    .home-welcome-icon{
+      width:52px;
+      height:52px;
+      display:grid;
+      place-items:center;
+      border-radius:16px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.28);
+      font-size:25px;
+      box-shadow:inset 0 0 18px rgba(210,153,34,.08);
+    }
+
+    .home-welcome-copy h3{margin:0 0 5px;font-size:19px;color:#fff}
+    .home-welcome-copy p{margin:0;color:var(--muted);font-size:13px;line-height:1.48}
+
+    .home-welcome-action{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:170px;
+      min-height:42px;
+      padding:10px 16px;
+      border:1px solid rgba(255,215,128,.48);
+      border-radius:999px;
+      background:linear-gradient(180deg,rgba(210,153,34,.26),rgba(36,29,17,.96));
+      color:#ffe29a;
+      font:inherit;
+      font-size:12px;
+      font-weight:800;
+      text-decoration:none;
+      white-space:nowrap;
+      cursor:pointer;
+      box-shadow:0 10px 24px rgba(0,0,0,.22);
+      transition:transform .18s ease,border-color .18s ease,background .18s ease;
+    }
+
+    .home-welcome-action:hover,
+    .home-welcome-action:focus-visible{
+      transform:translateY(-1px);
+      border-color:rgba(255,215,128,.82);
+      background:linear-gradient(180deg,#d7a42f,#7d5712);
+      color:#080a0e;
+      outline:none;
+    }
+
+    .home-welcome-tour .home-welcome-icon{
+      background:rgba(88,166,255,.11);
+      border-color:rgba(88,166,255,.26);
+      box-shadow:inset 0 0 18px rgba(88,166,255,.08);
+    }
+
+    .home-welcome-foot{
+      padding:13px 26px 18px;
+      color:rgba(220,229,241,.64);
+      font-size:11px;
+      text-align:center;
+    }
+
+    @media(max-width:700px){
+      .home-welcome-backdrop{padding:12px}
+      .home-welcome-box{width:calc(100vw - 24px);max-height:calc(100vh - 24px)}
+      .home-welcome-heading{padding:24px 70px 16px 20px}
+      .home-welcome-heading h2{font-size:24px}
+      .home-welcome-part{
+        grid-template-columns:48px minmax(0,1fr);
+        padding:18px 20px;
+      }
+      .home-welcome-icon{width:46px;height:46px;border-radius:14px}
+      .home-welcome-action{
+        grid-column:1/-1;
+        width:100%;
+        min-width:0;
+      }
+    }
+
+</style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6256462799096639" crossorigin="anonymous"></script>
 </head>
 
 <body>
   <div id="site-header"></div>
   <script src="site-nav.js?v=1"></script>
+
+  <div class="home-welcome-backdrop" id="home-welcome-popup" aria-hidden="true">
+    <section class="home-welcome-box" role="dialog" aria-modal="true" aria-labelledby="home-welcome-title">
+      <button class="home-welcome-close" id="home-welcome-close" type="button" aria-label="Close welcome message">×</button>
+
+      <div class="home-welcome-heading">
+        <div class="page-chip">Welcome</div>
+        <h2 id="home-welcome-title">Explore Public Sentiment Dash</h2>
+        <p>Two quick options are available below. Everything on the website remains free to use.</p>
+      </div>
+
+      <div class="home-welcome-part">
+        <div class="home-welcome-icon" aria-hidden="true">🤝</div>
+        <div class="home-welcome-copy">
+          <h3>Support the Project — Optional</h3>
+          <p>If the dashboard is useful to you, a contribution can help with data, hosting, and continued improvements. There is absolutely no pressure.</p>
+        </div>
+        <a class="home-welcome-action" id="home-welcome-donate" href="https://gofund.me/0d687f045" target="_blank" rel="noopener">Support on GoFundMe</a>
+      </div>
+
+      <div class="home-welcome-part home-welcome-tour">
+        <div class="home-welcome-icon" aria-hidden="true">🎬</div>
+        <div class="home-welcome-copy">
+          <h3>New Here? Take the 2-Minute Tour</h3>
+          <p>See the homepage, interactive dashboard, market pages, charts, and key features in one short walkthrough.</p>
+        </div>
+        <button class="home-welcome-action" id="home-welcome-tour" type="button">Watch Website Tour</button>
+      </div>
+
+      <div class="home-welcome-foot">This message appears only once during your current visit.</div>
+    </section>
+  </div>
+
 
   <main class="page">
     <div class="home-layout">
@@ -1712,6 +1915,91 @@
 
     window.addEventListener("psdUserSentimentReady", renderTopInstruments);
     loadPage();
+  </script>
+
+
+  <script>
+    (() => {
+      const popup = document.getElementById("home-welcome-popup");
+      const closeButton = document.getElementById("home-welcome-close");
+      const donateButton = document.getElementById("home-welcome-donate");
+      const tourButton = document.getElementById("home-welcome-tour");
+      const storageKey = "psd_home_welcome_seen_session";
+
+      if(!popup || !closeButton || !donateButton || !tourButton) return;
+
+      let lastFocused = null;
+      let showTimer = null;
+
+      const remember = () => {
+        try{ sessionStorage.setItem(storageKey,"1"); }catch(error){}
+      };
+
+      const wasSeen = () => {
+        try{ return sessionStorage.getItem(storageKey) === "1"; }
+        catch(error){ return false; }
+      };
+
+      const closePopup = (restoreFocus = true) => {
+        if(showTimer) window.clearTimeout(showTimer);
+        popup.classList.remove("is-open");
+        popup.setAttribute("aria-hidden","true");
+        document.body.classList.remove("home-welcome-open");
+        remember();
+
+        if(restoreFocus && lastFocused && typeof lastFocused.focus === "function"){
+          window.setTimeout(() => lastFocused.focus(),180);
+        }
+      };
+
+      const openPopup = () => {
+        if(wasSeen() || document.getElementById("site-tour-overlay")) return;
+        lastFocused = document.activeElement;
+        popup.classList.add("is-open");
+        popup.setAttribute("aria-hidden","false");
+        document.body.classList.add("home-welcome-open");
+        window.setTimeout(() => closeButton.focus(),80);
+      };
+
+      closeButton.addEventListener("click", () => closePopup());
+      donateButton.addEventListener("click", () => closePopup(false));
+
+      tourButton.addEventListener("click", () => {
+        closePopup(false);
+        const sharedTourButton = document.getElementById("site-tour-button");
+
+        if(sharedTourButton){
+          window.setTimeout(() => sharedTourButton.click(),180);
+        }else{
+          window.open(
+            "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4",
+            "_blank",
+            "noopener"
+          );
+        }
+      });
+
+      popup.addEventListener("click", event => {
+        if(event.target === popup) closePopup();
+      });
+
+      document.addEventListener("click", event => {
+        if(event.target.closest && event.target.closest("#site-tour-button")){
+          remember();
+          closePopup(false);
+        }
+      });
+
+      document.addEventListener("keydown", event => {
+        if(event.key === "Escape" && popup.classList.contains("is-open")){
+          closePopup();
+        }
+      });
+
+      if(!wasSeen()){
+        showTimer = window.setTimeout(openPopup,1000);
+      }
+    })();
   </script>
 
   <script src="vote-widget.js" defer></script>
