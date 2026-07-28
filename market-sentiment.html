@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Market Sentiment Guides — Public Sentiment Dash</title>
-  <meta name="description" content="Educational guides explaining market sentiment, stock sentiment, forex sentiment, crypto sentiment, and commodity sentiment.">
+  <title>Market Sentiment Guides & Tools — Public Sentiment Dash</title>
+  <meta name="description" content="Explore Public Sentiment Dash guides, live sentiment pages, interactive tools, historical sentiment, market charts, and research resources.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/market-sentiment.html">
   <link rel="icon" type="image/png" href="logo.png">
@@ -13,24 +13,77 @@
 
   <style>
     .hero{max-width:1120px;margin:0 auto 18px}
+    .guide-section{max-width:1120px;margin:0 auto 18px}
+    .section-intro{margin:0 0 12px}
+    .section-intro h2{margin:0 0 6px;font-size:24px;font-weight:650}
+    .section-intro p{margin:0;color:var(--muted)}
     .guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-    .guide-card{padding:22px;min-height:210px;color:var(--text)}
-    .guide-card h2{font-size:22px;font-weight:600}
-    .open{margin-top:14px;color:#fff;font-size:14px;font-weight:500}
+    .guide-card{display:flex;flex-direction:column;padding:22px;min-height:210px;color:var(--text);text-decoration:none}
+    .guide-card h3{margin:0 0 10px;font-size:22px;font-weight:650}
+    .guide-card p{margin:0;line-height:1.55}
+    .open{margin-top:auto;padding-top:16px;color:#fff;font-size:14px;font-weight:600}
     .guide-video{max-width:1120px;margin:0 auto 18px;padding:22px}
     .guide-video h2{margin:0 0 8px;font-size:24px;font-weight:600}
     .guide-video p{margin:0 0 16px}
     .guide-video video{display:block;width:100%;height:auto;border-radius:14px;background:#000;box-shadow:0 12px 35px rgba(0,0,0,.35)}
-  
+    .guide-steps{margin:12px 0 0;padding-left:22px}
+    .guide-steps li{margin:10px 0;line-height:1.55}
+
+    body.intro-video-active{overflow:hidden}
+    .intro-video-overlay{
+      position:fixed;
+      inset:0;
+      z-index:2147483647;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#000;
+      opacity:1;
+      visibility:visible;
+      transition:opacity .35s ease,visibility .35s ease;
+    }
+    .intro-video-overlay.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .intro-video-overlay video{
+      display:block;
+      width:100vw;
+      height:100vh;
+      object-fit:contain;
+      background:#000;
+    }
+    .intro-video-skip{
+      position:absolute;
+      top:max(16px,env(safe-area-inset-top));
+      right:max(16px,env(safe-area-inset-right));
+      z-index:2;
+      border:1px solid rgba(255,255,255,.45);
+      border-radius:999px;
+      padding:10px 16px;
+      color:#fff;
+      background:rgba(8,12,20,.78);
+      font:inherit;
+      font-size:14px;
+      font-weight:650;
+      cursor:pointer;
+      backdrop-filter:blur(8px);
+    }
+    .intro-video-skip:hover,.intro-video-skip:focus-visible{background:rgba(30,36,48,.95)}
+
     .nav-row-break{
       flex-basis:100%;
       height:0;
     }
-
   </style>
 </head>
 
-<body>
+<body class="intro-video-active">
+  <div class="intro-video-overlay" id="intro-video-overlay" role="dialog" aria-label="Public Sentiment Dash introduction video">
+    <video id="intro-video" autoplay muted controls playsinline preload="auto" aria-label="Public Sentiment Dash website walkthrough">
+      <source src="https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4" type="video/mp4">
+      Your browser does not support video playback.
+    </video>
+    <button class="intro-video-skip" id="intro-video-skip" type="button">Skip video</button>
+  </div>
+
   <div id="site-header"></div>
   <script src="site-nav.js?v=1"></script>
 
@@ -38,7 +91,7 @@
     <section class="panel hero">
       <div class="page-chip">Guides</div>
       <h1>Market Sentiment Guides</h1>
-      <p>These guides explain how public market sentiment works across major asset classes and how to read sentiment without treating it as a trade signal.</p>
+      <p>Use this page to understand the platform, open the live sentiment pages, and learn how to interpret public sentiment alongside charts, history, news, and your own market analysis.</p>
     </section>
 
     <section class="panel guide-video">
@@ -50,73 +103,99 @@
       </video>
     </section>
 
-    <section class="guide-grid">
-      <a class="dynamic-card guide-card" href="stock-market-sentiment.html">
-        <h2>Stock Market Sentiment</h2>
-        <p>Learn how equity sentiment is shaped by indexes, futures, earnings, macro data, volatility, and risk appetite.</p>
-        <div class="open">Open guide →</div>
-      </a>
+    <section class="guide-section" aria-labelledby="live-pages-heading">
+      <div class="section-intro">
+        <h2 id="live-pages-heading">Explore Live Sentiment Pages</h2>
+        <p>Open a market category to view current public sentiment, related drivers, news, and historical context.</p>
+      </div>
 
-      <a class="dynamic-card guide-card" href="forex-sentiment.html">
-        <h2>Forex Sentiment</h2>
-        <p>Understand currency sentiment, dollar strength, central banks, inflation, yields, and macro-driven forex moves.</p>
-        <div class="open">Open guide →</div>
-      </a>
+      <div class="guide-grid">
+        <a class="dynamic-card guide-card" href="crypto.html">
+          <h3>Crypto Sentiment</h3>
+          <p>Track public sentiment for the broader crypto market, regulation, ETF flows, Bitcoin, Ethereum, and major digital-asset themes.</p>
+          <div class="open">Open Crypto →</div>
+        </a>
 
-      <a class="dynamic-card guide-card" href="crypto-sentiment.html">
-        <h2>Crypto Sentiment</h2>
-        <p>Understand Bitcoin, Ethereum, ETFs, regulation, liquidity, blockchain news, and risk appetite in crypto markets.</p>
-        <div class="open">Open guide →</div>
-      </a>
+        <a class="dynamic-card guide-card" href="energy.html">
+          <h3>Energy Sentiment</h3>
+          <p>Follow sentiment around crude oil, natural gas, gasoline, heating oil, inventories, supply and demand, and geopolitical risk.</p>
+          <div class="open">Open Energy →</div>
+        </a>
 
-      <a class="dynamic-card guide-card" href="commodity-sentiment.html">
-        <h2>Commodity Sentiment</h2>
-        <p>Learn how gold, oil, natural gas, copper, inflation, supply shocks, and geopolitical risk affect commodity sentiment.</p>
-        <div class="open">Open guide →</div>
-      </a>
+        <a class="dynamic-card guide-card" href="precious-metals.html">
+          <h3>Precious Metals Sentiment</h3>
+          <p>Review sentiment for gold, silver, inflation, real yields, the U.S. dollar, central-bank demand, and safe-haven flows.</p>
+          <div class="open">Open Precious Metals →</div>
+        </a>
 
-      <a class="dynamic-card guide-card" href="market-sentiment-today.html">
-        <h2>Market Sentiment Today</h2>
-        <p>View today’s public market sentiment across stocks, forex, crypto, commodities, bonds, and macro headlines.</p>
-        <div class="open">Open today page →</div>
-      </a>
+        <a class="dynamic-card guide-card" href="indices.html">
+          <h3>Global Indices Sentiment</h3>
+          <p>Compare public sentiment across the S&amp;P 500, Nasdaq, Dow, Russell 2000, DAX, FTSE, Nikkei, and broader risk appetite.</p>
+          <div class="open">Open Indices →</div>
+        </a>
 
-      <a class="dynamic-card guide-card" href="stock-market-sentiment-today.html">
-        <h2>Stock Market Sentiment Today</h2>
-        <p>View today’s equity sentiment for S&P 500, Nasdaq, Dow, Russell 2000, VIX, and major stock headlines.</p>
-        <div class="open">Open today page →</div>
-      </a>
+        <a class="dynamic-card guide-card" href="policy-assets.html">
+          <h3>Policy &amp; Geopolitical Assets</h3>
+          <p>Track assets affected by elections, regulation, tariffs, defense spending, China exposure, strategic minerals, and geopolitical risk.</p>
+          <div class="open">Open Policy &amp; Geopolitical →</div>
+        </a>
 
-      <a class="dynamic-card guide-card" href="forex-sentiment-today.html">
-        <h2>Forex Sentiment Today</h2>
-        <p>View today’s forex sentiment for DXY, EUR/USD, GBP/USD, USD/JPY, rates, and central bank headlines.</p>
-        <div class="open">Open today page →</div>
-      </a>
+        <a class="dynamic-card guide-card" href="ai-assets.html">
+          <h3>AI Assets Sentiment</h3>
+          <p>Monitor leading AI stocks, semiconductor companies, cloud platforms, ETFs, and the wider artificial-intelligence investment theme.</p>
+          <div class="open">Open AI Assets →</div>
+        </a>
+      </div>
+    </section>
 
-      <a class="dynamic-card guide-card" href="crypto-sentiment-today.html">
-        <h2>Crypto Sentiment Today</h2>
-        <p>View today’s crypto sentiment for Bitcoin, Ethereum, Solana, XRP, ETFs, regulation, and digital asset headlines.</p>
-        <div class="open">Open today page →</div>
-      </a>
+    <section class="guide-section" aria-labelledby="tools-heading">
+      <div class="section-intro">
+        <h2 id="tools-heading">Research Tools</h2>
+        <p>Use these tools to move from a broad market view into deeper comparison, history, charts, and supporting information.</p>
+      </div>
+
+      <div class="guide-grid">
+        <a class="dynamic-card guide-card" href="dashboard.html">
+          <h3>Interactive Dashboard</h3>
+          <p>Select assets from multiple categories, review the current reading, open deeper analysis, and access charts from one dashboard.</p>
+          <div class="open">Open Dashboard →</div>
+        </a>
+
+        <a class="dynamic-card guide-card" href="sentiment-history.html">
+          <h3>Historical Sentiment</h3>
+          <p>Review how sentiment has changed over time and compare current readings with earlier daily, weekly, or monthly periods.</p>
+          <div class="open">View History →</div>
+        </a>
+
+        <a class="dynamic-card guide-card" href="charts.html">
+          <h3>Market Charts</h3>
+          <p>Open charts for supported instruments and switch between assets and timeframes to compare price behavior with public sentiment.</p>
+          <div class="open">Open Charts →</div>
+        </a>
+
+        <a class="dynamic-card guide-card" href="news-articles.html">
+          <h3>News &amp; Articles</h3>
+          <p>Read market-related news and educational content connected to the asset classes and themes tracked across the website.</p>
+          <div class="open">Open News &amp; Articles →</div>
+        </a>
+      </div>
     </section>
 
     <section class="panel">
       <h2>What Is Market Sentiment?</h2>
-      <p>Market sentiment is the public mood around a market, asset, instrument, or theme. It can be bullish, bearish, mixed, or neutral depending on what public information is emphasizing.</p>
-      <p>Sentiment is useful because markets often react not only to facts, but also to expectations, fear, confidence, positioning, headlines, and risk appetite.</p>
-      <p>Public Sentiment Dash organizes this information so users can compare the public narrative with technical direction and their own market judgment.</p>
+      <p>Market sentiment describes the overall public tone around a market, asset, or theme. It reflects whether current discussion and coverage are mainly bullish, bearish, mixed, or neutral.</p>
+      <p>Sentiment can be influenced by economic data, company results, policy decisions, regulation, geopolitical events, market volatility, expectations, fear, confidence, and changing risk appetite.</p>
+      <p>Public Sentiment Dash organizes those signals into a clearer view. It is designed to provide context—not to predict prices or replace technical, fundamental, or risk analysis.</p>
     </section>
 
     <section class="panel">
-      <h2>Popular Sentiment Pages</h2>
-      <p>
-        <a href="sp500-sentiment-today.html">S&P 500 Sentiment Today</a> ·
-        <a href="nasdaq-sentiment-today.html">Nasdaq Sentiment Today</a> ·
-        <a href="bitcoin-sentiment-today.html">Bitcoin Sentiment Today</a> ·
-        <a href="gold-sentiment-today.html">Gold Sentiment Today</a> ·
-        <a href="oil-sentiment-today.html">Oil Sentiment Today</a> ·
-        <a href="dxy-sentiment-today.html">DXY Sentiment Today</a>
-      </p>
+      <h2>How to Use Public Sentiment Dash</h2>
+      <ol class="guide-steps">
+        <li>Start with the Interactive Dashboard or choose the market category you want to study.</li>
+        <li>Review the current sentiment reading and the main public drivers behind it.</li>
+        <li>Use Historical Sentiment, Compare, and Market Charts to check whether the narrative and price direction agree or diverge.</li>
+        <li>Use the information as research context and make decisions based on your own analysis and risk management.</li>
+      </ol>
     </section>
 
     <footer class="footer">
@@ -124,7 +203,7 @@
         <a href="dashboard.html">Interactive Dashboard</a>
         <a href="public-sentiment-index.html">Public Sentiment Index</a>
         <a href="sentiment-history.html">Historical Sentiment</a>
-        <a href="news-articles.html">News & Articles</a>
+        <a href="news-articles.html">News &amp; Articles</a>
         <a href="market-sentiment.html" class="active">Guides</a>
         <a href="contact.html">Get in Touch</a>
         <a href="how-it-works.html">How the Dashboard Works</a>
@@ -144,5 +223,43 @@
   </main>
 
   <script src="vote-widget.js" defer></script>
+  <script>
+    (() => {
+      const overlay = document.getElementById('intro-video-overlay');
+      const video = document.getElementById('intro-video');
+      const skipButton = document.getElementById('intro-video-skip');
+
+      if (!overlay || !video || !skipButton) return;
+
+      let closed = false;
+
+      const closeIntro = () => {
+        if (closed) return;
+        closed = true;
+        video.pause();
+        overlay.classList.add('is-hidden');
+        document.body.classList.remove('intro-video-active');
+
+        window.setTimeout(() => {
+          overlay.hidden = true;
+        }, 400);
+      };
+
+      video.addEventListener('ended', closeIntro, { once: true });
+      skipButton.addEventListener('click', closeIntro);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeIntro();
+      });
+
+      const playAttempt = video.play();
+      if (playAttempt && typeof playAttempt.catch === 'function') {
+        playAttempt.catch(() => {
+          // If autoplay is blocked, the full-screen player remains visible
+          // so the visitor can start playback with the video controls.
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
