@@ -55,18 +55,42 @@
       top:max(16px,env(safe-area-inset-top));
       right:max(16px,env(safe-area-inset-right));
       z-index:2;
-      border:1px solid rgba(255,255,255,.45);
+      border:2px solid #fff2b3;
       border-radius:999px;
-      padding:10px 16px;
-      color:#fff;
-      background:rgba(8,12,20,.78);
+      padding:11px 18px;
+      color:#161006;
+      background:#f5b82e;
       font:inherit;
       font-size:14px;
-      font-weight:650;
+      font-weight:800;
       cursor:pointer;
-      backdrop-filter:blur(8px);
+      box-shadow:0 6px 22px rgba(0,0,0,.5),0 0 0 3px rgba(245,184,46,.22);
     }
-    .intro-video-skip:hover,.intro-video-skip:focus-visible{background:rgba(30,36,48,.95)}
+    .intro-video-skip:hover,.intro-video-skip:focus-visible{
+      background:#ffd35c;
+      border-color:#fff8d6;
+      transform:translateY(-1px);
+    }
+    .intro-video-start{
+      position:absolute;
+      left:50%;
+      top:50%;
+      z-index:3;
+      transform:translate(-50%,-50%);
+      border:1px solid rgba(255,255,255,.55);
+      border-radius:999px;
+      padding:14px 22px;
+      color:#fff;
+      background:rgba(8,12,20,.88);
+      font:inherit;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 12px 35px rgba(0,0,0,.45);
+      backdrop-filter:blur(10px);
+    }
+    .intro-video-start:hover,.intro-video-start:focus-visible{background:rgba(30,36,48,.98)}
+    .intro-video-start[hidden]{display:none}
 
     .nav-row-break{
       flex-basis:100%;
@@ -77,10 +101,11 @@
 
 <body class="intro-video-active">
   <div class="intro-video-overlay" id="intro-video-overlay" role="dialog" aria-label="Public Sentiment Dash introduction video">
-    <video id="intro-video" autoplay muted controls playsinline preload="auto" aria-label="Public Sentiment Dash website walkthrough">
+    <video id="intro-video" autoplay controls playsinline preload="auto" aria-label="Public Sentiment Dash website walkthrough">
       <source src="https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4" type="video/mp4">
       Your browser does not support video playback.
     </video>
+    <button class="intro-video-start" id="intro-video-start" type="button" hidden>Play video with sound</button>
     <button class="intro-video-skip" id="intro-video-skip" type="button">Skip video</button>
   </div>
 
@@ -227,9 +252,10 @@
     (() => {
       const overlay = document.getElementById('intro-video-overlay');
       const video = document.getElementById('intro-video');
+      const startButton = document.getElementById('intro-video-start');
       const skipButton = document.getElementById('intro-video-skip');
 
-      if (!overlay || !video || !skipButton) return;
+      if (!overlay || !video || !startButton || !skipButton) return;
 
       let closed = false;
 
@@ -252,13 +278,24 @@
         if (event.key === 'Escape') closeIntro();
       });
 
-      const playAttempt = video.play();
-      if (playAttempt && typeof playAttempt.catch === 'function') {
-        playAttempt.catch(() => {
-          // If autoplay is blocked, the full-screen player remains visible
-          // so the visitor can start playback with the video controls.
-        });
-      }
+      const playWithSound = () => {
+        video.muted = false;
+        video.volume = 1;
+        startButton.hidden = true;
+
+        const playAttempt = video.play();
+        if (playAttempt && typeof playAttempt.catch === 'function') {
+          playAttempt.catch(() => {
+            startButton.hidden = false;
+          });
+        }
+      };
+
+      startButton.addEventListener('click', playWithSound);
+
+      // First try to autoplay with sound. Most browsers block this on a first visit.
+      // When blocked, show one clear button so the visitor can start with sound.
+      playWithSound();
     })();
   </script>
 </body>
