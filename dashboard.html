@@ -58,13 +58,24 @@
     }
     .lab-select{
       background:var(--card);
-      color:var(--text);
+      color:#f5f8ff;
       border:1px solid var(--line);
       border-radius:12px;
       padding:10px 12px;
       min-width:175px;
       outline:none;
-      font-weight:500;
+      font-size:14px;
+      line-height:1.25;
+      font-weight:800;
+      letter-spacing:.01em;
+      text-rendering:geometricPrecision;
+      -webkit-font-smoothing:antialiased;
+      text-shadow:0 1px 1px rgba(0,0,0,.45);
+    }
+    .lab-select option, .lab-select optgroup{
+      background:#0f1724;
+      color:#f5f8ff;
+      font-weight:800;
     }
     .lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
     .lab-card-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
@@ -95,7 +106,7 @@
       mask-composite:exclude;
     }
     .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
-    .market-name{color:#fff;font-weight:800;font-size:15px;line-height:1.3}
+    .market-name{color:#fff;font-weight:900;font-size:16px;line-height:1.25;letter-spacing:-.01em;text-shadow:0 1px 1px rgba(0,0,0,.50)}
     .sentiment-badge{
       display:inline-flex;
       align-items:center;
@@ -137,12 +148,12 @@
       place-items:center;
       text-align:center;
     }
-    .psi-big{font-size:27px;font-weight:900;color:#fff;line-height:1}
-    .psi-small{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+    .psi-big{font-size:28px;font-weight:950;color:#fff;line-height:1;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+    .psi-small{font-size:10px;color:#b8c7dc;font-weight:800;margin-top:2px}
     .card-metrics{display:grid;gap:7px}
-    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:6px}
-    .metric-line span:first-child{color:var(--muted)}
-    .metric-line span:last-child{color:#fff;font-weight:700;text-align:right}
+    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.055);padding-bottom:6px}
+    .metric-line span:first-child{color:#aebed2;font-weight:650}
+    .metric-line span:last-child{color:#fff;font-weight:900;text-align:right;text-shadow:0 1px 1px rgba(0,0,0,.50)}
     .sparkline{width:100%;height:54px;margin-top:14px;display:block}
     .chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.55fr);gap:18px;margin-bottom:18px}
     .lab-panel{padding:22px}
@@ -345,9 +356,10 @@
     .card-control-strip .lab-select{
       width:100%;
       min-width:0;
-      padding:8px 10px;
+      padding:9px 11px;
       border-radius:11px;
-      font-size:12px;
+      font-size:13px;
+      font-weight:850;
     }
     .card-action-row{
       display:grid;
@@ -1212,6 +1224,31 @@
       return `${name} / ${symbol}`;
     }
 
+    const DROPDOWN_GROUP_ORDER = [
+      "Market Indices Sentiment",
+      "Crypto Sentiment",
+      "Energy Sentiment",
+      "Precious Metals Sentiment",
+      "AI Assets Sentiment",
+      "Policy & Geopolitical Assets Sentiment",
+      "Rates & Macro",
+      "Forex & Dollar",
+      "Dashboard Extras"
+    ];
+
+    function dropdownGroupForAsset(asset, catKey, catName, display){
+      if(catKey !== "dashboard_extras") return catName;
+      const txt = norm([display, asset?.id, asset?.name, asset?.symbol, ...(Array.isArray(asset?.aliases) ? asset.aliases : [])].join(" "));
+      if(/treasury|yield|fed|fomc|cpi|ppi|inflation|jobs|nfp|gdp|growth/.test(txt)) return "Rates & Macro";
+      if(/dxy|dollar|eur|gbp|jpy|chf|cad|aud|nzd|usdtry|usdmxn|usdzar|forex|currency/.test(txt)) return "Forex & Dollar";
+      return "Dashboard Extras";
+    }
+
+    function dropdownGroupRank(group){
+      const idx = DROPDOWN_GROUP_ORDER.indexOf(group);
+      return idx >= 0 ? idx : 999;
+    }
+
     function loadInstrumentsFromConfig(config){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
       if(!assets.length) return;
@@ -1231,6 +1268,7 @@
             aliases,
             category: catKey,
             categoryName: catName,
+            dropdownGroup: dropdownGroupForAsset(a, catKey, catName, display),
             priority: Number(cat.priority ?? a.priority ?? idx + 1),
             type: a.type || ''
           };
@@ -1244,10 +1282,12 @@
         return true;
       });
       clean.sort((a,b) => {
-        const ca = String(a.categoryName || '');
-        const cb = String(b.categoryName || '');
-        if(ca !== cb) return ca.localeCompare(cb);
-        return (a.priority || 999) - (b.priority || 999) || a.name.localeCompare(b.name);
+        const ga = a.dropdownGroup || a.categoryName || 'Available Assets';
+        const gb = b.dropdownGroup || b.categoryName || 'Available Assets';
+        const gr = dropdownGroupRank(ga) - dropdownGroupRank(gb);
+        if(gr) return gr;
+        if(ga !== gb) return ga.localeCompare(gb);
+        return String(a.name || '').localeCompare(String(b.name || ''));
       });
       if(clean.length) INSTRUMENTS = clean;
     }
@@ -2379,7 +2419,7 @@
     function instrumentOptions(selectedName){
       const groups = new Map();
       INSTRUMENTS.forEach(i => {
-        const group = i.categoryName || 'Available Assets';
+        const group = i.dropdownGroup || i.categoryName || 'Available Assets';
         if(!groups.has(group)) groups.set(group, []);
         groups.get(group).push(i);
       });
