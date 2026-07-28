@@ -1138,7 +1138,7 @@
   </main>
 
   <script>
-    const INSTRUMENTS = [
+    const FALLBACK_INSTRUMENTS = [
       {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"]},
       {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"]},
       {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"]},
@@ -1194,6 +1194,64 @@
       {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"]},
       {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"]}
     ];
+    let INSTRUMENTS = FALLBACK_INSTRUMENTS.slice();
+    let assetsConfigData = null;
+
+    function assetCategoryInfo(asset){
+      const cats = Array.isArray(asset?.categories) ? asset.categories : [];
+      const activeCats = cats.filter(c => c && c.enabled !== false);
+      activeCats.sort((a,b) => (Number(a.priority)||999) - (Number(b.priority)||999));
+      return activeCats[0] || cats[0] || {};
+    }
+
+    function assetDisplayName(asset){
+      const name = String(asset?.name || '').trim();
+      const symbol = String(asset?.symbol || '').trim();
+      if(!name) return symbol;
+      if(!symbol || name.toLowerCase().includes(symbol.toLowerCase())) return name;
+      return `${name} / ${symbol}`;
+    }
+
+    function loadInstrumentsFromConfig(config){
+      const assets = Array.isArray(config?.assets) ? config.assets : [];
+      if(!assets.length) return;
+      const categoryNames = config?.categories || {};
+      const rows = assets
+        .filter(a => a && a.enabled !== false)
+        .map((a, idx) => {
+          const cat = assetCategoryInfo(a);
+          const catKey = cat.category || 'other';
+          const catName = categoryNames?.[catKey]?.name || catKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const display = assetDisplayName(a);
+          const aliases = Array.from(new Set([
+            display, a.name, a.symbol, a.id, ...(Array.isArray(a.aliases) ? a.aliases : [])
+          ].filter(Boolean).map(x => String(x).trim())));
+          return {
+            name: display,
+            aliases,
+            category: catKey,
+            categoryName: catName,
+            priority: Number(cat.priority ?? a.priority ?? idx + 1),
+            type: a.type || ''
+          };
+        })
+        .filter(a => a.name);
+      const seen = new Set();
+      const clean = rows.filter(a => {
+        const key = norm(a.name);
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      clean.sort((a,b) => {
+        const ca = String(a.categoryName || '');
+        const cb = String(b.categoryName || '');
+        if(ca !== cb) return ca.localeCompare(cb);
+        return (a.priority || 999) - (b.priority || 999) || a.name.localeCompare(b.name);
+      });
+      if(clean.length) INSTRUMENTS = clean;
+    }
+
 
     const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
     let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
@@ -2319,7 +2377,16 @@
       if(box) box.innerHTML = "";
     }
     function instrumentOptions(selectedName){
-      return INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
+      const groups = new Map();
+      INSTRUMENTS.forEach(i => {
+        const group = i.categoryName || 'Available Assets';
+        if(!groups.has(group)) groups.set(group, []);
+        groups.get(group).push(i);
+      });
+      return Array.from(groups.entries()).map(([group, items]) => {
+        const options = items.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
+        return `<optgroup label="${esc(group)}">${options}</optgroup>`;
+      }).join("");
     }
     function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
     function renderCards(data){
@@ -2422,12 +2489,17 @@
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
     async function load(){
       try{
-        const [res, techRes, statusRes, instrumentHistoryRes] = await Promise.all([
+        const [configRes, res, techRes, statusRes, instrumentHistoryRes] = await Promise.all([
+          fetch("assets_config.json",{cache:"no-store"}).catch(() => null),
           fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
           fetch("technical_data.json",{cache:"no-store"}).catch(() => null),
           fetch("status.json",{cache:"no-store"}).catch(() => null),
           fetch("instrument_history.json",{cache:"no-store"}).catch(() => null)
         ]);
+        if(configRes && configRes.ok){
+          assetsConfigData = await configRes.json();
+          loadInstrumentsFromConfig(assetsConfigData);
+        }
         if(res && res.ok) dashboardData = await res.json();
         if(techRes && techRes.ok) technicalData = await techRes.json();
         if(statusRes && statusRes.ok) statusData = await statusRes.json();
