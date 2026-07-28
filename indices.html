@@ -622,44 +622,8 @@
 </head>
 
 <body>
-  <header class="header">
-    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
-        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
-      </span>
-      <div class="brand-copy">
-        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
-        <div class="site-subtitle">Global market public sentiment dashboard</div>
-      </div>
-    </a>
-
-    <div class="header-center">
-      <div class="header-pill">✨ Constantly learning & improving</div>
-    </div>
-
-    <nav class="nav">
-      <a href="dashboard.html">📊 Interactive Dashboard</a>
-      <a href="sentiment-history.html">📈 Historical Sentiment</a>
-      <a href="news-articles.html">📰 News & Articles</a>
-      <a href="market-sentiment.html">📘 Guides</a>
-      <a href="advertise.html">💼 Business Opportunities</a>
-      <a href="contact.html">✉️ Get in Touch</a>
-      <a href="about.html">ℹ️ About</a>
-
-      <span class="nav-row-break" aria-hidden="true"></span>
-      <a href="crypto.html">🪙 Crypto Sentiment</a>
-      <a href="energy.html">⚡ Energy Sentiment</a>
-      <a href="precious-metals.html">🥇 Precious Metals</a>
-      <a href="indices.html" class="active">📊 Indices</a>
-
-      <div class="social-links">
-        <span class="social-label">Follow us</span>
-        <span class="social-pill">X</span>
-        <span class="social-pill linkedin">LinkedIn</span>
-      </div>
-    </nav>
-  </header>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=1"></script>
 
   <main class="index-wrap">
     <section class="index-hero">
@@ -719,7 +683,7 @@
   <script src="sentiment-core.js?v=5"></script>
 
   <script>
-    const INDEX_ITEMS = [
+    let INDEX_ITEMS = [
       {name:"S&P 500 / ES", symbol:"S&P", aliases:["s&p 500","sp 500","s&p","spx","es futures","s&p futures","s&p 500 futures"], official:true},
       {name:"Nasdaq / NQ", symbol:"Nasdaq", aliases:["nasdaq","nasdaq 100","nasdaq futures","nq futures","ndx","tech index"], official:true},
       {name:"Dow / YM", symbol:"Dow", aliases:["dow","dow jones","dow futures","ym futures","djia"], official:true},
@@ -731,6 +695,55 @@
       {name:"Hang Seng", symbol:"HSI", aliases:["hang seng","hsi","hong kong stocks","hk stocks"], official:true},
       {name:"Euro Stoxx 50", symbol:"Stoxx", aliases:["euro stoxx","euro stoxx 50","stoxx 50","european stocks"], official:true}
     ];
+
+    const CATEGORY_KEY = "indices";
+    const DEFAULT_TOP_N = 10;
+
+    function uniqueTerms(values){
+      return Array.from(new Set((values || []).map(x => normalizeText(x)).filter(Boolean)));
+    }
+
+    function categoryEntry(asset, categoryKey){
+      return (Array.isArray(asset?.categories) ? asset.categories : []).find(c => c?.category === categoryKey && c?.enabled !== false);
+    }
+
+    function assetsFromConfig(config, categoryKey, fallbackItems){
+      const assets = Array.isArray(config?.assets) ? config.assets : [];
+      const rows = assets
+        .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
+        .map(asset => {
+          const cat = categoryEntry(asset, categoryKey);
+          return {
+            name: asset.name,
+            symbol: asset.symbol || asset.name,
+            aliases: uniqueTerms([...(asset.aliases || []), asset.name, asset.symbol]),
+            official: asset.official === true,
+            priority: Number(cat?.priority || 999),
+            historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
+          };
+        })
+        .sort((a,b) => a.priority - b.priority)
+        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
+      return rows.length ? rows : fallbackItems;
+    }
+
+    function applyAssetConfig(config){
+      INDEX_ITEMS = assetsFromConfig(config, CATEGORY_KEY, INDEX_ITEMS);
+      if(typeof activeHistoryName !== "undefined") activeHistoryName = INDEX_ITEMS[0]?.name || activeHistoryName;
+      try{
+        if(typeof INDEX_BACKEND_INSTRUMENTS !== "undefined" && INDEX_BACKEND_INSTRUMENTS?.add){
+          INDEX_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.historyKeys || [])]).forEach(term => INDEX_BACKEND_INSTRUMENTS.add(normalizeText(term)));
+        }
+      }catch(e){}
+      try{
+        if(typeof INDEX_STRONG_TERMS !== "undefined" && Array.isArray(INDEX_STRONG_TERMS)){
+          uniqueTerms(INDEX_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])).forEach(term => {
+            if(!INDEX_STRONG_TERMS.includes(term)) INDEX_STRONG_TERMS.push(term);
+          });
+        }
+      }catch(e){}
+    }
+
 
     const INDEX_BACKEND_INSTRUMENTS = new Set([
       "S&P 500 / ES",
@@ -1456,13 +1469,16 @@
 
     async function loadPage(){
       try{
-        const [dashboardRes, historyRes] = await Promise.all([
+        const [dashboardRes, historyRes, configRes] = await Promise.all([
           fetch("dashboard_data.json",{cache:"no-store"}),
-          fetch("instrument_history.json",{cache:"no-store"})
+          fetch("instrument_history.json",{cache:"no-store"}),
+          fetch("assets_config.json",{cache:"no-store"}).catch(() => null)
         ]);
 
         dashboardData = await dashboardRes.json();
         historyData = await historyRes.json();
+        const assetConfig = configRes && configRes.ok ? await configRes.json() : null;
+        applyAssetConfig(assetConfig);
 
         renderCards();
         renderHeadlines();
