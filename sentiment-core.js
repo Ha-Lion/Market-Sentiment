@@ -7,7 +7,7 @@
   1) PSI means headline sentiment only.
      - Do not mix user votes into PSI.
      - Do not mix technical direction into PSI.
-     - Global PSI should use dashboard_data.json headline_psi_score when available.
+     - Global PSI should use dashboard_live.json headline_psi_score when available.
 
   2) Sentiment label scale:
      - 70–100 = Strong Bullish
@@ -35,18 +35,18 @@
      - Avoid loose text.includes() matching against titles/descriptions.
 
   7) Timestamp:
-     - Prefer dashboard_data.json updated_ny.
+     - Prefer dashboard_live.json updated_ny.
      - Fallback to status.json updated, then updated_utc fields.
 
   8) Regional pulse:
-     - Use backend regional_pulse from dashboard_data.json/status.json.
+     - Use backend regional_pulse from dashboard_live.json/status.json.
      - Do not recalculate U.S./Europe PSI inside page scripts.
 
   9) Instrument dashboard:
-     - Prefer backend instrument_history.json for instrument PSI and chart series.
+     - Prefer backend instrument_history_compact.json for instrument PSI and chart series.
      - Daily/Weekly/Monthly periods are centralized here so all pages can share one rule.
      - Monthly means calendar month-by-month aggregation when history is available.
-     - Use dashboard_data.json headlines only as a legacy fallback when official history is missing.
+     - Use dashboard_live.json headlines only as a legacy fallback when official history is missing.
 */
 (function(){
   "use strict";
@@ -295,7 +295,7 @@
         return {
           score,
           sentiment: classifySentiment(score),
-          source: value === (statusData && statusData.headline_psi_score) ? "status.json" : "dashboard_data.json",
+          source: value === (statusData && statusData.headline_psi_score) ? "status.json" : "dashboard_live.json",
           formulaVersion: VERSION
         };
       }
@@ -626,12 +626,12 @@
       bearishCount: Number.isFinite(Number(entry.bearish_count)) ? Number(entry.bearish_count) : 0,
       neutralCount: Number.isFinite(Number(entry.neutral_count)) ? Number(entry.neutral_count) : 0,
       mixedCount: Number.isFinite(Number(entry.mixed_count)) ? Number(entry.mixed_count) : 0,
-      countBasis: "instrument_history.json",
+      countBasis: "instrument_history_compact.json",
       psiMethod: "backend_instrument_history",
       signedAverage: null,
       lastUpdated: cleanText(record.updated_ny || record.updated_utc || record.date || ""),
       topHeadlines: Array.isArray(entry.top_headlines) ? entry.top_headlines : [],
-      source: "instrument_history.json",
+      source: "instrument_history_compact.json",
       formulaVersion: VERSION
     };
   }
