@@ -1084,7 +1084,7 @@
       const status = document.getElementById("headlineStatus");
       const headlines = getIndexHeadlines().slice(0,30);
 
-      if(status) status.textContent = `30 latest strict market indices headline(s) shown from dashboard_data.json.`;
+      if(status) status.textContent = `30 latest strict market indices headline(s) shown from the latest dashboard feed.`;
 
       list.innerHTML = headlines.map(h => {
         const logo = sourceLogoUrl(h);
@@ -1470,8 +1470,8 @@
     async function loadPage(){
       try{
         const [dashboardRes, historyRes, configRes] = await Promise.all([
-          fetch("dashboard_data.json",{cache:"no-store"}),
-          fetch("instrument_history.json",{cache:"no-store"}),
+          fetch("dashboard_live.json",{cache:"no-store"}),
+          fetch("instrument_history_compact.json",{cache:"no-store"}),
           fetch("assets_config.json",{cache:"no-store"}).catch(() => null)
         ]);
 
