@@ -1263,7 +1263,7 @@
       const headlines = getAIHeadlines().slice(0,30);
 
       if(status){
-        status.textContent = `30 latest AI asset headline(s) shown from dashboard_data.json.`;
+        status.textContent = `30 latest AI asset headline(s) shown from the latest dashboard feed.`;
       }
 
       if(!list) return;
@@ -1687,8 +1687,8 @@
     async function init(){
       try{
         const [dashResp, histResp, assetConfig] = await Promise.all([
-          fetch("dashboard_data.json", {cache:"no-store"}),
-          fetch("instrument_history.json", {cache:"no-store"}),
+          fetch("dashboard_live.json", {cache:"no-store"}),
+          fetch("instrument_history_compact.json", {cache:"no-store"}),
           fetchOptionalJson("assets_config.json")
         ]);
 
@@ -1702,7 +1702,7 @@
         renderHeadlines();
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
-        document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">AI asset data could not be loaded. Confirm dashboard_data.json and instrument_history.json are available.</div>`;
+        document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">AI asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
       }
     }
 
