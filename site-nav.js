@@ -62,9 +62,7 @@
         align-items:center;
         justify-content:center;
         gap:7px;
-        margin:0;
-        min-height:31px;
-        box-sizing:border-box;
+        margin:7px 8px 0;
         padding:7px 15px;
         border:1px solid rgba(255,204,82,.72);
         border-radius:999px;
@@ -125,8 +123,7 @@
         outline:none;
       }
       @media (max-width:900px){
-        .header-action-row{flex-wrap:wrap;gap:7px !important}
-        .site-tour-banner{font-size:10px;padding:7px 12px}
+        .site-tour-banner{margin-top:8px;font-size:10px;padding:7px 12px}
       }
     `;
     document.head.appendChild(style);
@@ -241,7 +238,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=12", "psd-account-styles");
+      await loadStylesheet("account.css?v=13", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -251,11 +248,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=12", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=13", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=11", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=13", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -413,7 +410,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=12", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=13", "psd-supabase-client");
     }
 
     return window.psdSupabase;
@@ -558,21 +555,19 @@
     </a>
     <div class="header-center">
       <div class="header-pill" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;">✨ Constantly learning & improving</div>
-      <div class="header-action-row" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;transform:translateY(62px);white-space:nowrap;">
-        <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
-          <span>🚀 Help take Public Sentiment Dash to the next level</span>
-          <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
-        </a>
-        <button class="site-tour-banner" id="site-tour-button" type="button" aria-label="Play the two-minute Public Sentiment Dash website tour">
-          <span aria-hidden="true">🎬</span>
-          <span>Take a 2-Minute Website Tour</span>
-        </button>
-      </div>
+      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(62px);padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+        <span>🚀 Help take Public Sentiment Dash to the next level</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
+      </a>
     </div>
     <nav class="nav" aria-label="Main navigation">
       ${linksOne}
       <span class="nav-row-break" aria-hidden="true"></span>
       ${linksTwo}
+      <button class="site-tour-banner" id="site-tour-button" type="button" aria-label="Play the two-minute Public Sentiment Dash website tour">
+        <span aria-hidden="true">🎬</span>
+        <span>Take a 2-Minute Website Tour</span>
+      </button>
       <div class="psd-ribbon-social-wrap">
         <div class="social-links">
           <span class="social-label">Follow us</span>
