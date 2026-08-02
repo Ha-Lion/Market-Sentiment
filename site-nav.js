@@ -32,7 +32,8 @@
 
   function linkHtml(link, current){
     const isActive = link.href === current;
-    return '<a href="' + link.href + '"' + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
+    const modalAttribute = link.href === "auth.html" ? ' data-psd-auth-open="true"' : "";
+    return '<a href="' + link.href + '"' + modalAttribute + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
   }
 
   function ensureTourStyles(){
@@ -193,6 +194,72 @@
     }
   }
 
+  function loadStylesheet(href, id){
+    if(document.getElementById(id)) return Promise.resolve();
+
+    return new Promise(function(resolve, reject){
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = href;
+      link.addEventListener("load", resolve, { once:true });
+      link.addEventListener("error", reject, { once:true });
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadScript(src, id){
+    if(document.getElementById(id)) return Promise.resolve();
+
+    return new Promise(function(resolve, reject){
+      const script = document.createElement("script");
+      script.id = id;
+      script.src = src;
+      script.defer = true;
+      script.addEventListener("load", resolve, { once:true });
+      script.addEventListener("error", reject, { once:true });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function openAuthPopup(event){
+    if(event) event.preventDefault();
+
+    try{
+      await loadStylesheet("account.css?v=3", "psd-account-styles");
+
+      if(!window.supabase || typeof window.supabase.createClient !== "function"){
+        await loadScript(
+          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+          "psd-supabase-sdk"
+        );
+      }
+
+      if(!window.psdSupabase){
+        await loadScript("supabase-client.js?v=2", "psd-supabase-client");
+      }
+
+      if(!window.PSDAuthModal){
+        await loadScript("auth-modal.js?v=1", "psd-auth-modal-script");
+      }
+
+      if(!window.psdSupabase || !window.PSDAuthModal){
+        throw new Error("Account popup did not initialize.");
+      }
+
+      const sessionResult = await window.psdSupabase.auth.getSession();
+      if(sessionResult.data && sessionResult.data.session){
+        window.location.href = "account.html";
+        return;
+      }
+
+      window.PSDAuthModal.open();
+    }catch(error){
+      console.error(error);
+      window.location.href = "auth.html";
+    }
+  }
+
   function render(){
     const mount = document.getElementById("site-header");
     if(!mount) return;
@@ -242,6 +309,9 @@
     ensureTourStyles();
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton) tourButton.addEventListener("click", openTour);
+
+    const authButton = document.querySelector('[data-psd-auth-open="true"]');
+    if(authButton) authButton.addEventListener("click", openAuthPopup);
   }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
