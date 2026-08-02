@@ -1240,7 +1240,7 @@
       const headlines = getEnergyHeadlines().slice(0,30);
 
       if(status){
-        status.textContent = `30 latest strict energy headline(s) shown from dashboard_data.json.`;
+        status.textContent = `30 latest strict energy headline(s) shown from the latest dashboard feed.`;
       }
 
       if(!list) return;
@@ -1646,8 +1646,8 @@
     async function init(){
       try{
         const [dashResp, histResp, configResp] = await Promise.all([
-          fetch("dashboard_data.json", {cache:"no-store"}),
-          fetch("instrument_history.json", {cache:"no-store"}),
+          fetch("dashboard_live.json", {cache:"no-store"}),
+          fetch("instrument_history_compact.json", {cache:"no-store"}),
           fetch("assets_config.json", {cache:"no-store"}).catch(() => null)
         ]);
 
@@ -1662,7 +1662,7 @@
         renderHeadlines();
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
-        document.getElementById("energyTopGrid").innerHTML = `<div class="empty-note">Energy data could not be loaded. Confirm dashboard_data.json and instrument_history.json are available.</div>`;
+        document.getElementById("energyTopGrid").innerHTML = `<div class="empty-note">Energy data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
       }
     }
 
