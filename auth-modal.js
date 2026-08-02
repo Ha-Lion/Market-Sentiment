@@ -27,7 +27,7 @@
     return new URL(path, window.location.href).href;
   }
 
-  function normalizeUsername(value) {
+  function normalizeEmail(value) {
     return String(value || "")
       .trim()
       .toLowerCase()
@@ -47,7 +47,7 @@
 
     const config = window.PSDSupabaseConfig;
     const response = await fetch(
-      config.url + "/functions/v1/username-or-email-login",
+      config.url + "/functions/v1/Email-or-email-login",
       {
         method: "POST",
         headers: {
@@ -69,7 +69,7 @@
     if (!response.ok || !payload.access_token || !payload.refresh_token) {
       return {
         data: null,
-        error: new Error(payload.error || "Invalid username/email or password.")
+        error: new Error(payload.error || "Invalid Email/email or password.")
       };
     }
 
@@ -168,8 +168,8 @@
         <section id="psd-modal-signin" class="auth-panel">
           <form id="psd-modal-signin-form" class="psd-form">
             <div class="psd-field">
-              <label for="psd-modal-signin-identifier">Username or Email</label>
-              <input class="psd-input" id="psd-modal-signin-identifier" name="username" type="text" autocomplete="username" required>
+              <label for="psd-modal-signin-identifier">Email or Email</label>
+              <input class="psd-input" id="psd-modal-signin-identifier" name="Email" type="text" autocomplete="Email" required>
             </div>
             <div class="psd-field">
               <label for="psd-modal-signin-password">Password</label>
@@ -189,8 +189,8 @@
         <section id="psd-modal-signup" class="auth-panel" hidden>
           <form id="psd-modal-signup-form" class="psd-form">
             <div class="psd-field">
-              <label for="psd-modal-signup-username">Username</label>
-              <input class="psd-input" id="psd-modal-signup-username" name="new-username" type="text" autocomplete="username" minlength="3" maxlength="30" pattern="[a-z0-9_]{3,30}" required>
+              <label for="psd-modal-signup-Email">Email</label>
+              <input class="psd-input" id="psd-modal-signup-Email" name="new-Email" type="text" autocomplete="Email" minlength="3" maxlength="30" pattern="[a-z0-9_]{3,30}" required>
               <span class="psd-help">Use 3–30 lowercase letters, numbers, or underscores.</span>
             </div>
             <div class="psd-field">
@@ -263,9 +263,9 @@
 
     bindPasswordToggles();
 
-    const usernameInput = overlay.querySelector("#psd-modal-signup-username");
-    usernameInput.addEventListener("input", function () {
-      usernameInput.value = normalizeUsername(usernameInput.value);
+    const EmailInput = overlay.querySelector("#psd-modal-signup-Email");
+    EmailInput.addEventListener("input", function () {
+      EmailInput.value = normalizeEmail(EmailInput.value);
     });
 
     const signInForm = overlay.querySelector("#psd-modal-signin-form");
@@ -300,19 +300,19 @@
       setBusy(signUpForm, true);
       setStatus("Creating your account…");
 
-      const username = normalizeUsername(
-        overlay.querySelector("#psd-modal-signup-username").value
+      const Email = normalizeEmail(
+        overlay.querySelector("#psd-modal-signup-Email").value
       );
       const email = overlay.querySelector("#psd-modal-signup-email").value.trim();
       const password = overlay.querySelector("#psd-modal-signup-password").value;
 
-      const availability = await client.rpc("ms_username_available", {
-        p_username: username
+      const availability = await client.rpc("ms_Email_available", {
+        p_Email: Email
       });
 
       if (availability.error || availability.data !== true) {
         setBusy(signUpForm, false);
-        setStatus("That username is unavailable. Please choose another.", "error");
+        setStatus("That Email is unavailable. Please choose another.", "error");
         return;
       }
 
@@ -321,8 +321,8 @@
         password: password,
         options: {
           data: {
-            username: username,
-            display_name: username
+            Email: Email,
+            display_name: Email
           },
           emailRedirectTo: redirectUrl("auth.html?confirmed=1")
         }
