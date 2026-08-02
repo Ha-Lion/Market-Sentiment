@@ -41,6 +41,7 @@
           <div class="psd-account-menu" id="psd-account-menu" hidden>
             <a href="account.html#preferences">Preferences</a>
             <a href="account.html#profile">Update Information</a>
+            <a href="watchlist.html">My Watchlist</a>
             <a href="activity-report.html" id="psd-activity-report-link" hidden>Activity Report</a>
             <button type="button" id="psd-nav-signout">Log Out</button>
           </div>
@@ -240,7 +241,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=9", "psd-account-styles");
+      await loadStylesheet("account.css?v=10", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -250,11 +251,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=9", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=10", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=9", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=10", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -327,93 +328,35 @@
         background:rgba(210,153,34,.10);
       }
 
-      /*
-       * Shared ribbon standardization.
-       * This overrides page-specific or older header positioning so the same
-       * ribbon geometry is used on the homepage, Account, My Watchlist, and
-       * the owner Activity Report.
-       */
-      .header{
-        grid-template-columns:minmax(310px,1fr) minmax(430px,1fr) minmax(690px,1.75fr)!important;
-        align-items:start!important;
-        column-gap:18px!important;
-      }
-      .header .brand{
-        grid-column:1!important;
-        grid-row:1!important;
-      }
-      .header .header-center{
-        grid-column:2!important;
-        grid-row:1!important;
-        display:flex!important;
-        flex-direction:column!important;
-        align-items:center!important;
-        justify-content:flex-start!important;
-        align-self:start!important;
-        min-width:0!important;
-        transform:none!important;
-      }
-      .header .header-action-row{
-        display:flex!important;
-        align-items:center!important;
-        justify-content:center!important;
-        flex-wrap:wrap!important;
-        gap:9px!important;
-        width:100%!important;
-        margin-top:10px!important;
-        transform:none!important;
-        white-space:normal!important;
-      }
-      .header .nav{
-        grid-column:3!important;
-        grid-row:1!important;
-        display:flex!important;
-        flex-direction:column!important;
-        align-items:flex-end!important;
-        justify-content:flex-start!important;
-        align-self:start!important;
-        gap:7px!important;
-        min-width:0!important;
-        transform:none!important;
-      }
-      .header .nav-primary-row,
-      .header .nav-secondary-row{
-        display:flex!important;
-        align-items:center!important;
-        justify-content:flex-end!important;
-        flex-wrap:wrap!important;
-        gap:7px 12px!important;
-        width:100%!important;
-      }
-      .header .nav-secondary-row{
-        align-items:flex-start!important;
-      }
-
-      /* Labels already contain their page icons; suppress older CSS pseudo-icons. */
-      .header .nav a::before{
+      /* Keep the existing proven ribbon layout unchanged. */
+      .nav a::before{
         display:none!important;
         content:none!important;
       }
 
-      .psd-social-account-stack{
+      .psd-ribbon-social-wrap{
+        position:relative;
         display:inline-flex;
-        flex-direction:column;
-        align-items:flex-end;
-        justify-content:flex-start;
-        gap:7px;
-        margin-left:7px;
+        align-items:center;
+        margin-left:10px;
+        padding-bottom:35px;
       }
-      .psd-social-account-stack .social-links{
-        margin:0!important;
+
+      .psd-ribbon-social-wrap .social-links{
+        margin-left:0!important;
       }
+
       #psd-ribbon-watchlist-link{
+        position:absolute;
+        top:calc(100% - 28px);
+        right:0;
         display:inline-flex;
         align-items:center;
         justify-content:center;
         min-width:116px;
         padding:7px 12px!important;
         border:1px solid rgba(210,153,34,.32);
-        border-radius:9px;
+        border-radius:8px;
         background:rgba(210,153,34,.10);
         color:#ffd780;
         font-size:12px;
@@ -422,65 +365,30 @@
         white-space:nowrap;
         box-shadow:0 0 14px rgba(210,153,34,.10);
       }
+
       #psd-ribbon-watchlist-link:hover,
       #psd-ribbon-watchlist-link:focus-visible{
         color:#fff;
         background:rgba(210,153,34,.20);
         border-color:rgba(210,153,34,.52);
-        transform:translateY(-1px);
         outline:none;
       }
+
       #psd-ribbon-watchlist-link[hidden]{
         display:none!important;
       }
 
-      @media(max-width:1550px){
-        .header{
-          grid-template-columns:minmax(300px,auto) minmax(0,1fr)!important;
-          grid-template-rows:auto auto!important;
-        }
-        .header .brand{
-          grid-column:1!important;
-          grid-row:1 / span 2!important;
-        }
-        .header .nav{
-          grid-column:2!important;
-          grid-row:1!important;
-        }
-        .header .header-center{
-          grid-column:2!important;
-          grid-row:2!important;
-          margin-top:5px!important;
-        }
-      }
-
       @media(max-width:980px){
-        .header{
-          display:grid!important;
-          grid-template-columns:1fr!important;
-          grid-template-rows:auto!important;
-        }
-        .header .brand,
-        .header .header-center,
-        .header .nav{
-          grid-column:1!important;
-          grid-row:auto!important;
-          width:100%!important;
-        }
-        .header .header-center{
-          align-items:flex-start!important;
-        }
-        .header .header-action-row,
-        .header .nav-primary-row,
-        .header .nav-secondary-row{
-          justify-content:flex-start!important;
-        }
-        .header .nav{
-          align-items:flex-start!important;
-        }
-        .psd-social-account-stack{
-          align-items:flex-start;
+        .psd-ribbon-social-wrap{
           margin-left:0;
+          padding-bottom:0;
+          flex-direction:column;
+          align-items:flex-start;
+          gap:7px;
+        }
+
+        #psd-ribbon-watchlist-link{
+          position:static;
         }
       }
     `;
@@ -496,7 +404,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=9", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=10", "psd-supabase-client");
     }
 
     return window.psdSupabase;
@@ -641,7 +549,7 @@
     </a>
     <div class="header-center">
       <div class="header-pill" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;">✨ Constantly learning & improving</div>
-      <div class="header-action-row" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;white-space:nowrap;">
+      <div class="header-action-row" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;transform:translateY(62px);white-space:nowrap;">
         <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
           <span>🚀 Help take Public Sentiment Dash to the next level</span>
           <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
@@ -658,7 +566,7 @@
       </div>
       <div class="nav-secondary-row">
         ${linksTwo}
-        <div class="psd-social-account-stack">
+        <div class="psd-ribbon-social-wrap">
           <div class="social-links">
             <span class="social-label">Follow us</span>
             <span class="social-pill">X</span>
