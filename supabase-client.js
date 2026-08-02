@@ -102,7 +102,7 @@
     }));
   }
 
-  loadScript("site-analytics.js?v=4", "psd-site-analytics-script");
+  loadScript("site-analytics.js?v=8", "psd-site-analytics-script");
   loadScript("site-preferences.js?v=1", "psd-site-preferences-script");
 
   window.psdSupabase.auth.getSession().then(function (result) {
