@@ -260,7 +260,17 @@
     }
   }
 
+  function loadSiteAnalytics(){
+    if(document.getElementById("psd-site-analytics-script")) return;
+    const script = document.createElement("script");
+    script.id = "psd-site-analytics-script";
+    script.src = "site-analytics.js?v=2";
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
   function render(){
+    loadSiteAnalytics();
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
