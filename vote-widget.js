@@ -40,7 +40,7 @@ function psdLoadAnonymousAnalytics(){
   if(document.getElementById("psd-site-analytics-script")) return;
   const script = document.createElement("script");
   script.id = "psd-site-analytics-script";
-  script.src = "site-analytics.js?v=4";
+  script.src = "site-analytics.js?v=8";
   script.defer = true;
   document.head.appendChild(script);
 }
