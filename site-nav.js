@@ -9,7 +9,8 @@
     { href: "market-sentiment.html", label: "📘 Guides" },
     { href: "advertise.html", label: "💼 Business Opportunities" },
     { href: "contact.html", label: "✉️ Get in Touch" },
-    { href: "about.html", label: "ℹ️ About" }
+    { href: "about.html", label: "ℹ️ About" },
+    { href: "auth.html", label: "👤 Sign In" }
   ];
 
   const assetLinks = [
@@ -224,13 +225,16 @@
       </div>
     </div>
     <nav class="nav" aria-label="Main navigation">
-      ${linksOne}
-      <span class="nav-row-break" aria-hidden="true"></span>
-      ${linksTwo}
-      <div class="social-links">
-        <span class="social-label">Follow us</span>
-        <span class="social-pill">X</span>
-        <span class="social-pill linkedin">LinkedIn</span>
+      <div class="nav-primary-row">
+        ${linksOne}
+      </div>
+      <div class="nav-secondary-row">
+        ${linksTwo}
+        <div class="social-links">
+          <span class="social-label">Follow us</span>
+          <span class="social-pill">X</span>
+          <span class="social-pill linkedin">LinkedIn</span>
+        </div>
       </div>
     </nav>
   </header>`;
