@@ -24,6 +24,7 @@
 
   const supportUrl = "https://gofund.me/0d687f045";
   const tourVideoUrl = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
+  const homeUrl = "https://publicsentimentdash.com/";
 
   function currentFile(){
     const path = (window.location.pathname || "").split("/").pop();
@@ -407,10 +408,34 @@
 
     if(signout){
       signout.addEventListener("click", async function(){
-        const client = await ensureAccountInfrastructure();
-        if(client) await client.auth.signOut();
-        menu.hidden = true;
-        await refreshAccountNavigation();
+        const originalText = signout.textContent;
+        signout.disabled = true;
+        signout.textContent = "Logging out…";
+
+        try{
+          /* On the account page, save any pending preference fields first. */
+          if(typeof window.PSDSavePendingAccountSettings === "function"){
+            await window.PSDSavePendingAccountSettings();
+          }
+
+          const client = await ensureAccountInfrastructure();
+          if(!client) throw new Error("Account service is unavailable.");
+
+          /* End only this browser session and clear its stored auth session. */
+          const result = await client.auth.signOut({ scope: "local" });
+          if(result && result.error) throw result.error;
+
+          menu.hidden = true;
+
+          /* replace() loads a fresh home page and removes the private page
+             from the Back-button history. */
+          window.location.replace(homeUrl);
+        }catch(error){
+          console.error("Logout failed:", error);
+          signout.disabled = false;
+          signout.textContent = originalText;
+          window.alert("Logout did not complete. Please try again.");
+        }
       });
     }
 
