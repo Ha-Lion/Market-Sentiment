@@ -241,7 +241,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=10", "psd-account-styles");
+      await loadStylesheet("account.css?v=11", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -251,11 +251,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=10", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=11", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=10", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=11", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -326,6 +326,15 @@
         color:#ffd780;
         border:1px solid rgba(210,153,34,.32);
         background:rgba(210,153,34,.10);
+      }
+
+      /* Exact two-row ribbon rule used by the established public pages. */
+      .nav-row-break{
+        flex-basis:100%;
+        width:0;
+        height:0;
+        padding:0;
+        margin:0;
       }
 
       /* Keep the existing proven ribbon layout unchanged. */
@@ -404,7 +413,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=10", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=11", "psd-supabase-client");
     }
 
     return window.psdSupabase;
@@ -561,19 +570,16 @@
       </div>
     </div>
     <nav class="nav" aria-label="Main navigation">
-      <div class="nav-primary-row">
-        ${linksOne}
-      </div>
-      <div class="nav-secondary-row">
-        ${linksTwo}
-        <div class="psd-ribbon-social-wrap">
-          <div class="social-links">
-            <span class="social-label">Follow us</span>
-            <span class="social-pill">X</span>
-            <span class="social-pill linkedin">LinkedIn</span>
-          </div>
-          <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
+      ${linksOne}
+      <span class="nav-row-break" aria-hidden="true"></span>
+      ${linksTwo}
+      <div class="psd-ribbon-social-wrap">
+        <div class="social-links">
+          <span class="social-label">Follow us</span>
+          <span class="social-pill">X</span>
+          <span class="social-pill linkedin">LinkedIn</span>
         </div>
+        <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
       </div>
     </nav>
   </header>`;
