@@ -43,7 +43,7 @@
     }
 
     const config = window.PSDSupabaseConfig;
-    const response = await fetch(config.url + "/functions/v1/username-login", {
+    const response = await fetch(config.url + "/functions/v1/username-or-email-login", {
       method: "POST",
       headers: {
         "apikey": config.anonKey,
