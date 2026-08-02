@@ -1,134 +1,596 @@
-(function () {
+(function(){
   "use strict";
 
-  if (window.PSDPreferencesRuntime) return;
+  const mainLinks = [
+    { href: "dashboard.html", label: "📊 Interactive Dashboard" },
+    { href: "sentiment-history.html", label: "📈 Historical Sentiment" },
+    { href: "news-articles.html", label: "📰 News & Articles" },
+    { href: "charts.html", label: "📈 Market Charts" },
+    { href: "market-sentiment.html", label: "📘 Guides" },
+    { href: "advertise.html", label: "💼 Business Opportunities" },
+    { href: "contact.html", label: "✉️ Get in Touch" },
+    { href: "about.html", label: "ℹ️ About" },
+    { href: "auth.html", label: "Sign In" }
+  ];
 
-  const client = window.psdSupabase;
-  if (!client) return;
+  const assetLinks = [
+    { href: "crypto.html", label: "🪙 Crypto Sentiment" },
+    { href: "energy.html", label: "⚡ Energy Sentiment" },
+    { href: "precious-metals.html", label: "🥇 Precious Metals" },
+    { href: "indices.html", label: "📊 Indices" },
+    { href: "policy-assets.html", label: "🏛️ Policy & Geo Assets" },
+    { href: "ai-assets.html", label: "🤖 AI Assets" }
+  ];
 
-  function injectStyles() {
-    if (document.getElementById("psd-preferences-runtime-styles")) return;
+  const supportUrl = "https://gofund.me/0d687f045";
+  const tourVideoUrl = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
+  const homeUrl = "https://publicsentimentdash.com/";
+
+  function currentFile(){
+    const path = (window.location.pathname || "").split("/").pop();
+    return path || "index.html";
+  }
+
+  function linkHtml(link, current){
+    const isActive = link.href === current;
+
+    if(link.href === "auth.html"){
+      return `
+        <span class="psd-account-nav-wrap">
+          <a href="auth.html" id="psd-account-nav-link"${isActive ? ' class="active"' : ''}>${link.label}</a>
+          <div class="psd-account-menu" id="psd-account-menu" hidden>
+            <a href="account.html#preferences">Preferences</a>
+            <a href="account.html#profile">Update Information</a>
+            <a href="watchlist.html">My Watchlist</a>
+            <a href="activity-report.html" id="psd-activity-report-link" hidden>Activity Report</a>
+            <button type="button" id="psd-nav-signout">Log Out</button>
+          </div>
+        </span>`;
+    }
+
+    return '<a href="' + link.href + '"' + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
+  }
+
+  function ensureTourStyles(){
+    if(document.getElementById("site-tour-styles")) return;
 
     const style = document.createElement("style");
-    style.id = "psd-preferences-runtime-styles";
+    style.id = "site-tour-styles";
     style.textContent = `
-      body.psd-compact-mode .panel,
-      body.psd-compact-mode .card,
-      body.psd-compact-mode .dynamic-card{
-        padding-top:14px !important;
-        padding-bottom:14px !important;
+      .site-tour-banner{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:7px;
+        margin:0;
+        min-height:31px;
+        box-sizing:border-box;
+        padding:7px 15px;
+        border:1px solid rgba(255,204,82,.72);
+        border-radius:999px;
+        background:linear-gradient(180deg,rgba(85,61,12,.96),rgba(28,24,18,.96));
+        color:#ffe08a;
+        font:inherit;
+        font-size:11px;
+        font-weight:900;
+        line-height:1;
+        white-space:nowrap;
+        cursor:pointer;
+        box-shadow:0 0 18px rgba(225,167,39,.22);
+        transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
       }
-      body.psd-compact-mode .grid-2,
-      body.psd-compact-mode .grid-3{
-        gap:10px !important;
+      .site-tour-banner:hover,.site-tour-banner:focus-visible{
+        transform:translateY(-1px);
+        background:linear-gradient(180deg,#d7a42f,#8c6314);
+        color:#07090d;
+        box-shadow:0 0 24px rgba(255,198,69,.42);
+        outline:none;
+      }
+      body.site-tour-open{overflow:hidden}
+      .site-tour-overlay{
+        position:fixed;
+        inset:0;
+        z-index:2147483647;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#000;
+      }
+      .site-tour-overlay video{
+        display:block;
+        width:100vw;
+        height:100vh;
+        object-fit:contain;
+        background:#000;
+      }
+      .site-tour-close{
+        position:absolute;
+        top:max(16px,env(safe-area-inset-top));
+        right:max(16px,env(safe-area-inset-right));
+        z-index:2;
+        padding:11px 18px;
+        border:2px solid #fff2b3;
+        border-radius:999px;
+        background:#f5b82e;
+        color:#161006;
+        font:inherit;
+        font-size:14px;
+        font-weight:900;
+        cursor:pointer;
+        box-shadow:0 6px 22px rgba(0,0,0,.55),0 0 0 3px rgba(245,184,46,.22);
+      }
+      .site-tour-close:hover,.site-tour-close:focus-visible{
+        background:#ffd35c;
+        border-color:#fff8d6;
+        outline:none;
+      }
+      @media (max-width:900px){
+        .header-action-row{flex-wrap:wrap;gap:7px !important}
+        .site-tour-banner{font-size:10px;padding:7px 12px}
       }
     `;
     document.head.appendChild(style);
   }
 
-  function applyTimeframe(timeframe) {
-    const allowed = ["daily", "weekly", "monthly"];
-    const selected = allowed.includes(timeframe) ? timeframe : "daily";
-
-    document.documentElement.dataset.defaultTimeframe = selected;
-    sessionStorage.setItem("psd_default_timeframe", selected);
-
-    window.setTimeout(function () {
-      const control =
-        document.querySelector('[data-period="' + selected + '"]') ||
-        document.querySelector('[data-timeframe="' + selected + '"]');
-
-      if (control && !control.classList.contains("active")) {
-        try { control.click(); } catch (_error) {}
-      }
-    }, 450);
+  function exitFullscreen(){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(exit && (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement)){
+      try{
+        const result = exit.call(document);
+        if(result && typeof result.catch === "function") result.catch(function(){});
+      }catch(error){}
+    }
   }
 
-  async function apply() {
-    const sessionResult = await client.auth.getSession();
-    const session = sessionResult.data && sessionResult.data.session;
+  function openTour(){
+    if(document.getElementById("site-tour-overlay")) return;
 
-    if (!session) {
-      document.body.classList.remove("psd-compact-mode");
-      applyTimeframe("daily");
-      window.PSDUserPreferences = {
-        default_timeframe: "daily",
-        compact_mode: false,
-        watchlist: []
-      };
-      return;
-    }
+    const overlay = document.createElement("div");
+    overlay.id = "site-tour-overlay";
+    overlay.className = "site-tour-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-label", "Public Sentiment Dash website tour video");
 
-    const userId = session.user.id;
+    const video = document.createElement("video");
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.src = tourVideoUrl;
+    video.setAttribute("aria-label", "Public Sentiment Dash website tour");
+    video.muted = false;
+    video.volume = 1;
 
-    const results = await Promise.all([
-      client
-        .from("user_preferences")
-        .select("default_timeframe,compact_mode")
-        .eq("user_id", userId)
-        .single(),
-      client
-        .from("watchlists")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("is_default", true)
-        .limit(1)
-        .maybeSingle()
-    ]);
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "site-tour-close";
+    closeButton.textContent = "Skip video";
+    closeButton.setAttribute("aria-label", "Close website tour video");
 
-    const preferences = results[0].data || {
-      default_timeframe: "daily",
-      compact_mode: false
+    overlay.appendChild(video);
+    overlay.appendChild(closeButton);
+    document.body.appendChild(overlay);
+    document.body.classList.add("site-tour-open");
+
+    let closed = false;
+
+    const closeTour = function(){
+      if(closed) return;
+      closed = true;
+      video.pause();
+      exitFullscreen();
+      document.body.classList.remove("site-tour-open");
+      overlay.remove();
+      document.removeEventListener("keydown", onKeyDown);
     };
 
-    let watchlist = [];
-    const watchlistId = results[1].data && results[1].data.id;
+    const onKeyDown = function(event){
+      if(event.key === "Escape") closeTour();
+    };
 
-    if (watchlistId) {
-      const items = await client
-        .from("watchlist_items")
-        .select("instrument,display_order")
-        .eq("watchlist_id", watchlistId)
-        .order("display_order", { ascending: true });
+    video.addEventListener("ended", closeTour, { once:true });
+    closeButton.addEventListener("click", closeTour);
+    document.addEventListener("keydown", onKeyDown);
 
-      watchlist = (items.data || []).map(function (item) {
-        return item.instrument;
+    const requestFullscreen = overlay.requestFullscreen || overlay.webkitRequestFullscreen || overlay.msRequestFullscreen;
+    if(requestFullscreen){
+      try{
+        const fullResult = requestFullscreen.call(overlay);
+        if(fullResult && typeof fullResult.catch === "function") fullResult.catch(function(){});
+      }catch(error){}
+    }else if(typeof video.webkitEnterFullscreen === "function"){
+      try{ video.webkitEnterFullscreen(); }catch(error){}
+    }
+
+    const playResult = video.play();
+    if(playResult && typeof playResult.catch === "function"){
+      playResult.catch(function(){
+        video.controls = true;
+      });
+    }
+  }
+
+  function loadStylesheet(href, id){
+    if(document.getElementById(id)) return Promise.resolve();
+
+    return new Promise(function(resolve, reject){
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = href;
+      link.addEventListener("load", resolve, { once:true });
+      link.addEventListener("error", reject, { once:true });
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadScript(src, id){
+    if(document.getElementById(id)) return Promise.resolve();
+
+    return new Promise(function(resolve, reject){
+      const script = document.createElement("script");
+      script.id = id;
+      script.src = src;
+      script.defer = true;
+      script.addEventListener("load", resolve, { once:true });
+      script.addEventListener("error", reject, { once:true });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function openAuthPopup(event){
+    if(event) event.preventDefault();
+
+    try{
+      await loadStylesheet("account.css?v=12", "psd-account-styles");
+
+      if(!window.supabase || typeof window.supabase.createClient !== "function"){
+        await loadScript(
+          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+          "psd-supabase-sdk"
+        );
+      }
+
+      if(!window.psdSupabase){
+        await loadScript("supabase-client.js?v=12", "psd-supabase-client");
+      }
+
+      if(!window.PSDAuthModal){
+        await loadScript("auth-modal.js?v=11", "psd-auth-modal-script");
+      }
+
+      if(!window.psdSupabase || !window.PSDAuthModal){
+        throw new Error("Account popup did not initialize.");
+      }
+
+      const sessionResult = await window.psdSupabase.auth.getSession();
+      if(sessionResult.data && sessionResult.data.session){
+        window.location.href = "account.html";
+        return;
+      }
+
+      window.PSDAuthModal.open();
+    }catch(error){
+      console.error(error);
+      window.location.href = "auth.html";
+    }
+  }
+
+
+  function ensureAccountNavStyles(){
+    if(document.getElementById("psd-account-nav-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "psd-account-nav-styles";
+    style.textContent = `
+      .psd-account-nav-wrap{
+        position:relative;
+        display:inline-flex;
+        align-items:center;
+      }
+      .psd-account-menu{
+        position:absolute;
+        top:calc(100% + 9px);
+        right:0;
+        z-index:2147483000;
+        width:190px;
+        padding:8px;
+        border:1px solid rgba(210,153,34,.38);
+        border-radius:14px;
+        background:rgba(13,17,23,.99);
+        box-shadow:0 18px 48px rgba(0,0,0,.52);
+      }
+      .psd-account-menu[hidden]{display:none!important}
+      .psd-account-menu a,
+      .psd-account-menu button{
+        display:flex!important;
+        width:100%;
+        justify-content:flex-start;
+        box-sizing:border-box;
+        margin:0;
+        padding:10px 11px!important;
+        border:0;
+        border-radius:9px;
+        background:transparent;
+        color:#e6edf3;
+        font:600 12px Inter,Segoe UI,Arial,sans-serif;
+        text-align:left;
+        cursor:pointer;
+      }
+      .psd-account-menu a::before{display:none!important}
+      .psd-account-menu a:hover,
+      .psd-account-menu button:hover{
+        background:rgba(210,153,34,.16);
+        color:#ffd780;
+      }
+      #psd-account-nav-link.psd-member-link{
+        color:#ffd780;
+        border:1px solid rgba(210,153,34,.32);
+        background:rgba(210,153,34,.10);
+      }
+
+      /* Exact two-row ribbon rule used by the established public pages. */
+      .nav-row-break{
+        flex-basis:100%;
+        width:0;
+        height:0;
+        padding:0;
+        margin:0;
+      }
+
+      /* Keep the existing proven ribbon layout unchanged. */
+      .nav a::before{
+        display:none!important;
+        content:none!important;
+      }
+
+      .psd-ribbon-social-wrap{
+        position:relative;
+        display:inline-flex;
+        align-items:center;
+        margin-left:10px;
+        padding-bottom:35px;
+      }
+
+      .psd-ribbon-social-wrap .social-links{
+        margin-left:0!important;
+      }
+
+      #psd-ribbon-watchlist-link{
+        position:absolute;
+        top:calc(100% - 28px);
+        right:0;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-width:116px;
+        padding:7px 12px!important;
+        border:1px solid rgba(210,153,34,.32);
+        border-radius:8px;
+        background:rgba(210,153,34,.10);
+        color:#ffd780;
+        font-size:12px;
+        font-weight:700;
+        line-height:1;
+        white-space:nowrap;
+        box-shadow:0 0 14px rgba(210,153,34,.10);
+      }
+
+      #psd-ribbon-watchlist-link:hover,
+      #psd-ribbon-watchlist-link:focus-visible{
+        color:#fff;
+        background:rgba(210,153,34,.20);
+        border-color:rgba(210,153,34,.52);
+        outline:none;
+      }
+
+      #psd-ribbon-watchlist-link[hidden]{
+        display:none!important;
+      }
+
+      @media(max-width:980px){
+        .psd-ribbon-social-wrap{
+          margin-left:0;
+          padding-bottom:0;
+          flex-direction:column;
+          align-items:flex-start;
+          gap:7px;
+        }
+
+        #psd-ribbon-watchlist-link{
+          position:static;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function ensureAccountInfrastructure(){
+    if(!window.supabase || typeof window.supabase.createClient !== "function"){
+      await loadScript(
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+        "psd-supabase-sdk"
+      );
+    }
+
+    if(!window.psdSupabase){
+      await loadScript("supabase-client.js?v=12", "psd-supabase-client");
+    }
+
+    return window.psdSupabase;
+  }
+
+  async function refreshAccountNavigation(){
+    const accountLink = document.getElementById("psd-account-nav-link");
+    const menu = document.getElementById("psd-account-menu");
+    if(!accountLink || !menu) return;
+
+    try{
+      const client = await ensureAccountInfrastructure();
+      if(!client) return;
+
+      const sessionResult = await client.auth.getSession();
+      const session = sessionResult.data && sessionResult.data.session;
+
+      const ribbonWatchlistLink =
+        document.getElementById("psd-ribbon-watchlist-link");
+
+      if(!session){
+        if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = true;
+        accountLink.textContent = "Sign In";
+        accountLink.href = "auth.html";
+        accountLink.classList.remove("psd-member-link");
+        accountLink.dataset.signedIn = "false";
+        const reportLink = document.getElementById("psd-activity-report-link");
+        if(reportLink) reportLink.hidden = true;
+        menu.hidden = true;
+        return;
+      }
+
+      const profileResult = await client
+        .from("profiles")
+        .select("username,display_name,is_admin")
+        .eq("id", session.user.id)
+        .single();
+
+      const profile = profileResult.data || {};
+      const name = profile.username || profile.display_name || "Member";
+      const reportLink = document.getElementById("psd-activity-report-link");
+      if(reportLink) reportLink.hidden = profile.is_admin !== true;
+
+      if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = false;
+
+      accountLink.textContent = name;
+      accountLink.href = "#";
+      accountLink.classList.add("psd-member-link");
+      accountLink.dataset.signedIn = "true";
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  function initializeAccountNavigation(){
+    ensureAccountNavStyles();
+
+    const accountLink = document.getElementById("psd-account-nav-link");
+    const menu = document.getElementById("psd-account-menu");
+    const signout = document.getElementById("psd-nav-signout");
+    if(!accountLink || !menu) return;
+
+    accountLink.addEventListener("click", async function(event){
+      if(accountLink.dataset.signedIn === "true"){
+        event.preventDefault();
+        menu.hidden = !menu.hidden;
+        return;
+      }
+
+      await openAuthPopup(event);
+    });
+
+    if(signout){
+      signout.addEventListener("click", async function(){
+        const originalText = signout.textContent;
+        signout.disabled = true;
+        signout.textContent = "Logging out…";
+
+        try{
+          /* On the account page, save any pending preference fields first. */
+          if(typeof window.PSDSavePendingAccountSettings === "function"){
+            await window.PSDSavePendingAccountSettings();
+          }
+
+          const client = await ensureAccountInfrastructure();
+          if(!client) throw new Error("Account service is unavailable.");
+
+          /* End only this browser session and clear its stored auth session. */
+          const result = await client.auth.signOut({ scope: "local" });
+          if(result && result.error) throw result.error;
+
+          menu.hidden = true;
+
+          /* replace() loads a fresh home page and removes the private page
+             from the Back-button history. */
+          window.location.replace(homeUrl);
+        }catch(error){
+          console.error("Logout failed:", error);
+          signout.disabled = false;
+          signout.textContent = originalText;
+          window.alert("Logout did not complete. Please try again.");
+        }
       });
     }
 
-    document.body.classList.toggle(
-      "psd-compact-mode",
-      Boolean(preferences.compact_mode)
-    );
-    applyTimeframe(preferences.default_timeframe);
-
-    window.PSDUserPreferences = {
-      default_timeframe: preferences.default_timeframe || "daily",
-      compact_mode: Boolean(preferences.compact_mode),
-      watchlist: watchlist
-    };
-
-    window.dispatchEvent(new CustomEvent("psd-preferences-ready", {
-      detail: window.PSDUserPreferences
-    }));
-  }
-
-  injectStyles();
-  window.PSDPreferencesRuntime = { apply: apply };
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      apply().catch(function () {});
+    document.addEventListener("click", function(event){
+      if(!event.target.closest(".psd-account-nav-wrap")) menu.hidden = true;
     });
-  } else {
-    apply().catch(function () {});
+
+    document.addEventListener("keydown", function(event){
+      if(event.key === "Escape") menu.hidden = true;
+    });
+
+    window.addEventListener("psd-member-status-change", function(){
+      refreshAccountNavigation();
+    });
+
+    window.addEventListener("psd-profile-updated", function(){
+      refreshAccountNavigation();
+    });
+
+    refreshAccountNavigation();
   }
 
-  window.addEventListener("psd-preferences-updated", function () {
-    apply().catch(function () {});
-  });
+  function render(){
+    const mount = document.getElementById("site-header");
+    if(!mount) return;
+    const current = currentFile();
+    const linksOne = mainLinks.map(link => linkHtml(link, current)).join("\n      ");
+    const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n      ");
+    mount.outerHTML = `
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+    <div class="header-center">
+      <div class="header-pill" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;">✨ Constantly learning & improving</div>
+      <div class="header-action-row" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;transform:translateY(62px);white-space:nowrap;">
+        <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+          <span>🚀 Help take Public Sentiment Dash to the next level</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
+        </a>
+        <button class="site-tour-banner" id="site-tour-button" type="button" aria-label="Play the two-minute Public Sentiment Dash website tour">
+          <span aria-hidden="true">🎬</span>
+          <span>Take a 2-Minute Website Tour</span>
+        </button>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Main navigation">
+      ${linksOne}
+      <span class="nav-row-break" aria-hidden="true"></span>
+      ${linksTwo}
+      <div class="psd-ribbon-social-wrap">
+        <div class="social-links">
+          <span class="social-label">Follow us</span>
+          <span class="social-pill">X</span>
+          <span class="social-pill linkedin">LinkedIn</span>
+        </div>
+        <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
+      </div>
+    </nav>
+  </header>`;
 
-  window.addEventListener("psd-member-status-change", function () {
-    apply().catch(function () {});
-  });
+    ensureTourStyles();
+    const tourButton = document.getElementById("site-tour-button");
+    if(tourButton) tourButton.addEventListener("click", openTour);
+
+    initializeAccountNavigation();
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
+  else render();
 })();
