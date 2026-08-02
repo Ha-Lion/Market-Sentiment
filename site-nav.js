@@ -346,6 +346,7 @@
         align-items:center;
         margin-left:10px;
         padding-bottom:35px;
+        transform:translateY(-10px);
       }
 
       .psd-ribbon-social-wrap .social-links{
@@ -391,6 +392,7 @@
           flex-direction:column;
           align-items:flex-start;
           gap:7px;
+          transform:none;
         }
 
         #psd-ribbon-watchlist-link{
@@ -559,15 +561,21 @@
         <span>🚀 Help take Public Sentiment Dash to the next level</span>
         <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
       </a>
+      <button
+        class="site-tour-banner"
+        id="site-tour-button"
+        type="button"
+        aria-label="Play the two-minute Public Sentiment Dash website tour"
+        style="margin:8px 0 0 12px;transform:translateY(62px);flex-shrink:0;"
+      >
+        <span aria-hidden="true">🎬</span>
+        <span>Take a 2-Minute Website Tour</span>
+      </button>
     </div>
     <nav class="nav" aria-label="Main navigation">
       ${linksOne}
       <span class="nav-row-break" aria-hidden="true"></span>
       ${linksTwo}
-      <button class="site-tour-banner" id="site-tour-button" type="button" aria-label="Play the two-minute Public Sentiment Dash website tour">
-        <span aria-hidden="true">🎬</span>
-        <span>Take a 2-Minute Website Tour</span>
-      </button>
       <div class="psd-ribbon-social-wrap">
         <div class="social-links">
           <span class="social-label">Follow us</span>
