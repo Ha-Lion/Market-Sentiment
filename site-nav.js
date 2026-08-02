@@ -10,7 +10,7 @@
     { href: "advertise.html", label: "💼 Business Opportunities" },
     { href: "contact.html", label: "✉️ Get in Touch" },
     { href: "about.html", label: "ℹ️ About" },
-    { href: "auth.html", label: "👤 Sign In" }
+    { href: "auth.html", label: "Sign In" }
   ];
 
   const assetLinks = [
@@ -32,8 +32,21 @@
 
   function linkHtml(link, current){
     const isActive = link.href === current;
-    const modalAttribute = link.href === "auth.html" ? ' data-psd-auth-open="true"' : "";
-    return '<a href="' + link.href + '"' + modalAttribute + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
+
+    if(link.href === "auth.html"){
+      return `
+        <span class="psd-account-nav-wrap">
+          <a href="auth.html" id="psd-account-nav-link"${isActive ? ' class="active"' : ''}>${link.label}</a>
+          <div class="psd-account-menu" id="psd-account-menu" hidden>
+            <a href="account.html#preferences">Preferences</a>
+            <a href="account.html#profile">Update Information</a>
+            <a href="activity-report.html" id="psd-activity-report-link" hidden>Activity Report</a>
+            <button type="button" id="psd-nav-signout">Log Out</button>
+          </div>
+        </span>`;
+    }
+
+    return '<a href="' + link.href + '"' + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
   }
 
   function ensureTourStyles(){
@@ -226,7 +239,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=3", "psd-account-styles");
+      await loadStylesheet("account.css?v=7", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -236,11 +249,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=2", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=6", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=1", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=6", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -260,17 +273,167 @@
     }
   }
 
-  function loadSiteAnalytics(){
-    if(document.getElementById("psd-site-analytics-script")) return;
-    const script = document.createElement("script");
-    script.id = "psd-site-analytics-script";
-    script.src = "site-analytics.js?v=2";
-    script.defer = true;
-    document.head.appendChild(script);
+
+  function ensureAccountNavStyles(){
+    if(document.getElementById("psd-account-nav-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "psd-account-nav-styles";
+    style.textContent = `
+      .psd-account-nav-wrap{
+        position:relative;
+        display:inline-flex;
+        align-items:center;
+      }
+      .psd-account-menu{
+        position:absolute;
+        top:calc(100% + 9px);
+        right:0;
+        z-index:2147483000;
+        width:190px;
+        padding:8px;
+        border:1px solid rgba(210,153,34,.38);
+        border-radius:14px;
+        background:rgba(13,17,23,.99);
+        box-shadow:0 18px 48px rgba(0,0,0,.52);
+      }
+      .psd-account-menu[hidden]{display:none!important}
+      .psd-account-menu a,
+      .psd-account-menu button{
+        display:flex!important;
+        width:100%;
+        justify-content:flex-start;
+        box-sizing:border-box;
+        margin:0;
+        padding:10px 11px!important;
+        border:0;
+        border-radius:9px;
+        background:transparent;
+        color:#e6edf3;
+        font:600 12px Inter,Segoe UI,Arial,sans-serif;
+        text-align:left;
+        cursor:pointer;
+      }
+      .psd-account-menu a::before{display:none!important}
+      .psd-account-menu a:hover,
+      .psd-account-menu button:hover{
+        background:rgba(210,153,34,.16);
+        color:#ffd780;
+      }
+      #psd-account-nav-link.psd-member-link{
+        color:#ffd780;
+        border:1px solid rgba(210,153,34,.32);
+        background:rgba(210,153,34,.10);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function ensureAccountInfrastructure(){
+    if(!window.supabase || typeof window.supabase.createClient !== "function"){
+      await loadScript(
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+        "psd-supabase-sdk"
+      );
+    }
+
+    if(!window.psdSupabase){
+      await loadScript("supabase-client.js?v=6", "psd-supabase-client");
+    }
+
+    return window.psdSupabase;
+  }
+
+  async function refreshAccountNavigation(){
+    const accountLink = document.getElementById("psd-account-nav-link");
+    const menu = document.getElementById("psd-account-menu");
+    if(!accountLink || !menu) return;
+
+    try{
+      const client = await ensureAccountInfrastructure();
+      if(!client) return;
+
+      const sessionResult = await client.auth.getSession();
+      const session = sessionResult.data && sessionResult.data.session;
+
+      if(!session){
+        accountLink.textContent = "Sign In";
+        accountLink.href = "auth.html";
+        accountLink.classList.remove("psd-member-link");
+        accountLink.dataset.signedIn = "false";
+        const reportLink = document.getElementById("psd-activity-report-link");
+        if(reportLink) reportLink.hidden = true;
+        menu.hidden = true;
+        return;
+      }
+
+      const profileResult = await client
+        .from("profiles")
+        .select("username,display_name,is_admin")
+        .eq("id", session.user.id)
+        .single();
+
+      const profile = profileResult.data || {};
+      const name = profile.username || profile.display_name || "Member";
+      const reportLink = document.getElementById("psd-activity-report-link");
+      if(reportLink) reportLink.hidden = profile.is_admin !== true;
+
+      accountLink.textContent = name;
+      accountLink.href = "#";
+      accountLink.classList.add("psd-member-link");
+      accountLink.dataset.signedIn = "true";
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  function initializeAccountNavigation(){
+    ensureAccountNavStyles();
+
+    const accountLink = document.getElementById("psd-account-nav-link");
+    const menu = document.getElementById("psd-account-menu");
+    const signout = document.getElementById("psd-nav-signout");
+    if(!accountLink || !menu) return;
+
+    accountLink.addEventListener("click", async function(event){
+      if(accountLink.dataset.signedIn === "true"){
+        event.preventDefault();
+        menu.hidden = !menu.hidden;
+        return;
+      }
+
+      await openAuthPopup(event);
+    });
+
+    if(signout){
+      signout.addEventListener("click", async function(){
+        const client = await ensureAccountInfrastructure();
+        if(client) await client.auth.signOut();
+        menu.hidden = true;
+        await refreshAccountNavigation();
+      });
+    }
+
+    document.addEventListener("click", function(event){
+      if(!event.target.closest(".psd-account-nav-wrap")) menu.hidden = true;
+    });
+
+    document.addEventListener("keydown", function(event){
+      if(event.key === "Escape") menu.hidden = true;
+    });
+
+    window.addEventListener("psd-member-status-change", function(){
+      refreshAccountNavigation();
+    });
+
+    window.addEventListener("psd-profile-updated", function(){
+      refreshAccountNavigation();
+    });
+
+    refreshAccountNavigation();
   }
 
   function render(){
-    loadSiteAnalytics();
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
@@ -320,8 +483,7 @@
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton) tourButton.addEventListener("click", openTour);
 
-    const authButton = document.querySelector('[data-psd-auth-open="true"]');
-    if(authButton) authButton.addEventListener("click", openAuthPopup);
+    initializeAccountNavigation();
   }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
