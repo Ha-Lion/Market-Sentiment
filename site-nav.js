@@ -41,6 +41,7 @@
           <div class="psd-account-menu" id="psd-account-menu" hidden>
             <a href="account.html#preferences">Preferences</a>
             <a href="account.html#profile">Update Information</a>
+            <a href="watchlist.html">My Watchlist</a>
             <a href="activity-report.html" id="psd-activity-report-link" hidden>Activity Report</a>
             <button type="button" id="psd-nav-signout">Log Out</button>
           </div>
@@ -250,7 +251,7 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=6", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=8", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
@@ -339,7 +340,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=6", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=8", "psd-supabase-client");
     }
 
     return window.psdSupabase;
