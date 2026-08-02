@@ -679,7 +679,7 @@
           </article>
 
           <article class="dash-card card-b">
-            <div class="card-head"><div class="card-title">Global vs U.S. flow</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" id="flowTitle">Global vs U.S. flow</div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
           </article>
@@ -1391,10 +1391,16 @@
       drawHourly();
       const weeklyGlobal=aggregate("global","weekly",true).slice(-4);
       const weeklyUs=aggregate("us","weekly",true).slice(-4);
+      const useWeeklyFlow=weeklyGlobal.length >= 2 && weeklyUs.length >= 2;
+      const flowGlobal=useWeeklyFlow ? weeklyGlobal : aggregate("global","daily",true).slice(-7);
+      const flowUs=useWeeklyFlow ? weeklyUs : aggregate("us","daily",true).slice(-7);
+      const flowTitle=document.getElementById("flowTitle");
+      if(flowTitle) flowTitle.textContent=(useWeeklyFlow ? "Weekly" : "Daily") + " Global vs U.S. flow";
+      const flowPointCount=Math.max(flowGlobal.length,flowUs.length);
       drawLine(document.getElementById("chartFlow"),[
-        {points:weeklyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
-        {points:weeklyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
-      ],{dots:false,scan:true,pad:{l:34,r:10,t:30,b:20}});
+        {points:flowGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
+        {points:flowUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
+      ],{dots:flowPointCount <= 2,scan:true,labelAll:flowPointCount <= 7,pad:{l:34,r:10,t:30,b:20}});
       drawBars(document.getElementById("chartBars"), aggregate("global","daily",true));
       updateSkylineHeader();
       const skylineGlobal=movingAverage(skylinePoints("global")).map(p=>({...p,value:p.smooth??p.value}));
@@ -1690,7 +1696,7 @@
     }
 
     async function loadDrivers(){
-      const paths=["hot_news.json","news_cache.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
+      const paths=["hot_news.json","news_latest.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
       for(const path of paths){
         try{
           const data=await fetchJSON(path);
