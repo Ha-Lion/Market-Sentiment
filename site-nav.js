@@ -241,7 +241,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=11", "psd-account-styles");
+      await loadStylesheet("account.css?v=12", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -251,7 +251,7 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=11", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=12", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
@@ -413,7 +413,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=11", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=12", "psd-supabase-client");
     }
 
     return window.psdSupabase;
