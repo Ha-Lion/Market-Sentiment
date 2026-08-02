@@ -3,49 +3,158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anonymous Activity Report | Public Sentiment Dash</title>
+  <title>Privacy-Safe Activity Report | Public Sentiment Dash</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
-  <link rel="stylesheet" href="activity-report.css">
+  <link rel="stylesheet" href="activity-report.css?v=3">
 </head>
 <body>
   <div id="site-header"></div>
-  <script src="site-nav.js?v=6"></script>
+  <script src="site-nav.js?v=8"></script>
 
   <main class="page activity-page">
-    <section class="panel">
+    <section class="panel activity-intro">
       <div class="activity-heading">
         <div>
           <div class="page-chip">Owner Report</div>
-          <h1>Anonymous Member vs Guest Activity</h1>
-          <p>Aggregate counts only. No names, emails, user IDs, passwords, typed text, watchlists, or alert contents appear here.</p>
+          <h1>Privacy-Safe Website Activity</h1>
+          <p>
+            Aggregate hourly counts in Eastern Time. No names, emails, user IDs,
+            exact locations, raw time zones, passwords, typed text, watchlist contents,
+            alert contents, or voting identifiers are included.
+          </p>
         </div>
         <a class="activity-account-link" href="account.html">Back to Account</a>
+      </div>
+
+      <div class="activity-retention">
+        <strong>Rolling retention:</strong> up to 12 months.
+        Region is a broad group inferred from the browser time zone, not GPS or an IP-location lookup.
+      </div>
+
+      <div class="activity-quick-ranges" aria-label="Quick report ranges">
+        <button type="button" data-range="7">7 Days</button>
+        <button type="button" data-range="30" class="active">30 Days</button>
+        <button type="button" data-range="90">90 Days</button>
+        <button type="button" data-range="365">12 Months</button>
+        <button type="button" data-range="this-month">This Month</button>
+        <button type="button" data-range="last-month">Last Month</button>
       </div>
 
       <div class="activity-filters">
         <label>Start date<input id="activity-start" type="date"></label>
         <label>End date<input id="activity-end" type="date"></label>
         <button id="activity-refresh" type="button">Refresh</button>
-        <button id="activity-download" type="button">Download CSV</button>
+        <button id="activity-summary-download" type="button">Summary CSV</button>
+        <button id="activity-detail-download" type="button">Detailed CSV</button>
       </div>
+
+      <div class="activity-meta">
+        <span id="activity-generated">Generated: —</span>
+              </div>
       <div id="activity-status" class="activity-status" role="status"></div>
     </section>
 
     <section class="activity-summary" aria-label="Activity summary">
       <article class="panel"><span>Total Activities</span><strong id="summary-total">0</strong></article>
+      <article class="panel"><span>Page Views</span><strong id="summary-pageviews">0</strong></article>
+      <article class="panel"><span>Sessions</span><strong id="summary-sessions">0</strong></article>
+      <article class="panel"><span>Votes</span><strong id="summary-votes">0</strong></article>
       <article class="panel"><span>Member Activities</span><strong id="summary-member">0</strong></article>
       <article class="panel"><span>Guest Activities</span><strong id="summary-guest">0</strong></article>
       <article class="panel"><span>Most Used Page</span><strong id="summary-page">—</strong></article>
+      <article class="panel"><span>Top Feature</span><strong id="summary-feature">—</strong></article>
+      <article class="panel"><span>Top Region</span><strong id="summary-region">—</strong></article>
+      <article class="panel"><span>Top Device / Source</span><strong id="summary-device">—</strong></article>
+    </section>
+
+    <section class="activity-grid-two">
+      <article class="panel activity-table-panel">
+        <div class="activity-section-heading">
+          <div><h2>Monthly Trend</h2><p>Accumulated member, guest, session, page-view, and voting activity.</p></div>
+        </div>
+        <div class="activity-table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Total</th><th>Member</th><th>Guest</th><th>Views</th><th>Sessions</th><th>Votes</th></tr></thead>
+            <tbody id="monthly-body"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel activity-table-panel">
+        <div class="activity-section-heading">
+          <div><h2>Eastern Time Hours</h2><p>Hourly buckets; no exact visit timestamps.</p></div>
+        </div>
+        <div class="activity-table-wrap">
+          <table>
+            <thead><tr><th>ET Hour</th><th>Total</th><th>Views</th><th>Sessions</th><th>Votes</th></tr></thead>
+            <tbody id="hourly-body"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="activity-grid-two">
+      <article class="panel activity-table-panel">
+        <div class="activity-section-heading">
+          <div><h2>Voting Summary</h2><p>Aggregate direction by instrument. No browser voter IDs are shown here.</p></div>
+        </div>
+        <div class="activity-table-wrap">
+          <table>
+            <thead><tr><th>Instrument</th><th>Bullish</th><th>Bearish</th><th>Total</th><th>Net</th></tr></thead>
+            <tbody id="votes-body"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel activity-table-panel">
+        <div class="activity-section-heading">
+          <div><h2>Broad Audience Context</h2><p>Coarse region, device class, and referral category only.</p></div>
+        </div>
+        <div class="activity-audience-grid">
+          <div><h3>Regions</h3><div id="regions-list" class="activity-rank-list"></div></div>
+          <div><h3>Devices</h3><div id="devices-list" class="activity-rank-list"></div></div>
+          <div><h3>Sources</h3><div id="sources-list" class="activity-rank-list"></div></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="activity-grid-two">
+      <article class="panel activity-table-panel">
+        <div class="activity-section-heading"><div><h2>Top Pages</h2><p>Page-view counts only.</p></div></div>
+        <div class="activity-table-wrap">
+          <table>
+            <thead><tr><th>Page</th><th>Views</th></tr></thead>
+            <tbody id="pages-body"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel activity-table-panel">
+        <div class="activity-section-heading"><div><h2>Top Features</h2><p>Buttons, navigation links, and form names; never form contents.</p></div></div>
+        <div class="activity-table-wrap">
+          <table>
+            <thead><tr><th>Type</th><th>Feature</th><th>Count</th></tr></thead>
+            <tbody id="features-body"></tbody>
+          </table>
+        </div>
+      </article>
     </section>
 
     <section class="panel activity-table-panel">
+      <div class="activity-section-heading">
+        <div>
+          <h2>Detailed Aggregate Rows</h2>
+          <p>Latest 500 aggregate rows are shown. Detailed CSV downloads the complete selected period in batches.</p>
+        </div>
+      </div>
       <div class="activity-table-wrap">
-        <table>
+        <table class="activity-detail-table">
           <thead>
             <tr>
-              <th>Date</th><th>Type</th><th>Page</th><th>Activity</th><th>Feature</th><th>Count</th>
+              <th>Date ET</th><th>Hour ET</th><th>Type</th><th>Region</th><th>Device</th>
+              <th>Source</th><th>Page</th><th>Activity</th><th>Feature</th><th>Count</th>
             </tr>
           </thead>
           <tbody id="activity-body"></tbody>
@@ -55,7 +164,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-client.js?v=6"></script>
-  <script src="activity-report.js?v=1"></script>
+  <script src="supabase-client.js?v=8"></script>
+  <script src="activity-report.js?v=3"></script>
 </body>
 </html>
