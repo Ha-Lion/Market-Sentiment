@@ -341,9 +341,101 @@
       showRememberToast(toastState === "remembered");
     }
 
+    async function savePendingAccountSettings() {
+      const timezoneField = document.getElementById("timezone");
+      const timeframeField = document.getElementById("default-timeframe");
+      const compactField = document.getElementById("compact-mode");
+      const pushField = document.getElementById("push-enabled");
+      const emailField = document.getElementById("email-enabled");
+      const marketAlertsField = document.getElementById("market-alerts");
+      const newsAlertsField = document.getElementById("news-alerts");
+
+      const timezone = timezoneField ? (timezoneField.value || "UTC") : "UTC";
+      const saves = [];
+
+      /* Save settings that may still be visible in the account form.
+         Username remains controlled by its own Save Profile button so an
+         unfinished or unavailable username is never stored accidentally. */
+      if (timezoneField) {
+        saves.push(
+          client.from("profiles")
+            .update({ timezone: timezone })
+            .eq("id", user.id)
+        );
+      }
+
+      if (timeframeField && compactField) {
+        saves.push(
+          client.from("user_preferences")
+            .update({
+              theme: "dark",
+              default_timeframe: timeframeField.value || "daily",
+              compact_mode: compactField.checked
+            })
+            .eq("user_id", user.id)
+        );
+      }
+
+      if (
+        pushField && emailField && marketAlertsField && newsAlertsField
+      ) {
+        saves.push(
+          client.from("notification_preferences")
+            .update({
+              push_enabled: pushField.checked,
+              email_enabled: emailField.checked,
+              market_alerts: marketAlertsField.checked,
+              news_alerts: newsAlertsField.checked,
+              timezone: timezone
+            })
+            .eq("user_id", user.id)
+        );
+      }
+
+      if (!saves.length) return;
+
+      const results = await Promise.all(saves);
+      const failed = results.find(function (result) {
+        return result && result.error;
+      });
+
+      if (failed) throw failed.error;
+    }
+
+    /* The ribbon logout button can call the same safe save routine. */
+    window.PSDSavePendingAccountSettings = savePendingAccountSettings;
+
     document.getElementById("signout-button").addEventListener("click", async function () {
-      await client.auth.signOut();
-      window.location.replace("index.html");
+      const button = this;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Logging out…";
+      setStatus(status, "Saving your settings and logging out…");
+
+      try {
+        await savePendingAccountSettings();
+
+        /* Watchlist additions/removals are already saved immediately. */
+        const signoutResult = await client.auth.signOut({ scope: "local" });
+        if (signoutResult && signoutResult.error) {
+          throw signoutResult.error;
+        }
+
+        /* A full fresh load of the public homepage also removes the account
+           page from the browser's Back-button history. */
+        window.location.replace("https://publicsentimentdash.com/");
+      } catch (error) {
+        console.error("Logout failed:", error);
+        setStatus(
+          status,
+          error && error.message
+            ? error.message
+            : "Logout did not complete. Please try again.",
+          "error"
+        );
+        button.disabled = false;
+        button.textContent = originalText;
+      }
     });
 
     let defaultWatchlistId = null;
