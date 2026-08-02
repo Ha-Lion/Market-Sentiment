@@ -103,7 +103,7 @@
   }
 
   loadScript("site-analytics.js?v=8", "psd-site-analytics-script");
-  loadScript("site-preferences.js?v=1", "psd-site-preferences-script");
+  loadScript("site-preferences.js?v=2", "psd-site-preferences-script");
 
   window.psdSupabase.auth.getSession().then(function (result) {
     publishMemberStatus(result.data && result.data.session ? result.data.session : null);
