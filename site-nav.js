@@ -74,6 +74,9 @@
         line-height:1;
         white-space:nowrap;
         cursor:pointer;
+        position:relative;
+        z-index:50;
+        pointer-events:auto;
         box-shadow:0 0 18px rgba(225,167,39,.22);
         transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
       }
@@ -188,22 +191,31 @@
     closeButton.addEventListener("click", closeTour);
     document.addEventListener("keydown", onKeyDown);
 
-    const requestFullscreen = overlay.requestFullscreen || overlay.webkitRequestFullscreen || overlay.msRequestFullscreen;
-    if(requestFullscreen){
-      try{
-        const fullResult = requestFullscreen.call(overlay);
-        if(fullResult && typeof fullResult.catch === "function") fullResult.catch(function(){});
-      }catch(error){}
-    }else if(typeof video.webkitEnterFullscreen === "function"){
-      try{ video.webkitEnterFullscreen(); }catch(error){}
-    }
+    /*
+     * The overlay already fills the viewport. Avoid consuming the browser's
+     * click permission with requestFullscreen() before video.play().
+     */
+    const startPlayback = function(){
+      const playResult = video.play();
 
-    const playResult = video.play();
-    if(playResult && typeof playResult.catch === "function"){
-      playResult.catch(function(){
-        video.controls = true;
-      });
-    }
+      if(playResult && typeof playResult.catch === "function"){
+        playResult.catch(function(){
+          /*
+           * Browser fallback: start muted if unmuted playback is blocked.
+           * Controls remain visible so the viewer can immediately unmute.
+           */
+          video.muted = true;
+          const mutedPlay = video.play();
+          if(mutedPlay && typeof mutedPlay.catch === "function"){
+            mutedPlay.catch(function(){
+              video.controls = true;
+            });
+          }
+        });
+      }
+    };
+
+    startPlayback();
   }
 
   function loadStylesheet(href, id){
@@ -238,7 +250,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=13", "psd-account-styles");
+      await loadStylesheet("account.css?v=20260802-final", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -248,11 +260,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=13", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=20260802-final", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=13", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=20260802-final", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -412,7 +424,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=13", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=20260802-final", "psd-supabase-client");
     }
 
     return window.psdSupabase;
@@ -537,6 +549,23 @@
     refreshAccountNavigation();
   }
 
+  function installTourClickFallback(){
+    if(window.__PSD_TOUR_CLICK_FALLBACK__) return;
+    window.__PSD_TOUR_CLICK_FALLBACK__ = true;
+
+    document.addEventListener("click", function(event){
+      const button = event.target && event.target.closest
+        ? event.target.closest("#site-tour-button")
+        : null;
+
+      if(!button) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      openTour();
+    }, true);
+  }
+
   function render(){
     const mount = document.getElementById("site-header");
     if(!mount) return;
@@ -588,11 +617,20 @@
   </header>`;
 
     ensureTourStyles();
+
     const tourButton = document.getElementById("site-tour-button");
-    if(tourButton) tourButton.addEventListener("click", openTour);
+    if(tourButton){
+      tourButton.onclick = function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        openTour();
+      };
+    }
 
     initializeAccountNavigation();
   }
+
+  installTourClickFallback();
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
   else render();
