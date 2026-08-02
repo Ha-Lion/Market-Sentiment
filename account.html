@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account | Public Sentiment Dash</title>
+  <meta name="description" content="Manage your Public Sentiment Dash preferences and watchlist.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="account.css">
+</head>
+<body>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=2"></script>
+
+  <main class="page">
+    <section class="panel account-card full" style="max-width:1180px;margin:0 auto 18px;">
+      <div class="account-meta">
+        <div>
+          <div class="page-chip">My account</div>
+          <h1>Personalize Your Dashboard</h1>
+          <p class="account-email" id="account-email">Loading…</p>
+        </div>
+        <button class="psd-button secondary" id="signout-button" type="button">Sign Out</button>
+      </div>
+      <div id="account-status" class="psd-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <div class="account-grid">
+      <section class="panel account-card">
+        <h2>Profile</h2>
+        <form id="profile-form" class="psd-form">
+          <div class="psd-field">
+            <label for="display-name">Display name</label>
+            <input class="psd-input" id="display-name" type="text" maxlength="80">
+          </div>
+          <div class="psd-field">
+            <label for="timezone">Time zone</label>
+            <input class="psd-input" id="timezone" type="text" placeholder="America/New_York">
+          </div>
+          <button class="psd-button" type="submit">Save Profile</button>
+        </form>
+      </section>
+
+      <section class="panel account-card">
+        <h2>Dashboard Preferences</h2>
+        <form id="preferences-form" class="psd-form">
+          <div class="psd-field">
+            <label for="theme">Theme</label>
+            <select class="psd-select" id="theme">
+              <option value="system">Use device setting</option>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div class="psd-field">
+            <label for="default-timeframe">Default timeframe</label>
+            <select class="psd-select" id="default-timeframe">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <label class="checkbox-row">
+            <input id="compact-mode" type="checkbox">
+            <span>Use compact dashboard cards</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="analytics-opt-out" type="checkbox">
+            <span>Opt out of optional usage analytics</span>
+          </label>
+          <button class="psd-button" type="submit">Save Preferences</button>
+        </form>
+      </section>
+
+      <section class="panel account-card">
+        <h2>My Watchlist</h2>
+        <form id="watchlist-form" class="psd-form">
+          <div class="psd-field">
+            <label for="watchlist-instrument">Add an instrument</label>
+            <input class="psd-input" id="watchlist-instrument" type="text" maxlength="80" placeholder="Example: EUR/USD" required>
+          </div>
+          <button class="psd-button" type="submit">Add to Watchlist</button>
+        </form>
+        <ul class="watchlist-list" id="watchlist-list"></ul>
+      </section>
+
+      <section class="panel account-card">
+        <h2>Notifications</h2>
+        <form id="notification-form" class="psd-form">
+          <label class="checkbox-row">
+            <input id="push-enabled" type="checkbox">
+            <span>Push notifications</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="email-enabled" type="checkbox">
+            <span>Email notifications</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="market-alerts" type="checkbox">
+            <span>Market alerts</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="news-alerts" type="checkbox">
+            <span>News alerts</span>
+          </label>
+          <button class="psd-button" type="submit">Save Notification Settings</button>
+        </form>
+        <p class="psd-help">Mobile push delivery will be activated when the Apple and Android app is connected.</p>
+      </section>
+
+      <section class="panel account-card">
+        <h2>Password</h2>
+        <form id="password-form" class="psd-form">
+          <div class="psd-field">
+            <label for="account-new-password">New password</label>
+            <input class="psd-input" id="account-new-password" type="password" autocomplete="new-password" minlength="8" required>
+          </div>
+          <button class="psd-button" type="submit">Change Password</button>
+        </form>
+      </section>
+
+      <section class="panel account-card danger-zone">
+        <h2>Delete Account</h2>
+        <p>Request deletion of your account and personalized data. A seven-day cancellation period is provided.</p>
+        <div class="inline-actions">
+          <button class="psd-button danger" id="request-delete-button" type="button">Request Deletion</button>
+          <button class="psd-button secondary hidden" id="cancel-delete-button" type="button">Cancel Deletion</button>
+        </div>
+        <p id="deletion-status" class="psd-help"></p>
+      </section>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth-account.js"></script>
+</body>
+</html>
