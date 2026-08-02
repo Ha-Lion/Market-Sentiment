@@ -7,6 +7,145 @@
   const isAuthPage = /(^|\/)auth\.html$/i.test(window.location.pathname);
   const isAccountPage = /(^|\/)account\.html$/i.test(window.location.pathname);
 
+  const WATCHLIST_FALLBACK_ASSETS = [
+    { name:"S&P 500 / ES", symbol:"ES", category:"indices", page:"indices.html" },
+    { name:"Nasdaq / NQ", symbol:"NQ", category:"indices", page:"indices.html" },
+    { name:"Dow / YM", symbol:"YM", category:"indices", page:"indices.html" },
+    { name:"Russell / RTY", symbol:"RTY", category:"indices", page:"indices.html" },
+    { name:"VIX", symbol:"VIX", category:"indices", page:"indices.html" },
+    { name:"DAX", symbol:"DAX", category:"indices", page:"indices.html" },
+    { name:"FTSE 100", symbol:"FTSE", category:"indices", page:"indices.html" },
+    { name:"Nikkei 225", symbol:"N225", category:"indices", page:"indices.html" },
+    { name:"Hang Seng", symbol:"HSI", category:"indices", page:"indices.html" },
+    { name:"Euro Stoxx 50", symbol:"SX5E", category:"indices", page:"indices.html" },
+    { name:"US Dollar / DXY", symbol:"DXY", category:"dashboard_extras", page:"dashboard.html" },
+    { name:"EUR / EURUSD", symbol:"EURUSD", category:"dashboard_extras", page:"dashboard.html" },
+    { name:"GBP / GBPUSD", symbol:"GBPUSD", category:"dashboard_extras", page:"dashboard.html" },
+    { name:"JPY / USDJPY", symbol:"USDJPY", category:"dashboard_extras", page:"dashboard.html" },
+    { name:"CAD / USDCAD", symbol:"USDCAD", category:"dashboard_extras", page:"dashboard.html" },
+    { name:"AUD / AUDUSD", symbol:"AUDUSD", category:"dashboard_extras", page:"dashboard.html" },
+    { name:"Bitcoin / BTC", symbol:"BTC", category:"crypto", page:"crypto.html" },
+    { name:"Ethereum / ETH", symbol:"ETH", category:"crypto", page:"crypto.html" },
+    { name:"Solana / SOL", symbol:"SOL", category:"crypto", page:"crypto.html" },
+    { name:"XRP", symbol:"XRP", category:"crypto", page:"crypto.html" },
+    { name:"Gold", symbol:"Gold", category:"precious_metals", page:"precious-metals.html" },
+    { name:"Silver", symbol:"Silver", category:"precious_metals", page:"precious-metals.html" },
+    { name:"Copper", symbol:"Copper", category:"precious_metals", page:"precious-metals.html" },
+    { name:"Crude Oil", symbol:"Oil", category:"energy", page:"energy.html" },
+    { name:"Natural Gas", symbol:"Gas", category:"energy", page:"energy.html" },
+    { name:"NVIDIA / NVDA", symbol:"NVDA", category:"ai_assets", page:"ai-assets.html" },
+    { name:"Broadcom / AVGO", symbol:"AVGO", category:"ai_assets", page:"ai-assets.html" },
+    { name:"AMD / AMD", symbol:"AMD", category:"ai_assets", page:"ai-assets.html" }
+  ];
+
+  const WATCHLIST_CATEGORY_LABELS = {
+    crypto: "Crypto",
+    energy: "Energy",
+    precious_metals: "Precious Metals",
+    indices: "Indices",
+    policy_geopolitical: "Policy & Geopolitical",
+    ai_assets: "AI Assets",
+    dashboard_extras: "Forex, Rates & Other Markets"
+  };
+
+  function normalizeCatalogAsset(asset) {
+    if (!asset || typeof asset.name !== "string" || asset.enabled === false) {
+      return null;
+    }
+
+    const categories = Array.isArray(asset.categories)
+      ? asset.categories.filter(function (item) {
+          return item && item.enabled !== false;
+        })
+      : [];
+
+    const primary =
+      categories.find(function (item) { return item.role === "primary"; }) ||
+      categories[0] ||
+      {};
+
+    return {
+      name: asset.name.trim(),
+      symbol: String(asset.symbol || "").trim(),
+      category: String(primary.category || asset.type || "dashboard_extras"),
+      page: String(primary.page || "dashboard.html"),
+      priority: Number(primary.priority || 999)
+    };
+  }
+
+  async function loadWatchlistCatalog() {
+    let assets = [];
+
+    try {
+      const response = await fetch("assets_config.json", { cache: "no-store" });
+      if (response.ok) {
+        const payload = await response.json();
+        assets = (Array.isArray(payload.assets) ? payload.assets : [])
+          .map(normalizeCatalogAsset)
+          .filter(Boolean);
+      }
+    } catch (_error) {}
+
+    if (!assets.length) {
+      assets = WATCHLIST_FALLBACK_ASSETS.slice();
+    }
+
+    const unique = new Map();
+    assets.forEach(function (asset) {
+      const key = asset.name.toLowerCase();
+      if (!unique.has(key)) unique.set(key, asset);
+    });
+
+    return Array.from(unique.values()).sort(function (a, b) {
+      const categoryCompare = String(a.category).localeCompare(String(b.category));
+      if (categoryCompare) return categoryCompare;
+      const priorityCompare = Number(a.priority || 999) - Number(b.priority || 999);
+      if (priorityCompare) return priorityCompare;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  async function populateWatchlistInstrumentSelect(select) {
+    if (!select) return;
+
+    const assets = await loadWatchlistCatalog();
+    const grouped = new Map();
+
+    assets.forEach(function (asset) {
+      const groupName =
+        WATCHLIST_CATEGORY_LABELS[asset.category] ||
+        asset.category.replace(/_/g, " ");
+
+      if (!grouped.has(groupName)) grouped.set(groupName, []);
+      grouped.get(groupName).push(asset);
+    });
+
+    select.textContent = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a tracked instrument";
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+
+    Array.from(grouped.keys()).sort().forEach(function (groupName) {
+      const group = document.createElement("optgroup");
+      group.label = groupName;
+
+      grouped.get(groupName).forEach(function (asset) {
+        const option = document.createElement("option");
+        option.value = asset.name;
+        option.textContent =
+          asset.symbol && asset.symbol.toLowerCase() !== asset.name.toLowerCase()
+            ? asset.name + " — " + asset.symbol
+            : asset.name;
+        group.appendChild(option);
+      });
+
+      select.appendChild(group);
+    });
+  }
+
   function setStatus(element, message, type) {
     if (!element) return;
     element.textContent = message || "";
@@ -334,6 +473,10 @@
     const user = session.user;
     document.getElementById("account-email").textContent =
       user.email || "Signed-in user";
+
+    await populateWatchlistInstrumentSelect(
+      document.getElementById("watchlist-instrument")
+    );
 
     const toastState = sessionStorage.getItem("psd_show_remember_toast");
     if (toastState) {
@@ -676,7 +819,7 @@
       event.preventDefault();
 
       const input = document.getElementById("watchlist-instrument");
-      const instrument = input.value.trim().toUpperCase();
+      const instrument = input.value.trim();
       if (!instrument) return;
 
       const result = await client.from("watchlist_items")
