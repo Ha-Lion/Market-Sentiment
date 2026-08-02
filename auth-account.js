@@ -488,10 +488,6 @@
       const timezoneField = document.getElementById("timezone");
       const timeframeField = document.getElementById("default-timeframe");
       const compactField = document.getElementById("compact-mode");
-      const pushField = document.getElementById("push-enabled");
-      const emailField = document.getElementById("email-enabled");
-      const marketAlertsField = document.getElementById("market-alerts");
-      const newsAlertsField = document.getElementById("news-alerts");
 
       const timezone = timezoneField ? (timezoneField.value || "UTC") : "UTC";
       const saves = [];
@@ -519,21 +515,6 @@
         );
       }
 
-      if (
-        pushField && emailField && marketAlertsField && newsAlertsField
-      ) {
-        saves.push(
-          client.from("notification_preferences")
-            .update({
-              push_enabled: pushField.checked,
-              email_enabled: emailField.checked,
-              market_alerts: marketAlertsField.checked,
-              news_alerts: newsAlertsField.checked,
-              timezone: timezone
-            })
-            .eq("user_id", user.id)
-        );
-      }
 
       if (!saves.length) return;
 
@@ -595,10 +576,6 @@
           .select("default_timeframe,compact_mode")
           .eq("user_id", user.id)
           .single(),
-        client.from("notification_preferences")
-          .select("push_enabled,email_enabled,market_alerts,news_alerts")
-          .eq("user_id", user.id)
-          .single(),
         client.from("watchlists")
           .select("id,name,is_default")
           .eq("user_id", user.id)
@@ -624,9 +601,8 @@
 
       const profile = results[0].data || {};
       const preferences = results[1].data || {};
-      const notifications = results[2].data || {};
-      const watchlist = results[3].data;
-      const deletion = results[4].data;
+      const watchlist = results[2].data;
+      const deletion = results[3].data;
 
       document.getElementById("username").value = profile.username || "";
       populateTimezones(
@@ -637,14 +613,13 @@
         preferences.default_timeframe || "daily";
       document.getElementById("compact-mode").checked =
         Boolean(preferences.compact_mode);
-      document.getElementById("push-enabled").checked =
-        notifications.push_enabled !== false;
-      document.getElementById("email-enabled").checked =
-        Boolean(notifications.email_enabled);
-      document.getElementById("market-alerts").checked =
-        notifications.market_alerts !== false;
-      document.getElementById("news-alerts").checked =
-        notifications.news_alerts !== false;
+      ["push-enabled", "email-enabled", "market-alerts", "news-alerts"]
+        .forEach(function (id) {
+          const control = document.getElementById(id);
+          if (!control) return;
+          control.checked = false;
+          control.disabled = true;
+        });
 
       defaultWatchlistId = watchlist ? watchlist.id : null;
       await loadWatchlistItems();
@@ -795,23 +770,11 @@
       );
     });
 
-    document.getElementById("notification-form").addEventListener("submit", async function (event) {
+    document.getElementById("notification-form").addEventListener("submit", function (event) {
       event.preventDefault();
-
-      const result = await client.from("notification_preferences")
-        .update({
-          push_enabled: document.getElementById("push-enabled").checked,
-          email_enabled: document.getElementById("email-enabled").checked,
-          market_alerts: document.getElementById("market-alerts").checked,
-          news_alerts: document.getElementById("news-alerts").checked,
-          timezone: document.getElementById("timezone").value || "UTC"
-        })
-        .eq("user_id", user.id);
-
       setStatus(
         status,
-        result.error ? result.error.message : "Notification settings saved.",
-        result.error ? "error" : "success"
+        "Notifications are coming soon and are currently disabled."
       );
     });
 
