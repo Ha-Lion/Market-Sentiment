@@ -1,6 +1,5 @@
 const PSD_SUPABASE_URL = "https://fupexuonvzakoguucglk.supabase.co";
 const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
-const PSD_GA4_ID = "G-BZMQQZ2SVC";
 const PSD_SITE_URL = "https://publicsentimentdash.com";
 // v25: donation banner moved to site-nav.js; vote widget no longer creates it
 const PSD_X_PROFILE_URL = "https://x.com/PublicSentDash";
@@ -37,28 +36,22 @@ const PSD_VOTE_INSTRUMENTS = [
 
 window.PSD_USER_SENTIMENT = window.PSD_USER_SENTIMENT || {};
 
-function psdLoadGA4(){
-  if(!PSD_GA4_ID || window.PSD_GA4_LOADED) return;
-  window.PSD_GA4_LOADED = true;
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function(){ window.dataLayer.push(arguments); };
-
+function psdLoadAnonymousAnalytics(){
+  if(document.getElementById("psd-site-analytics-script")) return;
   const script = document.createElement("script");
-  script.async = true;
-  script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(PSD_GA4_ID);
+  script.id = "psd-site-analytics-script";
+  script.src = "site-analytics.js?v=4";
+  script.defer = true;
   document.head.appendChild(script);
-
-  window.gtag("js", new Date());
-  window.gtag("config", PSD_GA4_ID, {
-    page_title: document.title,
-    page_path: window.location.pathname
-  });
 }
 
 function psdTrack(eventName, params){
-  if(typeof window.gtag === "function"){
-    window.gtag("event", eventName, params || {});
+  if(window.PSDAnalytics && typeof window.PSDAnalytics.track === "function"){
+    window.PSDAnalytics.track(eventName, params || {});
+    return;
   }
+  window.PSD_ANALYTICS_QUEUE = window.PSD_ANALYTICS_QUEUE || [];
+  window.PSD_ANALYTICS_QUEUE.push({ event:eventName, params:params || {} });
 }
 
 function psdCanonicalURL(){
@@ -720,7 +713,7 @@ function psdSafe(name, fn){
 function psdInit(){
   psdSafe("create vote widget", psdCreateVoteWidget);
   psdSafe("create PDF widget", psdCreatePdfWidget);
-  psdSafe("load GA4", psdLoadGA4);
+  psdSafe("load anonymous analytics", psdLoadAnonymousAnalytics);
   psdSafe("inject structured data", psdInjectStructuredData);
   psdSafe("apply compact ribbon layout", psdApplyCompactRibbonLayout);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
