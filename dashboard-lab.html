@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Watchlist Ribbon Test | Public Sentiment Dash</title>
+  <title>Watchlist Single Supabase Test | Public Sentiment Dash</title>
   <meta name="description" content="Private personalized watchlist for a Public Sentiment Dash member.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
@@ -82,9 +82,40 @@
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
+  <script>
+    (function(){
+      "use strict";
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-client.js?v=11"></script>
-  <script src="watchlist.js?v=11"></script>
+      let attempts = 0;
+      const maximumAttempts = 100;
+
+      function loadWatchlistWhenReady(){
+        if(window.psdSupabase){
+          if(document.getElementById("psd-watchlist-page-script")) return;
+
+          const script = document.createElement("script");
+          script.id = "psd-watchlist-page-script";
+          script.src = "watchlist.js?v=11";
+          document.body.appendChild(script);
+          return;
+        }
+
+        attempts += 1;
+
+        if(attempts < maximumAttempts){
+          window.setTimeout(loadWatchlistWhenReady,100);
+          return;
+        }
+
+        const status = document.getElementById("watchlist-status");
+        if(status){
+          status.textContent = "Account service did not finish loading.";
+          status.className = "watchlist-status error";
+        }
+      }
+
+      loadWatchlistWhenReady();
+    })();
+  </script>
 </body>
 </html>
