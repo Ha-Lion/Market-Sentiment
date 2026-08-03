@@ -57,6 +57,30 @@
     const style = document.createElement("style");
     style.id = "site-tour-styles";
     style.textContent = `
+
+      /*
+       * Shared-ribbon stacking fix.
+       * The donation/tour row intentionally extends beyond the center grid cell.
+       * Keep that complete row above the navigation hit area on every page.
+       */
+      .psd-shared-header .header-center{
+        position:relative!important;
+        z-index:100!important;
+        overflow:visible!important;
+      }
+      .psd-shared-header .nav{
+        position:relative!important;
+        z-index:1!important;
+      }
+      .psd-shared-header .nav-row-break{
+        flex-basis:100%!important;
+        width:0!important;
+        height:0!important;
+        min-width:0!important;
+        padding:0!important;
+        margin:0!important;
+        pointer-events:none!important;
+      }
       .site-tour-banner{
         display:inline-flex;
         align-items:center;
@@ -75,8 +99,9 @@
         white-space:nowrap;
         cursor:pointer;
         position:relative;
-        z-index:50;
+        z-index:101;
         pointer-events:auto;
+        isolation:isolate;
         box-shadow:0 0 18px rgba(225,167,39,.22);
         transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
       }
@@ -250,7 +275,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=20260802-final", "psd-account-styles");
+      await loadStylesheet("account.css?v=20260802-ribbon-final2", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -260,11 +285,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=20260802-final", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=20260802-final", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=20260802-ribbon-final2", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -424,7 +449,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=20260802-final", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
     }
 
     return window.psdSupabase;
@@ -573,7 +598,7 @@
     const linksOne = mainLinks.map(link => linkHtml(link, current)).join("\n      ");
     const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n      ");
     mount.outerHTML = `
-  <header class="header">
+  <header class="header psd-shared-header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
       <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
         <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
