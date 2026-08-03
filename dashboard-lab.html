@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test 1 — No Watchlist CSS | Public Sentiment Dash</title>
+  <title>Test 2 — No Watchlist JavaScript | Public Sentiment Dash</title>
   <meta name="description" content="Private personalized watchlist for a Public Sentiment Dash member.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="watchlist.css?v=20260802-final">
 
   <style>
     .nav-row-break{
@@ -81,40 +82,5 @@
       <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
-  <script>
-    (function(){
-      "use strict";
-
-      let attempts = 0;
-      const maximumAttempts = 100;
-
-      function loadWatchlistWhenReady(){
-        if(window.psdSupabase){
-          if(document.getElementById("psd-watchlist-page-script")) return;
-
-          const script = document.createElement("script");
-          script.id = "psd-watchlist-page-script";
-          script.src = "watchlist.js?v=11";
-          document.body.appendChild(script);
-          return;
-        }
-
-        attempts += 1;
-
-        if(attempts < maximumAttempts){
-          window.setTimeout(loadWatchlistWhenReady,100);
-          return;
-        }
-
-        const status = document.getElementById("watchlist-status");
-        if(status){
-          status.textContent = "Account service did not finish loading.";
-          status.className = "watchlist-status error";
-        }
-      }
-
-      loadWatchlistWhenReady();
-    })();
-  </script>
 </body>
 </html>
