@@ -2846,12 +2846,31 @@
         return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g,"");
       }
 
-      function formatNumber(value){
+      function isFxInstrument(instrument){
+        const key = normalizeName(instrument);
+        return /(eurusd|gbpusd|usdjpy|usdchf|usdcad|audusd|nzdusd|eurjpy|eurgbp|gbpjpy|audjpy|cadjpy|eurchf|eurcad|audcad|audnzd|nzdjpy|usdtry|usdmxn|usdzar)/.test(key);
+      }
+
+      function pricePrecision(instrument,value){
+        const key = normalizeName(instrument);
+        if(/dxy/.test(key)) return 3;
+        if(isFxInstrument(instrument)) return /jpy/.test(key) ? 3 : 4;
+        const number = finite(value);
+        const abs = Math.abs(number == null ? 0 : number);
+        if(abs >= 100) return 2;
+        if(abs >= 10) return 3;
+        return 4;
+      }
+
+      function formatNumber(value,instrument=state.instrument){
         const number = finite(value);
         if(number == null) return "—";
-        const abs = Math.abs(number);
-        const digits = abs >= 1000 ? 2 : abs >= 100 ? 2 : abs >= 10 ? 3 : 4;
-        return number.toLocaleString(undefined,{maximumFractionDigits:digits});
+        const digits = pricePrecision(instrument,number);
+        const fixedFx = isFxInstrument(instrument) || /dxy/.test(normalizeName(instrument));
+        return number.toLocaleString(undefined,{
+          minimumFractionDigits:fixedFx ? digits : 0,
+          maximumFractionDigits:digits
+        });
       }
 
       function formatPsi(value){
@@ -3184,6 +3203,16 @@
       function setSeriesData(){
         const rows = aggregateRows(rawRows(state.instrument),state.period);
         state.displayRows = rows;
+
+        const latestClose = rows.at(-1)?.close;
+        const precision = pricePrecision(state.instrument,latestClose);
+        state.priceSeries.applyOptions({
+          priceFormat:{
+            type:"price",
+            precision,
+            minMove:Math.pow(10,-precision)
+          }
+        });
 
         const priceData = rows.map(row => ({time:row.date,value:row.close}));
         const psiData = rows.map(row => ({time:row.date,value:row.psi}));
