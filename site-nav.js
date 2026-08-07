@@ -15,6 +15,7 @@
 
   const assetLinks = [
     { href: "crypto.html", label: "🪙 Crypto Sentiment" },
+    { href: "forex-sentiment-today.html", label: "💱 Forex Sentiment" },
     { href: "energy.html", label: "⚡ Energy Sentiment" },
     { href: "precious-metals.html", label: "🥇 Precious Metals" },
     { href: "indices.html", label: "📊 Indices" },
