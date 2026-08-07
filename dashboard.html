@@ -1454,6 +1454,8 @@
     }
 
     function assetDisplayName(asset){
+      const configured = String(asset?.display_name || '').trim();
+      if(configured) return configured;
       const name = String(asset?.name || '').trim();
       const symbol = String(asset?.symbol || '').trim();
       if(!name) return symbol;
@@ -1497,11 +1499,13 @@
           const catKey = cat.category || 'other';
           const catName = categoryNames?.[catKey]?.name || catKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
           const display = assetDisplayName(a);
+          const dataKey = String(a.data_key || a.name || display).trim();
           const aliases = Array.from(new Set([
-            display, a.name, a.symbol, a.id, ...(Array.isArray(a.aliases) ? a.aliases : [])
+            display, dataKey, a.display_name, a.name, a.symbol, a.id, ...(Array.isArray(a.aliases) ? a.aliases : [])
           ].filter(Boolean).map(x => String(x).trim())));
           return {
             name: display,
+            dataKey,
             aliases,
             category: catKey,
             categoryName: catName,
@@ -1601,7 +1605,7 @@
       return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
     }
     function matchesInstrument(item, ins){
-      if(window.PSDCore?.matchesInstrument) return window.PSDCore.matchesInstrument(item, ins.name);
+      if(window.PSDCore?.matchesInstrument) return window.PSDCore.matchesInstrument(item, ins.dataKey || ins.name);
       const text = textFromItem(item);
       return ins.aliases.some(a => text.includes(a.toLowerCase()));
     }
@@ -1636,7 +1640,7 @@
     }
     function getTechnicalForInstrument(ins){
       if(window.PSDCore?.getTechnicalBias){
-        const bias = window.PSDCore.getTechnicalBias(technicalData, ins.name, "daily");
+        const bias = window.PSDCore.getTechnicalBias(technicalData, ins.dataKey || ins.name, "daily");
         return bias?.direction || "N/A";
       }
       if(!technicalData) return "N/A";
@@ -1723,9 +1727,10 @@
       return Array.from({length:Math.max(2,len)}, () => value);
     }
     function calcInstrument(ins){
+      const dataKey = ins.dataKey || ins.name;
       if(window.PSDCore?.buildInstrumentSummary){
         const summary = window.PSDCore.buildInstrumentSummary({
-          instrumentName: ins.name,
+          instrumentName: dataKey,
           dashboardData,
           statusData,
           technicalData,
@@ -1735,7 +1740,7 @@
         const score = summary.score;
         const liveTech = summary.tech || "N/A";
         const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
-        const actualUser = window.PSD_USER_SENTIMENT?.[summary.name || ins.name];
+        const actualUser = window.PSD_USER_SENTIMENT?.[summary.name || dataKey];
         const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
         return {
           name: ins.name,
@@ -1752,7 +1757,7 @@
           lastUpdated: summary.lastUpdated || "",
           user,
           tech,
-          series: makeSeries(ins.name, score)
+          series: makeSeries(dataKey, score)
         };
       }
 
@@ -1769,9 +1774,9 @@
         neutralCount: 0,
         countBasis: "backend_source_unavailable",
         formulaVersion: "missing_PSDCore",
-        user: window.PSD_USER_SENTIMENT?.[ins.name] || "N/A",
+        user: window.PSD_USER_SENTIMENT?.[dataKey] || "N/A",
         tech,
-        series: makeSeries(ins.name, null)
+        series: makeSeries(dataKey, null)
       };
     }
     function makeSeries(name, score, periodOverride){
@@ -1789,7 +1794,7 @@
       const value = score == null ? 50 : score;
       return Array.from({length:Math.max(2,len)}, () => value);
     }
-    function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
+    function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>(i.dataKey || i.name)===name) || INSTRUMENTS[0]))}
     function bindPeriodButtons(){
       document.querySelectorAll("[data-period]").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.period === selectedPeriod);
@@ -2288,7 +2293,8 @@
 
     function renderDeepWindowContent(win, id, slot){
       const instrumentName = selected[slot];
-      const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
+      const ins = INSTRUMENTS.find(i => (i.dataKey || i.name) === instrumentName) || INSTRUMENTS[0];
+      const displayName = ins.name || instrumentName;
       const data = calcInstrument(ins);
       const color = sentimentColor(data.score);
       const path24 = makeSeries(instrumentName, data.score || 50, "daily");
@@ -2296,12 +2302,12 @@
       const stats24 = deepSeriesStats(path24);
       const stats30 = deepSeriesStats(path30);
       win.setAttribute("data-deep-slot", String(slot));
-      win.setAttribute("aria-label", `${instrumentName} Deep Analysis`);
+      win.setAttribute("aria-label", `${displayName} Deep Analysis`);
       win.innerHTML = `
         <div class="deep-window-header">
           <div>
             <div class="deep-window-kicker">Deep Analysis</div>
-            <div class="deep-window-title">${esc(instrumentName)}</div>
+            <div class="deep-window-title">${esc(displayName)}</div>
           </div>
           <button class="deep-window-close" type="button" aria-label="Close Deep Analysis" onclick="closeDeepAnalysis('${id}')">×</button>
         </div>
@@ -2359,9 +2365,10 @@
 
     function buildArticleRows(slot, sortMode){
       const instrumentName = selected[slot] || "Selected Instrument";
-      const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
+      const ins = INSTRUMENTS.find(i => (i.dataKey || i.name) === instrumentName) || INSTRUMENTS[0];
+      const displayName = ins.name || instrumentName;
       const data = calcInstrument(ins);
-      const themes = deepInstrumentThemes(instrumentName);
+      const themes = deepInstrumentThemes(displayName);
       const sourceMap = {
         "Reuters Pulse":"https://www.reuters.com/",
         "CNBC Markets":"https://www.cnbc.com/markets/",
@@ -2378,7 +2385,7 @@
         const theme = themes[i % themes.length];
         const source = sources[(i + instrumentName.length) % sources.length];
         const age = i === 0 ? "Latest" : `${i * 2 + 1}h ago`;
-        const title = `${instrumentName} ${theme.toLowerCase()} narrative ${sent.label.toLowerCase()} pressure signal #${i+1}`;
+        const title = `${displayName} ${theme.toLowerCase()} narrative ${sent.label.toLowerCase()} pressure signal #${i+1}`;
         return {
           title,
           source,
@@ -2394,7 +2401,7 @@
       if(sortMode === "bearish") rows.sort((a,b)=>a.score-b.score);
       if(sortMode === "source") rows.sort((a,b)=>a.source.localeCompare(b.source));
       if(sortMode === "theme") rows.sort((a,b)=>a.theme.localeCompare(b.theme));
-      return {instrumentName, data, rows};
+      return {instrumentName:displayName, data, rows};
     }
 
     function renderArticleLoadPage(slot, sortMode){
@@ -2579,6 +2586,7 @@
 
     function openChartModal(slot){
       const instrumentName = selected[slot] || "S&P 500 / ES";
+      const ins = INSTRUMENTS.find(i => (i.dataKey || i.name) === instrumentName);
       const symbol = chartSymbolForInstrument(instrumentName);
       const layer = document.getElementById("chartModalLayer");
       const title = document.getElementById("chartModalTitle");
@@ -2586,7 +2594,7 @@
       const body = document.getElementById("chartModalBody");
       if(!layer || !body) return;
 
-      title.textContent = instrumentName;
+      title.textContent = ins?.name || instrumentName;
       subtitle.textContent = `${symbol} · Daily`;
 
       body.innerHTML = "";
@@ -2664,7 +2672,7 @@
         groups.get(group).push(i);
       });
       return Array.from(groups.entries()).map(([group, items]) => {
-        const options = items.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
+        const options = items.map(i=>{const key=i.dataKey||i.name;return `<option value="${esc(key)}"${key===selectedName?" selected":""}>${esc(i.name)}</option>`}).join("");
         return `<optgroup label="${esc(group)}">${options}</optgroup>`;
       }).join("");
     }
@@ -2817,6 +2825,7 @@
 
       const state = {
         history: null,
+        displayNames: new Map(),
         period: "daily",
         instrument: "",
         chartPrice: null,
@@ -2830,6 +2839,51 @@
         freeCursor: false,
         syncingCrosshair: false
       };
+
+      const FALLBACK_DISPLAY_NAMES = new Map(Object.entries({
+        "S&P 500 / ES":"S&P 500",
+        "Nasdaq / NQ":"Nasdaq Composite",
+        "Dow / YM":"Dow Jones Industrial Average",
+        "Russell / RTY":"Russell 2000",
+        "US Dollar / DXY":"US Dollar Index / DXY",
+        "EUR / EURUSD":"EUR/USD",
+        "GBP / GBPUSD":"GBP/USD",
+        "JPY / USDJPY":"USD/JPY",
+        "CHF / USDCHF":"USD/CHF",
+        "CAD / USDCAD":"USD/CAD",
+        "AUD / AUDUSD":"AUD/USD",
+        "NZD / NZDUSD":"NZD/USD",
+        "EURJPY":"EUR/JPY",
+        "EURGBP":"EUR/GBP",
+        "GBPJPY":"GBP/JPY",
+        "AUDJPY":"AUD/JPY",
+        "CADJPY":"CAD/JPY",
+        "EURCHF":"EUR/CHF",
+        "EURCAD":"EUR/CAD",
+        "AUDCAD":"AUD/CAD",
+        "AUDNZD":"AUD/NZD",
+        "NZDJPY":"NZD/JPY",
+        "USDTRY":"USD/TRY",
+        "USDMXN":"USD/MXN",
+        "USDZAR":"USD/ZAR",
+        "AMD / AMD":"AMD",
+        "ASML / ASML":"ASML"
+      }));
+
+      function instrumentDisplayName(dataKey){
+        return state.displayNames.get(dataKey) || FALLBACK_DISPLAY_NAMES.get(dataKey) || dataKey;
+      }
+
+      function loadDisplayNames(config){
+        state.displayNames.clear();
+        const assets = Array.isArray(config?.assets) ? config.assets : [];
+        assets.forEach(asset => {
+          if(!asset || asset.enabled === false) return;
+          const key = String(asset.data_key || asset.name || "").trim();
+          const label = String(asset.display_name || asset.name || key).trim();
+          if(key && label) state.displayNames.set(key,label);
+        });
+      }
 
       const COLORS = {
         blue:"#2962ff",
@@ -3227,7 +3281,7 @@
         state.priceSeries.setData(priceData);
         state.psiSeries.setData(psiData);
 
-        ui.priceTitle.textContent = state.instrument + " • market close";
+        ui.priceTitle.textContent = instrumentDisplayName(state.instrument) + " • market close";
         updateStats(rows);
         updatePriceLegend(null);
         updatePsiLegend(null);
@@ -3239,7 +3293,7 @@
 
         if(!rows.length){
           ui.loading.hidden = false;
-          ui.loading.innerHTML = "Historical market and sentiment data for <b>" + state.instrument.replace(/[&<>]/g,"") + "</b> is still building.";
+          ui.loading.innerHTML = "Historical market and sentiment data for <b>" + instrumentDisplayName(state.instrument).replace(/[&<>]/g,"") + "</b> is still building.";
           ui.status.textContent = "Waiting for aligned instrument PSI and market-close history.";
         }else{
           ui.loading.hidden = true;
@@ -3268,7 +3322,9 @@
       }
 
       function populateInstruments(){
-        const options = availableInstruments(state.history);
+        const options = availableInstruments(state.history).sort((a,b) =>
+          instrumentDisplayName(a.name).localeCompare(instrumentDisplayName(b.name),undefined,{sensitivity:"base"})
+        );
         if(!options.length){
           ui.instrument.innerHTML = '<option value="">No aligned instruments yet</option>';
           ui.loading.textContent = "Aligned market and sentiment history is not available yet.";
@@ -3279,7 +3335,7 @@
         state.instrument = initial;
         ui.instrument.innerHTML = options.map(option =>
           '<option value="' + option.name.replace(/"/g,"&quot;") + '">' +
-          option.name.replace(/[&<>]/g,"") +
+          instrumentDisplayName(option.name).replace(/[&<>]/g,"") +
           "</option>"
         ).join("");
         ui.instrument.value = initial;
@@ -3314,9 +3370,13 @@
         if(!buildCharts()) return;
         bindControls();
         try{
-          const response = await fetch("instrument_history.json",{cache:"no-store"});
-          if(!response.ok) throw new Error("HTTP " + response.status);
-          state.history = await response.json();
+          const [historyResponse,configResponse] = await Promise.all([
+            fetch("instrument_history.json",{cache:"no-store"}),
+            fetch("assets_config.json",{cache:"no-store"}).catch(() => null)
+          ]);
+          if(!historyResponse.ok) throw new Error("HTTP " + historyResponse.status);
+          state.history = await historyResponse.json();
+          if(configResponse && configResponse.ok) loadDisplayNames(await configResponse.json());
           if(!populateInstruments()) return;
           setSeriesData();
         }catch(error){
