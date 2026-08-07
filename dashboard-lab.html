@@ -1202,11 +1202,9 @@
     <section class="svm-lab-panel" id="sentimentVsMarketLab" aria-labelledby="svmTitle">
       <div class="svm-lab-head">
         <div>
-          <div class="svm-lab-badge">New laboratory prototype</div>
           <h2 id="svmTitle">Sentiment vs. Market Price</h2>
-          <p>One TradingView-style comparison chart aligns the selected instrument's market close with its saved Public Sentiment Index (PSI) on the same dates.</p>
         </div>
-        <div class="svm-tool-note" id="svmToolNote"><strong>Cursor:</strong> market and sentiment aligned on the same dates.</div>
+        <div class="svm-tool-note" id="svmToolNote" style="display:none"></div>
       </div>
 
       <div class="svm-controls">
@@ -1245,7 +1243,6 @@
 
       <div class="svm-foot">
         <span id="svmStatus">Uses instrument_history.json only. No extra scraping or workflow runs.</span>
-        <span>Chart engine: <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a></span>
       </div>
     </section>
 
@@ -2830,7 +2827,7 @@
           });
         });
         return [...counts.entries()]
-          .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+          .sort((a,b) => a[0].localeCompare(b[0],undefined,{sensitivity:"base"}))
           .map(([name,count]) => ({name,count}));
       }
 
@@ -2846,7 +2843,7 @@
         state.instrument = initial;
         ui.instrument.innerHTML = options.map(option =>
           '<option value="' + option.name.replace(/"/g,"&quot;") + '">' +
-          option.name.replace(/[&<>]/g,"") + " • " + option.count + " day" + (option.count === 1 ? "" : "s") +
+          option.name.replace(/[&<>]/g,"") +
           "</option>"
         ).join("");
         ui.instrument.value = initial;
