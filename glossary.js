@@ -1,165 +1,2897 @@
-/* Public Sentiment Dash — shared glossary/help system
-   One definition source for every page. Use: data-glossary="psi" */
-(function () {
-  "use strict";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  const DEFINITIONS = {
-    "market-close": {
-      title: "Market Close",
-      text: "The instrument's recorded closing market price for that period."
-    },
-    "psi": {
-      title: "Public Sentiment Index (PSI)",
-      text: "A 0–100 score showing the overall public sentiment for the selected market. Higher values are more bullish; lower values are more bearish."
-    },
-    "aligned-periods": {
-      title: "Aligned Periods",
-      text: "The number of dates where both market-price and sentiment data are available, allowing a direct comparison."
-    },
-    "change-correlation": {
-      title: "Change Correlation",
-      text: "Shows how closely changes in sentiment and changes in market price moved together. +1 means strongly together, 0 means little relationship, and −1 means strongly opposite."
-    },
-    "technical-direction": {
-      title: "Technical Direction",
-      text: "A simplified reading of price trend and technical indicators, shown as bullish, bearish, mixed, or neutral."
-    },
-    "user-sentiment": {
-      title: "User Sentiment",
-      text: "The voting bias submitted by users. It is separate from the Public Sentiment Index."
-    },
-    "headline-strength": {
-      title: "Headline Strength",
-      text: "A summary measure of how strongly recent relevant headlines lean bullish or bearish."
-    },
-    "stability": {
-      title: "Sentiment Stability",
-      text: "Shows how steady sentiment has been. Higher stability means fewer or smaller recent changes in the sentiment reading."
-    },
-    "source-votes": {
-      title: "Source Votes",
-      text: "A count or summary of sentiment signals contributed by the dashboard's monitored information sources."
-    },
-    "correlation": {
-      title: "Correlation",
-      text: "A measure from −1 to +1 describing how closely two sets of changes move together. Correlation does not prove that one causes the other."
+  <title>Public Sentiment Dash — Dashboard Lab</title>
+  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, technical direction, radar comparison, skyline trend, and sentiment heatwave.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+
+  <style>
+    .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
+    .lab-hero{
+      display:block;
+      padding:13px 18px 11px;
+      margin-bottom:14px;
     }
-  };
-
-  const STYLE_ID = "psd-glossary-styles";
-  const POPOVER_ID = "psdGlossaryPopover";
-  let activeButton = null;
-
-  function injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = `
-      .psd-glossary-info{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:5px;padding:0;border:1px solid #64748b;border-radius:50%;background:#18202e;color:#b9c7db;font:700 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;vertical-align:1px;transition:.15s ease}
-      .psd-glossary-info:hover,.psd-glossary-info:focus-visible,.psd-glossary-info[aria-expanded="true"]{border-color:#60a5fa;background:#1d4ed8;color:#fff;outline:none}
-      .psd-glossary-popover{position:fixed;z-index:100000;width:min(300px,calc(100vw - 24px));padding:12px 14px;border:1px solid #334155;border-radius:10px;background:#111827;color:#cbd5e1;box-shadow:0 14px 40px rgba(0,0,0,.45);font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-      .psd-glossary-popover[hidden]{display:none}
-      .psd-glossary-title{margin:0 20px 5px 0;color:#f8fafc;font-size:13px;font-weight:750}
-      .psd-glossary-text{margin:0}
-      .psd-glossary-close{position:absolute;right:8px;top:6px;border:0;background:transparent;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer}
-      .psd-glossary-close:hover{color:#fff}
-    `;
-    document.head.appendChild(style);
-  }
-
-  function getPopover() {
-    let popover = document.getElementById(POPOVER_ID);
-    if (popover) return popover;
-    popover = document.createElement("div");
-    popover.id = POPOVER_ID;
-    popover.className = "psd-glossary-popover";
-    popover.setAttribute("role", "dialog");
-    popover.setAttribute("aria-live", "polite");
-    popover.hidden = true;
-    popover.innerHTML = '<button class="psd-glossary-close" type="button" aria-label="Close explanation">×</button><div class="psd-glossary-title"></div><p class="psd-glossary-text"></p>';
-    document.body.appendChild(popover);
-    popover.querySelector(".psd-glossary-close").addEventListener("click", closePopover);
-    return popover;
-  }
-
-  function closePopover() {
-    const popover = document.getElementById(POPOVER_ID);
-    if (popover) popover.hidden = true;
-    if (activeButton) activeButton.setAttribute("aria-expanded", "false");
-    activeButton = null;
-  }
-
-  function positionPopover(popover, button) {
-    const rect = button.getBoundingClientRect();
-    const width = popover.offsetWidth;
-    const height = popover.offsetHeight;
-    const gap = 8;
-    let left = Math.min(rect.left, window.innerWidth - width - 12);
-    left = Math.max(12, left);
-    let top = rect.bottom + gap;
-    if (top + height > window.innerHeight - 12) top = Math.max(12, rect.top - height - gap);
-    popover.style.left = left + "px";
-    popover.style.top = top + "px";
-  }
-
-  function openPopover(button, key) {
-    const definition = DEFINITIONS[key];
-    if (!definition) return;
-    const popover = getPopover();
-    if (activeButton && activeButton !== button) activeButton.setAttribute("aria-expanded", "false");
-    activeButton = button;
-    button.setAttribute("aria-expanded", "true");
-    popover.querySelector(".psd-glossary-title").textContent = definition.title;
-    popover.querySelector(".psd-glossary-text").textContent = definition.text;
-    popover.hidden = false;
-    positionPopover(popover, button);
-  }
-
-  function decorate(root) {
-    const scope = root || document;
-    scope.querySelectorAll("[data-glossary]").forEach(function (target) {
-      if (target.querySelector(":scope > .psd-glossary-info")) return;
-      const key = target.getAttribute("data-glossary");
-      const definition = DEFINITIONS[key];
-      if (!definition) return;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "psd-glossary-info";
-      button.textContent = "i";
-      button.setAttribute("aria-label", "What does " + definition.title + " mean?");
-      button.setAttribute("aria-expanded", "false");
-      button.dataset.glossaryKey = key;
-      target.appendChild(button);
-    });
-  }
-
-  document.addEventListener("click", function (event) {
-    const button = event.target.closest(".psd-glossary-info");
-    if (button) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (activeButton === button) closePopover();
-      else openPopover(button, button.dataset.glossaryKey);
-      return;
+    .lab-hero h1{
+      font-size:clamp(25px,2.2vw,32px);
+      line-height:1.1;
+      letter-spacing:-0.015em;
+      white-space:nowrap;
+      margin:0 0 6px;
     }
-    const popover = document.getElementById(POPOVER_ID);
-    if (popover && !popover.hidden && !event.target.closest("#" + POPOVER_ID)) closePopover();
-  });
+    .lab-hero-main{
+      color:var(--text);
+      font-size:14px;
+      line-height:1.35;
+      max-width:1180px;
+      margin:0 0 4px;
+    }
+    .lab-warning{
+      display:inline-flex;
+      width:max-content;
+      max-width:100%;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(248,81,73,.10);
+      border:1px solid rgba(248,81,73,.35);
+      color:#ffaaa6;
+      font-size:12px;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+    .lab-small{color:var(--muted);font-size:12px;line-height:1.35;max-width:1180px;margin:0 0 5px}
+    .lab-controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-start;
+      align-items:center;
+      margin-top:4px;
+    }
+    .lab-select{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      min-width:175px;
+      outline:none;
+      font-weight:500;
+    }
+    .lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
+    .lab-card-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .sentiment-card{
+      position:relative;
+      overflow:hidden;
+      padding:18px;
+      min-height:238px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.16),transparent 10rem),
+        linear-gradient(180deg,#111927,#0c121c);
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:0 18px 42px rgba(0,0,0,.24);
+    }
+    .sentiment-card:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      border-radius:20px;
+      background:linear-gradient(135deg,rgba(210,153,34,.35),transparent 38%,rgba(88,166,255,.20));
+      opacity:.32;
+      pointer-events:none;
+      mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      padding:1px;
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+    }
+    .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+    .market-name{color:#fff;font-weight:800;font-size:15px;line-height:1.3}
+    .sentiment-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 9px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .badge-bullish{color:#baf7c5;background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.34)}
+    .badge-mixedbullish{color:#b8fff6;background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.34)}
+    .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.30)}
+    .badge-mixedbearish{color:#ffd8a8;background:rgba(249,115,22,.14);border-color:rgba(249,115,22,.34)}
+    .badge-bearish{color:#ffc0bc;background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.34)}
+    .gauge-row{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
+    .mini-gauge{
+      --score:50;
+      --accent:var(--gold);
+      width:104px;
+      height:104px;
+      border-radius:50%;
+      background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
+      display:grid;
+      place-items:center;
+      box-shadow:0 0 34px rgba(210,153,34,.12);
+    }
+    .mini-gauge-inner{
+      width:74px;
+      height:74px;
+      border-radius:50%;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.06);
+      display:grid;
+      place-items:center;
+      text-align:center;
+    }
+    .psi-big{font-size:27px;font-weight:900;color:#fff;line-height:1}
+    .psi-small{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+    .card-metrics{display:grid;gap:7px}
+    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:6px}
+    .metric-line span:first-child{color:var(--muted)}
+    .metric-line span:last-child{color:#fff;font-weight:700;text-align:right}
+    .sparkline{width:100%;height:54px;margin-top:14px;display:block}
+    .chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.55fr);gap:18px;margin-bottom:18px}
+    .lab-panel{padding:22px}
+    .panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+    .panel-kicker{color:var(--muted);font-size:13px;line-height:1.55}
+    .pill-row{display:flex;gap:8px;flex-wrap:wrap}
+    .tiny-pill{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:700;cursor:pointer;transition:.18s ease}
+    .tiny-pill:hover,.tiny-pill.active{color:#ffd780;border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.13);transform:translateY(-1px)}
+    button.tiny-pill{font-family:inherit}
+    .skyline-wrap{
+      position:relative;
+      height:480px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.12),transparent 18rem),
+        linear-gradient(180deg,#101826,#090e16);
+    }
+    #skylineChart{width:100%;height:100%;display:block}
+    .chart-watermark{
+      position:absolute;
+      right:18px;
+      top:16px;
+      color:rgba(255,255,255,.06);
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-1px;
+      pointer-events:none;
+    }
+    .radar-wrap{
+      height:480px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:radial-gradient(circle at center,rgba(88,166,255,.10),transparent 15rem),linear-gradient(180deg,#101826,#090e16);
+      position:relative;
+      overflow:hidden;
+    }
+    #radarChart{width:100%;height:100%;display:block}
+    .radar-legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+    }
+    .radar-legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 9px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(17,24,33,.72);
+    }
+    .radar-legend i{
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      display:inline-block;
+      box-shadow:0 0 10px currentColor;
+    }
 
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") closePopover();
-  });
+    .heat-legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+    .heat-legend span{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(17,24,33,.72);border:1px solid var(--line);color:var(--soft);font-size:11px;font-weight:800}
+    .heat-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 10px currentColor}
 
-  window.addEventListener("resize", closePopover);
-  window.addEventListener("scroll", closePopover, true);
+    .heatmap{
+      display:grid;
+      gap:9px;
+      margin-top:14px;
+    }
+    .heat-row{display:grid;grid-template-columns:180px repeat(12,minmax(0,1fr));gap:7px;align-items:center}
+    .heat-name{color:#fff;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .heat-cell{
+      position:relative;
+      overflow:hidden;
+      isolation:isolate;
+      height:34px;
+      border-radius:9px;
+      border:1px solid rgba(255,255,255,.12);
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      color:#fff;
+      font-weight:800;
+      box-shadow:inset 0 0 18px rgba(255,215,128,.16),0 0 0 1px rgba(255,215,128,.08);
+      text-shadow:0 1px 1px rgba(0,0,0,.28);
+    }
+    .heat-cell:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 22% 14%,rgba(255,215,128,.34),transparent 42%),
+        linear-gradient(115deg,transparent 0%,rgba(255,215,128,.16) 48%,transparent 100%);
+      opacity:.58;
+      transform:translateX(-18%);
+      animation:heatGoldWash 5.8s ease-in-out infinite;
+    }
+    .ranking-list{display:grid;gap:10px}
+    .rank-item{
+      display:grid;
+      grid-template-columns:32px minmax(0,1fr) auto;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:rgba(17,24,33,.70);
+    }
+    .rank-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(210,153,34,.14);color:#ffd780;font-weight:900}
+    .rank-title{color:#fff;font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rank-meta{color:var(--muted);font-size:12px;margin-top:2px}
+    .rank-score{font-size:18px;font-weight:900;color:#fff}
+    .preview-note{
+      margin-top:12px;
+      border:1px solid rgba(210,153,34,.24);
+      background:rgba(210,153,34,.08);
+      color:#f4d17d;
+      padding:12px 14px;
+      border-radius:14px;
+      font-size:12px;
+      line-height:1.55;
+    }
 
-  function init() {
-    injectStyles();
-    decorate(document);
-  }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+    .sentiment-card{
+      animation:labCardFloat 7.5s ease-in-out infinite;
+      will-change:transform,box-shadow,filter;
+    }
+    .sentiment-card:nth-child(2){animation-delay:.65s}.sentiment-card:nth-child(3){animation-delay:1.3s}.sentiment-card:nth-child(4){animation-delay:1.95s}.sentiment-card:nth-child(5){animation-delay:2.6s}
+    @keyframes labCardFloat{
+      0%,100%{transform:translateY(0) scale(1);box-shadow:0 18px 42px rgba(0,0,0,.24);filter:brightness(1)}
+      50%{transform:translateY(-5px) scale(1.012);box-shadow:0 24px 60px rgba(210,153,34,.16);filter:brightness(1.045)}
+    }
+    .sentiment-card:after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(115deg,transparent 0%,transparent 38%,rgba(255,255,255,.08) 48%,transparent 58%,transparent 100%);
+      transform:translateX(-130%);
+      animation:cardSheen 9s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes cardSheen{0%,58%,100%{transform:translateX(-130%)}72%{transform:translateX(130%)}}
+    .mini-gauge{animation:gaugeGlow 5.8s ease-in-out infinite}
+    @keyframes gaugeGlow{0%,100%{filter:saturate(1);transform:scale(1)}50%{filter:saturate(1.28) brightness(1.08);transform:scale(1.025)}}
+    .spark-path{stroke-dasharray:260;stroke-dashoffset:260;animation:sparkDraw 4.5s ease-out forwards, sparkPulse 7.5s ease-in-out infinite 4.5s}
+    @keyframes sparkDraw{to{stroke-dashoffset:0}}
+    @keyframes sparkPulse{0%,100%{opacity:.72;stroke-width:3}50%{opacity:1;stroke-width:4.25}}
+    .skyline-line{stroke-dasharray:1400;stroke-dashoffset:1400;animation:skyDraw 4.8s ease-out forwards, skyPulse 8s ease-in-out infinite 4.8s}
+    @keyframes skyDraw{to{stroke-dashoffset:0}}
+    @keyframes skyPulse{0%,100%{opacity:.76;stroke-width:4.2}50%{opacity:1;stroke-width:5.4}}
+    .skyline-label-box{filter:drop-shadow(0 8px 14px rgba(0,0,0,.35))}
+    .radar-poly{animation:radarBreath 9s ease-in-out infinite;transform-origin:250px 250px}
+    .radar-poly:nth-of-type(2){animation-delay:.7s}.radar-poly:nth-of-type(3){animation-delay:1.4s}.radar-poly:nth-of-type(4){animation-delay:2.1s}.radar-poly:nth-of-type(5){animation-delay:2.8s}
+    @keyframes radarBreath{0%,100%{opacity:.50;transform:scale(1)}50%{opacity:.72;transform:scale(1.015)}}
+    .heat-head{color:var(--muted);font-size:11px;font-weight:800;text-align:center}
+    .heat-cell{animation:heatBreathe 4.8s ease-in-out infinite;will-change:transform,filter,box-shadow}
+    .heat-cell:nth-child(3n){animation-delay:.45s}.heat-cell:nth-child(4n){animation-delay:.9s}.heat-cell:nth-child(5n){animation-delay:1.35s}
+    @keyframes heatBreathe{
+      0%,100%{filter:brightness(1);transform:translateY(0) scale(1);box-shadow:inset 0 0 18px rgba(255,215,128,.16),0 0 0 1px rgba(255,215,128,.08)}
+      50%{filter:brightness(1.16);transform:translateY(-2px) scale(1.018);box-shadow:inset 0 0 22px rgba(255,215,128,.24),0 0 16px rgba(255,215,128,.18)}
+    }
+    @keyframes heatGoldWash{
+      0%,100%{opacity:.36;transform:translateX(-22%)}
+      50%{opacity:.70;transform:translateX(22%)}
+    }
+    .legend-mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:11px;font-weight:700}
+    .legend-mini span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(17,24,33,.58)}
+    .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 
-  window.PSDGlossary = Object.freeze({ definitions: DEFINITIONS, refresh: decorate });
-})();
+
+
+    /* Deep Analysis Lab - Phase 2 */
+    .lab-control-slot{
+      display:grid;
+      grid-template-rows:auto auto;
+      gap:7px;
+      min-width:175px;
+    }
+    .lab-control-slot .lab-select{
+      width:100%;
+      min-width:0;
+    }
+    .card-control-strip{
+      position:relative;
+      z-index:4;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      margin-bottom:13px;
+    }
+    .card-control-strip .lab-select{
+      width:100%;
+      min-width:0;
+      padding:9px 10px;
+      border-radius:11px;
+      font-size:13px;
+    }
+    .card-control-strip .deep-analysis-btn{
+      width:100%;
+      min-height:36px;
+    }
+    .deep-analysis-btn{
+      border:1px solid rgba(210,153,34,.38);
+      border-radius:12px;
+      padding:8px 10px;
+      background:linear-gradient(180deg,rgba(210,153,34,.18),rgba(17,24,33,.92));
+      color:#ffd780;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.01em;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.18);
+      transition:transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .deep-analysis-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(210,153,34,.70);
+      background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(17,24,33,.96));
+    }
+    .deep-analysis-layer{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:1400;
+    }
+    .deep-analysis-window{
+      position:fixed;
+      top:92px;
+      right:20px;
+      width:min(940px,calc(50vw - 30px));
+      max-height:calc(100vh - 104px);
+      overflow:hidden;
+      pointer-events:auto;
+      border:1px solid rgba(210,153,34,.35);
+      border-radius:22px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 14rem),
+        linear-gradient(180deg,rgba(13,17,23,.98),rgba(7,10,16,.98));
+      box-shadow:0 26px 80px rgba(0,0,0,.50);
+      backdrop-filter:blur(10px);
+    }
+    .deep-analysis-window.focused{
+      border-color:rgba(210,153,34,.72);
+      box-shadow:0 28px 92px rgba(0,0,0,.58),0 0 36px rgba(210,153,34,.14);
+    }
+    .deep-analysis-window.second{
+      left:20px;
+      right:auto;
+      top:92px;
+    }
+    .deep-window-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:15px 16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      cursor:move;
+      user-select:none;
+    }
+    .deep-window-kicker{
+      color:#ffd780;
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:5px;
+    }
+    .deep-window-title{
+      color:#fff;
+      font-size:18px;
+      font-weight:900;
+      line-height:1.25;
+    }
+    .deep-window-sub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+      margin-top:4px;
+    }
+    .deep-window-close{
+      flex:0 0 auto;
+      width:32px;
+      height:32px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(17,24,33,.88);
+      color:#fff;
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+    }
+    .deep-window-close:hover{
+      border-color:rgba(248,81,73,.55);
+      background:rgba(248,81,73,.14);
+      color:#ffaaa6;
+    }
+    .deep-window-body{
+      padding:18px;
+      overflow:auto;
+      max-height:calc(100vh - 202px);
+    }
+    .deep-stat-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .deep-stat{
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      background:rgba(17,24,33,.74);
+      padding:10px 8px;
+      text-align:center;
+      min-width:0;
+    }
+    .deep-stat-label{
+      color:var(--muted);
+      font-size:10px;
+      font-weight:800;
+      margin-bottom:5px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .deep-stat-value{
+      color:#fff;
+      font-size:14px;
+      font-weight:900;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .deep-section-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .deep-section{
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:radial-gradient(circle at top right,rgba(210,153,34,.11),transparent 11rem),rgba(17,24,33,.66);
+      padding:14px;
+      min-height:238px;
+    }
+    .deep-section h3{
+      margin:0 0 7px;
+      font-size:14px;
+      color:#fff;
+    }
+    .deep-section p{
+      margin:0;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .deep-placeholder-pill{
+      display:inline-flex;
+      margin-top:9px;
+      padding:5px 8px;
+      border-radius:999px;
+      border:1px solid rgba(210,153,34,.24);
+      background:rgba(210,153,34,.10);
+      color:#ffd780;
+      font-size:10px;
+      font-weight:900;
+    }
+    .deep-chart{
+      width:100%;
+      height:126px;
+      margin-top:12px;
+      display:block;
+      border-radius:16px;
+      background:
+        radial-gradient(circle at top right,rgba(88,166,255,.11),transparent 38%),
+        radial-gradient(circle at bottom left,rgba(210,153,34,.10),transparent 34%),
+        linear-gradient(180deg,rgba(8,13,21,.86),rgba(8,11,17,.96));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:inset 0 0 24px rgba(88,166,255,.05),0 10px 30px rgba(0,0,0,.22);
+    }
+    .deep-grid-line{stroke:rgba(173,186,199,.12);stroke-dasharray:4 6;}
+    .deep-chart-line{filter:drop-shadow(0 0 7px currentColor) drop-shadow(0 0 16px currentColor);stroke-dasharray:640;stroke-dashoffset:640;animation:deepLineSweep 1.8s ease-out forwards,deepLinePulse 3.8s ease-in-out infinite .8s;}
+    .deep-chart-fill{opacity:.22;animation:deepFillBreathe 4.5s ease-in-out infinite;}
+    .deep-chart-dot{filter:drop-shadow(0 0 8px currentColor);animation:deepDotPulse 2.4s ease-in-out infinite;}
+    .deep-chart-bar{transform-origin:center bottom;animation:deepBarRise .85s ease-out both,deepBarPulse 3.6s ease-in-out infinite;}
+    .deep-chart-label{fill:#dbe8f5;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.9;}
+    @keyframes deepLineSweep{to{stroke-dashoffset:0}}
+    @keyframes deepLinePulse{0%,100%{opacity:.92}50%{opacity:1}}
+    @keyframes deepFillBreathe{0%,100%{opacity:.18}50%{opacity:.28}}
+    @keyframes deepDotPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+    @keyframes deepBarRise{from{transform:scaleY(.18);opacity:.32}to{transform:scaleY(1);opacity:1}}
+    @keyframes deepBarPulse{0%,100%{filter:brightness(.98)}50%{filter:brightness(1.08)}}
+    .deep-mini-row{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .deep-mini-metric{
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:12px;
+      padding:8px;
+      background:rgba(8,13,21,.58);
+      text-align:center;
+    }
+    .deep-mini-metric span{display:block;color:var(--muted);font-size:9px;font-weight:900;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+    .deep-mini-metric b{display:block;color:#fff;font-size:14px;}
+    .deep-news-bars{display:grid;gap:12px;margin-top:12px;}
+    .deep-news-band{position:relative;height:16px;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);display:flex;box-shadow:inset 0 0 18px rgba(0,0,0,.24);}
+    .deep-news-band span{height:100%;display:block;position:relative;overflow:hidden;}
+    .deep-news-band span:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.24) 50%,transparent 100%);transform:translateX(-120%);animation:deepShimmer 2.8s linear infinite;}
+    .deep-news-seg-bull{background:linear-gradient(90deg,rgba(63,185,80,.88),rgba(123,230,136,.95));}
+    .deep-news-seg-neutral{background:linear-gradient(90deg,rgba(88,166,255,.84),rgba(125,211,252,.92));}
+    .deep-news-seg-bear{background:linear-gradient(90deg,rgba(248,81,73,.86),rgba(255,126,102,.95));}
+    .deep-news-legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+    .deep-news-chip{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:9px 10px;background:rgba(7,10,16,.62);}
+    .deep-news-chip span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+    .deep-news-chip b{display:block;color:#fff;font-size:18px;line-height:1.1;}
+    .deep-news-chip small{display:block;color:var(--soft);font-size:11px;margin-top:3px;}
+    .deep-theme-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+    .deep-theme-pill{border-radius:12px;padding:8px 9px;background:linear-gradient(180deg,rgba(9,17,28,.88),rgba(6,11,18,.98));border:1px solid rgba(255,255,255,.07);box-shadow:inset 0 0 14px rgba(88,166,255,.05);}
+    .deep-theme-pill span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+    .deep-theme-pill b{display:block;color:#fff;font-size:14px;}
+    .deep-news-velocity{display:flex;align-items:flex-end;gap:5px;height:54px;padding:10px 8px 6px;border-radius:12px;background:linear-gradient(180deg,rgba(8,13,21,.82),rgba(6,10,16,.96));border:1px solid rgba(255,255,255,.07);overflow:hidden;}
+    .deep-news-velocity i{flex:1;display:block;min-width:0;border-radius:999px 999px 3px 3px;background:linear-gradient(180deg,rgba(255,210,90,.95),rgba(88,166,255,.72));box-shadow:0 0 16px rgba(88,166,255,.20);transform-origin:center bottom;animation:deepBarRise .95s ease-out both,deepBarPulse 3.4s ease-in-out infinite;}
+    .deep-news-fusion{display:grid;gap:12px;margin-top:12px;}
+    .deep-news-holo{border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(8,12,18,.84),rgba(5,9,15,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 16px 40px rgba(0,0,0,.24);}
+    .deep-news-holo svg{display:block;width:100%;height:166px;text-rendering:geometricPrecision;-webkit-font-smoothing:antialiased;}
+    .deep-news-holo svg text{paint-order:stroke;stroke:rgba(3,8,16,.52);stroke-width:.65px;letter-spacing:.01em;}
+    .deep-news-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    .deep-news-kpi{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 11px;background:linear-gradient(180deg,rgba(9,14,22,.84),rgba(6,10,16,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.04);}
+    .deep-news-kpi span{display:block;color:#a9b8cd;font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;text-shadow:0 0 10px rgba(120,170,255,.12);}
+    .deep-news-kpi b{display:block;color:#ffffff;font-size:17px;line-height:1.06;overflow-wrap:anywhere;font-weight:900;text-shadow:0 1px 0 rgba(255,255,255,.05),0 0 14px rgba(96,165,250,.10);}
+    .deep-news-kpi small{display:block;color:#d7e0ee;font-size:10.5px;margin-top:4px;line-height:1.28;font-weight:700;}
+
+    .deep-news-kpi-button{
+      width:100%;
+      min-height:100%;
+      font-family:inherit;
+      text-align:left;
+      color:inherit;
+      cursor:pointer;
+      appearance:none;
+    }
+    .deep-news-kpi-button:hover{
+      border-color:rgba(255,215,128,.42);
+      background:linear-gradient(180deg,rgba(210,153,34,.16),rgba(7,10,16,.98));
+      box-shadow:0 0 22px rgba(210,153,34,.12),inset 0 1px 0 rgba(255,255,255,.06);
+      transform:translateY(-1px);
+    }
+    .deep-news-kpi-button .deep-click-note{
+      color:#ffd780;
+      font-size:9px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.07em;
+      margin-top:6px;
+    }
+
+    .deep-news-themes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+    .deep-news-theme-pill{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;background:linear-gradient(180deg,rgba(10,15,23,.92),rgba(6,10,15,.98));}
+    .deep-news-theme-pill:before{content:"";position:absolute;inset:-40% auto auto -20%;width:70%;height:160%;background:radial-gradient(circle,rgba(88,166,255,.22),transparent 68%);pointer-events:none;}
+    .deep-news-theme-pill span{display:block;color:#ecf4ff;font-size:12.5px;font-weight:850;text-shadow:0 0 10px rgba(88,166,255,.12);}
+    .deep-news-theme-pill b{display:block;color:#fff;font-size:17px;line-height:1.05;margin-top:3px;font-weight:900;text-shadow:0 0 12px rgba(255,215,128,.08);}
+    .deep-news-theme-pill small{display:block;color:#d3dded;font-size:10.3px;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;font-weight:700;}
+    @keyframes deepShimmer{to{transform:translateX(120%)}}
+    .deep-radar-wrap{
+      display:grid;
+      grid-template-columns:1fr;
+      grid-template-areas:
+        "radar"
+        "legend"
+        "signal";
+      gap:12px;
+      align-items:start;
+      margin-top:12px;
+      overflow:hidden;
+    }
+    .deep-radar-card{
+      grid-area:radar;
+      position:relative;
+      min-height:300px;
+      border-radius:18px;
+      padding:12px;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(circle at 50% 10%,rgba(88,166,255,.16),transparent 36%),
+        radial-gradient(circle at 80% 80%,rgba(255,94,202,.12),transparent 34%),
+        linear-gradient(180deg,rgba(7,12,20,.98),rgba(6,10,16,.98));
+      border:1px solid rgba(120,170,255,.12);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 14px 34px rgba(0,0,0,.20);
+    }
+    .deep-radar-card:before{content:"";position:absolute;inset:10px;border-radius:14px;border:1px solid rgba(255,255,255,.04);pointer-events:none;}
+    .deep-radar-svg{
+      width:100%;
+      max-width:320px;
+      height:auto;
+      display:block;
+      filter:drop-shadow(0 0 16px rgba(88,166,255,.16));
+    }
+    .deep-radar-svg text{
+      font-family:inherit;
+      paint-order:stroke;
+      stroke:rgba(5,9,14,.88);
+      stroke-width:.32px;
+      stroke-linejoin:round;
+      text-rendering:geometricPrecision;
+      -webkit-font-smoothing:antialiased;
+    }
+    .deep-radar-legend{grid-area:legend;display:grid;gap:8px;align-content:start;min-width:0;}
+    .deep-radar-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:9px 10px;
+      background:linear-gradient(180deg,rgba(11,16,24,.94),rgba(7,11,17,.98));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      min-width:0;
+    }
+    .deep-radar-head span{display:block;color:#b9c8dc;font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;}
+    .deep-radar-head b{display:block;color:#ffffff;font-size:15px;line-height:1.05;margin-top:3px;font-weight:950;white-space:normal;}
+    .deep-radar-head em{font-style:normal;color:#8ff2ff;font-weight:950;font-size:11px;white-space:nowrap;}
+    .deep-radar-metrics{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:7px;
+      min-width:0;
+    }
+    .deep-radar-metric{
+      min-width:0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:8px 9px;
+      background:linear-gradient(180deg,rgba(10,15,23,.93),rgba(6,10,15,.99));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .deep-radar-metric span{display:block;color:#b7c7da;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .deep-radar-metric b{display:block;color:#ffffff;font-size:16px;line-height:1.05;font-weight:950;margin-top:3px;}
+    .deep-radar-metric small{display:block;color:#d4deeb;font-size:9px;line-height:1.2;margin-top:3px;font-weight:700;min-height:22px;}
+    .deep-radar-metric-line{height:5px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.04);margin-top:7px;}
+    .deep-radar-metric-line i{height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,#5ee7ff 0%,#5da7ff 38%,#9d7cff 70%,#ff5eca 100%);box-shadow:0 0 14px rgba(88,166,255,.26);position:relative;overflow:hidden;animation:deepBarPulse 3.6s ease-in-out infinite;}
+    .deep-radar-metric-line i:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.28) 48%,transparent 100%);transform:translateX(-120%);animation:deepShimmer 2.6s linear infinite;}
+    .deep-radar-signal{
+      grid-area:signal;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:0;
+      min-width:0;
+    }
+    .deep-radar-signal div{
+      min-width:0;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:12px;
+      padding:8px 9px;
+      background:linear-gradient(180deg,rgba(10,15,23,.92),rgba(6,10,15,.98));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .deep-radar-signal span{display:block;color:#a8b9ce;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .deep-radar-signal b{display:block;color:#ffffff;font-size:13px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    @media (max-width: 1180px){
+      .deep-radar-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .deep-radar-signal{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @keyframes deepCompassPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+    @media (max-width: 980px){
+      .deep-theme-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .deep-news-legend{grid-template-columns:1fr;}
+      .deep-news-meta,.deep-news-themes{grid-template-columns:1fr 1fr;}
+      .deep-radar-wrap{grid-template-columns:1fr;grid-template-areas:"radar" "legend" "signal";}
+      .deep-radar-signal{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+
+    .deep-article-page{
+      position:fixed;
+      top:116px;
+      left:50%;
+      transform:translateX(-50%);
+      width:min(820px,calc(100vw - 38px));
+      max-height:calc(100vh - 150px);
+      overflow:hidden;
+      z-index:1700;
+      pointer-events:auto;
+      border:1px solid rgba(210,153,34,.44);
+      border-radius:22px;
+      background:
+        radial-gradient(circle at top left,rgba(88,166,255,.14),transparent 18rem),
+        radial-gradient(circle at top right,rgba(210,153,34,.14),transparent 16rem),
+        linear-gradient(180deg,rgba(13,17,23,.98),rgba(6,10,16,.98));
+      box-shadow:0 30px 100px rgba(0,0,0,.62),0 0 40px rgba(210,153,34,.12);
+      backdrop-filter:blur(12px);
+    }
+    .deep-article-header{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .deep-article-kicker{color:#ffd780;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
+    .deep-article-title{color:#fff;font-size:20px;font-weight:900;line-height:1.2;}
+    .deep-article-sub{color:var(--muted);font-size:12px;line-height:1.4;margin-top:4px;}
+    .deep-article-close{
+      flex:0 0 auto;
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(17,24,33,.88);
+      color:#fff;
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+    }
+    .deep-article-body{padding:16px 18px 18px;overflow:auto;max-height:calc(100vh - 250px);}
+    .deep-article-tools{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+    .deep-article-tools label{color:var(--soft);font-size:12px;font-weight:800;}
+    .deep-article-tools select{
+      background:rgba(17,24,33,.88);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:9px 12px;
+      outline:none;
+      font-weight:700;
+    }
+    .deep-article-note{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+      border:1px solid rgba(255,255,255,.07);
+      background:rgba(8,13,21,.54);
+      border-radius:14px;
+      padding:10px 12px;
+      margin-bottom:12px;
+    }
+    .deep-article-list{display:grid;gap:10px;}
+    .deep-article-row{
+      position:relative;
+      overflow:hidden;
+      display:grid;
+      grid-template-columns:72px minmax(0,1fr) 104px;
+      gap:12px;
+      align-items:center;
+      padding:13px 14px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(13,19,29,.92),rgba(8,12,18,.98));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 10px 24px rgba(0,0,0,.16);
+      animation:deepArticleFloat 7.2s ease-in-out infinite;
+    }
+    .deep-article-row:nth-child(2n){animation-duration:8.4s;animation-delay:-1.2s;}
+    .deep-article-row:nth-child(3n){animation-duration:9s;animation-delay:-2s;}
+    .deep-article-row:before{
+      content:"";
+      position:absolute;
+      left:0;top:10px;bottom:10px;width:3px;
+      border-radius:999px;
+      background:linear-gradient(180deg,rgba(255,215,128,.95),rgba(88,166,255,.92),rgba(255,126,102,.88));
+      box-shadow:0 0 14px rgba(88,166,255,.22);
+      animation:deepSignalPulse 3.8s ease-in-out infinite;
+    }
+    .deep-article-score{
+      width:58px;
+      height:58px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:radial-gradient(circle at 30% 20%,rgba(255,215,128,.24),rgba(88,166,255,.10)),rgba(7,10,16,.8);
+      border:1px solid rgba(255,255,255,.08);
+      color:#fff;
+      font-size:18px;
+      font-weight:900;
+      text-shadow:0 0 12px rgba(88,166,255,.14);
+    }
+    .deep-article-headline{display:block;color:#f7fbff;font-size:14px;font-weight:900;line-height:1.34;text-decoration:none;text-shadow:0 1px 0 rgba(255,255,255,.03),0 0 10px rgba(88,166,255,.08);}
+    .deep-article-headline:hover{color:#ffd780;}
+    .deep-article-meta{color:#d7e1ef;font-size:11.5px;line-height:1.38;margin-top:5px;font-weight:700;}
+    .deep-article-links{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:7px;}
+    .deep-article-link{display:inline-flex;align-items:center;gap:6px;color:#7ec8ff;text-decoration:none;font-size:11.5px;font-weight:800;}
+    .deep-article-link:hover{color:#ffd780;}
+    .deep-article-pill{
+      justify-self:end;
+      display:inline-flex;
+      justify-content:center;
+      min-width:84px;
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:900;
+      border:1px solid rgba(255,255,255,.09);
+      color:#fff;
+      background:rgba(88,166,255,.12);
+      text-shadow:0 0 10px rgba(88,166,255,.12);
+    }
+    @keyframes deepArticleFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
+    @keyframes deepSignalPulse{0%,100%{opacity:.72;box-shadow:0 0 12px rgba(88,166,255,.18);}50%{opacity:1;box-shadow:0 0 18px rgba(255,215,128,.26);}}
+    @media(max-width:760px){
+      .deep-article-page{top:80px;width:calc(100vw - 20px);}
+      .deep-article-row{grid-template-columns:1fr;}
+      .deep-article-score{width:100%;height:42px;}
+      .deep-article-pill{justify-self:start;}
+    }
+
+    .deep-analysis-toast{
+      position:fixed;
+      left:50%;
+      bottom:26px;
+      transform:translateX(-50%);
+      z-index:1500;
+      display:none;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(210,153,34,.40);
+      background:rgba(13,17,23,.96);
+      color:#ffd780;
+      font-size:12px;
+      font-weight:800;
+      box-shadow:0 14px 38px rgba(0,0,0,.35);
+    }
+    .deep-analysis-toast.show{display:block;}
+
+    @media(max-width:1680px){
+      .deep-analysis-window{width:min(920px,calc(100vw - 36px));}
+      .deep-analysis-window.second{left:auto;right:20px;top:calc(50vh + 8px);}
+    }
+
+    @media(max-width:760px){
+      .deep-analysis-window{left:10px!important;right:auto!important;width:calc(100vw - 20px);}
+      .deep-analysis-window.second{top:calc(50vh + 8px);}
+      .deep-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .deep-section-grid{grid-template-columns:1fr;}
+    }
+
+    @media(max-width:1300px){
+      .lab-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .chart-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:1100px){
+      .lab-hero h1{white-space:normal}
+    }
+    @media(max-width:900px){
+      .lab-hero{padding:18px}
+      .lab-controls{justify-content:flex-start}
+      .lab-select{min-width:160px;flex:1 1 180px}
+      .lab-card-grid{grid-template-columns:1fr}
+      .heat-row{grid-template-columns:1fr repeat(6,minmax(0,1fr))}
+      .heat-row .heat-cell:nth-child(n+8){display:none}
+      .skyline-wrap,.radar-wrap{height:360px}
+    }
+
+    /* Sentiment vs. Market laboratory prototype — isolated from ribbon/voting code */
+    .svm-lab-panel{
+      position:relative;
+      overflow:hidden;
+      margin-bottom:18px;
+      padding:0;
+      background:
+        radial-gradient(circle at 86% 0%,rgba(41,98,255,.11),transparent 28rem),
+        linear-gradient(180deg,#111722,#0b0f17);
+      border:1px solid #2a2e39;
+      border-radius:20px;
+      box-shadow:0 22px 52px rgba(0,0,0,.28);
+    }
+    .svm-lab-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      padding:20px 20px 14px;
+      border-bottom:1px solid #2a2e39;
+      background:rgba(19,23,34,.84);
+    }
+    .svm-lab-head h2{margin:0 0 5px;color:#f0f3fa;font-size:24px}
+    .svm-lab-head p{margin:0;color:#9aa4b5;font-size:13px;line-height:1.5;max-width:820px}
+    .svm-lab-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:6px 9px;
+      margin-bottom:9px;
+      border:1px solid rgba(41,98,255,.38);
+      border-radius:999px;
+      background:rgba(41,98,255,.12);
+      color:#9fc0ff;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .svm-lab-badge:before{
+      content:"";
+      width:7px;height:7px;border-radius:50%;
+      background:#26a69a;
+      box-shadow:0 0 12px rgba(38,166,154,.70);
+    }
+    .svm-controls{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:12px 20px;
+      border-bottom:1px solid #2a2e39;
+      background:#131722;
+    }
+    .svm-select{
+      min-width:230px;
+      max-width:360px;
+      padding:9px 34px 9px 11px;
+      border:1px solid #363a45;
+      border-radius:8px;
+      background:#1e222d;
+      color:#d1d4dc;
+      font:inherit;
+      font-size:13px;
+      font-weight:700;
+      outline:none;
+    }
+    .svm-select:focus{border-color:#2962ff;box-shadow:0 0 0 2px rgba(41,98,255,.18)}
+    .svm-tool-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .svm-tool{
+      min-height:34px;
+      padding:7px 10px;
+      border:1px solid #363a45;
+      border-radius:8px;
+      background:#1e222d;
+      color:#b2b5be;
+      font:inherit;
+      font-size:11px;
+      font-weight:800;
+      cursor:pointer;
+      transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease;
+    }
+    .svm-tool:hover{background:#252a36;color:#f0f3fa;border-color:#596273}
+    .svm-tool.active{
+      background:rgba(41,98,255,.18);
+      border-color:#2962ff;
+      color:#dce7ff;
+      box-shadow:inset 0 0 0 1px rgba(41,98,255,.12);
+    }
+    .svm-periods{margin-left:auto}
+    .svm-chart-shell{
+      position:relative;
+      margin:0;
+      background:#131722;
+      border-bottom:1px solid #2a2e39;
+    }
+    .svm-chart-shell:last-of-type{border-bottom:0}
+    .svm-chart-title{
+      position:absolute;
+      left:14px;
+      top:10px;
+      z-index:5;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      pointer-events:none;
+      color:#d1d4dc;
+      font-size:12px;
+      font-weight:800;
+    }
+    .svm-chart-title i{width:8px;height:8px;border-radius:50%;display:inline-block}
+    .svm-price-dot{background:#2962ff;box-shadow:0 0 9px rgba(41,98,255,.75)}
+    .svm-psi-dot{background:#26a69a;box-shadow:0 0 9px rgba(38,166,154,.70)}
+    .svm-live-legend{
+      position:absolute;
+      right:74px;
+      top:9px;
+      z-index:5;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      pointer-events:none;
+      color:#b2b5be;
+      font-size:11px;
+      font-weight:800;
+    }
+    .svm-live-legend b{color:#f0f3fa}
+    #svmPriceChart{height:430px}
+    .svm-chart-loading{
+      position:absolute;
+      inset:0;
+      z-index:8;
+      display:grid;
+      place-items:center;
+      padding:24px;
+      color:#9aa4b5;
+      background:rgba(19,23,34,.92);
+      text-align:center;
+      font-size:13px;
+      line-height:1.55;
+    }
+    .svm-chart-loading[hidden]{display:none}
+    .svm-stats{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:1px;
+      background:#2a2e39;
+      border-top:1px solid #2a2e39;
+    }
+    .svm-stat{padding:13px 16px;background:#131722}
+    .svm-stat span{display:block;color:#787f8f;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+    .svm-stat b{display:block;margin-top:4px;color:#f0f3fa;font-size:18px}
+    .svm-foot{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      padding:11px 16px;
+      border-top:1px solid #2a2e39;
+      background:#10141d;
+      color:#787f8f;
+      font-size:10px;
+      line-height:1.45;
+    }
+    .svm-foot a{color:#9fc0ff}
+    .svm-tool-note{color:#9aa4b5}
+    .svm-tool-note strong{color:#d1d4dc}
+    @media(max-width:900px){
+      .svm-lab-head,.svm-controls{padding-left:14px;padding-right:14px}
+      .svm-select{width:100%;max-width:none}
+      .svm-periods{margin-left:0}
+      #svmPriceChart{height:340px}
+      .svm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .svm-live-legend{right:12px;top:32px}
+    }
+
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
+      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
+        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+      </span>
+      <div class="brand-copy">
+        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="site-subtitle">Global market public sentiment dashboard</div>
+      </div>
+    </a>
+
+    <div class="header-center">
+      <div class="header-pill">✨ Constantly learning & improving</div>
+    </div>
+
+    <nav class="nav">
+      <a href="dashboard.html" class="active">Interactive Dashboard</a>
+      <a href="Charts.html">Market Charts</a>
+      <a href="sentiment-history.html">Historical Sentiment</a>
+      <a href="news-articles.html">News & Articles</a>
+      <a href="market-sentiment.html">Guides</a>
+      <a href="advertise.html">Business Opportunities</a>
+      <a href="contact.html">Get in Touch</a>
+      <a href="about.html">About</a>
+
+      <div class="social-links">
+        <span class="social-label">Follow us</span>
+        <span class="social-pill">X</span>
+        <span class="social-pill linkedin">LinkedIn</span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="lab-wrap">
+    <section class="panel lab-hero">
+      <div>
+        <h1>Interactive Market Sentiment Dashboard Lab</h1>
+        <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
+        <div class="lab-controls" id="marketControls"></div>
+      </div>
+    </section>
+
+    <section class="svm-lab-panel" id="sentimentVsMarketLab" aria-labelledby="svmTitle">
+      <div class="svm-lab-head">
+        <div>
+          <h2 id="svmTitle">Sentiment vs. Market Price</h2>
+        </div>
+        <div class="svm-tool-note" id="svmToolNote" style="display:none"></div>
+      </div>
+
+      <div class="svm-controls">
+        <select class="svm-select" id="svmInstrument" aria-label="Select instrument for sentiment versus market comparison">
+          <option>Loading available instruments…</option>
+        </select>
+
+        <div class="svm-tool-group" aria-label="Basic chart tools">
+          <button class="svm-tool" type="button" id="svmTrendTool" title="Click two points on the market chart">╱ Trend line</button>
+          <button class="svm-tool" type="button" id="svmLevelTool" title="Click once on the market chart">— Price level</button>
+          <button class="svm-tool" type="button" id="svmCrosshairTool" title="Switch between magnet and free crosshair">＋ Free cursor</button>
+          <button class="svm-tool" type="button" id="svmFitTool">Fit</button>
+          <button class="svm-tool" type="button" id="svmClearTool">Clear drawings</button>
+        </div>
+
+        <div class="svm-tool-group svm-periods" aria-label="Comparison timeframe">
+          <button class="svm-tool active" type="button" data-svm-period="daily">Daily</button>
+          <button class="svm-tool" type="button" data-svm-period="weekly">Weekly</button>
+          <button class="svm-tool" type="button" data-svm-period="monthly">Monthly</button>
+        </div>
+      </div>
+
+      <div class="svm-chart-shell">
+        <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <span style="color:#667085">vs.</span> <i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
+        <div class="svm-live-legend"><span style="color:#5b7cff">Market <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
+        <div id="svmPriceChart" role="img" aria-label="Market price and Public Sentiment Index comparison chart"></div>
+        <div class="svm-chart-loading" id="svmLoading">Loading saved sentiment and market history…</div>
+      </div>
+
+      <div class="svm-stats">
+        <div class="svm-stat"><span data-glossary="market-close">Latest close</span><b id="svmLatestPrice">—</b></div>
+        <div class="svm-stat"><span data-glossary="psi">Latest PSI</span><b id="svmLatestPsi">—</b></div>
+        <div class="svm-stat"><span data-glossary="aligned-periods">Aligned periods</span><b id="svmRecordCount">—</b></div>
+        <div class="svm-stat"><span data-glossary="change-correlation">Change correlation</span><b id="svmCorrelation">—</b></div>
+      </div>
+
+      <div class="svm-foot">
+        <span id="svmStatus">Uses instrument_history.json only. No extra scraping or workflow runs.</span>
+      </div>
+    </section>
+
+    <section class="lab-card-grid" id="snapshotCards"></section>
+
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Skyline</h2>
+            <div class="panel-kicker">Multi-market PSI movement with glowing trend lines, clear end-point badges, and slow motion drawing.</div>
+          </div>
+          <div class="pill-row" aria-label="Skyline time period">
+            <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
+            <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
+            <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
+          </div>
+        </div>
+        <div class="skyline-wrap">
+          <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
+          <div class="chart-watermark">PSI</div>
+        </div>
+        <div class="preview-note" id="skylineNote">Preview mode uses generated trend shape when real instrument history is not available.</div>
+      </div>
+
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Radar Comparison</h2>
+            <div class="panel-kicker">Each colored shape is one selected market. Axes compare PSI, user bias, headline strength, technical direction, and stability.</div>
+          </div>
+        </div>
+        <div class="radar-wrap">
+          <svg id="radarChart" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="radar-legend" id="radarLegend"></div>
+      </div>
+    </section>
+
+    <section class="chart-grid">
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Sentiment Heatwave</h2>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, and sampled days for Monthly.</div>
+          </div>
+        </div>
+        <div class="heat-legend" aria-label="Heatwave color scale">
+          <span><i style="background:#ef4444;color:#ef4444"></i>0–30 Bearish</span>
+          <span><i style="background:#facc15;color:#facc15"></i>31–44 Mixed Bearish</span>
+          <span><i style="background:#3b82f6;color:#3b82f6"></i>45–55 Neutral</span>
+          <span><i style="background:#2dd4bf;color:#2dd4bf"></i>56–69 Mixed Bullish</span>
+          <span><i style="background:#16a34a;color:#16a34a"></i>70–100 Bullish</span>
+        </div>
+        <div class="heatmap" id="heatmapGrid"></div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
+      </div>
+
+      <div class="panel lab-panel">
+        <div class="panel-top">
+          <div>
+            <h2>Strength Ranking</h2>
+            <div class="panel-kicker">Simple ranked read of selected markets.</div>
+          </div>
+        </div>
+        <div class="ranking-list" id="rankingList"></div>
+      </div>
+    </section>
+    <div id="deepAnalysisLayer" class="deep-analysis-layer" aria-live="polite"></div>
+    <div id="deepAnalysisToast" class="deep-analysis-toast"></div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="dashboard.html" class="active">Interactive Dashboard</a>
+        <a href="public-sentiment-index.html">Public Sentiment Index</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">How the Dashboard Works</a>
+        <a href="advertise.html">Business Opportunities</a>
+        <a href="about.html">About</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script>
+    const INSTRUMENTS = [
+      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"], fallback:54},
+      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"], fallback:75},
+      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"], fallback:56},
+      {name:"Russell / RTY", aliases:["russell","rty","russell 2000","russell / rty"], fallback:50},
+      {name:"VIX", aliases:["vix","volatility"], fallback:55},
+      {name:"DAX", aliases:["dax"], fallback:62},
+      {name:"FTSE 100", aliases:["ftse","ftse 100"], fallback:52},
+      {name:"Nikkei 225", aliases:["nikkei","nikkei 225"], fallback:57},
+      {name:"Hang Seng", aliases:["hang seng","hsi"], fallback:53},
+      {name:"Euro Stoxx 50", aliases:["euro stoxx","euro stoxx 50","stoxx"], fallback:51},
+      {name:"CAC 40", aliases:["cac","cac 40"], fallback:52},
+      {name:"US 2Y Treasury", aliases:["us 2y","2y treasury","2-year yield","2 year yield"], fallback:50},
+      {name:"US 10Y Treasury", aliases:["10y","us 10y","10y treasury","10-year yield","10 year yield"], fallback:50},
+      {name:"Treasury Yields", aliases:["treasury yields","yields","bond yields","treasury"], fallback:50},
+      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index","usd index"], fallback:50},
+      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro","eur"], fallback:58},
+      {name:"GBP / GBPUSD", aliases:["gbpusd","gbp/usd","pound","gbp"], fallback:56},
+      {name:"JPY / USDJPY", aliases:["usdjpy","usd/jpy","yen","jpy"], fallback:47},
+      {name:"CHF / USDCHF", aliases:["usdchf","usd/chf","swiss franc","chf"], fallback:50},
+      {name:"CAD / USDCAD", aliases:["usdcad","usd/cad","canadian dollar","cad"], fallback:50},
+      {name:"AUD / AUDUSD", aliases:["audusd","aud/usd","australian dollar","aud"], fallback:56},
+      {name:"NZD / NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","nzd"], fallback:53},
+      {name:"EURJPY", aliases:["eurjpy","eur/jpy"], fallback:52},
+      {name:"EURGBP", aliases:["eurgbp","eur/gbp"], fallback:50},
+      {name:"GBPJPY", aliases:["gbpjpy","gbp/jpy"], fallback:51},
+      {name:"AUDJPY", aliases:["audjpy","aud/jpy"], fallback:54},
+      {name:"CADJPY", aliases:["cadjpy","cad/jpy"], fallback:50},
+      {name:"EURCHF", aliases:["eurchf","eur/chf"], fallback:50},
+      {name:"EURCAD", aliases:["eurcad","eur/cad"], fallback:50},
+      {name:"AUDCAD", aliases:["audcad","aud/cad"], fallback:52},
+      {name:"AUDNZD", aliases:["audnzd","aud/nzd"], fallback:52},
+      {name:"NZDJPY", aliases:["nzdjpy","nzd/jpy"], fallback:51},
+      {name:"USDTRY", aliases:["usdtry","usd/try","turkish lira"], fallback:48},
+      {name:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso"], fallback:50},
+      {name:"USDZAR", aliases:["usdzar","usd/zar","rand"], fallback:49},
+      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"], fallback:64},
+      {name:"Ethereum / ETH", aliases:["ethereum","eth"], fallback:61},
+      {name:"Solana / SOL", aliases:["solana","sol"], fallback:58},
+      {name:"XRP", aliases:["xrp","ripple"], fallback:53},
+      {name:"BNB", aliases:["bnb","binance coin"], fallback:51},
+      {name:"Cardano / ADA", aliases:["cardano","ada"], fallback:50},
+      {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"], fallback:50},
+      {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"], fallback:57},
+      {name:"Gold", aliases:["gold","xau"], fallback:48},
+      {name:"Silver", aliases:["silver","xag"], fallback:51},
+      {name:"Copper", aliases:["copper"], fallback:54},
+      {name:"Crude Oil", aliases:["crude oil","oil","wti"], fallback:57},
+      {name:"Natural Gas", aliases:["natural gas","nat gas"], fallback:52},
+      {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"], fallback:50},
+      {name:"CPI / Inflation", aliases:["cpi","inflation"], fallback:50},
+      {name:"PPI", aliases:["ppi","producer price"], fallback:50},
+      {name:"Jobs / NFP", aliases:["jobs","nfp","nonfarm payrolls","payrolls"], fallback:50},
+      {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"], fallback:50},
+      {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"], fallback:50}
+    ];
+
+    const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
+    let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
+    let selectedPeriod = "daily";
+    let dashboardData = null;
+    let technicalData = null;
+
+    function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+    function norm(v){return String(v||"").toLowerCase()}
+    function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+    function signed(v){
+      const n = Math.round(Number(v) || 0);
+      return (n > 0 ? "+" : "") + n;
+    }
+    function label(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 70) return "Bullish";
+      if(score >= 56) return "Mixed Bullish";
+      if(score >= 45) return "Neutral";
+      if(score >= 31) return "Mixed Bearish";
+      return "Bearish";
+    }
+    function badgeClass(score){return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral")}
+    function sentimentColor(score){
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#14b8a6";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f97316";
+      return "#ef4444";
+    }
+    function heatColor(v){
+      if(v >= 70) return "#16a34a";
+      if(v >= 56) return "#2dd4bf";
+      if(v >= 45) return "#3b82f6";
+      if(v >= 31) return "#facc15";
+      return "#ef4444";
+    }
+    function heatStyle(v){
+      const goldFade = "radial-gradient(circle at 18% 12%,rgba(255,215,128,.20),transparent 46%),";
+      if(v >= 70) return `background:${goldFade}linear-gradient(180deg,rgba(22,163,74,.98),rgba(20,83,45,.82));border-color:rgba(22,163,74,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(22,163,74,.30);color:#f0fff4;`;
+      if(v >= 56) return `background:${goldFade}linear-gradient(180deg,rgba(45,212,191,.98),rgba(15,118,110,.82));border-color:rgba(45,212,191,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(45,212,191,.28);color:#ecfffb;`;
+      if(v >= 45) return `background:${goldFade}linear-gradient(180deg,rgba(59,130,246,.98),rgba(30,64,175,.82));border-color:rgba(59,130,246,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(59,130,246,.25);color:#f1f7ff;`;
+      if(v >= 31) return `background:${goldFade}linear-gradient(180deg,rgba(250,204,21,.98),rgba(161,98,7,.84));border-color:rgba(250,204,21,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.12),0 0 20px rgba(250,204,21,.24);color:#fffbea;`;
+      return `background:${goldFade}linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.84));border-color:rgba(239,68,68,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(239,68,68,.30);color:#fff1f1;`;
+    }
+    function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
+    function scoreFromText(text){
+      const t = norm(text);
+      if(t.includes("bullish") && !t.includes("bearish")) return 80;
+      if(t.includes("bearish") && !t.includes("bullish")) return 20;
+      if(t.includes("mixed bullish")) return 60;
+      if(t.includes("mixed bearish")) return 40;
+      if(t.includes("mixed")) return 55;
+      if(t.includes("neutral")) return 50;
+      return null;
+    }
+    function textFromItem(item){
+      return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
+    }
+    function matchesInstrument(item, ins){
+      const text = textFromItem(item);
+      return ins.aliases.some(a => text.includes(a.toLowerCase()));
+    }
+    function getHeadlines(){
+      if(!dashboardData) return [];
+      return [
+        ...(Array.isArray(dashboardData.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : []),
+        ...(Array.isArray(dashboardData.headlines) ? dashboardData.headlines : [])
+      ];
+    }
+    function validDirectScore(h){
+      const candidates = [h.psi, h.psi_score, h.sentiment_score, h.public_sentiment_index];
+      for(const raw of candidates){
+        const n = Number(raw);
+        if(Number.isFinite(n) && n >= 0 && n <= 100) return n;
+      }
+      return null;
+    }
+    function extractTechLabel(entry, period){
+      const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
+      if(raw === null || raw === undefined) return "N/A";
+      if(typeof raw === "string" || typeof raw === "number") return String(raw);
+      return raw.direction || raw.signal || raw.label || raw.trend || raw.value || "N/A";
+    }
+    function normalizeTechLabel(value){
+      const t = norm(value);
+      if(t.includes("bull") || t === "up" || t.includes("rise") || t.includes("positive")) return "Up";
+      if(t.includes("bear") || t === "down" || t.includes("fall") || t.includes("negative")) return "Down";
+      if(t.includes("neutral") || t.includes("mixed") || t.includes("flat")) return "Neutral";
+      return value && value !== "N/A" ? String(value) : "N/A";
+    }
+    function getTechnicalForInstrument(ins){
+      if(!technicalData) return "N/A";
+      const techRoot = technicalData.technical || technicalData;
+      const wanted = ins.aliases.map(a => norm(a));
+      let entry = null;
+
+      if(Array.isArray(techRoot)){
+        entry = techRoot.find(item => {
+          const possible = [item?.instrument, item?.name, item?.symbol, item?.label, item?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
+        });
+      }else if(typeof techRoot === "object"){
+        const found = Object.entries(techRoot).find(([key, value]) => {
+          const possible = [key, value?.instrument, value?.name, value?.symbol, value?.label, value?.key].filter(Boolean).map(norm);
+          return wanted.some(w => possible.includes(w) || possible.some(p => p.includes(w) || w.includes(p)));
+        });
+        entry = found ? found[1] : null;
+      }
+
+      if(!entry) return "N/A";
+      return normalizeTechLabel(extractTechLabel(entry, "daily"));
+    }
+    function techFromScore(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 56) return "Up";
+      if(score <= 44) return "Down";
+      return "Neutral";
+    }
+    function userDefaultFromTech(tech){
+      const t = norm(tech);
+      if(t.includes("up") || t.includes("bull")) return "Bullish";
+      if(t.includes("down") || t.includes("bear")) return "Bearish";
+      return "Neutral";
+    }
+    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : 24}
+    function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
+    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
+    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : "Now"}
+    function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
+    function seriesForPeriod(d){return makeSkylineSeries(d.name, d.score)}
+    function periodScoreFor(d){
+      const values = seriesForPeriod(d);
+      if(!values.length) return d.score ?? null;
+      if(selectedPeriod === "daily") return values[values.length-1];
+      if(selectedPeriod === "weekly") return average(values.slice(-7));
+      return average(values);
+    }
+    function scoreLabelShort(score){return label(score).replace("Mixed ","M/")}
+    function userScore(value){
+      const t = norm(value);
+      if(t.includes("bull")) return 82;
+      if(t.includes("bear")) return 22;
+      if(t.includes("neutral")) return 52;
+      return 50;
+    }
+    function techScore(value){
+      const t = norm(value);
+      if(t.includes("up") || t.includes("bull")) return 82;
+      if(t.includes("down") || t.includes("bear")) return 22;
+      if(t.includes("neutral") || t.includes("mixed")) return 52;
+      return 50;
+    }
+    function stabilityScore(d){
+      const vals = seriesForPeriod(d);
+      if(vals.length < 2) return 60;
+      let totalMove = 0;
+      for(let i=1;i<vals.length;i++) totalMove += Math.abs(vals[i]-vals[i-1]);
+      const avgMove = totalMove/(vals.length-1);
+      return clamp(Math.round(100 - avgMove*7), 25, 95);
+    }
+    function makeSkylineSeries(name, score){
+      const base = score == null ? 50 : score;
+      const len = periodLength();
+      let seed = Array.from(name + selectedPeriod).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      const amp = selectedPeriod === "daily" ? 7 : selectedPeriod === "weekly" ? 10 : 13;
+      for(let i=0;i<len;i++){
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/Math.max(len-1,1))*Math.PI*2 + seed/65000) * amp;
+        const drift = (i-(len*.7)) * ((base-50)/(selectedPeriod === "monthly" ? 70 : 85));
+        const noise = ((seed/233280)-.5) * (selectedPeriod === "daily" ? 5 : 7);
+        values.push(clamp(Math.round(base - 4 + (i/Math.max(len-1,1))*8 + wave + drift + noise), 8, 94));
+      }
+      values[values.length-1] = score == null ? 50 : score;
+      return values;
+    }
+    function calcInstrument(ins){
+      const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
+      const scores = [];
+      headlines.forEach(h => {
+        const direct = validDirectScore(h);
+        if(direct != null) scores.push(clamp(direct,0,100));
+        else{
+          const s = scoreFromText(textFromItem(h));
+          if(s != null) scores.push(s);
+        }
+      });
+      let score = null;
+      if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+      else score = ins.fallback;
+      const liveTech = getTechnicalForInstrument(ins);
+      const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
+      const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
+      const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+      return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
+    }
+    function makeSeries(name, score){
+      const base = score == null ? 50 : score;
+      let seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
+      const values = [];
+      for(let i=0;i<24;i++){
+        seed = (seed * 9301 + 49297) % 233280;
+        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 8;
+        const drift = (i-18) * ((base-50)/85);
+        const noise = ((seed/233280)-.5) * 7;
+        values.push(clamp(Math.round(base - 5 + (i/23)*10 + wave + drift + noise), 8, 94));
+      }
+      values[values.length-1] = score == null ? 50 : score;
+      return values;
+    }
+    function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
+    function bindPeriodButtons(){
+      document.querySelectorAll("[data-period]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.period === selectedPeriod);
+        btn.onclick = () => { selectedPeriod = btn.dataset.period; renderAll(); };
+      });
+    }
+    const deepWindows = [];
+    let deepZ = 1410;
+
+    function showDeepToast(message){
+      const toast = document.getElementById("deepAnalysisToast");
+      if(!toast) return;
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showDeepToast.timer);
+      showDeepToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function focusDeepWindow(win){
+      document.querySelectorAll(".deep-analysis-window").forEach(w => w.classList.remove("focused"));
+      win.classList.add("focused");
+      win.style.zIndex = String(++deepZ);
+    }
+
+    function closeDeepAnalysis(id){
+      const idx = deepWindows.findIndex(x => x.id === id);
+      if(idx >= 0) deepWindows.splice(idx, 1);
+      const win = document.querySelector(`[data-deep-id="${id}"]`);
+      if(win) win.remove();
+      reflowDeepWindows();
+    }
+
+    function reflowDeepWindows(){
+      document.querySelectorAll(".deep-analysis-window").forEach((w,i) => w.classList.toggle("second", i === 1));
+    }
+
+    function makeDeepWindowDraggable(win){
+      const handle = win.querySelector(".deep-window-header");
+      if(!handle) return;
+      let startX=0,startY=0,startLeft=0,startTop=0,dragging=false;
+      handle.addEventListener("pointerdown", e => {
+        if(e.target.closest("button")) return;
+        dragging = true;
+        focusDeepWindow(win);
+        const rect = win.getBoundingClientRect();
+        startX = e.clientX; startY = e.clientY;
+        startLeft = rect.left; startTop = rect.top;
+        win.style.left = rect.left + "px";
+        win.style.top = rect.top + "px";
+        win.style.right = "auto";
+        handle.setPointerCapture(e.pointerId);
+      });
+      handle.addEventListener("pointermove", e => {
+        if(!dragging) return;
+        const nextLeft = clamp(startLeft + e.clientX - startX, 8, window.innerWidth - Math.min(win.offsetWidth, window.innerWidth - 16) - 8);
+        const nextTop = clamp(startTop + e.clientY - startY, 78, window.innerHeight - 100);
+        win.style.left = nextLeft + "px";
+        win.style.top = nextTop + "px";
+      });
+      handle.addEventListener("pointerup", e => {
+        dragging = false;
+        try{ handle.releasePointerCapture(e.pointerId); }catch(err){}
+      });
+    }
+
+    function deepMetricCard(labelText, value){
+      return `<div class="deep-stat"><div class="deep-stat-label">${esc(labelText)}</div><div class="deep-stat-value">${esc(value)}</div></div>`;
+    }
+
+    function deepSeriesStats(values){
+      const clean = (values || []).filter(v => Number.isFinite(v));
+      if(!clean.length) return {avg:"--", change:"--", high:"--", low:"--", vol:"--"};
+      const first = clean[0], last = clean[clean.length - 1];
+      const moves = clean.slice(1).map((v,i)=>Math.abs(v-clean[i]));
+      return {
+        avg: average(clean) ?? "--",
+        change: signed(last-first),
+        high: Math.max(...clean),
+        low: Math.min(...clean),
+        vol: moves.length ? Math.round(moves.reduce((a,b)=>a+b,0)/moves.length) : 0
+      };
+    }
+
+    function deepLineSvg(values, color, labelText){
+      const clean = (values && values.length ? values : [50,50,50,50,50,50,50,50]).map(v=>clamp(Number(v)||50,0,100));
+      const w = 420, h = 132, pad = 12, innerW = w - pad*2, innerH = h - pad*2;
+      const toPts = arr => arr.map((v,i)=>{
+        const x = pad + (i/(arr.length-1 || 1))*innerW;
+        const y = pad + (100-v)/100*innerH;
+        return [x,y];
+      });
+      const pathFromPts = pts => pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      const areaFromPts = pts => `${pathFromPts(pts)} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
+
+      const lineSeries = clean.map((v,i,arr)=>{
+        const prev = arr[i-1] ?? v;
+        const next = arr[i+1] ?? v;
+        return clamp(Math.round((prev + v*2 + next)/4),0,100);
+      });
+      const mountainSeries = clean.map((v,i)=>clamp(Math.round(18 + Math.abs(v-48)*0.45 + 8*Math.sin(i*0.7) + (i%3)*2),8,46));
+      const heatSeries = clean.map((v,i)=>clamp(Math.round(16 + Math.abs(v-45)*0.72 + 12*Math.cos(i*0.5) + 8),10,70));
+      const hazeSeries = clean.map((v,i)=>clamp(Math.round(10 + Math.abs(v-50)*0.55 + 6*Math.sin(i*0.4+1.2)),8,42));
+
+      const linePts = toPts(lineSeries);
+      const mountainPts = mountainSeries.map((v,i)=>{
+        const x = pad + (i/(mountainSeries.length-1 || 1))*innerW;
+        const y = h - pad - (v/100)*(innerH*0.92);
+        return [x,y];
+      });
+      const heatPts = heatSeries.map((v,i)=>{
+        const x = pad + (i/(heatSeries.length-1 || 1))*innerW;
+        const y = h - pad - (v/100)*(innerH*0.80);
+        return [x,y];
+      });
+      const hazePts = hazeSeries.map((v,i)=>{
+        const x = pad + (i/(hazeSeries.length-1 || 1))*innerW;
+        const y = h - pad - (v/100)*(innerH*0.70);
+        return [x,y];
+      });
+
+      const last = lineSeries[lineSeries.length-1];
+      const change = signed(last - lineSeries[0]);
+      const hi = Math.max(...lineSeries), lo = Math.min(...lineSeries);
+      const gradBg = `cloudBg${Math.round(Math.random()*100000)}`;
+      const gradMountain = `cloudMountain${Math.round(Math.random()*100000)}`;
+      const gradHeat = `cloudHeat${Math.round(Math.random()*100000)}`;
+      const gradHaze = `cloudHaze${Math.round(Math.random()*100000)}`;
+      const gradLine = `cloudLine${Math.round(Math.random()*100000)}`;
+      const glow = `cloudGlow${Math.round(Math.random()*100000)}`;
+      const blur = `cloudBlur${Math.round(Math.random()*100000)}`;
+      const scan = `cloudScan${Math.round(Math.random()*100000)}`;
+      const horizonY = h - pad - innerH*0.46;
+
+      return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
+        <defs>
+          <linearGradient id="${gradBg}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(12,17,26,.98)"/>
+            <stop offset="0.58" stop-color="rgba(11,15,22,.94)"/>
+            <stop offset="1" stop-color="rgba(7,10,15,.98)"/>
+          </linearGradient>
+          <linearGradient id="${gradMountain}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(167,178,196,.52)"/>
+            <stop offset="0.45" stop-color="rgba(105,116,132,.28)"/>
+            <stop offset="1" stop-color="rgba(30,36,46,.02)"/>
+          </linearGradient>
+          <linearGradient id="${gradHeat}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(255,109,109,.78)"/>
+            <stop offset="0.45" stop-color="rgba(255,71,87,.42)"/>
+            <stop offset="1" stop-color="rgba(255,71,87,0)"/>
+          </linearGradient>
+          <linearGradient id="${gradHaze}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(232,239,247,.18)"/>
+            <stop offset="1" stop-color="rgba(232,239,247,0)"/>
+          </linearGradient>
+          <linearGradient id="${gradLine}" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="rgba(255,199,199,.80)"/>
+            <stop offset="0.55" stop-color="rgba(255,93,93,.95)"/>
+            <stop offset="1" stop-color="rgba(255,146,146,.82)"/>
+          </linearGradient>
+          <filter id="${glow}" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="5.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="${blur}" x="-20%" y="-20%" width="140%" height="180%"><feGaussianBlur stdDeviation="10"/></filter>
+        </defs>
+        <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="url(#${gradBg})"/>
+        <text x="${pad}" y="16" class="deep-chart-label">24H CLOUD</text>
+        <text x="${w-116}" y="16" class="deep-chart-label">Range ${lo}-${hi}</text>
+        ${[0.24,0.48,0.72].map(t=>`<line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${(pad+innerH*t).toFixed(1)}" y2="${(pad+innerH*t).toFixed(1)}"/>`).join('')}
+        <line x1="${pad}" x2="${w-pad}" y1="${horizonY.toFixed(1)}" y2="${horizonY.toFixed(1)}" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 6"/>
+        <path d="${areaFromPts(hazePts)}" fill="url(#${gradHaze})" opacity=".85" filter="url(#${blur})" class="deep-chart-fill"/>
+        <path d="${areaFromPts(heatPts)}" fill="url(#${gradHeat})" opacity=".92" filter="url(#${glow})" class="deep-chart-fill"/>
+        <path d="${areaFromPts(mountainPts)}" fill="url(#${gradMountain})" opacity=".95" class="deep-chart-fill"/>
+        <path d="${pathFromPts(mountainPts)}" fill="none" stroke="rgba(232,239,247,.34)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="${pathFromPts(heatPts)}" fill="none" stroke="rgba(255,87,87,.58)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#${glow})"/>
+        <path d="${pathFromPts(linePts)}" fill="none" stroke="url(#${gradLine})" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#${glow})" style="animation-duration:1.8s,5s"/>
+        <rect x="${pad}" y="${h-28}" width="${innerW}" height="12" rx="6" fill="rgba(255,255,255,.03)"/>
+        <rect x="${pad}" y="${h-28}" width="${(innerW*0.58).toFixed(1)}" height="12" rx="6" fill="rgba(255,82,82,.14)">
+          <animate attributeName="width" values="${(innerW*0.42).toFixed(1)};${(innerW*0.64).toFixed(1)};${(innerW*0.58).toFixed(1)}" dur="5.5s" repeatCount="indefinite"/>
+        </rect>
+        ${linePts.slice(-4).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===3?4.4:2.4}" fill="${i===3?'#ffffff':'rgba(255,190,190,.55)'}" class="deep-chart-dot"><animate attributeName="opacity" values=".35;1;.35" dur="${2.3 + i*0.2}s" repeatCount="indefinite"/></circle>`).join('')}
+        <g transform="translate(${w-96} 22)">
+          <rect x="0" y="0" width="76" height="44" rx="10" fill="rgba(9,14,22,.72)" stroke="rgba(255,255,255,.08)"/>
+          <text x="38" y="18" fill="#8ba0bc" font-size="9" font-weight="800" text-anchor="middle">LIVE SIGNAL</text>
+          <text x="38" y="33" fill="#fff" font-size="18" font-weight="900" text-anchor="middle">${last}</text>
+          <text x="38" y="42" fill="#ff8f8f" font-size="9" font-weight="800" text-anchor="middle">Δ ${change}</text>
+        </g>
+      </svg>`;
+    }
+
+    function deepBarsSvg(values, color, labelText){
+      const clean = (values && values.length ? values : [50,50,50,50]).slice(-12).map(v=>clamp(Number(v)||50,0,100));
+      const w=420,h=132;
+      const cx=116, cy=66, r=50;
+      const avg = Math.round(clean.reduce((a,b)=>a+b,0)/clean.length);
+      const change = signed(clean[clean.length-1] - clean[0]);
+      const vol = Math.round(clean.reduce((a,b)=>a + Math.abs(b-avg), 0) / clean.length);
+      const maxv = Math.max(...clean, 1);
+      const barBaseX = 76, barBaseY = 100, barAreaW = 80;
+      const step = barAreaW / clean.length;
+      const ring1 = `lensRing${Math.round(Math.random()*100000)}`;
+      const ring2 = `lensRingB${Math.round(Math.random()*100000)}`;
+      const globe = `lensGlobe${Math.round(Math.random()*100000)}`;
+      const lines = [-24,-12,0,12,24].map(y=>`<ellipse cx="${cx}" cy="${cy+y*0.22}" rx="${(r - Math.abs(y)*0.4).toFixed(1)}" ry="${(12 - Math.abs(y)*0.08).toFixed(1)}" fill="none" stroke="rgba(255,255,255,.08)"/>`).join('');
+      const longs = [-36,-18,0,18,36].map(x=>`<ellipse cx="${cx+x*0.18}" cy="${cy}" rx="${(8 + Math.abs(x)*0.22).toFixed(1)}" ry="${r.toFixed(1)}" fill="none" stroke="rgba(255,255,255,.06)"/>`).join('');
+      const bars = clean.map((v,i)=>{
+        const bh = 12 + (v/maxv)*42;
+        const x = barBaseX + i*step + 1;
+        const y = barBaseY - bh;
+        const fill = i > clean.length-4 ? 'url(#histHot)' : 'url(#histCool)';
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(4, step-3).toFixed(1)}" height="${bh.toFixed(1)}" rx="3.5" fill="${fill}" opacity=".96" class="deep-chart-bar" style="animation-delay:${(i*0.05).toFixed(2)}s"/>`;
+      }).join('');
+      const orbitDots = [0,72,144,216,288].map((deg,i)=>{
+        const rad = deg * Math.PI/180;
+        const rr = 58 + (i%2)*8;
+        const x = cx + Math.cos(rad) * rr;
+        const y = cy + Math.sin(rad) * rr;
+        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i===0?3.8:2.8}" fill="${i%2===0?'#ffd25a':'#67e8f9'}" opacity=".85"><animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="${12 + i*2}s" repeatCount="indefinite"/></circle>`;
+      }).join('');
+      return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
+        <defs>
+          <radialGradient id="${globe}" cx="50%" cy="50%" r="58%">
+            <stop offset="0" stop-color="rgba(111,190,255,.30)"/>
+            <stop offset="0.55" stop-color="rgba(35,64,115,.18)"/>
+            <stop offset="1" stop-color="rgba(6,10,16,.02)"/>
+          </radialGradient>
+          <linearGradient id="${ring1}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="rgba(88,166,255,.96)"/><stop offset="1" stop-color="rgba(255,94,202,.84)"/></linearGradient>
+          <linearGradient id="${ring2}" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stop-color="rgba(255,208,92,.95)"/><stop offset="1" stop-color="rgba(255,116,88,.84)"/></linearGradient>
+          <linearGradient id="histCool" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(103,232,249,.96)"/><stop offset="1" stop-color="rgba(88,166,255,.68)"/></linearGradient>
+          <linearGradient id="histHot" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(255,210,90,.98)"/><stop offset="1" stop-color="rgba(255,94,202,.70)"/></linearGradient>
+        </defs>
+        <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.20)"/>
+        <text x="14" y="16" class="deep-chart-label">Sentiment Lens</text>
+        <text x="${w-120}" y="16" class="deep-chart-label">30 Day Orbit</text>
+        <g>
+          <circle cx="${cx}" cy="${cy}" r="${r+14}" fill="none" stroke="url(#${ring2})" stroke-width="1.5" opacity=".48"/>
+          <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2"/>
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${globe})" stroke="url(#${ring1})" stroke-width="2.6"/>
+          <circle cx="${cx}" cy="${cy}" r="${r-14}" fill="none" stroke="rgba(255,255,255,.08)"/>
+          ${lines}
+          ${longs}
+          <g clip-path="url(#lensClip)"></g>
+          <clipPath id="lensClip"><circle cx="${cx}" cy="${cy}" r="${r-6}"/></clipPath>
+          <g clip-path="url(#lensClip)">
+            <rect x="${cx-r+6}" y="${cy-r+6}" width="${(r-6)*2}" height="${(r-6)*2}" fill="rgba(5,10,16,.10)"/>
+            ${bars}
+            <path d="M${barBaseX},${barBaseY-22} ${clean.map((v,i)=>`L${(barBaseX + i*step + step/2).toFixed(1)},${(104 - (v/maxv)*34).toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(255,255,255,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.7s,4.5s"/>
+          </g>
+          ${orbitDots}
+          <circle cx="${cx}" cy="${cy}" r="11" fill="rgba(5,8,14,.92)" stroke="rgba(255,255,255,.12)"/>
+          <text x="${cx}" y="${cy+4}" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">${avg}</text>
+        </g>
+        <g transform="translate(228 26)">
+          <rect x="0" y="0" width="168" height="82" rx="14" fill="rgba(8,13,21,.58)" stroke="rgba(255,255,255,.06)"/>
+          <text x="14" y="18" class="deep-chart-label">Lens Readout</text>
+          <text x="14" y="39" fill="#fff" font-size="26" font-weight="900">${clean[clean.length-1]}</text>
+          <text x="72" y="39" fill="#8ba0bc" font-size="10" font-weight="800">CURRENT PSI</text>
+          <text x="14" y="58" fill="#ffd25a" font-size="14" font-weight="900">${change}</text>
+          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">30D CHANGE</text>
+          <text x="14" y="74" fill="#67e8f9" font-size="14" font-weight="900">VOL ${vol}</text>
+          <text x="84" y="74" fill="#8ba0bc" font-size="10" font-weight="800">STABILITY ${Math.max(0,100-vol)}</text>
+        </g>
+      </svg>`;
+    }
+
+    function deepInstrumentThemes(name){
+      const n = String(name || '').toLowerCase();
+      if(/gold|silver|oil|gas|crude|copper|aluminum/.test(n)) return ['Macro','Supply','Inflation','Flows'];
+      if(/bitcoin|ethereum|crypto/.test(n)) return ['Momentum','Risk','Flows','Narrative'];
+      if(/yield|bond|treasury|dxy|usd|eur|jpy|gbp|forex/.test(n)) return ['Rates','Macro','Policy','Flows'];
+      if(/vix|vol/.test(n)) return ['Risk','Vol','Macro','Hedge'];
+      return ['Earnings','Macro','Flows','Breadth'];
+    }
+
+    function deepNewsFusionSvg(data, instrumentName, stats){
+      const score = Number(data.score) || 50;
+      const headlines = Number(data.headlines || 0);
+      const bull = clamp(Math.round(score), 0, 100);
+      const bear = clamp(100 - bull, 0, 100);
+      const neutral = clamp(100 - Math.abs(score - 50) * 2, 0, 100);
+      const intensity = stats.intensity;
+      const uid = Math.round(Math.random()*100000);
+      const pulse = Array.from({length: 13}, (_, i) => clamp(Math.round(28 + Math.sin(i*0.58 + score/17) * 14 + Math.cos(i*0.35) * 9 + score*0.22), 14, 90));
+      const barSeries = Array.from({length: 9}, (_, i) => clamp(Math.round(20 + Math.abs(Math.cos(i*0.62 + score/19))*44 + (i%3)*5), 14, 92));
+      const linePts = pulse.map((v,i)=>[210 + i * 15, 104 - (v/100) * 58]);
+      const linePath = linePts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      const areaPath = `${linePath} L${linePts[linePts.length-1][0]},134 L210,134 Z`;
+      const bars = barSeries.map((v,i)=>{
+        const x = 216 + i*19;
+        const h = (v/100)*32;
+        const y = 146 - h;
+        return `<rect x="${x}" y="${y.toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="4" fill="url(#orbBar${uid})" opacity="${(0.66 + i*0.03).toFixed(2)}"/>`;
+      }).join('');
+      const themes = deepInstrumentThemes(instrumentName);
+      const dots = themes.map((t,i)=>`<g transform="translate(${34 + i*42} 146)"><circle r="6.5" fill="rgba(6,10,16,.88)" stroke="rgba(255,255,255,.14)"/><circle r="3" fill="${['#67e8f9','#f472b6','#facc15','#60a5fa'][i%4]}" filter="url(#orbGlow${uid})"/><text x="0" y="18" fill="#aab7cb" font-size="7.5" font-weight="800" text-anchor="middle">${esc(t.slice(0,4).toUpperCase())}</text></g>`).join('');
+      return `<svg viewBox="0 0 420 166" preserveAspectRatio="none" aria-label="News and article fusion chart">
+        <defs>
+          <radialGradient id="orbCore${uid}" cx="50%" cy="45%" r="62%">
+            <stop offset="0" stop-color="rgba(255,116,92,.95)"/>
+            <stop offset="0.34" stop-color="rgba(255,151,83,.78)"/>
+            <stop offset="0.62" stop-color="rgba(66,205,255,.28)"/>
+            <stop offset="1" stop-color="rgba(8,12,18,0)"/>
+          </radialGradient>
+          <linearGradient id="orbLine${uid}" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="rgba(255,118,118,.60)"/>
+            <stop offset="0.55" stop-color="rgba(255,74,74,.98)"/>
+            <stop offset="1" stop-color="rgba(255,184,184,.72)"/>
+          </linearGradient>
+          <linearGradient id="orbArea${uid}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(255,84,84,.34)"/>
+            <stop offset="1" stop-color="rgba(255,84,84,0)"/>
+          </linearGradient>
+          <linearGradient id="orbBar${uid}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(255,210,90,.96)"/>
+            <stop offset="1" stop-color="rgba(255,88,106,.68)"/>
+          </linearGradient>
+          <filter id="orbGlow${uid}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <clipPath id="orbClip${uid}"><circle cx="91" cy="80" r="43"/></clipPath>
+        </defs>
+        <rect x="0" y="0" width="420" height="166" rx="18" fill="rgba(6,10,16,.98)"/>
+        <text x="16" y="17" fill="#8ea1bc" font-size="9.5" font-weight="900" letter-spacing=".08em">NARRATIVE ORB</text>
+        <text x="208" y="17" fill="#8ea1bc" font-size="9.5" font-weight="900" letter-spacing=".08em">ARTICLE FLOW</text>
+
+        <g>
+          <circle cx="91" cy="80" r="67" fill="none" stroke="rgba(86,168,255,.14)" stroke-width="2"/>
+          <circle cx="91" cy="80" r="56" fill="none" stroke="rgba(255,86,86,.14)" stroke-width="2"/>
+          <circle cx="91" cy="80" r="47" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2" stroke-dasharray="4 6"/>
+          <circle cx="91" cy="80" r="43" fill="url(#orbCore${uid})" stroke="rgba(255,255,255,.13)" stroke-width="1.4"/>
+          <g clip-path="url(#orbClip${uid})">
+            ${Array.from({length:7},(_,i)=>{ const h = 16 + (i%4)*7 + Math.round(score/12); const x = 60 + i*9; const y = 111 - h; return `<rect x="${x}" y="${y}" width="6" height="${h}" rx="2" fill="url(#orbBar${uid})" opacity="${(0.58+i*0.05).toFixed(2)}"/>`; }).join('')}
+            <path d="M49,99 C66,88 80,78 91,80 C105,82 117,76 135,59" fill="none" stroke="rgba(255,255,255,.68)" stroke-width="2" stroke-linecap="round" filter="url(#orbGlow${uid})"/>
+          </g>
+          <text x="91" y="76" fill="#ffffff" font-size="18" font-weight="900" text-anchor="middle">${pressureLabel(score)}</text>
+          <text x="91" y="92" fill="#d6deeb" font-size="9.5" font-weight="800" text-anchor="middle">${headlines.toLocaleString()} ARTICLES</text>
+          <text x="91" y="106" fill="#ffd76b" font-size="9" font-weight="900" text-anchor="middle">INTENSITY ${intensity}</text>
+          ${dots}
+        </g>
+
+        <g>
+          ${[0,1,2,3].map(i=>`<line x1="208" x2="402" y1="${36 + i*25}" y2="${36 + i*25}" stroke="rgba(255,255,255,.065)"/>`).join('')}
+          <path d="${areaPath}" fill="url(#orbArea${uid})"/>
+          <path d="${linePath}" fill="none" stroke="url(#orbLine${uid})" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#orbGlow${uid})" style="animation-duration:1.7s,4.6s"/>
+          ${linePts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===linePts.length-1?3.8:2}" fill="${i===linePts.length-1?'#fff':'rgba(255,170,170,.60)'}" class="deep-chart-dot"/>`).join('')}
+          ${bars}
+          <rect x="208" y="27" width="194" height="126" rx="14" fill="none" stroke="rgba(255,255,255,.07)"/>
+          <g transform="translate(300 24)">
+            <rect x="0" y="0" width="86" height="30" rx="12" fill="rgba(8,13,21,.76)" stroke="rgba(255,255,255,.08)"/>
+            <text x="43" y="12" fill="#8ea1bc" font-size="7.5" font-weight="900" text-anchor="middle">VELOCITY</text>
+            <text x="43" y="23" fill="#fff" font-size="13" font-weight="900" text-anchor="middle">${intensity}/100</text>
+          </g>
+          <text x="212" y="160" fill="#7f93af" font-size="8" font-weight="800">source pulse + theme pressure + article flow</text>
+        </g>
+      </svg>`;
+    }
+
+    function pressureLabel(score){
+      return score > 58 ? 'BULL' : score < 44 ? 'BEAR' : 'BAL';
+    }
+
+    function deepNewsBars(data, instrumentName, slot){
+      const score = Number(data.score) || 50;
+      const headlines = Number(data.headlines || 0);
+      const bullish = clamp(Math.round(score),0,100);
+      const bearish = clamp(100-bullish,0,100);
+      const neutral = clamp(100-Math.abs(score-50)*2,0,100);
+      const intensity = clamp(Math.round(Math.min(100, 28 + Math.log10(headlines + 10) * 18)), 18, 100);
+      const pressure = score > 58 ? 'Bullish' : score < 44 ? 'Bearish' : 'Balanced';
+      const themes = deepInstrumentThemes(instrumentName).map((label, idx)=>({
+        label,
+        value: clamp(Math.round((score + idx*11 + (headlines % 19)) % 100),24,96),
+        mood: ['Narrative flow','Theme expansion','Source clustering','Momentum cross-check'][idx % 4]
+      }));
+      return `<div class="deep-news-fusion">
+        <div class="deep-news-holo">${deepNewsFusionSvg(data, instrumentName, { intensity })}</div>
+        <div class="deep-news-meta">
+          <div class="deep-news-kpi"><span>Pressure</span><b>${pressure}</b><small>${bullish}% bull / ${bearish}% bear</small></div>
+          <button class="deep-news-kpi deep-news-kpi-button" type="button" onclick="openArticleLoadPageFromSlot(${slot})"><span>Article Load</span><b>${headlines.toLocaleString()}</b><small>Intensity ${intensity}/100</small><small class="deep-click-note">Click to open articles</small></button>
+          <div class="deep-news-kpi"><span>Source Bias</span><b>${esc(data.user || 'Mixed')}</b><small>${esc(data.sentiment || 'Neutral')} narrative</small></div>
+          <div class="deep-news-kpi"><span>Neutrality</span><b>${neutral}%</b><small>Balance between bullish and bearish pressure</small></div>
+        </div>
+        <div class="deep-news-themes">
+          ${themes.map(t=>`<div class="deep-news-theme-pill"><span>${esc(t.label)}</span><b>${t.value}%</b><small>${esc(t.mood)}</small></div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    function deepTechCompass(data, series, instrumentName){
+      const score = Number(data.score) || 50;
+      const st = deepSeriesStats(series);
+      const headlines = Number(data.headlines || 0);
+      const trend = clamp(Math.round((Number(st.avg) || score) + Math.sign(parseInt(st.change,10)||0)*8), 0, 100);
+      const momentum = clamp(Math.round(50 + (parseInt(st.change,10)||0)*5), 0, 100);
+      const participation = clamp(Math.round(Math.min(100, 35 + Math.log10(headlines + 10) * 16)), 0, 100);
+      const alignment = clamp((data.tech === 'Up' && data.user === 'Bullish') || (data.tech === 'Down' && data.user === 'Bearish') ? 84 : data.sentiment === 'Neutral' ? 58 : 68, 0, 100);
+      const volatility = clamp(Math.round(Math.max(10, 100 - ((Number(st.vol)||0) * 8))),0,100);
+      const factors = [
+        ['Trend', trend],
+        ['Momentum', momentum],
+        ['Narrative', participation],
+        ['Alignment', alignment],
+        ['Stability', volatility]
+      ];
+      const factorNotes = {
+        Trend: 'Directional strength',
+        Momentum: 'Rate of change',
+        Narrative: 'Headline intensity',
+        Alignment: 'User vs tech agreement',
+        Stability: 'Lower noise = higher score'
+      };
+      const cx=130, cy=130, outer=108, levels=[28,48,68,88,108];
+      const pointsFor = r => factors.map((_,i)=>{
+        const ang = (-90 + i*(360/factors.length)) * Math.PI/180;
+        return [cx + Math.cos(ang)*r, cy + Math.sin(ang)*r];
+      });
+      const gridPolys = levels.map((r,idx)=>`<polygon points="${pointsFor(r).map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${idx === levels.length-1 ? 'rgba(110,170,255,.28)' : 'rgba(255,255,255,.06)'}" stroke-width="${idx === levels.length-1 ? '1.2' : '1'}"/>`).join('');
+      const rings = [32,56,80,104].map(r=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(110,170,255,.08)" stroke-dasharray="${r%2===0?'3 7':'2 6'}"/>`).join('');
+      const axes = pointsFor(outer).map((p,i)=>`<g><line x1="${cx}" y1="${cy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" stroke="rgba(255,255,255,.07)"/><text x="${(p[0] + (p[0]>cx?16:-16)).toFixed(1)}" y="${(p[1] + (p[1]>cy?15:-7)).toFixed(1)}" fill="#eaf3ff" font-size="10.2" font-weight="950" text-anchor="middle">${esc(factors[i][0].slice(0,4).toUpperCase())}</text></g>`).join('');
+      const shapePts = factors.map(([,v],i)=>{
+        const ang = (-90 + i*(360/factors.length)) * Math.PI/180;
+        const r = (v/100)*outer;
+        return [cx + Math.cos(ang)*r, cy + Math.sin(ang)*r];
+      });
+      const polygon = shapePts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ');
+      const theme = { dominant: (deepInstrumentThemes(instrumentName)[0] || 'Mixed') };
+      const badge = score > 58 ? 'Risk-On' : score < 44 ? 'Risk-Off' : 'Balanced';
+      const nextBias = parseInt(st.change,10) > 0 ? 'Continuation' : parseInt(st.change,10) < 0 ? 'Cooling' : 'Stable';
+      const aiSync = clamp(Math.round((alignment + volatility) / 2), 0, 100);
+      const neuralRead = clamp(Math.round((momentum + participation) / 2), 0, 100);
+      return `<div class="deep-radar-wrap">
+        <div class="deep-radar-card">
+          <svg class="deep-radar-svg" viewBox="0 0 260 260" aria-label="Signal Confluence Radar for ${esc(instrumentName)}">
+            <defs>
+              <radialGradient id="radBg${score}" cx="50%" cy="48%" r="60%">
+                <stop offset="0%" stop-color="rgba(34,61,110,.42)"/>
+                <stop offset="60%" stop-color="rgba(10,16,26,.18)"/>
+                <stop offset="100%" stop-color="rgba(5,8,14,0)"/>
+              </radialGradient>
+              <linearGradient id="radFill${score}" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stop-color="rgba(94,231,255,.42)"/>
+                <stop offset="48%" stop-color="rgba(93,167,255,.26)"/>
+                <stop offset="100%" stop-color="rgba(255,94,202,.20)"/>
+              </linearGradient>
+              <linearGradient id="radStroke${score}" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stop-color="#61f0ff"/>
+                <stop offset="55%" stop-color="#5da7ff"/>
+                <stop offset="100%" stop-color="#ff74d4"/>
+              </linearGradient>
+              <linearGradient id="sweep${score}" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stop-color="rgba(97,240,255,0)"/>
+                <stop offset="60%" stop-color="rgba(97,240,255,.15)"/>
+                <stop offset="100%" stop-color="rgba(97,240,255,.34)"/>
+              </linearGradient>
+            </defs>
+            <circle cx="${cx}" cy="${cy}" r="118" fill="url(#radBg${score})"/>
+            ${rings}
+            ${gridPolys}
+            <g opacity=".94">${axes}</g>
+            <g>
+              <path d="M ${cx} ${cy} L ${cx} ${cy-104} A 104 104 0 0 1 ${cx+52} ${cy-90} Z" fill="url(#sweep${score})">
+                <animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="9.8s" repeatCount="indefinite"/>
+              </path>
+            </g>
+            <polygon points="${polygon}" fill="url(#radFill${score})" stroke="url(#radStroke${score})" stroke-width="2.8"/>
+            ${shapePts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.6" fill="${i%2===0?'#61f0ff':'#ff74d4'}" stroke="rgba(255,255,255,.26)" stroke-width="1"><animate attributeName="r" values="4.6;6.2;4.6" dur="2.8s" repeatCount="indefinite" begin="${i*0.2}s"/></circle>`).join('')}
+            <circle cx="${cx}" cy="${cy}" r="38" fill="rgba(6,10,16,.98)" stroke="rgba(114,175,255,.24)" stroke-width="1.5"/>
+            <circle cx="${cx}" cy="${cy}" r="25" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="3 6"><animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="13s" repeatCount="indefinite"/></circle>
+            <text x="${cx}" y="${cy-2}" fill="#ffffff" font-size="26" font-weight="950" text-anchor="middle">${score}</text>
+            <text x="${cx}" y="${cy+15}" fill="#b4f8ff" font-size="10.2" font-weight="950" text-anchor="middle">AI CORE</text>
+            <g opacity=".94">
+              <circle cx="42" cy="216" r="5" fill="#61f0ff"/>
+              <circle cx="220" cy="40" r="4.2" fill="#ff74d4"/>
+              <circle cx="207" cy="212" r="3.8" fill="#ffd780"/>
+              <circle cx="55" cy="46" r="3.4" fill="#5da7ff"/>
+            </g>
+          </svg>
+        </div>
+        <div class="deep-radar-legend">
+          <div class="deep-radar-head"><div><span>AI Confluence Engine</span><b>${badge}</b></div><em>Sync ${aiSync}%</em></div>
+          <div class="deep-radar-metrics">
+            ${factors.map(([label,val])=>`<div class="deep-radar-metric"><span>${esc(label)}</span><b>${val}</b><small>${esc(factorNotes[label] || 'Signal factor')}</small><div class="deep-radar-metric-line"><i style="width:${val}%"></i></div></div>`).join('')}
+          </div>
+        </div>
+        <div class="deep-radar-signal">
+          <div><span>Next Read</span><b>${nextBias}</b></div>
+          <div><span>Neural Read</span><b>${neuralRead}</b></div>
+          <div><span>Theme</span><b>${esc(theme.dominant || '--')}</b></div>
+          <div><span>Tech</span><b>${esc(data.tech || '--')}</b></div>
+          <div><span>User</span><b>${esc(data.user || '--')}</b></div>
+          <div><span>Stability</span><b>${volatility}</b></div>
+        </div>
+      </div>`;
+    }
+
+    function renderDeepWindowContent(win, id, slot){
+      const instrumentName = selected[slot];
+      const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
+      const data = calcInstrument(ins);
+      const color = sentimentColor(data.score);
+      const path24 = data.series || makeSeries(instrumentName, data.score || 50);
+      const path30 = makeSkylineSeries(instrumentName, data.score || 50);
+      const stats24 = deepSeriesStats(path24);
+      const stats30 = deepSeriesStats(path30);
+      win.setAttribute("data-deep-slot", String(slot));
+      win.setAttribute("aria-label", `${instrumentName} Deep Analysis`);
+      win.innerHTML = `
+        <div class="deep-window-header">
+          <div>
+            <div class="deep-window-kicker">Deep Analysis Lab</div>
+            <div class="deep-window-title">${esc(instrumentName)}</div>
+            <div class="deep-window-sub">Phase 1 placeholder window. This updates automatically when the card instrument changes.</div>
+          </div>
+          <button class="deep-window-close" type="button" aria-label="Close Deep Analysis" onclick="closeDeepAnalysis('${id}')">×</button>
+        </div>
+        <div class="deep-window-body">
+          <div class="deep-stat-grid">
+            ${deepMetricCard("PSI", data.score ?? "--")}
+            ${deepMetricCard("Sentiment", data.sentiment || "--")}
+            ${deepMetricCard("User", data.user || "--")}
+            ${deepMetricCard("Tech", data.tech || "--")}
+            ${deepMetricCard("Headlines", Number(data.headlines || 0).toLocaleString())}
+          </div>
+          <div class="deep-section-grid">
+            <div class="deep-section">
+              <h3>24H Sentiment Cloud</h3>
+              <p>Layered cloud-style intraday flow with glowing pressure zones and carried-forward motion between scraper runs.</p>
+              ${deepLineSvg(path24, color, "24H Sentiment Cloud")}
+              <div class="deep-mini-row">
+                <div class="deep-mini-metric"><span>Now</span><b>${data.score ?? "--"}</b></div>
+                <div class="deep-mini-metric"><span>Change</span><b>${stats24.change}</b></div>
+                <div class="deep-mini-metric"><span>Range</span><b>${stats24.low}/${stats24.high}</b></div>
+              </div>
+            </div>
+            <div class="deep-section">
+              <h3>Sentiment Lens & Histogram</h3>
+              <p>Lens-style monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
+              ${deepBarsSvg(path30, color, "Sentiment Lens & Histogram")}
+              <div class="deep-mini-row">
+                <div class="deep-mini-metric"><span>Avg</span><b>${stats30.avg}</b></div>
+                <div class="deep-mini-metric"><span>Change</span><b>${stats30.change}</b></div>
+                <div class="deep-mini-metric"><span>Vol</span><b>${stats30.vol}</b></div>
+              </div>
+            </div>
+            <div class="deep-section">
+              <h3>News & Article Summary</h3>
+              <p>Pressure spectrum, article velocity, and theme balance for the selected instrument.</p>
+              ${deepNewsBars(data, instrumentName, slot)}
+            </div>
+            <div class="deep-section">
+              <h3>Signal Confluence Radar</h3>
+              <p>Advanced factor view showing trend, momentum, narrative intensity, and alignment strength.</p>
+              ${deepTechCompass(data, path30, instrumentName)}
+            </div>
+          </div>
+        </div>`;
+      makeDeepWindowDraggable(win);
+    }
+
+    function articleSentimentFromScore(score, index){
+      const s = clamp(Math.round(Number(score || 50) + Math.sin(index * .9) * 18 + (index % 3 - 1) * 7), 0, 100);
+      if(s >= 60) return {label:"Bullish", score:s, cls:"badge-bullish"};
+      if(s <= 40) return {label:"Bearish", score:s, cls:"badge-bearish"};
+      return {label:"Neutral", score:s, cls:"badge-neutral"};
+    }
+
+    function buildArticleRows(slot, sortMode){
+      const instrumentName = selected[slot] || "Selected Instrument";
+      const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
+      const data = calcInstrument(ins);
+      const themes = deepInstrumentThemes(instrumentName);
+      const sourceMap = {
+        "Reuters Pulse":"https://www.reuters.com/",
+        "CNBC Markets":"https://www.cnbc.com/markets/",
+        "MarketWatch Flow":"https://www.marketwatch.com/",
+        "Kitco News":"https://www.kitco.com/news",
+        "Yahoo Finance":"https://finance.yahoo.com/",
+        "Investing.com":"https://www.investing.com/",
+        "Bloomberg Wire":"https://www.bloomberg.com/markets",
+        "FXStreet":"https://www.fxstreet.com/"
+      };
+      const sources = Object.keys(sourceMap);
+      let rows = Array.from({length:10}, (_,i)=>{
+        const sent = articleSentimentFromScore(data.score, i);
+        const theme = themes[i % themes.length];
+        const source = sources[(i + instrumentName.length) % sources.length];
+        const age = i === 0 ? "Latest" : `${i * 2 + 1}h ago`;
+        const title = `${instrumentName} ${theme.toLowerCase()} narrative ${sent.label.toLowerCase()} pressure signal #${i+1}`;
+        return {
+          title,
+          source,
+          sourceUrl: sourceMap[source] || '#',
+          storyUrl: `${sourceMap[source] || 'https://www.google.com/search?q='}${sourceMap[source] ? '' : encodeURIComponent(title)}`,
+          theme,
+          age,
+          sentiment:sent.label,
+          score:sent.score
+        };
+      });
+      if(sortMode === "bullish") rows.sort((a,b)=>b.score-a.score);
+      if(sortMode === "bearish") rows.sort((a,b)=>a.score-b.score);
+      if(sortMode === "source") rows.sort((a,b)=>a.source.localeCompare(b.source));
+      if(sortMode === "theme") rows.sort((a,b)=>a.theme.localeCompare(b.theme));
+      return {instrumentName, data, rows};
+    }
+
+    function renderArticleLoadPage(slot, sortMode){
+      const {instrumentName, data, rows} = buildArticleRows(slot, sortMode || "newest");
+      const page = document.getElementById("deepArticlePage");
+      if(!page) return;
+      page.setAttribute("data-article-slot", String(slot));
+      page.innerHTML = `
+        <div class="deep-article-header">
+          <div>
+            <div class="deep-article-kicker">Article Load Drilldown</div>
+            <div class="deep-article-title">${esc(instrumentName)}</div>
+            <div class="deep-article-sub">Lab preview page. Live article connection and exact article data will come in Phase 2.</div>
+          </div>
+          <button class="deep-article-close" type="button" onclick="closeArticleLoadPage()" aria-label="Close article drilldown">×</button>
+        </div>
+        <div class="deep-article-body">
+          <div class="deep-article-tools">
+            <label>Showing ${Number(data.headlines || 0).toLocaleString()} article-load signal(s)</label>
+            <select onchange="renderArticleLoadPage(${slot}, this.value)">
+              <option value="newest"${sortMode==="newest"?" selected":""}>Sort: Newest</option>
+              <option value="bullish"${sortMode==="bullish"?" selected":""}>Sort: Bullish pressure</option>
+              <option value="bearish"${sortMode==="bearish"?" selected":""}>Sort: Bearish pressure</option>
+              <option value="source"${sortMode==="source"?" selected":""}>Sort: Source</option>
+              <option value="theme"${sortMode==="theme"?" selected":""}>Sort: Theme</option>
+            </select>
+          </div>
+          <div class="deep-article-note">This is the correct structure for Phase 2: click Article Load → open article list → sort by source, theme, freshness, or sentiment pressure.</div>
+          <div class="deep-article-list">
+            ${rows.map(r=>`<article class="deep-article-row">
+              <div class="deep-article-score">${r.score}</div>
+              <div>
+                <a class="deep-article-headline" href="${esc(r.storyUrl)}" target="_blank" rel="noopener noreferrer">${esc(r.title)} ↗</a>
+                <div class="deep-article-meta">${esc(r.source)} • ${esc(r.theme)} • ${esc(r.age)}</div>
+                <div class="deep-article-links">
+                  <a class="deep-article-link" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener noreferrer">Visit source ↗</a>
+                  <a class="deep-article-link" href="${esc(r.storyUrl)}" target="_blank" rel="noopener noreferrer">Open article signal ↗</a>
+                </div>
+              </div>
+              <div class="deep-article-pill ${r.sentiment === "Bullish" ? "badge-bullish" : r.sentiment === "Bearish" ? "badge-bearish" : "badge-neutral"}">${esc(r.sentiment)}</div>
+            </article>`).join("")}
+          </div>
+        </div>`;
+    }
+
+    function openArticleLoadPageFromSlot(slot){
+      let page = document.getElementById("deepArticlePage");
+      if(!page){
+        page = document.createElement("section");
+        page.id = "deepArticlePage";
+        page.className = "deep-article-page";
+        page.setAttribute("role","dialog");
+        document.body.appendChild(page);
+      }
+      renderArticleLoadPage(Number(slot), "newest");
+    }
+
+    function closeArticleLoadPage(){
+      const page = document.getElementById("deepArticlePage");
+      if(page) page.remove();
+    }
+
+    function updateDeepWindowForSlot(slot){
+      const open = deepWindows.find(x => x.slot === slot);
+      if(!open) return;
+      const win = document.querySelector(`[data-deep-id="${open.id}"]`);
+      if(!win) return;
+      open.instrument = selected[slot];
+      renderDeepWindowContent(win, open.id, slot);
+      focusDeepWindow(win);
+    }
+
+    function updateAllDeepWindows(){
+      deepWindows.slice().forEach(open => {
+        const win = document.querySelector(`[data-deep-id="${open.id}"]`);
+        if(win){
+          open.instrument = selected[open.slot];
+          renderDeepWindowContent(win, open.id, open.slot);
+        }
+      });
+      reflowDeepWindows();
+    }
+
+    function handleInstrumentChange(slot, value){
+      selected[Number(slot)] = value;
+      renderAll();
+      updateDeepWindowForSlot(Number(slot));
+      const articlePage = document.getElementById("deepArticlePage");
+      if(articlePage && Number(articlePage.getAttribute("data-article-slot")) === Number(slot)){
+        renderArticleLoadPage(Number(slot), "newest");
+      }
+    }
+
+    function openDeepAnalysis(slot){
+      const existing = deepWindows.find(x => x.slot === slot);
+      if(existing){
+        const current = document.querySelector(`[data-deep-id="${existing.id}"]`);
+        if(current){
+          renderDeepWindowContent(current, existing.id, slot);
+          focusDeepWindow(current);
+        }
+        showDeepToast(`Slot ${slot + 1} Deep Analysis is already open.`);
+        return;
+      }
+      if(deepWindows.length >= 2){
+        showDeepToast("Maximum 2 Deep Analysis windows can be open at once.");
+        return;
+      }
+
+      const layer = document.getElementById("deepAnalysisLayer") || document.body;
+      const id = "deep-" + Date.now() + "-" + slot;
+      deepWindows.push({id, slot, instrument:selected[slot]});
+
+      const win = document.createElement("section");
+      win.className = "deep-analysis-window" + (deepWindows.length === 2 ? " second" : "");
+      win.setAttribute("data-deep-id", id);
+      win.setAttribute("role", "dialog");
+      renderDeepWindowContent(win, id, slot);
+      layer.appendChild(win);
+      focusDeepWindow(win);
+      reflowDeepWindows();
+    }
+
+    window.openDeepAnalysis = openDeepAnalysis;
+    window.closeDeepAnalysis = closeDeepAnalysis;
+    window.handleInstrumentChange = handleInstrumentChange;
+    window.openArticleLoadPageFromSlot = openArticleLoadPageFromSlot;
+    window.closeArticleLoadPage = closeArticleLoadPage;
+    window.renderArticleLoadPage = renderArticleLoadPage;
+
+    function renderControls(){
+      const box = document.getElementById("marketControls");
+      if(box) box.innerHTML = "";
+    }
+    function instrumentOptions(selectedName){
+      return INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
+    }
+    function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
+    function renderCards(data){
+      document.getElementById("snapshotCards").innerHTML = data.map((d, idx) => {
+        const c = sentimentColor(d.score);
+        return `<article class="sentiment-card">
+          <div class="card-control-strip">
+            <select class="lab-select" data-slot="${idx}" onchange="handleInstrumentChange(${idx}, this.value)">${instrumentOptions(selected[idx])}</select>
+            <button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button>
+          </div>
+          <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div>
+          <div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div>
+          <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg>
+        </article>`;
+      }).join("");
+    }
+    function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
+    function renderSkyline(data){
+      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:235,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+      let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="18" y="${y+4}" fill="#a9b4c1" font-size="14" font-weight="800">${v}</text>`;});
+      const labelRows=data.map((d,idx)=>{
+        const skylineSeries=seriesForPeriod(d);
+        const pScore=periodScoreFor(d);
+        if(pScore != null) skylineSeries[skylineSeries.length-1]=pScore;
+        const points=skylineSeries.map((v,i)=>[pad.l+(i/(skylineSeries.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);
+        const last=points[points.length-1];
+        return{d,idx,points,last,y:last[1],pScore};
+      }).sort((a,b)=>a.y-b.y);
+      for(let i=1;i<labelRows.length;i++){if(labelRows[i].y-labelRows[i-1].y<34)labelRows[i].y=labelRows[i-1].y+34;}
+      labelRows.forEach(row=>{
+        const {d,idx,points,last,pScore}=row;
+        const c=lineColor(idx);
+        const pSentiment=label(pScore);
+        const path=smoothPath(points);
+        const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
+        const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
+        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="192" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.2" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+      });
+      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
+    }
+    function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
+    function renderRadar(data){
+      const svg=document.getElementById("radarChart"),legend=document.getElementById("radarLegend"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=162; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      const maxHeadlines=Math.max(...data.map(d=>Number(d.headlines)||0),1);
+      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.25"/>`;});
+      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+43,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.19)" stroke-width="1.25"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
+      data.slice(0,5).forEach((d,idx)=>{
+        const c=lineColor(idx);
+        const pScore=periodScoreFor(d) ?? d.score ?? 50;
+        const headlineStrength=clamp(Math.round(((Number(d.headlines)||0)/maxHeadlines)*100),8,100);
+        const vals=[pScore,userScore(d.user),headlineStrength,techScore(d.tech),stabilityScore(d)];
+        const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");
+        out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".16" stroke="${c}" stroke-width="3.25" filter="url(#radarGlow)"/>`;
+        vals.forEach((v,i)=>{const dot=radarPoint(cx,cy,r,(360/axes.length)*i,v);out+=`<circle cx="${dot[0]}" cy="${dot[1]}" r="3.3" fill="${c}" stroke="#fff" stroke-opacity=".45"/>`;});
+      });
+      svg.innerHTML=out;
+      if(legend){
+        legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
+      }
+    }
+    function heatLabels(){
+      if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
+      if(selectedPeriod === "monthly") return ["30D","27D","24D","21D","18D","15D","12D","9D","6D","3D","1D","Now"];
+      return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
+    }
+    function heatValues(d){
+      const vals = seriesForPeriod(d);
+      const labels = heatLabels();
+      if(vals.length <= labels.length) return vals;
+      if(selectedPeriod === "monthly"){
+        return labels.map((_,i)=>vals[Math.round(i*(vals.length-1)/(labels.length-1))]);
+      }
+      return vals.slice(-labels.length);
+    }
+    function renderHeatmap(data){
+      const box=document.getElementById("heatmapGrid");
+      const labels=heatLabels();
+      const gridStyle=`grid-template-columns:180px repeat(${labels.length},minmax(0,1fr))`;
+      const heads=`<div class="heat-row" style="${gridStyle}"><div></div>${labels.map(x=>`<div class="heat-head">${x}</div>`).join("")}</div>`;
+      box.innerHTML=heads+data.map(d=>{
+        const cells=heatValues(d).map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i]} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
+        return`<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
+      }).join("");
+    }
+    function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
+    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
+    function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
+    async function load(){
+      try{
+        const [res, techRes] = await Promise.all([
+          fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
+          fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
+        ]);
+        if(res && res.ok) dashboardData = await res.json();
+        if(techRes && techRes.ok) technicalData = await techRes.json();
+      }catch(e){}
+      renderAll();
+    }
+    load();
+  </script>
+
+  <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const ui = {
+        instrument: document.getElementById("svmInstrument"),
+        loading: document.getElementById("svmLoading"),
+        status: document.getElementById("svmStatus"),
+        toolNote: document.getElementById("svmToolNote"),
+        priceTitle: document.getElementById("svmPriceTitle"),
+        priceLegend: document.getElementById("svmPriceLegend"),
+        psiLegend: document.getElementById("svmPsiLegend"),
+        latestPrice: document.getElementById("svmLatestPrice"),
+        latestPsi: document.getElementById("svmLatestPsi"),
+        recordCount: document.getElementById("svmRecordCount"),
+        correlation: document.getElementById("svmCorrelation"),
+        trendTool: document.getElementById("svmTrendTool"),
+        levelTool: document.getElementById("svmLevelTool"),
+        crosshairTool: document.getElementById("svmCrosshairTool"),
+        fitTool: document.getElementById("svmFitTool"),
+        clearTool: document.getElementById("svmClearTool")
+      };
+
+      if(!ui.instrument) return;
+
+      const state = {
+        history: null,
+        period: "daily",
+        instrument: "",
+        chartPrice: null,
+        priceSeries: null,
+        psiSeries: null,
+        displayRows: [],
+        activeTool: null,
+        trendStart: null,
+        drawingSeries: [],
+        priceLines: [],
+        freeCursor: false,
+        syncingCrosshair: false
+      };
+
+      const COLORS = {
+        blue:"#2962ff",
+        blueFill:"rgba(41,98,255,.22)",
+        teal:"#26a69a",
+        red:"#ef5350",
+        gold:"#f2c94c",
+        purple:"#ab47bc",
+        grid:"rgba(42,46,57,.72)",
+        text:"#b2b5be",
+        border:"#2a2e39",
+        background:"#131722"
+      };
+
+      function finite(value){
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
+      }
+
+      function normalizeName(value){
+        return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g,"");
+      }
+
+      function formatNumber(value){
+        const number = finite(value);
+        if(number == null) return "—";
+        const abs = Math.abs(number);
+        const digits = abs >= 1000 ? 2 : abs >= 100 ? 2 : abs >= 10 ? 3 : 4;
+        return number.toLocaleString(undefined,{maximumFractionDigits:digits});
+      }
+
+      function formatPsi(value){
+        const number = finite(value);
+        return number == null ? "—" : Math.round(number).toString();
+      }
+
+      function isoWeekKey(dateString){
+        const date = new Date(dateString + "T00:00:00Z");
+        if(Number.isNaN(date.getTime())) return dateString;
+        const day = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() + 4 - day);
+        const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+        const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+        return date.getUTCFullYear() + "-W" + String(week).padStart(2,"0");
+      }
+
+      function monthKey(dateString){
+        return String(dateString || "").slice(0,7);
+      }
+
+      function entryFor(record,instrument){
+        const instruments = record && record.instruments;
+        if(!instruments || typeof instruments !== "object") return null;
+        if(instruments[instrument]) return instruments[instrument];
+        const wanted = normalizeName(instrument);
+        const key = Object.keys(instruments).find(name => normalizeName(name) === wanted);
+        return key ? instruments[key] : null;
+      }
+
+      function closeForEntry(entry){
+        if(!entry || typeof entry !== "object") return null;
+        const technical = entry.technical && typeof entry.technical === "object" ? entry.technical : {};
+        const candidates = [
+          technical.daily && technical.daily.close,
+          technical.close,
+          entry.close,
+          entry.market_close,
+          entry.price
+        ];
+        for(const candidate of candidates){
+          const value = finite(candidate);
+          if(value != null && value > 0) return value;
+        }
+        return null;
+      }
+
+      function rawRows(instrument){
+        const records = Array.isArray(state.history && state.history.records) ? state.history.records : [];
+        return records
+          .map(record => {
+            const date = String(record && record.date || "").slice(0,10);
+            const entry = entryFor(record,instrument);
+            return {
+              date,
+              psi: finite(entry && entry.psi),
+              close: closeForEntry(entry)
+            };
+          })
+          .filter(row => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && row.psi != null && row.close != null)
+          .sort((a,b) => a.date.localeCompare(b.date));
+      }
+
+      function aggregateRows(rows,period){
+        if(period === "daily") return rows;
+        const groups = new Map();
+        rows.forEach(row => {
+          const key = period === "weekly" ? isoWeekKey(row.date) : monthKey(row.date);
+          if(!groups.has(key)) groups.set(key,[]);
+          groups.get(key).push(row);
+        });
+        return [...groups.values()].map(group => {
+          group.sort((a,b) => a.date.localeCompare(b.date));
+          const psiValues = group.map(row => row.psi).filter(Number.isFinite);
+          const last = group[group.length - 1];
+          return {
+            date:last.date,
+            psi:psiValues.reduce((sum,value) => sum + value,0) / Math.max(1,psiValues.length),
+            close:last.close
+          };
+        });
+      }
+
+      function movingAverage(data,period,key){
+        const output = [];
+        for(let index=0;index<data.length;index++){
+          if(index < period - 1) continue;
+          const window = data.slice(index - period + 1,index + 1).map(row => finite(row[key])).filter(v => v != null);
+          if(window.length !== period) continue;
+          output.push({
+            time:data[index].date,
+            value:window.reduce((sum,value) => sum + value,0) / period
+          });
+        }
+        return output;
+      }
+
+      function correlation(rows){
+        if(rows.length < 4) return null;
+        const x = [];
+        const y = [];
+        for(let index=1;index<rows.length;index++){
+          const previous = rows[index - 1];
+          const current = rows[index];
+          if(!previous.close || !current.close) continue;
+          x.push(((current.close / previous.close) - 1) * 100);
+          y.push(current.psi - previous.psi);
+        }
+        if(x.length < 3) return null;
+        const mx = x.reduce((a,b)=>a+b,0) / x.length;
+        const my = y.reduce((a,b)=>a+b,0) / y.length;
+        let numerator = 0, dx = 0, dy = 0;
+        for(let index=0;index<x.length;index++){
+          const vx = x[index] - mx;
+          const vy = y[index] - my;
+          numerator += vx * vy;
+          dx += vx * vx;
+          dy += vy * vy;
+        }
+        const denominator = Math.sqrt(dx * dy);
+        return denominator ? numerator / denominator : null;
+      }
+
+      function chartOptions(container){
+        return {
+          width:container.clientWidth,
+          height:container.clientHeight,
+          layout:{
+            background:{type:LightweightCharts.ColorType.Solid,color:COLORS.background},
+            textColor:COLORS.text,
+            fontFamily:"Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+            fontSize:11,
+            attributionLogo:false
+          },
+          grid:{
+            vertLines:{color:COLORS.grid},
+            horzLines:{color:COLORS.grid}
+          },
+          crosshair:{
+            mode:LightweightCharts.CrosshairMode.Magnet,
+            vertLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"},
+            horzLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"}
+          },
+          rightPriceScale:{
+            borderColor:COLORS.border,
+            scaleMargins:{top:.12,bottom:.12}
+          },
+          leftPriceScale:{
+            visible:true,
+            borderColor:COLORS.border,
+            scaleMargins:{top:.12,bottom:.12}
+          },
+          timeScale:{
+            borderColor:COLORS.border,
+            timeVisible:false,
+            secondsVisible:false,
+            rightOffset:2,
+            barSpacing:12,
+            minBarSpacing:4,
+            fixLeftEdge:false,
+            fixRightEdge:false
+          },
+          handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
+          handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true},
+          localization:{locale:navigator.language || "en-US"}
+        };
+      }
+
+      function buildCharts(){
+        if(!window.LightweightCharts){
+          ui.loading.textContent = "The chart library could not load. Refresh the page or check whether the CDN is blocked.";
+          return false;
+        }
+
+        const priceBox = document.getElementById("svmPriceChart");
+        state.chartPrice = LightweightCharts.createChart(priceBox,chartOptions(priceBox));
+
+        state.priceSeries = state.chartPrice.addSeries(LightweightCharts.LineSeries,{
+          color:COLORS.blue,
+          lineWidth:2,
+          priceScaleId:"right",
+          priceLineVisible:true,
+          lastValueVisible:true,
+          crosshairMarkerVisible:true,
+          crosshairMarkerRadius:4
+        });
+
+        state.psiSeries = state.chartPrice.addSeries(LightweightCharts.LineSeries,{
+          color:COLORS.teal,
+          lineWidth:2,
+          priceScaleId:"left",
+          priceLineVisible:true,
+          lastValueVisible:true,
+          crosshairMarkerVisible:true,
+          crosshairMarkerRadius:4,
+          priceFormat:{type:"price",precision:0,minMove:1}
+        });
+
+        state.chartPrice.priceScale("left").applyOptions({
+          autoScale:true,
+          mode:LightweightCharts.PriceScaleMode.Normal,
+          scaleMargins:{top:.08,bottom:.08}
+        });
+        state.psiSeries.applyOptions({
+          autoscaleInfoProvider:() => ({
+            priceRange:{minValue:0,maxValue:100},
+            margins:{above:0,below:0}
+          })
+        });
+
+        bindCombinedCursor();
+        bindDrawingClicks();
+
+        const observer = new ResizeObserver(entries => {
+          entries.forEach(entry => {
+            if(state.chartPrice) state.chartPrice.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});
+          });
+        });
+        observer.observe(priceBox);
+        return true;
+      }
+
+      function bindCombinedCursor(){
+        state.chartPrice.subscribeCrosshairMove(param => {
+          updatePriceLegend(param);
+          updatePsiLegend(param);
+        });
+      }
+
+      function dataPoint(param,series){
+        if(!param || !param.seriesData) return null;
+        return param.seriesData.get(series) || null;
+      }
+
+      function updatePriceLegend(param){
+        const price = dataPoint(param,state.priceSeries);
+        ui.priceLegend.textContent = price && finite(price.value) != null ? formatNumber(price.value) : formatNumber(state.displayRows.at(-1)?.close);
+      }
+
+      function updatePsiLegend(param){
+        const psi = dataPoint(param,state.psiSeries);
+        ui.psiLegend.textContent = psi && finite(psi.value) != null ? formatPsi(psi.value) : formatPsi(state.displayRows.at(-1)?.psi);
+      }
+
+      function setActiveTool(tool){
+        state.activeTool = state.activeTool === tool ? null : tool;
+        state.trendStart = null;
+        ui.trendTool.classList.toggle("active",state.activeTool === "trend");
+        ui.levelTool.classList.toggle("active",state.activeTool === "level");
+
+        if(state.activeTool === "trend"){
+          ui.toolNote.innerHTML = "<strong>Trend line:</strong> click two points on the market-price chart.";
+        }else if(state.activeTool === "level"){
+          ui.toolNote.innerHTML = "<strong>Price level:</strong> click once on the market-price chart.";
+        }else{
+          ui.toolNote.innerHTML = "<strong>Cursor:</strong> market and sentiment aligned on the same dates.";
+        }
+      }
+
+      function bindDrawingClicks(){
+        state.chartPrice.subscribeClick(param => {
+          if(!state.activeTool || !param.point || !param.time) return;
+          const price = state.priceSeries.coordinateToPrice(param.point.y);
+          if(price == null) return;
+
+          if(state.activeTool === "level"){
+            const priceLine = state.priceSeries.createPriceLine({
+              price,
+              color:"#f2c94c",
+              lineWidth:1,
+              lineStyle:LightweightCharts.LineStyle.Dashed,
+              axisLabelVisible:true,
+              title:"Level"
+            });
+            state.priceLines.push(priceLine);
+            setActiveTool(null);
+            return;
+          }
+
+          if(state.activeTool === "trend"){
+            const point = {time:param.time,value:price};
+            if(!state.trendStart){
+              state.trendStart = point;
+              ui.toolNote.innerHTML = "<strong>Trend line:</strong> select the second point.";
+              return;
+            }
+            const points = [state.trendStart,point].sort((a,b) => String(a.time).localeCompare(String(b.time)));
+            if(String(points[0].time) !== String(points[1].time)){
+              const series = state.chartPrice.addSeries(LightweightCharts.LineSeries,{
+                color:"#f2c94c",
+                lineWidth:2,
+                lineStyle:LightweightCharts.LineStyle.Solid,
+                priceLineVisible:false,
+                lastValueVisible:false,
+                crosshairMarkerVisible:false
+              });
+              series.setData(points);
+              state.drawingSeries.push(series);
+            }
+            setActiveTool(null);
+          }
+        });
+      }
+
+      function clearDrawings(){
+        state.drawingSeries.forEach(series => {
+          try{ state.chartPrice.removeSeries(series); }catch(error){}
+        });
+        state.drawingSeries = [];
+        state.priceLines.forEach(line => {
+          try{ state.priceSeries.removePriceLine(line); }catch(error){}
+        });
+        state.priceLines = [];
+        setActiveTool(null);
+      }
+
+      function fitCharts(){
+        state.chartPrice.timeScale().fitContent();
+      }
+
+      function updateStats(rows){
+        const latest = rows.at(-1);
+        ui.latestPrice.textContent = formatNumber(latest && latest.close);
+        ui.latestPsi.textContent = formatPsi(latest && latest.psi) + (latest ? "/100" : "");
+        ui.recordCount.textContent = rows.length.toString();
+        const corr = correlation(rows);
+        ui.correlation.textContent = corr == null ? "Building" : corr.toFixed(2);
+      }
+
+      function setSeriesData(){
+        const rows = aggregateRows(rawRows(state.instrument),state.period);
+        state.displayRows = rows;
+
+        const priceData = rows.map(row => ({time:row.date,value:row.close}));
+        const psiData = rows.map(row => ({time:row.date,value:row.psi}));
+
+        state.priceSeries.setData(priceData);
+        state.psiSeries.setData(psiData);
+
+        ui.priceTitle.textContent = state.instrument + " • market close";
+        updateStats(rows);
+        updatePriceLegend(null);
+        updatePsiLegend(null);
+        clearDrawings();
+
+        document.querySelectorAll("[data-svm-period]").forEach(button => {
+          button.classList.toggle("active",button.dataset.svmPeriod === state.period);
+        });
+
+        if(!rows.length){
+          ui.loading.hidden = false;
+          ui.loading.innerHTML = "No aligned PSI and market-close records are available for <b>" + state.instrument.replace(/[&<>]/g,"") + "</b> yet.<br>The chart will populate automatically as instrument_history.json accumulates.";
+          ui.status.textContent = "Waiting for aligned instrument PSI and market-close history.";
+        }else{
+          ui.loading.hidden = true;
+          const label = state.period.charAt(0).toUpperCase() + state.period.slice(1);
+          ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • market and sentiment share the same timeline.";
+        }
+
+        requestAnimationFrame(fitCharts);
+      }
+
+      function availableInstruments(history){
+        const records = Array.isArray(history && history.records) ? history.records : [];
+        const counts = new Map();
+        records.forEach(record => {
+          const instruments = record && record.instruments;
+          if(!instruments || typeof instruments !== "object") return;
+          Object.entries(instruments).forEach(([name,entry]) => {
+            if(finite(entry && entry.psi) != null && closeForEntry(entry) != null){
+              counts.set(name,(counts.get(name) || 0) + 1);
+            }
+          });
+        });
+        return [...counts.entries()]
+          .sort((a,b) => a[0].localeCompare(b[0],undefined,{sensitivity:"base"}))
+          .map(([name,count]) => ({name,count}));
+      }
+
+      function populateInstruments(){
+        const options = availableInstruments(state.history);
+        if(!options.length){
+          ui.instrument.innerHTML = '<option value="">No aligned instruments yet</option>';
+          ui.loading.textContent = "instrument_history.json loaded, but no records currently contain both PSI and market close.";
+          return false;
+        }
+        const preferred = ["S&P 500 / ES","Nasdaq / NQ","Bitcoin / BTC","Gold"];
+        const initial = preferred.find(name => options.some(option => option.name === name)) || options[0].name;
+        state.instrument = initial;
+        ui.instrument.innerHTML = options.map(option =>
+          '<option value="' + option.name.replace(/"/g,"&quot;") + '">' +
+          option.name.replace(/[&<>]/g,"") +
+          "</option>"
+        ).join("");
+        ui.instrument.value = initial;
+        return true;
+      }
+
+      function bindControls(){
+        ui.instrument.addEventListener("change",() => {
+          state.instrument = ui.instrument.value;
+          setSeriesData();
+        });
+        document.querySelectorAll("[data-svm-period]").forEach(button => {
+          button.addEventListener("click",() => {
+            state.period = button.dataset.svmPeriod;
+            setSeriesData();
+          });
+        });
+        ui.trendTool.addEventListener("click",() => setActiveTool("trend"));
+        ui.levelTool.addEventListener("click",() => setActiveTool("level"));
+        ui.clearTool.addEventListener("click",clearDrawings);
+        ui.fitTool.addEventListener("click",fitCharts);
+        ui.crosshairTool.addEventListener("click",() => {
+          state.freeCursor = !state.freeCursor;
+          const mode = state.freeCursor ? LightweightCharts.CrosshairMode.Normal : LightweightCharts.CrosshairMode.Magnet;
+          state.chartPrice.applyOptions({crosshair:{mode}});
+          ui.crosshairTool.classList.toggle("active",state.freeCursor);
+          ui.crosshairTool.textContent = state.freeCursor ? "＋ Free cursor" : "⊕ Magnet cursor";
+        });
+      }
+
+      async function init(){
+        if(!buildCharts()) return;
+        bindControls();
+        try{
+          const response = await fetch("instrument_history.json",{cache:"no-store"});
+          if(!response.ok) throw new Error("HTTP " + response.status);
+          state.history = await response.json();
+          if(!populateInstruments()) return;
+          setSeriesData();
+        }catch(error){
+          ui.loading.hidden = false;
+          ui.loading.textContent = "Could not load instrument_history.json. " + (error && error.message ? error.message : "");
+          ui.status.textContent = "Chart data unavailable.";
+        }
+      }
+
+      init();
+    })();
+  </script>
+
+  <script src="glossary.js" defer></script>
+  <script src="vote-widget.js" defer></script>
+</body>
+</html>
