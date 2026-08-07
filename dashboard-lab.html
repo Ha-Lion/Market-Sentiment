@@ -1122,6 +1122,53 @@
   </header>
 
   <main class="lab-wrap">
+    <section class="svm-lab-panel" id="sentimentVsMarketLab" aria-labelledby="svmTitle">
+      <div class="svm-lab-head">
+        <div>
+          <h2 id="svmTitle">Sentiment vs. Market Price</h2>
+        </div>
+        <div class="svm-tool-note" id="svmToolNote" style="display:none"></div>
+      </div>
+
+      <div class="svm-controls">
+        <select class="svm-select" id="svmInstrument" aria-label="Select instrument for sentiment versus market comparison">
+          <option>Loading available instruments…</option>
+        </select>
+
+        <div class="svm-tool-group" aria-label="Basic chart tools">
+          <button class="svm-tool" type="button" id="svmTrendTool" title="Click two points on the market chart">╱ Trend line</button>
+          <button class="svm-tool" type="button" id="svmLevelTool" title="Click once on the market chart">— Price level</button>
+          <button class="svm-tool" type="button" id="svmCrosshairTool" title="Switch between magnet and free crosshair">＋ Free cursor</button>
+          <button class="svm-tool" type="button" id="svmFitTool">Fit</button>
+          <button class="svm-tool" type="button" id="svmClearTool">Clear drawings</button>
+        </div>
+
+        <div class="svm-tool-group svm-periods" aria-label="Comparison timeframe">
+          <button class="svm-tool active" type="button" data-svm-period="daily">Daily</button>
+          <button class="svm-tool" type="button" data-svm-period="weekly">Weekly</button>
+          <button class="svm-tool" type="button" data-svm-period="monthly">Monthly</button>
+        </div>
+      </div>
+
+      <div class="svm-chart-shell">
+        <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <span style="color:#667085">vs.</span> <i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
+        <div class="svm-live-legend"><span style="color:#5b7cff">Market <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
+        <div id="svmPriceChart" role="img" aria-label="Market price and Public Sentiment Index comparison chart"></div>
+        <div class="svm-chart-loading" id="svmLoading">Loading saved sentiment and market history…</div>
+      </div>
+
+      <div class="svm-stats">
+        <div class="svm-stat"><span data-glossary="market-close">Latest close</span><b id="svmLatestPrice">—</b></div>
+        <div class="svm-stat"><span data-glossary="psi">Latest PSI</span><b id="svmLatestPsi">—</b></div>
+        <div class="svm-stat"><span data-glossary="aligned-periods">Aligned periods</span><b id="svmRecordCount">—</b></div>
+        <div class="svm-stat"><span data-glossary="change-correlation">Change correlation</span><b id="svmCorrelation">—</b></div>
+      </div>
+
+      <div class="svm-foot">
+        <span id="svmStatus">Uses instrument_history.json only. No extra scraping or workflow runs.</span>
+      </div>
+    </section>
+
     <section class="panel lab-hero">
       <div>
         <div class="page-chip">Dashboard Lab • Deep Analysis Test v7</div>
@@ -1197,56 +1244,6 @@
         <div class="ranking-list" id="rankingList"></div>
       </div>
     </section>
-
-
-    <section class="svm-lab-panel" id="sentimentVsMarketLab" aria-labelledby="svmTitle">
-      <div class="svm-lab-head">
-        <div>
-          <h2 id="svmTitle">Sentiment vs. Market Price</h2>
-        </div>
-        <div class="svm-tool-note" id="svmToolNote" style="display:none"></div>
-      </div>
-
-      <div class="svm-controls">
-        <select class="svm-select" id="svmInstrument" aria-label="Select instrument for sentiment versus market comparison">
-          <option>Loading available instruments…</option>
-        </select>
-
-        <div class="svm-tool-group" aria-label="Basic chart tools">
-          <button class="svm-tool" type="button" id="svmTrendTool" title="Click two points on the market chart">╱ Trend line</button>
-          <button class="svm-tool" type="button" id="svmLevelTool" title="Click once on the market chart">— Price level</button>
-          <button class="svm-tool" type="button" id="svmCrosshairTool" title="Switch between magnet and free crosshair">＋ Free cursor</button>
-          <button class="svm-tool" type="button" id="svmFitTool">Fit</button>
-          <button class="svm-tool" type="button" id="svmClearTool">Clear drawings</button>
-        </div>
-
-        <div class="svm-tool-group svm-periods" aria-label="Comparison timeframe">
-          <button class="svm-tool active" type="button" data-svm-period="daily">Daily</button>
-          <button class="svm-tool" type="button" data-svm-period="weekly">Weekly</button>
-          <button class="svm-tool" type="button" data-svm-period="monthly">Monthly</button>
-        </div>
-      </div>
-
-      <div class="svm-chart-shell">
-        <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <span style="color:#667085">vs.</span> <i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
-        <div class="svm-live-legend"><span style="color:#5b7cff">Market <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
-        <div id="svmPriceChart" role="img" aria-label="Market price and Public Sentiment Index comparison chart"></div>
-        <div class="svm-chart-loading" id="svmLoading">Loading saved sentiment and market history…</div>
-      </div>
-
-      <div class="svm-stats">
-        <div class="svm-stat"><span>Latest close</span><b id="svmLatestPrice">—</b></div>
-        <div class="svm-stat"><span>Latest PSI</span><b id="svmLatestPsi">—</b></div>
-        <div class="svm-stat"><span>Aligned periods</span><b id="svmRecordCount">—</b></div>
-        <div class="svm-stat"><span>Change correlation</span><b id="svmCorrelation">—</b></div>
-      </div>
-
-      <div class="svm-foot">
-        <span id="svmStatus">Uses instrument_history.json only. No extra scraping or workflow runs.</span>
-      </div>
-    </section>
-
-
     <div id="deepAnalysisLayer" class="deep-analysis-layer" aria-live="polite"></div>
     <div id="deepAnalysisToast" class="deep-analysis-toast"></div>
 
@@ -2894,6 +2891,7 @@
     })();
   </script>
 
+  <script src="glossary.js" defer></script>
   <script src="vote-widget.js" defer></script>
 </body>
 </html>
