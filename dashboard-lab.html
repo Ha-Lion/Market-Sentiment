@@ -1035,8 +1035,7 @@
       font-weight:800;
     }
     .svm-live-legend b{color:#f0f3fa}
-    #svmPriceChart{height:330px}
-    #svmPsiChart{height:245px}
+    #svmPriceChart{height:430px}
     .svm-chart-loading{
       position:absolute;
       inset:0;
@@ -1080,8 +1079,7 @@
       .svm-lab-head,.svm-controls{padding-left:14px;padding-right:14px}
       .svm-select{width:100%;max-width:none}
       .svm-periods{margin-left:0}
-      #svmPriceChart{height:285px}
-      #svmPsiChart{height:220px}
+      #svmPriceChart{height:340px}
       .svm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
       .svm-live-legend{right:12px;top:32px}
     }
@@ -1206,9 +1204,9 @@
         <div>
           <div class="svm-lab-badge">New laboratory prototype</div>
           <h2 id="svmTitle">Sentiment vs. Market Price</h2>
-          <p>Two synchronized TradingView-style charts compare the selected instrument's saved PSI with its market close. Move, zoom, or scroll either chart and the other follows on the same dates.</p>
+          <p>One TradingView-style comparison chart aligns the selected instrument's market close with its saved Public Sentiment Index (PSI) on the same dates.</p>
         </div>
-        <div class="svm-tool-note" id="svmToolNote"><strong>Cursor:</strong> synchronized across both charts.</div>
+        <div class="svm-tool-note" id="svmToolNote"><strong>Cursor:</strong> market and sentiment aligned on the same dates.</div>
       </div>
 
       <div class="svm-controls">
@@ -1219,7 +1217,6 @@
         <div class="svm-tool-group" aria-label="Basic chart tools">
           <button class="svm-tool" type="button" id="svmTrendTool" title="Click two points on the market chart">╱ Trend line</button>
           <button class="svm-tool" type="button" id="svmLevelTool" title="Click once on the market chart">— Price level</button>
-          <button class="svm-tool active" type="button" id="svmIndicatorsTool" title="Toggle moving-average overlays">ƒx Averages</button>
           <button class="svm-tool" type="button" id="svmCrosshairTool" title="Switch between magnet and free crosshair">＋ Free cursor</button>
           <button class="svm-tool" type="button" id="svmFitTool">Fit</button>
           <button class="svm-tool" type="button" id="svmClearTool">Clear drawings</button>
@@ -1233,16 +1230,10 @@
       </div>
 
       <div class="svm-chart-shell">
-        <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span></div>
-        <div class="svm-live-legend"><span>Close <b id="svmPriceLegend">—</b></span><span>SMA 5 <b id="svmSmaLegend">—</b></span></div>
-        <div id="svmPriceChart" role="img" aria-label="Market price chart"></div>
+        <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <span style="color:#667085">vs.</span> <i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
+        <div class="svm-live-legend"><span style="color:#5b7cff">Market <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
+        <div id="svmPriceChart" role="img" aria-label="Market price and Public Sentiment Index comparison chart"></div>
         <div class="svm-chart-loading" id="svmLoading">Loading saved sentiment and market history…</div>
-      </div>
-
-      <div class="svm-chart-shell">
-        <div class="svm-chart-title"><i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
-        <div class="svm-live-legend"><span>PSI <b id="svmPsiLegend">—</b></span><span>Average 3 <b id="svmPsiAvgLegend">—</b></span></div>
-        <div id="svmPsiChart" role="img" aria-label="Public Sentiment Index chart"></div>
       </div>
 
       <div class="svm-stats">
@@ -2406,16 +2397,13 @@
         toolNote: document.getElementById("svmToolNote"),
         priceTitle: document.getElementById("svmPriceTitle"),
         priceLegend: document.getElementById("svmPriceLegend"),
-        smaLegend: document.getElementById("svmSmaLegend"),
         psiLegend: document.getElementById("svmPsiLegend"),
-        psiAvgLegend: document.getElementById("svmPsiAvgLegend"),
         latestPrice: document.getElementById("svmLatestPrice"),
         latestPsi: document.getElementById("svmLatestPsi"),
         recordCount: document.getElementById("svmRecordCount"),
         correlation: document.getElementById("svmCorrelation"),
         trendTool: document.getElementById("svmTrendTool"),
         levelTool: document.getElementById("svmLevelTool"),
-        indicatorsTool: document.getElementById("svmIndicatorsTool"),
         crosshairTool: document.getElementById("svmCrosshairTool"),
         fitTool: document.getElementById("svmFitTool"),
         clearTool: document.getElementById("svmClearTool")
@@ -2428,19 +2416,14 @@
         period: "daily",
         instrument: "",
         chartPrice: null,
-        chartPsi: null,
         priceSeries: null,
         psiSeries: null,
-        smaSeries: null,
-        psiAvgSeries: null,
         displayRows: [],
         activeTool: null,
         trendStart: null,
         drawingSeries: [],
         priceLines: [],
-        indicatorsVisible: true,
         freeCursor: false,
-        syncingRange: false,
         syncingCrosshair: false
       };
 
@@ -2619,6 +2602,11 @@
             borderColor:COLORS.border,
             scaleMargins:{top:.12,bottom:.12}
           },
+          leftPriceScale:{
+            visible:true,
+            borderColor:COLORS.border,
+            scaleMargins:{top:.12,bottom:.12}
+          },
           timeScale:{
             borderColor:COLORS.border,
             timeVisible:false,
@@ -2642,40 +2630,22 @@
         }
 
         const priceBox = document.getElementById("svmPriceChart");
-        const psiBox = document.getElementById("svmPsiChart");
-
         state.chartPrice = LightweightCharts.createChart(priceBox,chartOptions(priceBox));
-        state.chartPsi = LightweightCharts.createChart(psiBox,chartOptions(psiBox));
 
-        state.priceSeries = state.chartPrice.addSeries(LightweightCharts.AreaSeries,{
-          lineColor:COLORS.blue,
-          topColor:"rgba(41,98,255,.34)",
-          bottomColor:"rgba(41,98,255,.02)",
+        state.priceSeries = state.chartPrice.addSeries(LightweightCharts.LineSeries,{
+          color:COLORS.blue,
           lineWidth:2,
+          priceScaleId:"right",
           priceLineVisible:true,
           lastValueVisible:true,
           crosshairMarkerVisible:true,
           crosshairMarkerRadius:4
         });
 
-        state.smaSeries = state.chartPrice.addSeries(LightweightCharts.LineSeries,{
-          color:COLORS.gold,
+        state.psiSeries = state.chartPrice.addSeries(LightweightCharts.LineSeries,{
+          color:COLORS.teal,
           lineWidth:2,
-          lineStyle:LightweightCharts.LineStyle.Solid,
-          priceLineVisible:false,
-          lastValueVisible:false,
-          crosshairMarkerVisible:false
-        });
-
-        state.psiSeries = state.chartPsi.addSeries(LightweightCharts.BaselineSeries,{
-          baseValue:{type:"price",price:50},
-          topLineColor:COLORS.teal,
-          topFillColor1:"rgba(38,166,154,.30)",
-          topFillColor2:"rgba(38,166,154,.03)",
-          bottomLineColor:COLORS.red,
-          bottomFillColor1:"rgba(239,83,80,.03)",
-          bottomFillColor2:"rgba(239,83,80,.26)",
-          lineWidth:2,
+          priceScaleId:"left",
           priceLineVisible:true,
           lastValueVisible:true,
           crosshairMarkerVisible:true,
@@ -2683,17 +2653,7 @@
           priceFormat:{type:"price",precision:0,minMove:1}
         });
 
-        state.psiAvgSeries = state.chartPsi.addSeries(LightweightCharts.LineSeries,{
-          color:COLORS.purple,
-          lineWidth:2,
-          lineStyle:LightweightCharts.LineStyle.Dashed,
-          priceLineVisible:false,
-          lastValueVisible:false,
-          crosshairMarkerVisible:false,
-          priceFormat:{type:"price",precision:0,minMove:1}
-        });
-
-        state.chartPsi.priceScale("right").applyOptions({
+        state.chartPrice.priceScale("left").applyOptions({
           autoScale:false,
           mode:LightweightCharts.PriceScaleMode.Normal,
           scaleMargins:{top:.08,bottom:.08}
@@ -2705,61 +2665,22 @@
           })
         });
 
-        syncCharts();
+        bindCombinedCursor();
         bindDrawingClicks();
 
         const observer = new ResizeObserver(entries => {
           entries.forEach(entry => {
-            const chart = entry.target.id === "svmPriceChart" ? state.chartPrice : state.chartPsi;
-            if(chart) chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});
+            if(state.chartPrice) state.chartPrice.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});
           });
         });
         observer.observe(priceBox);
-        observer.observe(psiBox);
         return true;
       }
 
-      function syncCharts(){
-        const syncRange = (source,target) => {
-          source.timeScale().subscribeVisibleLogicalRangeChange(range => {
-            if(!range || state.syncingRange) return;
-            state.syncingRange = true;
-            target.timeScale().setVisibleLogicalRange(range);
-            state.syncingRange = false;
-          });
-        };
-        syncRange(state.chartPrice,state.chartPsi);
-        syncRange(state.chartPsi,state.chartPrice);
-
-        const byTime = (key,time) => {
-          const row = state.displayRows.find(item => item.date === String(time));
-          return row ? row[key] : null;
-        };
-
+      function bindCombinedCursor(){
         state.chartPrice.subscribeCrosshairMove(param => {
           updatePriceLegend(param);
-          if(state.syncingCrosshair) return;
-          state.syncingCrosshair = true;
-          if(param.time){
-            const psi = byTime("psi",param.time);
-            if(psi != null) state.chartPsi.setCrosshairPosition(psi,param.time,state.psiSeries);
-          }else{
-            state.chartPsi.clearCrosshairPosition();
-          }
-          state.syncingCrosshair = false;
-        });
-
-        state.chartPsi.subscribeCrosshairMove(param => {
           updatePsiLegend(param);
-          if(state.syncingCrosshair) return;
-          state.syncingCrosshair = true;
-          if(param.time){
-            const close = byTime("close",param.time);
-            if(close != null) state.chartPrice.setCrosshairPosition(close,param.time,state.priceSeries);
-          }else{
-            state.chartPrice.clearCrosshairPosition();
-          }
-          state.syncingCrosshair = false;
         });
       }
 
@@ -2770,16 +2691,12 @@
 
       function updatePriceLegend(param){
         const price = dataPoint(param,state.priceSeries);
-        const average = dataPoint(param,state.smaSeries);
         ui.priceLegend.textContent = price && finite(price.value) != null ? formatNumber(price.value) : formatNumber(state.displayRows.at(-1)?.close);
-        ui.smaLegend.textContent = average && finite(average.value) != null ? formatNumber(average.value) : formatNumber(movingAverage(state.displayRows,5,"close").at(-1)?.value);
       }
 
       function updatePsiLegend(param){
         const psi = dataPoint(param,state.psiSeries);
-        const average = dataPoint(param,state.psiAvgSeries);
         ui.psiLegend.textContent = psi && finite(psi.value) != null ? formatPsi(psi.value) : formatPsi(state.displayRows.at(-1)?.psi);
-        ui.psiAvgLegend.textContent = average && finite(average.value) != null ? formatPsi(average.value) : formatPsi(movingAverage(state.displayRows,3,"psi").at(-1)?.value);
       }
 
       function setActiveTool(tool){
@@ -2793,7 +2710,7 @@
         }else if(state.activeTool === "level"){
           ui.toolNote.innerHTML = "<strong>Price level:</strong> click once on the market-price chart.";
         }else{
-          ui.toolNote.innerHTML = "<strong>Cursor:</strong> synchronized across both charts.";
+          ui.toolNote.innerHTML = "<strong>Cursor:</strong> market and sentiment aligned on the same dates.";
         }
       }
 
@@ -2856,7 +2773,6 @@
 
       function fitCharts(){
         state.chartPrice.timeScale().fitContent();
-        state.chartPsi.timeScale().fitContent();
       }
 
       function updateStats(rows){
@@ -2877,8 +2793,6 @@
 
         state.priceSeries.setData(priceData);
         state.psiSeries.setData(psiData);
-        state.smaSeries.setData(state.indicatorsVisible ? movingAverage(rows,5,"close") : []);
-        state.psiAvgSeries.setData(state.indicatorsVisible ? movingAverage(rows,3,"psi") : []);
 
         ui.priceTitle.textContent = state.instrument + " • market close";
         updateStats(rows);
@@ -2897,7 +2811,7 @@
         }else{
           ui.loading.hidden = true;
           const label = state.period.charAt(0).toUpperCase() + state.period.slice(1);
-          ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • synchronized cursor and zoom.";
+          ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • market and sentiment share the same timeline.";
         }
 
         requestAnimationFrame(fitCharts);
@@ -2954,19 +2868,10 @@
         ui.levelTool.addEventListener("click",() => setActiveTool("level"));
         ui.clearTool.addEventListener("click",clearDrawings);
         ui.fitTool.addEventListener("click",fitCharts);
-        ui.indicatorsTool.addEventListener("click",() => {
-          state.indicatorsVisible = !state.indicatorsVisible;
-          ui.indicatorsTool.classList.toggle("active",state.indicatorsVisible);
-          state.smaSeries.setData(state.indicatorsVisible ? movingAverage(state.displayRows,5,"close") : []);
-          state.psiAvgSeries.setData(state.indicatorsVisible ? movingAverage(state.displayRows,3,"psi") : []);
-          updatePriceLegend(null);
-          updatePsiLegend(null);
-        });
         ui.crosshairTool.addEventListener("click",() => {
           state.freeCursor = !state.freeCursor;
           const mode = state.freeCursor ? LightweightCharts.CrosshairMode.Normal : LightweightCharts.CrosshairMode.Magnet;
           state.chartPrice.applyOptions({crosshair:{mode}});
-          state.chartPsi.applyOptions({crosshair:{mode}});
           ui.crosshairTool.classList.toggle("active",state.freeCursor);
           ui.crosshairTool.textContent = state.freeCursor ? "＋ Free cursor" : "⊕ Magnet cursor";
         });
