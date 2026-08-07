@@ -4,33 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Public Sentiment Dash — Dashboard Lab</title>
+  <title>Public Sentiment Dash — Interactive Dashboard</title>
   <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, technical direction, radar comparison, skyline trend, and sentiment heatwave.">
-  <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
+  <script src="sentiment-core.js?v=5"></script>
 
   <style>
     .lab-wrap{max-width:1500px;margin:0 auto;padding:26px}
     .lab-hero{
+      position:relative;
       display:block;
-      padding:13px 18px 11px;
+      padding:20px 245px 18px 22px;
       margin-bottom:14px;
     }
     .lab-hero h1{
-      font-size:clamp(25px,2.2vw,32px);
-      line-height:1.1;
-      letter-spacing:-0.015em;
+      font-size:clamp(36px,3.2vw,48px);
+      line-height:1.05;
+      letter-spacing:-0.025em;
       white-space:nowrap;
-      margin:0 0 6px;
+      margin:0 0 10px;
     }
     .lab-hero-main{
       color:var(--text);
-      font-size:14px;
-      line-height:1.35;
+      font-size:16px;
+      line-height:1.45;
       max-width:1180px;
-      margin:0 0 4px;
+      margin:0 0 7px;
     }
     .lab-warning{
       display:inline-flex;
@@ -45,24 +47,37 @@
       font-weight:700;
       margin-bottom:12px;
     }
-    .lab-small{color:var(--muted);font-size:12px;line-height:1.35;max-width:1180px;margin:0 0 5px}
+    .lab-small{color:var(--muted);font-size:13px;line-height:1.45;max-width:1180px;margin:0 0 12px}
     .lab-controls{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
       justify-content:flex-start;
       align-items:center;
-      margin-top:4px;
+      margin-top:8px;
     }
     .lab-select{
       background:var(--card);
-      color:var(--text);
+      color:#f5f8ff;
       border:1px solid var(--line);
       border-radius:12px;
       padding:10px 12px;
       min-width:175px;
       outline:none;
-      font-weight:500;
+      font-size:14px;
+      line-height:1.25;
+      font-weight:400;
+      letter-spacing:.01em;
+      text-rendering:geometricPrecision;
+      -webkit-font-smoothing:antialiased;
+      text-shadow:0 1px 1px rgba(0,0,0,.45);
+    }
+    .lab-select option, .lab-select optgroup{
+      background:#0f1724;
+      color:#f5f8ff;
+      font-family:inherit;
+      font-style:normal;
+      font-weight:400;
     }
     .lab-select:focus{border-color:rgba(210,153,34,.65);box-shadow:0 0 0 3px rgba(210,153,34,.10)}
     .lab-card-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
@@ -93,7 +108,7 @@
       mask-composite:exclude;
     }
     .card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
-    .market-name{color:#fff;font-weight:800;font-size:15px;line-height:1.3}
+    .market-name{color:#fff;font-weight:900;font-size:16px;line-height:1.25;letter-spacing:-.01em;text-shadow:0 1px 1px rgba(0,0,0,.50)}
     .sentiment-badge{
       display:inline-flex;
       align-items:center;
@@ -110,6 +125,9 @@
     .badge-neutral{color:#d8ebff;background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.30)}
     .badge-mixedbearish{color:#ffd8a8;background:rgba(249,115,22,.14);border-color:rgba(249,115,22,.34)}
     .badge-bearish{color:#ffc0bc;background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.34)}
+    .badge-strongbullish{color:#d8ffe2;background:rgba(34,197,94,.20);border-color:rgba(34,197,94,.48)}
+    .badge-mixedneutral{color:#d8ebff;background:rgba(88,166,255,.12);border-color:rgba(88,166,255,.30)}
+    .badge-strongbearish{color:#ffd0cc;background:rgba(239,68,68,.20);border-color:rgba(239,68,68,.48)}
     .gauge-row{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center}
     .mini-gauge{
       --score:50;
@@ -132,24 +150,25 @@
       place-items:center;
       text-align:center;
     }
-    .psi-big{font-size:27px;font-weight:900;color:#fff;line-height:1}
-    .psi-small{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+    .psi-big{font-size:28px;font-weight:950;color:#fff;line-height:1;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+    .psi-small{font-size:10px;color:#b8c7dc;font-weight:800;margin-top:2px}
     .card-metrics{display:grid;gap:7px}
-    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:6px}
-    .metric-line span:first-child{color:var(--muted)}
-    .metric-line span:last-child{color:#fff;font-weight:700;text-align:right}
+    .metric-line{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.055);padding-bottom:6px}
+    .metric-line span:first-child{color:#aebed2;font-weight:650}
+    .metric-line span:last-child{color:#fff;font-weight:900;text-align:right;text-shadow:0 1px 1px rgba(0,0,0,.50)}
     .sparkline{width:100%;height:54px;margin-top:14px;display:block}
     .chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(360px,.55fr);gap:18px;margin-bottom:18px}
     .lab-panel{padding:22px}
     .panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
     .panel-kicker{color:var(--muted);font-size:13px;line-height:1.55}
     .pill-row{display:flex;gap:8px;flex-wrap:wrap}
-    .tiny-pill{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:11px;font-weight:700;cursor:pointer;transition:.18s ease}
+    .hero-period-controls{position:absolute;right:22px;bottom:18px;justify-content:flex-end}
+    .tiny-pill{display:inline-flex;padding:7px 11px;border-radius:999px;border:1px solid var(--line);color:var(--soft);background:rgba(17,24,33,.8);font-size:12px;font-weight:800;cursor:pointer;transition:.18s ease}
     .tiny-pill:hover,.tiny-pill.active{color:#ffd780;border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.13);transform:translateY(-1px)}
     button.tiny-pill{font-family:inherit}
     .skyline-wrap{
       position:relative;
-      height:480px;
+      height:625px;
       border:1px solid var(--line);
       border-radius:20px;
       overflow:hidden;
@@ -333,19 +352,129 @@
       z-index:4;
       display:grid;
       grid-template-columns:1fr;
-      gap:8px;
-      margin-bottom:13px;
+      gap:7px;
+      margin-bottom:11px;
     }
     .card-control-strip .lab-select{
       width:100%;
       min-width:0;
-      padding:9px 10px;
+      padding:9px 11px;
       border-radius:11px;
       font-size:13px;
+      font-weight:400;
     }
-    .card-control-strip .deep-analysis-btn{
+    .card-action-row{
+      display:grid;
+      grid-template-columns:1fr .72fr;
+      gap:7px;
+    }
+    .card-control-strip .deep-analysis-btn,
+    .card-control-strip .chart-open-btn{
       width:100%;
-      min-height:36px;
+      min-height:30px;
+      padding:6px 8px;
+      font-size:11px;
+      border-radius:11px;
+    }
+    .chart-open-btn{
+      border:1px solid rgba(210,153,34,.38);
+      border-radius:12px;
+      padding:8px 10px;
+      background:linear-gradient(180deg,rgba(210,153,34,.18),rgba(17,24,33,.92));
+      color:#ffd780;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.01em;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.18);
+      transition:transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .chart-open-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(210,153,34,.70);
+      background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(17,24,33,.96));
+    }
+    .chart-modal-layer{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(0,0,0,.70);
+      backdrop-filter:blur(6px);
+      z-index:1800;
+    }
+    .chart-modal-layer.open{
+      display:flex;
+    }
+    .chart-modal-card{
+      width:min(1480px,96vw);
+      height:min(820px,90vh);
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(16,24,36,.98),rgba(7,11,18,.98));
+      box-shadow:0 28px 90px rgba(0,0,0,.55);
+    }
+    .chart-modal-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      min-height:40px;
+      padding:8px 12px;
+      border-bottom:1px solid rgba(148,163,184,.16);
+    }
+    .chart-modal-title-row{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      min-width:0;
+      flex-wrap:wrap;
+    }
+    .chart-modal-title{
+      margin:0;
+      color:#fff;
+      font-size:16px;
+      line-height:1;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .chart-modal-subtitle{
+      color:var(--muted);
+      font-size:11px;
+      line-height:1;
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .chart-modal-close{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(148,163,184,.26);
+      border-radius:10px;
+      background:rgba(13,19,29,.86);
+      color:#fff;
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+    }
+    .chart-modal-close:hover{
+      border-color:rgba(210,153,34,.55);
+      background:rgba(210,153,34,.12);
+    }
+    .chart-modal-body{
+      height:calc(100% - 41px);
+      padding:8px;
+    }
+    .chart-modal-body .tradingview-widget-container,
+    .chart-modal-body .tradingview-widget-container__widget{
+      width:100%;
+      height:100%;
+      min-height:520px;
     }
     .deep-analysis-btn{
       border:1px solid rgba(210,153,34,.38);
@@ -797,7 +926,7 @@
       position:relative;
       overflow:hidden;
       display:grid;
-      grid-template-columns:72px minmax(0,1fr) 104px;
+      grid-template-columns:minmax(0,1fr) 104px;
       gap:12px;
       align-items:center;
       padding:13px 14px;
@@ -817,19 +946,6 @@
       background:linear-gradient(180deg,rgba(255,215,128,.95),rgba(88,166,255,.92),rgba(255,126,102,.88));
       box-shadow:0 0 14px rgba(88,166,255,.22);
       animation:deepSignalPulse 3.8s ease-in-out infinite;
-    }
-    .deep-article-score{
-      width:58px;
-      height:58px;
-      border-radius:18px;
-      display:grid;
-      place-items:center;
-      background:radial-gradient(circle at 30% 20%,rgba(255,215,128,.24),rgba(88,166,255,.10)),rgba(7,10,16,.8);
-      border:1px solid rgba(255,255,255,.08);
-      color:#fff;
-      font-size:18px;
-      font-weight:900;
-      text-shadow:0 0 12px rgba(88,166,255,.14);
     }
     .deep-article-headline{display:block;color:#f7fbff;font-size:14px;font-weight:900;line-height:1.34;text-decoration:none;text-shadow:0 1px 0 rgba(255,255,255,.03),0 0 10px rgba(88,166,255,.08);}
     .deep-article-headline:hover{color:#ffd780;}
@@ -856,7 +972,6 @@
     @media(max-width:760px){
       .deep-article-page{top:80px;width:calc(100vw - 20px);}
       .deep-article-row{grid-template-columns:1fr;}
-      .deep-article-score{width:100%;height:42px;}
       .deep-article-pill{justify-self:start;}
     }
 
@@ -899,6 +1014,7 @@
     }
     @media(max-width:900px){
       .lab-hero{padding:18px}
+      .hero-period-controls{position:static;margin-top:12px;justify-content:flex-start}
       .lab-controls{justify-content:flex-start}
       .lab-select{min-width:160px;flex:1 1 180px}
       .lab-card-grid{grid-template-columns:1fr}
@@ -907,11 +1023,17 @@
       .skyline-wrap,.radar-wrap{height:360px}
     }
 
+  
+    .nav-row-break{
+      flex-basis:100%;
+      height:0;
+    }
+
     /* Sentiment vs. Market laboratory prototype — isolated from ribbon/voting code */
     .svm-lab-panel{
       position:relative;
       overflow:hidden;
-      margin-bottom:18px;
+      margin-bottom:12px;
       padding:0;
       background:
         radial-gradient(circle at 86% 0%,rgba(41,98,255,.11),transparent 28rem),
@@ -1075,59 +1197,25 @@
     .svm-foot a{color:#9fc0ff}
     .svm-tool-note{color:#9aa4b5}
     .svm-tool-note strong{color:#d1d4dc}
-    @media(max-width:900px){
-      .svm-lab-head,.svm-controls{padding-left:14px;padding-right:14px}
-      .svm-select{width:100%;max-width:none}
-      .svm-periods{margin-left:0}
-      #svmPriceChart{height:340px}
-      .svm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .svm-live-legend{right:12px;top:32px}
-    }
 
   </style>
 </head>
 
 <body>
-  <header class="header">
-    <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
-      <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
-        <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
-      </span>
-      <div class="brand-copy">
-        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
-        <div class="site-subtitle">Global market public sentiment dashboard</div>
-      </div>
-    </a>
-
-    <div class="header-center">
-      <div class="header-pill">✨ Constantly learning & improving</div>
-    </div>
-
-    <nav class="nav">
-      <a href="dashboard.html" class="active">Interactive Dashboard</a>
-      <a href="Charts.html">Market Charts</a>
-      <a href="sentiment-history.html">Historical Sentiment</a>
-      <a href="news-articles.html">News & Articles</a>
-      <a href="market-sentiment.html">Guides</a>
-      <a href="advertise.html">Business Opportunities</a>
-      <a href="contact.html">Get in Touch</a>
-      <a href="about.html">About</a>
-
-      <div class="social-links">
-        <span class="social-label">Follow us</span>
-        <span class="social-pill">X</span>
-        <span class="social-pill linkedin">LinkedIn</span>
-      </div>
-    </nav>
-  </header>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=1"></script>
 
   <main class="lab-wrap">
     <section class="panel lab-hero">
       <div>
-        <h1>Interactive Market Sentiment Dashboard Lab</h1>
+        <h1>Interactive Market Sentiment Dashboard</h1>
         <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-        <p class="lab-small">Focused on selected-market sentiment. PSI uses instrument headlines; user sentiment falls back to technical direction when direct votes are unavailable. Preview visuals are used until deeper instrument history grows.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI and chart movement read the shared backend JSON outputs; user sentiment stays separate from PSI.</p>
+        <div class="pill-row hero-period-controls" aria-label="Dashboard time period">
+          <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
+          <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
+          <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
+        </div>
         <div class="lab-controls" id="marketControls"></div>
       </div>
     </section>
@@ -1168,10 +1256,10 @@
       </div>
 
       <div class="svm-stats">
-        <div class="svm-stat"><span data-glossary="market-close">Latest close</span><b id="svmLatestPrice">—</b></div>
-        <div class="svm-stat"><span data-glossary="psi">Latest PSI</span><b id="svmLatestPsi">—</b></div>
-        <div class="svm-stat"><span data-glossary="aligned-periods">Aligned periods</span><b id="svmRecordCount">—</b></div>
-        <div class="svm-stat"><span data-glossary="change-correlation">Change correlation</span><b id="svmCorrelation">—</b></div>
+        <div class="svm-stat"><span>Latest close</span><b id="svmLatestPrice">—</b></div>
+        <div class="svm-stat"><span>Latest PSI</span><b id="svmLatestPsi">—</b></div>
+        <div class="svm-stat"><span>Aligned periods</span><b id="svmRecordCount">—</b></div>
+        <div class="svm-stat"><span>Change correlation</span><b id="svmCorrelation">—</b></div>
       </div>
 
       <div class="svm-foot">
@@ -1188,17 +1276,12 @@
             <h2>Sentiment Skyline</h2>
             <div class="panel-kicker">Multi-market PSI movement with glowing trend lines, clear end-point badges, and slow motion drawing.</div>
           </div>
-          <div class="pill-row" aria-label="Skyline time period">
-            <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
-            <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
-            <button class="tiny-pill" type="button" data-period="monthly">Monthly</button>
-          </div>
+
         </div>
         <div class="skyline-wrap">
           <svg id="skylineChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
           <div class="chart-watermark">PSI</div>
         </div>
-        <div class="preview-note" id="skylineNote">Preview mode uses generated trend shape when real instrument history is not available.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -1220,7 +1303,7 @@
         <div class="panel-top">
           <div>
             <h2>Sentiment Heatwave</h2>
-            <div class="panel-kicker">Recent PSI-style pressure matrix. Labels change with the Skyline period: recent hours for Daily, recent days for Weekly, and sampled days for Monthly.</div>
+            <div class="panel-kicker">Recent PSI-style pressure matrix. Daily uses recent readings, Weekly uses daily readings, and Monthly uses calendar-month grouped readings.</div>
           </div>
         </div>
         <div class="heat-legend" aria-label="Heatwave color scale">
@@ -1231,7 +1314,7 @@
           <span><i style="background:#16a34a;color:#16a34a"></i>70–100 Bullish</span>
         </div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled recent days. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
+        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled historical points. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -1244,7 +1327,20 @@
         <div class="ranking-list" id="rankingList"></div>
       </div>
     </section>
+
     <div id="deepAnalysisLayer" class="deep-analysis-layer" aria-live="polite"></div>
+    <div id="chartModalLayer" class="chart-modal-layer" role="dialog" aria-modal="true" aria-label="Instrument chart" onclick="if(event.target===this) closeChartModal();">
+      <section class="chart-modal-card">
+        <div class="chart-modal-head">
+          <div class="chart-modal-title-row">
+            <h2 id="chartModalTitle" class="chart-modal-title">Market Chart</h2>
+            <div id="chartModalSubtitle" class="chart-modal-subtitle">TradingView · Daily</div>
+          </div>
+          <button class="chart-modal-close" type="button" aria-label="Close chart" onclick="closeChartModal()">×</button>
+        </div>
+        <div id="chartModalBody" class="chart-modal-body"></div>
+      </section>
+    </div>
     <div id="deepAnalysisToast" class="deep-analysis-toast"></div>
 
     <footer class="footer">
@@ -1272,68 +1368,156 @@
   </main>
 
   <script>
-    const INSTRUMENTS = [
-      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"], fallback:54},
-      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"], fallback:75},
-      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"], fallback:56},
-      {name:"Russell / RTY", aliases:["russell","rty","russell 2000","russell / rty"], fallback:50},
-      {name:"VIX", aliases:["vix","volatility"], fallback:55},
-      {name:"DAX", aliases:["dax"], fallback:62},
-      {name:"FTSE 100", aliases:["ftse","ftse 100"], fallback:52},
-      {name:"Nikkei 225", aliases:["nikkei","nikkei 225"], fallback:57},
-      {name:"Hang Seng", aliases:["hang seng","hsi"], fallback:53},
-      {name:"Euro Stoxx 50", aliases:["euro stoxx","euro stoxx 50","stoxx"], fallback:51},
-      {name:"CAC 40", aliases:["cac","cac 40"], fallback:52},
-      {name:"US 2Y Treasury", aliases:["us 2y","2y treasury","2-year yield","2 year yield"], fallback:50},
-      {name:"US 10Y Treasury", aliases:["10y","us 10y","10y treasury","10-year yield","10 year yield"], fallback:50},
-      {name:"Treasury Yields", aliases:["treasury yields","yields","bond yields","treasury"], fallback:50},
-      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index","usd index"], fallback:50},
-      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro","eur"], fallback:58},
-      {name:"GBP / GBPUSD", aliases:["gbpusd","gbp/usd","pound","gbp"], fallback:56},
-      {name:"JPY / USDJPY", aliases:["usdjpy","usd/jpy","yen","jpy"], fallback:47},
-      {name:"CHF / USDCHF", aliases:["usdchf","usd/chf","swiss franc","chf"], fallback:50},
-      {name:"CAD / USDCAD", aliases:["usdcad","usd/cad","canadian dollar","cad"], fallback:50},
-      {name:"AUD / AUDUSD", aliases:["audusd","aud/usd","australian dollar","aud"], fallback:56},
-      {name:"NZD / NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","nzd"], fallback:53},
-      {name:"EURJPY", aliases:["eurjpy","eur/jpy"], fallback:52},
-      {name:"EURGBP", aliases:["eurgbp","eur/gbp"], fallback:50},
-      {name:"GBPJPY", aliases:["gbpjpy","gbp/jpy"], fallback:51},
-      {name:"AUDJPY", aliases:["audjpy","aud/jpy"], fallback:54},
-      {name:"CADJPY", aliases:["cadjpy","cad/jpy"], fallback:50},
-      {name:"EURCHF", aliases:["eurchf","eur/chf"], fallback:50},
-      {name:"EURCAD", aliases:["eurcad","eur/cad"], fallback:50},
-      {name:"AUDCAD", aliases:["audcad","aud/cad"], fallback:52},
-      {name:"AUDNZD", aliases:["audnzd","aud/nzd"], fallback:52},
-      {name:"NZDJPY", aliases:["nzdjpy","nzd/jpy"], fallback:51},
-      {name:"USDTRY", aliases:["usdtry","usd/try","turkish lira"], fallback:48},
-      {name:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso"], fallback:50},
-      {name:"USDZAR", aliases:["usdzar","usd/zar","rand"], fallback:49},
-      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"], fallback:64},
-      {name:"Ethereum / ETH", aliases:["ethereum","eth"], fallback:61},
-      {name:"Solana / SOL", aliases:["solana","sol"], fallback:58},
-      {name:"XRP", aliases:["xrp","ripple"], fallback:53},
-      {name:"BNB", aliases:["bnb","binance coin"], fallback:51},
-      {name:"Cardano / ADA", aliases:["cardano","ada"], fallback:50},
-      {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"], fallback:50},
-      {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"], fallback:57},
-      {name:"Gold", aliases:["gold","xau"], fallback:48},
-      {name:"Silver", aliases:["silver","xag"], fallback:51},
-      {name:"Copper", aliases:["copper"], fallback:54},
-      {name:"Crude Oil", aliases:["crude oil","oil","wti"], fallback:57},
-      {name:"Natural Gas", aliases:["natural gas","nat gas"], fallback:52},
-      {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"], fallback:50},
-      {name:"CPI / Inflation", aliases:["cpi","inflation"], fallback:50},
-      {name:"PPI", aliases:["ppi","producer price"], fallback:50},
-      {name:"Jobs / NFP", aliases:["jobs","nfp","nonfarm payrolls","payrolls"], fallback:50},
-      {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"], fallback:50},
-      {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"], fallback:50}
+    const FALLBACK_INSTRUMENTS = [
+      {name:"S&P 500 / ES", aliases:["s&p 500","sp 500","s&p","spx","es","s&p 500 / es"]},
+      {name:"Nasdaq / NQ", aliases:["nasdaq","nq","ndx","nasdaq / nq"]},
+      {name:"Dow / YM", aliases:["dow","dow jones","ym","dow / ym"]},
+      {name:"Russell / RTY", aliases:["russell","rty","russell 2000","russell / rty"]},
+      {name:"VIX", aliases:["vix","volatility"]},
+      {name:"DAX", aliases:["dax"]},
+      {name:"FTSE 100", aliases:["ftse","ftse 100"]},
+      {name:"Nikkei 225", aliases:["nikkei","nikkei 225"]},
+      {name:"Hang Seng", aliases:["hang seng","hsi"]},
+      {name:"Euro Stoxx 50", aliases:["euro stoxx","euro stoxx 50","stoxx"]},
+      {name:"CAC 40", aliases:["cac","cac 40"]},
+      {name:"US 2Y Treasury", aliases:["us 2y","2y treasury","2-year yield","2 year yield"]},
+      {name:"US 10Y Treasury", aliases:["10y","us 10y","10y treasury","10-year yield","10 year yield"]},
+      {name:"Treasury Yields", aliases:["treasury yields","yields","bond yields","treasury"]},
+      {name:"US Dollar / DXY", aliases:["dxy","us dollar","dollar index","usd index"]},
+      {name:"EUR / EURUSD", aliases:["eurusd","eur/usd","euro","eur"]},
+      {name:"GBP / GBPUSD", aliases:["gbpusd","gbp/usd","pound","gbp"]},
+      {name:"JPY / USDJPY", aliases:["usdjpy","usd/jpy","yen","jpy"]},
+      {name:"CHF / USDCHF", aliases:["usdchf","usd/chf","swiss franc","chf"]},
+      {name:"CAD / USDCAD", aliases:["usdcad","usd/cad","canadian dollar","cad"]},
+      {name:"AUD / AUDUSD", aliases:["audusd","aud/usd","australian dollar","aud"]},
+      {name:"NZD / NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","nzd"]},
+      {name:"EURJPY", aliases:["eurjpy","eur/jpy"]},
+      {name:"EURGBP", aliases:["eurgbp","eur/gbp"]},
+      {name:"GBPJPY", aliases:["gbpjpy","gbp/jpy"]},
+      {name:"AUDJPY", aliases:["audjpy","aud/jpy"]},
+      {name:"CADJPY", aliases:["cadjpy","cad/jpy"]},
+      {name:"EURCHF", aliases:["eurchf","eur/chf"]},
+      {name:"EURCAD", aliases:["eurcad","eur/cad"]},
+      {name:"AUDCAD", aliases:["audcad","aud/cad"]},
+      {name:"AUDNZD", aliases:["audnzd","aud/nzd"]},
+      {name:"NZDJPY", aliases:["nzdjpy","nzd/jpy"]},
+      {name:"USDTRY", aliases:["usdtry","usd/try","turkish lira"]},
+      {name:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso"]},
+      {name:"USDZAR", aliases:["usdzar","usd/zar","rand"]},
+      {name:"Bitcoin / BTC", aliases:["bitcoin","btc"]},
+      {name:"Ethereum / ETH", aliases:["ethereum","eth"]},
+      {name:"Solana / SOL", aliases:["solana","sol"]},
+      {name:"XRP", aliases:["xrp","ripple"]},
+      {name:"BNB", aliases:["bnb","binance coin"]},
+      {name:"Cardano / ADA", aliases:["cardano","ada"]},
+      {name:"Dogecoin / DOGE", aliases:["dogecoin","doge"]},
+      {name:"General Crypto", aliases:["crypto","cryptocurrency","digital assets"]},
+      {name:"Gold", aliases:["gold","xau"]},
+      {name:"Silver", aliases:["silver","xag"]},
+      {name:"Copper", aliases:["copper"]},
+      {name:"Crude Oil", aliases:["crude oil","oil","wti"]},
+      {name:"Natural Gas", aliases:["natural gas","nat gas"]},
+      {name:"Fed / FOMC", aliases:["fed","fomc","federal reserve"]},
+      {name:"CPI / Inflation", aliases:["cpi","inflation"]},
+      {name:"PPI", aliases:["ppi","producer price"]},
+      {name:"Jobs / NFP", aliases:["jobs","nfp","nonfarm payrolls","payrolls"]},
+      {name:"US GDP / Growth", aliases:["gdp","growth","us gdp"]},
+      {name:"Geopolitical / Tariffs", aliases:["geopolitical","tariffs","tariff"]}
     ];
+    let INSTRUMENTS = FALLBACK_INSTRUMENTS.slice();
+    let assetsConfigData = null;
+
+    function assetCategoryInfo(asset){
+      const cats = Array.isArray(asset?.categories) ? asset.categories : [];
+      const activeCats = cats.filter(c => c && c.enabled !== false);
+      activeCats.sort((a,b) => (Number(a.priority)||999) - (Number(b.priority)||999));
+      return activeCats[0] || cats[0] || {};
+    }
+
+    function assetDisplayName(asset){
+      const name = String(asset?.name || '').trim();
+      const symbol = String(asset?.symbol || '').trim();
+      if(!name) return symbol;
+      if(!symbol || name.toLowerCase().includes(symbol.toLowerCase())) return name;
+      return `${name} / ${symbol}`;
+    }
+
+    const DROPDOWN_GROUP_ORDER = [
+      "Market Indices Sentiment",
+      "Crypto Sentiment",
+      "Energy Sentiment",
+      "Precious Metals Sentiment",
+      "AI Assets Sentiment",
+      "Policy & Geopolitical Assets Sentiment",
+      "Rates & Macro",
+      "Forex & Dollar",
+      "Dashboard Extras"
+    ];
+
+    function dropdownGroupForAsset(asset, catKey, catName, display){
+      if(catKey !== "dashboard_extras") return catName;
+      const txt = norm([display, asset?.id, asset?.name, asset?.symbol, ...(Array.isArray(asset?.aliases) ? asset.aliases : [])].join(" "));
+      if(/treasury|yield|fed|fomc|cpi|ppi|inflation|jobs|nfp|gdp|growth/.test(txt)) return "Rates & Macro";
+      if(/dxy|dollar|eur|gbp|jpy|chf|cad|aud|nzd|usdtry|usdmxn|usdzar|forex|currency/.test(txt)) return "Forex & Dollar";
+      return "Dashboard Extras";
+    }
+
+    function dropdownGroupRank(group){
+      const idx = DROPDOWN_GROUP_ORDER.indexOf(group);
+      return idx >= 0 ? idx : 999;
+    }
+
+    function loadInstrumentsFromConfig(config){
+      const assets = Array.isArray(config?.assets) ? config.assets : [];
+      if(!assets.length) return;
+      const categoryNames = config?.categories || {};
+      const rows = assets
+        .filter(a => a && a.enabled !== false)
+        .map((a, idx) => {
+          const cat = assetCategoryInfo(a);
+          const catKey = cat.category || 'other';
+          const catName = categoryNames?.[catKey]?.name || catKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const display = assetDisplayName(a);
+          const aliases = Array.from(new Set([
+            display, a.name, a.symbol, a.id, ...(Array.isArray(a.aliases) ? a.aliases : [])
+          ].filter(Boolean).map(x => String(x).trim())));
+          return {
+            name: display,
+            aliases,
+            category: catKey,
+            categoryName: catName,
+            dropdownGroup: dropdownGroupForAsset(a, catKey, catName, display),
+            priority: Number(cat.priority ?? a.priority ?? idx + 1),
+            type: a.type || ''
+          };
+        })
+        .filter(a => a.name);
+      const seen = new Set();
+      const clean = rows.filter(a => {
+        const key = norm(a.name);
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      clean.sort((a,b) => {
+        const ga = a.dropdownGroup || a.categoryName || 'Available Assets';
+        const gb = b.dropdownGroup || b.categoryName || 'Available Assets';
+        const gr = dropdownGroupRank(ga) - dropdownGroupRank(gb);
+        if(gr) return gr;
+        if(ga !== gb) return ga.localeCompare(gb);
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      });
+      if(clean.length) INSTRUMENTS = clean;
+    }
+
 
     const LINE_COLORS = ["#58a6ff", "#d29922", "#3fb950", "#c084fc", "#f85149", "#2dd4bf"];
     let selected = ["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX"];
     let selectedPeriod = "daily";
     let dashboardData = null;
     let technicalData = null;
+    let statusData = null;
+    let instrumentHistoryData = null;
 
     function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
     function norm(v){return String(v||"").toLowerCase()}
@@ -1343,15 +1527,24 @@
       return (n > 0 ? "+" : "") + n;
     }
     function label(score){
+      if(window.PSDCore?.classifySentiment) return window.PSDCore.classifySentiment(score);
       if(score == null) return "No PSI Match";
-      if(score >= 70) return "Bullish";
-      if(score >= 56) return "Mixed Bullish";
-      if(score >= 45) return "Neutral";
-      if(score >= 31) return "Mixed Bearish";
-      return "Bearish";
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+      return "Strong Bearish";
     }
-    function badgeClass(score){return "badge-" + label(score).replace(/\s+/g,"").toLowerCase().replace("nopsimatch","neutral")}
+    function badgeClass(score){
+      if(score == null) return "badge-neutral";
+      if(score >= 70) return "badge-strongbullish";
+      if(score >= 56) return "badge-bullish";
+      if(score >= 45) return "badge-mixedneutral";
+      if(score >= 31) return "badge-bearish";
+      return "badge-strongbearish";
+    }
     function sentimentColor(score){
+      if(window.PSDCore?.sentimentColor) return window.PSDCore.sentimentColor(score);
       if(score == null) return "#8b949e";
       if(score >= 70) return "#22c55e";
       if(score >= 56) return "#14b8a6";
@@ -1377,10 +1570,10 @@
     function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
     function scoreFromText(text){
       const t = norm(text);
-      if(t.includes("bullish") && !t.includes("bearish")) return 80;
-      if(t.includes("bearish") && !t.includes("bullish")) return 20;
       if(t.includes("mixed bullish")) return 60;
       if(t.includes("mixed bearish")) return 40;
+      if(t.includes("bullish") && !t.includes("bearish")) return 80;
+      if(t.includes("bearish") && !t.includes("bullish")) return 20;
       if(t.includes("mixed")) return 55;
       if(t.includes("neutral")) return 50;
       return null;
@@ -1389,6 +1582,7 @@
       return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
     }
     function matchesInstrument(item, ins){
+      if(window.PSDCore?.matchesInstrument) return window.PSDCore.matchesInstrument(item, ins.name);
       const text = textFromItem(item);
       return ins.aliases.some(a => text.includes(a.toLowerCase()));
     }
@@ -1422,6 +1616,10 @@
       return value && value !== "N/A" ? String(value) : "N/A";
     }
     function getTechnicalForInstrument(ins){
+      if(window.PSDCore?.getTechnicalBias){
+        const bias = window.PSDCore.getTechnicalBias(technicalData, ins.name, "daily");
+        return bias?.direction || "N/A";
+      }
       if(!technicalData) return "N/A";
       const techRoot = technicalData.technical || technicalData;
       const wanted = ins.aliases.map(a => norm(a));
@@ -1455,12 +1653,12 @@
       if(t.includes("down") || t.includes("bear")) return "Bearish";
       return "Neutral";
     }
-    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 30 : 24}
+    function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 12 : 24}
     function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
-    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "30D ago" : "24H ago"}
-    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "30D Avg" : "Now"}
+    function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "Earlier" : "24H ago"}
+    function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "Monthly Avg" : "Now"}
     function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
-    function seriesForPeriod(d){return makeSkylineSeries(d.name, d.score)}
+    function seriesForPeriod(d){return Array.isArray(d.series) && d.series.length ? d.series.slice() : makeSkylineSeries(d.name, d.score)}
     function periodScoreFor(d){
       const values = seriesForPeriod(d);
       if(!values.length) return d.score ?? null;
@@ -1492,54 +1690,85 @@
       return clamp(Math.round(100 - avgMove*7), 25, 95);
     }
     function makeSkylineSeries(name, score){
-      const base = score == null ? 50 : score;
-      const len = periodLength();
-      let seed = Array.from(name + selectedPeriod).reduce((a,c)=>a+c.charCodeAt(0),0);
-      const values = [];
-      const amp = selectedPeriod === "daily" ? 7 : selectedPeriod === "weekly" ? 10 : 13;
-      for(let i=0;i<len;i++){
-        seed = (seed * 9301 + 49297) % 233280;
-        const wave = Math.sin((i/Math.max(len-1,1))*Math.PI*2 + seed/65000) * amp;
-        const drift = (i-(len*.7)) * ((base-50)/(selectedPeriod === "monthly" ? 70 : 85));
-        const noise = ((seed/233280)-.5) * (selectedPeriod === "daily" ? 5 : 7);
-        values.push(clamp(Math.round(base - 4 + (i/Math.max(len-1,1))*8 + wave + drift + noise), 8, 94));
+      if(window.PSDCore?.buildInstrumentSeries){
+        return window.PSDCore.buildInstrumentSeries({
+          instrumentName:name,
+          instrumentHistoryData,
+          period:selectedPeriod,
+          fallbackScore:score
+        });
       }
-      values[values.length-1] = score == null ? 50 : score;
-      return values;
+
+      const len = periodLength();
+      const value = score == null ? 50 : score;
+      return Array.from({length:Math.max(2,len)}, () => value);
     }
     function calcInstrument(ins){
-      const headlines = getHeadlines().filter(h => matchesInstrument(h, ins));
-      const scores = [];
-      headlines.forEach(h => {
-        const direct = validDirectScore(h);
-        if(direct != null) scores.push(clamp(direct,0,100));
-        else{
-          const s = scoreFromText(textFromItem(h));
-          if(s != null) scores.push(s);
-        }
-      });
-      let score = null;
-      if(scores.length) score = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
-      else score = ins.fallback;
-      const liveTech = getTechnicalForInstrument(ins);
-      const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
-      const actualUser = window.PSD_USER_SENTIMENT?.[ins.name];
-      const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
-      return {name: ins.name, score, sentiment: label(score), headlines: headlines.length || (ins.name==="S&P 500 / ES" ? 1763 : ins.name==="Nasdaq / NQ" ? 143 : ins.name==="Dow / YM" ? 221 : ins.name==="Russell / RTY" ? 17 : ins.name==="VIX" ? 4 : 0), user, tech, series: makeSeries(ins.name, score)};
-    }
-    function makeSeries(name, score){
-      const base = score == null ? 50 : score;
-      let seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
-      const values = [];
-      for(let i=0;i<24;i++){
-        seed = (seed * 9301 + 49297) % 233280;
-        const wave = Math.sin((i/23)*Math.PI*2 + seed/60000) * 8;
-        const drift = (i-18) * ((base-50)/85);
-        const noise = ((seed/233280)-.5) * 7;
-        values.push(clamp(Math.round(base - 5 + (i/23)*10 + wave + drift + noise), 8, 94));
+      if(window.PSDCore?.buildInstrumentSummary){
+        const summary = window.PSDCore.buildInstrumentSummary({
+          instrumentName: ins.name,
+          dashboardData,
+          statusData,
+          technicalData,
+          instrumentHistoryData,
+          userVotes: window.PSD_USER_SENTIMENT || {}
+        });
+        const score = summary.score;
+        const liveTech = summary.tech || "N/A";
+        const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
+        const actualUser = window.PSD_USER_SENTIMENT?.[summary.name || ins.name];
+        const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+        return {
+          name: ins.name,
+          score,
+          sentiment: summary.sentiment || label(score),
+          headlines: Number(summary.headlineCount || summary.headlines || 0),
+          psiHeadlineCount: Number(summary.psiHeadlineCount || 0),
+          archiveArticleCount: Number(summary.archiveArticleCount || 0),
+          bullishCount: Number(summary.bullishCount || 0),
+          bearishCount: Number(summary.bearishCount || 0),
+          neutralCount: Number(summary.neutralCount || 0),
+          countBasis: summary.countBasis || "official_core",
+          formulaVersion: summary.formulaVersion || window.PSDCore.VERSION,
+          lastUpdated: summary.lastUpdated || "",
+          user,
+          tech,
+          series: makeSeries(ins.name, score)
+        };
       }
-      values[values.length-1] = score == null ? 50 : score;
-      return values;
+
+      const tech = getTechnicalForInstrument(ins);
+      return {
+        name: ins.name,
+        score: null,
+        sentiment: "No PSI Match",
+        headlines: 0,
+        psiHeadlineCount: 0,
+        archiveArticleCount: 0,
+        bullishCount: 0,
+        bearishCount: 0,
+        neutralCount: 0,
+        countBasis: "backend_source_unavailable",
+        formulaVersion: "missing_PSDCore",
+        user: window.PSD_USER_SENTIMENT?.[ins.name] || "N/A",
+        tech,
+        series: makeSeries(ins.name, null)
+      };
+    }
+    function makeSeries(name, score, periodOverride){
+      const periodToUse = periodOverride || selectedPeriod;
+      if(window.PSDCore?.buildInstrumentSeries){
+        return window.PSDCore.buildInstrumentSeries({
+          instrumentName:name,
+          instrumentHistoryData,
+          period:periodToUse,
+          fallbackScore:score
+        });
+      }
+
+      const len = periodToUse === "weekly" ? 7 : periodToUse === "monthly" ? 180 : 24;
+      const value = score == null ? 50 : score;
+      return Array.from({length:Math.max(2,len)}, () => value);
     }
     function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>i.name===name) || INSTRUMENTS[0]))}
     function bindPeriodButtons(){
@@ -1730,7 +1959,7 @@
     }
 
     function deepBarsSvg(values, color, labelText){
-      const clean = (values && values.length ? values : [50,50,50,50]).slice(-12).map(v=>clamp(Number(v)||50,0,100));
+      const clean = (values && values.length ? values : [50,50,50,50]).slice(-24).map(v=>clamp(Number(v)||50,0,100));
       const w=420,h=132;
       const cx=116, cy=66, r=50;
       const avg = Math.round(clean.reduce((a,b)=>a+b,0)/clean.length);
@@ -1772,7 +2001,7 @@
         </defs>
         <rect x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.20)"/>
         <text x="14" y="16" class="deep-chart-label">Sentiment Lens</text>
-        <text x="${w-120}" y="16" class="deep-chart-label">30 Day Orbit</text>
+        <text x="${w-120}" y="16" class="deep-chart-label">Monthly Orbit</text>
         <g>
           <circle cx="${cx}" cy="${cy}" r="${r+14}" fill="none" stroke="url(#${ring2})" stroke-width="1.5" opacity=".48"/>
           <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2"/>
@@ -1797,7 +2026,7 @@
           <text x="14" y="39" fill="#fff" font-size="26" font-weight="900">${clean[clean.length-1]}</text>
           <text x="72" y="39" fill="#8ba0bc" font-size="10" font-weight="800">CURRENT PSI</text>
           <text x="14" y="58" fill="#ffd25a" font-size="14" font-weight="900">${change}</text>
-          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">30D CHANGE</text>
+          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">MONTHLY CHANGE</text>
           <text x="14" y="74" fill="#67e8f9" font-size="14" font-weight="900">VOL ${vol}</text>
           <text x="84" y="74" fill="#8ba0bc" font-size="10" font-weight="800">STABILITY ${Math.max(0,100-vol)}</text>
         </g>
@@ -1932,7 +2161,10 @@
       const trend = clamp(Math.round((Number(st.avg) || score) + Math.sign(parseInt(st.change,10)||0)*8), 0, 100);
       const momentum = clamp(Math.round(50 + (parseInt(st.change,10)||0)*5), 0, 100);
       const participation = clamp(Math.round(Math.min(100, 35 + Math.log10(headlines + 10) * 16)), 0, 100);
-      const alignment = clamp((data.tech === 'Up' && data.user === 'Bullish') || (data.tech === 'Down' && data.user === 'Bearish') ? 84 : data.sentiment === 'Neutral' ? 58 : 68, 0, 100);
+      const techBias = norm(data.tech);
+      const userBias = norm(data.user);
+      const isAligned = ((techBias.includes('up') || techBias.includes('bull')) && userBias.includes('bull')) || ((techBias.includes('down') || techBias.includes('bear')) && userBias.includes('bear'));
+      const alignment = clamp(isAligned ? 84 : data.sentiment === 'Mixed/Neutral' || data.sentiment === 'Neutral' ? 58 : 68, 0, 100);
       const volatility = clamp(Math.round(Math.max(10, 100 - ((Number(st.vol)||0) * 8))),0,100);
       const factors = [
         ['Trend', trend],
@@ -2037,8 +2269,8 @@
       const ins = INSTRUMENTS.find(i => i.name === instrumentName) || INSTRUMENTS[0];
       const data = calcInstrument(ins);
       const color = sentimentColor(data.score);
-      const path24 = data.series || makeSeries(instrumentName, data.score || 50);
-      const path30 = makeSkylineSeries(instrumentName, data.score || 50);
+      const path24 = makeSeries(instrumentName, data.score || 50, "daily");
+      const path30 = makeSeries(instrumentName, data.score || 50, "monthly");
       const stats24 = deepSeriesStats(path24);
       const stats30 = deepSeriesStats(path30);
       win.setAttribute("data-deep-slot", String(slot));
@@ -2046,9 +2278,8 @@
       win.innerHTML = `
         <div class="deep-window-header">
           <div>
-            <div class="deep-window-kicker">Deep Analysis Lab</div>
+            <div class="deep-window-kicker">Deep Analysis</div>
             <div class="deep-window-title">${esc(instrumentName)}</div>
-            <div class="deep-window-sub">Phase 1 placeholder window. This updates automatically when the card instrument changes.</div>
           </div>
           <button class="deep-window-close" type="button" aria-label="Close Deep Analysis" onclick="closeDeepAnalysis('${id}')">×</button>
         </div>
@@ -2059,6 +2290,7 @@
             ${deepMetricCard("User", data.user || "--")}
             ${deepMetricCard("Tech", data.tech || "--")}
             ${deepMetricCard("Headlines", Number(data.headlines || 0).toLocaleString())}
+            ${deepMetricCard("Formula", data.formulaVersion || window.PSD_SENTIMENT_CORE_VERSION || "Legacy")}
           </div>
           <div class="deep-section-grid">
             <div class="deep-section">
@@ -2073,7 +2305,7 @@
             </div>
             <div class="deep-section">
               <h3>Sentiment Lens & Histogram</h3>
-              <p>Lens-style monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
+              <p>Lens-style calendar monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
               ${deepBarsSvg(path30, color, "Sentiment Lens & Histogram")}
               <div class="deep-mini-row">
                 <div class="deep-mini-metric"><span>Avg</span><b>${stats30.avg}</b></div>
@@ -2153,7 +2385,6 @@
           <div>
             <div class="deep-article-kicker">Article Load Drilldown</div>
             <div class="deep-article-title">${esc(instrumentName)}</div>
-            <div class="deep-article-sub">Lab preview page. Live article connection and exact article data will come in Phase 2.</div>
           </div>
           <button class="deep-article-close" type="button" onclick="closeArticleLoadPage()" aria-label="Close article drilldown">×</button>
         </div>
@@ -2168,10 +2399,8 @@
               <option value="theme"${sortMode==="theme"?" selected":""}>Sort: Theme</option>
             </select>
           </div>
-          <div class="deep-article-note">This is the correct structure for Phase 2: click Article Load → open article list → sort by source, theme, freshness, or sentiment pressure.</div>
           <div class="deep-article-list">
             ${rows.map(r=>`<article class="deep-article-row">
-              <div class="deep-article-score">${r.score}</div>
               <div>
                 <a class="deep-article-headline" href="${esc(r.storyUrl)}" target="_blank" rel="noopener noreferrer">${esc(r.title)} ↗</a>
                 <div class="deep-article-meta">${esc(r.source)} • ${esc(r.theme)} • ${esc(r.age)}</div>
@@ -2180,7 +2409,7 @@
                   <a class="deep-article-link" href="${esc(r.storyUrl)}" target="_blank" rel="noopener noreferrer">Open article signal ↗</a>
                 </div>
               </div>
-              <div class="deep-article-pill ${r.sentiment === "Bullish" ? "badge-bullish" : r.sentiment === "Bearish" ? "badge-bearish" : "badge-neutral"}">${esc(r.sentiment)}</div>
+              <div class="deep-article-pill ${r.sentiment === "Bullish" || r.sentiment === "Strong Bullish" ? "badge-bullish" : r.sentiment === "Bearish" || r.sentiment === "Strong Bearish" ? "badge-bearish" : "badge-neutral"}">${esc(r.sentiment)}</div>
             </article>`).join("")}
           </div>
         </div>`;
@@ -2264,7 +2493,137 @@
       reflowDeepWindows();
     }
 
+
+    const CHART_SYMBOLS = {
+      "S&P 500 / ES": "AMEX:SPY",
+      "Nasdaq / NQ": "NASDAQ:QQQ",
+      "Dow / YM": "AMEX:DIA",
+      "Russell / RTY": "AMEX:IWM",
+      "VIX": "AMEX:VXX",
+      "DAX": "OANDA:DE30EUR",
+      "FTSE 100": "OANDA:UK100GBP",
+      "Nikkei 225": "OANDA:JP225USD",
+      "Hang Seng": "OANDA:HK33HKD",
+      "Euro Stoxx 50": "OANDA:EU50EUR",
+      "CAC 40": "OANDA:FR40EUR",
+      "US 2Y Treasury": "NASDAQ:SHY",
+      "US 10Y Treasury": "NASDAQ:IEF",
+      "Treasury Yields": "NASDAQ:TLT",
+      "US Dollar / DXY": "TVC:DXY",
+      "EUR / EURUSD": "OANDA:EURUSD",
+      "GBP / GBPUSD": "OANDA:GBPUSD",
+      "JPY / USDJPY": "OANDA:USDJPY",
+      "CHF / USDCHF": "OANDA:USDCHF",
+      "CAD / USDCAD": "OANDA:USDCAD",
+      "AUD / AUDUSD": "OANDA:AUDUSD",
+      "NZD / NZDUSD": "OANDA:NZDUSD",
+      "EURJPY": "OANDA:EURJPY",
+      "EURGBP": "OANDA:EURGBP",
+      "GBPJPY": "OANDA:GBPJPY",
+      "AUDJPY": "OANDA:AUDJPY",
+      "CADJPY": "OANDA:CADJPY",
+      "EURCHF": "OANDA:EURCHF",
+      "EURCAD": "OANDA:EURCAD",
+      "AUDCAD": "OANDA:AUDCAD",
+      "AUDNZD": "OANDA:AUDNZD",
+      "NZDJPY": "OANDA:NZDJPY",
+      "USDTRY": "OANDA:USDTRY",
+      "USDMXN": "OANDA:USDMXN",
+      "USDZAR": "OANDA:USDZAR",
+      "Bitcoin / BTC": "BINANCE:BTCUSDT",
+      "Ethereum / ETH": "BINANCE:ETHUSDT",
+      "Solana / SOL": "BINANCE:SOLUSDT",
+      "XRP": "BINANCE:XRPUSDT",
+      "BNB": "BINANCE:BNBUSDT",
+      "Cardano / ADA": "BINANCE:ADAUSDT",
+      "Dogecoin / DOGE": "BINANCE:DOGEUSDT",
+      "General Crypto": "BINANCE:BTCUSDT",
+      "Gold": "AMEX:GLD",
+      "Silver": "AMEX:SLV",
+      "Copper": "COMEX:HG1!",
+      "Crude Oil": "AMEX:USO",
+      "Natural Gas": "AMEX:UNG",
+      "Fed / FOMC": "NASDAQ:TLT",
+      "CPI / Inflation": "AMEX:SPY",
+      "PPI": "AMEX:SPY",
+      "Jobs / NFP": "AMEX:SPY",
+      "US GDP / Growth": "AMEX:SPY",
+      "Geopolitical / Tariffs": "AMEX:SPY"
+    };
+
+    function chartSymbolForInstrument(name){
+      return CHART_SYMBOLS[name] || "AMEX:SPY";
+    }
+
+    function openChartModal(slot){
+      const instrumentName = selected[slot] || "S&P 500 / ES";
+      const symbol = chartSymbolForInstrument(instrumentName);
+      const layer = document.getElementById("chartModalLayer");
+      const title = document.getElementById("chartModalTitle");
+      const subtitle = document.getElementById("chartModalSubtitle");
+      const body = document.getElementById("chartModalBody");
+      if(!layer || !body) return;
+
+      title.textContent = instrumentName;
+      subtitle.textContent = `${symbol} · Daily`;
+
+      body.innerHTML = "";
+
+      const container = document.createElement("div");
+      container.className = "tradingview-widget-container";
+
+      const widget = document.createElement("div");
+      widget.className = "tradingview-widget-container__widget";
+
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      script.async = true;
+      script.textContent = JSON.stringify({
+        autosize: true,
+        symbol: symbol,
+        interval: "D",
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        allow_symbol_change: true,
+        calendar: false,
+        support_host: "https://www.tradingview.com",
+        hide_side_toolbar: false,
+        details: false,
+        hotlist: false,
+        withdateranges: true,
+        hide_legend: false,
+        save_image: false,
+        studies: [],
+        backgroundColor: "rgba(13, 19, 29, 1)",
+        gridColor: "rgba(148, 163, 184, 0.12)"
+      });
+
+      container.appendChild(widget);
+      container.appendChild(script);
+      body.appendChild(container);
+
+      layer.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeChartModal(){
+      const layer = document.getElementById("chartModalLayer");
+      const body = document.getElementById("chartModalBody");
+      if(layer) layer.classList.remove("open");
+      if(body) body.innerHTML = "";
+      document.body.style.overflow = "";
+    }
+
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape") closeChartModal();
+    });
+
     window.openDeepAnalysis = openDeepAnalysis;
+    window.openChartModal = openChartModal;
+    window.closeChartModal = closeChartModal;
     window.closeDeepAnalysis = closeDeepAnalysis;
     window.handleInstrumentChange = handleInstrumentChange;
     window.openArticleLoadPageFromSlot = openArticleLoadPageFromSlot;
@@ -2276,7 +2635,16 @@
       if(box) box.innerHTML = "";
     }
     function instrumentOptions(selectedName){
-      return INSTRUMENTS.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
+      const groups = new Map();
+      INSTRUMENTS.forEach(i => {
+        const group = i.dropdownGroup || i.categoryName || 'Available Assets';
+        if(!groups.has(group)) groups.set(group, []);
+        groups.get(group).push(i);
+      });
+      return Array.from(groups.entries()).map(([group, items]) => {
+        const options = items.map(i=>`<option value="${esc(i.name)}"${i.name===selectedName?" selected":""}>${esc(i.name)}</option>`).join("");
+        return `<optgroup label="${esc(group)}">${options}</optgroup>`;
+      }).join("");
     }
     function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
     function renderCards(data){
@@ -2285,7 +2653,10 @@
         return `<article class="sentiment-card">
           <div class="card-control-strip">
             <select class="lab-select" data-slot="${idx}" onchange="handleInstrumentChange(${idx}, this.value)">${instrumentOptions(selected[idx])}</select>
-            <button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button>
+            <div class="card-action-row">
+              <button class="deep-analysis-btn" type="button" onclick="openDeepAnalysis(${idx})">Deep Analysis</button>
+              <button class="chart-open-btn" type="button" onclick="openChartModal(${idx})">Chart</button>
+            </div>
           </div>
           <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div>
           <div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div>
@@ -2314,7 +2685,7 @@
         const path=smoothPath(points);
         const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
         const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
-        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="192" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+10}" y="${ly+2}" fill="#fff" font-size="12.2" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="206" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+9}" y="${ly+2}" fill="#fff" font-size="10.8" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
       });
       out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
     }
@@ -2340,45 +2711,62 @@
     }
     function heatLabels(){
       if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
-      if(selectedPeriod === "monthly") return ["30D","27D","24D","21D","18D","15D","12D","9D","6D","3D","1D","Now"];
       return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
+    }
+    function monthlyHeatLabels(count){
+      const n = Math.max(2, Number(count) || 2);
+      if(n === 2) return ["Previous","Current"];
+      return Array.from({length:n}, (_, i) => i === 0 ? "Older" : i === n-1 ? "Current" : "");
+    }
+    function alignHeatValues(values, length){
+      const vals = Array.isArray(values) && values.length ? values.slice() : [50,50];
+      const fill = vals.length ? vals[0] : 50;
+      while(vals.length < length) vals.unshift(fill);
+      return vals.slice(-length);
     }
     function heatValues(d){
       const vals = seriesForPeriod(d);
+      if(selectedPeriod === "monthly") return vals.length ? vals : [d.score ?? 50, d.score ?? 50];
       const labels = heatLabels();
-      if(vals.length <= labels.length) return vals;
-      if(selectedPeriod === "monthly"){
-        return labels.map((_,i)=>vals[Math.round(i*(vals.length-1)/(labels.length-1))]);
-      }
-      return vals.slice(-labels.length);
+      return alignHeatValues(vals, labels.length);
     }
     function renderHeatmap(data){
       const box=document.getElementById("heatmapGrid");
-      const labels=heatLabels();
+      const rowValues=data.map(d=>heatValues(d));
+      const labels=selectedPeriod === "monthly" ? monthlyHeatLabels(Math.max(2, ...rowValues.map(v=>v.length))) : heatLabels();
       const gridStyle=`grid-template-columns:180px repeat(${labels.length},minmax(0,1fr))`;
       const heads=`<div class="heat-row" style="${gridStyle}"><div></div>${labels.map(x=>`<div class="heat-head">${x}</div>`).join("")}</div>`;
-      box.innerHTML=heads+data.map(d=>{
-        const cells=heatValues(d).map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i]} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
+      box.innerHTML=heads+data.map((d,rowIdx)=>{
+        const vals=alignHeatValues(rowValues[rowIdx], labels.length);
+        const cells=vals.map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i] || 'Period'} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
         return`<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
       }).join("");
     }
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
-    function renderLegend(data){const top=document.querySelector("#skylineNote");if(!top)return;const legend=`<div class="legend-mini">${data.map((d,idx)=>`<span><i class="legend-dot" style="background:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${periodScoreFor(d)??"--"}</span>`).join("")}</div>`;top.innerHTML=`${periodName()} skyline is active. Right-side labels now show ${periodMetricLabel()} values for the selected period. Preview mode uses generated trend shapes when true instrument-level history is not available. ${legend}`}
+    function renderLegend(data){}
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
     async function load(){
       try{
-        const [res, techRes] = await Promise.all([
-          fetch("dashboard_data.json",{cache:"no-store"}).catch(() => null),
-          fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
+        const [configRes, res, techRes, statusRes, instrumentHistoryRes] = await Promise.all([
+          fetch("assets_config.json",{cache:"no-store"}).catch(() => null),
+          fetch("dashboard_live.json",{cache:"no-store"}).catch(() => null),
+          fetch("technical_data.json",{cache:"no-store"}).catch(() => null),
+          fetch("status.json",{cache:"no-store"}).catch(() => null),
+          fetch("instrument_history_compact.json",{cache:"no-store"}).catch(() => null)
         ]);
+        if(configRes && configRes.ok){
+          assetsConfigData = await configRes.json();
+          loadInstrumentsFromConfig(assetsConfigData);
+        }
         if(res && res.ok) dashboardData = await res.json();
         if(techRes && techRes.ok) technicalData = await techRes.json();
+        if(statusRes && statusRes.ok) statusData = await statusRes.json();
+        if(instrumentHistoryRes && instrumentHistoryRes.ok) instrumentHistoryData = await instrumentHistoryRes.json();
       }catch(e){}
       renderAll();
     }
     load();
   </script>
-
   <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
   <script>
     (() => {
@@ -2891,7 +3279,6 @@
     })();
   </script>
 
-  <script src="glossary.js" defer></script>
   <script src="vote-widget.js" defer></script>
 </body>
 </html>
