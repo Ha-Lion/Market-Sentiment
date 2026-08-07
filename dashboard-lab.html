@@ -1200,11 +1200,18 @@
     .dashboard-period-row{
       display:flex;
       align-items:center;
-      justify-content:flex-end;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
       padding:9px 12px;
       margin:0 0 10px;
       border-top:1px solid var(--line);
       border-bottom:1px solid var(--line);
+    }
+    .dashboard-compare-copy{
+      color:var(--text);
+      font-size:14px;
+      line-height:1.4;
     }
 
   </style>
@@ -1218,8 +1225,7 @@
     <section class="panel lab-hero">
       <div>
         <h1>Interactive Market Sentiment Dashboard</h1>
-        <p class="lab-hero-main">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</p>
-        <p class="lab-small">Focused on selected-market sentiment. PSI and chart movement read the shared backend JSON outputs; user sentiment stays separate from PSI.</p>
+        <p class="lab-small">Focused on selected-market sentiment. PSI reflects public-news sentiment, while user sentiment is shown separately for comparison.</p>
         <div class="lab-controls" id="marketControls"></div>
       </div>
     </section>
@@ -1267,11 +1273,12 @@
       </div>
 
       <div class="svm-foot">
-        <span id="svmStatus">Uses instrument_history.json only. No extra scraping or workflow runs.</span>
+        <span id="svmStatus">Market and sentiment history are aligned automatically.</span>
       </div>
     </section>
 
     <div class="dashboard-period-row" aria-label="Dashboard time period">
+      <div class="dashboard-compare-copy">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</div>
       <div class="pill-row">
         <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
         <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
@@ -3232,7 +3239,7 @@
 
         if(!rows.length){
           ui.loading.hidden = false;
-          ui.loading.innerHTML = "No aligned PSI and market-close records are available for <b>" + state.instrument.replace(/[&<>]/g,"") + "</b> yet.<br>The chart will populate automatically as instrument_history.json accumulates.";
+          ui.loading.innerHTML = "Historical market and sentiment data for <b>" + state.instrument.replace(/[&<>]/g,"") + "</b> is still building.";
           ui.status.textContent = "Waiting for aligned instrument PSI and market-close history.";
         }else{
           ui.loading.hidden = true;
@@ -3264,7 +3271,7 @@
         const options = availableInstruments(state.history);
         if(!options.length){
           ui.instrument.innerHTML = '<option value="">No aligned instruments yet</option>';
-          ui.loading.textContent = "instrument_history.json loaded, but no records currently contain both PSI and market close.";
+          ui.loading.textContent = "Aligned market and sentiment history is not available yet.";
           return false;
         }
         const preferred = ["S&P 500 / ES","Nasdaq / NQ","Bitcoin / BTC","Gold"];
@@ -3314,7 +3321,7 @@
           setSeriesData();
         }catch(error){
           ui.loading.hidden = false;
-          ui.loading.textContent = "Could not load instrument_history.json. " + (error && error.message ? error.message : "");
+          ui.loading.textContent = "Market history is temporarily unavailable. Please refresh and try again.";
           ui.status.textContent = "Chart data unavailable.";
         }
       }
