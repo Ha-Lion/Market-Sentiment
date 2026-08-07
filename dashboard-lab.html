@@ -3666,5 +3666,79 @@
     })();
   </script>
   <script src="vote-widget.js" defer></script>
+  <script>
+    /* Dashboard-only PDF fallback.
+       The shared vote widget normally creates this control. If that shared
+       control is unavailable, restore the same PDF report entry point here. */
+    (function () {
+      function ensureDashboardPdfButton() {
+        if (document.getElementById("psdPdfWidget")) return;
+
+        if (!document.getElementById("psdDashboardPdfFallbackCss")) {
+          const style = document.createElement("style");
+          style.id = "psdDashboardPdfFallbackCss";
+          style.textContent = `
+            .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Arial,Segoe UI,sans-serif}
+            .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:54px;min-height:78px;border:1px solid rgba(115,176,255,.72);border-radius:18px;background:#132844;color:#fff;cursor:pointer;box-shadow:0 0 14px rgba(88,166,255,.20);animation:psdDashboardPdfFloat 3.5s ease-in-out infinite;padding:8px 5px;text-align:center}
+            .psd-pdf-tab:hover{background:#18365c;transform:translateX(2px)}
+            .psd-pdf-tab-icon{font-size:18px;line-height:1;font-weight:800;color:#fff}
+            .psd-pdf-tab-text{font-size:10.5px;font-weight:700;line-height:1.05;text-align:center;color:#fff}
+            @keyframes psdDashboardPdfFloat{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
+            @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 96px)}}
+            @media print{#psdPdfWidget{display:none!important}}
+          `;
+          document.head.appendChild(style);
+        }
+
+        const wrap = document.createElement("div");
+        wrap.id = "psdPdfWidget";
+        wrap.className = "psd-pdf-widget";
+        wrap.innerHTML = `
+          <button class="psd-pdf-tab" type="button" aria-label="Save this page as PDF report" title="Save this page as PDF report">
+            <span class="psd-pdf-tab-icon">PDF</span>
+            <span class="psd-pdf-tab-text">Save<br>PDF</span>
+          </button>
+        `;
+        document.body.appendChild(wrap);
+
+        const button = wrap.querySelector(".psd-pdf-tab");
+        button.addEventListener("click", async function () {
+          const original = button.innerHTML;
+          button.innerHTML = '<span class="psd-pdf-tab-icon">…</span><span class="psd-pdf-tab-text">Wait<br>PDF</span>';
+          button.disabled = true;
+          try {
+            if (typeof window.psdOpenPdfReport !== "function") {
+              await new Promise(function (resolve, reject) {
+                const existing = document.getElementById("psdPdfReportScript");
+                if (existing) {
+                  existing.addEventListener("load", resolve, { once: true });
+                  existing.addEventListener("error", reject, { once: true });
+                  return;
+                }
+                const script = document.createElement("script");
+                script.id = "psdPdfReportScript";
+                script.src = "pdf-report.js?v=40";
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+              });
+            }
+            if (typeof window.psdOpenPdfReport === "function") await window.psdOpenPdfReport();
+            else window.print();
+          } catch (error) {
+            console.warn("PDF report failed", error);
+            alert("PDF report failed to load. Please refresh and try again.");
+          } finally {
+            button.innerHTML = original;
+            button.disabled = false;
+          }
+        });
+      }
+
+      window.addEventListener("load", function () {
+        window.setTimeout(ensureDashboardPdfButton, 350);
+      });
+    })();
+  </script>
 </body>
 </html>
