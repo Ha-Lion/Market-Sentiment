@@ -42,9 +42,37 @@
     const map = new Map();
     (Array.isArray(payload.assets) ? payload.assets : []).forEach(function(asset){
       if(!asset || !asset.name || asset.enabled === false) return;
-      map.set(String(asset.name).toLowerCase(),asset);
+      const keys = [asset.name,asset.display_name,asset.data_key,asset.symbol]
+        .concat(Array.isArray(asset.aliases) ? asset.aliases : [])
+        .concat(Array.isArray(asset.history_keys) ? asset.history_keys : []);
+      keys.filter(Boolean).forEach(function(key){
+        map.set(String(key).trim().toLowerCase(),asset);
+      });
     });
     return map;
+  }
+
+  function relatedPageFor(asset,instrument,category){
+    const categoryName = String(category && category.category || "").toLowerCase();
+    const categoryPages = {
+      crypto:"crypto.html",
+      energy:"energy.html",
+      precious_metals:"precious-metals.html",
+      indices:"indices.html",
+      policy_assets:"policy-assets.html",
+      ai_assets:"ai-assets.html",
+      forex:"forex-sentiment-today.html"
+    };
+    if(categoryPages[categoryName]) return categoryPages[categoryName];
+    if(category && category.page && category.page !== "dashboard.html") return category.page;
+
+    const type = String(asset && asset.type || "").toLowerCase();
+    const symbol = String(asset && asset.symbol || "").replace(/[^A-Za-z]/g,"").toUpperCase();
+    const name = String(instrument || asset && (asset.display_name || asset.name) || "");
+    if(["forex","fx","currency"].includes(type) || (/^[A-Z]{6}$/.test(symbol) && name.includes("/"))){
+      return "forex-sentiment-today.html";
+    }
+    return category && category.page || "dashboard.html";
   }
 
   function aggregateHeadlineMix(headlines,instrument){
@@ -204,7 +232,7 @@
       const key = String(item.instrument).toLowerCase();
       const asset = assetMap.get(key) || {};
       const category = primaryCategory(asset);
-      const relatedPage = category.page || "dashboard.html";
+      const relatedPage = relatedPageFor(asset,item.instrument,category);
       const technical = technicalMap[item.instrument] || technicalMap[asset.name] || {};
       const daily = technical.daily || {};
       const userSentiment = userMap[key] || "N/A";
@@ -256,7 +284,6 @@
       const actions = document.createElement("div");
       actions.className = "watchlist-card-actions";
       actions.appendChild(makeLink("Related Sentiment Page",relatedPage));
-      actions.appendChild(makeLink("Interactive Dashboard","dashboard.html"));
       actions.appendChild(makeLink("Market Charts","charts.html"));
       actions.appendChild(makeLink("News & Articles","news-articles.html"));
 
