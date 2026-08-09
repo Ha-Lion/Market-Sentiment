@@ -11,6 +11,7 @@
   const modalBody = document.getElementById("watchlist-modal-body");
   const modalClose = document.getElementById("watchlist-modal-close");
   let historyPromise = null;
+  let technicalPromise = null;
   let newsPromise = null;
   let liveHeadlines = [];
   let activeChartCleanup = null;
@@ -176,6 +177,11 @@
     return historyPromise;
   }
 
+  function technicalData(){
+    if(!technicalPromise) technicalPromise = fetchJson("technical_data.json");
+    return technicalPromise;
+  }
+
   function newsData(){
     if(!newsPromise) newsPromise = fetchJson("news_latest.json");
     return newsPromise;
@@ -188,26 +194,49 @@
     return key ? instruments[key] : null;
   }
 
-  function chartPoints(payload,instrument,asset){
-    return (Array.isArray(payload && payload.records) ? payload.records : []).map(function(record){
+  function technicalEntry(payload,instrument,asset){
+    const technical = payload && payload.technical && typeof payload.technical === "object" ? payload.technical : {};
+    const wanted = new Set(assetKeys(asset,instrument));
+    const key = Object.keys(technical).find(function(name){ return wanted.has(normalizedKey(name)); });
+    return key ? technical[key] : null;
+  }
+
+  function chartPoints(payload,technicalPayload,instrument,asset){
+    const byDate = new Map();
+    (Array.isArray(payload && payload.records) ? payload.records : []).forEach(function(record){
       const entry = instrumentEntry(record,instrument,asset);
-      if(!entry) return null;
+      if(!entry) return;
       const daily = entry.technical && entry.technical.daily || {};
       const psi = Number(entry.psi);
       const close = Number(daily.close);
-      return {
-        date:String(record.date || "").slice(0,10).replace(/[^0-9-]/g,""),
+      const date=String(record.date || "").slice(0,10).replace(/[^0-9-]/g,"");
+      if(!date) return;
+      byDate.set(date,{
+        date:date,
         psi:Number.isFinite(psi) ? psi : null,
         close:Number.isFinite(close) ? close : null
-      };
-    }).filter(function(point){ return point && (Number.isFinite(point.psi) || Number.isFinite(point.close)); });
+      });
+    });
+    const currentTechnical=technicalEntry(technicalPayload,instrument,asset);
+    const dailyHistory=Array.isArray(currentTechnical && currentTechnical.daily_history) ? currentTechnical.daily_history : [];
+    dailyHistory.forEach(function(item){
+      const date=String(item && item.date || "").slice(0,10).replace(/[^0-9-]/g,"");
+      const close=Number(item && item.close);
+      if(!date || !Number.isFinite(close)) return;
+      const point=byDate.get(date) || {date:date,psi:null,close:null};
+      point.close=close;
+      byDate.set(date,point);
+    });
+    return Array.from(byDate.values())
+      .filter(function(point){return Number.isFinite(point.psi)||Number.isFinite(point.close);})
+      .sort(function(a,b){return a.date.localeCompare(b.date);});
   }
 
   function movingAverage(points,period){
     const out=[];
     const windowValues=[];
     points.forEach(function(point){
-      if(!Number.isFinite(point.close)){windowValues.length=0;return;}
+      if(!Number.isFinite(point.close)) return;
       windowValues.push(point.close);
       if(windowValues.length>period) windowValues.shift();
       if(windowValues.length===period){
@@ -246,6 +275,8 @@
       return;
     }
     const latest=points[points.length-1];
+    const latestMarket=points.slice().reverse().find(function(point){return Number.isFinite(point.close);}) || {};
+    const latestSentiment=points.slice().reverse().find(function(point){return Number.isFinite(point.psi);}) || {};
     const configuredDecimals=Number(asset && asset.market_data && asset.market_data.price_decimals);
     const priceDecimals=Number.isFinite(configuredDecimals)?Math.max(0,Math.min(6,configuredDecimals)):2;
     const prices=points.map(function(p){return p.close;});
@@ -259,8 +290,8 @@
     summary.className="watchlist-chart-summary";
     const summaryItems=[
       {text:"Latest: "+latest.date},
-      {text:"Market: "+formatValue(latest.close,priceDecimals),className:"market-value"},
-      {text:"PSI: "+(Number.isFinite(latest.psi)?Math.round(latest.psi)+"/100":"N/A"),className:"psi-value"},
+      {text:"Market: "+formatValue(latestMarket.close,priceDecimals),className:"market-value"},
+      {text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value"},
       {text:"Market RSI(14): "+formatValue(marketRsi,1),className:"market-rsi"},
       {text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi"},
       {text:"MA50: "+(ma50.length?formatValue(ma50[ma50.length-1].value,priceDecimals):"N/A")},
@@ -271,11 +302,6 @@
       const node=document.createElement("span");node.textContent=item.text;if(item.className) node.className=item.className;
       summary.appendChild(node);summaryNodes[item.className||("item"+index)]=node;
     });
-    if(!prices.some(Number.isFinite)){
-      const note=document.createElement("div");note.className="watchlist-chart-note";
-      note.textContent="Market-price history is not currently stored for this instrument.";summary.appendChild(note);
-    }
-
     const toolbar=document.createElement("div");
     toolbar.className="watchlist-chart-toolbar";
     function tool(label){const button=document.createElement("button");button.type="button";button.className="watchlist-chart-tool";button.textContent=label;toolbar.appendChild(button);return button;}
@@ -353,9 +379,9 @@
 
   async function openChartPopup(instrument,asset){
     openModal(instrument+" — Daily Market & Sentiment Comparison");
-    const payload=await historyData();
+    const data=await Promise.all([historyData(),technicalData()]);
     if(!modal.classList.contains("open")) return;
-    renderInstrumentChart(chartPoints(payload,instrument,asset),instrument,asset);
+    renderInstrumentChart(chartPoints(data[0],data[1],instrument,asset),instrument,asset);
   }
 
   function relevantNews(payload,instrument,asset){
