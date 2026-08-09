@@ -180,6 +180,10 @@
       title: "U.S. PSI",
       text: "A 0–100 Public Sentiment Index focused on major U.S. markets, rates, indexes, and U.S.-focused financial headlines."
     },
+    "europe-psi": {
+      title: "Europe PSI",
+      text: "A 0–100 Public Sentiment Index focused on major European markets and Europe-related financial headlines."
+    },
     "instrument-psi": {
       title: "Instrument PSI",
       text: "The 0–100 Public Sentiment Index calculated specifically for the selected instrument from its relevant PSI headline set."
@@ -224,6 +228,18 @@
       title: "Global vs. U.S. Flow",
       text: "Compares the movement of Global PSI and U.S. PSI over the same time periods."
     },
+    "historical-sentiment-bars": {
+      title: "Sentiment History",
+      text: "Compares saved Global PSI, U.S. PSI, and their relative momentum across recent periods. Taller values indicate stronger readings on the 0–100 sentiment scale."
+    },
+    "historical-skyline": {
+      title: "Global vs. U.S. Skyline",
+      text: "Shows the recent paths of Global PSI and U.S. PSI together so users can see whether the two sentiment readings are rising, falling, or separating."
+    },
+    "historical-momentum-chart": {
+      title: "Sentiment Momentum Performance",
+      text: "Shows the direction and size of recent sentiment changes alongside volatility. Momentum describes the recent pace of change, not a market-price forecast."
+    },
     "global-us-divergence": {
       title: "Global vs. U.S. Divergence",
       text: "Shows the difference between Global PSI and U.S. PSI. A larger gap means the two sentiment views are moving further apart."
@@ -231,6 +247,10 @@
     "global-bias-mix": {
       title: "Global Bias Mix",
       text: "Summarizes how saved global sentiment observations are distributed across bullish, neutral, and bearish readings."
+    },
+    "sentiment-drivers": {
+      title: "Sentiment Drivers",
+      text: "Lists recent relevant headlines contributing to the displayed sentiment context. The ordering reflects recency and signal strength, not source quality."
     },
     "source-vote-impact": {
       title: "Source Votes and Impact",
