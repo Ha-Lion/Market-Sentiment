@@ -43,7 +43,7 @@
             <a href="account.html#preferences">Preferences</a>
             <a href="account.html#profile">Update Information</a>
             <a href="watchlist.html">My Watchlist</a>
-            <a href="activity-report.html" id="psd-activity-report-link" hidden>Activity Report</a>
+            <a href="activity-report.html" id="psd-activity-report-link" hidden>Control Center</a>
             <button type="button" id="psd-nav-signout">Log Out</button>
           </div>
         </span>`;
@@ -592,6 +592,49 @@
     }, true);
   }
 
+  function ensureMaintenanceStyles(){
+    if(document.getElementById("psd-maintenance-styles")) return;
+    const style=document.createElement("style");
+    style.id="psd-maintenance-styles";
+    style.textContent=`
+      .psd-maintenance-banner{
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        width:100%;box-sizing:border-box;padding:10px 18px;
+        border-top:1px solid rgba(239,184,55,.65);
+        border-bottom:1px solid rgba(239,184,55,.65);
+        background:linear-gradient(90deg,#2b1d06,#59400e,#2b1d06);
+        color:#ffe49a;text-align:center;font-size:13px;font-weight:800;
+        box-shadow:0 5px 18px rgba(0,0,0,.22);position:relative;z-index:50
+      }
+      .psd-maintenance-banner strong{color:#fff0ba}
+      @media(max-width:700px){.psd-maintenance-banner{font-size:12px;padding:9px 12px}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function loadSiteStatus(){
+    try{
+      const client=await ensureAccountInfrastructure();
+      if(!client) return;
+      const result=await client.rpc("ms_get_site_status");
+      if(result.error||!result.data||result.data.maintenance!==true) return;
+      const header=document.querySelector(".psd-shared-header");
+      if(!header||document.getElementById("psd-maintenance-banner")) return;
+      ensureMaintenanceStyles();
+      const banner=document.createElement("div");
+      banner.id="psd-maintenance-banner";
+      banner.className="psd-maintenance-banner";
+      banner.setAttribute("role","status");
+      const icon=document.createElement("span");icon.textContent="🛠️";icon.setAttribute("aria-hidden","true");
+      const message=document.createElement("strong");message.textContent=String(result.data.message||"Website updates are in progress.");
+      banner.append(icon,message);
+      if(result.data.expected_back){const expected=document.createElement("span");expected.textContent=String(result.data.expected_back);banner.appendChild(expected);}
+      header.insertAdjacentElement("afterend",banner);
+    }catch(error){
+      /* A status-control outage must never interfere with the website. */
+    }
+  }
+
   function render(){
     const mount = document.getElementById("site-header");
     if(!mount) return;
@@ -654,6 +697,7 @@
     }
 
     initializeAccountNavigation();
+    loadSiteStatus();
   }
 
   installTourClickFallback();
