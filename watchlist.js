@@ -303,21 +303,21 @@
     summary.className="watchlist-chart-summary";
     const summaryItems=[{text:"Latest: "+latest.date}];
     if(hasNumericalFeed){
-      summaryItems.push({text:valueLabel+": "+formatValue(latestMarket.close,priceDecimals),className:"market-value"});
+      summaryItems.push({text:valueLabel+": "+formatValue(latestMarket.close,priceDecimals),className:"market-value series-label"});
     }
-    summaryItems.push({text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value"});
+    summaryItems.push({text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value series-label"});
     if(hasNumericalFeed){
-      summaryItems.push({text:valueLabel+" RSI(14): "+formatValue(marketRsi,1),className:"market-rsi"});
+      summaryItems.push({text:valueLabel+" RSI(14): "+formatValue(marketRsi,1),className:"market-rsi series-label"});
     }
-    summaryItems.push({text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi"});
+    summaryItems.push({text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi series-label"});
     if(hasNumericalFeed){
-      summaryItems.push({text:"MA20: "+(ma20.length?formatValue(ma20[ma20.length-1].value,priceDecimals):"N/A")});
-      summaryItems.push({text:"MA50: "+(ma50.length?formatValue(ma50[ma50.length-1].value,priceDecimals):"N/A")});
+      summaryItems.push({text:"MA20: "+(ma20.length?formatValue(ma20[ma20.length-1].value,priceDecimals):"N/A"),className:"ma20-value series-label"});
+      summaryItems.push({text:"MA50: "+(ma50.length?formatValue(ma50[ma50.length-1].value,priceDecimals):"N/A"),className:"ma50-value series-label"});
     }
     const summaryNodes={};
     summaryItems.forEach(function(item,index){
       const node=document.createElement("span");node.textContent=item.text;if(item.className) node.className=item.className;
-      summary.appendChild(node);summaryNodes[item.className||("item"+index)]=node;
+      summary.appendChild(node);summaryNodes[(item.className||("item"+index)).split(" ")[0]]=node;
     });
     const toolbar=document.createElement("div");
     toolbar.className="watchlist-chart-toolbar";
@@ -333,20 +333,16 @@
     wrap.className="watchlist-chart-wrap";
     const chartBox=document.createElement("div");chartBox.className="watchlist-chart-canvas";wrap.appendChild(chartBox);
 
-    const legend=document.createElement("div");
-    legend.className="watchlist-chart-legend";
-    legend.innerHTML=(hasNumericalFeed?'<span><i class="watchlist-legend-dot" style="background:#4f6dff"></i>'+(isEconomic?'Economic indicator':'Market price')+'</span>':'')+'<span><i class="watchlist-legend-dot" style="background:#43b5aa"></i>Public Sentiment Index</span>'+(hasNumericalFeed?'<span><i class="watchlist-legend-dot" style="background:#ef4444"></i>MA20</span><span><i class="watchlist-legend-dot" style="background:#f59e0b"></i>MA50</span>':'');
     modalBody.textContent="";
     modalBody.appendChild(toolbar);
     modalBody.appendChild(summary);
     modalBody.appendChild(wrap);
-    modalBody.appendChild(legend);
 
     const chart=LightweightCharts.createChart(chartBox,{
       width:chartBox.clientWidth,height:chartBox.clientHeight,
-      layout:{background:{type:LightweightCharts.ColorType.Solid,color:"#0b111b"},textColor:"#aeb8c7",fontFamily:"Inter,system-ui,-apple-system,'Segoe UI',sans-serif",fontSize:11,attributionLogo:false},
+      layout:{background:{type:LightweightCharts.ColorType.Solid,color:"#0b111b"},textColor:"#aeb8c7",fontFamily:"Inter,system-ui,-apple-system,'Segoe UI',sans-serif",fontSize:12,attributionLogo:false},
       grid:{vertLines:{color:"rgba(255,255,255,.08)"},horzLines:{color:"rgba(255,255,255,.08)"}},
-      crosshair:{mode:LightweightCharts.CrosshairMode.Magnet,vertLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"},horzLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"}},
+      crosshair:{mode:LightweightCharts.CrosshairMode.Magnet,vertLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"},horzLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#43b5aa"}},
       rightPriceScale:{borderColor:"#2a3443",scaleMargins:{top:.10,bottom:.10}},
       leftPriceScale:{visible:true,borderColor:"#2a3443",scaleMargins:{top:.10,bottom:.10}},
       timeScale:{borderColor:"#2a3443",timeVisible:false,secondsVisible:false,rightOffset:2,barSpacing:12,minBarSpacing:4},
