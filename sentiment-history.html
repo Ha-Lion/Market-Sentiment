@@ -592,6 +592,25 @@
       z-index:2;
     }
 
+    .history-records-heading{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+      align-items:center;
+      gap:18px;
+      margin-bottom:12px;
+    }
+
+    .history-records-heading h2{grid-column:1;margin:0;}
+    .history-records-heading p{
+      grid-column:2;
+      margin:0;
+      color:#fff;
+      font-size:13px;
+      font-weight:700;
+      text-align:center;
+      white-space:nowrap;
+    }
+
     .history-table th,.history-table td{
       padding:10px 12px;
       border-bottom:1px solid rgba(255,255,255,.075);
@@ -645,6 +664,8 @@
       .dash-side{grid-template-columns:repeat(2,1fr);}
       .card-a,.card-b,.card-c,.card-d,.card-e,.card-f,.card-g,.card-h,.card-i{grid-column:1/-1;min-height:190px;}
       .stats-strip,.history-info-grid{grid-template-columns:1fr 1fr;}
+      .history-records-heading{display:block;}
+      .history-records-heading p{margin-top:7px;text-align:left;white-space:normal;}
     }
 
     @media(max-width:520px){.stats-strip,.history-info-grid{grid-template-columns:1fr;}}
@@ -682,12 +703,11 @@
             <div class="side-pill" data-period="weekly">Weekly</div>
             <div class="side-pill" data-period="monthly">Monthly</div>
             <div class="side-spacer"></div>
-            <div class="side-pill export-pill" data-export="daily" title="Download up to 180 days of daily Global and U.S. sentiment history.">Export Daily</div>
-            <div class="side-pill export-pill" data-export="hourly" title="Download up to 45 days of hourly Global and U.S. sentiment history.">Export Hourly</div>
+            <div class="side-pill export-pill" data-export="hourly" title="Export up to 45 days of hourly Global and U.S. sentiment history as a CSV file.">Export Hourly CSV</div>
           </aside>
 
           <article class="dash-card card-a">
-            <div class="card-head"><div class="card-title" data-glossary="hourly-pulse"><span>Hourly sentiment pulse</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="hourly-pulse"><span>Hourly sentiment pulse</span></div></div>
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">NY Time</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
@@ -697,13 +717,13 @@
           </article>
 
           <article class="dash-card card-b">
-            <div class="card-head"><div class="card-title" data-glossary="global-us-flow"><span id="flowTitle">Global vs U.S. flow</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="global-us-flow"><span id="flowTitle">Global vs U.S. flow</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
           </article>
 
           <article class="dash-card card-c">
-            <div class="card-head"><div class="card-title" data-glossary="historical-sentiment-bars"><span>Sentiment history</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="historical-sentiment-bars"><span>Sentiment history</span></div></div>
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">Past 5D</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
@@ -714,14 +734,14 @@
           </article>
 
           <article class="dash-card card-d">
-            <div class="card-head"><div class="card-title" data-glossary="historical-skyline"><span id="skylineTitle">Daily Global vs U.S. skyline</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="historical-skyline"><span id="skylineTitle">Daily Global vs U.S. skyline</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="metric-caption" id="skylineYear">Daily</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartSkyline"></canvas></div>
           </article>
 
           <article class="dash-card card-e">
-            <div class="card-head"><div class="card-title" data-glossary="historical-momentum-chart"><span id="momentumTitle">Daily Global momentum performance</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="historical-momentum-chart"><span id="momentumTitle">Daily Global momentum performance</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(4,auto);gap:12px;">
               <div class="legend-row"><span class="legend-dot"></span>Global</div>
               <div class="legend-row"><span class="legend-dot us"></span>U.S.</div>
@@ -732,20 +752,20 @@
           </article>
 
           <article class="dash-card card-f">
-            <div class="card-head"><div class="card-title" data-glossary="global-bias-mix"><span id="biasTitle">Daily Global bias mix</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="global-bias-mix"><span id="biasTitle">Daily Global bias mix</span></div></div>
             <div class="bias-legend" id="biasLegend"></div>
             <div class="card-body bias-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
           </article>
 
           <article class="dash-card card-g">
-            <div class="card-head"><div class="card-title" data-glossary="global-us-divergence"><span id="divergenceTitle">Daily Global vs U.S. divergence</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="global-us-divergence"><span id="divergenceTitle">Daily Global vs U.S. divergence</span></div></div>
             <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:20px;" id="divergenceValue">--</div>
             <div class="small-note" id="divergenceNote" style="position:absolute;right:14px;top:76px;text-align:right;max-width:56%;">Waiting for data</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartDivergence"></canvas></div>
           </article>
 
           <article class="dash-card card-i">
-            <div class="card-head"><div class="card-title" data-glossary="sentiment-drivers"><span id="driversTitle">Daily Global sentiment drivers</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="sentiment-drivers"><span id="driversTitle">Daily Global sentiment drivers</span></div></div>
             <div class="driver-list" id="driverList"></div>
           </article>
         </div>
@@ -763,8 +783,10 @@
     </section>
 
     <section class="panel section">
-      <h2>Filtered Historical Records</h2>
-      <p class="muted">Newest records first. Use the dashboard controls above to switch source, period, and range.</p>
+      <div class="history-records-heading">
+        <h2>Filtered Historical Records</h2>
+        <p>Use the dashboard controls above to switch source, period, and range.</p>
+      </div>
       <div class="history-table-wrap">
         <table class="history-table">
           <thead><tr><th>Date / Period</th><th data-glossary="global-psi">Global PSI</th><th data-glossary="us-psi">U.S. PSI</th><th>Selected</th><th data-glossary="historical-move">Move</th><th data-glossary="sentiment-bias">Bias</th><th data-glossary="record-count">Records</th></tr></thead>
@@ -1512,7 +1534,10 @@
     }
 
     function renderRows(){
-      const rows=aggregate(state.scope,state.period,true).slice().reverse().slice(0,18);
+      const allRows=aggregate(state.scope,state.period,false);
+      const latestTime=allRows.length ? allRows[allRows.length-1].lastTs.getTime() : 0;
+      const cutoffTime=latestTime-(44*86400000);
+      const rows=allRows.filter(r=>r.lastTs.getTime()>=cutoffTime).slice().reverse();
       const body=document.getElementById("historyRows");
       if(!rows.length){body.innerHTML='<tr><td colspan="7">Waiting for sentiment history.</td></tr>';return;}
       body.innerHTML=rows.map((r,i,arr)=>{
