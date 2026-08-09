@@ -3371,7 +3371,7 @@
         bindControls();
         try{
           const [historyResponse,configResponse] = await Promise.all([
-            fetch("instrument_history.json",{cache:"no-store"}),
+            fetch("instrument_history_compact.json",{cache:"no-store"}),
             fetch("assets_config.json",{cache:"no-store"}).catch(() => null)
           ]);
           if(!historyResponse.ok) throw new Error("HTTP " + historyResponse.status);
@@ -3390,12 +3390,14 @@
     })();
   </script>
 
+  <script src="glossary.js?v=2"></script>
   <script>
     /* Embedded shared glossary fallback: keeps help icons available even if glossary.js is not served. */
     /* Public Sentiment Dash — shared glossary/help system
        One definition source for every page. Use: data-glossary="psi" */
     (function () {
       "use strict";
+      if (window.PSDGlossary) return;
     
       const DEFINITIONS = {
         "sentiment-market-chart": {
