@@ -6,6 +6,13 @@
 
   const statusNode = document.getElementById("watchlist-status");
   const grid = document.getElementById("watchlist-grid");
+  const modal = document.getElementById("watchlist-modal");
+  const modalTitle = document.getElementById("watchlist-modal-title");
+  const modalBody = document.getElementById("watchlist-modal-body");
+  const modalClose = document.getElementById("watchlist-modal-close");
+  let historyPromise = null;
+  let newsPromise = null;
+  let liveHeadlines = [];
 
   function setStatus(message,type){
     statusNode.textContent = message || "";
@@ -21,6 +28,19 @@
 
   function safeText(value,fallback){
     return String(value == null || value === "" ? (fallback || "—") : value);
+  }
+
+  function normalizedKey(value){
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g,"");
+  }
+
+  function assetKeys(asset,instrument){
+    return [instrument,asset && asset.name,asset && asset.display_name,asset && asset.data_key,asset && asset.symbol]
+      .concat(Array.isArray(asset && asset.aliases) ? asset.aliases : [])
+      .concat(Array.isArray(asset && asset.history_keys) ? asset.history_keys : [])
+      .filter(Boolean)
+      .map(normalizedKey)
+      .filter(Boolean);
   }
 
   async function fetchJson(path){
@@ -128,6 +148,180 @@
     return link;
   }
 
+  function makeButton(text,handler){
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = text;
+    button.addEventListener("click",handler);
+    return button;
+  }
+
+  function openModal(title){
+    modalTitle.textContent = title;
+    modalBody.innerHTML = '<div class="watchlist-popup-empty">Loading…</div>';
+    modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal(){
+    modal.classList.remove("open");
+    modalBody.textContent = "";
+    document.body.style.overflow = "";
+  }
+
+  function historyData(){
+    if(!historyPromise) historyPromise = fetchJson("instrument_history_compact.json");
+    return historyPromise;
+  }
+
+  function newsData(){
+    if(!newsPromise) newsPromise = fetchJson("news_latest.json");
+    return newsPromise;
+  }
+
+  function instrumentEntry(record,instrument,asset){
+    const instruments = record && record.instruments && typeof record.instruments === "object" ? record.instruments : {};
+    const wanted = new Set(assetKeys(asset,instrument));
+    const key = Object.keys(instruments).find(function(name){ return wanted.has(normalizedKey(name)); });
+    return key ? instruments[key] : null;
+  }
+
+  function chartPoints(payload,instrument,asset){
+    return (Array.isArray(payload && payload.records) ? payload.records : []).map(function(record){
+      const entry = instrumentEntry(record,instrument,asset);
+      if(!entry) return null;
+      const daily = entry.technical && entry.technical.daily || {};
+      const psi = Number(entry.psi);
+      const close = Number(daily.close);
+      return {
+        date:String(record.date || "").slice(0,10).replace(/[^0-9-]/g,""),
+        psi:Number.isFinite(psi) ? psi : null,
+        close:Number.isFinite(close) ? close : null
+      };
+    }).filter(function(point){ return point && (Number.isFinite(point.psi) || Number.isFinite(point.close)); });
+  }
+
+  function linePath(points,key,min,max,width,height,pad){
+    const span = max-min || 1;
+    let started = false;
+    return points.map(function(point,index){
+      const value = point[key];
+      if(!Number.isFinite(value)){started=false;return "";}
+      const x = pad + (points.length === 1 ? 0 : index/(points.length-1))*(width-pad*2);
+      const y = pad + (max-value)/span*(height-pad*2);
+      const command = started ? "L" : "M";
+      started = true;
+      return command+x.toFixed(1)+" "+y.toFixed(1);
+    }).filter(Boolean).join(" ");
+  }
+
+  function renderInstrumentChart(points){
+    if(!points.length){
+      modalBody.innerHTML = '<div class="watchlist-popup-empty">No saved chart history is available for this instrument yet.</div>';
+      return;
+    }
+    const width=820,height=360,pad=42;
+    const prices=points.map(function(p){return p.close;}).filter(Number.isFinite);
+    let priceMin=prices.length?Math.min.apply(null,prices):0;
+    let priceMax=prices.length?Math.max.apply(null,prices):1;
+    if(priceMin===priceMax){priceMin-=1;priceMax+=1;}
+    const pricePadding=(priceMax-priceMin)*.08;
+    priceMin-=pricePadding;priceMax+=pricePadding;
+    const pricePath=linePath(points,"close",priceMin,priceMax,width,height,pad);
+    const psiPath=linePath(points,"psi",0,100,width,height,pad);
+    const latest=points[points.length-1];
+
+    const summary=document.createElement("div");
+    summary.className="watchlist-chart-summary";
+    ["Latest date: "+latest.date,"Market: "+(Number.isFinite(latest.close)?latest.close.toLocaleString(undefined,{maximumFractionDigits:4}):"N/A"),"PSI: "+(Number.isFinite(latest.psi)?Math.round(latest.psi)+"/100":"N/A"),"Periods: "+points.length].forEach(function(text){
+      const item=document.createElement("span");item.textContent=text;summary.appendChild(item);
+    });
+
+    const wrap=document.createElement("div");
+    wrap.className="watchlist-chart-wrap";
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("viewBox","0 0 "+width+" "+height);
+    const grid=[0,1,2,3,4].map(function(i){
+      const y=pad+i*(height-pad*2)/4;
+      const psi=Math.round(100-i*25);
+      const price=(priceMax-i*(priceMax-priceMin)/4).toLocaleString(undefined,{maximumFractionDigits:4});
+      return '<line x1="'+pad+'" y1="'+y+'" x2="'+(width-pad)+'" y2="'+y+'" stroke="rgba(255,255,255,.10)"/><text x="8" y="'+(y+4)+'" fill="#8fa0b8" font-size="10">'+psi+'</text><text x="'+(width-7)+'" y="'+(y+4)+'" fill="#8fa0b8" font-size="10" text-anchor="end">'+price+'</text>';
+    }).join("");
+    const labels=[0,Math.floor((points.length-1)/2),points.length-1].filter(function(v,i,a){return a.indexOf(v)===i;}).map(function(index){
+      const x=pad+(points.length===1?0:index/(points.length-1))*(width-pad*2);
+      return '<text x="'+x+'" y="'+(height-12)+'" fill="#8fa0b8" font-size="10" text-anchor="middle">'+points[index].date+'</text>';
+    }).join("");
+    svg.innerHTML=grid+
+      (pricePath?'<path d="'+pricePath+'" fill="none" stroke="#4f6dff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>':"")+
+      (psiPath?'<path d="'+psiPath+'" fill="none" stroke="#43b5aa" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>':"")+labels;
+    wrap.appendChild(svg);
+
+    const legend=document.createElement("div");
+    legend.className="watchlist-chart-legend";
+    legend.innerHTML='<span><i class="watchlist-legend-dot" style="background:#4f6dff"></i>Market price</span><span><i class="watchlist-legend-dot" style="background:#43b5aa"></i>Public Sentiment Index</span>';
+    modalBody.textContent="";
+    modalBody.appendChild(summary);
+    modalBody.appendChild(wrap);
+    modalBody.appendChild(legend);
+  }
+
+  async function openChartPopup(instrument,asset){
+    openModal(instrument+" — Market & Sentiment History");
+    const payload=await historyData();
+    if(!modal.classList.contains("open")) return;
+    renderInstrumentChart(chartPoints(payload,instrument,asset));
+  }
+
+  function relevantNews(payload,instrument,asset){
+    const wanted=new Set(assetKeys(asset,instrument));
+    const latest=Array.isArray(payload && payload.articles)?payload.articles:[];
+    const combined=latest.concat(liveHeadlines);
+    const seen=new Set();
+    return combined.filter(function(article){
+      const matches=(Array.isArray(article && article.instruments)?article.instruments:[]).some(function(name){return wanted.has(normalizedKey(name));});
+      if(!matches) return false;
+      const key=String(article.link || article.title || "").trim().toLowerCase();
+      if(!key || seen.has(key)) return false;
+      seen.add(key);return true;
+    }).slice(0,50);
+  }
+
+  function renderNewsPopup(articles){
+    modalBody.textContent="";
+    if(!articles.length){
+      modalBody.innerHTML='<div class="watchlist-popup-empty">No relevant saved articles were found for this instrument.</div>';
+      return;
+    }
+    const list=document.createElement("div");
+    list.className="watchlist-news-list";
+    articles.forEach(function(article){
+      const link=document.createElement("a");
+      link.className="watchlist-news-item";
+      link.href=article.link || "#";
+      link.target="_blank";
+      link.rel="noopener";
+      const title=document.createElement("div");
+      title.className="watchlist-news-title";
+      title.textContent=safeText(article.title,"Untitled article");
+      const meta=document.createElement("div");
+      meta.className="watchlist-news-meta";
+      meta.textContent=[article.source || "Source",article.vote || "Neutral",(article.impact || "Normal")+" impact",article.published_utc || article.published || ""].filter(Boolean).join(" • ");
+      link.appendChild(title);link.appendChild(meta);list.appendChild(link);
+    });
+    modalBody.appendChild(list);
+  }
+
+  async function openNewsPopup(instrument,asset){
+    openModal(instrument+" — Relevant News & Articles");
+    const payload=await newsData();
+    if(!modal.classList.contains("open")) return;
+    renderNewsPopup(relevantNews(payload,instrument,asset));
+  }
+
+  modalClose.addEventListener("click",closeModal);
+  modal.addEventListener("click",function(event){if(event.target===modal) closeModal();});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape" && modal.classList.contains("open")) closeModal();});
+
   async function removeItem(itemId,watchlistId){
     const confirmed = window.confirm("Remove this instrument from your watchlist?");
     if(!confirmed) return;
@@ -218,6 +412,7 @@
 
     const assetMap = buildAssetMap(results[1] || {});
     const headlines = (results[2] && results[2].psi_headlines) || [];
+    liveHeadlines = headlines;
     const technicalMap = (results[3] && results[3].technical) || {};
     const userMap = {};
 
@@ -263,10 +458,26 @@
         });
       });
 
+      const maximize = document.createElement("button");
+      maximize.type = "button";
+      maximize.className = "watchlist-maximize";
+      maximize.textContent = "Maximize";
+      maximize.addEventListener("click",function(){
+        openChartPopup(item.instrument,asset).catch(function(error){
+          console.error(error);
+          modalBody.innerHTML = '<div class="watchlist-popup-empty">Chart could not be loaded.</div>';
+        });
+      });
+
+      const cardTools = document.createElement("div");
+      cardTools.className = "watchlist-card-tools";
+      cardTools.appendChild(maximize);
+      cardTools.appendChild(remove);
+
       nameBox.appendChild(title);
       nameBox.appendChild(symbol);
       top.appendChild(nameBox);
-      top.appendChild(remove);
+      top.appendChild(cardTools);
 
       const metrics = document.createElement("div");
       metrics.className = "watchlist-metrics";
@@ -285,7 +496,12 @@
       actions.className = "watchlist-card-actions";
       actions.appendChild(makeLink("Related Sentiment Page",relatedPage));
       actions.appendChild(makeLink("Market Charts","charts.html"));
-      actions.appendChild(makeLink("News & Articles","news-articles.html"));
+      actions.appendChild(makeButton("News & Articles",function(){
+        openNewsPopup(item.instrument,asset).catch(function(error){
+          console.error(error);
+          modalBody.innerHTML = '<div class="watchlist-popup-empty">News could not be loaded.</div>';
+        });
+      }));
 
       card.appendChild(top);
       card.appendChild(metrics);
