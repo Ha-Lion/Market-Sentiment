@@ -185,15 +185,32 @@
       box-shadow:0 8px 24px rgba(155,44,255,.18);
     }
 
-    .side-spacer{height:6px;}
-    .side-note{
-      color:rgba(255,255,255,.56);
-      font-size:10px;
-      line-height:1.35;
-      text-align:center;
-      padding:0 4px;
-      margin-top:-2px;
+    .side-pill.export-pill{
+      color:#171006;
+      border-color:rgba(255,215,128,.72);
+      background:linear-gradient(135deg,#ffd780,#d29922);
+      box-shadow:0 0 0 1px rgba(255,215,128,.18),0 8px 24px rgba(210,153,34,.30);
+      animation:exportDance 2.3s ease-in-out infinite;
     }
+
+    .side-pill.export-pill:nth-of-type(even){animation-delay:.22s;}
+
+    .side-pill.export-pill:hover{
+      color:#05070b;
+      border-color:#ffe8a8;
+      background:linear-gradient(135deg,#ffe7a3,#e4ad35);
+      box-shadow:0 0 20px rgba(255,215,128,.48),0 10px 28px rgba(210,153,34,.35);
+    }
+
+    @keyframes exportDance{
+      0%,100%{transform:translateY(0) rotate(0);}
+      35%{transform:translateY(-3px) rotate(-1deg);}
+      65%{transform:translateY(1px) rotate(1deg);}
+    }
+
+    @media(prefers-reduced-motion:reduce){.side-pill.export-pill{animation:none;}}
+
+    .side-spacer{height:6px;}
 
     .dash-card{
       position:relative;
@@ -665,12 +682,12 @@
             <div class="side-pill" data-period="weekly">Weekly</div>
             <div class="side-pill" data-period="monthly">Monthly</div>
             <div class="side-spacer"></div>
-            <div class="side-pill" data-export="csv" title="Exports past 6 months of hourly Global/U.S. history.">Export CSV</div>
-            <div class="side-note">CSV exports past 6 months of hourly history.</div>
+            <div class="side-pill export-pill" data-export="daily" title="Download up to 180 days of daily Global and U.S. sentiment history.">Export Daily</div>
+            <div class="side-pill export-pill" data-export="hourly" title="Download up to 45 days of hourly Global and U.S. sentiment history.">Export Hourly</div>
           </aside>
 
           <article class="dash-card card-a">
-            <div class="card-head"><div class="card-title">Hourly sentiment pulse</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="hourly-pulse"><span>Hourly sentiment pulse</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">NY Time</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
@@ -680,13 +697,13 @@
           </article>
 
           <article class="dash-card card-b">
-            <div class="card-head"><div class="card-title" id="flowTitle">Global vs U.S. flow</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="global-us-flow"><span id="flowTitle">Global vs U.S. flow</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
           </article>
 
           <article class="dash-card card-c">
-            <div class="card-head"><div class="card-title">Sentiment history</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="historical-sentiment-bars"><span>Sentiment history</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">Past 5D</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
@@ -697,14 +714,14 @@
           </article>
 
           <article class="dash-card card-d">
-            <div class="card-head"><div class="card-title" id="skylineTitle">Daily Global vs U.S. skyline</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="historical-skyline"><span id="skylineTitle">Daily Global vs U.S. skyline</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="metric-caption" id="skylineYear">Daily</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartSkyline"></canvas></div>
           </article>
 
           <article class="dash-card card-e">
-            <div class="card-head"><div class="card-title" id="momentumTitle">Daily Global momentum performance</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="historical-momentum-chart"><span id="momentumTitle">Daily Global momentum performance</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(4,auto);gap:12px;">
               <div class="legend-row"><span class="legend-dot"></span>Global</div>
               <div class="legend-row"><span class="legend-dot us"></span>U.S.</div>
@@ -715,20 +732,20 @@
           </article>
 
           <article class="dash-card card-f">
-            <div class="card-head"><div class="card-title" id="biasTitle">Daily Global bias mix</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="global-bias-mix"><span id="biasTitle">Daily Global bias mix</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="bias-legend" id="biasLegend"></div>
             <div class="card-body bias-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
           </article>
 
           <article class="dash-card card-g">
-            <div class="card-head"><div class="card-title" id="divergenceTitle">Daily Global vs U.S. divergence</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="global-us-divergence"><span id="divergenceTitle">Daily Global vs U.S. divergence</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:20px;" id="divergenceValue">--</div>
             <div class="small-note" id="divergenceNote" style="position:absolute;right:14px;top:76px;text-align:right;max-width:56%;">Waiting for data</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartDivergence"></canvas></div>
           </article>
 
           <article class="dash-card card-i">
-            <div class="card-head"><div class="card-title" id="driversTitle">Daily Global sentiment drivers</div><div class="card-icons"><span>+</span><span>×</span></div></div>
+            <div class="card-head"><div class="card-title" data-glossary="sentiment-drivers"><span id="driversTitle">Daily Global sentiment drivers</span></div><div class="card-icons"><span>+</span><span>×</span></div></div>
             <div class="driver-list" id="driverList"></div>
           </article>
         </div>
@@ -842,6 +859,17 @@
       return scope === "us" ? us : global;
     }
 
+    function historyMetadata(r){
+      return {
+        headlineCount:num(r.headline_count ?? r.relevant_headlines),
+        sourcesWorking:num(r.sources_working),
+        sourcesConfigured:num(r.sources_configured),
+        usSourceCount:num(r.us_psi_source_count ?? r.us_source_count),
+        usMethod:String(r.us_psi_method ?? r.us_method ?? ""),
+        recordCount:num(r.sample_count ?? r.record_count ?? r.records) ?? 1
+      };
+    }
+
     function normalizePayload(payload){
       const pools = [];
       if(Array.isArray(payload)) pools.push(payload);
@@ -857,7 +885,7 @@
         const global = valueFrom(r,"global");
         const us = valueFrom(r,"us");
         if(global === null && us === null) return null;
-        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i};
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i, ...historyMetadata(r)};
       }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
     }
 
@@ -876,7 +904,7 @@
         const global = valueFrom(r,"global");
         const us = valueFrom(r,"us");
         if(global === null && us === null) return null;
-        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i};
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i, ...historyMetadata(r)};
       }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
     }
 
@@ -1606,46 +1634,96 @@
         document.querySelectorAll("[data-range]").forEach(b=>b.classList.toggle("active",b===btn));
         render();
       }));
-      document.querySelector("[data-export='csv']")?.addEventListener("click",exportCSV);
+      document.querySelectorAll("[data-export]").forEach(btn=>btn.addEventListener("click",()=>exportCSV(btn.dataset.export)));
       window.addEventListener("resize",()=>{state.anim=1;drawAll();});
     }
 
-    function exportCSV(){
-      const source = (state.hourly && state.hourly.length ? state.hourly : state.raw)
-        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()));
+    function csvCell(value){
+      return `"${String(value ?? "").replaceAll('"','""')}"`;
+    }
 
-      if(!source.length){
-        alert("No hourly history is available to export yet.");
-        return;
-      }
-
-      const latestTs = Math.max(...source.map(r => r.ts.getTime()));
-      const cutoffTs = latestTs - (180 * 86400000);
-      const groups = new Map();
-
-      source.filter(r => r.ts.getTime() >= cutoffTs).forEach(r => {
-        const ny = nyHourParts(r.ts);
-        if(!groups.has(ny.key)){
-          groups.set(ny.key,{key:ny.key, global:[], us:[], count:0});
-        }
-        const g = groups.get(ny.key);
-        if(Number.isFinite(r.global)) g.global.push(r.global);
-        if(Number.isFinite(r.us)) g.us.push(r.us);
-        g.count += 1;
-      });
-
-      const rows = [...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
-      const csv=["ny_hour,global_psi,us_psi,records"].concat(rows.map(r=>[
-        r.key,
-        round(avg(r.global)),
-        round(avg(r.us)),
-        r.count
-      ].map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(","))).join("\n");
-
-      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    function downloadCSV(filename,headers,rows){
+      const csv=[headers.map(csvCell).join(",")].concat(rows.map(row=>row.map(csvCell).join(","))).join("\n");
+      const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
       const url=URL.createObjectURL(blob);
       const a=document.createElement("a");
-      a.href=url; a.download="public-sentiment-hourly-6months.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      a.href=url;
+      a.download=filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportDailyCSV(){
+      const source=state.raw.filter(r=>r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+      if(!source.length){alert("No daily sentiment history is available to export yet.");return;}
+      const latestTs=source[source.length-1].ts.getTime();
+      const cutoffTs=latestTs-(180*86400000);
+      const records=source.filter(r=>r.ts.getTime()>=cutoffTs);
+      let priorGlobal=null, priorUs=null;
+      const rows=records.map(r=>{
+        const global=round(r.global);
+        const us=round(r.us);
+        const globalChange=Number.isFinite(global)&&Number.isFinite(priorGlobal)?global-priorGlobal:null;
+        const usChange=Number.isFinite(us)&&Number.isFinite(priorUs)?us-priorUs:null;
+        if(Number.isFinite(global)) priorGlobal=global;
+        if(Number.isFinite(us)) priorUs=us;
+        return [
+          "daily",r.date,global,us,
+          Number.isFinite(global)&&Number.isFinite(us)?global-us:null,
+          globalChange,usChange,bias(global).text,bias(us).text,
+          r.headlineCount,r.sourcesWorking,r.sourcesConfigured,r.usSourceCount,r.usMethod,r.recordCount
+        ];
+      });
+      downloadCSV("public-sentiment-daily-180days.csv",[
+        "period","date_ny","global_psi","us_psi","global_us_gap","global_change","us_change",
+        "global_sentiment","us_sentiment","headline_count","sources_working","sources_configured",
+        "us_source_count","us_psi_method","records"
+      ],rows);
+    }
+
+    function exportHourlyCSV(){
+      const source=state.hourly.filter(r=>r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+      if(!source.length){alert("No hourly sentiment history is available to export yet.");return;}
+      const latestTs=source[source.length-1].ts.getTime();
+      const cutoffTs=latestTs-(45*86400000);
+      const groups=new Map();
+      source.filter(r=>r.ts.getTime()>=cutoffTs).forEach(r=>{
+        const ny=nyHourParts(r.ts);
+        if(!groups.has(ny.key)) groups.set(ny.key,{key:ny.key,global:[],us:[],records:0,meta:r});
+        const g=groups.get(ny.key);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+        g.records+=Number.isFinite(r.recordCount)?r.recordCount:1;
+        g.meta=r;
+      });
+      const records=[...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
+      let priorGlobal=null, priorUs=null;
+      const rows=records.map(r=>{
+        const global=round(avg(r.global));
+        const us=round(avg(r.us));
+        const globalChange=Number.isFinite(global)&&Number.isFinite(priorGlobal)?global-priorGlobal:null;
+        const usChange=Number.isFinite(us)&&Number.isFinite(priorUs)?us-priorUs:null;
+        if(Number.isFinite(global)) priorGlobal=global;
+        if(Number.isFinite(us)) priorUs=us;
+        return [
+          "hourly",r.key,r.meta.ts.toISOString(),global,us,
+          Number.isFinite(global)&&Number.isFinite(us)?global-us:null,
+          globalChange,usChange,bias(global).text,bias(us).text,
+          r.meta.headlineCount,r.meta.sourcesWorking,r.meta.sourcesConfigured,r.meta.usSourceCount,r.meta.usMethod,r.records
+        ];
+      });
+      downloadCSV("public-sentiment-hourly-45days.csv",[
+        "period","ny_hour","utc_timestamp","global_psi","us_psi","global_us_gap","global_change","us_change",
+        "global_sentiment","us_sentiment","headline_count","sources_working","sources_configured",
+        "us_source_count","us_psi_method","records"
+      ],rows);
+    }
+
+    function exportCSV(kind){
+      if(kind==="daily") exportDailyCSV();
+      else exportHourlyCSV();
     }
 
     async function fetchJSON(path){
@@ -1727,7 +1805,7 @@
     bindControls();
     loadHistory();
   </script>
-  <script src="glossary.js?v=2" defer></script>
+  <script src="glossary.js?v=3" defer></script>
   <script src="vote-widget.js" defer></script>
 </body>
 </html>
