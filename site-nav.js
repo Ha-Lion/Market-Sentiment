@@ -599,15 +599,15 @@
     style.textContent=`
       .psd-maintenance-banner{
         display:flex;align-items:center;justify-content:center;gap:8px;
-        width:100%;box-sizing:border-box;padding:10px 18px;
-        border-top:1px solid rgba(239,184,55,.65);
-        border-bottom:1px solid rgba(239,184,55,.65);
-        background:linear-gradient(90deg,#2b1d06,#59400e,#2b1d06);
-        color:#ffe49a;text-align:center;font-size:13px;font-weight:800;
+        width:100%;box-sizing:border-box;padding:14px 20px;
+        border-top:1px solid rgba(174,48,68,.9);
+        border-bottom:1px solid rgba(174,48,68,.9);
+        background:linear-gradient(90deg,#350711,#681523,#350711);
+        color:#ffe4e8;text-align:center;font-size:15px;font-weight:800;
         box-shadow:0 5px 18px rgba(0,0,0,.22);position:relative;z-index:50
       }
-      .psd-maintenance-banner strong{color:#fff0ba}
-      @media(max-width:700px){.psd-maintenance-banner{font-size:12px;padding:9px 12px}}
+      .psd-maintenance-banner strong{color:#fff2f4}
+      @media(max-width:700px){.psd-maintenance-banner{font-size:13px;padding:12px 14px}}
     `;
     document.head.appendChild(style);
   }
