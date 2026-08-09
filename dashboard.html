@@ -1260,13 +1260,13 @@
 
       <div class="svm-chart-shell">
         <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <span style="color:#667085">vs.</span> <i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
-        <div class="svm-live-legend"><span style="color:#5b7cff">Market <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
+        <div class="svm-live-legend"><span style="color:#5b7cff"><span id="svmValueLabel">Market</span> <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
         <div id="svmPriceChart" role="img" aria-label="Market price and Public Sentiment Index comparison chart"></div>
         <div class="svm-chart-loading" id="svmLoading">Loading saved sentiment and market history…</div>
       </div>
 
       <div class="svm-stats">
-        <div class="svm-stat"><span>Latest close</span><b id="svmLatestPrice">—</b></div>
+        <div class="svm-stat"><span id="svmLatestValueLabel">Latest close</span><b id="svmLatestPrice">—</b></div>
         <div class="svm-stat"><span data-glossary="psi">Latest PSI</span><b id="svmLatestPsi">—</b></div>
         <div class="svm-stat"><span data-glossary="aligned-periods">Aligned periods</span><b id="svmRecordCount">—</b></div>
         <div class="svm-stat"><span data-glossary="change-correlation">Change correlation</span><b id="svmCorrelation">—</b></div>
@@ -2803,12 +2803,15 @@
       "use strict";
 
       const ui = {
+        panelTitle: document.getElementById("svmTitle"),
         instrument: document.getElementById("svmInstrument"),
         loading: document.getElementById("svmLoading"),
         status: document.getElementById("svmStatus"),
         toolNote: document.getElementById("svmToolNote"),
         priceTitle: document.getElementById("svmPriceTitle"),
         priceLegend: document.getElementById("svmPriceLegend"),
+        valueLabel: document.getElementById("svmValueLabel"),
+        latestValueLabel: document.getElementById("svmLatestValueLabel"),
         psiLegend: document.getElementById("svmPsiLegend"),
         latestPrice: document.getElementById("svmLatestPrice"),
         latestPsi: document.getElementById("svmLatestPsi"),
@@ -2825,7 +2828,9 @@
 
       const state = {
         history: null,
+        technical: null,
         displayNames: new Map(),
+        assetsByKey: new Map(),
         period: "daily",
         instrument: "",
         chartPrice: null,
@@ -2876,12 +2881,16 @@
 
       function loadDisplayNames(config){
         state.displayNames.clear();
+        state.assetsByKey.clear();
         const assets = Array.isArray(config?.assets) ? config.assets : [];
         assets.forEach(asset => {
           if(!asset || asset.enabled === false) return;
           const key = String(asset.data_key || asset.name || "").trim();
           const label = String(asset.display_name || asset.name || key).trim();
-          if(key && label) state.displayNames.set(key,label);
+          if(key && label){
+            state.displayNames.set(key,label);
+            state.assetsByKey.set(key,asset);
+          }
         });
       }
 
@@ -2913,6 +2922,8 @@
       }
 
       function pricePrecision(instrument,value){
+        const configured = Number(state.assetsByKey.get(instrument)?.market_data?.price_decimals);
+        if(Number.isInteger(configured) && configured >= 0 && configured <= 8) return configured;
         const key = normalizeName(instrument);
         if(/dxy/.test(key)) return 3;
         if(isFxInstrument(instrument)) return /jpy/.test(key) ? 3 : 4;
@@ -2979,18 +2990,40 @@
         return null;
       }
 
+      function technicalFor(instrument){
+        const technical = state.technical && state.technical.technical;
+        if(!technical || typeof technical !== "object") return null;
+        if(technical[instrument]) return technical[instrument];
+        const wanted = normalizeName(instrument);
+        const key = Object.keys(technical).find(name => normalizeName(name) === wanted);
+        return key ? technical[key] : null;
+      }
+
+      function valueDescriptor(instrument){
+        return state.assetsByKey.get(instrument)?.market_data?.data_kind === "economic_indicator"
+          ? "economic indicator"
+          : "market close";
+      }
+
       function rawRows(instrument){
         const records = Array.isArray(state.history && state.history.records) ? state.history.records : [];
-        return records
-          .map(record => {
-            const date = String(record && record.date || "").slice(0,10);
-            const entry = entryFor(record,instrument);
-            return {
-              date,
-              psi: finite(entry && entry.psi),
-              close: closeForEntry(entry)
-            };
-          })
+        const rowsByDate = new Map();
+        records.forEach(record => {
+          const date = String(record && record.date || "").slice(0,10);
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+          const entry = entryFor(record,instrument);
+          rowsByDate.set(date,{date,psi:finite(entry && entry.psi),close:closeForEntry(entry)});
+        });
+        const sourceHistory = technicalFor(instrument)?.daily_history;
+        (Array.isArray(sourceHistory) ? sourceHistory : []).forEach(point => {
+          const date = String(point && point.date || "").slice(0,10);
+          const close = finite(point && point.close);
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || close == null) return;
+          const row = rowsByDate.get(date) || {date,psi:null,close:null};
+          row.close = close;
+          rowsByDate.set(date,row);
+        });
+        return [...rowsByDate.values()]
           .filter(row => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && row.psi != null && row.close != null)
           .sort((a,b) => a.date.localeCompare(b.date));
       }
@@ -3281,7 +3314,11 @@
         state.priceSeries.setData(priceData);
         state.psiSeries.setData(psiData);
 
-        ui.priceTitle.textContent = instrumentDisplayName(state.instrument) + " • market close";
+        const economicIndicator = state.assetsByKey.get(state.instrument)?.market_data?.data_kind === "economic_indicator";
+        ui.panelTitle.textContent = economicIndicator ? "Sentiment vs. Economic Indicator" : "Sentiment vs. Market Price";
+        ui.valueLabel.textContent = economicIndicator ? "Indicator" : "Market";
+        ui.latestValueLabel.textContent = economicIndicator ? "Latest indicator" : "Latest close";
+        ui.priceTitle.textContent = instrumentDisplayName(state.instrument) + " • " + valueDescriptor(state.instrument);
         updateStats(rows);
         updatePriceLegend(null);
         updatePsiLegend(null);
@@ -3294,11 +3331,11 @@
         if(!rows.length){
           ui.loading.hidden = false;
           ui.loading.innerHTML = "Historical market and sentiment data for <b>" + instrumentDisplayName(state.instrument).replace(/[&<>]/g,"") + "</b> is still building.";
-          ui.status.textContent = "Waiting for aligned instrument PSI and market-close history.";
+          ui.status.textContent = "Waiting for aligned instrument PSI and source-value history.";
         }else{
           ui.loading.hidden = true;
           const label = state.period.charAt(0).toUpperCase() + state.period.slice(1);
-          ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • market and sentiment share the same timeline.";
+          ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • source values and sentiment share the same timeline.";
         }
 
         requestAnimationFrame(fitCharts);
@@ -3307,14 +3344,10 @@
       function availableInstruments(history){
         const records = Array.isArray(history && history.records) ? history.records : [];
         const counts = new Map();
-        records.forEach(record => {
-          const instruments = record && record.instruments;
-          if(!instruments || typeof instruments !== "object") return;
-          Object.entries(instruments).forEach(([name,entry]) => {
-            if(finite(entry && entry.psi) != null && closeForEntry(entry) != null){
-              counts.set(name,(counts.get(name) || 0) + 1);
-            }
-          });
+        state.assetsByKey.forEach((asset,name) => {
+          if(!asset?.market_data || !Array.isArray(technicalFor(name)?.daily_history) || !technicalFor(name).daily_history.length) return;
+          const count = records.reduce((total,record) => total + (finite(entryFor(record,name)?.psi) != null ? 1 : 0),0);
+          if(count) counts.set(name,count);
         });
         return [...counts.entries()]
           .sort((a,b) => a[0].localeCompare(b[0],undefined,{sensitivity:"base"}))
@@ -3370,13 +3403,15 @@
         if(!buildCharts()) return;
         bindControls();
         try{
-          const [historyResponse,configResponse] = await Promise.all([
+          const [historyResponse,configResponse,technicalResponse] = await Promise.all([
             fetch("instrument_history_compact.json",{cache:"no-store"}),
-            fetch("assets_config.json",{cache:"no-store"}).catch(() => null)
+            fetch("assets_config.json",{cache:"no-store"}).catch(() => null),
+            fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
           ]);
           if(!historyResponse.ok) throw new Error("HTTP " + historyResponse.status);
           state.history = await historyResponse.json();
           if(configResponse && configResponse.ok) loadDisplayNames(await configResponse.json());
+          if(technicalResponse && technicalResponse.ok) state.technical = await technicalResponse.json();
           if(!populateInstruments()) return;
           setSeriesData();
         }catch(error){
