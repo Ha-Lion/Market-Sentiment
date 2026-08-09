@@ -214,7 +214,9 @@
       byDate.set(date,{
         date:date,
         psi:Number.isFinite(psi) ? psi : null,
-        close:Number.isFinite(close) ? close : null
+        close:Number.isFinite(close) ? close : null,
+        ma20:null,
+        ma50:null,
       });
     });
     const currentTechnical=technicalEntry(technicalPayload,instrument,asset);
@@ -225,6 +227,10 @@
       if(!date || !Number.isFinite(close)) return;
       const point=byDate.get(date) || {date:date,psi:null,close:null};
       point.close=close;
+      const ma20=Number(item && item.ma20);
+      const ma50=Number(item && item.ma50);
+      point.ma20=Number.isFinite(ma20) ? ma20 : null;
+      point.ma50=Number.isFinite(ma50) ? ma50 : null;
       byDate.set(date,point);
     });
     return Array.from(byDate.values())
@@ -232,7 +238,11 @@
       .sort(function(a,b){return a.date.localeCompare(b.date);});
   }
 
-  function movingAverage(points,period){
+  function movingAverage(points,period,storedField){
+    const stored=points
+      .filter(function(point){return Number.isFinite(point[storedField]);})
+      .map(function(point){return {time:point.date,value:point[storedField]};});
+    if(stored.length) return stored;
     const out=[];
     const windowValues=[];
     points.forEach(function(point){
@@ -274,6 +284,9 @@
       modalBody.innerHTML='<div class="watchlist-popup-empty">The interactive chart library could not load. Refresh the page and try again.</div>';
       return;
     }
+    const hasNumericalFeed=Boolean(asset && asset.market_data);
+    const isEconomic=asset && asset.market_data && asset.market_data.data_kind === "economic_indicator";
+    const valueLabel=isEconomic ? "Indicator" : "Market";
     const latest=points[points.length-1];
     const latestMarket=points.slice().reverse().find(function(point){return Number.isFinite(point.close);}) || {};
     const latestSentiment=points.slice().reverse().find(function(point){return Number.isFinite(point.psi);}) || {};
@@ -283,20 +296,24 @@
     const sentiments=points.map(function(p){return p.psi;});
     const marketRsi=rsi(prices,14);
     const sentimentRsi=rsi(sentiments,14);
-    const ma50=movingAverage(points,50);
-    const ma200=movingAverage(points,200);
+    const ma20=movingAverage(points,20,"ma20");
+    const ma50=movingAverage(points,50,"ma50");
 
     const summary=document.createElement("div");
     summary.className="watchlist-chart-summary";
-    const summaryItems=[
-      {text:"Latest: "+latest.date},
-      {text:"Market: "+formatValue(latestMarket.close,priceDecimals),className:"market-value"},
-      {text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value"},
-      {text:"Market RSI(14): "+formatValue(marketRsi,1),className:"market-rsi"},
-      {text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi"},
-      {text:"MA50: "+(ma50.length?formatValue(ma50[ma50.length-1].value,priceDecimals):"N/A")},
-      {text:"MA200: "+(ma200.length?formatValue(ma200[ma200.length-1].value,priceDecimals):"N/A")}
-    ];
+    const summaryItems=[{text:"Latest: "+latest.date}];
+    if(hasNumericalFeed){
+      summaryItems.push({text:valueLabel+": "+formatValue(latestMarket.close,priceDecimals),className:"market-value"});
+    }
+    summaryItems.push({text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value"});
+    if(hasNumericalFeed){
+      summaryItems.push({text:valueLabel+" RSI(14): "+formatValue(marketRsi,1),className:"market-rsi"});
+    }
+    summaryItems.push({text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi"});
+    if(hasNumericalFeed){
+      summaryItems.push({text:"MA20: "+(ma20.length?formatValue(ma20[ma20.length-1].value,priceDecimals):"N/A")});
+      summaryItems.push({text:"MA50: "+(ma50.length?formatValue(ma50[ma50.length-1].value,priceDecimals):"N/A")});
+    }
     const summaryNodes={};
     summaryItems.forEach(function(item,index){
       const node=document.createElement("span");node.textContent=item.text;if(item.className) node.className=item.className;
@@ -310,6 +327,7 @@
     const cursorTool=tool("＋ Free cursor");
     const fitTool=tool("Fit");
     const clearTool=tool("Clear drawings");
+    toolbar.hidden=!hasNumericalFeed;
 
     const wrap=document.createElement("div");
     wrap.className="watchlist-chart-wrap";
@@ -317,7 +335,7 @@
 
     const legend=document.createElement("div");
     legend.className="watchlist-chart-legend";
-    legend.innerHTML='<span><i class="watchlist-legend-dot" style="background:#4f6dff"></i>Market price</span><span><i class="watchlist-legend-dot" style="background:#43b5aa"></i>Public Sentiment Index</span><span><i class="watchlist-legend-dot" style="background:#f59e0b"></i>MA50</span><span><i class="watchlist-legend-dot" style="background:#ef4444"></i>MA200</span>';
+    legend.innerHTML=(hasNumericalFeed?'<span><i class="watchlist-legend-dot" style="background:#4f6dff"></i>'+(isEconomic?'Economic indicator':'Market price')+'</span>':'')+'<span><i class="watchlist-legend-dot" style="background:#43b5aa"></i>Public Sentiment Index</span>'+(hasNumericalFeed?'<span><i class="watchlist-legend-dot" style="background:#ef4444"></i>MA20</span><span><i class="watchlist-legend-dot" style="background:#f59e0b"></i>MA50</span>':'');
     modalBody.textContent="";
     modalBody.appendChild(toolbar);
     modalBody.appendChild(summary);
@@ -336,14 +354,14 @@
       handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true},
       localization:{locale:navigator.language||"en-US"}
     });
-    const priceSeries=chart.addSeries(LightweightCharts.LineSeries,{title:"Market",color:"#4f6dff",lineWidth:2,priceScaleId:"right",priceLineVisible:true,lastValueVisible:true,crosshairMarkerVisible:true,priceFormat:{type:"price",precision:priceDecimals,minMove:Math.pow(10,-priceDecimals)}});
+    const priceSeries=chart.addSeries(LightweightCharts.LineSeries,{title:valueLabel,color:"#4f6dff",lineWidth:2,priceScaleId:"right",priceLineVisible:true,lastValueVisible:true,crosshairMarkerVisible:true,priceFormat:{type:"price",precision:priceDecimals,minMove:Math.pow(10,-priceDecimals)}});
     const psiSeries=chart.addSeries(LightweightCharts.LineSeries,{title:"PSI",color:"#43b5aa",lineWidth:2,priceScaleId:"left",priceLineVisible:true,lastValueVisible:true,crosshairMarkerVisible:true,priceFormat:{type:"price",precision:0,minMove:1},autoscaleInfoProvider:function(){return {priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}};}});
     const marketPriceFormat={type:"price",precision:priceDecimals,minMove:Math.pow(10,-priceDecimals)};
+    const ma20Series=chart.addSeries(LightweightCharts.LineSeries,{title:"MA20",color:"#ef4444",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
     const ma50Series=chart.addSeries(LightweightCharts.LineSeries,{title:"MA50",color:"#f59e0b",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
-    const ma200Series=chart.addSeries(LightweightCharts.LineSeries,{title:"MA200",color:"#ef4444",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
     const priceData=points.filter(function(p){return Number.isFinite(p.close);}).map(function(p){return {time:p.date,value:p.close};});
     const psiData=points.filter(function(p){return Number.isFinite(p.psi);}).map(function(p){return {time:p.date,value:p.psi};});
-    priceSeries.setData(priceData);psiSeries.setData(psiData);ma50Series.setData(ma50);ma200Series.setData(ma200);
+    priceSeries.setData(priceData);psiSeries.setData(psiData);ma20Series.setData(ma20);ma50Series.setData(ma50);
     chart.timeScale().fitContent();
 
     let drawingMode="",trendStart=null,freeCursor=false;
@@ -369,7 +387,7 @@
     });
     chart.subscribeCrosshairMove(function(param){
       const market=param.seriesData.get(priceSeries);const sentiment=param.seriesData.get(psiSeries);
-      if(summaryNodes["market-value"]&&market&&Number.isFinite(market.value)) summaryNodes["market-value"].textContent="Market: "+formatValue(market.value,priceDecimals);
+      if(summaryNodes["market-value"]&&market&&Number.isFinite(market.value)) summaryNodes["market-value"].textContent=valueLabel+": "+formatValue(market.value,priceDecimals);
       if(summaryNodes["psi-value"]&&sentiment&&Number.isFinite(sentiment.value)) summaryNodes["psi-value"].textContent="PSI: "+Math.round(sentiment.value)+"/100";
     });
     const observer=new ResizeObserver(function(entries){entries.forEach(function(entry){chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});});});
@@ -378,7 +396,10 @@
   }
 
   async function openChartPopup(instrument,asset){
-    openModal(instrument+" — Daily Market & Sentiment Comparison");
+    const title=asset && asset.market_data
+      ? instrument+" — Daily "+(asset.market_data.data_kind === "economic_indicator" ? "Indicator" : "Market")+" & Sentiment Comparison"
+      : instrument+" — Daily Sentiment History";
+    openModal(title);
     const data=await Promise.all([historyData(),technicalData()]);
     if(!modal.classList.contains("open")) return;
     renderInstrumentChart(chartPoints(data[0],data[1],instrument,asset),instrument,asset);
