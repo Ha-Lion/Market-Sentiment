@@ -1135,12 +1135,16 @@
       display:flex;
       align-items:center;
       gap:8px;
-      pointer-events:none;
+      pointer-events:auto;
       color:#d1d4dc;
       font-size:12px;
       font-weight:800;
     }
     .svm-chart-title i{width:8px;height:8px;border-radius:50%;display:inline-block}
+    .svm-series-toggle{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid #363a45;border-radius:999px;background:#171b25;color:inherit;font:inherit;cursor:pointer}
+    .svm-series-toggle.inactive{color:#667085!important;opacity:.72}
+    .svm-series-toggle.inactive i{background:#667085!important;box-shadow:none!important}
+    .svm-chart-title{max-width:calc(100% - 28px);flex-wrap:wrap}
     .svm-price-dot{background:#2962ff;box-shadow:0 0 9px rgba(41,98,255,.75)}
     .svm-psi-dot{background:#26a69a;box-shadow:0 0 9px rgba(38,166,154,.70)}
     .svm-live-legend{
@@ -1247,6 +1251,7 @@
           <button class="svm-tool" type="button" id="svmTrendTool" title="Click two points on the market chart">╱ Trend line</button>
           <button class="svm-tool" type="button" id="svmLevelTool" title="Click once on the market chart">— Price level</button>
           <button class="svm-tool" type="button" id="svmCrosshairTool" title="Switch between magnet and free crosshair">＋ Free cursor</button>
+          <button class="svm-tool" type="button" id="svmResetTool">Reset 7D</button>
           <button class="svm-tool" type="button" id="svmFitTool">Fit</button>
           <button class="svm-tool" type="button" id="svmClearTool">Clear drawings</button>
         </div>
@@ -1259,8 +1264,14 @@
       </div>
 
       <div class="svm-chart-shell">
-        <div class="svm-chart-title"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <span style="color:#667085">vs.</span> <i class="svm-psi-dot"></i><span>Public Sentiment Index</span></div>
-        <div class="svm-live-legend"><span style="color:#5b7cff"><span id="svmValueLabel">Market</span> <b id="svmPriceLegend">—</b></span><span style="color:#26a69a">Sentiment <b id="svmPsiLegend">—</b>/100</span></div>
+        <div class="svm-chart-title" id="svmSeriesControls">
+          <button class="svm-series-toggle" type="button" data-svm-series="market" aria-pressed="true" style="color:#5b7cff"><i class="svm-price-dot"></i><span id="svmPriceTitle">Market price</span> <b id="svmPriceLegend">—</b></button>
+          <button class="svm-series-toggle" type="button" data-svm-series="sentiment" aria-pressed="true" style="color:#26a69a"><i class="svm-psi-dot"></i><span>PSI</span> <b id="svmPsiLegend">—</b>/100</button>
+          <button class="svm-series-toggle" type="button" data-svm-series="marketEma20" aria-pressed="true" style="color:#ef5350"><i style="background:#ef5350"></i><span>Market EMA20</span></button>
+          <button class="svm-series-toggle" type="button" data-svm-series="marketEma50" aria-pressed="true" style="color:#f59e0b"><i style="background:#f59e0b"></i><span>Market EMA50</span></button>
+          <button class="svm-series-toggle" type="button" data-svm-series="sentimentEma20" aria-pressed="true" style="color:#22d3ee"><i style="background:#22d3ee"></i><span>Sentiment EMA20</span></button>
+          <button class="svm-series-toggle" type="button" data-svm-series="sentimentEma50" aria-pressed="true" style="color:#84cc16"><i style="background:#84cc16"></i><span>Sentiment EMA50</span></button>
+        </div>
         <div id="svmPriceChart" role="img" aria-label="Market price and Public Sentiment Index comparison chart"></div>
         <div class="svm-chart-loading" id="svmLoading">Loading saved sentiment and market history…</div>
       </div>
@@ -2820,6 +2831,7 @@
         trendTool: document.getElementById("svmTrendTool"),
         levelTool: document.getElementById("svmLevelTool"),
         crosshairTool: document.getElementById("svmCrosshairTool"),
+        resetTool: document.getElementById("svmResetTool"),
         fitTool: document.getElementById("svmFitTool"),
         clearTool: document.getElementById("svmClearTool")
       };
@@ -2836,13 +2848,18 @@
         chartPrice: null,
         priceSeries: null,
         psiSeries: null,
+        marketEma20Series: null,
+        marketEma50Series: null,
+        sentimentEma20Series: null,
+        sentimentEma50Series: null,
         displayRows: [],
         activeTool: null,
         trendStart: null,
         drawingSeries: [],
         priceLines: [],
         freeCursor: false,
-        syncingCrosshair: false
+        syncingCrosshair: false,
+        linkedScaleMargin: .10
       };
 
       const FALLBACK_DISPLAY_NAMES = new Map(Object.entries({
@@ -3048,17 +3065,21 @@
         });
       }
 
-      function movingAverage(data,period,key){
+      function exponentialMovingAverage(data,period,key){
         const output = [];
-        for(let index=0;index<data.length;index++){
-          if(index < period - 1) continue;
-          const window = data.slice(index - period + 1,index + 1).map(row => finite(row[key])).filter(v => v != null);
-          if(window.length !== period) continue;
-          output.push({
-            time:data[index].date,
-            value:window.reduce((sum,value) => sum + value,0) / period
-          });
-        }
+        const seed = [];
+        const alpha = 2 / (period + 1);
+        let ema = null;
+        data.forEach(row => {
+          const value = finite(row[key]);
+          if(value == null) return;
+          if(ema == null){
+            seed.push(value);
+            if(seed.length < period) return;
+            ema = seed.reduce((sum,item) => sum + item,0) / period;
+          }else ema = (value * alpha) + (ema * (1 - alpha));
+          output.push({time:row.date,value:ema});
+        });
         return output;
       }
 
@@ -3128,7 +3149,7 @@
             fixRightEdge:false
           },
           handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
-          handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true},
+          handleScale:{axisPressedMouseMove:false,mouseWheel:true,pinch:true},
           localization:{locale:navigator.language || "en-US"}
         };
       }
@@ -3162,6 +3183,11 @@
           crosshairMarkerRadius:4,
           priceFormat:{type:"price",precision:0,minMove:1}
         });
+        const marketFormat = {type:"price",precision:2,minMove:.01};
+        state.marketEma20Series = state.chartPrice.addSeries(LightweightCharts.LineSeries,{color:"#ef5350",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketFormat});
+        state.marketEma50Series = state.chartPrice.addSeries(LightweightCharts.LineSeries,{color:"#f59e0b",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketFormat});
+        state.sentimentEma20Series = state.chartPrice.addSeries(LightweightCharts.LineSeries,{color:"#22d3ee",lineWidth:1,priceScaleId:"left",priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceFormat:{type:"price",precision:1,minMove:.1}});
+        state.sentimentEma50Series = state.chartPrice.addSeries(LightweightCharts.LineSeries,{color:"#84cc16",lineWidth:1,priceScaleId:"left",priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceFormat:{type:"price",precision:1,minMove:.1}});
 
         state.chartPrice.priceScale("left").applyOptions({
           autoScale:true,
@@ -3177,6 +3203,7 @@
 
         bindCombinedCursor();
         bindDrawingClicks();
+        bindLinkedScale(priceBox);
 
         const observer = new ResizeObserver(entries => {
           entries.forEach(entry => {
@@ -3185,6 +3212,29 @@
         });
         observer.observe(priceBox);
         return true;
+      }
+
+      function applyLinkedScaleMargin(value){
+        state.linkedScaleMargin = Math.max(.02,Math.min(.36,value));
+        ["left","right"].forEach(side => state.chartPrice.priceScale(side).applyOptions({autoScale:true,scaleMargins:{top:state.linkedScaleMargin,bottom:state.linkedScaleMargin}}));
+      }
+
+      function bindLinkedScale(container){
+        let drag = null;
+        container.addEventListener("pointerdown",event => {
+          const rect = container.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          if(x > 58 && x < rect.width - 58) return;
+          drag = {y:event.clientY,margin:state.linkedScaleMargin};
+          container.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        });
+        container.addEventListener("pointermove",event => {
+          if(!drag) return;
+          applyLinkedScaleMargin(drag.margin + ((event.clientY - drag.y) / Math.max(200,container.clientHeight)) * .35);
+        });
+        container.addEventListener("pointerup",() => { drag = null; });
+        container.addEventListener("pointercancel",() => { drag = null; });
       }
 
       function bindCombinedCursor(){
@@ -3285,6 +3335,12 @@
         state.chartPrice.timeScale().fitContent();
       }
 
+      function resetSevenDays(){
+        applyLinkedScaleMargin(.10);
+        const count = state.displayRows.length;
+        state.chartPrice.timeScale().setVisibleLogicalRange({from:Math.max(0,count - 7),to:Math.max(0,count - 1)});
+      }
+
       function updateStats(rows){
         const latest = rows.at(-1);
         ui.latestPrice.textContent = formatNumber(latest && latest.close);
@@ -3313,10 +3369,15 @@
 
         state.priceSeries.setData(priceData);
         state.psiSeries.setData(psiData);
+        state.marketEma20Series.setData(exponentialMovingAverage(rows,20,"close"));
+        state.marketEma50Series.setData(exponentialMovingAverage(rows,50,"close"));
+        state.sentimentEma20Series.setData(exponentialMovingAverage(rows,20,"psi"));
+        state.sentimentEma50Series.setData(exponentialMovingAverage(rows,50,"psi"));
+        [state.marketEma20Series,state.marketEma50Series].forEach(series => series.applyOptions({priceFormat:{type:"price",precision,minMove:Math.pow(10,-precision)}}));
 
         const economicIndicator = state.assetsByKey.get(state.instrument)?.market_data?.data_kind === "economic_indicator";
         ui.panelTitle.textContent = economicIndicator ? "Sentiment vs. Economic Indicator" : "Sentiment vs. Market Price";
-        ui.valueLabel.textContent = economicIndicator ? "Indicator" : "Market";
+        if(ui.valueLabel) ui.valueLabel.textContent = economicIndicator ? "Indicator" : "Market";
         ui.latestValueLabel.textContent = economicIndicator ? "Latest indicator" : "Latest close";
         ui.priceTitle.textContent = instrumentDisplayName(state.instrument) + " • " + valueDescriptor(state.instrument);
         updateStats(rows);
@@ -3338,7 +3399,7 @@
           ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • source values and sentiment share the same timeline.";
         }
 
-        requestAnimationFrame(fitCharts);
+        requestAnimationFrame(resetSevenDays);
       }
 
       function availableInstruments(history){
@@ -3390,6 +3451,14 @@
         ui.levelTool.addEventListener("click",() => setActiveTool("level"));
         ui.clearTool.addEventListener("click",clearDrawings);
         ui.fitTool.addEventListener("click",fitCharts);
+        ui.resetTool.addEventListener("click",resetSevenDays);
+        const seriesByKey = {market:state.priceSeries,sentiment:state.psiSeries,marketEma20:state.marketEma20Series,marketEma50:state.marketEma50Series,sentimentEma20:state.sentimentEma20Series,sentimentEma50:state.sentimentEma50Series};
+        document.querySelectorAll("[data-svm-series]").forEach(button => button.addEventListener("click",() => {
+          const active = button.getAttribute("aria-pressed") !== "true";
+          button.setAttribute("aria-pressed",String(active));
+          button.classList.toggle("inactive",!active);
+          seriesByKey[button.dataset.svmSeries].applyOptions({visible:active});
+        }));
         ui.crosshairTool.addEventListener("click",() => {
           state.freeCursor = !state.freeCursor;
           const mode = state.freeCursor ? LightweightCharts.CrosshairMode.Normal : LightweightCharts.CrosshairMode.Magnet;
