@@ -238,20 +238,22 @@
       .sort(function(a,b){return a.date.localeCompare(b.date);});
   }
 
-  function movingAverage(points,period,storedField){
-    const stored=points
-      .filter(function(point){return Number.isFinite(point[storedField]);})
-      .map(function(point){return {time:point.date,value:point[storedField]};});
-    if(stored.length) return stored;
+  function exponentialMovingAverage(points,period,key){
     const out=[];
-    const windowValues=[];
+    const seed=[];
+    const alpha=2/(period+1);
+    let ema=null;
     points.forEach(function(point){
-      if(!Number.isFinite(point.close)) return;
-      windowValues.push(point.close);
-      if(windowValues.length>period) windowValues.shift();
-      if(windowValues.length===period){
-        out.push({time:point.date,value:windowValues.reduce(function(a,b){return a+b;},0)/period});
+      const value=Number(point[key]);
+      if(!Number.isFinite(value)) return;
+      if(ema===null){
+        seed.push(value);
+        if(seed.length<period) return;
+        ema=seed.reduce(function(a,b){return a+b;},0)/period;
+      }else{
+        ema=(value*alpha)+(ema*(1-alpha));
       }
+      out.push({time:point.date,value:ema});
     });
     return out;
   }
@@ -296,28 +298,33 @@
     const sentiments=points.map(function(p){return p.psi;});
     const marketRsi=rsi(prices,14);
     const sentimentRsi=rsi(sentiments,14);
-    const ma20=movingAverage(points,20,"ma20");
-    const ma50=movingAverage(points,50,"ma50");
+    const marketEma20=exponentialMovingAverage(points,20,"close");
+    const marketEma50=exponentialMovingAverage(points,50,"close");
+    const sentimentEma20=exponentialMovingAverage(points,20,"psi");
+    const sentimentEma50=exponentialMovingAverage(points,50,"psi");
 
     const summary=document.createElement("div");
     summary.className="watchlist-chart-summary";
     const summaryItems=[{text:"Latest: "+latest.date}];
     if(hasNumericalFeed){
-      summaryItems.push({text:valueLabel+": "+formatValue(latestMarket.close,priceDecimals),className:"market-value series-label"});
+      summaryItems.push({key:"market",text:valueLabel+": "+formatValue(latestMarket.close,priceDecimals),className:"market-value series-label"});
     }
-    summaryItems.push({text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value series-label"});
+    summaryItems.push({key:"sentiment",text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value series-label"});
     if(hasNumericalFeed){
       summaryItems.push({text:valueLabel+" RSI(14): "+formatValue(marketRsi,1),className:"market-rsi series-label"});
     }
     summaryItems.push({text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi series-label"});
     if(hasNumericalFeed){
-      summaryItems.push({text:"MA20: "+(ma20.length?formatValue(ma20[ma20.length-1].value,priceDecimals):"N/A"),className:"ma20-value series-label"});
-      summaryItems.push({text:"MA50: "+(ma50.length?formatValue(ma50[ma50.length-1].value,priceDecimals):"N/A"),className:"ma50-value series-label"});
+      summaryItems.push({key:"marketEma20",text:"Market EMA20: "+(marketEma20.length?formatValue(marketEma20[marketEma20.length-1].value,priceDecimals):"N/A"),className:"market-ema20-value series-label"});
+      summaryItems.push({key:"marketEma50",text:"Market EMA50: "+(marketEma50.length?formatValue(marketEma50[marketEma50.length-1].value,priceDecimals):"N/A"),className:"market-ema50-value series-label"});
     }
+    summaryItems.push({key:"sentimentEma20",text:"Sentiment EMA20: "+(sentimentEma20.length?formatValue(sentimentEma20[sentimentEma20.length-1].value,1):"N/A"),className:"sentiment-ema20-value series-label"});
+    summaryItems.push({key:"sentimentEma50",text:"Sentiment EMA50: "+(sentimentEma50.length?formatValue(sentimentEma50[sentimentEma50.length-1].value,1):"N/A"),className:"sentiment-ema50-value series-label"});
     const summaryNodes={};
     summaryItems.forEach(function(item,index){
-      const node=document.createElement("span");node.textContent=item.text;if(item.className) node.className=item.className;
-      summary.appendChild(node);summaryNodes[(item.className||("item"+index)).split(" ")[0]]=node;
+      const node=document.createElement(item.key?"button":"span");if(item.key){node.type="button";node.classList.add("watchlist-series-toggle");node.dataset.series=item.key;node.setAttribute("aria-pressed","true");const dot=document.createElement("i");dot.setAttribute("aria-hidden","true");node.appendChild(dot);}if(item.className) node.className+=(node.className?" ":"")+item.className;
+      const text=document.createElement("span");text.className="watchlist-series-text";text.textContent=item.text;node.appendChild(text);
+      summary.appendChild(node);summaryNodes[(item.className||("item"+index)).split(" ")[0]]=text;
     });
     const toolbar=document.createElement("div");
     toolbar.className="watchlist-chart-toolbar";
@@ -325,6 +332,7 @@
     const trendTool=tool("╱ Trend line");
     const levelTool=tool("— Price level");
     const cursorTool=tool("＋ Free cursor");
+    const resetTool=tool("Reset 7D");
     const fitTool=tool("Fit");
     const clearTool=tool("Clear drawings");
     toolbar.hidden=!hasNumericalFeed;
@@ -347,18 +355,29 @@
       leftPriceScale:{visible:true,borderColor:"#2a3443",scaleMargins:{top:.10,bottom:.10}},
       timeScale:{borderColor:"#2a3443",timeVisible:false,secondsVisible:false,rightOffset:2,barSpacing:12,minBarSpacing:4},
       handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
-      handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true},
+      handleScale:{axisPressedMouseMove:false,mouseWheel:true,pinch:true},
       localization:{locale:navigator.language||"en-US"}
     });
     const priceSeries=chart.addSeries(LightweightCharts.LineSeries,{title:valueLabel,color:"#4f6dff",lineWidth:2,priceScaleId:"right",priceLineVisible:true,lastValueVisible:true,crosshairMarkerVisible:true,priceFormat:{type:"price",precision:priceDecimals,minMove:Math.pow(10,-priceDecimals)}});
     const psiSeries=chart.addSeries(LightweightCharts.LineSeries,{title:"PSI",color:"#43b5aa",lineWidth:2,priceScaleId:"left",priceLineVisible:true,lastValueVisible:true,crosshairMarkerVisible:true,priceFormat:{type:"price",precision:0,minMove:1},autoscaleInfoProvider:function(){return {priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}};}});
     const marketPriceFormat={type:"price",precision:priceDecimals,minMove:Math.pow(10,-priceDecimals)};
-    const ma20Series=chart.addSeries(LightweightCharts.LineSeries,{title:"MA20",color:"#ef4444",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
-    const ma50Series=chart.addSeries(LightweightCharts.LineSeries,{title:"MA50",color:"#f59e0b",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
+    const marketEma20Series=chart.addSeries(LightweightCharts.LineSeries,{title:"Market EMA20",color:"#ef4444",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
+    const marketEma50Series=chart.addSeries(LightweightCharts.LineSeries,{title:"Market EMA50",color:"#f59e0b",lineWidth:1,priceScaleId:"right",priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:false,priceFormat:marketPriceFormat});
+    const sentimentEma20Series=chart.addSeries(LightweightCharts.LineSeries,{title:"Sentiment EMA20",color:"#22d3ee",lineWidth:1,priceScaleId:"left",priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceFormat:{type:"price",precision:1,minMove:.1}});
+    const sentimentEma50Series=chart.addSeries(LightweightCharts.LineSeries,{title:"Sentiment EMA50",color:"#84cc16",lineWidth:1,priceScaleId:"left",priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceFormat:{type:"price",precision:1,minMove:.1}});
     const priceData=points.filter(function(p){return Number.isFinite(p.close);}).map(function(p){return {time:p.date,value:p.close};});
     const psiData=points.filter(function(p){return Number.isFinite(p.psi);}).map(function(p){return {time:p.date,value:p.psi};});
-    priceSeries.setData(priceData);psiSeries.setData(psiData);ma20Series.setData(ma20);ma50Series.setData(ma50);
-    chart.timeScale().fitContent();
+    priceSeries.setData(priceData);psiSeries.setData(psiData);marketEma20Series.setData(marketEma20);marketEma50Series.setData(marketEma50);sentimentEma20Series.setData(sentimentEma20);sentimentEma50Series.setData(sentimentEma50);
+    const seriesByKey={market:priceSeries,sentiment:psiSeries,marketEma20:marketEma20Series,marketEma50:marketEma50Series,sentimentEma20:sentimentEma20Series,sentimentEma50:sentimentEma50Series};
+    summary.querySelectorAll(".watchlist-series-toggle").forEach(function(button){button.addEventListener("click",function(){const active=button.getAttribute("aria-pressed")!=="true";button.setAttribute("aria-pressed",String(active));button.classList.toggle("inactive",!active);seriesByKey[button.dataset.series].applyOptions({visible:active});});});
+    let linkedMargin=.10;
+    function applyLinkedMargin(value){linkedMargin=Math.max(.02,Math.min(.36,value));["left","right"].forEach(function(side){chart.priceScale(side).applyOptions({autoScale:true,scaleMargins:{top:linkedMargin,bottom:linkedMargin}});});}
+    function resetSevenDays(){applyLinkedMargin(.10);const count=Math.max(priceData.length,psiData.length);chart.timeScale().setVisibleLogicalRange({from:Math.max(0,count-7),to:Math.max(0,count-1)});}
+    resetSevenDays();
+    let edgeDrag=null;
+    chartBox.addEventListener("pointerdown",function(event){const rect=chartBox.getBoundingClientRect();const x=event.clientX-rect.left;if(x>58&&x<rect.width-58) return;edgeDrag={y:event.clientY,margin:linkedMargin};chartBox.setPointerCapture(event.pointerId);event.preventDefault();});
+    chartBox.addEventListener("pointermove",function(event){if(!edgeDrag) return;applyLinkedMargin(edgeDrag.margin+((event.clientY-edgeDrag.y)/Math.max(200,chartBox.clientHeight))*.35);});
+    chartBox.addEventListener("pointerup",function(){edgeDrag=null;});chartBox.addEventListener("pointercancel",function(){edgeDrag=null;});
 
     let drawingMode="",trendStart=null,freeCursor=false;
     const drawingSeries=[],priceLines=[];
@@ -366,6 +385,7 @@
     trendTool.addEventListener("click",function(){setMode("trend",trendTool);});
     levelTool.addEventListener("click",function(){setMode("level",levelTool);});
     cursorTool.addEventListener("click",function(){freeCursor=!freeCursor;chart.applyOptions({crosshair:{mode:freeCursor?LightweightCharts.CrosshairMode.Normal:LightweightCharts.CrosshairMode.Magnet}});cursorTool.classList.toggle("active",freeCursor);cursorTool.textContent=freeCursor?"⊕ Magnet cursor":"＋ Free cursor";});
+    resetTool.addEventListener("click",resetSevenDays);
     fitTool.addEventListener("click",function(){chart.timeScale().fitContent();});
     clearTool.addEventListener("click",function(){drawingSeries.splice(0).forEach(function(series){chart.removeSeries(series);});priceLines.splice(0).forEach(function(line){priceSeries.removePriceLine(line);});drawingMode="";trendStart=null;trendTool.classList.remove("active");levelTool.classList.remove("active");});
     chart.subscribeClick(function(param){
