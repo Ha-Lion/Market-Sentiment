@@ -47,7 +47,7 @@
 
   async function fetchJson(path){
     try{
-      const response = await fetch(path,{cache:"no-store"});
+      const response = await fetch(path,{cache:"no-cache"});
       if(response.ok) return await response.json();
     }catch(_error){}
     return {};
@@ -509,69 +509,8 @@
     grid.appendChild(card);
   }
 
-  async function load(){
-    setStatus("Loading your private watchlist…");
+  function renderCards(items,assetMap,headlines,technicalMap,userMap){
     grid.textContent = "";
-
-    const sessionResult = await client.auth.getSession();
-    const session = sessionResult.data && sessionResult.data.session;
-    if(!session){
-      window.location.replace("auth.html");
-      return;
-    }
-
-    const watchlistResult = await client
-      .from("watchlists")
-      .select("id")
-      .eq("user_id",session.user.id)
-      .eq("is_default",true)
-      .limit(1)
-      .maybeSingle();
-
-    if(watchlistResult.error) throw watchlistResult.error;
-    if(!watchlistResult.data){
-      renderEmpty();
-      setStatus("No default watchlist exists yet.");
-      return;
-    }
-
-    const watchlistId = watchlistResult.data.id;
-
-    const results = await Promise.all([
-      client
-        .from("watchlist_items")
-        .select("id,instrument,display_order,created_at")
-        .eq("watchlist_id",watchlistId)
-        .order("display_order",{ascending:true})
-        .order("created_at",{ascending:true}),
-      fetchJson("assets_config.json"),
-      fetchJson("dashboard_live.json"),
-      fetchJson("technical_data.json"),
-      client.rpc("get_user_sentiment")
-    ]);
-
-    if(results[0].error) throw results[0].error;
-
-    const items = results[0].data || [];
-    if(!items.length){
-      renderEmpty();
-      setStatus("Your watchlist is ready for instruments.");
-      return;
-    }
-
-    const assetMap = buildAssetMap(results[1] || {});
-    const headlines = (results[2] && results[2].psi_headlines) || [];
-    liveHeadlines = headlines;
-    const technicalMap = (results[3] && results[3].technical) || {};
-    const userMap = {};
-
-    if(!results[4].error && Array.isArray(results[4].data)){
-      results[4].data.forEach(function(row){
-        userMap[String(row.instrument).toLowerCase()] =
-          row.user_sentiment || "N/A";
-      });
-    }
-
     items.forEach(function(item){
       const key = String(item.instrument).toLowerCase();
       const asset = assetMap.get(key) || {};
@@ -647,7 +586,78 @@
       card.appendChild(actions);
       grid.appendChild(card);
     });
+  }
 
+  async function load(){
+    setStatus("Loading your private watchlist…");
+    grid.textContent = "";
+
+    const sessionResult = await client.auth.getSession();
+    const session = sessionResult.data && sessionResult.data.session;
+    if(!session){
+      window.location.replace("auth.html");
+      return;
+    }
+
+    const watchlistResult = await client
+      .from("watchlists")
+      .select("id")
+      .eq("user_id",session.user.id)
+      .eq("is_default",true)
+      .limit(1)
+      .maybeSingle();
+
+    if(watchlistResult.error) throw watchlistResult.error;
+    if(!watchlistResult.data){
+      renderEmpty();
+      setStatus("No default watchlist exists yet.");
+      return;
+    }
+
+    const watchlistId = watchlistResult.data.id;
+    const firstResults = await Promise.all([
+      client
+        .from("watchlist_items")
+        .select("id,instrument,display_order,created_at")
+        .eq("watchlist_id",watchlistId)
+        .order("display_order",{ascending:true})
+        .order("created_at",{ascending:true}),
+      fetchJson("assets_config.json")
+    ]);
+
+    if(firstResults[0].error) throw firstResults[0].error;
+    const items = firstResults[0].data || [];
+    if(!items.length){
+      renderEmpty();
+      setStatus("Your watchlist is ready for instruments.");
+      return;
+    }
+
+    const assetMap = buildAssetMap(firstResults[1] || {});
+    renderCards(items,assetMap,[],{},{});
+
+    setStatus(
+      "Showing " + items.length + " saved instrument" +
+      (items.length === 1 ? "." : "s.") +
+      " Loading the latest readings…",
+      "success"
+    );
+
+    const backgroundResults = await Promise.all([
+      fetchJson("dashboard_live.json"),
+      fetchJson("technical_data.json"),
+      client.rpc("get_user_sentiment")
+    ]);
+    const headlines = (backgroundResults[0] && backgroundResults[0].psi_headlines) || [];
+    liveHeadlines = headlines;
+    const technicalMap = (backgroundResults[1] && backgroundResults[1].technical) || {};
+    const userMap = {};
+    if(!backgroundResults[2].error && Array.isArray(backgroundResults[2].data)){
+      backgroundResults[2].data.forEach(function(row){
+        userMap[String(row.instrument).toLowerCase()] = row.user_sentiment || "N/A";
+      });
+    }
+    renderCards(items,assetMap,headlines,technicalMap,userMap);
     setStatus(
       "Showing " + items.length + " saved instrument" +
       (items.length === 1 ? "." : "s.") +
