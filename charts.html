@@ -368,11 +368,22 @@
         name: "Stocks",
         items: [
           { label:"Nvidia", short:"NVDA", symbol:"NASDAQ:NVDA" },
+          { label:"Broadcom", short:"AVGO", symbol:"NASDAQ:AVGO" },
+          { label:"AMD", short:"AMD", symbol:"NASDAQ:AMD" },
+          { label:"Micron", short:"MU", symbol:"NASDAQ:MU" },
+          { label:"Taiwan Semiconductor", short:"TSM", symbol:"NYSE:TSM" },
+          { label:"ASML", short:"ASML", symbol:"NASDAQ:ASML" },
           { label:"Tesla", short:"TSLA", symbol:"NASDAQ:TSLA" },
           { label:"Apple", short:"AAPL", symbol:"NASDAQ:AAPL" },
           { label:"Microsoft", short:"MSFT", symbol:"NASDAQ:MSFT" },
+          { label:"Alphabet", short:"GOOGL", symbol:"NASDAQ:GOOGL" },
           { label:"Amazon", short:"AMZN", symbol:"NASDAQ:AMZN" },
-          { label:"Meta", short:"META", symbol:"NASDAQ:META" }
+          { label:"Meta", short:"META", symbol:"NASDAQ:META" },
+          { label:"Palantir", short:"PLTR", symbol:"NASDAQ:PLTR" },
+          { label:"Oracle", short:"ORCL", symbol:"NYSE:ORCL" },
+          { label:"Arm", short:"ARM", symbol:"NASDAQ:ARM" },
+          { label:"Semiconductor ETF", short:"SMH", symbol:"NASDAQ:SMH" },
+          { label:"AI ETF", short:"AIQ", symbol:"NASDAQ:AIQ" }
         ]
       },
       {
@@ -411,7 +422,8 @@
     const chartSubtitle = document.getElementById("chartSubtitle");
     const tvShell = document.getElementById("tvShell");
 
-    let currentSymbol = "AMEX:SPY";
+    const requestedSymbol = new URLSearchParams(window.location.search).get("symbol");
+    let currentSymbol = CHARTS.some(item=>item.symbol===requestedSymbol) ? requestedSymbol : "AMEX:SPY";
 
     function findChart(symbol){
       return CHARTS.find(item => item.symbol === symbol) || CHARTS[0];
