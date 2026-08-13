@@ -90,6 +90,27 @@
       margin-bottom:4px;
     }
 
+    .market-pulse-lab{
+      margin:0 0 18px;
+      padding:18px;
+      border:1px solid rgba(88,166,255,.3);
+      border-radius:22px;
+      background:linear-gradient(145deg,rgba(15,28,43,.96),rgba(8,13,21,.98));
+      box-shadow:0 18px 44px rgba(0,0,0,.22);
+    }
+    .market-pulse-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:14px}
+    .market-pulse-kicker{color:#7dc4ff;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+    .market-pulse-head h2{margin:3px 0 4px;color:#fff;font-size:25px}
+    .market-pulse-head p{margin:0;color:var(--muted);font-size:13px}
+    .market-pulse-global{min-width:138px;text-align:right;color:var(--muted);font-size:12px}
+    .market-pulse-global b{display:block;color:#fff;font-size:26px}
+    .market-pulse-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .market-pulse-item{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.035)}
+    .market-pulse-item strong{display:block;color:#fff;margin-bottom:6px}
+    .market-pulse-metric{color:#ffd780;font-size:20px;font-weight:900}
+    .market-pulse-detail{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.4}
+    .market-pulse-empty{color:var(--muted);padding:8px 0}
+
     .crypto-top-grid{
       display:grid;
       grid-template-columns:repeat(5,minmax(0,1fr));
@@ -699,6 +720,7 @@
       .crypto-score-wrap{grid-template-columns:82px 1fr}
       .history-grid{grid-template-columns:1fr}
       .history-card{height:92vh}
+      .market-pulse-head{display:block}.market-pulse-global{text-align:left;margin-top:12px}.market-pulse-grid{grid-template-columns:1fr}
     }
 
   
@@ -727,6 +749,18 @@
           <span id="updatedText">Loading latest forex sentiment...</span>
         </div>
       </div>
+    </section>
+
+    <section class="market-pulse-lab" aria-labelledby="marketPulseTitle">
+      <div class="market-pulse-head">
+        <div>
+          <div class="market-pulse-kicker">Phase 1 Laboratory</div>
+          <h2 id="marketPulseTitle">Today’s Market Pulse</h2>
+          <p id="marketPulseStatus">Loading traceable market changes…</p>
+        </div>
+        <div class="market-pulse-global" id="marketPulseGlobal"></div>
+      </div>
+      <div class="market-pulse-grid" id="marketPulseGrid"></div>
     </section>
 
     <section class="crypto-top-grid" id="cryptoTopGrid"></section>
@@ -1529,7 +1563,37 @@
       if(e.key === "Escape") closeHistory();
     });
 
+    async function loadMarketPulse(){
+      const status = document.getElementById("marketPulseStatus");
+      const global = document.getElementById("marketPulseGlobal");
+      const grid = document.getElementById("marketPulseGrid");
+      try{
+        const response = await fetch("market_pulse.json", {cache:"no-store"});
+        if(!response.ok) throw new Error("Market Pulse unavailable");
+        const pulse = await response.json();
+        const movers = Array.isArray(pulse.top_movers) ? pulse.top_movers.slice(0,6) : [];
+        const comparison = pulse.comparison || {};
+        status.textContent = `Changes from ${comparison.previous_date || "the prior reading"} • Data updated ${pulse.data_updated_ny || "latest scan"}`;
+        const globalChange = Number(pulse?.global?.change_1d || 0);
+        global.innerHTML = `<span>Global PSI</span><b>${Number(pulse?.global?.psi ?? 0).toFixed(0)}/100</b><span>${globalChange >= 0 ? "+" : ""}${globalChange.toFixed(0)} points</span>`;
+        grid.innerHTML = movers.map(row => {
+          const change = Number(row.change_1d || 0);
+          const price = Number.isFinite(Number(row.price_change_1d_pct)) ? ` • Price ${Number(row.price_change_1d_pct) >= 0 ? "+" : ""}${Number(row.price_change_1d_pct).toFixed(2)}%` : "";
+          return `<article class="market-pulse-item">
+            <strong>${esc(row.display_name || row.instrument)}</strong>
+            <div class="market-pulse-metric">${change >= 0 ? "+" : ""}${change.toFixed(0)} PSI</div>
+            <div class="market-pulse-detail">Now ${Number(row.psi).toFixed(0)}/100 • ${Number(row.headline_count || 0)} headlines${price}</div>
+          </article>`;
+        }).join("") || `<div class="market-pulse-empty">No qualified changes are available yet.</div>`;
+      }catch(error){
+        status.textContent = "Laboratory Market Pulse is awaiting its generated data file.";
+        global.textContent = "";
+        grid.innerHTML = `<div class="market-pulse-empty">No production page is affected.</div>`;
+      }
+    }
+
     async function init(){
+      loadMarketPulse();
       try{
         const [dashResp, histResp, configResp] = await Promise.all([
           fetch("dashboard_live.json", {cache:"no-store"}),
