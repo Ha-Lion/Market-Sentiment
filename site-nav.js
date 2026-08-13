@@ -9,8 +9,7 @@
     { href: "market-sentiment.html", label: "📘 Guides" },
     { href: "advertise.html", label: "💼 Business Opportunities" },
     { href: "contact.html", label: "✉️ Get in Touch" },
-    { href: "about.html", label: "ℹ️ About" },
-    { href: "auth.html", label: "Sign In" }
+    { href: "about.html", label: "ℹ️ About" }
   ];
 
   const assetLinks = [
@@ -641,6 +640,7 @@
     const current = currentFile();
     const linksOne = mainLinks.map(link => linkHtml(link, current)).join("\n      ");
     const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n      ");
+    const accountLink = linkHtml({ href:"auth.html", label:"Sign In" }, current);
     mount.outerHTML = `
   <header class="header psd-shared-header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
@@ -655,31 +655,27 @@
     </a>
     <div class="header-center">
       <div class="header-pill" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;">✨ Constantly learning & improving</div>
-      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(62px);padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
-        <span>🚀 Help take Public Sentiment Dash to the next level</span>
-        <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
-      </a>
-      <button
-        class="site-tour-banner"
-        id="site-tour-button"
-        type="button"
-        aria-label="Play the two-minute Public Sentiment Dash website tour"
-        style="margin:8px 0 0 12px;transform:translateY(62px);flex-shrink:0;"
-      >
-        <span aria-hidden="true">🎬</span>
-        <span>Take a 2-Minute Website Tour</span>
-      </button>
+      <div class="psd-support-actions">
+        <a class="psd-donation-banner" href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash">
+          <span>🚀 Help take Public Sentiment Dash to the next level</span>
+          <span class="psd-donate-button">Donate Now</span>
+        </a>
+        <button class="site-tour-banner" id="site-tour-button" type="button" aria-label="Play the two-minute Public Sentiment Dash website tour">
+          <span aria-hidden="true">🎬</span><span>Take a 2-Minute Website Tour</span>
+        </button>
+      </div>
     </div>
     <nav class="nav" aria-label="Main navigation">
-      ${linksOne}
-      <span class="nav-row-break" aria-hidden="true"></span>
-      ${linksTwo}
-      <div class="psd-ribbon-social-wrap">
-        <div class="social-links">
-          <span class="social-label">Follow us</span>
-          <span class="social-pill">X</span>
-          <span class="social-pill linkedin">LinkedIn</span>
-        </div>
+      <div class="psd-nav-row psd-nav-main">${linksOne}</div>
+      <div class="psd-nav-row psd-nav-social" id="psd-nav-social-row">
+        <span class="social-label">Follow Us</span>
+        <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener">X.com</a>
+        <span class="social-pill linkedin">LinkedIn</span>
+        ${accountLink}
+      </div>
+      <div class="psd-nav-row psd-nav-assets">${linksTwo}</div>
+      <div class="psd-nav-row psd-nav-fourth">
+        <a href="dashboard-lab.html"${current === "dashboard-lab.html" ? ' class="active"' : ''}>✨ Market Pulse</a>
         <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
       </div>
     </nav>
