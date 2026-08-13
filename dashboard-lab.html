@@ -785,6 +785,8 @@
     .ai-hero-tools .ai-carousel-count{margin:0;color:var(--theme-text);font-size:11px;font-weight:900;white-space:nowrap}
     .ai-hero-arrows{display:flex;justify-content:flex-end;gap:7px}
     .ai-card-news{gap:8px!important}
+    .no-current-news{display:inline-flex;align-items:center;min-height:34px;padding:6px 9px;border:1px dashed var(--theme-line);border-radius:8px;color:var(--theme-muted);font-size:10px;font-weight:800}
+    body:not(.dark-mode) .no-current-news{color:#02070c}
     .ai-card-news a{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease}
     .ai-card-news a:hover,.ai-card-news a:focus-visible{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(210,153,34,.42);outline:none}
     .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:52px!important;height:52px!important;max-width:52px!important;max-height:52px!important;flex:0 0 52px!important;border-radius:10px!important}
@@ -1233,6 +1235,9 @@
     function getAIHeadlines(){
       const all = [
         ...(Array.isArray(dashboardData?.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData?.psi_headlines_used) ? dashboardData.psi_headlines_used : []),
+        ...(Array.isArray(dashboardData?.psi_major_outlet_headlines) ? dashboardData.psi_major_outlet_headlines : []),
+        ...(Array.isArray(dashboardData?.psi_broader_source_headlines) ? dashboardData.psi_broader_source_headlines : []),
         ...(Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : []),
         ...(Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [])
       ];
@@ -1277,23 +1282,11 @@
 
     function priorityValue(headline){
       const value=Number(headline?.source_priority ?? headline?.priority ?? 3);
-      return Number.isFinite(value)?Math.max(1,Math.min(3,value)):3;
+      return Number.isFinite(value)?Math.max(1,Math.min(4,value)):4;
     }
 
     function priorityHeadlines(headlines,limit=6){
       return [...(headlines||[])].sort((a,b)=>priorityValue(a)-priorityValue(b)||String(b.published_utc||"").localeCompare(String(a.published_utc||""))).slice(0,limit);
-    }
-
-    function uniqueOutletHeadlines(headlines,limit=5){
-      const seen=new Set(),unique=[];
-      for(const headline of headlines||[]){
-        const key=normalizeText(headline?.source||headline?.source_url||headline?.link||"unknown").replace(/\s+(markets?|business|news)$/g,"").trim();
-        if(seen.has(key))continue;
-        seen.add(key);
-        unique.push(headline);
-        if(unique.length>=limit)break;
-      }
-      return unique;
     }
 
     function technicalForItem(item){
@@ -1337,13 +1330,15 @@
         const color = colorForScore(row.score);
         const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : (row.source === "proxy" ? "Proxy PSI" : "Headline PSI"));
         const item=AI_ITEMS.find(candidate=>candidate.name===row.name);
-        const news=uniqueOutletHeadlines(priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),15),5);
+        const matchedNews=getAIHeadlines().filter(h=>itemMatchesHeadline(item,h));
+        const news=priorityHeadlines([...(row.topHeadlines||[]),...matchedNews].filter((h,index,list)=>index===list.findIndex(x=>(x.link||`${x.source}|${x.title}`)===(h.link||`${h.source}|${h.title}`))),7);
+        const unsupportedSavedScore=row.source==="official"&&row.headlineCount===0&&news.length===0;
         return `
           <article class="ai-card">
             <div class="ai-card-top">
               <div style="min-width:0;">
                 <div class="ai-name">${esc(row.name)}</div>
-                <div class="ai-symbol">${esc(row.symbol)} • ${sourceText}</div>
+                <div class="ai-symbol">${esc(row.symbol)} • ${unsupportedSavedScore?"Previous saved PSI — no current supporting news":sourceText}</div>
               </div>
               <span class="sentiment-pill status-${esc(String(row.label).toLowerCase().replace(/[^a-z]+/g,"-"))}" style="${pillStyle(row.score)}">${esc(row.label)}</span>
             </div>
@@ -1367,7 +1362,7 @@
             </div>
 
             <div class="market-insight"><span>Daily market insight</span><b>${esc(marketDirection(row.name))}</b></div>
-            <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
+            <div class="ai-card-news" aria-label="Leading news outlets">${news.length?news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="${esc(h.source||'News outlet')} — open article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join(""):`<span class="no-current-news">No current matched news</span>`}</div>
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
             <label class="compare-control">
