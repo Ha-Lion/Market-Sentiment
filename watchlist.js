@@ -13,8 +13,49 @@
   let historyPromise = null;
   let technicalPromise = null;
   let newsPromise = null;
+  let chartLibraryPromise = null;
   let liveHeadlines = [];
   let activeChartCleanup = null;
+
+  function ensureChartLibrary(){
+    if(window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
+    if(chartLibraryPromise) return chartLibraryPromise;
+
+    chartLibraryPromise = new Promise(function(resolve,reject){
+      const existing = document.getElementById("psd-lightweight-charts");
+      const script = existing || document.createElement("script");
+      const timeout = window.setTimeout(function(){
+        reject(new Error("Chart library timed out."));
+      },12000);
+
+      function loaded(){
+        window.clearTimeout(timeout);
+        if(window.LightweightCharts) resolve(window.LightweightCharts);
+        else reject(new Error("Chart library did not initialize."));
+      }
+
+      function failed(){
+        window.clearTimeout(timeout);
+        chartLibraryPromise = null;
+        reject(new Error("Chart library could not be loaded."));
+      }
+
+      if(existing){
+        existing.addEventListener("load",loaded,{once:true});
+        existing.addEventListener("error",failed,{once:true});
+        return;
+      }
+
+      script.id = "psd-lightweight-charts";
+      script.src = "https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js";
+      script.async = true;
+      script.addEventListener("load",loaded,{once:true});
+      script.addEventListener("error",failed,{once:true});
+      document.head.appendChild(script);
+    });
+
+    return chartLibraryPromise;
+  }
 
   function setStatus(message,type){
     statusNode.textContent = message || "";
@@ -416,7 +457,7 @@
       ? instrument+" — Daily "+(asset.market_data.data_kind === "economic_indicator" ? "Indicator" : "Market")+" & Sentiment Comparison"
       : instrument+" — Daily Sentiment History";
     openModal(title);
-    const data=await Promise.all([historyData(),technicalData()]);
+    const data=await Promise.all([historyData(),technicalData(),ensureChartLibrary()]);
     if(!modal.classList.contains("open")) return;
     renderInstrumentChart(chartPoints(data[0],data[1],instrument,asset),instrument,asset);
   }
