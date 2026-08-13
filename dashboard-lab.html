@@ -752,6 +752,7 @@
     body.dark-mode .headline-row{background:linear-gradient(145deg,#101b28,#0b141f)}
     @media(max-width:1240px){.ai-top-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.headline-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:760px){.ai-page{width:calc(100% - 12px);padding:6px 0 20px}.ai-top-grid,.headline-list{grid-template-columns:1fr}.ai-hero-grid{grid-template-columns:1fr}.ai-updated{min-width:0}.headline-row{grid-template-columns:50px minmax(0,1fr)}}
+    .ai-carousel-head{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0 0 8px}.ai-carousel-count{margin-right:auto;color:var(--theme-soft);font-size:11px;font-weight:900}.ai-scroll{display:grid;place-items:center;width:40px;height:40px;padding:0;border:2px solid #8b6100;border-radius:10px;background:#fff8e7;color:#4b3200;font-size:27px;font-weight:1000;line-height:1;cursor:pointer}.ai-scroll:hover{background:#f3dfad}.ai-carousel{overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;scroll-snap-type:x mandatory}.ai-carousel::-webkit-scrollbar{display:none}.ai-top-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,minmax(285px,auto));grid-auto-columns:clamp(390px,31vw,560px);gap:11px;margin:0}.ai-card{scroll-snap-align:start;min-height:285px}.ai-card-news{display:flex;align-items:center;gap:6px;margin:8px 0}.ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:28px;height:28px;max-width:28px;max-height:28px;border-radius:7px}.market-insight{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 9px;padding:8px 9px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-card-2);color:var(--theme-soft);font-size:11px}.market-insight b{color:var(--theme-text)}body.dark-mode .ai-scroll{background:#211b0f;color:#ffd780;border-color:#a87813}.history-card{width:calc(100vw - 18px);height:calc(100vh - 18px);border-radius:16px}.history-body{padding:12px}.history-controls{display:none}.history-grid{grid-template-columns:1fr 1fr;gap:12px}.pulse-chart-panel{min-width:0;padding:12px;border:1px solid var(--theme-line);border-radius:13px;background:var(--theme-card);box-shadow:0 6px 18px rgba(28,58,83,.11)}.pulse-chart-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.pulse-chart-head h3{margin:0;color:var(--theme-text);font-size:13px}.chart-size{height:30px;padding:0 10px;border:1px solid var(--theme-line);border-radius:7px;background:var(--theme-card);color:var(--theme-text);font-size:10px;font-weight:900;cursor:pointer}.interactive-chart{width:100%;height:360px}.pulse-chart-panel.expanded{position:fixed;inset:10px;z-index:1900;display:flex;flex-direction:column}.pulse-chart-panel.expanded .interactive-chart{height:calc(100vh - 70px)}.history-news{grid-column:1/-1;padding:12px;border:1px solid var(--theme-line);border-radius:13px;background:var(--theme-card-2)}.history-news h3{margin:0 0 9px;color:var(--theme-text);font-size:15px}.history-news-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.history-news-list a{display:flex;gap:9px;padding:10px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-card);color:var(--theme-text);text-decoration:none;font-size:11px;line-height:1.4}.history-news-list small{display:block;margin-top:4px;color:var(--theme-muted);font-size:9px}.history-news-list .headline-logo,.history-news-list .headline-logo-fallback{width:30px;height:30px;max-width:30px;max-height:30px;flex:0 0 30px}.history-range{color:var(--theme-muted);font-size:10px;font-weight:700}.psd-shared-header .nav a,.psd-shared-header .brand-stamp,.psd-shared-header .header-pill,.psd-shared-header .site-subtitle,.psd-shared-header .social-label{opacity:1!important;text-shadow:none!important;font-weight:700!important}.ai-name,.headline-title,.ai-line b,.market-insight,.ai-updated,.ai-hero p{opacity:1!important;text-shadow:none!important}.sentiment-pill{font-weight:950}.light-mode .sentiment-pill{color:#061522!important;background:#fff!important;border-width:2px!important}.light-mode .compare-control,.light-mode .ai-symbol,.light-mode .ai-line,.light-mode .headline-meta{color:#10263b!important;font-weight:700}.light-mode .headline-title,.light-mode .ai-name{color:#020b12!important;font-weight:900}@media(max-width:1050px){.history-grid{grid-template-columns:1fr}.history-news-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-top-grid{grid-auto-columns:min(72vw,520px)}}@media(max-width:650px){.ai-top-grid{grid-template-rows:1fr;grid-auto-columns:88vw}.history-news-list{grid-template-columns:1fr}.interactive-chart{height:300px}}
 
   </style>
 </head>
@@ -777,7 +778,7 @@
       </div>
     </section>
 
-    <section class="ai-top-grid" id="aiTopGrid"></section>
+    <div class="ai-carousel-head"><span class="ai-carousel-count" id="aiCarouselCount"></span><button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous AI assets">‹</button><button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next AI assets">›</button></div><div class="ai-carousel" id="aiCarousel"><section class="ai-top-grid" id="aiTopGrid"></section></div>
 
     <aside class="ad-slot" id="adContent" aria-label="Advertisement"></aside>
 
@@ -798,19 +799,7 @@
           </div>
           <button class="history-close" type="button" aria-label="Close history" onclick="closeHistory()">×</button>
         </div>
-        <div class="history-body">
-          <div class="history-controls">
-            <button class="history-period active" type="button" data-period="daily" onclick="setHistoryPeriod('daily')">Daily</button>
-            <button class="history-period" type="button" data-period="weekly" onclick="setHistoryPeriod('weekly')">Weekly</button>
-            <button class="history-period" type="button" data-period="monthly" onclick="setHistoryPeriod('monthly')">Monthly</button>
-          </div>
-          <div class="history-grid">
-            <div class="history-chart-wrap">
-              <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
-            </div>
-            <div class="history-stats" id="historyStats"></div>
-          </div>
-        </div>
+        <div class="history-body"><div id="historyRange" class="history-range"></div><div class="history-grid"><section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History</h3><button class="chart-size" type="button" data-chart-size="market">Maximize</button></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News</h3><div class="history-news-list" id="historyNews"></div></section></div></div>
       </section>
     </div>
 
@@ -852,11 +841,14 @@
 
     let dashboardData = null;
     let historyData = null;
+    let technicalData = null;
     let currentRows = [];
     let activeHistoryName = "NVIDIA / NVDA";
     let activeHistoryPeriod = "daily";
     let selectedCompareNames = [];
     let activeCompareNames = [];
+    let chartLibraryPromise = null;
+    let chartCleanup = [];
 
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1180,6 +1172,36 @@
       return AI_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item)).slice(0,15);
     }
 
+    function priorityValue(headline){
+      const value=Number(headline?.source_priority ?? headline?.priority ?? 3);
+      return Number.isFinite(value)?Math.max(1,Math.min(3,value)):3;
+    }
+
+    function priorityHeadlines(headlines,limit=6){
+      return [...(headlines||[])].sort((a,b)=>priorityValue(a)-priorityValue(b)||String(b.published_utc||"").localeCompare(String(a.published_utc||""))).slice(0,limit);
+    }
+
+    function technicalForItem(item){
+      const technical=technicalData?.technical||{};
+      const keys=instrumentKeysForItem(item,item?.name);
+      const key=Object.keys(technical).find(name=>keys.includes(normalizeText(name)));
+      if(key)return technical[key];
+      return historyInstrumentRow(currentLatestRecord(),item,item?.name)?.technical||{};
+    }
+
+    function marketSeries(name){
+      const item=AI_ITEMS.find(x=>x.name===name);
+      return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
+    }
+
+    function marketDirection(name){
+      const item=AI_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
+      if(direction&&direction!=="N/A")return direction;
+      const series=marketSeries(name);
+      if(series.length<2)return"Unavailable";
+      return series.at(-1).value>series.at(-2).value?"Bullish":series.at(-1).value<series.at(-2).value?"Bearish":"Neutral";
+    }
+
     function renderTopCards(){
       const grid = document.getElementById("aiTopGrid");
       if(!grid) return;
@@ -1189,10 +1211,13 @@
         return;
       }
 
+      document.getElementById("aiCarouselCount").textContent=`${currentRows.length} AI assets`;
       grid.innerHTML = currentRows.map((row, idx) => {
         const score = row.score == null ? 0 : row.score;
         const color = colorForScore(row.score);
         const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : (row.source === "proxy" ? "Proxy PSI" : "Headline PSI"));
+        const item=AI_ITEMS.find(candidate=>candidate.name===row.name);
+        const news=priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),5);
         return `
           <article class="ai-card">
             <div class="ai-card-top">
@@ -1220,6 +1245,9 @@
                 <div class="ai-line"><span>Neutral/Mixed</span><b>${row.neutral}</b></div>
               </div>
             </div>
+
+            <div class="market-insight"><span>Daily market insight</span><b>${esc(marketDirection(row.name))}</b></div>
+            <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase());return logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" title="${esc(h.source||"Source")}" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback" title="${esc(h.source||"Source")}">${initial}</span>`}).join("")}</div>
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
             <label class="compare-control">
@@ -1297,7 +1325,7 @@
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
       const status = document.getElementById("headlineStatus");
-      const headlines = getAIHeadlines().slice(0,30);
+      const headlines = priorityHeadlines(getAIHeadlines(),30);
 
       if(status){
         status.textContent = `30 latest AI asset headline(s) shown from the latest dashboard feed.`;
@@ -1603,112 +1631,46 @@
       `;
     }
 
-    function openHistory(name){
-      activeCompareNames = [];
-      activeHistoryName = name;
-      activeHistoryPeriod = "daily";
-
-      const layer = document.getElementById("historyLayer");
-      const card = document.querySelector(".history-card");
-      if(layer) layer.classList.add("open");
-      if(card) card.classList.remove("compare-card");
-      document.body.style.overflow = "hidden";
-
-      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
-      renderHistory();
+    function ensureCharts(){
+      if(window.LightweightCharts)return Promise.resolve();
+      if(chartLibraryPromise)return chartLibraryPromise;
+      chartLibraryPromise=new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js";script.async=true;script.onload=resolve;script.onerror=()=>reject(Error("Interactive charts unavailable"));document.head.appendChild(script)});
+      return chartLibraryPromise;
     }
 
-    function closeHistory(){
-      const layer = document.getElementById("historyLayer");
-      const card = document.querySelector(".history-card");
-      if(layer) layer.classList.remove("open");
-      if(card) card.classList.remove("compare-card");
-      document.body.style.overflow = "";
+    function clearCharts(){chartCleanup.splice(0).forEach(cleanup=>cleanup())}
+
+    function makeInteractiveChart(id,data,color,isPsi){
+      const box=document.getElementById(id);if(!box)return;box.textContent="";
+      if(!data.length){box.innerHTML='<div class="empty-note" style="height:300px;display:grid;place-items:center">No applicable history is available.</div>';return}
+      const dark=document.body.classList.contains("dark-mode"),background=dark?"#070e17":"#ffffff",text=dark?"#d5e0ea":"#10263b",grid=dark?"rgba(255,255,255,.07)":"rgba(17,42,68,.10)",border=dark?"#334155":"#8fa9bd";
+      const chart=LightweightCharts.createChart(box,{width:box.clientWidth,height:Math.max(320,box.clientHeight||360),layout:{background:{type:LightweightCharts.ColorType.Solid,color:background},textColor:text,attributionLogo:false},grid:{vertLines:{color:grid},horzLines:{color:grid}},crosshair:{mode:LightweightCharts.CrosshairMode.Normal},timeScale:{borderColor:border,rightOffset:2},rightPriceScale:{borderColor:border,autoScale:true},handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true},handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true}});
+      const series=chart.addSeries(LightweightCharts.AreaSeries,{lineColor:color,topColor:color+"55",bottomColor:color+"08",lineWidth:2,priceFormat:isPsi?{type:"price",precision:0,minMove:1}:{type:"price",precision:3,minMove:.001},autoscaleInfoProvider:isPsi?()=>({priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}}):undefined});
+      series.setData(data.map(point=>({time:point.date,value:Number(point.value)})));chart.timeScale().fitContent();
+      const observer=new ResizeObserver(entries=>entries.forEach(entry=>chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(320,entry.contentRect.height)})));observer.observe(box);chartCleanup.push(()=>{observer.disconnect();chart.remove()});
     }
 
-    function setHistoryPeriod(period){
-      activeHistoryPeriod = period;
-      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === period));
-      renderHistory();
+    function historyNewsFor(name){const item=AI_ITEMS.find(x=>x.name===name);return priorityHeadlines(getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
+
+    function newsHtml(news){return news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").slice(0,1).toUpperCase()),logoHtml=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener">${logoHtml}<span>${esc(h.title||"Untitled headline")}<small>${esc(h.source||"Source")} • ${esc(h.vote||"Neutral")}</small></span></a>`}).join("")||'<div class="empty-note">No recent news available.</div>'}
+
+    function toggleChart(name){const panel=document.querySelector(`[data-chart-panel="${name}"]`),expand=!panel.classList.contains("expanded");document.querySelectorAll(".pulse-chart-panel").forEach(item=>item.classList.remove("expanded"));document.querySelectorAll("[data-chart-size]").forEach(button=>button.textContent="Maximize");if(expand){panel.classList.add("expanded");panel.querySelector("[data-chart-size]").textContent="Minimize"}}
+
+    async function renderHistory(){
+      clearCharts();const grid=document.querySelector(".history-grid"),title=document.getElementById("historyTitle"),subtitle=document.getElementById("historySubtitle"),range=document.getElementById("historyRange");
+      if(activeCompareNames.length===2){title.textContent="AI Assets Comparison";subtitle.textContent=`${activeCompareNames[0]} vs ${activeCompareNames[1]}`;range.textContent="Full available sentiment history";grid.innerHTML=activeCompareNames.map((name,index)=>`<section class="pulse-chart-panel"><div class="pulse-chart-head"><h3>${esc(name)} — Sentiment</h3></div><div class="interactive-chart" id="compareChart${index}"></div></section>`).join("");try{await ensureCharts();activeCompareNames.forEach((name,index)=>makeInteractiveChart(`compareChart${index}`,dailySeries(name),"#57dfc6",true))}catch(_error){}return}
+      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
+      grid.innerHTML='<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History</h3><button class="chart-size" type="button" data-chart-size="market">Maximize</button></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News</h3><div class="history-news-list" id="historyNews"></div></section>';
+      document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
+      try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
     }
 
-    function restoreSingleHistoryGrid(){
-      const grid = document.querySelector(".history-grid");
-      if(!grid) return;
-      grid.classList.remove("compare-mode");
-      grid.innerHTML = `
-        <div class="history-chart-wrap">
-          <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
-        </div>
-        <div class="history-stats" id="historyStats"></div>
-      `;
-    }
+    function openHistory(name){activeCompareNames=[];activeHistoryName=name;document.getElementById("historyLayer").classList.add("open");document.body.style.overflow="hidden";renderHistory()}
+    function closeHistory(){clearCharts();document.getElementById("historyLayer").classList.remove("open");document.body.style.overflow=""}
+    function setHistoryPeriod(){renderHistory()}
 
-    function renderCompareHistory(){
-      const title = document.getElementById("historyTitle");
-      const subtitle = document.getElementById("historySubtitle");
-      const grid = document.querySelector(".history-grid");
-      const card = document.querySelector(".history-card");
-      if(!grid || activeCompareNames.length !== 2) return;
-
-      if(card) card.classList.add("compare-card");
-      grid.classList.add("compare-mode");
-
-      const periodLabel = activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1);
-      if(title) title.textContent = "AI Assets Comparison";
-      if(subtitle) subtitle.textContent = `${periodLabel} • ${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
-
-      grid.innerHTML = activeCompareNames.map((name, idx) => {
-        const base = dailySeries(name);
-        const series = aggregateSeries(base, activeHistoryPeriod);
-        const latest = series.length ? `${series[series.length - 1].value}/100` : "No history";
-        return `
-          <div class="history-compare-item">
-            <div class="history-compare-title">
-              <b>${esc(name)}</b>
-              <span>${latest}</span>
-            </div>
-            <div class="history-compare-chart-wrap">
-              <svg id="historyCompareChart${idx}" class="history-compare-chart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
-            </div>
-            <div class="history-stats history-compare-stats" id="historyCompareStats${idx}"></div>
-          </div>
-        `;
-      }).join("");
-
-      activeCompareNames.forEach((name, idx) => {
-        const series = aggregateSeries(dailySeries(name), activeHistoryPeriod);
-        drawHistoryChart(series, `historyCompareChart${idx}`);
-        renderHistoryStats(series, name, activeHistoryPeriod, `historyCompareStats${idx}`);
-      });
-    }
-
-    function renderHistory(){
-      if(activeCompareNames.length === 2){
-        renderCompareHistory();
-        return;
-      }
-
-      const title = document.getElementById("historyTitle");
-      const subtitle = document.getElementById("historySubtitle");
-      const card = document.querySelector(".history-card");
-      if(card) card.classList.remove("compare-card");
-
-      restoreSingleHistoryGrid();
-
-      const base = dailySeries(activeHistoryName);
-      const series = aggregateSeries(base, activeHistoryPeriod);
-
-      if(title) title.textContent = activeHistoryName;
-      if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} • ${series.length} record(s)`;
-
-      drawHistoryChart(series);
-      renderHistoryStats(series, activeHistoryName, activeHistoryPeriod);
-    }
-
-    document.addEventListener("keydown", e => {
-      if(e.key === "Escape") closeHistory();
-    });
+    document.addEventListener("keydown", e => {if(e.key!=="Escape")return;const expanded=document.querySelector(".pulse-chart-panel.expanded");if(expanded){expanded.classList.remove("expanded");const button=expanded.querySelector("[data-chart-size]");if(button)button.textContent="Maximize"}else closeHistory()});
+    window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
 
 
     async function fetchOptionalJson(url){
@@ -1723,20 +1685,23 @@
 
     async function init(){
       try{
-        const [dashResp, histResp, assetConfig] = await Promise.all([
+        const [dashResp, histResp, assetConfig, technical] = await Promise.all([
           fetch("dashboard_live.json", {cache:"no-store"}),
           fetch("instrument_history_compact.json", {cache:"no-store"}),
-          fetchOptionalJson("assets_config.json")
+          fetchOptionalJson("assets_config.json"),
+          fetchOptionalJson("technical_data.json")
         ]);
 
         dashboardData = await dashResp.json();
         historyData = await histResp.json();
+        technicalData = technical || {};
         applyAssetConfig(assetConfig);
 
         currentRows = buildRows();
         renderHero();
         renderTopCards();
         renderHeadlines();
+        document.querySelectorAll("[data-ai-scroll]").forEach(button=>button.addEventListener("click",()=>document.getElementById("aiCarousel").scrollBy({left:Number(button.dataset.aiScroll)*Math.max(400,document.getElementById("aiCarousel").clientWidth*.8),behavior:"smooth"})));
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
         document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">AI asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
