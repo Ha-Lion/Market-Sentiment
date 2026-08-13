@@ -80,6 +80,25 @@
         will-change:transform,filter,box-shadow;
       }
       .psd-shared-header .brand-stamp.psd-dancing-label{animation-delay:.35s,.35s!important}
+      .psd-shared-header .site-subtitle.psd-ai-subtitle{
+        position:relative;
+        top:5px;
+        margin-top:3px;
+        font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
+        font-size:14px!important;
+        font-weight:700!important;
+        letter-spacing:.7px!important;
+      }
+      .psd-shared-header .psd-market-pulse-row{
+        flex-basis:100%!important;
+        width:100%!important;
+        height:0!important;
+        pointer-events:none!important;
+      }
+      .psd-shared-header .psd-market-pulse-link{
+        margin-right:auto!important;
+        pointer-events:auto!important;
+      }
       @media(prefers-reduced-motion:reduce){
         .psd-shared-header .psd-dancing-label{animation:psdLabelShine 2.8s ease-in-out infinite!important}
       }
@@ -675,7 +694,7 @@
       </span>
       <div class="brand-copy">
         <div class="brand-stamp psd-dancing-label">AI-built public market sentiment dashboard</div>
-        <div class="site-subtitle">Global market public sentiment dashboard</div>
+        <div class="site-subtitle psd-ai-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
     <div class="header-center">
@@ -699,6 +718,8 @@
       ${linksOne}
       <span class="nav-row-break" aria-hidden="true"></span>
       ${linksTwo}
+      <span class="psd-market-pulse-row" aria-hidden="true"></span>
+      <a class="psd-market-pulse-link${current === "dashboard-lab.html" ? ' active' : ''}" href="dashboard-lab.html">✨ Market Pulse</a>
       <div class="psd-ribbon-social-wrap">
         <div class="social-links">
           <span class="social-label">Follow us</span>
