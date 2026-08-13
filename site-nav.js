@@ -720,7 +720,7 @@
       <span class="nav-row-break" aria-hidden="true"></span>
       ${linksTwo}
       <span class="psd-market-pulse-row" aria-hidden="true"></span>
-      <a class="psd-market-pulse-link${current === "dashboard-lab.html" ? ' active' : ''}" href="dashboard-lab.html">✨ Market Pulse</a>
+      <a class="psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">✨ Market Pulse</a>
       <div class="psd-ribbon-social-wrap">
         <div class="social-links">
           <span class="social-label">Follow us</span>
