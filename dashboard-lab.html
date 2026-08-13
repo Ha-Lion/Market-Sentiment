@@ -1284,6 +1284,18 @@
       return [...(headlines||[])].sort((a,b)=>priorityValue(a)-priorityValue(b)||String(b.published_utc||"").localeCompare(String(a.published_utc||""))).slice(0,limit);
     }
 
+    function uniqueOutletHeadlines(headlines,limit=5){
+      const seen=new Set(),unique=[];
+      for(const headline of headlines||[]){
+        const key=normalizeText(headline?.source||headline?.source_url||headline?.link||"unknown").replace(/\s+(markets?|business|news)$/g,"").trim();
+        if(seen.has(key))continue;
+        seen.add(key);
+        unique.push(headline);
+        if(unique.length>=limit)break;
+      }
+      return unique;
+    }
+
     function technicalForItem(item){
       const technical=technicalData?.technical||{};
       const keys=instrumentKeysForItem(item,item?.name);
@@ -1325,7 +1337,7 @@
         const color = colorForScore(row.score);
         const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : (row.source === "proxy" ? "Proxy PSI" : "Headline PSI"));
         const item=AI_ITEMS.find(candidate=>candidate.name===row.name);
-        const news=priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),5);
+        const news=uniqueOutletHeadlines(priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),15),5);
         return `
           <article class="ai-card">
             <div class="ai-card-top">
