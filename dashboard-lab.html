@@ -790,6 +790,10 @@
     .compare-asset-column{display:grid;grid-template-rows:auto auto auto;gap:12px;min-width:0;padding:12px;border:1px solid var(--theme-line);border-radius:15px;background:var(--theme-card-2)}
     .compare-asset-column>h3{margin:0;color:var(--theme-text);font-size:17px}
     .compare-asset-column .interactive-chart{height:300px}
+    .comparison-sync-controls{grid-column:1/-1;display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px;border:1px solid var(--theme-line);border-radius:12px;background:var(--theme-card)}
+    .comparison-sync-controls strong{margin-right:3px;color:var(--theme-text);font-size:11px}
+    .comparison-sync-button{padding:7px 11px;border:1px solid #a87813;border-radius:999px;background:var(--theme-card-2);color:var(--theme-text);font-family:inherit;font-size:10px;font-weight:900;line-height:1;cursor:pointer}
+    .comparison-sync-button.active{background:linear-gradient(180deg,#d7a42f,#8c6314);color:#07090d;box-shadow:0 0 14px rgba(210,153,34,.24)}
     @media(max-width:900px){.compare-assets-grid{grid-template-columns:1fr!important}}
     @media(max-width:1250px){.ai-top-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     @media(max-width:680px){.ai-top-grid{grid-template-columns:1fr!important;grid-template-rows:repeat(2,minmax(320px,auto))!important}}
@@ -890,6 +894,9 @@
     let chartCleanup = [];
     let aiCardPage = 0;
     let aiCardPageSize = 8;
+    const comparisonCharts = new Map();
+    let comparisonSyncMode = "pair";
+    let comparisonSyncCleanup = [];
 
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1697,16 +1704,66 @@
       return chartLibraryPromise;
     }
 
-    function clearCharts(){chartCleanup.splice(0).forEach(cleanup=>cleanup())}
+    function clearComparisonSync(){comparisonSyncCleanup.splice(0).forEach(cleanup=>cleanup());comparisonCharts.clear()}
+    function clearCharts(){clearComparisonSync();chartCleanup.splice(0).forEach(cleanup=>cleanup())}
 
-    function makeInteractiveChart(id,data,color,isPsi){
+    function makeInteractiveChart(id,data,color,isPsi,comparisonKey=""){
       const box=document.getElementById(id);if(!box)return;box.textContent="";
       if(!data.length){box.innerHTML='<div class="empty-note" style="height:300px;display:grid;place-items:center">No applicable history is available.</div>';return}
       const dark=document.body.classList.contains("dark-mode"),background=dark?"#070e17":"#ffffff",text=dark?"#d5e0ea":"#10263b",grid=dark?"rgba(255,255,255,.07)":"rgba(17,42,68,.10)",border=dark?"#334155":"#8fa9bd";
       const chart=LightweightCharts.createChart(box,{width:box.clientWidth,height:Math.max(320,box.clientHeight||360),layout:{background:{type:LightweightCharts.ColorType.Solid,color:background},textColor:text,attributionLogo:false},grid:{vertLines:{color:grid},horzLines:{color:grid}},crosshair:{mode:LightweightCharts.CrosshairMode.Normal},timeScale:{borderColor:border,rightOffset:2},rightPriceScale:{borderColor:border,autoScale:true},handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true},handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true}});
       const series=chart.addSeries(LightweightCharts.AreaSeries,{lineColor:color,topColor:color+"55",bottomColor:color+"08",lineWidth:2,priceFormat:isPsi?{type:"price",precision:0,minMove:1}:{type:"price",precision:3,minMove:.001},autoscaleInfoProvider:isPsi?()=>({priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}}):undefined});
-      series.setData(data.map(point=>({time:point.date,value:Number(point.value)})));chart.timeScale().fitContent();
+      const chartData=data.map(point=>({time:point.date,value:Number(point.value)}));series.setData(chartData);chart.timeScale().fitContent();
       const observer=new ResizeObserver(entries=>entries.forEach(entry=>chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(320,entry.contentRect.height)})));observer.observe(box);chartCleanup.push(()=>{observer.disconnect();chart.remove()});
+      if(comparisonKey)comparisonCharts.set(comparisonKey,{chart,series,data:chartData});
+      return{chart,series,data:chartData};
+    }
+
+    function nearestChartPoint(data,time){
+      if(!data.length||time==null)return null;
+      const target=typeof time==="string"?Date.parse(time):Date.parse(`${time.year}-${String(time.month).padStart(2,"0")}-${String(time.day).padStart(2,"0")}`);
+      let best=data[0],distance=Math.abs(Date.parse(best.time)-target);
+      for(const point of data){const next=Math.abs(Date.parse(point.time)-target);if(next<distance){best=point;distance=next}}
+      return best;
+    }
+
+    function comparisonGroups(mode){
+      if(mode==="pair")return[["sentiment-0","market-0"],["sentiment-1","market-1"]];
+      if(mode==="sentiment")return[["sentiment-0","sentiment-1"]];
+      if(mode==="market")return[["market-0","market-1"]];
+      if(mode==="all")return[["sentiment-0","market-0","sentiment-1","market-1"]];
+      return[];
+    }
+
+    function activateComparisonSync(mode){
+      comparisonSyncCleanup.splice(0).forEach(cleanup=>cleanup());
+      comparisonSyncMode=mode;
+      document.querySelectorAll("[data-sync-mode]").forEach(button=>button.classList.toggle("active",button.dataset.syncMode===mode));
+      comparisonGroups(mode).forEach(keys=>{
+        const members=keys.map(key=>comparisonCharts.get(key)).filter(Boolean);
+        const state={crosshair:false,range:false};
+        members.forEach(source=>{
+          const crosshairHandler=param=>{
+            if(state.crosshair)return;
+            state.crosshair=true;
+            members.filter(target=>target!==source).forEach(target=>{
+              if(!param?.time||!param?.point){try{target.chart.clearCrosshairPosition()}catch(_error){}return}
+              const point=nearestChartPoint(target.data,param.time);
+              if(point)try{target.chart.setCrosshairPosition(point.value,param.time,target.series)}catch(_error){}
+            });
+            requestAnimationFrame(()=>{state.crosshair=false});
+          };
+          const rangeHandler=range=>{
+            if(state.range||!range)return;
+            state.range=true;
+            members.filter(target=>target!==source).forEach(target=>{try{target.chart.timeScale().setVisibleRange(range)}catch(_error){}});
+            requestAnimationFrame(()=>{state.range=false});
+          };
+          source.chart.subscribeCrosshairMove(crosshairHandler);
+          source.chart.timeScale().subscribeVisibleTimeRangeChange(rangeHandler);
+          comparisonSyncCleanup.push(()=>{source.chart.unsubscribeCrosshairMove(crosshairHandler);source.chart.timeScale().unsubscribeVisibleTimeRangeChange(rangeHandler)});
+        });
+      });
     }
 
     function historyNewsFor(name){const item=AI_ITEMS.find(x=>x.name===name);return priorityHeadlines(getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
@@ -1722,9 +1779,10 @@
         subtitle.textContent=`${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
         range.textContent="Full available sentiment and market history";
         grid.className="history-grid compare-assets-grid";
-        grid.innerHTML=activeCompareNames.map((name,index)=>`<section class="compare-asset-column"><h3>${esc(name)}</h3><section class="pulse-chart-panel" data-chart-panel="compare-sentiment-${index}"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="compare-sentiment-${index}">Maximize</button></div><div class="interactive-chart" id="compareSentiment${index}"></div></section><section class="pulse-chart-panel" data-chart-panel="compare-market-${index}"><div class="pulse-chart-head"><h3>Market Price History</h3><button class="chart-size" type="button" data-chart-size="compare-market-${index}">Maximize</button></div><div class="interactive-chart" id="compareMarket${index}"></div></section></section>`).join("");
+        grid.innerHTML=`<div class="comparison-sync-controls" role="group" aria-label="Comparison chart synchronization"><strong>Synchronize crosshair + date range:</strong><button class="comparison-sync-button" type="button" data-sync-mode="pair">Each asset pair</button><button class="comparison-sync-button" type="button" data-sync-mode="sentiment">Both sentiment charts</button><button class="comparison-sync-button" type="button" data-sync-mode="market">Both market charts</button><button class="comparison-sync-button" type="button" data-sync-mode="all">All four charts</button><button class="comparison-sync-button" type="button" data-sync-mode="individual">Individual charts</button></div>`+activeCompareNames.map((name,index)=>`<section class="compare-asset-column"><h3>${esc(name)}</h3><section class="pulse-chart-panel" data-chart-panel="compare-sentiment-${index}"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="compare-sentiment-${index}">Maximize</button></div><div class="interactive-chart" id="compareSentiment${index}"></div></section><section class="pulse-chart-panel" data-chart-panel="compare-market-${index}"><div class="pulse-chart-head"><h3>Market Price History</h3><button class="chart-size" type="button" data-chart-size="compare-market-${index}">Maximize</button></div><div class="interactive-chart" id="compareMarket${index}"></div></section></section>`).join("");
         document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
-        try{await ensureCharts();activeCompareNames.forEach((name,index)=>{makeInteractiveChart(`compareSentiment${index}`,dailySeries(name),"#57dfc6",true);makeInteractiveChart(`compareMarket${index}`,marketSeries(name),"#69b9ff",false)})}catch(_error){grid.querySelectorAll(".interactive-chart").forEach(box=>box.innerHTML='<div class="empty-note">Interactive chart could not load.</div>')}
+        document.querySelectorAll("[data-sync-mode]").forEach(button=>button.addEventListener("click",()=>activateComparisonSync(button.dataset.syncMode)));
+        try{await ensureCharts();activeCompareNames.forEach((name,index)=>{makeInteractiveChart(`compareSentiment${index}`,dailySeries(name),"#57dfc6",true,`sentiment-${index}`);makeInteractiveChart(`compareMarket${index}`,marketSeries(name),"#69b9ff",false,`market-${index}`)});activateComparisonSync(comparisonSyncMode)}catch(_error){grid.querySelectorAll(".interactive-chart").forEach(box=>box.innerHTML='<div class="empty-note">Interactive chart could not load.</div>')}
         return;
       }
       grid.className="history-grid";
