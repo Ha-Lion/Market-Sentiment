@@ -771,17 +771,21 @@
     .ai-scroll:disabled{opacity:.38;cursor:not-allowed}
     .ai-card-news{min-height:32px}
     .ai-hero{margin-bottom:4px!important}
-    .ai-hero-grid{align-items:center!important}
-    .ai-hero-tools{display:grid;grid-template-columns:auto auto;grid-template-areas:"score score" "count arrows";align-items:center;align-self:start;justify-content:end;gap:4px 10px;min-width:350px}
-    .ai-hero-tools .ai-updated{grid-area:score;justify-self:stretch;margin:0;padding:6px 10px;text-align:center;line-height:1.25}
-    .ai-hero-tools .ai-updated b{margin-bottom:2px;text-align:center}
-    .ai-hero-tools .ai-updated span{display:block;text-align:center}
-    .ai-hero-tools .ai-carousel-count{grid-area:count;margin:0;color:var(--theme-text);font-size:11px;font-weight:900;white-space:nowrap}
-    .ai-hero-arrows{grid-area:arrows;display:flex;justify-content:flex-end;gap:7px}
+    .ai-hero-grid{grid-template-columns:minmax(0,1fr) minmax(280px,360px) minmax(230px,1fr)!important;align-items:center!important;gap:12px!important}
+    .ai-hero-center{display:flex;align-items:center;justify-content:center}
+    .ai-hero-center .ai-updated{width:100%;min-width:0;margin:0;padding:5px 10px;text-align:center;line-height:1.2}
+    .ai-hero-center .ai-updated b{margin-bottom:2px;text-align:center}
+    .ai-hero-center .ai-updated span{display:block;text-align:center}
+    .ai-hero-tools{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}
+    .ai-hero-tools .ai-carousel-count{margin:0;color:var(--theme-text);font-size:11px;font-weight:900;white-space:nowrap}
+    .ai-hero-arrows{display:flex;justify-content:flex-end;gap:7px}
     .ai-card-news{gap:8px!important}
     .ai-card-news a{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease}
     .ai-card-news a:hover,.ai-card-news a:focus-visible{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(210,153,34,.42);outline:none}
-    .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:42px!important;height:42px!important;max-width:42px!important;max-height:42px!important;flex:0 0 42px!important;border-radius:9px!important}
+    .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:48px!important;height:48px!important;max-width:48px!important;max-height:48px!important;flex:0 0 48px!important;border-radius:10px!important}
+    .full-market-chart-link{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 11px;border:1px solid #a87813;border-radius:999px;background:var(--theme-gold-soft);color:var(--theme-gold);font-size:10px;font-weight:900;text-decoration:none;white-space:nowrap}
+    .full-market-chart-link:hover,.full-market-chart-link:focus-visible{background:linear-gradient(180deg,#d7a42f,#8c6314);color:#07090d;outline:none}
+    .market-chart-actions{display:flex;align-items:center;gap:7px}
     .psd-shared-header .social-label,
     .psd-shared-header .social-pill,
     .psd-shared-header .social-pill span{opacity:1!important;font-weight:900!important;text-shadow:none!important}
@@ -818,7 +822,8 @@
     @media(max-width:1100px){.comparison-sync-controls strong{display:none}.comparison-sync-button{padding:6px 8px;font-size:9px}}
     @media(max-width:900px){.compare-assets-grid{grid-template-columns:1fr!important}}
     @media(max-width:1250px){.ai-top-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-    @media(max-width:760px){.ai-hero-tools{min-width:0;width:100%;grid-template-columns:1fr auto}.ai-hero-grid{grid-template-columns:1fr!important}}
+    @media(max-width:1000px){.ai-hero-grid{grid-template-columns:1fr auto!important}.ai-hero-center{grid-column:2}.ai-hero-tools{grid-column:1/-1}.ai-hero-tools .ai-carousel-count{margin-right:auto}}
+    @media(max-width:760px){.ai-hero-grid{grid-template-columns:1fr!important}.ai-hero-center,.ai-hero-tools{grid-column:1}.ai-hero-tools{width:100%}}
     @media(max-width:680px){.ai-top-grid{grid-template-columns:1fr!important;grid-template-rows:repeat(2,minmax(320px,auto))!important}}
   </style>
 </head>
@@ -836,11 +841,13 @@
           <h1>Top AI Assets Sentiment</h1>
           <p>Track public sentiment across assets tied to artificial intelligence, AI chips, cloud infrastructure, data platforms, semiconductor supply chains, AI software, and AI-focused ETFs.</p>
         </div>
-        <div class="ai-hero-tools">
+        <div class="ai-hero-center">
           <div class="ai-updated">
             <b id="overallScore">--</b>
             <span id="updatedText">Loading latest AI asset sentiment...</span>
           </div>
+        </div>
+        <div class="ai-hero-tools">
           <span class="ai-carousel-count" id="aiCarouselCount">Loading AI assets…</span>
           <div class="ai-hero-arrows">
             <button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous AI assets">‹</button>
@@ -1414,9 +1421,19 @@
     }
 
     function sourceLogoUrl(h){
-      const domain = domainFromUrl(h.source_url || h.link || "");
+      const source=normalizeText(h.source).replace(/[^a-z0-9.]+/g," ").trim();
+      const publishers={"bloomberg markets":"bloomberg.com","bnn bloomberg":"bnnbloomberg.ca","cnbc":"cnbc.com","cnbc markets":"cnbc.com","wsj":"wsj.com","the wall street journal markets":"wsj.com","financial times markets":"ft.com","reuters":"reuters.com","reuters markets":"reuters.com","yahoo finance":"finance.yahoo.com","yahoo finance uk":"uk.finance.yahoo.com","yahoo finance singapore":"sg.finance.yahoo.com","marketwatch":"marketwatch.com","barron s":"barrons.com","investing.com":"investing.com","investing.com india":"in.investing.com","investing.com australia":"au.investing.com","fxstreet":"fxstreet.com","forexlive":"forexlive.com","oilprice":"oilprice.com","kitco news":"kitco.com","coindesk":"coindesk.com","cointelegraph":"cointelegraph.com","decrypt":"decrypt.co","the block":"theblock.co","morningstar":"morningstar.com","morningstar markets":"morningstar.com","trading economics news":"tradingeconomics.com","euronews business":"euronews.com","nasdaq news":"nasdaq.com","eia today in energy":"eia.gov","tradingview.com":"tradingview.com","ca.finance.yahoo.com":"ca.finance.yahoo.com"};
+      const domain = publishers[source] || (domainFromUrl(h.source_url || h.link || "")==="news.google.com" ? "" : domainFromUrl(h.source_url || h.link || ""));
       return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
     }
+
+    function tradingViewSymbol(name){
+      const symbol=AI_ITEMS.find(item=>item.name===name)?.symbol||String(name||"").split("/").pop().trim();
+      const nyse=new Set(["TSM","ORCL"]);
+      return `${nyse.has(symbol)?"NYSE":"NASDAQ"}:${symbol}`;
+    }
+
+    function fullMarketChartHref(name){return `charts.html?symbol=${encodeURIComponent(tradingViewSymbol(name))}`}
 
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
@@ -1811,7 +1828,7 @@
         range.textContent="";
         grid.className="history-grid compare-assets-grid";
         syncMount.innerHTML=`<div class="comparison-sync-controls" role="group" aria-label="Comparison chart synchronization"><strong>Synchronize crosshair + date range:</strong><button class="comparison-sync-button" type="button" data-sync-mode="pair">Each asset pair</button><button class="comparison-sync-button" type="button" data-sync-mode="sentiment">Both sentiment charts</button><button class="comparison-sync-button" type="button" data-sync-mode="market">Both market charts</button><button class="comparison-sync-button" type="button" data-sync-mode="all">All four charts</button><button class="comparison-sync-button" type="button" data-sync-mode="individual">Individual charts</button></div>`;
-        grid.innerHTML=activeCompareNames.map((name,index)=>`<section class="compare-asset-column"><h3>${esc(name)}</h3><section class="pulse-chart-panel" data-chart-panel="compare-sentiment-${index}"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="compare-sentiment-${index}">Maximize</button></div><div class="interactive-chart" id="compareSentiment${index}"></div></section><section class="pulse-chart-panel" data-chart-panel="compare-market-${index}"><div class="pulse-chart-head"><h3>Market Price History</h3><button class="chart-size" type="button" data-chart-size="compare-market-${index}">Maximize</button></div><div class="interactive-chart" id="compareMarket${index}"></div></section></section>`).join("");
+        grid.innerHTML=activeCompareNames.map((name,index)=>`<section class="compare-asset-column"><h3>${esc(name)}</h3><section class="pulse-chart-panel" data-chart-panel="compare-sentiment-${index}"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="compare-sentiment-${index}">Maximize</button></div><div class="interactive-chart" id="compareSentiment${index}"></div></section><section class="pulse-chart-panel" data-chart-panel="compare-market-${index}"><div class="pulse-chart-head"><h3>Market Price History</h3><div class="market-chart-actions"><a class="full-market-chart-link" href="${fullMarketChartHref(name)}">Open Full Market Chart</a><button class="chart-size" type="button" data-chart-size="compare-market-${index}">Maximize</button></div></div><div class="interactive-chart" id="compareMarket${index}"></div></section></section>`).join("");
         document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
         document.querySelectorAll("[data-sync-mode]").forEach(button=>button.addEventListener("click",()=>activateComparisonSync(button.dataset.syncMode)));
         try{await ensureCharts();activeCompareNames.forEach((name,index)=>{makeInteractiveChart(`compareSentiment${index}`,dailySeries(name),"#57dfc6",true,`sentiment-${index}`);makeInteractiveChart(`compareMarket${index}`,marketSeries(name),"#69b9ff",false,`market-${index}`)});activateComparisonSync(comparisonSyncMode)}catch(_error){grid.querySelectorAll(".interactive-chart").forEach(box=>box.innerHTML='<div class="empty-note">Interactive chart could not load.</div>')}
@@ -1821,7 +1838,7 @@
       syncMount.innerHTML="";
       grid.className="history-grid";
       const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
-      grid.innerHTML='<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History</h3><button class="chart-size" type="button" data-chart-size="market">Maximize</button></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News</h3><div class="history-news-list" id="historyNews"></div></section>';
+      grid.innerHTML=`<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History</h3><div class="market-chart-actions"><a class="full-market-chart-link" href="${fullMarketChartHref(activeHistoryName)}">Open Full Market Chart</a><button class="chart-size" type="button" data-chart-size="market">Maximize</button></div></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News</h3><div class="history-news-list" id="historyNews"></div></section>`;
       document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
       try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
     }
