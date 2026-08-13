@@ -151,6 +151,224 @@ function psdHeaders(){
 }
 
 
+function psdApplyCompactRibbonLayout(){
+  if(document.getElementById("psdCompactRibbonCss")) return;
+
+  const style = document.createElement("style");
+  style.id = "psdCompactRibbonCss";
+  style.textContent = `
+    .header{
+      padding:8px 22px 7px !important;
+      gap:14px !important;
+      min-height:148px !important;
+    }
+
+    .logo{
+      width:112px !important;
+      height:112px !important;
+      padding:6px !important;
+    }
+
+    .brand{
+      gap:11px !important;
+    }
+
+    .brand-stamp,
+    .page-chip{
+      padding:7px 12px !important;
+      font-size:12px !important;
+    }
+
+    .header-pill{
+      min-width:340px !important;
+      padding:8px 30px !important;
+      font-size:12px !important;
+      justify-content:center !important;
+      text-align:center !important;
+      white-space:nowrap !important;
+    }
+
+    .site-subtitle{
+      font-size:12px !important;
+    }
+
+    .header-center{
+      min-width:360px !important;
+      transform:translateY(-5px) !important;
+    }
+
+    .nav{
+      gap:6px 8px !important;
+      transform:translateY(-5px) !important;
+      align-content:flex-start !important;
+    }
+
+    .nav a{
+      font-size:11.5px !important;
+      line-height:1.02 !important;
+      padding:5px 6px !important;
+      gap:4px !important;
+      white-space:nowrap !important;
+    }
+
+    .nav a::before{
+      width:12px !important;
+      min-width:12px !important;
+      font-size:10.5px !important;
+    }
+
+    .social-links{
+      gap:6px !important;
+      margin-left:6px !important;
+      margin-top:0 !important;
+    }
+
+    .social-label{
+      font-size:11px !important;
+    }
+
+    .social-pill{
+      min-width:38px !important;
+      padding:6px 10px !important;
+      font-size:11px !important;
+    }
+
+    .social-pill.linkedin{
+      min-width:68px !important;
+    }
+
+    @media(max-width:1180px){
+      .header{
+        min-height:auto !important;
+      }
+      .header-center,
+      .nav{
+        transform:none !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function psdNormalizeTopNavIcons(){
+  const navLinkMap = {
+    "dashboard.html": { label:"Interactive Dashboard", icon:"📊" },
+    "charts.html": { label:"Market Charts", icon:"📈" },
+    "sentiment-history.html": { label:"Historical Sentiment", icon:"📈" },
+    "news-articles.html": { label:"News & Articles", icon:"📰" },
+    "market-sentiment.html": { label:"Guides", icon:"📘" },
+    "advertise.html": { label:"Business Opportunities", icon:"💼" },
+    "contact.html": { label:"Get in Touch", icon:"✉️" },
+    "about.html": { label:"About", icon:"ℹ️" },
+    "crypto.html": { label:"Crypto Sentiment", icon:"🪙" },
+    "energy.html": { label:"Energy Sentiment", icon:"⚡" },
+    "precious-metals.html": { label:"Precious Metals Sentiment", icon:"🥇" },
+    "indices.html": { label:"Indices Sentiment", icon:"📊" }
+  };
+
+  if(!document.getElementById("psdRibbonIconCss")){
+    const style = document.createElement("style");
+    style.id = "psdRibbonIconCss";
+    style.textContent = Object.entries(navLinkMap).map(([href, item]) =>
+      `.nav a[href="${href}"]::before{content:"${item.icon}"!important;}`
+    ).join("\n");
+    document.head.appendChild(style);
+  }
+
+  document.querySelectorAll(".nav a[href]").forEach(link => {
+    const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
+    const key = href.split("/").pop();
+    const item = navLinkMap[key];
+    if(!item) return;
+
+    link.href = key;
+    link.textContent = item.label;
+  });
+}
+
+function psdEnsureMarketChartsNavLink(){
+  const nav = document.querySelector(".nav");
+  if(!nav) return;
+
+  const currentPath = window.location.pathname.toLowerCase();
+  const isChartsPage = currentPath.endsWith("/charts.html") || currentPath.endsWith("charts.html");
+
+  let chartsLink = Array.from(nav.querySelectorAll("a[href]")).find(link => {
+    const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
+    return href === "charts.html" || href.endsWith("/charts.html");
+  });
+
+  if(!chartsLink){
+    chartsLink = document.createElement("a");
+    chartsLink.href = "charts.html";
+
+    const dashboardLink = Array.from(nav.querySelectorAll("a[href]")).find(link => {
+      const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
+      return href === "dashboard.html" || href.endsWith("/dashboard.html");
+    });
+
+    const rowBreak = nav.querySelector(".nav-row-break");
+
+    if(dashboardLink){
+      dashboardLink.insertAdjacentElement("afterend", chartsLink);
+    }else if(rowBreak){
+      nav.insertBefore(chartsLink, rowBreak);
+    }else{
+      nav.insertBefore(chartsLink, nav.firstChild);
+    }
+  }
+
+  chartsLink.href = "charts.html";
+  chartsLink.textContent = "Market Charts";
+  chartsLink.classList.toggle("active", isChartsPage);
+}
+
+function psdEnhanceFooterLegalLinks(){
+  document.querySelectorAll(".footer-links").forEach(footer => {
+    const extraLinks = [
+      ["advertise.html", "Business Opportunities"],
+      ["privacy.html", "Privacy"],
+      ["terms.html", "Terms"],
+      ["disclaimer.html", "Disclaimer"]
+    ];
+
+    extraLinks.forEach(([href, label]) => {
+      const exists = Array.from(footer.querySelectorAll("a")).some(a => (a.getAttribute("href") || "") === href);
+      if(!exists){
+        const a = document.createElement("a");
+        a.href = href;
+        a.textContent = label;
+        if(window.location.pathname.toLowerCase().endsWith("/" + href.toLowerCase())){
+          a.className = "active";
+        }
+        footer.appendChild(a);
+      }
+    });
+  });
+}
+
+function psdEnhanceSocialLinks(){
+  document.querySelectorAll(".social-links").forEach(social => {
+    const xPill = Array.from(social.querySelectorAll(".social-pill")).find(el =>
+      el.textContent.trim().toLowerCase() === "x"
+    );
+
+    if(xPill && xPill.tagName.toLowerCase() !== "a"){
+      const a = document.createElement("a");
+      a.className = xPill.className;
+      a.textContent = "X";
+      a.href = PSD_X_PROFILE_URL;
+      a.target = "_blank";
+      a.rel = "noopener";
+      xPill.replaceWith(a);
+    }else if(xPill){
+      xPill.href = PSD_X_PROFILE_URL;
+      xPill.target = "_blank";
+      xPill.rel = "noopener";
+    }
+  });
+}
+
 function psdFallbackFromElement(el){
   const card = el.closest(".instrument-card");
   if(card){
@@ -497,7 +715,12 @@ function psdInit(){
   psdSafe("create PDF widget", psdCreatePdfWidget);
   psdSafe("load anonymous analytics", psdLoadAnonymousAnalytics);
   psdSafe("inject structured data", psdInjectStructuredData);
+  psdSafe("apply compact ribbon layout", psdApplyCompactRibbonLayout);
   psdSafe("create advertise banner", psdCreateAdvertiseBanner);
+  psdSafe("ensure market charts nav link", psdEnsureMarketChartsNavLink);
+  psdSafe("normalize top nav icons", psdNormalizeTopNavIcons);
+  psdSafe("enhance footer legal links", psdEnhanceFooterLegalLinks);
+  psdSafe("enhance social links", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment", psdApplyUserSentiment);
   psdSafe("load user sentiment", psdLoadUserSentiment);
 
@@ -515,7 +738,12 @@ if(document.readyState === "loading"){
 window.addEventListener("load", () => {
   psdSafe("create vote widget on load", psdCreateVoteWidget);
   psdSafe("create PDF widget on load", psdCreatePdfWidget);
+  psdSafe("apply compact ribbon layout on load", psdApplyCompactRibbonLayout);
   psdSafe("create advertise banner on load", psdCreateAdvertiseBanner);
+  psdSafe("ensure market charts nav link on load", psdEnsureMarketChartsNavLink);
+  psdSafe("normalize top nav icons on load", psdNormalizeTopNavIcons);
+  psdSafe("enhance footer legal links on load", psdEnhanceFooterLegalLinks);
+  psdSafe("enhance social links on load", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment on load", psdApplyUserSentiment);
 });
 
