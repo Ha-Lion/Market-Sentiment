@@ -59,6 +59,31 @@
     style.id = "site-tour-styles";
     style.textContent = `
 
+      @keyframes psdLabelDance{
+        0%,100%{transform:translateY(0) rotate(0deg)}
+        25%{transform:translateY(-2px) rotate(-.25deg)}
+        50%{transform:translateY(1px) rotate(0deg)}
+        75%{transform:translateY(-2px) rotate(.25deg)}
+      }
+      @keyframes psdLabelShine{
+        0%,100%{box-shadow:0 0 10px rgba(210,153,34,.18);filter:brightness(1)}
+        50%{box-shadow:0 0 25px rgba(240,183,47,.55),inset 0 0 12px rgba(255,215,128,.12);filter:brightness(1.12)}
+      }
+      .psd-shared-header .psd-dancing-label{
+        width:340px!important;
+        min-width:340px!important;
+        max-width:340px!important;
+        justify-content:center!important;
+        box-sizing:border-box!important;
+        animation:psdLabelDance 3.2s ease-in-out infinite,psdLabelShine 2.1s ease-in-out infinite!important;
+        transform-origin:center!important;
+        will-change:transform,filter,box-shadow;
+      }
+      .psd-shared-header .brand-stamp.psd-dancing-label{animation-delay:.35s,.35s!important}
+      @media(prefers-reduced-motion:reduce){
+        .psd-shared-header .psd-dancing-label{animation:psdLabelShine 2.8s ease-in-out infinite!important}
+      }
+
       /*
        * Shared-ribbon stacking fix.
        * The donation/tour row intentionally extends beyond the center grid cell.
@@ -649,12 +674,12 @@
         <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
       </span>
       <div class="brand-copy">
-        <div class="brand-stamp">AI-built public market sentiment dashboard</div>
+        <div class="brand-stamp psd-dancing-label">AI-built public market sentiment dashboard</div>
         <div class="site-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
     <div class="header-center">
-      <div class="header-pill" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;position:relative;top:3px;animation:softFloat 3.2s ease-in-out infinite,softGlow 1.7s ease-in-out infinite;box-shadow:0 0 18px rgba(210,153,34,.30);">✨ Constantly learning & improving</div>
+      <div class="header-pill psd-dancing-label" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;position:relative;top:3px;">✨ Constantly learning & improving</div>
       <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
         <span>🚀 Help take Public Sentiment Dash to the next level</span>
         <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
