@@ -655,7 +655,7 @@
     </a>
     <div class="header-center">
       <div class="header-pill" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;">✨ Constantly learning & improving</div>
-      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translate(68px,46px);padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(42px);padding:5px 12px;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
         <span>🚀 Help take Public Sentiment Dash to the next level</span>
         <span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
       </a>
@@ -664,7 +664,7 @@
         id="site-tour-button"
         type="button"
         aria-label="Play the two-minute Public Sentiment Dash website tour"
-        style="margin:8px 0 0 12px;transform:translate(68px,46px);flex-shrink:0;"
+        style="margin:8px 0 0 12px;transform:translateY(42px);flex-shrink:0;"
       >
         <span aria-hidden="true">🎬</span>
         <span>Take a 2-Minute Website Tour</span>
