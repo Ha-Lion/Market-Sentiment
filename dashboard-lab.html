@@ -760,12 +760,17 @@
       display:grid!important;
       grid-auto-flow:row!important;
       grid-template-columns:repeat(4,minmax(0,1fr))!important;
-      grid-template-rows:repeat(2,minmax(320px,auto))!important;
+      grid-template-rows:repeat(2,minmax(288px,auto))!important;
       grid-auto-columns:auto!important;
-      gap:7px!important;
+      gap:5px!important;
       width:100%;
     }
-    .ai-card{display:flex;flex-direction:column;height:100%;min-height:320px!important}
+    .ai-card{display:flex;flex-direction:column;height:100%;min-height:288px!important;padding:11px 14px!important}
+    .ai-card-top{margin-bottom:7px!important}
+    .ai-score-wrap{margin-bottom:7px!important}
+    .market-insight{margin-bottom:5px!important;padding:6px 8px!important}
+    .ai-card-news{margin:5px 0!important}
+    .ai-card .compare-control{margin-top:4px!important}
     .ai-card .history-btn{margin-top:auto}
     .ai-scroll{width:40px!important;height:40px!important;font-size:30px!important;font-weight:1000!important}
     .ai-scroll:disabled{opacity:.38;cursor:not-allowed}
@@ -782,7 +787,27 @@
     .ai-card-news{gap:8px!important}
     .ai-card-news a{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease}
     .ai-card-news a:hover,.ai-card-news a:focus-visible{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(210,153,34,.42);outline:none}
-    .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:48px!important;height:48px!important;max-width:48px!important;max-height:48px!important;flex:0 0 48px!important;border-radius:10px!important}
+    .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:52px!important;height:52px!important;max-width:52px!important;max-height:52px!important;flex:0 0 52px!important;border-radius:10px!important}
+    .sentiment-pill{color:#05080c!important;background:color-mix(in srgb,var(--status-color) 24%,#fff)!important;border:2px solid var(--status-color)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+    body.dark-mode .sentiment-pill{color:#fff!important;background:color-mix(in srgb,var(--status-color) 34%,#07101a)!important;border-color:var(--status-color)!important;box-shadow:none}
+    body:not(.dark-mode) .ai-name,
+    body:not(.dark-mode) .ai-symbol,
+    body:not(.dark-mode) .ai-line,
+    body:not(.dark-mode) .ai-line b,
+    body:not(.dark-mode) .ai-score-label,
+    body:not(.dark-mode) .market-insight,
+    body:not(.dark-mode) .market-insight b,
+    body:not(.dark-mode) .compare-control,
+    body:not(.dark-mode) .ai-hero p,
+    body:not(.dark-mode) .ai-updated,
+    body:not(.dark-mode) .ai-carousel-count{color:#02070c!important;opacity:1!important}
+    body.dark-mode .ai-name,
+    body.dark-mode .ai-line b,
+    body.dark-mode .market-insight b{color:#fff!important}
+    body.dark-mode .ai-symbol,
+    body.dark-mode .ai-line,
+    body.dark-mode .market-insight,
+    body.dark-mode .compare-control{color:#eaf3ff!important;opacity:1!important}
     .full-market-chart-link{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 11px;border:1px solid #a87813;border-radius:999px;background:var(--theme-gold-soft);color:var(--theme-gold);font-size:10px;font-weight:900;text-decoration:none;white-space:nowrap}
     .full-market-chart-link:hover,.full-market-chart-link:focus-visible{background:linear-gradient(180deg,#d7a42f,#8c6314);color:#07090d;outline:none}
     .market-chart-actions{display:flex;align-items:center;gap:7px}
@@ -824,7 +849,7 @@
     @media(max-width:1250px){.ai-top-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     @media(max-width:1000px){.ai-hero-grid{grid-template-columns:1fr auto!important}.ai-hero-center{grid-column:2}.ai-hero-tools{grid-column:1/-1}.ai-hero-tools .ai-carousel-count{margin-right:auto}}
     @media(max-width:760px){.ai-hero-grid{grid-template-columns:1fr!important}.ai-hero-center,.ai-hero-tools{grid-column:1}.ai-hero-tools{width:100%}}
-    @media(max-width:680px){.ai-top-grid{grid-template-columns:1fr!important;grid-template-rows:repeat(2,minmax(320px,auto))!important}}
+    @media(max-width:680px){.ai-top-grid{grid-template-columns:1fr!important;grid-template-rows:repeat(2,minmax(288px,auto))!important}}
   </style>
 </head>
 
@@ -963,7 +988,7 @@
 
     function pillStyle(score){
       const c = colorForScore(score);
-      return `color:#fff;background:${c}26;border-color:${c}70;`;
+      return `--status-color:${c};`;
     }
 
     function headlineText(h){
@@ -1254,7 +1279,17 @@
     }
 
     function buildRows(){
-      return AI_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item)).slice(0,15);
+      const featuredOrder = [
+        "NVIDIA / NVDA","Microsoft / MSFT","Alphabet / GOOGL","Amazon / AMZN",
+        "Meta / META","AMD / AMD","Broadcom / AVGO","Taiwan Semiconductor / TSM",
+        "ASML / ASML","Micron / MU","Palantir / PLTR","Oracle / ORCL",
+        "Arm / ARM","Semiconductors / SMH","AI ETF / AIQ"
+      ];
+      const importance = new Map(featuredOrder.map((name,index)=>[name,index]));
+      return AI_ITEMS
+        .map(item => getOfficialCurrent(item) || getDerivedCurrent(item))
+        .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999))
+        .slice(0,15);
     }
 
     function priorityValue(headline){
@@ -1315,7 +1350,7 @@
                 <div class="ai-name">${esc(row.name)}</div>
                 <div class="ai-symbol">${esc(row.symbol)} • ${sourceText}</div>
               </div>
-              <span class="sentiment-pill" style="${pillStyle(row.score)}">${esc(row.label)}</span>
+              <span class="sentiment-pill status-${esc(String(row.label).toLowerCase().replace(/[^a-z]+/g,"-"))}" style="${pillStyle(row.score)}">${esc(row.label)}</span>
             </div>
 
             <div class="ai-score-wrap">
