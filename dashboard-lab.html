@@ -770,6 +770,16 @@
     .ai-scroll{width:46px!important;height:46px!important;font-size:32px!important;font-weight:1000!important}
     .ai-scroll:disabled{opacity:.38;cursor:not-allowed}
     .ai-card-news{min-height:32px}
+    .ai-hero{margin-bottom:6px!important}
+    .ai-hero-grid{align-items:center!important}
+    .ai-hero-tools{display:grid;grid-template-columns:auto auto;grid-template-areas:"score score" "count arrows";align-items:center;justify-content:end;gap:7px 12px;min-width:350px}
+    .ai-hero-tools .ai-updated{grid-area:score;justify-self:stretch;margin:0;padding:8px 12px}
+    .ai-hero-tools .ai-carousel-count{grid-area:count;margin:0;color:var(--theme-text);font-size:11px;font-weight:900;white-space:nowrap}
+    .ai-hero-arrows{grid-area:arrows;display:flex;justify-content:flex-end;gap:7px}
+    .ai-card-news{gap:8px!important}
+    .ai-card-news a{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease}
+    .ai-card-news a:hover,.ai-card-news a:focus-visible{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(210,153,34,.42);outline:none}
+    .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:34px!important;height:34px!important;max-width:34px!important;max-height:34px!important;flex:0 0 34px!important;border-radius:8px!important}
     .psd-shared-header .social-label,
     .psd-shared-header .social-pill,
     .psd-shared-header .social-pill span{opacity:1!important;font-weight:900!important;text-shadow:none!important}
@@ -806,6 +816,7 @@
     @media(max-width:1100px){.comparison-sync-controls strong{display:none}.comparison-sync-button{padding:6px 8px;font-size:9px}}
     @media(max-width:900px){.compare-assets-grid{grid-template-columns:1fr!important}}
     @media(max-width:1250px){.ai-top-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    @media(max-width:760px){.ai-hero-tools{min-width:0;width:100%;grid-template-columns:1fr auto}.ai-hero-grid{grid-template-columns:1fr!important}}
     @media(max-width:680px){.ai-top-grid{grid-template-columns:1fr!important;grid-template-rows:repeat(2,minmax(320px,auto))!important}}
   </style>
 </head>
@@ -820,18 +831,24 @@
     <section class="ai-hero">
       <div class="ai-hero-grid">
         <div>
-          <div class="ai-live-pill">AI Assets Sentiment</div>
           <h1>Top AI Assets Sentiment</h1>
           <p>Track public sentiment across assets tied to artificial intelligence, AI chips, cloud infrastructure, data platforms, semiconductor supply chains, AI software, and AI-focused ETFs.</p>
         </div>
-        <div class="ai-updated">
-          <b id="overallScore">--</b>
-          <span id="updatedText">Loading latest AI asset sentiment...</span>
+        <div class="ai-hero-tools">
+          <div class="ai-updated">
+            <b id="overallScore">--</b>
+            <span id="updatedText">Loading latest AI asset sentiment...</span>
+          </div>
+          <span class="ai-carousel-count" id="aiCarouselCount">Loading AI assets…</span>
+          <div class="ai-hero-arrows">
+            <button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous AI assets">‹</button>
+            <button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next AI assets">›</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <div class="ai-carousel-head"><span class="ai-carousel-count" id="aiCarouselCount"></span><button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous AI assets">‹</button><button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next AI assets">›</button></div><div class="ai-carousel" id="aiCarousel"><section class="ai-top-grid" id="aiTopGrid"></section></div>
+    <div class="ai-carousel" id="aiCarousel"><section class="ai-top-grid" id="aiTopGrid"></section></div>
 
     <aside class="ad-slot" id="adContent" aria-label="Advertisement"></aside>
 
@@ -1311,7 +1328,7 @@
             </div>
 
             <div class="market-insight"><span>Daily market insight</span><b>${esc(marketDirection(row.name))}</b></div>
-            <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase());return logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" title="${esc(h.source||"Source")}" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback" title="${esc(h.source||"Source")}">${initial}</span>`}).join("")}</div>
+            <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
             <label class="compare-control">
