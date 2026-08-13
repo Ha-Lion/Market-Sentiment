@@ -22,14 +22,21 @@
   }
 
   function installRibbonControl(){
-    const row=document.getElementById("psd-nav-social-row");
-    if(!row||document.getElementById("psd-theme-toggle"))return false;
+    const nav=document.querySelector(".psd-shared-header .nav");
+    if(!nav||document.getElementById("psd-theme-toggle"))return false;
+    const social=nav.querySelector(".psd-ribbon-social-wrap");
+    const account=nav.querySelector(".psd-account-nav-wrap");
+    if(social&&account)nav.insertBefore(social,account);
+    let actions=nav.querySelector(".psd-ribbon-actions");
+    if(!actions){actions=document.createElement("div");actions.className="psd-ribbon-actions";nav.appendChild(actions)}
+    const watchlist=document.getElementById("psd-ribbon-watchlist-link");
+    if(watchlist)actions.appendChild(watchlist);
     const button=document.createElement("button");
     button.id="psd-theme-toggle";
     button.className="psd-theme-toggle";
     button.type="button";
     button.setAttribute("aria-label","Switch website color theme");
-    row.appendChild(button);
+    actions.appendChild(button);
     button.addEventListener("click",()=>applyTheme(document.body.classList.contains("dark-mode")?"light":"dark",true));
     applyTheme(savedTheme(),false);
     return true;
