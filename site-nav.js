@@ -97,6 +97,7 @@
       }
       .psd-shared-header .psd-market-pulse-link{
         margin-right:auto!important;
+        margin-left:106px!important;
         pointer-events:auto!important;
       }
       @media(prefers-reduced-motion:reduce){
