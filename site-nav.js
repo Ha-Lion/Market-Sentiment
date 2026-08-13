@@ -635,61 +635,6 @@
     }
   }
 
-  function applyCompleteRibbonBehavior(){
-    if(!document.getElementById("psdCompactRibbonCss")){
-      const style=document.createElement("style");
-      style.id="psdCompactRibbonCss";
-      style.textContent=`
-        .header{padding:8px 22px 7px!important;gap:14px!important;min-height:148px!important}
-        .logo{width:112px!important;height:112px!important;padding:6px!important}
-        .brand{gap:11px!important}
-        .brand-stamp,.page-chip{padding:7px 12px!important;font-size:12px!important}
-        .header-pill{min-width:340px!important;padding:8px 30px!important;font-size:12px!important;justify-content:center!important;text-align:center!important;white-space:nowrap!important}
-        .site-subtitle{font-size:12px!important}
-        .header-center{min-width:360px!important;transform:translateY(-5px)!important}
-        .nav{gap:6px 8px!important;transform:translateY(-5px)!important;align-content:flex-start!important}
-        .nav a{font-size:11.5px!important;line-height:1.02!important;padding:5px 6px!important;gap:4px!important;white-space:nowrap!important}
-        .nav a::before{width:12px!important;min-width:12px!important;font-size:10.5px!important}
-        .social-links{gap:6px!important;margin-left:6px!important;margin-top:0!important}
-        .social-label{font-size:11px!important}
-        .social-pill{min-width:38px!important;padding:6px 10px!important;font-size:11px!important}
-        .social-pill.linkedin{min-width:68px!important}
-        @media(max-width:1180px){.header{min-height:auto!important}.header-center,.nav{transform:none!important}}
-      `;
-      document.head.appendChild(style);
-    }
-
-    const navLinkMap={
-      "dashboard.html":["Interactive Dashboard","📊"],"charts.html":["Market Charts","📈"],
-      "sentiment-history.html":["Historical Sentiment","📈"],"news-articles.html":["News & Articles","📰"],
-      "market-sentiment.html":["Guides","📘"],"advertise.html":["Business Opportunities","💼"],
-      "contact.html":["Get in Touch","✉️"],"about.html":["About","ℹ️"],
-      "crypto.html":["Crypto Sentiment","🪙"],"energy.html":["Energy Sentiment","⚡"],
-      "precious-metals.html":["Precious Metals Sentiment","🥇"],"indices.html":["Indices Sentiment","📊"]
-    };
-    if(!document.getElementById("psdRibbonIconCss")){
-      const style=document.createElement("style");
-      style.id="psdRibbonIconCss";
-      style.textContent=Object.entries(navLinkMap).map(([href,item])=>`.nav a[href="${href}"]::before{content:"${item[1]}"!important;}`).join("\n");
-      document.head.appendChild(style);
-    }
-    document.querySelectorAll(".nav a[href]").forEach(link=>{
-      const key=(link.getAttribute("href")||"").split("#")[0].split("?")[0].toLowerCase().split("/").pop();
-      const item=navLinkMap[key];
-      if(!item)return;
-      link.href=key;
-      link.textContent=item[0];
-    });
-    document.querySelectorAll(".social-links").forEach(social=>{
-      const x=Array.from(social.querySelectorAll(".social-pill")).find(el=>el.textContent.trim().toLowerCase()==="x");
-      if(!x)return;
-      if(x.tagName.toLowerCase()!=="a"){
-        const a=document.createElement("a");
-        a.className=x.className;a.textContent="X";a.href="https://x.com/PublicSentDash";a.target="_blank";a.rel="noopener";x.replaceWith(a);
-      }else{x.href="https://x.com/PublicSentDash";x.target="_blank";x.rel="noopener";}
-    });
-  }
-
   function render(){
     const mount = document.getElementById("site-header");
     if(!mount) return;
@@ -739,8 +684,6 @@
       </div>
     </nav>
   </header>`;
-
-    applyCompleteRibbonBehavior();
 
     ensureTourStyles();
 
