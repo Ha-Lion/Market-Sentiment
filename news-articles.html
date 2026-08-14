@@ -13,18 +13,21 @@
 
   <style>
     main.page{
-      padding-top:12px;
+      width:100%;
+      max-width:none;
+      box-sizing:border-box;
+      padding:10px 16px 28px;
     }
 
     .news-search-panel{
       position:relative;
-      padding-top:12px;
-      padding-bottom:12px;
+      padding:14px 18px;
+      border-radius:20px;
     }
 
     .news-search-panel h1{
-      font-size:38px;
-      margin-bottom:8px;
+      font-size:clamp(28px,2.6vw,38px);
+      margin-bottom:5px;
       line-height:1.05;
     }
 
@@ -37,7 +40,7 @@
       grid-template-columns:minmax(260px,1.35fr) minmax(180px,.78fr) minmax(220px,.92fr) minmax(260px,1fr);
       gap:12px;
       align-items:end;
-      margin-top:22px;
+      margin-top:18px;
     }
 
     input[type="text"],select{
@@ -51,6 +54,7 @@
       font-size:15px;
       outline:none;
       font-weight:400;
+      color-scheme:dark;
     }
 
     input[type="text"]:focus,select:focus{
@@ -165,8 +169,8 @@
 
     .headline-list{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
-      gap:16px;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:14px;
     }
 
     .headline-card{
@@ -174,14 +178,14 @@
       overflow:hidden;
       display:flex;
       flex-direction:column;
-      min-height:320px;
+      min-height:285px;
       background:radial-gradient(circle at top right, rgba(210,153,34,.15), transparent 14rem), linear-gradient(180deg,#101826,#0d131d);
       border:1px solid var(--line);
       border-radius:18px;
       box-shadow:0 12px 30px rgba(0,0,0,.18);
       transition:.18s ease;
       color:var(--text);
-      padding:16px;
+      padding:17px;
     }
 
     .headline-card:hover{
@@ -198,9 +202,9 @@
     }
 
     .headline-source-icon{
-      width:24px;
-      height:24px;
-      border-radius:6px;
+      width:34px;
+      height:34px;
+      border-radius:8px;
       object-fit:cover;
       background:#fff;
       flex-shrink:0;
@@ -208,8 +212,8 @@
 
     .headline-source-name{
       color:#fff;
-      font-size:13px;
-      font-weight:600;
+      font-size:14px;
+      font-weight:800;
     }
 
     .headline-body{
@@ -257,9 +261,9 @@
 
     .headline-title{
       color:#fff;
-      font-size:20px;
-      font-weight:500;
-      line-height:1.45;
+      font-size:18px;
+      font-weight:800;
+      line-height:1.35;
       margin-top:2px;
     }
 
@@ -272,9 +276,11 @@
 
     .headline-open{
       margin-top:auto;
-      color:#fff;
+      color:#ffd780;
       font-size:13px;
-      font-weight:500;
+      font-weight:900;
+      text-decoration:underline;
+      text-underline-offset:3px;
     }
 
     .empty-card{
@@ -324,6 +330,59 @@
       display:flex;
     }
 
+    /* Page-only light theme. Shared ribbon and footer files remain authoritative. */
+    body:not(.dark-mode) main.page{color:#071426;}
+    body:not(.dark-mode) .news-search-panel,
+    body:not(.dark-mode) main.page > section.panel{
+      background:#fff;
+      border-color:#aec4d8;
+      box-shadow:0 12px 32px rgba(31,55,82,.12);
+    }
+    body:not(.dark-mode) .news-search-panel h1,
+    body:not(.dark-mode) .news-search-panel p,
+    body:not(.dark-mode) .count-note{color:#071426;}
+    body:not(.dark-mode) input[type="text"],
+    body:not(.dark-mode) select{
+      background:#fff;
+      color:#071426;
+      border-color:#9fb9d0;
+      color-scheme:light;
+    }
+    body:not(.dark-mode) input[type="text"]::placeholder{color:#405a70;opacity:1;}
+    body:not(.dark-mode) select option{background:#fff;color:#071426;}
+    body:not(.dark-mode) .btn.secondary{background:#fff;color:#071426;border-color:#9a6900;}
+    body:not(.dark-mode) .source-summary{background:#edf4fa;border-color:#aec4d8;}
+    body:not(.dark-mode) .source-summary-title{color:#19364d;}
+    body:not(.dark-mode) .source-summary-link{color:#063d78;background:#fff;border-color:#9fb9d0;}
+    body:not(.dark-mode) .source-summary-link:hover{color:#071426;background:#fff5d8;border-color:#9a6900;}
+    body:not(.dark-mode) .headline-card{
+      color:#071426;
+      background:radial-gradient(circle at top right,rgba(210,153,34,.14),transparent 14rem),linear-gradient(180deg,#fff,#eef4fa);
+      border-color:#aec4d8;
+      box-shadow:0 10px 24px rgba(31,55,82,.12);
+    }
+    body:not(.dark-mode) .headline-card:hover{border-color:#9a6900;box-shadow:0 16px 30px rgba(31,55,82,.18);}
+    body:not(.dark-mode) .headline-source-name,
+    body:not(.dark-mode) .headline-title,
+    body:not(.dark-mode) .headline-meta{color:#071426;}
+    body:not(.dark-mode) .headline-top{color:#18384f;}
+    body:not(.dark-mode) .tag{background:#e5f0ff;border-color:#78a9dc;color:#062f5d;}
+    body:not(.dark-mode) .impact-tag{background:#fff4d3;border-color:#b27a00;color:#573900;}
+    body:not(.dark-mode) .tech-tag{background:#e8f8eb;border-color:#57a866;color:#123d19;}
+    body:not(.dark-mode) .headline-open{color:#6c4700;}
+    body:not(.dark-mode) .empty-card{background:#fff;color:#071426;border-color:#aec4d8;}
+    body:not(.dark-mode) .page-up{background:#fff;color:#5d3d00;border-color:#9a6900;}
+    body:not(.dark-mode) .footer{color:#071426;border-color:#9fb9d0;}
+    body:not(.dark-mode) .footer a,
+    body:not(.dark-mode) .footer p{color:#071426;opacity:1;}
+    body:not(.dark-mode) .footer .legal{background:#fff8e9;color:#071426;border-color:#c6972d;}
+
+    body.dark-mode .headline-card,
+    body.dark-mode .news-search-panel,
+    body.dark-mode main.page > section.panel{color:#fff;}
+
+    @media(max-width:1180px){.headline-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
     @media(max-width:760px){
       .news-search-panel{
         padding-top:20px;
@@ -369,7 +428,7 @@
   <main class="page">
     <section class="panel news-search-panel">
       <h1>News & Articles</h1>
-      <p>Search the rolling news memory by keyword, market, instrument, and source.</p>
+      <p><span data-glossary="news-summary">Search the rolling news memory</span> by keyword, market, instrument, and source. Trusted market outlets are shown first.</p>
       <div class="count-note" id="resultsCount">Loading published articles...</div>
 
       <div class="controls">
@@ -501,6 +560,25 @@
       return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral";
     }
 
+    const preferredSources = [
+      "Reuters","Bloomberg","CNBC","Financial Times","The Wall Street Journal","WSJ",
+      "Associated Press","AP News","MarketWatch","Fox Business","Barron's","Investors Business Daily"
+    ];
+
+    function sourceRank(item){
+      if(item?.is_major_outlet === true) return 1;
+      const source = String(item?.source || "").toLowerCase();
+      if(preferredSources.some(name => source.includes(name.toLowerCase()))) return 1;
+      if(Number(item?.relevance_score || 0) >= 7 || String(item?.impact || "").toLowerCase() === "high") return 2;
+      return 3;
+    }
+
+    function publishedTime(item){
+      const value = item?.published_at || item?.published || item?.date || "";
+      const stamp = Date.parse(value);
+      return Number.isFinite(stamp) ? stamp : 0;
+    }
+
     function domainFromURL(url){
       try{
         return new URL(url).hostname.replace(/^www\./, "");
@@ -602,7 +680,7 @@
         const keywordOk = !keyword || text.includes(keyword);
 
         return marketOk && instrumentOk && sourceOk && keywordOk;
-      });
+      }).sort((a,b) => sourceRank(a) - sourceRank(b) || publishedTime(b) - publishedTime(a) || Number(b.relevance_score || 0) - Number(a.relevance_score || 0));
     }
 
     function renderSourceSummary(headlines){
@@ -664,7 +742,7 @@
             return `
               <a class="headline-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
                 <div class="headline-source-row">
-                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(item.source || "Source")} icon">` : ""}
+                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(item.source || "Source")} logo" loading="lazy" onerror="this.style.visibility='hidden'">` : ""}
                   <div class="headline-source-name">${escapeHTML(item.source || "Source")}</div>
                 </div>
 
@@ -720,7 +798,7 @@
 
         const latestItems = Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : [];
 
-        allArticles = dedupeArticles([...latestItems, ...cacheItems]);
+        allArticles = dedupeArticles([...cacheItems, ...latestItems]);
 
         populateInstrumentOptions();
         populateSourceOptions();
@@ -753,5 +831,6 @@
   </script>
 
   <script src="vote-widget.js" defer></script>
+  <script src="glossary.js?v=3" defer></script>
 </body>
 </html>
