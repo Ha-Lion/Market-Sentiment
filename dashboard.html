@@ -10,6 +10,7 @@
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css">
   <script src="sentiment-core.js?v=5"></script>
 
   <style>
@@ -1263,6 +1264,24 @@
     body:not(.dark-mode) .skyline-wrap,
     body:not(.dark-mode) .radar-wrap{
       background:linear-gradient(180deg,#f8fbff,#edf4fb)!important;
+    }
+    body:not(.dark-mode) .dashboard-period-row{
+      background:#fff!important;
+      border-color:#a9bfd6!important;
+      color:#071426!important;
+    }
+    body:not(.dark-mode) .legend-mini span,
+    body:not(.dark-mode) .radar-legend span,
+    body:not(.dark-mode) .heat-legend span{
+      background:#f5f9fd!important;
+      border-color:#9fb6cd!important;
+      color:#071426!important;
+      text-shadow:none!important;
+    }
+    body:not(.dark-mode) .preview-note{
+      background:#fff8e6!important;
+      border-color:#b78317!important;
+      color:#4b3200!important;
     }
     body:not(.dark-mode) .market-name,
     body:not(.dark-mode) .psi-big,
@@ -2787,8 +2806,9 @@
     function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
     function renderSkyline(data){
       const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:235,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+      const dark=document.body.classList.contains("dark-mode"),grid=dark?"rgba(255,255,255,.13)":"rgba(26,57,88,.17)",axis=dark?"#a9b4c1":"#263b53",labelBg=dark?"rgba(9,14,22,.88)":"rgba(255,255,255,.96)",labelText=dark?"#fff":"#071426";
       let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-      [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="18" y="${y+4}" fill="#a9b4c1" font-size="14" font-weight="800">${v}</text>`;});
+      [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="${grid}" stroke-width="1"/><text x="18" y="${y+4}" fill="${axis}" font-size="14" font-weight="800">${v}</text>`;});
       const labelRows=data.map((d,idx)=>{
         const skylineSeries=seriesForPeriod(d);
         const pScore=periodScoreFor(d);
@@ -2805,16 +2825,17 @@
         const path=smoothPath(points);
         const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
         const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
-        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="#fff" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="206" height="26" rx="13" fill="rgba(9,14,22,.88)" stroke="${c}" stroke-opacity=".55"/><text x="${lx+9}" y="${ly+2}" fill="#fff" font-size="10.8" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="${dark?'#fff':'#071426'}" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-16}" width="206" height="26" rx="13" fill="${labelBg}" stroke="${c}" stroke-opacity=".70"/><text x="${lx+9}" y="${ly+2}" fill="${labelText}" font-size="10.8" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
       });
-      out+=`<text x="${pad.l}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="#a9b4c1" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
+      out+=`<text x="${pad.l}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
     }
     function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
     function renderRadar(data){
       const svg=document.getElementById("radarChart"),legend=document.getElementById("radarLegend"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=162; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      const dark=document.body.classList.contains("dark-mode"),grid=dark?"rgba(255,255,255,.18)":"rgba(26,57,88,.20)",axis=dark?"#e6edf3":"#071426";
       const maxHeadlines=Math.max(...data.map(d=>Number(d.headlines)||0),1);
-      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.25"/>`;});
-      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+43,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="rgba(255,255,255,.19)" stroke-width="1.25"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="900">${a}</text>`;});
+      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="${grid}" stroke-width="1.25"/>`;});
+      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+43,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="${grid}" stroke-width="1.25"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="${axis}" font-size="15" font-weight="900">${a}</text>`;});
       data.slice(0,5).forEach((d,idx)=>{
         const c=lineColor(idx);
         const pScore=periodScoreFor(d) ?? d.score ?? 50;
@@ -3314,7 +3335,11 @@
           });
         });
         observer.observe(priceBox);
-        new MutationObserver(applyChartTheme).observe(document.body,{attributes:true,attributeFilter:["class"]});
+        new MutationObserver(function(){
+          applyChartTheme();
+          renderSkyline(selectedData());
+          renderRadar(selectedData());
+        }).observe(document.body,{attributes:true,attributeFilter:["class"]});
         return true;
       }
 
