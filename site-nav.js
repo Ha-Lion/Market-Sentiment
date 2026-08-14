@@ -724,7 +724,7 @@
       <div class="psd-ribbon-social-wrap">
         <div class="social-links">
           <span class="social-label">Follow us</span>
-          <span class="social-pill">X</span>
+          <span class="social-pill">X.com</span>
           <span class="social-pill linkedin">LinkedIn</span>
         </div>
         <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
