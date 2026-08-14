@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="watchlist.css?v=20260809-chart5">
+  <link rel="stylesheet" href="site-theme.css">
 
   <style>
     .nav-row-break{
@@ -21,6 +22,10 @@
     }
 
     main.page.watchlist-page{
+      width:auto;
+      max-width:none;
+      margin:0;
+      padding:14px;
       min-height:calc(100vh - 180px);
       display:flex;
       flex-direction:column;
@@ -30,15 +35,28 @@
       flex:0 0 auto;
     }
 
-    .watchlist-page .footer{
-      width:100%;
-      margin-top:auto;
-    }
+    body:not(.dark-mode){--bg:var(--theme-bg);--panel:var(--theme-card);--card:var(--theme-card-2);--line:var(--theme-line);--text:var(--theme-text);--soft:var(--theme-soft);--muted:var(--theme-muted);--blue:var(--theme-blue)}
+    body:not(.dark-mode) .panel{background:var(--theme-card);box-shadow:0 12px 28px rgba(25,50,72,.13)}
+    body:not(.dark-mode) .page-chip{background:var(--theme-gold-soft);color:#523700;border-color:#a97200}
+    body:not(.dark-mode) .watchlist-metric,body:not(.dark-mode) .watchlist-chip{background:var(--theme-card-2);color:#061522}
+    body:not(.dark-mode) .watchlist-metric strong,body:not(.dark-mode) .watchlist-card h2{color:#061522}
+    body:not(.dark-mode) .watchlist-symbol{color:#6b4700}
+    body:not(.dark-mode) .watchlist-modal-card{background:#f8fbfe;color:#061522}
+    body:not(.dark-mode) .watchlist-modal-head{background:#fff}
+    body:not(.dark-mode) .watchlist-modal-close,body:not(.dark-mode) .watchlist-chart-tool{background:#eef4f9;color:#061522}
+    body:not(.dark-mode) .watchlist-news-item{background:#fff}
+    body:not(.dark-mode) .watchlist-news-title{color:#061522}
+    body .psd-shared-header .social-pill.linkedin{opacity:1!important;visibility:visible!important;font-weight:900!important;text-shadow:none!important}
+    body:not(.dark-mode) .psd-shared-header .social-pill.linkedin{color:#061522!important;background:#fff!important;border-color:#8da8bd!important}
+    body.dark-mode .psd-shared-header .social-pill.linkedin{color:#fff!important}
   </style>
 </head>
 <body>
   <div id="site-header"></div>
-  <script src="site-nav.js?v=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-client.js?v=6" defer></script>
+  <script src="site-nav.js?v=1" defer></script>
+  <script src="site-theme.js?v=1" defer></script>
 
   <main class="page watchlist-page">
     <section class="panel watchlist-hero">
@@ -46,7 +64,7 @@
         <div class="page-chip">Private Member Page</div>
         <h1>My Watchlist</h1>
         <p>
-          Your saved instruments, anonymous user sentiment, technical direction,
+          Your saved instruments, <span data-glossary="user-sentiment">anonymous user sentiment</span>, <span data-glossary="technical-direction">technical direction</span>,
           and latest headline mix in one place.
         </p>
         <div id="watchlist-status" class="watchlist-status" role="status">Loading your watchlist…</div>
@@ -68,64 +86,12 @@
       </section>
     </div>
 
-    <footer class="footer">
-      <div class="footer-links">
-        <a href="dashboard.html">Interactive Dashboard</a>
-        <a href="public-sentiment-index.html">Public Sentiment Index</a>
-        <a href="sentiment-history.html">Historical Sentiment</a>
-        <a href="news-articles.html">News & Articles</a>
-        <a href="market-sentiment.html">Guides</a>
-        <a href="contact.html">Get in Touch</a>
-        <a href="how-it-works.html">How the Dashboard Works</a>
-        <a href="advertise.html">Business Opportunities</a>
-        <a href="about.html">About</a>
-        <a href="privacy.html">Privacy</a>
-        <a href="terms.html">Terms</a>
-        <a href="disclaimer.html">Disclaimer</a>
-      </div>
-
-      <div class="legal">
-        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
-      </div>
-
-      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
-    </footer>
   </main>
-  <script>
-    (function(){
-      "use strict";
-
-      let attempts = 0;
-      const maximumAttempts = 100;
-
-      function loadWatchlistWhenReady(){
-        if(window.psdSupabase){
-          if(document.getElementById("psd-watchlist-page-script")) return;
-
-          const script = document.createElement("script");
-          script.id = "psd-watchlist-page-script";
-          script.src = "watchlist.js?v=20";
-          document.body.appendChild(script);
-          return;
-        }
-
-        attempts += 1;
-
-        if(attempts < maximumAttempts){
-          window.setTimeout(loadWatchlistWhenReady,100);
-          return;
-        }
-
-        const status = document.getElementById("watchlist-status");
-        if(status){
-          status.textContent = "Account service did not finish loading.";
-          status.className = "watchlist-status error";
-        }
-      }
-
-      loadWatchlistWhenReady();
-    })();
-  </script>
-  <script src="vote-widget.js" defer></script>
+  <div id="site-footer"></div>
+  <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js" defer></script>
+  <script src="watchlist.js?v=20" defer></script>
+  <script src="site-footer.js?v=1" defer></script>
+  <script src="glossary.js?v=3" defer></script>
+  <script src="vote-widget.js?v=19" defer></script>
 </body>
 </html>
