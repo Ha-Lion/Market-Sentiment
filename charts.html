@@ -9,25 +9,40 @@
   <link rel="canonical" href="https://publicsentimentdash.com/charts.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css">
 
   <style>
     :root{
+      --bg:#e8eef5;
+      --card:#ffffff;
+      --card2:#f2f6fa;
+      --line:#a9bed0;
+      --text:#061522;
+      --muted:#365067;
+      --gold:#8b5e00;
+      --gold2:#6b4700;
+      --shadow:rgba(25,50,72,.15);
+      --chart-bg:#ffffff;
+      --chart-grid:rgba(71,85,105,.16);
+    }
+
+    body.dark-mode{
       --bg:#070b12;
       --card:#0d131d;
       --card2:#111927;
-      --line:rgba(148,163,184,.22);
-      --text:#f3f7ff;
-      --muted:#94a3b8;
+      --line:rgba(148,163,184,.30);
+      --text:#f8fbff;
+      --muted:#c7d4e5;
       --gold:#d29922;
       --gold2:#f4d17d;
+      --shadow:rgba(0,0,0,.24);
+      --chart-bg:#0d131d;
+      --chart-grid:rgba(148,163,184,.12);
     }
 
     body{
       margin:0;
-      background:
-        radial-gradient(circle at 12% 0%,rgba(210,153,34,.10),transparent 28rem),
-        radial-gradient(circle at 92% 12%,rgba(88,166,255,.07),transparent 30rem),
-        var(--bg);
+      background:var(--bg);
       color:var(--text);
     }
 
@@ -46,8 +61,8 @@
       margin-bottom:8px;
       border:1px solid var(--line);
       border-radius:17px;
-      background:linear-gradient(180deg,rgba(16,24,36,.92),rgba(9,14,22,.92));
-      box-shadow:0 14px 34px rgba(0,0,0,.24);
+      background:var(--card);
+      box-shadow:0 14px 34px var(--shadow);
     }
 
     .charts-hero h1{
@@ -67,9 +82,9 @@
     }
 
     .provider-pill{
-      color:#f4d17d;
-      border:1px solid rgba(210,153,34,.35);
-      background:rgba(210,153,34,.10);
+      color:var(--gold2);
+      border:1px solid rgba(139,94,0,.48);
+      background:#fff6d9;
       border-radius:999px;
       padding:6px 10px;
       font-size:11px;
@@ -87,9 +102,9 @@
     .charts-panel{
       border:1px solid var(--line);
       border-radius:17px;
-      background:linear-gradient(180deg,rgba(17,24,39,.94),rgba(9,14,22,.96));
+      background:var(--card);
       padding:9px;
-      box-shadow:0 14px 34px rgba(0,0,0,.20);
+      box-shadow:0 14px 34px var(--shadow);
       max-height:calc(100vh - 86px);
       overflow:auto;
     }
@@ -106,7 +121,7 @@
 
     .charts-select{
       width:100%;
-      background:#121a26;
+      background:var(--card2);
       color:var(--text);
       border:1px solid var(--line);
       border-radius:10px;
@@ -125,7 +140,7 @@
       font-weight:700;
       text-transform:uppercase;
       letter-spacing:.06em;
-      opacity:.9;
+      opacity:1;
     }
 
     .quick-grid{
@@ -137,8 +152,8 @@
     .quick-btn{
       appearance:none;
       border:1px solid var(--line);
-      background:#111927;
-      color:#dbe7f8;
+      background:var(--card2);
+      color:var(--text);
       border-radius:9px;
       padding:5px 4px;
       min-height:25px;
@@ -154,19 +169,19 @@
       transform:translateY(-1px);
       border-color:rgba(210,153,34,.55);
       background:rgba(210,153,34,.10);
-      color:#fff;
+      color:var(--text);
     }
 
     .quick-btn.active{
       border-color:rgba(210,153,34,.78);
       background:linear-gradient(180deg,rgba(210,153,34,.22),rgba(210,153,34,.08));
-      color:#fff3c8;
+      color:var(--text);
     }
 
     .provider-copy{
       margin-top:10px;
       padding-top:9px;
-      border-top:1px solid rgba(148,163,184,.16);
+      border-top:1px solid var(--line);
       color:var(--muted);
       font-size:10px;
       line-height:1.35;
@@ -177,8 +192,8 @@
       min-height:calc(100vh - 92px);
       border:1px solid var(--line);
       border-radius:17px;
-      background:linear-gradient(180deg,rgba(16,24,36,.96),rgba(7,11,18,.98));
-      box-shadow:0 14px 38px rgba(0,0,0,.24);
+      background:var(--card);
+      box-shadow:0 14px 38px var(--shadow);
     }
 
     .chart-header{
@@ -187,7 +202,7 @@
       align-items:center;
       gap:8px;
       padding:4px 9px 3px;
-      border-bottom:1px solid rgba(148,163,184,.14);
+      border-bottom:1px solid var(--line);
       min-height:28px;
     }
 
@@ -216,9 +231,9 @@
     }
 
     .chart-chip{
-      color:#cdd9ec;
-      border:1px solid rgba(148,163,184,.22);
-      background:rgba(13,19,29,.85);
+      color:var(--text);
+      border:1px solid var(--line);
+      background:var(--card2);
       padding:3px 7px;
       border-radius:999px;
       font-size:9.5px;
@@ -287,13 +302,38 @@
       content:"📈";
     }
 
+    body.dark-mode{
+      background:
+        radial-gradient(circle at 12% 0%,rgba(210,153,34,.10),transparent 28rem),
+        radial-gradient(circle at 92% 12%,rgba(88,166,255,.07),transparent 30rem),
+        var(--bg);
+    }
+
+    body.dark-mode .charts-hero,
+    body.dark-mode .charts-panel,
+    body.dark-mode .chart-card{
+      background:linear-gradient(180deg,var(--card2),var(--card));
+    }
+
+    body.dark-mode .provider-pill{
+      color:var(--gold2);
+      border-color:rgba(210,153,34,.45);
+      background:rgba(210,153,34,.10);
+    }
+
+    body.dark-mode .quick-btn:hover,
+    body.dark-mode .quick-btn.active{
+      color:#fff;
+    }
+
   </style>
 </head>
 
 <body>
 
   <div id="site-header"></div>
-  <script src="site-nav.js?v=1"></script>
+  <script src="site-nav.js?v=1" defer></script>
+  <script src="site-theme.js?v=1" defer></script>
 
   <main class="charts-wrap">
     <section class="charts-hero">
@@ -477,12 +517,13 @@
       script.type = "text/javascript";
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.async = true;
+      const dark = document.body.classList.contains("dark-mode");
       script.textContent = JSON.stringify({
         autosize: true,
         symbol: item.symbol,
         interval: interval,
         timezone: "Etc/UTC",
-        theme: "dark",
+        theme: dark ? "dark" : "light",
         style: "1",
         locale: "en",
         allow_symbol_change: false,
@@ -495,8 +536,8 @@
         hide_legend: false,
         save_image: false,
         studies: [],
-        backgroundColor: "rgba(13, 19, 29, 1)",
-        gridColor: "rgba(148, 163, 184, 0.12)"
+        backgroundColor: dark ? "rgba(13, 19, 29, 1)" : "rgba(255, 255, 255, 1)",
+        gridColor: dark ? "rgba(148, 163, 184, 0.12)" : "rgba(71, 85, 105, 0.16)"
       });
 
       container.appendChild(widget);
@@ -506,7 +547,10 @@
 
     initControls();
     renderChart();
+    window.addEventListener("psd-theme-change", renderChart);
   </script>
-  <script src="vote-widget.js?v=19"></script>
+  <div id="site-footer"></div>
+  <script src="site-footer.js?v=1" defer></script>
+  <script src="vote-widget.js?v=19" defer></script>
 </body>
 </html>
