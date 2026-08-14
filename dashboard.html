@@ -1,4 +1,4 @@
-ac<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1024,11 +1024,6 @@ ac<!DOCTYPE html>
     }
 
   
-    .nav-row-break{
-      flex-basis:100%;
-      height:0;
-    }
-
     /* Sentiment vs. Market laboratory prototype — isolated from ribbon/voting code */
     .svm-lab-panel{
       position:relative;
@@ -1241,6 +1236,30 @@ ac<!DOCTYPE html>
     body:not(.dark-mode) .sentiment-card{
       background:radial-gradient(circle at top right,rgba(210,153,34,.12),transparent 10rem),linear-gradient(180deg,#fff,#f2f7fc)!important;
     }
+    body:not(.dark-mode) .svm-lab-head,
+    body:not(.dark-mode) .svm-controls,
+    body:not(.dark-mode) .svm-chart-shell,
+    body:not(.dark-mode) .svm-stat,
+    body:not(.dark-mode) .svm-foot{
+      background:#fff!important;
+      border-color:#a9bfd6!important;
+      color:#071426!important;
+    }
+    body:not(.dark-mode) .svm-lab-head h2,
+    body:not(.dark-mode) .svm-chart-title,
+    body:not(.dark-mode) .svm-live-legend b,
+    body:not(.dark-mode) .svm-tool-note strong{color:#071426!important}
+    body:not(.dark-mode) .svm-lab-head p,
+    body:not(.dark-mode) .svm-live-legend{color:#263b53!important}
+    body:not(.dark-mode) .svm-series-toggle{
+      background:#fff!important;
+      border-color:#9fb6cd!important;
+    }
+    body:not(.dark-mode) .svm-chart-loading{
+      background:rgba(255,255,255,.94)!important;
+      color:#071426!important;
+    }
+    body:not(.dark-mode) .svm-stats{background:#a9bfd6!important;border-color:#a9bfd6!important}
     body:not(.dark-mode) .skyline-wrap,
     body:not(.dark-mode) .radar-wrap{
       background:linear-gradient(180deg,#f8fbff,#edf4fb)!important;
@@ -1286,10 +1305,10 @@ ac<!DOCTYPE html>
     body:not(.dark-mode) .psd-glossary-title{color:#071426!important}
     body:not(.dark-mode) .psd-glossary-text{color:#1d334b!important}
     body:not(.dark-mode) .psd-glossary-close{color:#071426!important}
-    body .psd-shared-header .social-pill.linkedin{opacity:1!important;visibility:visible!important;font-weight:900!important;text-shadow:none!important}
-    body:not(.dark-mode) .psd-shared-header .social-pill.linkedin{color:#071426!important;background:#fff!important;border-color:#8da8bd!important}
-    body.dark-mode .psd-shared-header .social-pill.linkedin{color:#fff!important}
-    body:not(.dark-mode) .footer,
+    body:not(.dark-mode) .footer{
+      background:#eef4f9!important;
+      border-color:#9eb4c6!important;
+    }
     body:not(.dark-mode) .footer p{color:#071426!important}
     body:not(.dark-mode) .footer-links a{color:#10263b!important;font-weight:800}
     body:not(.dark-mode) .legal{background:#fff!important;color:#071426!important;border-color:#d17a7a!important}
@@ -3006,6 +3025,13 @@ ac<!DOCTYPE html>
         background:"#131722"
       };
 
+      function chartTheme(){
+        const dark = document.body.classList.contains("dark-mode");
+        return dark
+          ? {background:"#131722",text:"#b2b5be",grid:"rgba(42,46,57,.72)",border:"#2a2e39",crosshair:"#758696"}
+          : {background:"#ffffff",text:"#16283b",grid:"rgba(100,116,139,.20)",border:"#9fb6cd",crosshair:"#526b82"};
+      }
+
       function finite(value){
         const number = Number(value);
         return Number.isFinite(number) ? number : null;
@@ -3192,36 +3218,37 @@ ac<!DOCTYPE html>
       }
 
       function chartOptions(container){
+        const theme = chartTheme();
         return {
           width:container.clientWidth,
           height:container.clientHeight,
           layout:{
-            background:{type:LightweightCharts.ColorType.Solid,color:COLORS.background},
-            textColor:COLORS.text,
+            background:{type:LightweightCharts.ColorType.Solid,color:theme.background},
+            textColor:theme.text,
             fontFamily:"Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
             fontSize:11,
             attributionLogo:false
           },
           grid:{
-            vertLines:{color:COLORS.grid},
-            horzLines:{color:COLORS.grid}
+            vertLines:{color:theme.grid},
+            horzLines:{color:theme.grid}
           },
           crosshair:{
             mode:LightweightCharts.CrosshairMode.Magnet,
-            vertLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"},
-            horzLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"}
+            vertLine:{color:theme.crosshair,width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"},
+            horzLine:{color:theme.crosshair,width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"}
           },
           rightPriceScale:{
-            borderColor:COLORS.border,
+            borderColor:theme.border,
             scaleMargins:{top:.12,bottom:.12}
           },
           leftPriceScale:{
             visible:true,
-            borderColor:COLORS.border,
+            borderColor:theme.border,
             scaleMargins:{top:.12,bottom:.12}
           },
           timeScale:{
-            borderColor:COLORS.border,
+            borderColor:theme.border,
             timeVisible:false,
             secondsVisible:false,
             rightOffset:2,
@@ -3234,6 +3261,22 @@ ac<!DOCTYPE html>
           handleScale:{axisPressedMouseMove:false,mouseWheel:true,pinch:true},
           localization:{locale:navigator.language || "en-US"}
         };
+      }
+
+      function applyChartTheme(){
+        if(!state.chartPrice || !window.LightweightCharts) return;
+        const theme = chartTheme();
+        state.chartPrice.applyOptions({
+          layout:{background:{type:LightweightCharts.ColorType.Solid,color:theme.background},textColor:theme.text},
+          grid:{vertLines:{color:theme.grid},horzLines:{color:theme.grid}},
+          crosshair:{
+            vertLine:{color:theme.crosshair,labelBackgroundColor:"#2962ff"},
+            horzLine:{color:theme.crosshair,labelBackgroundColor:"#2962ff"}
+          },
+          rightPriceScale:{borderColor:theme.border},
+          leftPriceScale:{borderColor:theme.border},
+          timeScale:{borderColor:theme.border}
+        });
       }
 
       function buildCharts(){
@@ -3293,6 +3336,7 @@ ac<!DOCTYPE html>
           });
         });
         observer.observe(priceBox);
+        new MutationObserver(applyChartTheme).observe(document.body,{attributes:true,attributeFilter:["class"]});
         return true;
       }
 
