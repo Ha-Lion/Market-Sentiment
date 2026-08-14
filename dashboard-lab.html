@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>AI Assets Sentiment — Public Sentiment Dash</title>
-  <meta name="description" content="Track today’s AI asset sentiment across AI chips, cloud platforms, software, data infrastructure, memory, semiconductor supply chain, and AI-focused ETFs using Public Sentiment Dash PSI data.">
+  <title>Crypto Sentiment — Public Sentiment Dash</title>
+  <meta name="description" content="Track public sentiment across crypto assets, regulation, ETF flows, blockchain markets, and digital-asset headlines.">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://publicsentimentdash.com/ai-assets.html">
+  <link rel="canonical" href="https://publicsentimentdash.com/crypto.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css">
@@ -785,8 +785,6 @@
     .ai-hero-tools .ai-carousel-count{margin:0;color:var(--theme-text);font-size:11px;font-weight:900;white-space:nowrap}
     .ai-hero-arrows{display:flex;justify-content:flex-end;gap:7px}
     .ai-card-news{gap:8px!important}
-    .no-current-news{display:inline-flex;align-items:center;min-height:34px;padding:6px 9px;border:1px dashed var(--theme-line);border-radius:8px;color:var(--theme-muted);font-size:10px;font-weight:800}
-    body:not(.dark-mode) .no-current-news{color:#02070c}
     .ai-card-news a{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease}
     .ai-card-news a:hover,.ai-card-news a:focus-visible{transform:translateY(-2px);box-shadow:0 0 0 2px rgba(210,153,34,.42);outline:none}
     .ai-card-news .headline-logo,.ai-card-news .headline-logo-fallback{width:52px!important;height:52px!important;max-width:52px!important;max-height:52px!important;flex:0 0 52px!important;border-radius:10px!important}
@@ -856,26 +854,28 @@
 </head>
 
 <body>
+  <div id="site-header"></div>
+  <script src="site-nav.js" defer></script>
   <script src="site-theme.js" defer></script>
 
   <main class="ai-page">
     <section class="ai-hero">
       <div class="ai-hero-grid">
         <div>
-          <h1>Top AI Assets Sentiment</h1>
-          <p>Track public sentiment across assets tied to artificial intelligence, AI chips, cloud infrastructure, data platforms, semiconductor supply chains, AI software, and AI-focused ETFs.</p>
+          <h1>Top Crypto Sentiment</h1>
+          <p>Track public sentiment across crypto assets, regulation, ETF flows, blockchain markets, and digital-asset headlines.</p>
         </div>
         <div class="ai-hero-center">
           <div class="ai-updated">
             <b id="overallScore">--</b>
-            <span id="updatedText">Loading latest AI asset sentiment...</span>
+            <span id="updatedText">Loading latest crypto asset sentiment...</span>
           </div>
         </div>
         <div class="ai-hero-tools">
-          <span class="ai-carousel-count" id="aiCarouselCount">Loading AI assets…</span>
+          <span class="ai-carousel-count" id="aiCarouselCount">Loading crypto assets…</span>
           <div class="ai-hero-arrows">
-            <button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous AI assets">‹</button>
-            <button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next AI assets">›</button>
+            <button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous crypto assets">‹</button>
+            <button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next crypto assets">›</button>
           </div>
         </div>
       </div>
@@ -886,17 +886,17 @@
 
     <section class="ai-panels">
       <div class="ai-panel">
-        <h2>Latest AI Asset Headlines</h2>
-        <p id="headlineStatus">Loading AI asset headlines...</p>
+        <h2>Latest Crypto Headlines</h2>
+        <p id="headlineStatus">Loading crypto asset headlines...</p>
         <div class="headline-list" id="headlineList"></div>
       </div>
     </section>
 
-    <div id="historyLayer" class="history-layer" role="dialog" aria-modal="true" aria-label="AI asset history" onclick="if(event.target===this) closeHistory();">
+    <div id="historyLayer" class="history-layer" role="dialog" aria-modal="true" aria-label="crypto asset history" onclick="if(event.target===this) closeHistory();">
       <section class="history-card">
         <div class="history-head">
           <div class="history-title-row">
-            <h2 id="historyTitle" class="history-title">AI Asset History</h2>
+            <h2 id="historyTitle" class="history-title">Crypto History</h2>
             <div id="historySubtitle" class="history-subtitle">Daily</div>
             <div id="comparisonSyncMount"></div>
           </div>
@@ -911,29 +911,24 @@
   <script src="sentiment-core.js?v=5"></script>
 
   <script>
-    let AI_ITEMS = [
-      {name:"NVIDIA / NVDA", symbol:"NVDA", aliases:["nvidia","nvda","nvidia stock","ai chips","gpu demand","blackwell chips","data center gpu","ai accelerator"], official:false},
-      {name:"Broadcom / AVGO", symbol:"AVGO", aliases:["broadcom","avgo","broadcom stock","ai networking","custom ai chips","ai accelerators","semiconductor networking"], official:false},
-      {name:"AMD / AMD", symbol:"AMD", aliases:["advanced micro devices","amd","amd stock","mi300","mi350","ai gpu","ai chips amd","data center accelerator"], official:false},
-      {name:"Micron / MU", symbol:"MU", aliases:["micron","mu stock","hbm memory","high bandwidth memory","ai memory","dram demand","memory chips"], official:false},
-      {name:"Taiwan Semiconductor / TSM", symbol:"TSM", aliases:["taiwan semiconductor","tsmc","tsm stock","chip foundry","advanced chips","ai chip manufacturing","semiconductor foundry"], official:false},
-      {name:"ASML / ASML", symbol:"ASML", aliases:["asml","asml stock","euv lithography","chip equipment","semiconductor equipment","advanced lithography"], official:false},
-      {name:"Microsoft / MSFT", symbol:"MSFT", aliases:["microsoft","msft","azure ai","copilot","openai microsoft","ai cloud","microsoft ai"], official:false},
-      {name:"Alphabet / GOOGL", symbol:"GOOGL", aliases:["alphabet","google","googl","gemini ai","google ai","ai search","google cloud ai","deepmind"], official:false},
-      {name:"Amazon / AMZN", symbol:"AMZN", aliases:["amazon","amzn","aws ai","amazon ai","bedrock ai","anthropic amazon","ai cloud aws"], official:false},
-      {name:"Meta / META", symbol:"META", aliases:["meta","meta platforms","meta stock","llama ai","meta ai","ai infrastructure","open source ai model"], official:false},
-      {name:"Palantir / PLTR", symbol:"PLTR", aliases:["palantir","pltr","aip platform","ai data analytics","government ai","enterprise ai platform"], official:false},
-      {name:"Oracle / ORCL", symbol:"ORCL", aliases:["oracle","orcl","oracle cloud","oci ai","ai cloud infrastructure","database ai"], official:false},
-      {name:"Arm / ARM", symbol:"ARM", aliases:["arm holdings","arm stock","arm chips","chip architecture","ai edge chips","mobile ai chips"], official:false},
-      {name:"Semiconductors / SMH", symbol:"SMH", aliases:["smh","semiconductor etf","semiconductors","chip stocks","ai chip stocks","semiconductor sector"], official:false},
-      {name:"AI ETF / AIQ", symbol:"AIQ", aliases:["aiq","aiq etf","artificial intelligence etf","ai etf","ai technology etf","global x artificial intelligence"], official:false}
+    let CRYPTO_ITEMS = [
+      {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins","blockchain","token"], official:true},
+      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin","digital asset regulation","tokenization","crypto rules","digital assets regulation"], official:true},
+      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:true},
+      {name:"Bitcoin / BTC", symbol:"BTC", aliases:["bitcoin","btc"], official:true},
+      {name:"Ethereum / ETH", symbol:"ETH", aliases:["ethereum","eth"], official:true},
+      {name:"Solana / SOL", symbol:"SOL", aliases:["solana","sol"], official:true},
+      {name:"XRP", symbol:"XRP", aliases:["xrp","ripple"], official:true},
+      {name:"BNB", symbol:"BNB", aliases:["bnb","binance coin"], official:true},
+      {name:"Cardano / ADA", symbol:"ADA", aliases:["cardano","ada"], official:true},
+      {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin","doge"], official:true}
     ];
 
     let dashboardData = null;
     let historyData = null;
     let technicalData = null;
     let currentRows = [];
-    let activeHistoryName = "NVIDIA / NVDA";
+    let activeHistoryName = CRYPTO_ITEMS[0].name;
     let activeHistoryPeriod = "daily";
     let selectedCompareNames = [];
     let activeCompareNames = [];
@@ -987,53 +982,12 @@
       ].join(" "));
     }
 
-    let AI_BACKEND_INSTRUMENTS = new Set([
-      "NVIDIA / NVDA",
-      "Broadcom / AVGO",
-      "AMD / AMD",
-      "Micron / MU",
-      "Taiwan Semiconductor / TSM",
-      "ASML / ASML",
-      "Microsoft / MSFT",
-      "Alphabet / GOOGL",
-      "Amazon / AMZN",
-      "Meta / META",
-      "Palantir / PLTR",
-      "Oracle / ORCL",
-      "Arm / ARM",
-      "Semiconductors / SMH",
-      "AI ETF / AIQ"
-    ].map(x => normalizeText(x)));
+    let CRYPTO_BACKEND_INSTRUMENTS=new Set(CRYPTO_ITEMS.flatMap(item=>[item.name,item.symbol,...(item.aliases||[])]).map(x=>normalizeText(x)));
+    let CRYPTO_STRONG_TERMS=[...CRYPTO_BACKEND_INSTRUMENTS];
+    const CRYPTO_SOFT_TERMS=[];
+    const CRYPTO_EXCLUDE_TERMS=[];
 
-    let AI_STRONG_TERMS = [
-      "nvidia","nvda","ai chips","gpu demand","data center gpu","blackwell chips","ai accelerator",
-      "broadcom","avgo","ai networking","custom ai chips","semiconductor networking",
-      "amd","advanced micro devices","mi300","mi350","ai gpu","data center accelerator",
-      "micron","mu stock","hbm memory","high bandwidth memory","ai memory","dram demand","memory chips",
-      "taiwan semiconductor","tsmc","tsm stock","chip foundry","advanced chips","ai chip manufacturing",
-      "asml","euv lithography","chip equipment","semiconductor equipment","advanced lithography",
-      "microsoft","msft","azure ai","copilot","openai microsoft","ai cloud","microsoft ai",
-      "alphabet","google","googl","gemini ai","google ai","ai search","google cloud ai","deepmind",
-      "amazon","amzn","aws ai","bedrock ai","anthropic amazon","ai cloud aws",
-      "meta","meta platforms","llama ai","meta ai","ai infrastructure","open source ai model",
-      "palantir","pltr","aip platform","ai data analytics","government ai","enterprise ai platform",
-      "oracle","orcl","oracle cloud","oci ai","database ai",
-      "arm holdings","arm stock","chip architecture","edge ai chips","mobile ai chips",
-      "smh","semiconductor etf","semiconductors","chip stocks","ai chip stocks",
-      "aiq","aiq etf","artificial intelligence etf","ai etf","ai technology etf"
-    ];
-
-    const AI_SOFT_TERMS = [
-      "artificial intelligence","generative ai","large language model","llm","machine learning",
-      "ai model","ai models","ai demand","ai infrastructure","ai spending","data center demand",
-      "cloud ai","enterprise ai","robotics ai","automation ai","ai software","ai platform"
-    ];
-
-    const AI_EXCLUDE_TERMS = [
-      "bitcoin","crypto token","meme coin","crude oil","natural gas","gold price","silver price"
-    ];
-
-    const CATEGORY_KEY = "ai_assets";
+    const CATEGORY_KEY = "crypto";
     const DEFAULT_TOP_N = 15;
 
     function uniqueTerms(values){
@@ -1065,14 +1019,14 @@
     }
 
     function applyAssetConfig(config){
-      AI_ITEMS = assetsFromConfig(config, CATEGORY_KEY, AI_ITEMS);
-      AI_BACKEND_INSTRUMENTS = new Set(AI_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.historyKeys || [])]).map(x => normalizeText(x)));
-      AI_STRONG_TERMS = uniqueTerms([...AI_STRONG_TERMS, ...AI_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])]);
-      activeHistoryName = AI_ITEMS[0]?.name || activeHistoryName || "NVIDIA / NVDA";
+      CRYPTO_ITEMS = assetsFromConfig(config, CATEGORY_KEY, CRYPTO_ITEMS);
+      CRYPTO_BACKEND_INSTRUMENTS = new Set(CRYPTO_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.historyKeys || [])]).map(x => normalizeText(x)));
+      CRYPTO_STRONG_TERMS = uniqueTerms([...CRYPTO_STRONG_TERMS, ...CRYPTO_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])]);
+      activeHistoryName = CRYPTO_ITEMS[0]?.name || activeHistoryName || CRYPTO_ITEMS[0].name;
     }
 
     function instrumentKeysForItem(item, fallbackName){
-      return uniqueTerms([fallbackName, item?.name, item?.symbol, ...(item?.historyKeys || [])]);
+      return uniqueTerms([fallbackName, item?.dataKey, item?.name, item?.symbol, ...(item?.historyKeys || [])]);
     }
 
     function currentInstrumentRow(item){
@@ -1106,42 +1060,42 @@
       return terms.some(term => text.includes(term));
     }
 
-    function hasExactAIInstrument(h){
-      return headlineInstruments(h).some(x => AI_BACKEND_INSTRUMENTS.has(x));
+    function hasExactCategoryInstrument(h){
+      return headlineInstruments(h).some(x => CRYPTO_BACKEND_INSTRUMENTS.has(x));
     }
 
-    function hasExcludedAIFocus(h){
+    function hasExcludedCategoryFocus(h){
       const text = headlineText(h);
-      return hasTerm(text, AI_EXCLUDE_TERMS);
+      return hasTerm(text, CRYPTO_EXCLUDE_TERMS);
     }
 
-    function isAIHeadline(h){
+    function isCategoryHeadline(h){
       const fullText = headlineText(h);
       const titleText = titleDescriptionText(h);
       const markets = headlineMarkets(h);
-      const strongAI = hasTerm(titleText, AI_STRONG_TERMS) || hasTerm(fullText, AI_STRONG_TERMS);
-      const softAI = hasTerm(titleText, AI_SOFT_TERMS);
-      const exactAI = hasExactAIInstrument(h);
-      const aiContext = markets.includes("stocks") || markets.includes("indexes") || markets.includes("macro") || markets.includes("general") || markets.includes("technology");
+      const strongCategory = hasTerm(titleText, CRYPTO_STRONG_TERMS) || hasTerm(fullText, CRYPTO_STRONG_TERMS);
+      const softCategory = hasTerm(titleText, CRYPTO_SOFT_TERMS);
+      const exactCategory = hasExactCategoryInstrument(h);
+      const categoryContext = markets.includes("stocks") || markets.includes("indexes") || markets.includes("macro") || markets.includes("general") || markets.includes("technology");
 
-      if(hasExcludedAIFocus(h)){
+      if(hasExcludedCategoryFocus(h)){
         return false;
       }
 
-      if(exactAI || strongAI) return true;
-      if(softAI && aiContext) return true;
+      if(exactCategory || strongCategory) return true;
+      if(softCategory && categoryContext) return true;
 
       return false;
     }
 
     function exactInstrumentMatch(item, h){
-      if(!isAIHeadline(h)) return false;
+      if(!isCategoryHeadline(h)) return false;
       const instruments = headlineInstruments(h);
       return instruments.some(x => instrumentKeysForItem(item, item?.name).includes(x));
     }
 
     function itemMatchesHeadline(item, h){
-      if(!isAIHeadline(h)) return false;
+      if(!isCategoryHeadline(h)) return false;
       if(exactInstrumentMatch(item, h)) return true;
       const text = headlineText(h);
       return item.aliases.some(alias => text.includes(normalizeText(alias)));
@@ -1219,7 +1173,7 @@
         };
       }
 
-      const backendTagged = getAIHeadlines().filter(h => exactInstrumentMatch(item, h));
+      const backendTagged = getCategoryHeadlines().filter(h => exactInstrumentMatch(item, h));
       if(backendTagged.length){
         return scoreFromHeadlineSet(item.name, item.symbol, backendTagged, "backend");
       }
@@ -1228,16 +1182,13 @@
     }
 
     function getDerivedCurrent(item){
-      const headlines = getAIHeadlines().filter(h => itemMatchesHeadline(item, h));
+      const headlines = getCategoryHeadlines().filter(h => itemMatchesHeadline(item, h));
       return scoreFromHeadlineSet(item.name, item.symbol, headlines, "derived");
     }
 
-    function getAIHeadlines(){
+    function getCategoryHeadlines(){
       const all = [
         ...(Array.isArray(dashboardData?.psi_headlines) ? dashboardData.psi_headlines : []),
-        ...(Array.isArray(dashboardData?.psi_headlines_used) ? dashboardData.psi_headlines_used : []),
-        ...(Array.isArray(dashboardData?.psi_major_outlet_headlines) ? dashboardData.psi_major_outlet_headlines : []),
-        ...(Array.isArray(dashboardData?.psi_broader_source_headlines) ? dashboardData.psi_broader_source_headlines : []),
         ...(Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : []),
         ...(Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [])
       ];
@@ -1246,7 +1197,7 @@
       const filtered = [];
 
       all.forEach(h => {
-        if(!isAIHeadline(h)) return;
+        if(!isCategoryHeadline(h)) return;
         const key = h.link || `${h.source || ""}|${h.title || ""}`;
         if(key && seen.has(key)) return;
         if(key) seen.add(key);
@@ -1267,14 +1218,8 @@
     }
 
     function buildRows(){
-      const featuredOrder = [
-        "NVIDIA / NVDA","Microsoft / MSFT","Alphabet / GOOGL","Amazon / AMZN",
-        "Meta / META","AMD / AMD","Broadcom / AVGO","Taiwan Semiconductor / TSM",
-        "ASML / ASML","Micron / MU","Palantir / PLTR","Oracle / ORCL",
-        "Arm / ARM","Semiconductors / SMH","AI ETF / AIQ"
-      ];
-      const importance = new Map(featuredOrder.map((name,index)=>[name,index]));
-      return AI_ITEMS
+      const importance = new Map(CRYPTO_ITEMS.map((item,index)=>[item.name,index]));
+      return CRYPTO_ITEMS
         .map(item => getOfficialCurrent(item) || getDerivedCurrent(item))
         .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999))
         .slice(0,15);
@@ -1282,7 +1227,7 @@
 
     function priorityValue(headline){
       const value=Number(headline?.source_priority ?? headline?.priority ?? 3);
-      return Number.isFinite(value)?Math.max(1,Math.min(4,value)):4;
+      return Number.isFinite(value)?Math.max(1,Math.min(3,value)):3;
     }
 
     function priorityHeadlines(headlines,limit=6){
@@ -1298,12 +1243,12 @@
     }
 
     function marketSeries(name){
-      const item=AI_ITEMS.find(x=>x.name===name);
+      const item=CRYPTO_ITEMS.find(x=>x.name===name);
       return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
     }
 
     function marketDirection(name){
-      const item=AI_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
+      const item=CRYPTO_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
       if(direction&&direction!=="N/A")return direction;
       const series=marketSeries(name);
       if(series.length<2)return"Unavailable";
@@ -1315,7 +1260,7 @@
       if(!grid) return;
 
       if(!currentRows.length){
-        grid.innerHTML = `<div class="empty-note">No ai-sensitive asset data loaded yet.</div>`;
+        grid.innerHTML = `<div class="empty-note">No crypto data loaded yet.</div>`;
         return;
       }
 
@@ -1324,21 +1269,19 @@
       aiCardPage = Math.min(aiCardPage, pageCount - 1);
       const first = aiCardPage * aiCardPageSize;
       const visibleRows = currentRows.slice(first, first + aiCardPageSize);
-      document.getElementById("aiCarouselCount").textContent=`${first + 1}–${Math.min(first + aiCardPageSize,currentRows.length)} of ${currentRows.length} AI assets`;
+      document.getElementById("aiCarouselCount").textContent=`${first + 1}–${Math.min(first + aiCardPageSize,currentRows.length)} of ${currentRows.length} crypto assets`;
       grid.innerHTML = visibleRows.map((row, idx) => {
         const score = row.score == null ? 0 : row.score;
         const color = colorForScore(row.score);
         const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : (row.source === "proxy" ? "Proxy PSI" : "Headline PSI"));
-        const item=AI_ITEMS.find(candidate=>candidate.name===row.name);
-        const matchedNews=getAIHeadlines().filter(h=>itemMatchesHeadline(item,h));
-        const news=priorityHeadlines([...(row.topHeadlines||[]),...matchedNews].filter((h,index,list)=>index===list.findIndex(x=>(x.link||`${x.source}|${x.title}`)===(h.link||`${h.source}|${h.title}`))),7);
-        const unsupportedSavedScore=row.source==="official"&&row.headlineCount===0&&news.length===0;
+        const item=CRYPTO_ITEMS.find(candidate=>candidate.name===row.name);
+        const news=priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),5);
         return `
           <article class="ai-card">
             <div class="ai-card-top">
               <div style="min-width:0;">
                 <div class="ai-name">${esc(row.name)}</div>
-                <div class="ai-symbol">${esc(row.symbol)} • ${unsupportedSavedScore?"Previous saved PSI — no current supporting news":sourceText}</div>
+                <div class="ai-symbol">${esc(row.symbol)} • ${sourceText}</div>
               </div>
               <span class="sentiment-pill status-${esc(String(row.label).toLowerCase().replace(/[^a-z]+/g,"-"))}" style="${pillStyle(row.score)}">${esc(row.label)}</span>
             </div>
@@ -1362,7 +1305,7 @@
             </div>
 
             <div class="market-insight"><span>Daily market insight</span><b>${esc(marketDirection(row.name))}</b></div>
-            <div class="ai-card-news" aria-label="Leading news outlets">${news.length?news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="${esc(h.source||'News outlet')} — open article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join(""):`<span class="no-current-news">No current matched news</span>`}</div>
+            <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
             <label class="compare-control">
@@ -1453,7 +1396,7 @@
     }
 
     function tradingViewSymbol(name){
-      const symbol=AI_ITEMS.find(item=>item.name===name)?.symbol||String(name||"").split("/").pop().trim();
+      const symbol=CRYPTO_ITEMS.find(item=>item.name===name)?.symbol||String(name||"").split("/").pop().trim();
       const nyse=new Set(["TSM","ORCL"]);
       return `${nyse.has(symbol)?"NYSE":"NASDAQ"}:${symbol}`;
     }
@@ -1463,16 +1406,16 @@
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
       const status = document.getElementById("headlineStatus");
-      const headlines = priorityHeadlines(getAIHeadlines(),30);
+      const headlines = priorityHeadlines(getCategoryHeadlines(),30);
 
       if(status){
-        status.textContent = `30 latest AI asset headline(s) shown from the latest dashboard feed.`;
+        status.textContent = `30 latest crypto asset headline(s) shown from the latest dashboard feed.`;
       }
 
       if(!list) return;
 
       if(!headlines.length){
-        list.innerHTML = `<div class="empty-note">No ai-sensitive asset headlines found in the latest data file.</div>`;
+        list.innerHTML = `<div class="empty-note">No crypto headlines found in the latest data file.</div>`;
         return;
       }
 
@@ -1526,47 +1469,7 @@
       return out;
     }
 
-    function proxyHistoryRowForAI(record, item){
-      const instruments = record?.instruments || {};
-      const candidatesByName = {
-        "NVIDIA / NVDA": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Broadcom / AVGO": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "AMD / AMD": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Micron / MU": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Taiwan Semiconductor / TSM": ["Nasdaq / NQ", "S&P 500 / ES", "Nikkei 225"],
-        "ASML / ASML": ["Nasdaq / NQ", "S&P 500 / ES", "Euro Stoxx 50"],
-        "Microsoft / MSFT": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Alphabet / GOOGL": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Amazon / AMZN": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Meta / META": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Palantir / PLTR": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Oracle / ORCL": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Arm / ARM": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "Semiconductors / SMH": ["Nasdaq / NQ", "S&P 500 / ES"],
-        "AI ETF / AIQ": ["Nasdaq / NQ", "S&P 500 / ES"]
-      };
-      const candidates = candidatesByName[item?.name] || [];
-      const rows = candidates
-        .map(name => instruments[name])
-        .filter(row => row && row.psi != null);
-
-      if(!rows.length) return null;
-
-      const avgPsi = Math.round(rows.reduce((sum,row) => sum + Number(row.psi || 50), 0) / rows.length);
-      const count = rows.reduce((sum,row) => sum + Number(row.headline_count || 0), 0);
-
-      return {
-        date:record.date,
-        label:record.date,
-        value:avgPsi,
-        count:count,
-        bullish:rows.reduce((sum,row) => sum + Number(row.bullish_count || 0), 0),
-        bearish:rows.reduce((sum,row) => sum + Number(row.bearish_count || 0), 0),
-        neutral:rows.reduce((sum,row) => sum + Number(row.neutral_count || 0) + Number(row.mixed_count || 0), 0),
-        sentiment:labelForScore(avgPsi),
-        source:"proxy"
-      };
-    }
+    function proxyHistoryRowForAI(record,item){ return null; }
 
     function derivedHistoryRowForItem(record, item){
       const matches = savedHeadlinesForRecord(record).filter(h => itemMatchesHeadline(item, h));
@@ -1605,7 +1508,7 @@
 
     function dailySeries(name){
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
-      const item = AI_ITEMS.find(x => x.name === name);
+      const item = CRYPTO_ITEMS.find(x => x.name === name);
 
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
@@ -1838,7 +1741,7 @@
       });
     }
 
-    function historyNewsFor(name){const item=AI_ITEMS.find(x=>x.name===name);return priorityHeadlines(getAIHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
+    function historyNewsFor(name){const item=CRYPTO_ITEMS.find(x=>x.name===name);return priorityHeadlines(getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
 
     function newsHtml(news){return news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").slice(0,1).toUpperCase()),logoHtml=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener">${logoHtml}<span>${esc(h.title||"Untitled headline")}<small>${esc(h.source||"Source")} • ${esc(h.vote||"Neutral")}</small></span></a>`}).join("")||'<div class="empty-note">No recent news available.</div>'}
 
@@ -1848,7 +1751,7 @@
       clearCharts();const grid=document.querySelector(".history-grid"),title=document.getElementById("historyTitle"),subtitle=document.getElementById("historySubtitle"),range=document.getElementById("historyRange"),card=document.querySelector(".history-card"),syncMount=document.getElementById("comparisonSyncMount");
       if(activeCompareNames.length===2){
         card?.classList.add("compare-view");
-        title.textContent="AI Assets Comparison";
+        title.textContent="Crypto Comparison";
         subtitle.textContent=`${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
         range.textContent="";
         grid.className="history-grid compare-assets-grid";
@@ -1907,7 +1810,7 @@
         document.querySelectorAll("[data-ai-scroll]").forEach(button=>button.addEventListener("click",()=>changeAiCardPage(button.dataset.aiScroll)));
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
-        document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">AI asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
+        document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">crypto asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
       }
     }
 
@@ -1928,6 +1831,8 @@
 
     init();
   </script>
+  <div id="site-footer"></div>
+  <script src="site-footer.js" defer></script>
 
 </body>
 </html>
