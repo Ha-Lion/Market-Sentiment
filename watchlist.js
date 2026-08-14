@@ -13,49 +13,8 @@
   let historyPromise = null;
   let technicalPromise = null;
   let newsPromise = null;
-  let chartLibraryPromise = null;
   let liveHeadlines = [];
   let activeChartCleanup = null;
-
-  function ensureChartLibrary(){
-    if(window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
-    if(chartLibraryPromise) return chartLibraryPromise;
-
-    chartLibraryPromise = new Promise(function(resolve,reject){
-      const existing = document.getElementById("psd-lightweight-charts");
-      const script = existing || document.createElement("script");
-      const timeout = window.setTimeout(function(){
-        reject(new Error("Chart library timed out."));
-      },12000);
-
-      function loaded(){
-        window.clearTimeout(timeout);
-        if(window.LightweightCharts) resolve(window.LightweightCharts);
-        else reject(new Error("Chart library did not initialize."));
-      }
-
-      function failed(){
-        window.clearTimeout(timeout);
-        chartLibraryPromise = null;
-        reject(new Error("Chart library could not be loaded."));
-      }
-
-      if(existing){
-        existing.addEventListener("load",loaded,{once:true});
-        existing.addEventListener("error",failed,{once:true});
-        return;
-      }
-
-      script.id = "psd-lightweight-charts";
-      script.src = "https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js";
-      script.async = true;
-      script.addEventListener("load",loaded,{once:true});
-      script.addEventListener("error",failed,{once:true});
-      document.head.appendChild(script);
-    });
-
-    return chartLibraryPromise;
-  }
 
   function setStatus(message,type){
     statusNode.textContent = message || "";
@@ -387,14 +346,15 @@
     modalBody.appendChild(summary);
     modalBody.appendChild(wrap);
 
+    const chartIsDark=document.body.classList.contains("dark-mode");
     const chart=LightweightCharts.createChart(chartBox,{
       width:chartBox.clientWidth,height:chartBox.clientHeight,
-      layout:{background:{type:LightweightCharts.ColorType.Solid,color:"#0b111b"},textColor:"#aeb8c7",fontFamily:"Inter,system-ui,-apple-system,'Segoe UI',sans-serif",fontSize:12,attributionLogo:false},
-      grid:{vertLines:{color:"rgba(255,255,255,.08)"},horzLines:{color:"rgba(255,255,255,.08)"}},
+      layout:{background:{type:LightweightCharts.ColorType.Solid,color:chartIsDark?"#0b111b":"#ffffff"},textColor:chartIsDark?"#f8fbff":"#061522",fontFamily:"Inter,system-ui,-apple-system,'Segoe UI',sans-serif",fontSize:12,attributionLogo:false},
+      grid:{vertLines:{color:chartIsDark?"rgba(255,255,255,.08)":"rgba(71,85,105,.16)"},horzLines:{color:chartIsDark?"rgba(255,255,255,.08)":"rgba(71,85,105,.16)"}},
       crosshair:{mode:LightweightCharts.CrosshairMode.Magnet,vertLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#2962ff"},horzLine:{color:"#758696",width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:"#43b5aa"}},
-      rightPriceScale:{borderColor:"#2a3443",scaleMargins:{top:.10,bottom:.10}},
-      leftPriceScale:{visible:true,borderColor:"#2a3443",scaleMargins:{top:.10,bottom:.10}},
-      timeScale:{borderColor:"#2a3443",timeVisible:false,secondsVisible:false,rightOffset:2,barSpacing:12,minBarSpacing:4},
+      rightPriceScale:{borderColor:chartIsDark?"#2a3443":"#9eb4c6",scaleMargins:{top:.10,bottom:.10}},
+      leftPriceScale:{visible:true,borderColor:chartIsDark?"#2a3443":"#9eb4c6",scaleMargins:{top:.10,bottom:.10}},
+      timeScale:{borderColor:chartIsDark?"#2a3443":"#9eb4c6",timeVisible:false,secondsVisible:false,rightOffset:2,barSpacing:12,minBarSpacing:4},
       handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
       handleScale:{axisPressedMouseMove:false,mouseWheel:true,pinch:true},
       localization:{locale:navigator.language||"en-US"}
@@ -447,9 +407,20 @@
       if(summaryNodes["market-value"]&&market&&Number.isFinite(market.value)) summaryNodes["market-value"].textContent=valueLabel+": "+formatValue(market.value,priceDecimals);
       if(summaryNodes["psi-value"]&&sentiment&&Number.isFinite(sentiment.value)) summaryNodes["psi-value"].textContent="PSI: "+Math.round(sentiment.value)+"/100";
     });
+    function applyChartTheme(event){
+      const dark=event && event.detail ? event.detail.theme==="dark" : document.body.classList.contains("dark-mode");
+      chart.applyOptions({
+        layout:{background:{type:LightweightCharts.ColorType.Solid,color:dark?"#0b111b":"#ffffff"},textColor:dark?"#f8fbff":"#061522"},
+        grid:{vertLines:{color:dark?"rgba(255,255,255,.08)":"rgba(71,85,105,.16)"},horzLines:{color:dark?"rgba(255,255,255,.08)":"rgba(71,85,105,.16)"}},
+        rightPriceScale:{borderColor:dark?"#2a3443":"#9eb4c6"},
+        leftPriceScale:{borderColor:dark?"#2a3443":"#9eb4c6"},
+        timeScale:{borderColor:dark?"#2a3443":"#9eb4c6"}
+      });
+    }
+    window.addEventListener("psd-theme-change",applyChartTheme);
     const observer=new ResizeObserver(function(entries){entries.forEach(function(entry){chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});});});
     observer.observe(chartBox);
-    activeChartCleanup=function(){observer.disconnect();chart.remove();};
+    activeChartCleanup=function(){window.removeEventListener("psd-theme-change",applyChartTheme);observer.disconnect();chart.remove();};
   }
 
   async function openChartPopup(instrument,asset){
@@ -457,7 +428,7 @@
       ? instrument+" — Daily "+(asset.market_data.data_kind === "economic_indicator" ? "Indicator" : "Market")+" & Sentiment Comparison"
       : instrument+" — Daily Sentiment History";
     openModal(title);
-    const data=await Promise.all([historyData(),technicalData(),ensureChartLibrary()]);
+    const data=await Promise.all([historyData(),technicalData()]);
     if(!modal.classList.contains("open")) return;
     renderInstrumentChart(chartPoints(data[0],data[1],instrument,asset),instrument,asset);
   }
@@ -633,6 +604,7 @@
     setStatus("Loading your private watchlist…");
     grid.textContent = "";
 
+    const assetConfigPromise = fetchJson("assets_config.json");
     const sessionResult = await client.auth.getSession();
     const session = sessionResult.data && sessionResult.data.session;
     if(!session){
@@ -656,6 +628,11 @@
     }
 
     const watchlistId = watchlistResult.data.id;
+    const backgroundPromise = Promise.all([
+      fetchJson("dashboard_live.json"),
+      fetchJson("technical_data.json"),
+      client.rpc("get_user_sentiment")
+    ]);
     const firstResults = await Promise.all([
       client
         .from("watchlist_items")
@@ -663,7 +640,7 @@
         .eq("watchlist_id",watchlistId)
         .order("display_order",{ascending:true})
         .order("created_at",{ascending:true}),
-      fetchJson("assets_config.json")
+      assetConfigPromise
     ]);
 
     if(firstResults[0].error) throw firstResults[0].error;
@@ -684,11 +661,7 @@
       "success"
     );
 
-    const backgroundResults = await Promise.all([
-      fetchJson("dashboard_live.json"),
-      fetchJson("technical_data.json"),
-      client.rpc("get_user_sentiment")
-    ]);
+    const backgroundResults = await backgroundPromise;
     const headlines = (backgroundResults[0] && backgroundResults[0].psi_headlines) || [];
     liveHeadlines = headlines;
     const technicalMap = (backgroundResults[1] && backgroundResults[1].technical) || {};
