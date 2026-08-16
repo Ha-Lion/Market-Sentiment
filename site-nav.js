@@ -89,17 +89,6 @@
         font-weight:700!important;
         letter-spacing:.7px!important;
       }
-      .psd-shared-header .psd-market-pulse-row{
-        flex-basis:100%!important;
-        width:100%!important;
-        height:0!important;
-        pointer-events:none!important;
-      }
-      .psd-shared-header .psd-market-pulse-link{
-        margin-right:auto!important;
-        margin-left:58px!important;
-        pointer-events:auto!important;
-      }
       @media(prefers-reduced-motion:reduce){
         .psd-shared-header .psd-dancing-label{animation:psdLabelShine 2.8s ease-in-out infinite!important}
       }
@@ -117,15 +106,6 @@
       .psd-shared-header .nav{
         position:relative!important;
         z-index:1!important;
-      }
-      .psd-shared-header .nav-row-break{
-        flex-basis:100%!important;
-        width:0!important;
-        height:0!important;
-        min-width:0!important;
-        padding:0!important;
-        margin:0!important;
-        pointer-events:none!important;
       }
       .site-tour-banner{
         display:inline-flex;
@@ -408,54 +388,16 @@
         background:rgba(210,153,34,.10);
       }
 
-      /* Exact two-row ribbon rule used by the established public pages. */
-      .nav-row-break{
-        flex-basis:100%;
-        width:0;
-        height:0;
-        padding:0;
-        margin:0;
-      }
-
-      /* Keep the existing proven ribbon layout unchanged. */
+      /* Shared ribbon rows are rendered explicitly in render(); theme CSS owns row placement. */
       .nav a::before{
         display:none!important;
         content:none!important;
       }
-
       .psd-ribbon-social-wrap{
-        position:relative;
         display:inline-flex;
         align-items:center;
-        margin-left:10px;
-        padding-bottom:35px;
-        transform:translateY(-10px);
       }
-
-      .psd-ribbon-social-wrap .social-links{
-        margin-left:0!important;
-      }
-
-      #psd-ribbon-watchlist-link{
-        position:absolute;
-        top:calc(100% - 28px);
-        right:0;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        min-width:116px;
-        padding:7px 12px!important;
-        border:1px solid rgba(210,153,34,.32);
-        border-radius:8px;
-        background:rgba(210,153,34,.10);
-        color:#ffd780;
-        font-size:12px;
-        font-weight:700;
-        line-height:1;
-        white-space:nowrap;
-        box-shadow:0 0 14px rgba(210,153,34,.10);
-      }
-
+      .psd-ribbon-social-wrap .social-links{margin-left:0!important}
       #psd-ribbon-watchlist-link:hover,
       #psd-ribbon-watchlist-link:focus-visible{
         color:#fff;
@@ -463,25 +405,7 @@
         border-color:rgba(210,153,34,.52);
         outline:none;
       }
-
-      #psd-ribbon-watchlist-link[hidden]{
-        display:none!important;
-      }
-
-      @media(max-width:980px){
-        .psd-ribbon-social-wrap{
-          margin-left:0;
-          padding-bottom:0;
-          flex-direction:column;
-          align-items:flex-start;
-          gap:7px;
-          transform:none;
-        }
-
-        #psd-ribbon-watchlist-link{
-          position:static;
-        }
-      }
+      #psd-ribbon-watchlist-link[hidden]{display:none!important}
     `;
     document.head.appendChild(style);
   }
@@ -684,8 +608,9 @@
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
-    const linksOne = mainLinks.map(link => linkHtml(link, current)).join("\n      ");
-    const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n      ");
+    const primaryLinks = mainLinks.filter(link => link.href !== "auth.html").map(link => linkHtml(link, current)).join("\n        ");
+    const accountLink = linkHtml(mainLinks.find(link => link.href === "auth.html"), current);
+    const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n        ");
     mount.outerHTML = `
   <header class="header psd-shared-header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
@@ -716,18 +641,27 @@
       </button>
     </div>
     <nav class="nav" aria-label="Main navigation">
-      ${linksOne}
-      <span class="nav-row-break" aria-hidden="true"></span>
-      ${linksTwo}
-      <span class="psd-market-pulse-row" aria-hidden="true"></span>
-      <a class="psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">✨ Market Pulse</a>
-      <div class="psd-ribbon-social-wrap">
-        <div class="social-links">
-          <span class="social-label">Follow us</span>
-          <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer">X.com</a>
-          <span class="social-pill linkedin">LinkedIn</span>
+      <div class="psd-nav-row psd-nav-main">
+        ${primaryLinks}
+      </div>
+      <div class="psd-nav-row psd-nav-social">
+        <div class="psd-ribbon-social-wrap">
+          <div class="social-links">
+            <span class="social-label">Follow us</span>
+            <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer">X.com</a>
+            <span class="social-pill linkedin">LinkedIn</span>
+          </div>
         </div>
-        <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
+        ${accountLink}
+      </div>
+      <div class="psd-nav-row psd-nav-assets">
+        ${linksTwo}
+      </div>
+      <div class="psd-nav-row psd-nav-fourth">
+        <a class="psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">✨ Market Pulse</a>
+        <div class="psd-ribbon-actions">
+          <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
+        </div>
       </div>
     </nav>
   </header>`;
