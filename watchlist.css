@@ -283,13 +283,14 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
 .watchlist-chart-canvas.watchlist-drawing-active,
 .watchlist-chart-canvas.watchlist-drawing-active *{cursor:crosshair!important}
 .watchlist-drawing-manager{
+  position:relative;
   margin:0 0 7px;
   border:1px solid #46566c;
   border-radius:10px;
   background:linear-gradient(180deg,#111925,#0a1019);
   color:#eaf1f8;
   box-shadow:0 7px 20px rgba(0,0,0,.26);
-  overflow:hidden
+  overflow:visible
 }
 .watchlist-drawing-manager[hidden]{display:none!important}
 .watchlist-drawing-manager-head{
@@ -304,66 +305,122 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
   background:#101722;color:#dce7f1;font-size:15px;font-weight:800;cursor:pointer
 }
 .watchlist-drawing-manager-body{
-  display:grid;grid-template-columns:minmax(230px,.72fr) minmax(390px,1.28fr);
+  display:block;
   height:84px;min-height:84px;max-height:84px
 }
 .watchlist-drawing-list{
   height:84px;max-height:84px;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;
-  padding:5px;border-right:1px solid #344257;background:#0b121c
+  padding:5px 8px;background:#0b121c
 }
-.watchlist-drawing-list-empty,.watchlist-drawing-empty{
-  padding:7px;color:#8fa0b2;font-size:8.5px;line-height:1.25
+.watchlist-drawing-list-empty{
+  padding:7px 2px;color:#8fa0b2;font-size:8.5px;line-height:1.25
 }
-.watchlist-drawing-row{
-  display:flex;width:100%;min-height:34px;align-items:center;gap:6px;box-sizing:border-box;
-  margin:0 0 4px;padding:5px 7px;border:1px solid #35445a;border-radius:7px;
-  background:#111a27;color:#e8eef5;text-align:left;cursor:pointer
+.watchlist-drawing-item{
+  display:block;
+  min-height:31px;
+  box-sizing:border-box;
+  padding:2px 0;
+  border-bottom:1px solid rgba(85,103,126,.22)
 }
-.watchlist-drawing-row:last-child{margin-bottom:0}
-.watchlist-drawing-row:hover{border-color:#687a93;background:#162131}
-.watchlist-drawing-row.selected{
-  border-color:#d6a52e;background:linear-gradient(180deg,#312712,#1d180e);
-  box-shadow:inset 0 0 0 1px rgba(255,216,128,.10)
+.watchlist-drawing-item:last-child{border-bottom:0}
+.watchlist-drawing-name{
+  display:inline-flex;
+  align-items:center;
+  max-width:100%;
+  padding:3px 2px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:#d9e4ef;
+  font:800 9px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:none;
+  text-shadow:none;
+  appearance:none
 }
-.watchlist-drawing-swatch{
-  width:8px;height:22px;flex:0 0 8px;border-radius:999px;
-  box-shadow:0 0 6px rgba(255,255,255,.12)
+.watchlist-drawing-name:hover,
+.watchlist-drawing-name:focus-visible{
+  color:#ffd780;
+  text-decoration:underline;
+  outline:none
 }
-.watchlist-drawing-row-copy{display:flex;min-width:0;flex-direction:column;gap:1px}
-.watchlist-drawing-row-copy strong{font-size:8.5px;color:inherit}
-.watchlist-drawing-row-copy small{
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#96a7b9;font-size:7.5px
+.watchlist-drawing-name.selected{
+  color:#ffd780;
+  font-weight:900;
+  text-decoration:underline
 }
-.watchlist-drawing-editor{
-  height:84px;box-sizing:border-box;overflow:auto;padding:6px 8px;background:#0f1722
+.watchlist-drawing-name.selected::after{
+  content:" ▾";
+  margin-left:4px;
+  font-size:8px
 }
-.watchlist-drawing-editor-title{
-  display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:5px
+
+.watchlist-drawing-dropdown{
+  position:absolute;
+  z-index:40;
+  width:min(430px,calc(100% - 16px));
+  box-sizing:border-box;
+  padding:7px;
+  border:1px solid #52647b;
+  border-radius:8px;
+  background:#101925;
+  color:#eaf1f8;
+  box-shadow:0 10px 26px rgba(0,0,0,.42)
 }
-.watchlist-drawing-editor-title strong{font-size:9px;color:#fff}
-.watchlist-drawing-editor-title span{font-size:7.5px;color:#91a3b7}
-.watchlist-drawing-fields{
-  display:grid;grid-template-columns:minmax(90px,.7fr) minmax(82px,.55fr) minmax(95px,.7fr);
-  gap:5px;margin-bottom:5px
+.watchlist-drawing-dropdown-fields{
+  display:grid;
+  grid-template-columns:minmax(105px,.8fr) minmax(90px,.55fr) minmax(110px,.7fr);
+  gap:6px
 }
-.watchlist-drawing-fields label{display:flex;flex-direction:column;gap:2px;color:#9aaabd;font-size:7.5px;font-weight:700}
-.watchlist-drawing-fields input[type="color"],
-.watchlist-drawing-fields select{
-  width:100%;height:26px;box-sizing:border-box;border:1px solid #46566c;border-radius:6px;
-  background:#111a27;color:#eaf1f8;padding:3px 5px;font:700 8px system-ui;cursor:pointer
+.watchlist-drawing-dropdown-fields label{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  color:#9aaabd;
+  font-size:7.5px;
+  font-weight:700
 }
-.watchlist-drawing-fields input[type="color"]{padding:3px}
-.watchlist-drawing-editor-actions{display:flex;gap:4px;flex-wrap:wrap}
-.watchlist-drawing-editor-actions button{
-  padding:4px 7px;border:1px solid #53647a;border-radius:6px;
-  background:linear-gradient(180deg,#303b4b,#1c2532);color:#eef4fb;
-  font:800 8px system-ui;cursor:pointer;
+.watchlist-drawing-dropdown-fields input[type="color"],
+.watchlist-drawing-dropdown-fields select{
+  width:100%;
+  height:27px;
+  box-sizing:border-box;
+  border:1px solid #46566c;
+  border-radius:6px;
+  background:#111a27;
+  color:#eaf1f8;
+  padding:3px 5px;
+  font:700 8px system-ui;
+  cursor:pointer
+}
+.watchlist-drawing-dropdown-fields input[type="color"]{padding:3px}
+.watchlist-drawing-dropdown-actions{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  margin-top:6px
+}
+.watchlist-drawing-dropdown-actions button{
+  padding:4px 7px;
+  border:1px solid #53647a;
+  border-radius:6px;
+  background:linear-gradient(180deg,#303b4b,#1c2532);
+  color:#eef4fb;
+  font:800 8px system-ui;
+  cursor:pointer;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 4px rgba(0,0,0,.22)
 }
-.watchlist-drawing-editor-actions button:hover{filter:brightness(1.13);border-color:#7e91aa}
-.watchlist-drawing-editor-actions button.danger{
-  border-color:#88464b;background:linear-gradient(180deg,#51262b,#31161a);color:#ffb2b8
+.watchlist-drawing-dropdown-actions button:hover{
+  filter:brightness(1.13);
+  border-color:#7e91aa
 }
+.watchlist-drawing-dropdown-actions button.danger{
+  border-color:#88464b;
+  background:linear-gradient(180deg,#51262b,#31161a);
+  color:#ffb2b8
+}
+
 .watchlist-drawing-status{
   padding:4px 8px;border-top:1px solid #344257;background:#0b121b;color:#aebccd;
   font-size:8px;line-height:1.2
@@ -383,45 +440,57 @@ body:not(.dark-mode) .watchlist-drawing-manager-close{
   border-color:#9eb4c6;background:#f7fafc;color:#10263b
 }
 body:not(.dark-mode) .watchlist-drawing-list{
-  border-right-color:#b8c8d5;background:#f5f9fc
+  background:#f5f9fc
 }
-body:not(.dark-mode) .watchlist-drawing-row{
-  border-color:#b8c8d5;background:#fff;color:#10263b
+body:not(.dark-mode) .watchlist-drawing-item{
+  border-bottom-color:rgba(111,135,157,.22)
 }
-body:not(.dark-mode) .watchlist-drawing-row:hover{border-color:#829bb0;background:#eef5fa}
-body:not(.dark-mode) .watchlist-drawing-row.selected{
-  border-color:#b38318;background:linear-gradient(180deg,#fff7da,#ead49a);
-  color:#3e2b02;box-shadow:inset 0 1px 0 rgba(255,255,255,.82)
+body:not(.dark-mode) .watchlist-drawing-name{
+  color:#10263b
 }
-body:not(.dark-mode) .watchlist-drawing-row-copy small{color:#526b80}
-body:not(.dark-mode) .watchlist-drawing-editor{background:#f7fafc}
-body:not(.dark-mode) .watchlist-drawing-editor-title strong{color:#061522}
-body:not(.dark-mode) .watchlist-drawing-editor-title span,
-body:not(.dark-mode) .watchlist-drawing-fields label{color:#526b80}
-body:not(.dark-mode) .watchlist-drawing-fields input[type="color"],
-body:not(.dark-mode) .watchlist-drawing-fields select{
-  border-color:#9eb4c6;background:#fff;color:#10263b
+body:not(.dark-mode) .watchlist-drawing-name:hover,
+body:not(.dark-mode) .watchlist-drawing-name:focus-visible,
+body:not(.dark-mode) .watchlist-drawing-name.selected{
+  color:#795000
 }
-body:not(.dark-mode) .watchlist-drawing-editor-actions button{
-  border-color:#9eb4c6;background:linear-gradient(180deg,#fff,#dbe6ef);color:#10263b;
+body:not(.dark-mode) .watchlist-drawing-dropdown{
+  border-color:#9eb4c6;
+  background:#fff;
+  color:#10263b;
+  box-shadow:0 10px 24px rgba(28,58,83,.22)
+}
+body:not(.dark-mode) .watchlist-drawing-dropdown-fields label{
+  color:#526b80
+}
+body:not(.dark-mode) .watchlist-drawing-dropdown-fields input[type="color"],
+body:not(.dark-mode) .watchlist-drawing-dropdown-fields select{
+  border-color:#9eb4c6;
+  background:#fff;
+  color:#10263b
+}
+body:not(.dark-mode) .watchlist-drawing-dropdown-actions button{
+  border-color:#9eb4c6;
+  background:linear-gradient(180deg,#fff,#dbe6ef);
+  color:#10263b;
   box-shadow:inset 0 2px 1px rgba(255,255,255,.92),0 2px 4px rgba(28,58,83,.14)
 }
-body:not(.dark-mode) .watchlist-drawing-editor-actions button.danger{
-  border-color:#cf858a;background:linear-gradient(180deg,#fff0f1,#efc4c7);color:#8b1e27
+body:not(.dark-mode) .watchlist-drawing-dropdown-actions button.danger{
+  border-color:#cf858a;
+  background:linear-gradient(180deg,#fff0f1,#efc4c7);
+  color:#8b1e27
 }
 body:not(.dark-mode) .watchlist-drawing-status{
   border-top-color:#b8c8d5;background:#edf4f9;color:#526b80
 }
 
 @media(max-width:820px){
-  .watchlist-drawing-manager-body{grid-template-columns:1fr;height:auto;min-height:0;max-height:none}
-  .watchlist-drawing-list{height:76px;max-height:76px;border-right:0;border-bottom:1px solid #344257}
-  .watchlist-drawing-editor{height:auto;max-height:92px}
-  body:not(.dark-mode) .watchlist-drawing-list{border-bottom-color:#b8c8d5}
-  .watchlist-drawing-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .watchlist-drawing-manager-body{height:76px;min-height:76px;max-height:76px}
+  .watchlist-drawing-list{height:76px;max-height:76px}
+  .watchlist-drawing-dropdown{width:min(390px,calc(100% - 12px))}
 }
 @media(max-width:560px){
-  .watchlist-drawing-fields{grid-template-columns:1fr}
+  .watchlist-drawing-dropdown-fields{grid-template-columns:1fr}
+  .watchlist-drawing-dropdown{width:calc(100% - 12px)}
 }
 
 .watchlist-rsi-indicator.market-rsi{
