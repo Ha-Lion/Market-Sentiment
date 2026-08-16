@@ -10,6 +10,7 @@
   <link rel="canonical" href="https://publicsentimentdash.com/sentiment-history.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css">
 
   <style>
     /* Historical Sentiment Dashboard v3: hourly charts forward-fill missing hours so graphs stay complete when scraper cadence changes. */
@@ -30,31 +31,15 @@
       --hist-red:#ff4b6e;
     }
 
-    main.page{
-      padding-top:12px;
-    }
-
     .history-dashboard-hero{
       display:grid;
       grid-template-columns:minmax(0,1fr) auto;
-      gap:12px;
+      gap:18px;
       align-items:end;
-      margin-bottom:12px;
-      padding:16px 20px;
+      margin-bottom:18px;
     }
 
-    .history-dashboard-hero h1{
-      font-size:36px;
-      line-height:1.08;
-      margin-bottom:8px;
-    }
-
-    .history-lead{
-      font-size:15px;
-      line-height:1.5;
-      max-width:1180px;
-      margin-bottom:0;
-    }
+    .history-lead{font-size:16px;max-width:850px;margin-bottom:0;}
 
     .dashboard-actions{
       display:flex;
@@ -185,32 +170,15 @@
       box-shadow:0 8px 24px rgba(155,44,255,.18);
     }
 
-    .side-pill.export-pill{
-      color:#171006;
-      border-color:rgba(255,215,128,.72);
-      background:linear-gradient(135deg,#ffd780,#d29922);
-      box-shadow:0 0 0 1px rgba(255,215,128,.18),0 8px 24px rgba(210,153,34,.30);
-      animation:exportDance 2.3s ease-in-out infinite;
-    }
-
-    .side-pill.export-pill:nth-of-type(even){animation-delay:.22s;}
-
-    .side-pill.export-pill:hover{
-      color:#05070b;
-      border-color:#ffe8a8;
-      background:linear-gradient(135deg,#ffe7a3,#e4ad35);
-      box-shadow:0 0 20px rgba(255,215,128,.48),0 10px 28px rgba(210,153,34,.35);
-    }
-
-    @keyframes exportDance{
-      0%,100%{transform:translateY(0) rotate(0);}
-      35%{transform:translateY(-3px) rotate(-1deg);}
-      65%{transform:translateY(1px) rotate(1deg);}
-    }
-
-    @media(prefers-reduced-motion:reduce){.side-pill.export-pill{animation:none;}}
-
     .side-spacer{height:6px;}
+    .side-note{
+      color:rgba(255,255,255,.56);
+      font-size:10px;
+      line-height:1.35;
+      text-align:center;
+      padding:0 4px;
+      margin-top:-2px;
+    }
 
     .dash-card{
       position:relative;
@@ -452,8 +420,8 @@
     .card-c{grid-column:18/26;grid-row:1/2;}
     .card-d{grid-column:2/12;grid-row:2/3;}
     .card-e{grid-column:12/26;grid-row:2/3;}
-    .card-f{grid-column:1/5;grid-row:3/4;}
-    .card-g{grid-column:5/18;grid-row:3/4;}
+    .card-f{grid-column:1/6;grid-row:3/4;}
+    .card-g{grid-column:6/18;grid-row:3/4;}
     .card-i{grid-column:18/26;grid-row:3/4;}
 
     .dash-empty{
@@ -592,25 +560,6 @@
       z-index:2;
     }
 
-    .history-records-heading{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
-      align-items:center;
-      gap:18px;
-      margin-bottom:12px;
-    }
-
-    .history-records-heading h2{grid-column:1;margin:0;}
-    .history-records-heading p{
-      grid-column:2;
-      margin:0;
-      color:#fff;
-      font-size:13px;
-      font-weight:700;
-      text-align:center;
-      white-space:nowrap;
-    }
-
     .history-table th,.history-table td{
       padding:10px 12px;
       border-bottom:1px solid rgba(255,255,255,.075);
@@ -658,21 +607,514 @@
 
     @media(max-width:760px){
       .history-dashboard-hero{grid-template-columns:1fr;}
-      .history-dashboard-hero h1{font-size:30px;}
       .dashboard-actions{justify-content:flex-start;}
       .dash-layout{grid-template-columns:1fr;padding:14px;gap:12px;}
       .dash-side{grid-template-columns:repeat(2,1fr);}
       .card-a,.card-b,.card-c,.card-d,.card-e,.card-f,.card-g,.card-h,.card-i{grid-column:1/-1;min-height:190px;}
       .stats-strip,.history-info-grid{grid-template-columns:1fr 1fr;}
-      .history-records-heading{display:block;}
-      .history-records-heading p{margin-top:7px;text-align:left;white-space:normal;}
     }
 
     @media(max-width:520px){.stats-strip,.history-info-grid{grid-template-columns:1fr;}}
-  
-    .nav-row-break{
-      flex-basis:100%;
-      height:0;
+
+    /* Historical Sentiment page theme bridge.
+       Dark mode keeps the existing design unchanged.
+       Light mode uses the same shared palette as the rest of the website. */
+    body:not(.dark-mode){
+      --hist-bg:#e9eff5;
+      --hist-card:#ffffff;
+      --hist-card-2:#eef4f9;
+      --hist-line:#9eb4c6;
+      --hist-soft:#10263b;
+      --hist-muted:#344e64;
+      --hist-gold:#7b5400;
+      --hist-gold-2:#9a6900;
+      --hist-purple:#6d28d9;
+      --hist-pink:#b42368;
+      --hist-orange:#a44a00;
+      --hist-cyan:#007c72;
+      --hist-green:#087443;
+      --hist-red:#b42318;
+    }
+
+    body:not(.dark-mode) main.page{
+      color:var(--theme-text)!important;
+    }
+
+    body:not(.dark-mode) .history-dashboard-hero,
+    body:not(.dark-mode) main.page > .panel.section{
+      background:var(--theme-card)!important;
+      border-color:var(--theme-line)!important;
+      color:var(--theme-text)!important;
+    }
+
+    body:not(.dark-mode) .history-dashboard-hero h1,
+    body:not(.dark-mode) main.page > .panel.section h2{
+      color:var(--theme-text)!important;
+    }
+
+    body:not(.dark-mode) .history-lead,
+    body:not(.dark-mode) main.page > .panel.section .muted{
+      color:var(--theme-soft)!important;
+      opacity:1!important;
+    }
+
+    body:not(.dark-mode) .history-kicker{
+      background:#fff3cf!important;
+      border-color:#b68922!important;
+      color:#523700!important;
+    }
+
+    body:not(.dark-mode) .dash-stage-shell{
+      background:linear-gradient(135deg,#e2bd5f,#fff0bf,#c99a2f)!important;
+      box-shadow:0 18px 44px rgba(28,58,83,.18)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage{
+      border-color:#9eb4c6!important;
+      background:
+        radial-gradient(circle at 73% 17%,rgba(255,214,102,.28),transparent 26%),
+        radial-gradient(circle at 34% 38%,rgba(109,40,217,.08),transparent 30%),
+        radial-gradient(circle at 92% 78%,rgba(0,124,114,.08),transparent 28%),
+        linear-gradient(135deg,#f8fbfe 0%,#eef4f9 42%,#fff8df 74%,#f4f7fa 100%)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:before{
+      opacity:.55!important;
+      background-image:
+        linear-gradient(rgba(52,78,100,.10) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(52,78,100,.10) 1px,transparent 1px)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:after{
+      opacity:.10!important;
+    }
+
+    body:not(.dark-mode) .dash-card{
+      background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(238,244,249,.96))!important;
+      border-color:#a9bfd2!important;
+      box-shadow:0 12px 28px rgba(28,58,83,.14)!important;
+    }
+
+    body:not(.dark-mode) .dash-card:before{
+      background:linear-gradient(90deg,transparent,rgba(123,84,0,.055),transparent)!important;
+    }
+
+    body:not(.dark-mode) .card-head{
+      background:rgba(226,235,243,.88)!important;
+      border-bottom-color:#b7c9d8!important;
+    }
+
+    body:not(.dark-mode) .card-title,
+    body:not(.dark-mode) .mini-tabs,
+    body:not(.dark-mode) .chart-legend,
+    body:not(.dark-mode) .bias-legend,
+    body:not(.dark-mode) .driver-item,
+    body:not(.dark-mode) .small-note,
+    body:not(.dark-mode) .metric-caption{
+      color:#10263b!important;
+    }
+
+    body:not(.dark-mode) .card-icons{
+      color:#526f87!important;
+    }
+
+    body:not(.dark-mode) .side-pill{
+      background:#ffffff!important;
+      border-color:#a9bfd2!important;
+      color:#10263b!important;
+    }
+
+    body:not(.dark-mode) .side-pill:hover,
+    body:not(.dark-mode) .side-pill.active{
+      background:linear-gradient(135deg,#fff3cf,#efe7ff)!important;
+      border-color:#b68922!important;
+      color:#3f2b00!important;
+      box-shadow:0 7px 18px rgba(123,84,0,.13)!important;
+    }
+
+    body:not(.dark-mode) .side-note,
+    body:not(.dark-mode) .driver-meta{
+      color:#344e64!important;
+    }
+
+    body:not(.dark-mode) .driver-item{
+      border-bottom-color:#c7d5e1!important;
+    }
+
+    body:not(.dark-mode) .driver-item a:hover{
+      color:#004f91!important;
+    }
+
+    body:not(.dark-mode) .dash-empty{
+      background:rgba(255,255,255,.96)!important;
+      border-color:#b68922!important;
+      color:#10263b!important;
+    }
+
+    body:not(.dark-mode) .stat-tile{
+      background:
+        radial-gradient(circle at 18% 0%,rgba(123,84,0,.07),transparent 42%),
+        linear-gradient(135deg,#ffffff,#eef4f9)!important;
+      border-color:#a9bfd2!important;
+      box-shadow:0 8px 20px rgba(28,58,83,.10)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-bull{
+      border-color:#63a684!important;
+      background:radial-gradient(circle at 18% 0%,rgba(8,116,67,.09),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-bear{
+      border-color:#c77870!important;
+      background:radial-gradient(circle at 18% 0%,rgba(180,35,24,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-neutral{
+      border-color:#7da9cc!important;
+      background:radial-gradient(circle at 18% 0%,rgba(0,79,145,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-gold{
+      border-color:#b68922!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-purple{
+      border-color:#9a7fd0!important;
+      background:radial-gradient(circle at 18% 0%,rgba(109,40,217,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-label,
+    body:not(.dark-mode) .stat-note{
+      color:#344e64!important;
+    }
+
+    body:not(.dark-mode) .stat-value{
+      color:#061522!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap{
+      border-color:#a9bfd2!important;
+      background:
+        radial-gradient(circle at 12% 0%,rgba(123,84,0,.07),transparent 34%),
+        linear-gradient(135deg,#ffffff,#eef4f9)!important;
+      box-shadow:0 12px 28px rgba(28,58,83,.12)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::before{
+      background:linear-gradient(90deg,transparent,rgba(123,84,0,.07),transparent)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::after{
+      background:
+        linear-gradient(90deg,rgba(52,78,100,.04) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(52,78,100,.04) 1px,transparent 1px)!important;
+    }
+
+    body:not(.dark-mode) .history-table th{
+      color:#061522!important;
+      background:linear-gradient(90deg,#fff3cf,#eef4f9)!important;
+      border-bottom-color:#b7c9d8!important;
+    }
+
+    body:not(.dark-mode) .history-table td{
+      color:#10263b!important;
+      border-bottom-color:#c7d5e1!important;
+    }
+
+    body:not(.dark-mode) .history-table tbody tr:hover{
+      background:rgba(123,84,0,.07)!important;
+      box-shadow:inset 3px 0 #9a6900!important;
+    }
+
+    body:not(.dark-mode) .progress-line{
+      background:#d8e2ea!important;
+    }
+
+
+    /* Historical Sentiment finishing touches — page-only, shared ribbon files untouched. */
+
+    /* Keep shared social labels fully readable in both themes. */
+    .psd-shared-header .social-label,
+    .psd-shared-header .social-pill,
+    .psd-shared-header .social-pill span{
+      opacity:1!important;
+      font-weight:900!important;
+      text-shadow:none!important;
+    }
+    body:not(.dark-mode) .psd-shared-header .social-label,
+    body:not(.dark-mode) .psd-shared-header .social-pill,
+    body:not(.dark-mode) .psd-shared-header .social-pill span{
+      color:#061522!important;
+    }
+    body:not(.dark-mode) .psd-shared-header .social-pill{
+      background:#fff!important;
+      border-color:#8da8bd!important;
+    }
+    body.dark-mode .psd-shared-header .social-label,
+    body.dark-mode .psd-shared-header .social-pill,
+    body.dark-mode .psd-shared-header .social-pill span{
+      color:#fff!important;
+    }
+
+    /* Match the compact title treatment used by the newer market pages. */
+    main.page{
+      padding-top:10px!important;
+    }
+    .history-dashboard-hero{
+      grid-template-columns:1fr!important;
+      align-items:start!important;
+      padding:15px 18px!important;
+      margin-bottom:10px!important;
+      border-radius:20px!important;
+    }
+    .history-dashboard-hero h1{
+      margin:0 0 6px!important;
+      font-size:clamp(30px,3vw,46px)!important;
+      line-height:1!important;
+      letter-spacing:-.035em!important;
+    }
+    .history-lead{
+      margin:0!important;
+      max-width:980px!important;
+      font-size:13.5px!important;
+      line-height:1.38!important;
+    }
+
+    /* Tighten vertical rhythm without changing dashboard geometry. */
+    .dash-stage-shell{
+      margin-bottom:10px!important;
+    }
+    .stats-strip{
+      gap:8px!important;
+      margin-top:9px!important;
+    }
+    .history-info-grid{
+      gap:8px!important;
+      margin-top:8px!important;
+    }
+    .history-table-wrap{
+      margin-top:8px!important;
+    }
+    main.page > .panel.section{
+      margin-top:10px!important;
+    }
+
+    /* Page-local glossary buttons. */
+    .hist-title-with-info,
+    .hist-label-with-info{
+      display:inline-flex!important;
+      align-items:center!important;
+      gap:5px!important;
+      min-width:0;
+    }
+    .card-title.hist-title-with-info{
+      max-width:calc(100% - 8px);
+    }
+    .hist-info-btn{
+      display:inline-grid;
+      place-items:center;
+      width:16px;
+      height:16px;
+      min-width:16px;
+      padding:0;
+      border:1px solid #64748b;
+      border-radius:50%;
+      background:#18202e;
+      color:#ef4444;
+      font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+      cursor:pointer;
+      vertical-align:1px;
+      transition:.15s ease;
+    }
+    .hist-info-btn:hover,
+    .hist-info-btn:focus-visible,
+    .hist-info-btn[aria-expanded="true"]{
+      border-color:#60a5fa;
+      background:#1d4ed8;
+      color:#fff;
+      outline:none;
+    }
+    .hist-glossary-popover{
+      position:fixed;
+      z-index:2147483000;
+      width:min(320px,calc(100vw - 24px));
+      padding:12px 14px;
+      border:1px solid #334155;
+      border-radius:10px;
+      background:#111827;
+      color:#cbd5e1;
+      box-shadow:0 14px 40px rgba(0,0,0,.45);
+      font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    }
+    .hist-glossary-popover[hidden]{display:none}
+    .hist-glossary-title{
+      margin:0 22px 5px 0;
+      color:#f8fafc;
+      font-size:13px;
+      font-weight:800;
+    }
+    .hist-glossary-text{margin:0}
+    .hist-glossary-close{
+      position:absolute;
+      right:8px;
+      top:6px;
+      border:0;
+      background:transparent;
+      color:#94a3b8;
+      font-size:18px;
+      line-height:1;
+      cursor:pointer;
+    }
+    .hist-glossary-close:hover{color:#fff}
+
+    body:not(.dark-mode) .hist-info-btn{
+      border-color:#8299ad;
+      background:#fff;
+      color:#c62828;
+    }
+    body:not(.dark-mode) .hist-info-btn:hover,
+    body:not(.dark-mode) .hist-info-btn:focus-visible,
+    body:not(.dark-mode) .hist-info-btn[aria-expanded="true"]{
+      border-color:#004f91;
+      background:#e7f2fb;
+      color:#8a1c12;
+    }
+    body:not(.dark-mode) .hist-glossary-popover{
+      border-color:#9eb4c6;
+      background:#fff;
+      color:#10263b;
+      box-shadow:0 14px 40px rgba(31,54,73,.20);
+    }
+    body:not(.dark-mode) .hist-glossary-title{
+      color:#020b12;
+    }
+    body:not(.dark-mode) .hist-glossary-text{
+      color:#10263b;
+    }
+    body:not(.dark-mode) .hist-glossary-close{
+      color:#061522;
+    }
+
+
+    /* Historical Sentiment — final width + light-mode visual parity refinements.
+       Dark-mode styling is intentionally left unchanged. */
+
+    /* Match the 1480px content width used by the current market pages. */
+    main.page{
+      width:100%!important;
+      max-width:none!important;
+      margin:0!important;
+      padding:14px 26px 26px!important;
+      box-sizing:border-box!important;
+    }
+
+    /* Future advertising hooks. Empty slots remain completely invisible today. */
+    .historical-ad-slot:empty{
+      display:none!important;
+    }
+    .historical-ad-slot:not(:empty){
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      min-height:90px;
+      margin:10px 0;
+      padding:8px;
+      box-sizing:border-box;
+      border:1px dashed var(--theme-line);
+      border-radius:14px;
+      background:var(--theme-surface);
+      color:var(--theme-muted);
+      overflow:hidden;
+    }
+
+    /*
+      Light mode was visually flatter than dark mode because the original
+      dashboard effects use white highlights over a dark surface. Rebuild
+      those same effects with light-mode-appropriate gold/blue/purple tones.
+    */
+    body:not(.dark-mode) .dash-stage-shell{
+      background:
+        linear-gradient(135deg,#d9ae43 0%,#f8e7ae 31%,#d4a32b 65%,#ead48b 100%)!important;
+      box-shadow:
+        0 22px 54px rgba(28,58,83,.19),
+        0 0 0 1px rgba(154,105,0,.11)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage{
+      background:
+        radial-gradient(circle at 73% 17%,rgba(201,154,47,.25),transparent 27%),
+        radial-gradient(circle at 34% 38%,rgba(109,40,217,.12),transparent 31%),
+        radial-gradient(circle at 92% 78%,rgba(0,124,114,.12),transparent 29%),
+        radial-gradient(circle at 16% 76%,rgba(0,79,145,.08),transparent 26%),
+        linear-gradient(135deg,#f8fbfe 0%,#eef4f9 38%,#fff4cf 70%,#edf3f7 100%)!important;
+      border-color:#9eb4c6!important;
+      box-shadow:inset 0 0 38px rgba(123,84,0,.055)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:before{
+      opacity:.72!important;
+      background-image:
+        linear-gradient(rgba(52,78,100,.11) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(52,78,100,.11) 1px,transparent 1px)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:after{
+      opacity:.34!important;
+      background:
+        radial-gradient(ellipse at 22% 33%,transparent 0 8%,rgba(154,105,0,.23) 8.4% 10.8%,transparent 11.2%),
+        radial-gradient(ellipse at 49% 34%,transparent 0 9%,rgba(0,79,145,.16) 9.4% 13.4%,transparent 13.9%),
+        radial-gradient(ellipse at 70% 42%,transparent 0 8%,rgba(109,40,217,.14) 8.4% 12.5%,transparent 13%),
+        radial-gradient(ellipse at 38% 66%,transparent 0 7%,rgba(154,105,0,.18) 7.4% 11.5%,transparent 12%),
+        radial-gradient(ellipse at 83% 66%,transparent 0 7%,rgba(0,124,114,.15) 7.5% 11%,transparent 11.5%)!important;
+      filter:blur(.2px)!important;
+    }
+
+    body:not(.dark-mode) .dash-card{
+      background:
+        radial-gradient(circle at 92% 4%,rgba(123,84,0,.075),transparent 34%),
+        radial-gradient(circle at 8% 96%,rgba(0,79,145,.045),transparent 30%),
+        linear-gradient(180deg,rgba(255,255,255,.98),rgba(238,244,249,.97))!important;
+      box-shadow:
+        0 13px 29px rgba(28,58,83,.15),
+        inset 0 1px 0 rgba(255,255,255,.90)!important;
+    }
+
+    body:not(.dark-mode) .dash-card:before{
+      background:
+        linear-gradient(90deg,transparent,rgba(154,105,0,.12),rgba(255,255,255,.30),transparent)!important;
+    }
+
+    body:not(.dark-mode) .card-head{
+      background:
+        linear-gradient(90deg,rgba(224,234,243,.96),rgba(238,244,249,.90),rgba(255,243,207,.64))!important;
+      border-bottom-color:#b5c7d6!important;
+    }
+
+    body:not(.dark-mode) .stat-tile::before{
+      background:
+        linear-gradient(90deg,transparent,rgba(154,105,0,.10),rgba(255,255,255,.32),transparent)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::before{
+      background:
+        linear-gradient(90deg,transparent,rgba(154,105,0,.12),rgba(255,255,255,.32),transparent)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::after{
+      opacity:.66!important;
+      background:
+        linear-gradient(90deg,rgba(52,78,100,.055) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(52,78,100,.055) 1px,transparent 1px)!important;
+    }
+
+    @media(max-width:760px){
+      main.page{
+        padding:10px 14px 20px!important;
+      }
+      .historical-ad-slot:not(:empty){
+        min-height:64px;
+      }
     }
 
   </style>
@@ -680,16 +1122,19 @@
 
 <body>
   <div id="site-header"></div>
-  <script src="site-nav.js?v=1"></script>
+  <script src="site-nav.js" defer></script>
+  <script src="site-theme.js" defer></script>
 
   <main class="page">
     <section class="panel history-dashboard-hero">
       <div>
         <h1>Historical Market Sentiment Dashboard</h1>
-        <p class="history-lead">Track overall Global and U.S. market sentiment and compare how both readings change over time. The graphs use the same saved PSI history to show trends, momentum, volatility, bullish/bearish balance, Global–U.S. differences, and the headlines behind recent moves.</p>
+        <p class="history-lead">A market-desk style view of <span class="hist-label-with-info">Global PSI<button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Public Sentiment Index" aria-expanded="false">i</button></span> and U.S. sentiment history with animated trend, momentum, bias mix, range, volatility, and top-driver panels.</p>
       </div>
 
     </section>
+
+    <div class="historical-ad-slot ad-slot" id="historical-ad-top" data-ad-position="historical-top" aria-label="Advertising space"></div>
 
     <section class="dash-stage-shell" aria-label="Historical sentiment dashboard">
       <div class="dash-stage">
@@ -703,11 +1148,12 @@
             <div class="side-pill" data-period="weekly">Weekly</div>
             <div class="side-pill" data-period="monthly">Monthly</div>
             <div class="side-spacer"></div>
-            <div class="side-pill export-pill" data-export="hourly" title="Export up to 45 days of hourly Global and U.S. sentiment history as a CSV file.">Export Hourly CSV</div>
+            <div class="side-pill" data-export="csv" title="Exports past 6 months of hourly Global/U.S. history.">Export CSV</div>
+            <div class="side-note">CSV exports past 6 months of hourly history.</div>
           </aside>
 
           <article class="dash-card card-a">
-            <div class="card-head"><div class="card-title" data-glossary="hourly-pulse"><span>Hourly sentiment pulse</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Hourly sentiment pulse</span><button class="hist-info-btn" type="button" data-hist-glossary="hourly-pulse" aria-label="Explain Hourly sentiment pulse" aria-expanded="false">i</button></div></div>
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">NY Time</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
@@ -717,55 +1163,55 @@
           </article>
 
           <article class="dash-card card-b">
-            <div class="card-head"><div class="card-title" data-glossary="global-us-flow"><span id="flowTitle">Global vs U.S. flow</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Global vs U.S. flow</span><button class="hist-info-btn" type="button" data-hist-glossary="global-us-flow" aria-label="Explain Global versus U.S. flow" aria-expanded="false">i</button></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
           </article>
 
           <article class="dash-card card-c">
-            <div class="card-head"><div class="card-title" data-glossary="historical-sentiment-bars"><span>Sentiment history</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Sentiment history</span><button class="hist-info-btn" type="button" data-hist-glossary="sentiment-history" aria-label="Explain Sentiment history" aria-expanded="false">i</button></div></div>
             <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
               <span class="active">Past 5D</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
               <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-purple);display:inline-block;"></i><span data-glossary="momentum">Momentum</span></span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-purple);display:inline-block;"></i>Momentum</span>
             </div>
             <div class="card-body"><canvas class="dash-canvas" id="chartBars"></canvas></div>
           </article>
 
           <article class="dash-card card-d">
-            <div class="card-head"><div class="card-title" data-glossary="historical-skyline"><span id="skylineTitle">Daily Global vs U.S. skyline</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="skylineTitle">Daily Global vs U.S. skyline</span><button class="hist-info-btn" type="button" data-hist-glossary="skyline" aria-label="Explain Global versus U.S. skyline" aria-expanded="false">i</button></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="metric-caption" id="skylineYear">Daily</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartSkyline"></canvas></div>
           </article>
 
           <article class="dash-card card-e">
-            <div class="card-head"><div class="card-title" data-glossary="historical-momentum-chart"><span id="momentumTitle">Daily Global momentum performance</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="momentumTitle">Daily Global momentum performance</span><button class="hist-info-btn" type="button" data-hist-glossary="momentum-chart" aria-label="Explain Sentiment momentum performance" aria-expanded="false">i</button></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(4,auto);gap:12px;">
               <div class="legend-row"><span class="legend-dot"></span>Global</div>
               <div class="legend-row"><span class="legend-dot us"></span>U.S.</div>
-              <div class="legend-row"><span class="legend-dot mom"></span><span data-glossary="momentum">Momentum</span></div>
-              <div class="legend-row"><span class="legend-dot vol"></span><span data-glossary="sentiment-volatility">Volatility</span></div>
+              <div class="legend-row"><span class="legend-dot mom"></span>Momentum</div>
+              <div class="legend-row"><span class="legend-dot vol"></span>Volatility</div>
             </div>
             <div class="card-body"><canvas class="dash-canvas" id="chartMomentum"></canvas></div>
           </article>
 
           <article class="dash-card card-f">
-            <div class="card-head"><div class="card-title" data-glossary="global-bias-mix"><span id="biasTitle">Daily Global bias mix</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="biasTitle">Daily Global bias mix</span><button class="hist-info-btn" type="button" data-hist-glossary="bias-mix" aria-label="Explain Sentiment bias mix" aria-expanded="false">i</button></div></div>
             <div class="bias-legend" id="biasLegend"></div>
             <div class="card-body bias-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
           </article>
 
           <article class="dash-card card-g">
-            <div class="card-head"><div class="card-title" data-glossary="global-us-divergence"><span id="divergenceTitle">Daily Global vs U.S. divergence</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="divergenceTitle">Daily Global vs U.S. divergence</span><button class="hist-info-btn" type="button" data-hist-glossary="divergence" aria-label="Explain Global versus U.S. divergence" aria-expanded="false">i</button></div></div>
             <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:20px;" id="divergenceValue">--</div>
             <div class="small-note" id="divergenceNote" style="position:absolute;right:14px;top:76px;text-align:right;max-width:56%;">Waiting for data</div>
             <div class="card-body"><canvas class="dash-canvas" id="chartDivergence"></canvas></div>
           </article>
 
           <article class="dash-card card-i">
-            <div class="card-head"><div class="card-title" data-glossary="sentiment-drivers"><span id="driversTitle">Daily Global sentiment drivers</span></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="driversTitle">Daily Global sentiment drivers</span><button class="hist-info-btn" type="button" data-hist-glossary="drivers" aria-label="Explain Sentiment drivers" aria-expanded="false">i</button></div></div>
             <div class="driver-list" id="driverList"></div>
           </article>
         </div>
@@ -774,28 +1220,28 @@
     </section>
 
     <section class="stats-strip" aria-label="Historical sentiment summary stats">
-      <div class="stat-tile"><div class="stat-label">Current</div><div class="stat-value" id="statCurrent">--</div><div class="stat-note">Latest selected reading</div></div>
-      <div class="stat-tile"><div class="stat-label">Change</div><div class="stat-value" id="statChange">--</div><div class="stat-note">First to latest in selected view</div></div>
-      <div class="stat-tile"><div class="stat-label" data-glossary="sentiment-average">Average</div><div class="stat-value" id="statAverage">--</div><div class="stat-note">Mean PSI across selected view</div></div>
-      <div class="stat-tile"><div class="stat-label" data-glossary="sentiment-range">Range</div><div class="stat-value" id="statRange">--</div><div class="stat-note">Lowest / highest reading</div></div>
-      <div class="stat-tile"><div class="stat-label" data-glossary="sentiment-volatility">Volatility</div><div class="stat-value" id="statVolatility">--</div><div class="stat-note">Average absolute move</div></div>
-      <div class="stat-tile"><div class="stat-label">Bull / Bear</div><div class="stat-value" id="statBullBear">--</div><div class="stat-note">Bullish vs bearish count</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Current</span><button class="hist-info-btn" type="button" data-hist-glossary="current" aria-label="Explain Current sentiment reading" aria-expanded="false">i</button></div><div class="stat-value" id="statCurrent">--</div><div class="stat-note">Latest selected reading</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Change</span><button class="hist-info-btn" type="button" data-hist-glossary="change" aria-label="Explain Sentiment change" aria-expanded="false">i</button></div><div class="stat-value" id="statChange">--</div><div class="stat-note">First to latest in selected view</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Average</span><button class="hist-info-btn" type="button" data-hist-glossary="average" aria-label="Explain Average sentiment" aria-expanded="false">i</button></div><div class="stat-value" id="statAverage">--</div><div class="stat-note">Mean PSI across selected view</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Range</span><button class="hist-info-btn" type="button" data-hist-glossary="range" aria-label="Explain Sentiment range" aria-expanded="false">i</button></div><div class="stat-value" id="statRange">--</div><div class="stat-note">Lowest / highest reading</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Volatility</span><button class="hist-info-btn" type="button" data-hist-glossary="volatility" aria-label="Explain Sentiment volatility" aria-expanded="false">i</button></div><div class="stat-value" id="statVolatility">--</div><div class="stat-note">Average absolute move</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Bull / Bear</span><button class="hist-info-btn" type="button" data-hist-glossary="bull-bear" aria-label="Explain Bull versus Bear count" aria-expanded="false">i</button></div><div class="stat-value" id="statBullBear">--</div><div class="stat-note">Bullish vs bearish count</div></div>
     </section>
 
     <section class="panel section">
-      <div class="history-records-heading">
-        <h2>Filtered Historical Records</h2>
-        <p>Use the dashboard controls above to switch source, period, and range.</p>
-      </div>
+      <h2>Filtered Historical Records</h2>
+      <p class="muted">Newest records first. Use the dashboard controls above to switch source, period, and range.</p>
       <div class="history-table-wrap">
         <table class="history-table">
-          <thead><tr><th>Date / Period</th><th data-glossary="global-psi">Global PSI</th><th data-glossary="us-psi">U.S. PSI</th><th>Selected</th><th data-glossary="historical-move">Move</th><th data-glossary="sentiment-bias">Bias</th><th data-glossary="record-count">Records</th></tr></thead>
+          <thead><tr><th>Date / Period</th><th><span class="hist-label-with-info">Global PSI<button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Global PSI" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">U.S. PSI<button class="hist-info-btn" type="button" data-hist-glossary="us-psi" aria-label="Explain U.S. PSI" aria-expanded="false">i</button></span></th><th>Selected</th><th><span class="hist-label-with-info">Move<button class="hist-info-btn" type="button" data-hist-glossary="move" aria-label="Explain Historical move" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">Bias<button class="hist-info-btn" type="button" data-hist-glossary="bias" aria-label="Explain Sentiment bias" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">Records<button class="hist-info-btn" type="button" data-hist-glossary="records" aria-label="Explain Historical records" aria-expanded="false">i</button></span></th></tr></thead>
           <tbody id="historyRows"><tr><td colspan="7">Waiting for sentiment history.</td></tr></tbody>
         </table>
       </div>
     </section>
 
-    <footer class="footer">
+    <div class="historical-ad-slot ad-slot" id="historical-ad-bottom" data-ad-position="historical-bottom" aria-label="Advertising space"></div>
+
+    <footer class="footer psd-shared-footer">
       <div class="footer-links">
         <a href="dashboard.html">Interactive Dashboard</a>
         <a href="public-sentiment-index.html">Public Sentiment Index</a>
@@ -815,7 +1261,7 @@
         <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
       </div>
 
-      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
+      <p class="psd-copyright">© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
 
@@ -837,6 +1283,41 @@
       orange:"#ff9f1c", cyan:"#2ee6d6", green:"#55f0a1", red:"#ff4b6e",
       grid:"rgba(255,255,255,.13)", text:"rgba(255,255,255,.72)"
     };
+
+    function syncHistoricalThemeColors(){
+      const dark=document.body.classList.contains("dark-mode");
+      if(dark){
+        Object.assign(COLORS,{
+          gold:"#ffd780",gold2:"#d29922",purple:"#9b2cff",pink:"#ff3f86",
+          orange:"#ff9f1c",cyan:"#2ee6d6",green:"#55f0a1",red:"#ff4b6e",
+          grid:"rgba(255,255,255,.13)",text:"rgba(255,255,255,.72)"
+        });
+      }else{
+        Object.assign(COLORS,{
+          gold:"#7b5400",gold2:"#9a6900",purple:"#6d28d9",pink:"#b42368",
+          orange:"#a44a00",cyan:"#007c72",green:"#087443",red:"#b42318",
+          grid:"rgba(25,54,78,.18)",text:"rgba(16,38,59,.78)"
+        });
+      }
+    }
+
+    function refreshHistoricalTheme(){
+      syncHistoricalThemeColors();
+      state.anim=1;
+      renderStats();
+      renderRows();
+      renderDrivers();
+      drawAll();
+    }
+
+    syncHistoricalThemeColors();
+
+    const historicalThemeObserver=new MutationObserver(mutations=>{
+      if(mutations.some(m=>m.type==="attributes" && m.attributeName==="class")){
+        refreshHistoricalTheme();
+      }
+    });
+    historicalThemeObserver.observe(document.body,{attributes:true,attributeFilter:["class"]});
 
     function num(v){
       const n = Number(v);
@@ -881,17 +1362,6 @@
       return scope === "us" ? us : global;
     }
 
-    function historyMetadata(r){
-      return {
-        headlineCount:num(r.headline_count ?? r.relevant_headlines),
-        sourcesWorking:num(r.sources_working),
-        sourcesConfigured:num(r.sources_configured),
-        usSourceCount:num(r.us_psi_source_count ?? r.us_source_count),
-        usMethod:String(r.us_psi_method ?? r.us_method ?? ""),
-        recordCount:num(r.sample_count ?? r.record_count ?? r.records) ?? 1
-      };
-    }
-
     function normalizePayload(payload){
       const pools = [];
       if(Array.isArray(payload)) pools.push(payload);
@@ -907,7 +1377,7 @@
         const global = valueFrom(r,"global");
         const us = valueFrom(r,"us");
         if(global === null && us === null) return null;
-        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i, ...historyMetadata(r)};
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i};
       }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
     }
 
@@ -926,7 +1396,7 @@
         const global = valueFrom(r,"global");
         const us = valueFrom(r,"us");
         if(global === null && us === null) return null;
-        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i, ...historyMetadata(r)};
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i};
       }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
     }
 
@@ -1442,16 +1912,10 @@
       drawHourly();
       const weeklyGlobal=aggregate("global","weekly",true).slice(-4);
       const weeklyUs=aggregate("us","weekly",true).slice(-4);
-      const useWeeklyFlow=weeklyGlobal.length >= 2 && weeklyUs.length >= 2;
-      const flowGlobal=useWeeklyFlow ? weeklyGlobal : aggregate("global","daily",true).slice(-7);
-      const flowUs=useWeeklyFlow ? weeklyUs : aggregate("us","daily",true).slice(-7);
-      const flowTitle=document.getElementById("flowTitle");
-      if(flowTitle) flowTitle.textContent=(useWeeklyFlow ? "Weekly" : "Daily") + " Global vs U.S. flow";
-      const flowPointCount=Math.max(flowGlobal.length,flowUs.length);
       drawLine(document.getElementById("chartFlow"),[
-        {points:flowGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
-        {points:flowUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
-      ],{dots:flowPointCount <= 2,scan:true,labelAll:flowPointCount <= 7,pad:{l:34,r:10,t:30,b:20}});
+        {points:weeklyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
+        {points:weeklyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
+      ],{dots:false,scan:true,pad:{l:34,r:10,t:30,b:20}});
       drawBars(document.getElementById("chartBars"), aggregate("global","daily",true));
       updateSkylineHeader();
       const skylineGlobal=movingAverage(skylinePoints("global")).map(p=>({...p,value:p.smooth??p.value}));
@@ -1534,10 +1998,7 @@
     }
 
     function renderRows(){
-      const allRows=aggregate(state.scope,state.period,false);
-      const latestTime=allRows.length ? allRows[allRows.length-1].lastTs.getTime() : 0;
-      const cutoffTime=latestTime-(44*86400000);
-      const rows=allRows.filter(r=>r.lastTs.getTime()>=cutoffTime).slice().reverse();
+      const rows=aggregate(state.scope,state.period,true).slice().reverse().slice(0,18);
       const body=document.getElementById("historyRows");
       if(!rows.length){body.innerHTML='<tr><td colspan="7">Waiting for sentiment history.</td></tr>';return;}
       body.innerHTML=rows.map((r,i,arr)=>{
@@ -1659,96 +2120,46 @@
         document.querySelectorAll("[data-range]").forEach(b=>b.classList.toggle("active",b===btn));
         render();
       }));
-      document.querySelectorAll("[data-export]").forEach(btn=>btn.addEventListener("click",()=>exportCSV(btn.dataset.export)));
+      document.querySelector("[data-export='csv']")?.addEventListener("click",exportCSV);
       window.addEventListener("resize",()=>{state.anim=1;drawAll();});
     }
 
-    function csvCell(value){
-      return `"${String(value ?? "").replaceAll('"','""')}"`;
-    }
+    function exportCSV(){
+      const source = (state.hourly && state.hourly.length ? state.hourly : state.raw)
+        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()));
 
-    function downloadCSV(filename,headers,rows){
-      const csv=[headers.map(csvCell).join(",")].concat(rows.map(row=>row.map(csvCell).join(","))).join("\n");
-      const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url;
-      a.download=filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
+      if(!source.length){
+        alert("No hourly history is available to export yet.");
+        return;
+      }
 
-    function exportDailyCSV(){
-      const source=state.raw.filter(r=>r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime())).sort((a,b)=>a.ts-b.ts);
-      if(!source.length){alert("No daily sentiment history is available to export yet.");return;}
-      const latestTs=source[source.length-1].ts.getTime();
-      const cutoffTs=latestTs-(180*86400000);
-      const records=source.filter(r=>r.ts.getTime()>=cutoffTs);
-      let priorGlobal=null, priorUs=null;
-      const rows=records.map(r=>{
-        const global=round(r.global);
-        const us=round(r.us);
-        const globalChange=Number.isFinite(global)&&Number.isFinite(priorGlobal)?global-priorGlobal:null;
-        const usChange=Number.isFinite(us)&&Number.isFinite(priorUs)?us-priorUs:null;
-        if(Number.isFinite(global)) priorGlobal=global;
-        if(Number.isFinite(us)) priorUs=us;
-        return [
-          "daily",r.date,global,us,
-          Number.isFinite(global)&&Number.isFinite(us)?global-us:null,
-          globalChange,usChange,bias(global).text,bias(us).text,
-          r.headlineCount,r.sourcesWorking,r.sourcesConfigured,r.usSourceCount,r.usMethod,r.recordCount
-        ];
-      });
-      downloadCSV("public-sentiment-daily-180days.csv",[
-        "period","date_ny","global_psi","us_psi","global_us_gap","global_change","us_change",
-        "global_sentiment","us_sentiment","headline_count","sources_working","sources_configured",
-        "us_source_count","us_psi_method","records"
-      ],rows);
-    }
+      const latestTs = Math.max(...source.map(r => r.ts.getTime()));
+      const cutoffTs = latestTs - (180 * 86400000);
+      const groups = new Map();
 
-    function exportHourlyCSV(){
-      const source=state.hourly.filter(r=>r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime())).sort((a,b)=>a.ts-b.ts);
-      if(!source.length){alert("No hourly sentiment history is available to export yet.");return;}
-      const latestTs=source[source.length-1].ts.getTime();
-      const cutoffTs=latestTs-(45*86400000);
-      const groups=new Map();
-      source.filter(r=>r.ts.getTime()>=cutoffTs).forEach(r=>{
-        const ny=nyHourParts(r.ts);
-        if(!groups.has(ny.key)) groups.set(ny.key,{key:ny.key,global:[],us:[],records:0,meta:r});
-        const g=groups.get(ny.key);
+      source.filter(r => r.ts.getTime() >= cutoffTs).forEach(r => {
+        const ny = nyHourParts(r.ts);
+        if(!groups.has(ny.key)){
+          groups.set(ny.key,{key:ny.key, global:[], us:[], count:0});
+        }
+        const g = groups.get(ny.key);
         if(Number.isFinite(r.global)) g.global.push(r.global);
         if(Number.isFinite(r.us)) g.us.push(r.us);
-        g.records+=Number.isFinite(r.recordCount)?r.recordCount:1;
-        g.meta=r;
+        g.count += 1;
       });
-      const records=[...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
-      let priorGlobal=null, priorUs=null;
-      const rows=records.map(r=>{
-        const global=round(avg(r.global));
-        const us=round(avg(r.us));
-        const globalChange=Number.isFinite(global)&&Number.isFinite(priorGlobal)?global-priorGlobal:null;
-        const usChange=Number.isFinite(us)&&Number.isFinite(priorUs)?us-priorUs:null;
-        if(Number.isFinite(global)) priorGlobal=global;
-        if(Number.isFinite(us)) priorUs=us;
-        return [
-          "hourly",r.key,r.meta.ts.toISOString(),global,us,
-          Number.isFinite(global)&&Number.isFinite(us)?global-us:null,
-          globalChange,usChange,bias(global).text,bias(us).text,
-          r.meta.headlineCount,r.meta.sourcesWorking,r.meta.sourcesConfigured,r.meta.usSourceCount,r.meta.usMethod,r.records
-        ];
-      });
-      downloadCSV("public-sentiment-hourly-45days.csv",[
-        "period","ny_hour","utc_timestamp","global_psi","us_psi","global_us_gap","global_change","us_change",
-        "global_sentiment","us_sentiment","headline_count","sources_working","sources_configured",
-        "us_source_count","us_psi_method","records"
-      ],rows);
-    }
 
-    function exportCSV(kind){
-      if(kind==="daily") exportDailyCSV();
-      else exportHourlyCSV();
+      const rows = [...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
+      const csv=["ny_hour,global_psi,us_psi,records"].concat(rows.map(r=>[
+        r.key,
+        round(avg(r.global)),
+        round(avg(r.us)),
+        r.count
+      ].map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(","))).join("\n");
+
+      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download="public-sentiment-hourly-6months.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
     async function fetchJSON(path){
@@ -1800,7 +2211,7 @@
     }
 
     async function loadDrivers(){
-      const paths=["hot_news.json","news_latest.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
+      const paths=["hot_news.json","news_cache.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
       for(const path of paths){
         try{
           const data=await fetchJSON(path);
@@ -1830,7 +2241,165 @@
     bindControls();
     loadHistory();
   </script>
-  <script src="glossary.js?v=3" defer></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const HIST_GLOSSARY = {
+        "psi": {
+          title:"Public Sentiment Index (PSI)",
+          text:"A 0–100 score showing public market sentiment. Higher readings are more bullish, lower readings are more bearish, and readings near the middle are mixed or neutral."
+        },
+        "us-psi": {
+          title:"U.S. PSI",
+          text:"A 0–100 Public Sentiment Index focused on major U.S. markets, rates, indexes, and U.S.-focused financial headlines."
+        },
+        "hourly-pulse": {
+          title:"Hourly Sentiment Pulse",
+          text:"Shows recent hourly Global and U.S. sentiment observations. When a new hourly reading is unavailable, the most recent valid reading may be carried forward so the timeline remains continuous."
+        },
+        "global-us-flow": {
+          title:"Global vs. U.S. Flow",
+          text:"Compares the movement of Global PSI and U.S. PSI over the same periods so you can see whether the two sentiment views are moving together or separating."
+        },
+        "sentiment-history": {
+          title:"Sentiment History",
+          text:"Compares saved Global PSI, U.S. PSI, and relative momentum across recent periods. Taller values indicate stronger readings on the 0–100 sentiment scale."
+        },
+        "skyline": {
+          title:"Global vs. U.S. Skyline",
+          text:"Shows the recent paths of Global PSI and U.S. PSI together. It helps show whether sentiment is rising, falling, converging, or separating."
+        },
+        "momentum-chart": {
+          title:"Sentiment Momentum Performance",
+          text:"Shows the direction and size of recent sentiment changes alongside volatility. Momentum describes the recent pace of change; it is not a market-price forecast."
+        },
+        "bias-mix": {
+          title:"Sentiment Bias Mix",
+          text:"Summarizes how saved sentiment observations are distributed across bullish, mixed/neutral, and bearish readings for the selected scope and period."
+        },
+        "divergence": {
+          title:"Global vs. U.S. Divergence",
+          text:"Shows the difference between Global PSI and U.S. PSI. A larger gap means the two sentiment views are further apart."
+        },
+        "drivers": {
+          title:"Sentiment Drivers",
+          text:"Lists recent relevant headlines contributing to the displayed sentiment context. Ordering reflects recency and signal strength, not source quality."
+        },
+        "current": {
+          title:"Current",
+          text:"The latest available sentiment reading for the selected Global or U.S. view and selected period."
+        },
+        "change": {
+          title:"Change",
+          text:"The difference between the first and latest sentiment reading in the selected view. Positive means sentiment rose; negative means it fell."
+        },
+        "average": {
+          title:"Average",
+          text:"The arithmetic mean of the sentiment readings included in the selected view."
+        },
+        "range": {
+          title:"Range",
+          text:"The lowest and highest sentiment readings recorded within the selected view."
+        },
+        "volatility": {
+          title:"Volatility",
+          text:"The average absolute change between consecutive sentiment readings. Higher values mean the sentiment reading moved around more."
+        },
+        "bull-bear": {
+          title:"Bull / Bear",
+          text:"The count of bullish readings compared with bearish readings in the selected period. Mixed or neutral readings are not included in either side of this pair."
+        },
+        "move": {
+          title:"Move",
+          text:"The change in the selected sentiment reading from the prior comparable saved period."
+        },
+        "bias": {
+          title:"Bias",
+          text:"A simplified label describing whether the selected sentiment reading is bullish, bearish, or mixed/neutral."
+        },
+        "records": {
+          title:"Records",
+          text:"The number of saved sentiment observations combined into the displayed date or period."
+        }
+      };
+
+      let activeButton = null;
+
+      function getPopover(){
+        let popover=document.getElementById("histGlossaryPopover");
+        if(popover) return popover;
+
+        popover=document.createElement("div");
+        popover.id="histGlossaryPopover";
+        popover.className="hist-glossary-popover";
+        popover.setAttribute("role","dialog");
+        popover.setAttribute("aria-live","polite");
+        popover.hidden=true;
+        popover.innerHTML='<button class="hist-glossary-close" type="button" aria-label="Close explanation">×</button><div class="hist-glossary-title"></div><p class="hist-glossary-text"></p>';
+        document.body.appendChild(popover);
+        popover.querySelector(".hist-glossary-close").addEventListener("click",closePopover);
+        return popover;
+      }
+
+      function closePopover(){
+        const popover=document.getElementById("histGlossaryPopover");
+        if(popover) popover.hidden=true;
+        if(activeButton) activeButton.setAttribute("aria-expanded","false");
+        activeButton=null;
+      }
+
+      function positionPopover(popover,button){
+        const rect=button.getBoundingClientRect();
+        const width=popover.offsetWidth;
+        const height=popover.offsetHeight;
+        const gap=8;
+        let left=Math.min(rect.left,window.innerWidth-width-12);
+        left=Math.max(12,left);
+        let top=rect.bottom+gap;
+        if(top+height>window.innerHeight-12) top=Math.max(12,rect.top-height-gap);
+        popover.style.left=left+"px";
+        popover.style.top=top+"px";
+      }
+
+      function openPopover(button){
+        const def=HIST_GLOSSARY[button.dataset.histGlossary];
+        if(!def) return;
+
+        const popover=getPopover();
+        if(activeButton && activeButton!==button) activeButton.setAttribute("aria-expanded","false");
+        activeButton=button;
+        button.setAttribute("aria-expanded","true");
+        popover.querySelector(".hist-glossary-title").textContent=def.title;
+        popover.querySelector(".hist-glossary-text").textContent=def.text;
+        popover.hidden=false;
+        positionPopover(popover,button);
+      }
+
+      document.addEventListener("click",event=>{
+        const button=event.target.closest(".hist-info-btn");
+        if(button){
+          event.preventDefault();
+          event.stopPropagation();
+          if(activeButton===button) closePopover();
+          else openPopover(button);
+          return;
+        }
+
+        const popover=document.getElementById("histGlossaryPopover");
+        if(popover && !popover.hidden && !event.target.closest("#histGlossaryPopover")) closePopover();
+      });
+
+      document.addEventListener("keydown",event=>{
+        if(event.key==="Escape") closePopover();
+      });
+
+      window.addEventListener("resize",closePopover);
+      window.addEventListener("scroll",closePopover,true);
+    })();
+  </script>
+
   <script src="vote-widget.js" defer></script>
 </body>
 </html>
