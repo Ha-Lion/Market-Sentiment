@@ -409,6 +409,7 @@
     const resetTool=tool("Reset 7D");
     const fitTool=tool("Fit");
     const clearTool=tool("Clear drawings");
+    const drawingsTool=tool("Drawings (0)");
 
     function rsiIndicator(label,value,className){
       const badge=document.createElement("span");
@@ -436,8 +437,25 @@
     wrap.className="watchlist-chart-wrap";
     const chartBox=document.createElement("div");chartBox.className="watchlist-chart-canvas";wrap.appendChild(chartBox);
 
+    const drawingManager=document.createElement("section");
+    drawingManager.className="watchlist-drawing-manager";
+    drawingManager.hidden=true;
+    drawingManager.innerHTML=
+      '<div class="watchlist-drawing-manager-head">'+
+        '<div><strong>Drawing Manager</strong><span class="watchlist-drawing-manager-help">Select a drawing to edit it.</span></div>'+
+        '<button type="button" class="watchlist-drawing-manager-close" aria-label="Close drawing manager">×</button>'+
+      '</div>'+
+      '<div class="watchlist-drawing-manager-body">'+
+        '<div class="watchlist-drawing-list" role="listbox" aria-label="Chart drawings"></div>'+
+        '<div class="watchlist-drawing-editor">'+
+          '<div class="watchlist-drawing-empty">No drawing selected.</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="watchlist-drawing-status" aria-live="polite">Choose Trend line or Price level to start drawing.</div>';
+
     modalBody.textContent="";
     modalBody.appendChild(toolbar);
+    modalBody.appendChild(drawingManager);
     modalBody.appendChild(summary);
     modalBody.appendChild(wrap);
 
@@ -475,28 +493,527 @@
     chartBox.addEventListener("pointermove",function(event){if(!edgeDrag) return;applyLinkedMargin(edgeDrag.margin+((event.clientY-edgeDrag.y)/Math.max(200,chartBox.clientHeight))*.35);});
     chartBox.addEventListener("pointerup",function(){edgeDrag=null;});chartBox.addEventListener("pointercancel",function(){edgeDrag=null;});
 
-    let drawingMode="",trendStart=null,freeCursor=false;
-    const drawingSeries=[],priceLines=[];
-    function setMode(mode,button){drawingMode=drawingMode===mode?"":mode;trendStart=null;[trendTool,levelTool].forEach(function(x){x.classList.remove("active");});if(drawingMode) button.classList.add("active");}
+    let drawingMode="",trendStart=null,freeCursor=false,editState=null;
+    let previewTrendSeries=null,previewPriceLine=null;
+    let drawingCounter=0,selectedDrawingId=null;
+    const drawings=[];
+
+    const drawingList=drawingManager.querySelector(".watchlist-drawing-list");
+    const drawingEditor=drawingManager.querySelector(".watchlist-drawing-editor");
+    const drawingStatus=drawingManager.querySelector(".watchlist-drawing-status");
+    const drawingClose=drawingManager.querySelector(".watchlist-drawing-manager-close");
+
+    function drawingSetStatus(message){
+      drawingStatus.textContent=message;
+    }
+
+    function openDrawingManager(){
+      drawingManager.hidden=false;
+      drawingsTool.classList.add("active");
+    }
+
+    function closeDrawingManager(){
+      drawingManager.hidden=true;
+      drawingsTool.classList.remove("active");
+    }
+
+    drawingsTool.addEventListener("click",function(){
+      if(drawingManager.hidden) openDrawingManager();
+      else closeDrawingManager();
+    });
+    drawingClose.addEventListener("click",closeDrawingManager);
+
+    function updateDrawingCount(){
+      drawingsTool.textContent="Drawings ("+drawings.length+")";
+    }
+
+    function chartPointFromParam(param){
+      if(!param||!param.point) return null;
+      let time=param.time;
+      if(time==null && chart.timeScale().coordinateToTime){
+        time=chart.timeScale().coordinateToTime(param.point.x);
+      }
+      let value=priceSeries.coordinateToPrice(param.point.y);
+      if(!Number.isFinite(value)){
+        const item=param.seriesData&&param.seriesData.get(priceSeries);
+        value=item&&Number.isFinite(item.value)?item.value:NaN;
+      }
+      if(time==null||!Number.isFinite(value)) return null;
+      return {time:time,value:value};
+    }
+
+    function timeOrderValue(time){
+      if(typeof time==="number") return time;
+      if(typeof time==="string"){
+        const parsed=Date.parse(time);
+        return Number.isFinite(parsed)?parsed:0;
+      }
+      if(time&&typeof time==="object"&&Number.isFinite(time.year)){
+        return Date.UTC(time.year,Number(time.month||1)-1,Number(time.day||1));
+      }
+      return 0;
+    }
+
+    function orderedPair(a,b){
+      return timeOrderValue(a.time)<=timeOrderValue(b.time)?[a,b]:[b,a];
+    }
+
+    function displayTime(time){
+      if(typeof time==="string") return time;
+      if(typeof time==="number"){
+        try{return new Date(time*1000).toLocaleDateString();}catch(error){return String(time);}
+      }
+      if(time&&typeof time==="object"&&time.year){
+        return String(time.year)+"-"+String(time.month).padStart(2,"0")+"-"+String(time.day).padStart(2,"0");
+      }
+      return "N/A";
+    }
+
+    function lineStyleValue(style){
+      if(style==="dotted") return LightweightCharts.LineStyle.Dotted;
+      if(style==="dashed") return LightweightCharts.LineStyle.Dashed;
+      return LightweightCharts.LineStyle.Solid;
+    }
+
+    function safeLineWidth(width){
+      return Math.max(1,Math.min(4,Number(width)||1));
+    }
+
+    function removePreview(){
+      if(previewTrendSeries){
+        try{chart.removeSeries(previewTrendSeries);}catch(error){}
+        previewTrendSeries=null;
+      }
+      if(previewPriceLine){
+        try{priceSeries.removePriceLine(previewPriceLine);}catch(error){}
+        previewPriceLine=null;
+      }
+    }
+
+    function cancelDrawingInteraction(message){
+      removePreview();
+      drawingMode="";
+      trendStart=null;
+      editState=null;
+      trendTool.classList.remove("active");
+      levelTool.classList.remove("active");
+      chartBox.classList.remove("watchlist-drawing-active");
+      if(message) drawingSetStatus(message);
+      renderDrawingManager();
+    }
+
+    function setMode(mode,button){
+      const same=drawingMode===mode&&!editState;
+      removePreview();
+      editState=null;
+      drawingMode=same?"":mode;
+      trendStart=null;
+      [trendTool,levelTool].forEach(function(x){x.classList.remove("active");});
+      if(drawingMode){
+        button.classList.add("active");
+        chartBox.classList.add("watchlist-drawing-active");
+        openDrawingManager();
+        drawingSetStatus(drawingMode==="trend"?"Trend line: click the first point.":"Price level: move the mouse to preview the level, then click to place it.");
+      }else{
+        chartBox.classList.remove("watchlist-drawing-active");
+        drawingSetStatus("Drawing mode cancelled.");
+      }
+    }
+
+    function nextDrawingName(type){
+      drawingCounter+=1;
+      return (type==="trend"?"Trend ":"Level ")+drawingCounter;
+    }
+
+    function createTrendDrawing(p1,p2,options){
+      const opts=options||{};
+      const drawing={
+        id:"drawing-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
+        type:"trend",
+        name:opts.name||nextDrawingName("trend"),
+        p1:{time:p1.time,value:p1.value},
+        p2:{time:p2.time,value:p2.value},
+        color:opts.color||"#ffd780",
+        width:safeLineWidth(opts.width||2),
+        style:opts.style||"solid",
+        series:null
+      };
+      drawing.series=chart.addSeries(LightweightCharts.LineSeries,{
+        color:drawing.color,
+        lineWidth:drawing.width,
+        lineStyle:lineStyleValue(drawing.style),
+        priceScaleId:"right",
+        priceLineVisible:false,
+        lastValueVisible:false,
+        crosshairMarkerVisible:false
+      });
+      drawing.series.setData(orderedPair(drawing.p1,drawing.p2));
+      drawings.push(drawing);
+      selectedDrawingId=drawing.id;
+      updateDrawingCount();
+      openDrawingManager();
+      renderDrawingManager();
+      return drawing;
+    }
+
+    function createLevelDrawing(price,options){
+      const opts=options||{};
+      const drawing={
+        id:"drawing-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
+        type:"level",
+        name:opts.name||nextDrawingName("level"),
+        price:Number(price),
+        color:opts.color||"#ffd780",
+        width:safeLineWidth(opts.width||1),
+        style:opts.style||"dashed",
+        priceLine:null
+      };
+      drawing.priceLine=priceSeries.createPriceLine({
+        price:drawing.price,
+        color:drawing.color,
+        lineWidth:drawing.width,
+        lineStyle:lineStyleValue(drawing.style),
+        axisLabelVisible:true,
+        title:drawing.name
+      });
+      drawings.push(drawing);
+      selectedDrawingId=drawing.id;
+      updateDrawingCount();
+      openDrawingManager();
+      renderDrawingManager();
+      return drawing;
+    }
+
+    function refreshDrawing(drawing){
+      if(!drawing) return;
+      if(drawing.type==="trend"){
+        drawing.series.applyOptions({
+          color:drawing.color,
+          lineWidth:safeLineWidth(drawing.width),
+          lineStyle:lineStyleValue(drawing.style)
+        });
+        drawing.series.setData(orderedPair(drawing.p1,drawing.p2));
+      }else{
+        if(drawing.priceLine){
+          try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}
+        }
+        drawing.priceLine=priceSeries.createPriceLine({
+          price:drawing.price,
+          color:drawing.color,
+          lineWidth:safeLineWidth(drawing.width),
+          lineStyle:lineStyleValue(drawing.style),
+          axisLabelVisible:true,
+          title:drawing.name
+        });
+      }
+    }
+
+    function deleteDrawing(id){
+      const index=drawings.findIndex(function(drawing){return drawing.id===id;});
+      if(index<0) return;
+      const drawing=drawings[index];
+      if(drawing.type==="trend"&&drawing.series){
+        try{chart.removeSeries(drawing.series);}catch(error){}
+      }
+      if(drawing.type==="level"&&drawing.priceLine){
+        try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}
+      }
+      drawings.splice(index,1);
+      if(selectedDrawingId===id) selectedDrawingId=drawings.length?drawings[Math.max(0,index-1)].id:null;
+      updateDrawingCount();
+      renderDrawingManager();
+      drawingSetStatus(drawings.length?"Drawing deleted.":"No drawings on this chart.");
+    }
+
+    function clearAllDrawings(){
+      removePreview();
+      drawings.splice(0).forEach(function(drawing){
+        if(drawing.type==="trend"&&drawing.series){
+          try{chart.removeSeries(drawing.series);}catch(error){}
+        }
+        if(drawing.type==="level"&&drawing.priceLine){
+          try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}
+        }
+      });
+      selectedDrawingId=null;
+      drawingMode="";
+      trendStart=null;
+      editState=null;
+      trendTool.classList.remove("active");
+      levelTool.classList.remove("active");
+      chartBox.classList.remove("watchlist-drawing-active");
+      updateDrawingCount();
+      renderDrawingManager();
+      drawingSetStatus("All drawings cleared.");
+    }
+
+    function selectDrawing(id){
+      selectedDrawingId=id;
+      renderDrawingManager();
+    }
+
+    function selectedDrawing(){
+      return drawings.find(function(drawing){return drawing.id===selectedDrawingId;})||null;
+    }
+
+    function beginEdit(drawing,part){
+      removePreview();
+      drawingMode="";
+      trendStart=null;
+      [trendTool,levelTool].forEach(function(button){button.classList.remove("active");});
+      editState={id:drawing.id,part:part};
+      chartBox.classList.add("watchlist-drawing-active");
+      openDrawingManager();
+      if(part==="p1") drawingSetStatus(drawing.name+": move the mouse to preview Point 1, then click its new position.");
+      else if(part==="p2") drawingSetStatus(drawing.name+": move the mouse to preview Point 2, then click its new position.");
+      else drawingSetStatus(drawing.name+": move the mouse to preview the new level, then click to place it.");
+      renderDrawingManager();
+    }
+
+    function renderDrawingManager(){
+      drawingList.textContent="";
+      if(!drawings.length){
+        const empty=document.createElement("div");
+        empty.className="watchlist-drawing-list-empty";
+        empty.textContent="No drawings yet.";
+        drawingList.appendChild(empty);
+      }else{
+        drawings.forEach(function(drawing){
+          const row=document.createElement("button");
+          row.type="button";
+          row.className="watchlist-drawing-row"+(drawing.id===selectedDrawingId?" selected":"");
+          row.setAttribute("role","option");
+          row.setAttribute("aria-selected",drawing.id===selectedDrawingId?"true":"false");
+          const swatch=document.createElement("span");
+          swatch.className="watchlist-drawing-swatch";
+          swatch.style.background=drawing.color;
+          const copy=document.createElement("span");
+          copy.className="watchlist-drawing-row-copy";
+          const name=document.createElement("strong");
+          name.textContent=drawing.name;
+          const meta=document.createElement("small");
+          meta.textContent=drawing.type==="trend"
+            ? displayTime(drawing.p1.time)+" "+formatValue(drawing.p1.value,priceDecimals)+" → "+displayTime(drawing.p2.time)+" "+formatValue(drawing.p2.value,priceDecimals)
+            : valueLabel+" "+formatValue(drawing.price,priceDecimals);
+          copy.append(name,meta);
+          row.append(swatch,copy);
+          row.addEventListener("click",function(){selectDrawing(drawing.id);});
+          drawingList.appendChild(row);
+        });
+      }
+
+      const drawing=selectedDrawing();
+      drawingEditor.textContent="";
+      if(!drawing){
+        const empty=document.createElement("div");
+        empty.className="watchlist-drawing-empty";
+        empty.textContent="Select a drawing to modify color, width, style, position, or delete it.";
+        drawingEditor.appendChild(empty);
+        return;
+      }
+
+      const title=document.createElement("div");
+      title.className="watchlist-drawing-editor-title";
+      title.innerHTML="<strong>"+drawing.name+"</strong><span>"+(drawing.type==="trend"?"Trend line":"Price level")+"</span>";
+      drawingEditor.appendChild(title);
+
+      const fields=document.createElement("div");
+      fields.className="watchlist-drawing-fields";
+
+      function field(labelText,control){
+        const label=document.createElement("label");
+        const caption=document.createElement("span");
+        caption.textContent=labelText;
+        label.append(caption,control);
+        fields.appendChild(label);
+      }
+
+      const color=document.createElement("input");
+      color.type="color";
+      color.value=drawing.color;
+      color.addEventListener("input",function(){
+        drawing.color=color.value;
+        refreshDrawing(drawing);
+        renderDrawingManager();
+      });
+      field("Color",color);
+
+      const width=document.createElement("select");
+      [1,2,3,4].forEach(function(value){
+        const option=document.createElement("option");
+        option.value=String(value);
+        option.textContent=value+" px";
+        if(value===drawing.width) option.selected=true;
+        width.appendChild(option);
+      });
+      width.addEventListener("change",function(){
+        drawing.width=safeLineWidth(width.value);
+        refreshDrawing(drawing);
+      });
+      field("Width",width);
+
+      const style=document.createElement("select");
+      [["solid","Solid"],["dashed","Dashed"],["dotted","Dotted"]].forEach(function(pair){
+        const option=document.createElement("option");
+        option.value=pair[0];
+        option.textContent=pair[1];
+        if(pair[0]===drawing.style) option.selected=true;
+        style.appendChild(option);
+      });
+      style.addEventListener("change",function(){
+        drawing.style=style.value;
+        refreshDrawing(drawing);
+      });
+      field("Style",style);
+
+      drawingEditor.appendChild(fields);
+
+      const actions=document.createElement("div");
+      actions.className="watchlist-drawing-editor-actions";
+      function action(label,handler,className){
+        const button=document.createElement("button");
+        button.type="button";
+        button.textContent=label;
+        if(className) button.className=className;
+        button.addEventListener("click",handler);
+        actions.appendChild(button);
+      }
+      if(drawing.type==="trend"){
+        action("Move Point 1",function(){beginEdit(drawing,"p1");});
+        action("Move Point 2",function(){beginEdit(drawing,"p2");});
+      }else{
+        action("Move Level",function(){beginEdit(drawing,"level");});
+      }
+      action("Delete",function(){deleteDrawing(drawing.id);},"danger");
+      drawingEditor.appendChild(actions);
+    }
+
+    function updateTrendPreview(startPoint,endPoint,color,width,style){
+      if(!previewTrendSeries){
+        previewTrendSeries=chart.addSeries(LightweightCharts.LineSeries,{
+          color:color||"#ffd780",
+          lineWidth:safeLineWidth(width||2),
+          lineStyle:lineStyleValue(style||"dashed"),
+          priceScaleId:"right",
+          priceLineVisible:false,
+          lastValueVisible:false,
+          crosshairMarkerVisible:false
+        });
+      }else{
+        previewTrendSeries.applyOptions({
+          color:color||"#ffd780",
+          lineWidth:safeLineWidth(width||2),
+          lineStyle:lineStyleValue(style||"dashed")
+        });
+      }
+      previewTrendSeries.setData(orderedPair(startPoint,endPoint));
+    }
+
+    function updateLevelPreview(price,color,width,style){
+      if(previewPriceLine){
+        try{priceSeries.removePriceLine(previewPriceLine);}catch(error){}
+      }
+      previewPriceLine=priceSeries.createPriceLine({
+        price:price,
+        color:color||"#ffd780",
+        lineWidth:safeLineWidth(width||1),
+        lineStyle:lineStyleValue(style||"dashed"),
+        axisLabelVisible:true,
+        title:"Preview"
+      });
+    }
+
     trendTool.addEventListener("click",function(){setMode("trend",trendTool);});
     levelTool.addEventListener("click",function(){setMode("level",levelTool);});
-    cursorTool.addEventListener("click",function(){freeCursor=!freeCursor;chart.applyOptions({crosshair:{mode:freeCursor?LightweightCharts.CrosshairMode.Normal:LightweightCharts.CrosshairMode.Magnet}});cursorTool.classList.toggle("active",freeCursor);cursorTool.textContent=freeCursor?"⊕ Magnet cursor":"＋ Free cursor";});
+    cursorTool.addEventListener("click",function(){
+      freeCursor=!freeCursor;
+      chart.applyOptions({crosshair:{mode:freeCursor?LightweightCharts.CrosshairMode.Normal:LightweightCharts.CrosshairMode.Magnet}});
+      cursorTool.classList.toggle("active",freeCursor);
+      cursorTool.textContent=freeCursor?"⊕ Magnet cursor":"＋ Free cursor";
+    });
     resetTool.addEventListener("click",resetSevenDays);
     fitTool.addEventListener("click",function(){chart.timeScale().fitContent();});
-    clearTool.addEventListener("click",function(){drawingSeries.splice(0).forEach(function(series){chart.removeSeries(series);});priceLines.splice(0).forEach(function(line){priceSeries.removePriceLine(line);});drawingMode="";trendStart=null;trendTool.classList.remove("active");levelTool.classList.remove("active");});
+    clearTool.addEventListener("click",clearAllDrawings);
+
     chart.subscribeClick(function(param){
-      if(!drawingMode||!param.time) return;
-      const item=param.seriesData.get(priceSeries);
-      if(!item||!Number.isFinite(item.value)) return;
-      if(drawingMode==="level"){
-        priceLines.push(priceSeries.createPriceLine({price:item.value,color:"#ffd780",lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:"Level"}));
-        setMode("",levelTool);return;
+      const point=chartPointFromParam(param);
+      if(!point) return;
+
+      if(editState){
+        const drawing=drawings.find(function(item){return item.id===editState.id;});
+        if(!drawing){
+          cancelDrawingInteraction("Drawing no longer exists.");
+          return;
+        }
+        if(editState.part==="p1") drawing.p1={time:point.time,value:point.value};
+        else if(editState.part==="p2") drawing.p2={time:point.time,value:point.value};
+        else drawing.price=point.value;
+        refreshDrawing(drawing);
+        selectedDrawingId=drawing.id;
+        cancelDrawingInteraction(drawing.name+" updated.");
+        openDrawingManager();
+        return;
       }
-      if(!trendStart){trendStart={time:param.time,value:item.value};return;}
-      const series=chart.addSeries(LightweightCharts.LineSeries,{color:"#ffd780",lineWidth:2,priceScaleId:"right",priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
-      const pair=[trendStart,{time:param.time,value:item.value}].sort(function(a,b){return String(a.time).localeCompare(String(b.time));});
-      series.setData(pair);drawingSeries.push(series);setMode("",trendTool);
+
+      if(!drawingMode) return;
+
+      if(drawingMode==="level"){
+        createLevelDrawing(point.value);
+        cancelDrawingInteraction("Price level added. Select it in Drawing Manager to modify it.");
+        openDrawingManager();
+        return;
+      }
+
+      if(!trendStart){
+        trendStart={time:point.time,value:point.value};
+        drawingSetStatus("Trend line: first point set. Move the mouse to preview the line, then click the second point.");
+        return;
+      }
+
+      createTrendDrawing(trendStart,point);
+      cancelDrawingInteraction("Trend line added. Select it in Drawing Manager to modify it.");
+      openDrawingManager();
     });
+
+    chart.subscribeCrosshairMove(function(param){
+      const point=chartPointFromParam(param);
+      if(!point) return;
+
+      if(editState){
+        const drawing=drawings.find(function(item){return item.id===editState.id;});
+        if(!drawing) return;
+        if(drawing.type==="trend"){
+          const p1=editState.part==="p1"?point:drawing.p1;
+          const p2=editState.part==="p2"?point:drawing.p2;
+          updateTrendPreview(p1,p2,drawing.color,drawing.width,drawing.style);
+        }else{
+          updateLevelPreview(point.value,drawing.color,drawing.width,drawing.style);
+        }
+        return;
+      }
+
+      if(drawingMode==="trend"&&trendStart){
+        updateTrendPreview(trendStart,point,"#ffd780",2,"dashed");
+      }else if(drawingMode==="level"){
+        updateLevelPreview(point.value,"#ffd780",1,"dashed");
+      }
+    });
+
+    const drawingKeyHandler=function(event){
+      const tag=event.target&&event.target.tagName?event.target.tagName.toLowerCase():"";
+      if(tag==="input"||tag==="select"||tag==="textarea") return;
+      if(event.key==="Escape"&&(drawingMode||editState)){
+        cancelDrawingInteraction("Drawing action cancelled.");
+      }else if((event.key==="Delete"||event.key==="Backspace")&&selectedDrawingId&&!drawingManager.hidden){
+        event.preventDefault();
+        deleteDrawing(selectedDrawingId);
+      }
+    };
+    document.addEventListener("keydown",drawingKeyHandler);
+
+    updateDrawingCount();
+    renderDrawingManager();
+
     chart.subscribeCrosshairMove(function(param){
       const market=param.seriesData.get(priceSeries);const sentiment=param.seriesData.get(psiSeries);
       if(summaryNodes["market-value"]&&market&&Number.isFinite(market.value)) summaryNodes["market-value"].textContent=valueLabel+": "+formatValue(market.value,priceDecimals);
@@ -515,7 +1032,13 @@
     window.addEventListener("psd-theme-change",applyChartTheme);
     const observer=new ResizeObserver(function(entries){entries.forEach(function(entry){chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});});});
     observer.observe(chartBox);
-    activeChartCleanup=function(){window.removeEventListener("psd-theme-change",applyChartTheme);observer.disconnect();chart.remove();};
+    activeChartCleanup=function(){
+      window.removeEventListener("psd-theme-change",applyChartTheme);
+      document.removeEventListener("keydown",drawingKeyHandler);
+      removePreview();
+      observer.disconnect();
+      chart.remove();
+    };
   }
 
   async function openChartPopup(instrument,asset){
