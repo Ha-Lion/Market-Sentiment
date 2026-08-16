@@ -2,25 +2,25 @@
   "use strict";
 
   const mainLinks = [
-    { href: "dashboard.html", icon: "📊", label: "Interactive Dashboard" },
-    { href: "sentiment-history.html", icon: "📈", label: "Historical Sentiment" },
-    { href: "news-articles.html", icon: "📰", label: "News & Articles" },
-    { href: "charts.html", icon: "📈", label: "Market Charts" },
-    { href: "market-sentiment.html", icon: "📘", label: "Guides" },
-    { href: "advertise.html", icon: "💼", label: "Business Opportunities" },
-    { href: "about.html", icon: "ℹ️", label: "About" },
-    { href: "contact.html", icon: "✉️", label: "Get in Touch" },
+    { href: "dashboard.html", icon: "▦", label: "Interactive Dashboard" },
+    { href: "sentiment-history.html", icon: "↗", label: "Historical Sentiment" },
+    { href: "news-articles.html", icon: "▤", label: "News & Articles" },
+    { href: "charts.html", icon: "⌁", label: "Market Charts" },
+    { href: "market-sentiment.html", icon: "▣", label: "Guides" },
+    { href: "advertise.html", icon: "◆", label: "Business Opportunities" },
+    { href: "about.html", icon: "i", label: "About" },
+    { href: "contact.html", icon: "✉", label: "Get in Touch" },
     { href: "auth.html", label: "Sign In" }
   ];
 
   const assetLinks = [
-    { href: "crypto.html", icon: "🪙", label: "Crypto Sentiment" },
-    { href: "forex-sentiment-today.html", icon: "💱", label: "Forex Sentiment" },
+    { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" },
+    { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
     { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
-    { href: "precious-metals.html", icon: "🥇", label: "Precious Metals" },
-    { href: "indices.html", icon: "📊", label: "Indices" },
-    { href: "policy-assets.html", icon: "🏛️", label: "Policy & Geo Assets" },
-    { href: "ai-assets.html", icon: "🤖", label: "AI Assets" }
+    { href: "precious-metals.html", icon: "◆", label: "Precious Metals" },
+    { href: "indices.html", icon: "▥", label: "Indices Sentiment" },
+    { href: "policy-assets.html", icon: "⚖", label: "Policy & Geo Assets" },
+    { href: "ai-assets.html", icon: "AI", label: "AI Assets" }
   ];
 
   const supportUrl = "https://gofund.me/0d687f045";
@@ -49,11 +49,11 @@
         </span>`;
     }
 
-    const content = link.icon
+    const linkContent = link.icon
       ? '<span class="psd-nav-icon" aria-hidden="true">' + link.icon + '</span><span class="psd-nav-label">' + link.label + '</span>'
       : link.label;
 
-    return '<a class="psd-nav-link' + (isActive ? ' active' : '') + '" href="' + link.href + '">' + content + '</a>';
+    return '<a href="' + link.href + '" class="psd-nav-link' + (isActive ? ' active' : '') + '">' + linkContent + '</a>';
   }
 
   function ensureTourStyles(){
@@ -74,13 +74,12 @@
         50%{box-shadow:0 0 25px rgba(240,183,47,.55),inset 0 0 12px rgba(255,215,128,.12);filter:brightness(1.12)}
       }
       .psd-shared-header .psd-dancing-label{
-        position:relative!important;
-        top:2px!important;
         width:340px!important;
         min-width:340px!important;
         max-width:340px!important;
         justify-content:center!important;
         box-sizing:border-box!important;
+        translate:0 2px;
         animation:psdLabelDance 3.2s ease-in-out infinite,psdLabelShine 2.1s ease-in-out infinite!important;
         transform-origin:center!important;
         will-change:transform,filter,box-shadow;
@@ -610,35 +609,66 @@
     }
   }
 
-  function alignDancingLabels(){
+
+  function alignRibbonDancingWidgets(){
     const aiBuilt = document.querySelector(".psd-shared-header .brand-stamp.psd-dancing-label");
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
     if(!aiBuilt || !learning) return;
 
-    learning.style.left = "0px";
-    const aiRect = aiBuilt.getBoundingClientRect();
-    const learningRect = learning.getBoundingClientRect();
-    learning.style.left = Math.round(aiRect.left - learningRect.left) + "px";
+    /* Reset horizontal adjustment before measuring. */
+    learning.style.translate = "0px 2px";
+
+    window.requestAnimationFrame(function(){
+      const aiRect = aiBuilt.getBoundingClientRect();
+      const learningRect = learning.getBoundingClientRect();
+      const horizontalShift = Math.round(aiRect.left - learningRect.left);
+      learning.style.translate = horizontalShift + "px 2px";
+    });
   }
 
-  function installThemeTogglePlacement(){
-    const nav = document.querySelector(".psd-shared-header .nav");
-    const slot = document.querySelector(".psd-shared-header .psd-theme-toggle-slot");
-    if(!nav || !slot) return;
 
-    const placeToggle = function(){
-      const toggle = document.querySelector(".psd-shared-header .psd-theme-toggle");
-      if(toggle && toggle.parentElement !== slot) slot.appendChild(toggle);
+  function initializeRibbonThemeButton(){
+    const button = document.getElementById("psd-ribbon-theme-toggle");
+    if(!button) return;
+
+    const syncLabel = function(){
+      const dark = document.body.classList.contains("dark-mode");
+      button.textContent = dark ? "☀ Light mode" : "◐ Dark mode";
+      button.setAttribute("aria-pressed", dark ? "true" : "false");
     };
 
-    placeToggle();
+    syncLabel();
 
-    const observer = new MutationObserver(placeToggle);
-    observer.observe(nav, { childList:true, subtree:true });
+    const bodyObserver = new MutationObserver(syncLabel);
+    bodyObserver.observe(document.body, { attributes:true, attributeFilter:["class"] });
 
-    window.setTimeout(placeToggle, 0);
-    window.setTimeout(placeToggle, 80);
-    window.setTimeout(placeToggle, 250);
+    button.addEventListener("click", function(){
+      const before = document.body.classList.contains("dark-mode");
+
+      /*
+       * Give the existing site-theme.js handler the first chance to act.
+       * Only use this fallback if that handler did not change the mode.
+       */
+      window.setTimeout(function(){
+        const afterExistingHandler = document.body.classList.contains("dark-mode");
+        if(afterExistingHandler !== before){
+          syncLabel();
+          return;
+        }
+
+        const dark = !before;
+        document.body.classList.toggle("dark-mode", dark);
+        syncLabel();
+
+        try{
+          localStorage.setItem("psd-theme", dark ? "dark" : "light");
+        }catch(error){}
+
+        window.dispatchEvent(new CustomEvent("psd-theme-change", {
+          detail:{ theme: dark ? "dark" : "light" }
+        }));
+      }, 0);
+    });
   }
 
   function render(){
@@ -695,18 +725,22 @@
         ${linksTwo}
       </div>
       <div class="psd-nav-row psd-nav-fourth">
-        <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html"><span class="psd-nav-icon" aria-hidden="true">✨</span><span class="psd-nav-label">Market Pulse</span></a>
+        <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html"><span class="psd-nav-icon" aria-hidden="true">✦</span><span class="psd-nav-label">Market Pulse</span></a>
         <div class="psd-ribbon-actions">
           <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
-          <span class="psd-theme-toggle-slot" aria-label="Theme control position"></span>
+          <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
         </div>
       </div>
     </nav>
   </header>`;
 
     ensureTourStyles();
-    alignDancingLabels();
-    installThemeTogglePlacement();
+    initializeRibbonThemeButton();
+
+    /* Align after the header has had time to settle into its final grid geometry. */
+    alignRibbonDancingWidgets();
+    window.setTimeout(alignRibbonDancingWidgets, 80);
+    window.setTimeout(alignRibbonDancingWidgets, 240);
 
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton){
@@ -723,7 +757,7 @@
 
   installTourClickFallback();
   window.addEventListener("resize", function(){
-    window.requestAnimationFrame(alignDancingLabels);
+    window.requestAnimationFrame(alignRibbonDancingWidgets);
   });
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
