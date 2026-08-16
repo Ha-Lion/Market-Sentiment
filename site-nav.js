@@ -86,7 +86,6 @@
         justify-content:center!important;
         text-align:center!important;
         white-space:nowrap!important;
-        overflow:hidden!important;
         font-size:12px!important;
         letter-spacing:.2px!important;
         animation-delay:.35s,.35s!important;
