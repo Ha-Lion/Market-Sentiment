@@ -707,122 +707,6 @@
       height:0;
     }
 
-  
-    /* Glossary visual override: exact Today’s Market Pulse style.
-       Existing Forex glossary logic and glossary locations are untouched. */
-    .psd-glossary-info{
-      display:inline-grid!important;
-      place-items:center!important;
-      width:16px!important;
-      height:16px!important;
-      min-width:16px!important;
-      padding:0!important;
-      margin-left:4px!important;
-      border:1px solid #71849a!important;
-      border-radius:50%!important;
-      background:transparent!important;
-      color:#d32f2f!important;
-      font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif!important;
-      vertical-align:middle!important;
-      cursor:pointer!important;
-      opacity:1!important;
-      box-shadow:none!important;
-      transform-origin:center!important;
-      animation:psdPulseGlossary 5s ease-in-out infinite!important;
-    }
-    .psd-glossary-info:hover,
-    .psd-glossary-info:focus-visible,
-    .psd-glossary-info[aria-expanded="true"]{
-      color:#d32f2f!important;
-      border-color:#ef5350!important;
-      background:rgba(239,83,80,.08)!important;
-      animation:none!important;
-      outline:none!important;
-    }
-    @keyframes psdPulseGlossary{
-      0%,82%,100%{transform:scale(1);box-shadow:none}
-      87%{transform:scale(1.11);box-shadow:0 0 0 3px rgba(211,47,47,.10),0 0 10px rgba(211,47,47,.32)}
-      92%{transform:scale(1);box-shadow:0 0 5px rgba(211,47,47,.18)}
-    }
-    .psd-glossary-popover{
-      position:fixed!important;
-      z-index:10250!important;
-      width:min(330px,calc(100vw - 24px))!important;
-      padding:12px 14px!important;
-      border:1px solid #52677c!important;
-      border-radius:11px!important;
-      background:#101927!important;
-      color:#e8f1f9!important;
-      box-shadow:0 18px 48px rgba(0,0,0,.48)!important;
-      font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif!important;
-    }
-    .psd-glossary-popover[hidden]{display:none!important}
-    .psd-glossary-title{
-      margin:0 24px 5px 0!important;
-      color:#fff!important;
-      font-size:13px!important;
-      font-weight:900!important;
-    }
-    .psd-glossary-text{margin:0!important;color:#d7e2ed!important}
-    .psd-glossary-close{
-      position:absolute!important;
-      right:8px!important;
-      top:5px!important;
-      border:0!important;
-      background:transparent!important;
-      color:#d32f2f!important;
-      font-size:18px!important;
-      font-weight:900!important;
-      line-height:1!important;
-      cursor:pointer!important;
-    }
-    body.light-mode .psd-glossary-popover,
-    body:not(.dark-mode) .psd-glossary-popover{
-      background:#fff!important;
-      color:#10263b!important;
-      border-color:#91a9bc!important;
-      box-shadow:0 16px 38px rgba(28,58,83,.22)!important;
-    }
-    body.light-mode .psd-glossary-title,
-    body:not(.dark-mode) .psd-glossary-title{color:#061522!important}
-    body.light-mode .psd-glossary-text,
-    body:not(.dark-mode) .psd-glossary-text{color:#10263b!important}
-    @media (prefers-reduced-motion:reduce){
-      .psd-glossary-info{animation:none!important}
-    }
-
-    /* Open Full Market Chart — uses the same gold control language already on this Forex page. */
-    .full-market-chart-link{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding:7px 11px;
-      border:1px solid rgba(210,153,34,.58);
-      border-radius:999px;
-      background:linear-gradient(180deg,rgba(210,153,34,.18),rgba(17,24,33,.92));
-      color:#ffd780;
-      font-family:inherit;
-      font-size:11px;
-      font-weight:900;
-      line-height:1;
-      text-decoration:none;
-      white-space:nowrap;
-      cursor:pointer;
-    }
-    .full-market-chart-link:hover,
-    .full-market-chart-link:focus-visible{
-      border-color:rgba(210,153,34,.86);
-      background:linear-gradient(180deg,rgba(210,153,34,.30),rgba(17,24,33,.96));
-      color:#fff0b3;
-      outline:none;
-    }
-    .history-controls .full-market-chart-link{margin-left:auto}
-    .history-compare-title .full-market-chart-link{
-      margin-left:auto;
-      padding:5px 9px;
-      font-size:9px;
-    }
-
   </style>
 </head>
 
@@ -869,7 +753,6 @@
             <button class="history-period active" type="button" data-period="daily" onclick="setHistoryPeriod('daily')">Daily</button>
             <button class="history-period" type="button" data-period="weekly" onclick="setHistoryPeriod('weekly')">Weekly</button>
             <button class="history-period" type="button" data-period="monthly" onclick="setHistoryPeriod('monthly')">Monthly</button>
-            <a id="fullMarketChartLink" class="full-market-chart-link" href="charts.html">Open Full Market Chart</a>
           </div>
           <div class="history-grid">
             <div class="history-chart-wrap">
@@ -1241,27 +1124,6 @@
       renderHistory();
     }
 
-    function tradingViewSymbol(name){
-      const item = CRYPTO_ITEMS.find(candidate => candidate.name === name);
-      const symbol = String(item?.symbol || "").replace(/[^A-Za-z]/g,"").toUpperCase();
-
-      if(symbol === "DXY") return "TVC:DXY";
-      if(/^[A-Z]{6}$/.test(symbol)) return `OANDA:${symbol}`;
-      return "";
-    }
-
-    function fullMarketChartHref(name){
-      const symbol = tradingViewSymbol(name);
-      return symbol ? `charts.html?symbol=${encodeURIComponent(symbol)}` : "charts.html";
-    }
-
-    function syncFullMarketChartLink(name){
-      const link = document.getElementById("fullMarketChartLink");
-      if(!link) return;
-      link.href = fullMarketChartHref(name);
-      link.hidden = false;
-    }
-
     function domainFromUrl(url){
       try{ return new URL(url).hostname.replace(/^www\./, ""); }
       catch(e){ return ""; }
@@ -1614,8 +1476,6 @@
       const periodLabel = activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1);
       if(title) title.textContent = "Forex Comparison";
       if(subtitle) subtitle.textContent = `${periodLabel} • ${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
-      const singleMarketLink = document.getElementById("fullMarketChartLink");
-      if(singleMarketLink) singleMarketLink.hidden = true;
 
       grid.innerHTML = activeCompareNames.map((name, idx) => {
         const base = dailySeries(name);
@@ -1626,7 +1486,6 @@
             <div class="history-compare-title">
               <b>${esc(name)}</b>
               <span>${latest}</span>
-              <a class="full-market-chart-link" href="${fullMarketChartHref(name)}">Open Full Market Chart</a>
             </div>
             <div class="history-compare-chart-wrap">
               <svg id="historyCompareChart${idx}" class="history-compare-chart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
@@ -1661,7 +1520,6 @@
 
       if(title) title.textContent = activeHistoryName;
       if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} view`;
-      syncFullMarketChartLink(activeHistoryName);
 
       drawHistoryChart(series);
       renderHistoryStats(series, activeHistoryName, activeHistoryPeriod);
