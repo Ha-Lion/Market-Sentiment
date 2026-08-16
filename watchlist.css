@@ -185,99 +185,240 @@ body:not(.dark-mode) .watchlist-card-actions button:active{
 }
 .watchlist-modal-body{padding:18px 20px 20px}
 .watchlist-chart-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:10px}
-.watchlist-chart-tool{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#171e2a;color:var(--soft);font-size:11.5px;font-weight:800;cursor:pointer}
-.watchlist-chart-tool:hover,.watchlist-chart-tool.active{color:#fff;border-color:#4f6dff;background:#1b2850}
+.watchlist-chart-tool{
+  padding:8px 12px;
+  border:1px solid #506078;
+  border-radius:8px;
+  background:linear-gradient(180deg,#303b4b 0%,#1e2734 48%,#111823 100%);
+  color:#eef4fb;
+  font-size:11.5px;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.26),
+    inset 0 -2px 3px rgba(0,0,0,.46),
+    0 2px 5px rgba(0,0,0,.30);
+  text-shadow:0 1px 1px rgba(0,0,0,.55);
+  transition:transform .12s ease,filter .12s ease,box-shadow .12s ease,border-color .12s ease
+}
+.watchlist-chart-tool:hover,
+.watchlist-chart-tool:focus-visible{
+  border-color:#7d91ad;
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+  outline:none
+}
+.watchlist-chart-tool:active,
+.watchlist-chart-tool.active{
+  transform:translateY(1px);
+  border-color:#687dff;
+  background:linear-gradient(180deg,#1b2850 0%,#16213e 54%,#10182d 100%);
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,.50),
+    0 1px 2px rgba(0,0,0,.24)
+}
+body:not(.dark-mode) .watchlist-chart-tool{
+  border-color:#9bafc4;
+  background:linear-gradient(180deg,#ffffff 0%,#e6eef6 48%,#cbd8e5 100%);
+  color:#10263b;
+  text-shadow:0 1px 0 rgba(255,255,255,.85);
+  box-shadow:
+    inset 0 2px 1px rgba(255,255,255,.95),
+    inset 0 -2px 3px rgba(54,79,104,.20),
+    0 2px 5px rgba(28,58,83,.18)
+}
+body:not(.dark-mode) .watchlist-chart-tool:active,
+body:not(.dark-mode) .watchlist-chart-tool.active{
+  border-color:#6078df;
+  background:linear-gradient(180deg,#dce4ff 0%,#c4d0ff 52%,#a9b9f2 100%);
+  box-shadow:
+    inset 0 2px 5px rgba(50,71,135,.24),
+    0 1px 2px rgba(28,58,83,.14)
+}
 
-/* RSI readouts: beveled indicators beside Clear drawings.
-   Rectangular by design so they do not look like hyperlink pills. */
+/* RSI readouts beside Clear drawings.
+   Informational labels only — intentionally flat, not button-like. */
 .watchlist-rsi-indicator{
   display:inline-flex;
   align-items:center;
   gap:7px;
   min-height:32px;
   box-sizing:border-box;
-  padding:7px 11px;
+  padding:7px 10px;
   border:1px solid var(--rsi-border);
-  border-radius:7px;
-  background:linear-gradient(180deg,var(--rsi-top) 0%,var(--rsi-mid) 52%,var(--rsi-bottom) 100%);
+  border-radius:6px;
+  background:var(--rsi-bg);
   color:var(--rsi-text);
   font-size:11.5px;
   font-weight:800;
   line-height:1;
   white-space:nowrap;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.28),
-    inset 0 -2px 3px rgba(0,0,0,.42),
-    0 2px 5px rgba(0,0,0,.28);
-  text-shadow:0 1px 1px rgba(0,0,0,.50);
+  box-shadow:none;
+  text-shadow:none;
   cursor:default;
   user-select:none
 }
 .watchlist-rsi-indicator .watchlist-rsi-indicator-value{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:34px;
-  padding:3px 6px;
-  border-radius:5px;
-  background:rgba(255,255,255,.10);
-  box-shadow:inset 0 1px 2px rgba(0,0,0,.28);
+  min-width:auto;
+  padding:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
   color:inherit;
   font-size:11.5px;
   font-weight:900
 }
 .watchlist-rsi-indicator.market-rsi{
   --rsi-border:#8ea0ff;
-  --rsi-top:#3d4d96;
-  --rsi-mid:#26336f;
-  --rsi-bottom:#151c42;
-  --rsi-text:#dce2ff
+  --rsi-bg:rgba(142,160,255,.12);
+  --rsi-text:#aebaff
 }
 .watchlist-rsi-indicator.sentiment-rsi{
   --rsi-border:#6ddbd0;
-  --rsi-top:#286f69;
-  --rsi-mid:#174e4a;
-  --rsi-bottom:#0d302e;
-  --rsi-text:#d7fffb
-}
-body:not(.dark-mode) .watchlist-rsi-indicator{
-  text-shadow:0 1px 0 rgba(255,255,255,.72);
-  box-shadow:
-    inset 0 2px 1px rgba(255,255,255,.88),
-    inset 0 -2px 3px rgba(39,65,91,.20),
-    0 2px 5px rgba(28,58,83,.18)
+  --rsi-bg:rgba(109,219,208,.12);
+  --rsi-text:#88e7de
 }
 body:not(.dark-mode) .watchlist-rsi-indicator.market-rsi{
-  --rsi-border:#667adf;
-  --rsi-top:#f0f2ff;
-  --rsi-mid:#cfd6ff;
-  --rsi-bottom:#aeb9f3;
-  --rsi-text:#273a9b
+  --rsi-border:#8a9de7;
+  --rsi-bg:#eef1ff;
+  --rsi-text:#4259b8
 }
 body:not(.dark-mode) .watchlist-rsi-indicator.sentiment-rsi{
-  --rsi-border:#36a99f;
-  --rsi-top:#edfffc;
-  --rsi-mid:#c6f1ec;
-  --rsi-bottom:#9bded7;
-  --rsi-text:#126c65
-}
-body:not(.dark-mode) .watchlist-rsi-indicator .watchlist-rsi-indicator-value{
-  background:rgba(255,255,255,.48);
-  box-shadow:inset 0 1px 2px rgba(39,65,91,.16)
+  --rsi-border:#63bdb5;
+  --rsi-bg:#e8faf7;
+  --rsi-text:#187e75
 }
 
 .watchlist-chart-summary{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 10px}
-.watchlist-chart-summary>span,.watchlist-chart-summary>button{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--soft);font:inherit;font-size:12px}
-.watchlist-chart-summary>button{cursor:pointer}
-.watchlist-chart-summary>button i{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
-.watchlist-chart-summary>button.inactive{color:#6b7280!important;border-color:#29313d;opacity:.75}
-.watchlist-chart-summary>button.inactive i{box-shadow:none;background:#6b7280}
+.watchlist-chart-summary>span,
+.watchlist-chart-summary>button{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:transparent;
+  color:var(--soft);
+  font:inherit;
+  font-size:12px
+}
+.watchlist-chart-summary>button{
+  cursor:pointer;
+  font-weight:850;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -2px 3px rgba(0,0,0,.28),
+    0 2px 4px rgba(0,0,0,.20);
+  text-shadow:0 1px 1px rgba(0,0,0,.35);
+  transition:transform .12s ease,filter .12s ease,box-shadow .12s ease
+}
+.watchlist-chart-summary>button:hover,
+.watchlist-chart-summary>button:focus-visible{
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+  outline:none
+}
+.watchlist-chart-summary>button:active{
+  transform:translateY(1px);
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,.34),
+    0 1px 2px rgba(0,0,0,.16)
+}
+.watchlist-chart-summary>button i{
+  width:9px;height:9px;flex:0 0 9px;border-radius:50%;
+  background:currentColor;box-shadow:0 0 7px currentColor
+}
+
+/* Each on/off line control uses the same shade as its chart line. */
+.watchlist-chart-summary>button.market-value{
+  color:#aab5ff;
+  border-color:#7181ec;
+  background:linear-gradient(180deg,rgba(142,160,255,.34),rgba(82,99,196,.23) 52%,rgba(45,58,122,.28))
+}
+.watchlist-chart-summary>button.psi-value{
+  color:#8ce9df;
+  border-color:#48bfb4;
+  background:linear-gradient(180deg,rgba(109,219,208,.34),rgba(42,144,136,.23) 52%,rgba(21,82,78,.28))
+}
+.watchlist-chart-summary>button.market-ema20-value{
+  color:#ff9a9a;
+  border-color:#e45c5c;
+  background:linear-gradient(180deg,rgba(255,119,119,.34),rgba(185,62,62,.23) 52%,rgba(103,31,31,.28))
+}
+.watchlist-chart-summary>button.market-ema50-value{
+  color:#ffd27f;
+  border-color:#dda640;
+  background:linear-gradient(180deg,rgba(255,196,93,.36),rgba(186,126,29,.24) 52%,rgba(101,67,15,.28))
+}
+.watchlist-chart-summary>button.sentiment-ema20-value{
+  color:#69e8f8;
+  border-color:#20abc0;
+  background:linear-gradient(180deg,rgba(34,211,238,.34),rgba(16,139,158,.23) 52%,rgba(8,76,87,.28))
+}
+.watchlist-chart-summary>button.sentiment-ema50-value{
+  color:#a7e85b;
+  border-color:#6eae20;
+  background:linear-gradient(180deg,rgba(132,204,22,.34),rgba(83,139,12,.23) 52%,rgba(46,79,7,.28))
+}
+
+.watchlist-chart-summary>button.inactive{
+  color:#7b8490!important;
+  border-color:#45505f!important;
+  background:linear-gradient(180deg,#303844,#202733 55%,#171d26)!important;
+  opacity:.72;
+  transform:translateY(1px);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.38),0 1px 2px rgba(0,0,0,.14)
+}
+.watchlist-chart-summary>button.inactive i{box-shadow:none;background:#7b8490}
+
+/* Light-mode bevels keep the same series color families. */
+body:not(.dark-mode) .watchlist-chart-summary>button{
+  text-shadow:0 1px 0 rgba(255,255,255,.82);
+  box-shadow:
+    inset 0 2px 1px rgba(255,255,255,.90),
+    inset 0 -2px 3px rgba(44,66,88,.16),
+    0 2px 4px rgba(28,58,83,.16)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.market-value{
+  color:#4358bf;border-color:#7585dd;
+  background:linear-gradient(180deg,#f1f3ff,#dce1ff 52%,#c3ccf6)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.psi-value{
+  color:#17796f;border-color:#55aaa2;
+  background:linear-gradient(180deg,#ecfffc,#d0f3ef 52%,#b0e0da)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.market-ema20-value{
+  color:#b83232;border-color:#dd7373;
+  background:linear-gradient(180deg,#fff0f0,#ffd6d6 52%,#efb5b5)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.market-ema50-value{
+  color:#96610b;border-color:#d9a84a;
+  background:linear-gradient(180deg,#fff8e8,#ffe8b9 52%,#e8c77d)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.sentiment-ema20-value{
+  color:#087d91;border-color:#43b5c5;
+  background:linear-gradient(180deg,#eaffff,#c9f3f8 52%,#a9dce5)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.sentiment-ema50-value{
+  color:#4d7d10;border-color:#87b94b;
+  background:linear-gradient(180deg,#f4ffe7,#dcf4bc 52%,#bddc8e)
+}
+body:not(.dark-mode) .watchlist-chart-summary>button.inactive{
+  color:#66717e!important;
+  border-color:#aab5c1!important;
+  background:linear-gradient(180deg,#f1f4f7,#dce3ea 55%,#c7d0d9)!important;
+  opacity:.72
+}
 .watchlist-chart-summary .market-rsi{color:#8ea0ff}.watchlist-chart-summary .sentiment-rsi{color:#6ddbd0}
 .watchlist-chart-summary .market-value,.watchlist-chart-summary .market-rsi{color:#8ea0ff}
 .watchlist-chart-summary .psi-value,.watchlist-chart-summary .sentiment-rsi{color:#6ddbd0}
 .watchlist-chart-summary .market-ema20-value{color:#ff7777}.watchlist-chart-summary .market-ema50-value{color:#ffc45d}
 .watchlist-chart-summary .sentiment-ema20-value{color:#22d3ee}.watchlist-chart-summary .sentiment-ema50-value{color:#84cc16}
-.watchlist-chart-summary>span.series-label::before{content:"";width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
+.watchlist-chart-summary>span.series-label::before{
+  content:"";width:9px;height:9px;flex:0 0 9px;border-radius:50%;
+  background:currentColor;box-shadow:0 0 7px currentColor
+}
 .watchlist-chart-note{margin-left:auto;color:#ffcf75;font-size:10px}
 .watchlist-chart-wrap{height:650px;border:1px solid var(--line);border-radius:14px;background:#0b111b;overflow:hidden}
 .watchlist-chart-canvas{width:100%;height:100%}
