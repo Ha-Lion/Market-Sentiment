@@ -83,6 +83,12 @@
       /* AI-Built copies the live rendered height of Constantly Learning in alignRibbonGeometry(). */
       .psd-shared-header .brand-stamp.psd-dancing-label{
         translate:0 6px;
+        justify-content:center!important;
+        text-align:center!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        font-size:12px!important;
+        letter-spacing:.2px!important;
         animation-delay:.35s,.35s!important;
       }
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
@@ -90,7 +96,7 @@
         top:38px;
         margin-top:3px;
         font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
-        font-size:14.5px!important;
+        font-size:15.5px!important;
         font-weight:700!important;
         letter-spacing:.7px!important;
       }
