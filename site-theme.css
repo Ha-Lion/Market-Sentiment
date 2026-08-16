@@ -129,6 +129,19 @@ body:not(.dark-mode) .psd-shared-header .site-subtitle{color:#344e64!important}
 body:not(.dark-mode) .psd-shared-header .header-pill,
 body:not(.dark-mode) .psd-shared-header .brand-stamp{background:#fff3cf!important;color:#523700!important}
 
+/* Home label: same geometry, stronger contrast in light mode. */
+body:not(.dark-mode) .psd-shared-header .psd-home-label{
+  color:#684700!important;
+  font-weight:900!important;
+  opacity:1!important;
+  text-shadow:0 1px 0 rgba(255,255,255,.95),0 0 5px rgba(154,105,0,.16)!important;
+}
+body.dark-mode .psd-shared-header .psd-home-label{
+  color:#ffd780!important;
+  font-weight:800!important;
+  opacity:1!important;
+}
+
 .ad-slot:empty{display:none}
 .ad-slot:not(:empty){margin:10px 16px;padding:10px;border:1px dashed rgba(210,153,34,.45);border-radius:10px;text-align:center}
 
@@ -176,49 +189,81 @@ body.dark-mode .psd-shared-footer .legal{color:#f8fbff!important}
 
 /* Shared ribbon structure: four explicit rows. Layout only; widget sizes stay unchanged. */
 
-/* Explicit navigation icon boxes: visible and beveled in both themes. */
+/* Ribbon page icons: generated from each link href so every page link gets one.
+   The previous global .nav a::before suppression has been removed in site-nav.js. */
 .psd-shared-header .psd-nav-link{
   display:inline-flex!important;
   align-items:center!important;
-  gap:4px!important;
+  gap:5px!important;
 }
-.psd-shared-header .psd-nav-icon{
+.psd-shared-header .psd-nav-link::before{
+  content:"•";
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
-  width:16px!important;
-  height:16px!important;
-  min-width:16px!important;
+  width:17px!important;
+  height:17px!important;
+  min-width:17px!important;
+  flex:0 0 17px!important;
   padding:0!important;
   border:1px solid #9a6900!important;
   border-radius:5px!important;
-  background:linear-gradient(145deg,#fff8db,#e5cb82)!important;
-  color:#4b3200!important;
-  font:900 10px/1 "Segoe UI",Arial,sans-serif!important;
-  text-shadow:0 1px 0 rgba(255,255,255,.85)!important;
+  background:linear-gradient(145deg,#fff9e5,#e4c66d)!important;
+  color:#4c3300!important;
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI",Arial,sans-serif!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  opacity:1!important;
+  visibility:visible!important;
+  text-shadow:0 1px 0 rgba(255,255,255,.88)!important;
   box-shadow:
-    inset 1px 1px 0 rgba(255,255,255,.95),
-    inset -1px -1px 2px rgba(92,63,5,.28),
-    0 1px 3px rgba(16,38,59,.22)!important;
+    inset 1px 1px 0 rgba(255,255,255,.98),
+    inset -1px -1px 2px rgba(79,54,5,.32),
+    0 1px 3px rgba(16,38,59,.24)!important;
 }
-body.dark-mode .psd-shared-header .psd-nav-icon{
-  border-color:#c79a32!important;
-  background:linear-gradient(145deg,#493a19,#17130b)!important;
+
+/* Main navigation row */
+.psd-shared-header .psd-nav-link[href="dashboard.html"]::before{content:"📊"!important}
+.psd-shared-header .psd-nav-link[href="sentiment-history.html"]::before{content:"📈"!important}
+.psd-shared-header .psd-nav-link[href="news-articles.html"]::before{content:"📰"!important}
+.psd-shared-header .psd-nav-link[href="charts.html"]::before{content:"📉"!important}
+.psd-shared-header .psd-nav-link[href="market-sentiment.html"]::before{content:"📘"!important}
+.psd-shared-header .psd-nav-link[href="advertise.html"]::before{content:"💼"!important}
+.psd-shared-header .psd-nav-link[href="about.html"]::before{content:"ⓘ"!important}
+.psd-shared-header .psd-nav-link[href="contact.html"]::before{content:"✉"!important}
+
+/* Asset navigation row */
+.psd-shared-header .psd-nav-link[href="crypto.html"]::before{content:"₿"!important}
+.psd-shared-header .psd-nav-link[href="forex-sentiment-today.html"]::before{content:"💱"!important}
+.psd-shared-header .psd-nav-link[href="energy.html"]::before{content:"⚡"!important}
+.psd-shared-header .psd-nav-link[href="precious-metals.html"]::before{content:"🥇"!important}
+.psd-shared-header .psd-nav-link[href="indices.html"]::before{content:"📊"!important}
+.psd-shared-header .psd-nav-link[href="policy-assets.html"]::before{content:"🏛"!important}
+.psd-shared-header .psd-nav-link[href="ai-assets.html"]::before{content:"AI"!important;font-family:"Inter","Segoe UI",Arial,sans-serif!important;font-size:8px!important}
+
+/* Lowest row */
+.psd-shared-header .psd-nav-link[href="market-pulse.html"]::before{content:"✦"!important}
+
+body.dark-mode .psd-shared-header .psd-nav-link::before{
+  border-color:#c99b34!important;
+  background:linear-gradient(145deg,#4a3a18,#17120a)!important;
   color:#ffe08a!important;
   text-shadow:0 0 4px rgba(255,211,111,.32)!important;
   box-shadow:
-    inset 1px 1px 0 rgba(255,226,155,.22),
-    inset -1px -1px 2px rgba(0,0,0,.65),
-    0 1px 4px rgba(0,0,0,.44)!important;
+    inset 1px 1px 0 rgba(255,229,164,.22),
+    inset -1px -1px 2px rgba(0,0,0,.68),
+    0 1px 4px rgba(0,0,0,.48)!important;
 }
-.psd-shared-header .psd-nav-link:hover .psd-nav-icon,
-.psd-shared-header .psd-nav-link.active .psd-nav-icon{
+.psd-shared-header .psd-nav-link:hover::before,
+.psd-shared-header .psd-nav-link.active::before{
   border-color:#d29922!important;
+  transform:translateY(-1px);
   box-shadow:
-    inset 1px 1px 0 rgba(255,255,255,.95),
-    inset -1px -1px 2px rgba(92,63,5,.22),
-    0 2px 5px rgba(16,38,59,.24),
-    0 0 7px rgba(210,153,34,.30)!important;
+    inset 1px 1px 0 rgba(255,255,255,.98),
+    inset -1px -1px 2px rgba(79,54,5,.24),
+    0 2px 5px rgba(16,38,59,.25),
+    0 0 8px rgba(210,153,34,.32)!important;
 }
 
 
