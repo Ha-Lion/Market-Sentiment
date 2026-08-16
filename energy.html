@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Energy Sentiment — Public Sentiment Dash</title>
-  <meta name="description" content="Track public sentiment across crude oil, natural gas, OPEC supply, oil inventories, gasoline, heating oil, and energy-market headlines.">
+  <title>Forex Sentiment Today — Public Sentiment Dash</title>
+  <meta name="description" content="Track current public sentiment across the U.S. Dollar Index, major currency pairs, and leading FX crosses using Public Sentiment Dash PSI data.">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://publicsentimentdash.com/energy.html">
+  <link rel="canonical" href="https://publicsentimentdash.com/forex-sentiment-today.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css">
@@ -862,20 +862,20 @@
     <section class="ai-hero">
       <div class="ai-hero-grid">
         <div>
-          <h1>Top Energy Sentiment</h1>
-          <p>Track public sentiment across crude oil, natural gas, OPEC supply, oil inventories, gasoline, heating oil, and energy-market headlines.</p>
+          <h1>Top Forex Sentiment</h1>
+          <p>Track current public sentiment across the U.S. Dollar Index, major currency pairs, and leading FX crosses.</p>
         </div>
         <div class="ai-hero-center">
           <div class="ai-updated">
             <b id="overallScore">--</b>
-            <span id="updatedText">Loading latest energy asset sentiment...</span>
+            <span id="updatedText">Loading latest forex instrument sentiment...</span>
           </div>
         </div>
         <div class="ai-hero-tools">
-          <span class="ai-carousel-count" id="aiCarouselCount">Loading energy assets…</span>
+          <span class="ai-carousel-count" id="aiCarouselCount">Loading forex instruments…</span>
           <div class="ai-hero-arrows">
-            <button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous energy assets">‹</button>
-            <button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next energy assets">›</button>
+            <button class="ai-scroll" type="button" data-ai-scroll="-1" aria-label="Previous forex instruments">‹</button>
+            <button class="ai-scroll" type="button" data-ai-scroll="1" aria-label="Next forex instruments">›</button>
           </div>
         </div>
       </div>
@@ -886,17 +886,17 @@
 
     <section class="ai-panels">
       <div class="ai-panel">
-        <h2>Latest Energy Headlines</h2>
-        <p id="headlineStatus">Loading energy asset headlines...</p>
+        <h2>Latest Forex Headlines</h2>
+        <p id="headlineStatus">Loading forex headlines...</p>
         <div class="headline-list" id="headlineList"></div>
       </div>
     </section>
 
-    <div id="historyLayer" class="history-layer" role="dialog" aria-modal="true" aria-label="energy asset history" onclick="if(event.target===this) closeHistory();">
+    <div id="historyLayer" class="history-layer" role="dialog" aria-modal="true" aria-label="forex instrument history" onclick="if(event.target===this) closeHistory();">
       <section class="history-card">
         <div class="history-head">
           <div class="history-title-row">
-            <h2 id="historyTitle" class="history-title">Energy History</h2>
+            <h2 id="historyTitle" class="history-title">Forex History</h2>
             <div id="historySubtitle" class="history-subtitle">Daily</div>
             <div id="comparisonSyncMount"></div>
           </div>
@@ -911,24 +911,24 @@
   <script src="sentiment-core.js?v=5"></script>
 
   <script>
-    let ENERGY_ITEMS = [
-      {name:"General Energy", symbol:"Energy", aliases:["energy market","energy markets","energy sector","energy prices","energy demand","energy supply","power market","utilities"], official:false},
-      {name:"Crude Oil", symbol:"Oil", aliases:["crude oil","oil price","oil prices","wti","west texas intermediate","brent","crude","oil market"], official:true},
-      {name:"Natural Gas", symbol:"NatGas", aliases:["natural gas","nat gas","gas prices","lng","henry hub","gas market"], official:true},
-      {name:"OPEC / Supply", symbol:"OPEC", aliases:["opec","opec+","oil output","oil production","supply cut","production cut","oil supply"], official:false},
-      {name:"Oil Inventories / EIA", symbol:"EIA", aliases:["oil inventory","oil inventories","eia","crude stockpiles","gasoline inventories","distillate inventories"], official:false},
-      {name:"Brent Oil", symbol:"Brent", aliases:["brent","brent crude","brent oil"], official:false},
-      {name:"WTI Oil", symbol:"WTI", aliases:["wti","wti crude","west texas intermediate"], official:false},
-      {name:"Gasoline", symbol:"Gasoline", aliases:["gasoline","gasoline futures","rbob","pump prices","fuel prices","gas prices","refinery","refineries","crack spread","eia gasoline","gasoline inventories"], official:false},
-      {name:"Heating Oil", symbol:"Heating", aliases:["heating oil","distillates","distillate inventories","diesel","diesel prices","fuel oil","refinery","refineries","eia distillate"], official:false},
-      {name:"Energy Stocks", symbol:"Stocks", aliases:["energy stocks","oil stocks","gas stocks","exxon","chevron","shell","bp","energy shares"], official:true}
+    let FOREX_ITEMS = [
+      {name:"US Dollar Index / DXY", dataKey:"US Dollar / DXY", symbol:"DXY", aliases:["dxy","us dollar index","dollar index","usd index"], historyKeys:["US Dollar / DXY","US Dollar Index / DXY","DXY"], official:true},
+      {name:"EUR/USD", dataKey:"EUR / EURUSD", symbol:"EURUSD", aliases:["eurusd","eur/usd","euro dollar","euro vs dollar"], historyKeys:["EUR / EURUSD","EURUSD","EUR/USD"], official:true},
+      {name:"GBP/USD", dataKey:"GBP / GBPUSD", symbol:"GBPUSD", aliases:["gbpusd","gbp/usd","sterling dollar","pound dollar"], historyKeys:["GBP / GBPUSD","GBPUSD","GBP/USD"], official:true},
+      {name:"USD/JPY", dataKey:"JPY / USDJPY", symbol:"USDJPY", aliases:["usdjpy","usd/jpy","dollar yen","yen"], historyKeys:["JPY / USDJPY","USDJPY","USD/JPY"], official:true},
+      {name:"USD/CHF", dataKey:"CHF / USDCHF", symbol:"USDCHF", aliases:["usdchf","usd/chf","dollar swiss franc","swiss franc"], historyKeys:["CHF / USDCHF","USDCHF","USD/CHF"], official:true},
+      {name:"USD/CAD", dataKey:"CAD / USDCAD", symbol:"USDCAD", aliases:["usdcad","usd/cad","dollar canadian dollar","canadian dollar"], historyKeys:["CAD / USDCAD","USDCAD","USD/CAD"], official:true},
+      {name:"AUD/USD", dataKey:"AUD / AUDUSD", symbol:"AUDUSD", aliases:["audusd","aud/usd","australian dollar","aussie dollar"], historyKeys:["AUD / AUDUSD","AUDUSD","AUD/USD"], official:true},
+      {name:"NZD/USD", dataKey:"NZD / NZDUSD", symbol:"NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","kiwi dollar"], historyKeys:["NZD / NZDUSD","NZDUSD","NZD/USD"], official:true},
+      {name:"EUR/JPY", dataKey:"EURJPY", symbol:"EURJPY", aliases:["eurjpy","eur/jpy","euro yen"], historyKeys:["EURJPY","EUR/JPY"], official:true},
+      {name:"EUR/GBP", dataKey:"EURGBP", symbol:"EURGBP", aliases:["eurgbp","eur/gbp","euro sterling"], historyKeys:["EURGBP","EUR/GBP"], official:true}
     ];
 
     let dashboardData = null;
     let historyData = null;
     let technicalData = null;
     let currentRows = [];
-    let activeHistoryName = ENERGY_ITEMS[0].name;
+    let activeHistoryName = FOREX_ITEMS[0].name;
     let activeHistoryPeriod = "daily";
     let selectedCompareNames = [];
     let activeCompareNames = [];
@@ -982,13 +982,13 @@
       ].join(" "));
     }
 
-    let ENERGY_BACKEND_INSTRUMENTS=new Set(ENERGY_ITEMS.flatMap(item=>[item.name,item.symbol,...(item.aliases||[])]).map(x=>normalizeText(x)));
-    let ENERGY_STRONG_TERMS=[...ENERGY_BACKEND_INSTRUMENTS];
-    const ENERGY_SOFT_TERMS=[];
-    const ENERGY_EXCLUDE_TERMS=[];
+    let FOREX_BACKEND_INSTRUMENTS=new Set(FOREX_ITEMS.flatMap(item=>[item.name,item.dataKey,item.symbol,...(item.historyKeys||[])]).map(x=>normalizeText(x)));
+    let FOREX_STRONG_TERMS=uniqueTerms(["forex","foreign exchange","fx market","fx markets","currency market","currency markets","currency pair","currency pairs","dollar index","dxy",...FOREX_ITEMS.flatMap(item=>[item.name,item.dataKey,item.symbol,...(item.historyKeys||[])])]);
+    const FOREX_SOFT_TERMS=["euro","yen","sterling","swiss franc","australian dollar","canadian dollar","new zealand dollar","federal reserve","ecb","european central bank","bank of japan","boj","bank of england","boe","snb","bank of canada","boc","rba","rbnz"];
+    const FOREX_EXCLUDE_TERMS=[];
 
-    const CATEGORY_KEY = "energy";
-    const DEFAULT_TOP_N = 15;
+    const CATEGORY_KEY = "forex";
+    const DEFAULT_TOP_N = 10;
 
     function uniqueTerms(values){
       return Array.from(new Set((values || []).map(x => normalizeText(x)).filter(Boolean)));
@@ -998,19 +998,32 @@
       return (Array.isArray(asset?.categories) ? asset.categories : []).find(c => c?.category === categoryKey && c?.enabled !== false);
     }
 
+    function isForexAsset(asset){
+      const dataKey = String(asset?.data_key || asset?.name || "").trim();
+      const marketSymbol = String(asset?.market_data?.symbol || "").trim().toUpperCase();
+      const name = String(asset?.display_name || asset?.name || "").toUpperCase();
+      return dataKey === "US Dollar / DXY" || marketSymbol.endsWith("=X") || /(^|[^A-Z])(DXY|EURUSD|GBPUSD|USDJPY|USDCHF|USDCAD|AUDUSD|NZDUSD|EURJPY|EURGBP)([^A-Z]|$)/.test(name + " " + dataKey.toUpperCase() + " " + marketSymbol);
+    }
+
     function assetsFromConfig(config, categoryKey, fallbackItems){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
       const rows = assets
-        .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
+        .filter(asset => asset?.enabled !== false && (categoryEntry(asset, categoryKey) || isForexAsset(asset)))
         .map(asset => {
-          const cat = categoryEntry(asset, categoryKey);
+          const cat = categoryEntry(asset, categoryKey) || categoryEntry(asset, "dashboard_extras") || {};
+          const dataKey = String(asset.data_key || asset.name || "").trim();
+          const displayName = String(asset.display_name || asset?.market_data?.label || asset.name || dataKey).trim();
+          const marketSymbol = String(asset?.market_data?.symbol || "").replace(/=X$/i,"").replace(/[^A-Za-z]/g,"").toUpperCase();
+          let symbol = String(asset.symbol || marketSymbol || displayName).replace(/[^A-Za-z]/g,"").toUpperCase();
+          if(dataKey === "US Dollar / DXY" || /DXY/.test(symbol)) symbol = "DXY";
           return {
-            name: asset.name,
-            symbol: asset.symbol || asset.name,
-            aliases: uniqueTerms([...(asset.aliases || []), asset.name, asset.symbol]),
-            official: false,
-            priority: Number(cat?.priority || 999),
-            historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
+            name:displayName,
+            dataKey,
+            symbol,
+            aliases:uniqueTerms([...(asset.aliases || []), displayName, dataKey, asset.name, asset.symbol, marketSymbol]),
+            official:asset.official === true,
+            priority:Number(cat?.priority || 999),
+            historyKeys:uniqueTerms([dataKey, displayName, asset.name, asset.symbol, marketSymbol, ...(asset.history_keys || [])])
           };
         })
         .sort((a,b) => a.priority - b.priority)
@@ -1019,10 +1032,10 @@
     }
 
     function applyAssetConfig(config){
-      ENERGY_ITEMS = assetsFromConfig(config, CATEGORY_KEY, ENERGY_ITEMS);
-      ENERGY_BACKEND_INSTRUMENTS = new Set(ENERGY_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.historyKeys || [])]).map(x => normalizeText(x)));
-      ENERGY_STRONG_TERMS = uniqueTerms([...ENERGY_STRONG_TERMS, ...ENERGY_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])]);
-      activeHistoryName = ENERGY_ITEMS[0]?.name || activeHistoryName || ENERGY_ITEMS[0].name;
+      FOREX_ITEMS = assetsFromConfig(config, CATEGORY_KEY, FOREX_ITEMS);
+      FOREX_BACKEND_INSTRUMENTS = new Set(FOREX_ITEMS.flatMap(item => [item.name, item.dataKey, item.symbol, ...(item.historyKeys || [])]).map(x => normalizeText(x)));
+      FOREX_STRONG_TERMS = uniqueTerms([...FOREX_STRONG_TERMS, ...FOREX_ITEMS.flatMap(item => [item.name, item.dataKey, item.symbol, ...(item.historyKeys || [])])]);
+      activeHistoryName = FOREX_ITEMS[0]?.name || activeHistoryName || "US Dollar Index / DXY";
     }
 
     function instrumentKeysForItem(item, fallbackName){
@@ -1061,22 +1074,22 @@
     }
 
     function hasExactCategoryInstrument(h){
-      return headlineInstruments(h).some(x => ENERGY_BACKEND_INSTRUMENTS.has(x));
+      return headlineInstruments(h).some(x => FOREX_BACKEND_INSTRUMENTS.has(x));
     }
 
     function hasExcludedCategoryFocus(h){
       const text = headlineText(h);
-      return hasTerm(text, ENERGY_EXCLUDE_TERMS);
+      return hasTerm(text, FOREX_EXCLUDE_TERMS);
     }
 
     function isCategoryHeadline(h){
       const fullText = headlineText(h);
       const titleText = titleDescriptionText(h);
       const markets = headlineMarkets(h);
-      const strongCategory = hasTerm(titleText, ENERGY_STRONG_TERMS) || hasTerm(fullText, ENERGY_STRONG_TERMS);
-      const softCategory = hasTerm(titleText, ENERGY_SOFT_TERMS);
+      const strongCategory = hasTerm(titleText, FOREX_STRONG_TERMS) || hasTerm(fullText, FOREX_STRONG_TERMS);
+      const softCategory = hasTerm(titleText, FOREX_SOFT_TERMS);
       const exactCategory = hasExactCategoryInstrument(h);
-      const categoryContext = markets.includes("stocks") || markets.includes("indexes") || markets.includes("macro") || markets.includes("general") || markets.includes("technology");
+      const categoryContext = markets.includes("forex") || markets.includes("fx") || markets.includes("currency") || markets.includes("currencies") || markets.includes("macro") || markets.includes("general");
 
       if(hasExcludedCategoryFocus(h)){
         return false;
@@ -1218,8 +1231,8 @@
     }
 
     function buildRows(){
-      const importance = new Map(ENERGY_ITEMS.map((item,index)=>[item.name,index]));
-      return ENERGY_ITEMS
+      const importance = new Map(FOREX_ITEMS.map((item,index)=>[item.name,index]));
+      return FOREX_ITEMS
         .map(item => getOfficialCurrent(item) || getDerivedCurrent(item))
         .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999))
         .slice(0,15);
@@ -1243,12 +1256,12 @@
     }
 
     function marketSeries(name){
-      const item=ENERGY_ITEMS.find(x=>x.name===name);
+      const item=FOREX_ITEMS.find(x=>x.name===name);
       return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
     }
 
     function marketDirection(name){
-      const item=ENERGY_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
+      const item=FOREX_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
       if(direction&&direction!=="N/A")return direction;
       const series=marketSeries(name);
       if(series.length<2)return"Unavailable";
@@ -1260,7 +1273,7 @@
       if(!grid) return;
 
       if(!currentRows.length){
-        grid.innerHTML = `<div class="empty-note">No energy data loaded yet.</div>`;
+        grid.innerHTML = `<div class="empty-note">No forex data loaded yet.</div>`;
         return;
       }
 
@@ -1269,12 +1282,12 @@
       aiCardPage = Math.min(aiCardPage, pageCount - 1);
       const first = aiCardPage * aiCardPageSize;
       const visibleRows = currentRows.slice(first, first + aiCardPageSize);
-      document.getElementById("aiCarouselCount").textContent=`${first + 1}–${Math.min(first + aiCardPageSize,currentRows.length)} of ${currentRows.length} energy assets`;
+      document.getElementById("aiCarouselCount").textContent=`${first + 1}–${Math.min(first + aiCardPageSize,currentRows.length)} of ${currentRows.length} forex instruments`;
       grid.innerHTML = visibleRows.map((row, idx) => {
         const score = row.score == null ? 0 : row.score;
         const color = colorForScore(row.score);
         const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : (row.source === "proxy" ? "Proxy PSI" : "Headline PSI"));
-        const item=ENERGY_ITEMS.find(candidate=>candidate.name===row.name);
+        const item=FOREX_ITEMS.find(candidate=>candidate.name===row.name);
         const news=priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),5);
         return `
           <article class="ai-card">
@@ -1396,12 +1409,17 @@
     }
 
     function tradingViewSymbol(name){
-      const symbol=ENERGY_ITEMS.find(item=>item.name===name)?.symbol||String(name||"").split("/").pop().trim();
-      const nyse=new Set(["TSM","ORCL"]);
-      return `${nyse.has(symbol)?"NYSE":"NASDAQ"}:${symbol}`;
+      const item=FOREX_ITEMS.find(candidate=>candidate.name===name);
+      const symbol=String(item?.symbol||"").replace(/[^A-Za-z]/g,"").toUpperCase();
+      if(symbol==="DXY") return "TVC:DXY";
+      if(/^[A-Z]{6}$/.test(symbol)) return `OANDA:${symbol}`;
+      return "";
     }
 
-    function fullMarketChartHref(name){return `charts.html?symbol=${encodeURIComponent(tradingViewSymbol(name))}`}
+    function fullMarketChartHref(name){
+      const symbol=tradingViewSymbol(name);
+      return symbol ? `charts.html?symbol=${encodeURIComponent(symbol)}` : "charts.html";
+    }
 
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
@@ -1409,13 +1427,13 @@
       const headlines = priorityHeadlines(getCategoryHeadlines(),30);
 
       if(status){
-        status.textContent = `30 latest energy asset headline(s) shown from the latest dashboard feed.`;
+        status.textContent = `30 latest forex headline(s) shown from the latest dashboard feed.`;
       }
 
       if(!list) return;
 
       if(!headlines.length){
-        list.innerHTML = `<div class="empty-note">No energy headlines found in the latest data file.</div>`;
+        list.innerHTML = `<div class="empty-note">No forex headlines found in the latest data file.</div>`;
         return;
       }
 
@@ -1508,7 +1526,7 @@
 
     function dailySeries(name){
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
-      const item = ENERGY_ITEMS.find(x => x.name === name);
+      const item = FOREX_ITEMS.find(x => x.name === name);
 
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
@@ -1741,7 +1759,7 @@
       });
     }
 
-    function historyNewsFor(name){const item=ENERGY_ITEMS.find(x=>x.name===name);return priorityHeadlines(getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
+    function historyNewsFor(name){const item=FOREX_ITEMS.find(x=>x.name===name);return priorityHeadlines(getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
 
     function newsHtml(news){return news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").slice(0,1).toUpperCase()),logoHtml=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener">${logoHtml}<span>${esc(h.title||"Untitled headline")}<small>${esc(h.source||"Source")} • ${esc(h.vote||"Neutral")}</small></span></a>`}).join("")||'<div class="empty-note">No recent news available.</div>'}
 
@@ -1751,7 +1769,7 @@
       clearCharts();const grid=document.querySelector(".history-grid"),title=document.getElementById("historyTitle"),subtitle=document.getElementById("historySubtitle"),range=document.getElementById("historyRange"),card=document.querySelector(".history-card"),syncMount=document.getElementById("comparisonSyncMount");
       if(activeCompareNames.length===2){
         card?.classList.add("compare-view");
-        title.textContent="Energy Comparison";
+        title.textContent="Forex Comparison";
         subtitle.textContent=`${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
         range.textContent="";
         grid.className="history-grid compare-assets-grid";
@@ -1810,7 +1828,7 @@
         document.querySelectorAll("[data-ai-scroll]").forEach(button=>button.addEventListener("click",()=>changeAiCardPage(button.dataset.aiScroll)));
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
-        document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">energy asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
+        document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">forex instrument data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
       }
     }
 
@@ -1831,6 +1849,198 @@
 
     init();
   </script>
+
+  <script>
+    /* Forex glossary — same red-i / pulse / Light-Dark popover behavior used on Today’s Market Pulse. */
+    (() => {
+      "use strict";
+
+      const definitions = {
+        "psi": {
+          title:"Public Sentiment Index (PSI)",
+          text:"A 0–100 reading of the current public-news narrative for the selected currency market. Higher values are more bullish, lower values are more bearish, and readings near the middle are mixed or neutral."
+        },
+        "headline-count": {
+          title:"Headline Count",
+          text:"The number of relevant headlines currently included in the sentiment reading for this currency instrument."
+        },
+        "current-sentiment": {
+          title:"Latest",
+          text:"The latest available Public Sentiment Index reading in the displayed historical series."
+        },
+        "sentiment-average": {
+          title:"Average",
+          text:"The average Public Sentiment Index reading across the observations in the displayed historical series."
+        },
+        "record-count": {
+          title:"Records",
+          text:"The number of saved sentiment observations included in the displayed historical series."
+        }
+      };
+
+      const style = document.createElement("style");
+      style.textContent = `
+        .psd-glossary-info{
+          display:inline-grid;
+          place-items:center;
+          width:16px;
+          height:16px;
+          min-width:16px;
+          padding:0;
+          margin-left:4px;
+          border:1px solid #71849a;
+          border-radius:50%;
+          background:transparent;
+          color:#d32f2f!important;
+          font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+          vertical-align:middle;
+          cursor:pointer;
+          opacity:1!important;
+          box-shadow:none;
+          transform-origin:center;
+          animation:psdPulseGlossary 5s ease-in-out infinite;
+        }
+        .psd-glossary-info:hover,
+        .psd-glossary-info:focus-visible,
+        .psd-glossary-info[aria-expanded="true"]{
+          color:#d32f2f!important;
+          border-color:#ef5350!important;
+          background:rgba(239,83,80,.08)!important;
+          animation:none!important;
+          outline:none;
+        }
+        @keyframes psdPulseGlossary{
+          0%,82%,100%{transform:scale(1);box-shadow:none}
+          87%{transform:scale(1.11);box-shadow:0 0 0 3px rgba(211,47,47,.10),0 0 10px rgba(211,47,47,.32)}
+          92%{transform:scale(1);box-shadow:0 0 5px rgba(211,47,47,.18)}
+        }
+        .psd-glossary-popover{
+          position:fixed;
+          z-index:10250;
+          width:min(330px,calc(100vw - 24px));
+          padding:12px 14px;
+          border:1px solid #52677c;
+          border-radius:11px;
+          background:#101927;
+          color:#e8f1f9;
+          box-shadow:0 18px 48px rgba(0,0,0,.48);
+          font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+        }
+        .psd-glossary-popover[hidden]{display:none!important}
+        .psd-glossary-title{margin:0 24px 5px 0;color:#fff;font-size:13px;font-weight:900}
+        .psd-glossary-text{margin:0;color:#d7e2ed}
+        .psd-glossary-close{
+          position:absolute;right:8px;top:5px;border:0;background:transparent;color:#d32f2f;
+          font-size:18px;font-weight:900;line-height:1;cursor:pointer;
+        }
+        body.light-mode .psd-glossary-popover,
+        body:not(.dark-mode) .psd-glossary-popover{
+          background:#fff;color:#10263b;border-color:#91a9bc;box-shadow:0 16px 38px rgba(28,58,83,.22)
+        }
+        body.light-mode .psd-glossary-title,
+        body:not(.dark-mode) .psd-glossary-title{color:#061522}
+        body.light-mode .psd-glossary-text,
+        body:not(.dark-mode) .psd-glossary-text{color:#10263b}
+        @media (prefers-reduced-motion:reduce){
+          .psd-glossary-info{animation:none!important}
+        }
+      `;
+      document.head.appendChild(style);
+
+      let activeButton = null;
+
+      function ensurePopover(){
+        let pop = document.getElementById("psdPulseGlossaryPopover");
+        if(pop) return pop;
+        pop = document.createElement("div");
+        pop.id = "psdPulseGlossaryPopover";
+        pop.className = "psd-glossary-popover";
+        pop.hidden = true;
+        pop.setAttribute("role","dialog");
+        pop.setAttribute("aria-live","polite");
+        pop.innerHTML = '<button class="psd-glossary-close" type="button" aria-label="Close glossary">×</button><div class="psd-glossary-title"></div><p class="psd-glossary-text"></p>';
+        document.body.appendChild(pop);
+        pop.querySelector(".psd-glossary-close").addEventListener("click", closePopover);
+        return pop;
+      }
+
+      function closePopover(){
+        const pop = document.getElementById("psdPulseGlossaryPopover");
+        if(pop) pop.hidden = true;
+        if(activeButton) activeButton.setAttribute("aria-expanded","false");
+        activeButton = null;
+      }
+
+      function positionPopover(pop, button){
+        const r = button.getBoundingClientRect();
+        const gap = 8;
+        const w = pop.offsetWidth;
+        const h = pop.offsetHeight;
+        let left = Math.min(r.left, window.innerWidth - w - 12);
+        left = Math.max(12,left);
+        let top = r.bottom + gap;
+        if(top + h > window.innerHeight - 12) top = Math.max(12,r.top - h - gap);
+        pop.style.left = left + "px";
+        pop.style.top = top + "px";
+      }
+
+      function openPopover(button){
+        const def = definitions[button.dataset.glossaryKey];
+        if(!def) return;
+        const pop = ensurePopover();
+        if(activeButton && activeButton !== button) activeButton.setAttribute("aria-expanded","false");
+        activeButton = button;
+        button.setAttribute("aria-expanded","true");
+        pop.querySelector(".psd-glossary-title").textContent = def.title;
+        pop.querySelector(".psd-glossary-text").textContent = def.text;
+        pop.hidden = false;
+        positionPopover(pop,button);
+      }
+
+      function decorate(root){
+        const nodes = [];
+        if(root?.nodeType === 1 && root.matches?.("[data-glossary]")) nodes.push(root);
+        root?.querySelectorAll?.("[data-glossary]").forEach(node => nodes.push(node));
+        nodes.forEach(node => {
+          if(node.querySelector(":scope > .psd-glossary-info")) return;
+          const key = node.dataset.glossary;
+          if(!definitions[key]) return;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "psd-glossary-info";
+          button.textContent = "i";
+          button.dataset.glossaryKey = key;
+          button.setAttribute("aria-label","Explain " + definitions[key].title);
+          button.setAttribute("aria-expanded","false");
+          node.appendChild(button);
+        });
+      }
+
+      document.addEventListener("click", event => {
+        const button = event.target.closest?.(".psd-glossary-info");
+        if(button){
+          event.preventDefault();
+          event.stopPropagation();
+          activeButton === button ? closePopover() : openPopover(button);
+          return;
+        }
+        const pop = document.getElementById("psdPulseGlossaryPopover");
+        if(pop && !pop.hidden && !event.target.closest?.("#psdPulseGlossaryPopover")) closePopover();
+      });
+
+      document.addEventListener("keydown", event => {
+        if(event.key === "Escape") closePopover();
+      });
+      window.addEventListener("resize", closePopover);
+      window.addEventListener("scroll", closePopover, true);
+
+      decorate(document);
+      new MutationObserver(mutations => mutations.forEach(m => m.addedNodes.forEach(node => {
+        if(node.nodeType === 1) decorate(node);
+      }))).observe(document.body,{childList:true,subtree:true});
+    })();
+  </script>
+
   <script src="vote-widget.js?v=19" defer></script>
   <div id="site-footer"></div>
   <script src="site-footer.js" defer></script>
