@@ -4,6 +4,110 @@
   "use strict";
 
   const DEFINITIONS = {
+    "legal-operator": {
+      title: "Legal Operator",
+      text: "The registered business entity responsible for operating the website and related services. Public Sentiment Dash is operated by PublicSentimentDash, LLC."
+    },
+    "privacy-policy": {
+      title: "Privacy Policy",
+      text: "Explains what information may be collected or processed, how it is used, how long it may be retained, when service providers may process it, and the choices available to users."
+    },
+    "privacy-scope": {
+      title: "Privacy Policy Scope",
+      text: "Identifies which Public Sentiment Dash services and activities are covered by this Privacy Policy and distinguishes them from third-party websites or services."
+    },
+    "information-we-collect": {
+      title: "Information We Collect",
+      text: "Describes the categories of account, preference, usage, voting, contact, browser-storage, and technical information that may be processed when the service is used."
+    },
+    "aggregate-activity": {
+      title: "Aggregate Activity",
+      text: "Combined usage counts used to understand how the service is used without displaying a member's private account details, watchlists, messages, or alert contents."
+    },
+    "advertising-privacy": {
+      title: "Advertising & Privacy",
+      text: "Advertising services may use their own technologies and policies. Public Sentiment Dash intends to keep advertising separate from account credentials and private member settings."
+    },
+    "third-party-providers": {
+      title: "Third-Party Service Providers",
+      text: "Outside companies or platforms that may provide authentication, hosting, databases, forms, advertising, content delivery, notifications, or mobile distribution."
+    },
+    "browser-storage": {
+      title: "Cookies & Browser Storage",
+      text: "Browser technologies such as cookies, local storage, or session storage that can remember authentication, preferences, voting state, privacy choices, or basic site functionality."
+    },
+    "data-retention": {
+      title: "Data Retention",
+      text: "How long information is kept before it is deleted, anonymized, replaced, or no longer needed for the purpose for which it was collected."
+    },
+    "data-security": {
+      title: "Data Security",
+      text: "Technical and organizational measures intended to protect information and systems. No internet-based service can guarantee absolute security."
+    },
+    "privacy-choices": {
+      title: "Privacy Choices",
+      text: "Options available to users to manage browser settings, account preferences, recovery, deletion requests, and other privacy rights that may apply."
+    },
+    "terms-of-use": {
+      title: "Terms of Use",
+      text: "The rules and conditions that apply when a person accesses or uses Public Sentiment Dash and its related services."
+    },
+    "eligibility-accounts": {
+      title: "Eligibility & Accounts",
+      text: "Explains basic responsibilities for account creation, password protection, lawful use, and unauthorized or abusive account activity."
+    },
+    "acceptable-use": {
+      title: "Acceptable Use",
+      text: "Rules intended to prevent abuse, unauthorized access, manipulation, harmful automation, security circumvention, and unlawful use of the service."
+    },
+    "no-financial-advice": {
+      title: "No Financial Advice",
+      text: "Public Sentiment Dash provides general informational and educational market context. It does not provide personalized recommendations or instructions to buy, sell, hold, or trade an asset."
+    },
+    "intellectual-property": {
+      title: "Intellectual Property",
+      text: "Legal rights associated with original content, software, designs, branding, databases, calculations, and other protected materials."
+    },
+    "no-warranty": {
+      title: "No Warranty",
+      text: "The service is provided without a promise that it will always be accurate, complete, available, timely, error-free, or suitable for a particular purpose, to the extent permitted by law."
+    },
+    "limitation-of-liability": {
+      title: "Limitation of Liability",
+      text: "A provision describing limits on the types of losses or damages for which the business may be responsible, to the extent permitted by applicable law."
+    },
+    "governing-law": {
+      title: "Governing Law",
+      text: "Identifies the jurisdiction's law intended to govern interpretation of the Terms, subject to any mandatory legal protections that still apply."
+    },
+    "severability": {
+      title: "Severability",
+      text: "If one provision is found unenforceable, the remaining provisions are intended to continue operating to the extent permitted by law."
+    },
+    "website-disclaimer": {
+      title: "Website Disclaimer",
+      text: "Explains important limits on the information provided by the website, including that the content is informational and educational and is not professional financial, investment, trading, tax, or legal advice."
+    },
+    "ai-assisted-content": {
+      title: "AI-Assisted Content",
+      text: "Content that may be organized, classified, summarized, or presented with AI tools. AI-assisted output may contain errors, omissions, outdated information, or incorrect classifications."
+    },
+    "third-party-content": {
+      title: "Third-Party Content",
+      text: "Headlines, websites, data, products, or services provided by parties outside PublicSentimentDash, LLC. Those third parties control their own content and policies."
+    },
+    "no-guarantee-accuracy": {
+      title: "No Guarantee of Accuracy",
+      text: "Market data, sentiment classifications, technical readings, headlines, links, and other content may contain errors, omissions, delays, or outdated information."
+    },
+    "no-professional-relationship": {
+      title: "No Professional Relationship",
+      text: "Using the website does not by itself create an adviser-client, broker-client, fiduciary, attorney-client, or other professional relationship."
+    },
+    "use-at-own-risk": {
+      title: "Use at Your Own Risk",
+      text: "Users remain responsible for their own decisions and should independently verify information and consult qualified professionals when appropriate."
+    },
     "sentiment-market-chart": {
       title: "Sentiment vs. Market Price",
       text: "Compares the selected market's price movement with its Public Sentiment Index over the same dates. The two lines use separate scales so their direction and turning points can be compared."
@@ -275,6 +379,14 @@
       .psd-glossary-text{margin:0}
       .psd-glossary-close{position:absolute;right:8px;top:6px;border:0;background:transparent;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer}
       .psd-glossary-close:hover{color:#fff}
+      body:not(.dark-mode) .psd-glossary-info{background:transparent;color:#d32f2f;border-color:#71849a}
+      body:not(.dark-mode) .psd-glossary-info:hover,
+      body:not(.dark-mode) .psd-glossary-info:focus-visible,
+      body:not(.dark-mode) .psd-glossary-info[aria-expanded="true"]{background:rgba(211,47,47,.08);color:#d32f2f;border-color:#ef5350}
+      body:not(.dark-mode) .psd-glossary-popover{background:#fff;color:#10263b;border-color:#91a9bc;box-shadow:0 16px 38px rgba(28,58,83,.22)}
+      body:not(.dark-mode) .psd-glossary-title{color:#061522}
+      body:not(.dark-mode) .psd-glossary-text{color:#10263b}
+      body:not(.dark-mode) .psd-glossary-close{color:#d32f2f}
     `;
     document.head.appendChild(style);
   }
