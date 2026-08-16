@@ -175,15 +175,15 @@ body:not(.dark-mode) .watchlist-card-actions button:active{
   border-radius:20px;background:linear-gradient(180deg,#111722,#090e16);box-shadow:0 28px 90px rgba(0,0,0,.65)
 }
 .watchlist-modal-head{
-  position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:10px 14px;border-bottom:1px solid var(--line);background:rgba(9,14,22,.96)
+  position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:9px;
+  padding:6px 10px;border-bottom:1px solid var(--line);background:rgba(9,14,22,.96)
 }
-.watchlist-modal-head h2{margin:0;font-size:18px;line-height:1.15}
+.watchlist-modal-head h2{margin:0;font-size:16px;line-height:1.08}
 .watchlist-modal-close{
-  width:32px;height:32px;border:1px solid var(--line);border-radius:50%;background:#111925;color:#fff;
-  font-size:20px;line-height:1;cursor:pointer
+  width:28px;height:28px;border:1px solid var(--line);border-radius:50%;background:#111925;color:#fff;
+  font-size:17px;line-height:1;cursor:pointer
 }
-.watchlist-modal-body{padding:10px 14px 14px}
+.watchlist-modal-body{padding:7px 10px 10px}
 .watchlist-chart-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:10px}
 .watchlist-chart-tool{
   padding:8px 12px;
@@ -269,10 +269,19 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
   font-weight:900
 }
 
-.watchlist-chart-canvas.watchlist-drawing-active,
-.watchlist-chart-canvas.watchlist-drawing-active *{
-  cursor:crosshair!important
+.watchlist-chart-canvas{position:relative}
+.watchlist-drawing-overlay{
+  position:absolute;inset:0;z-index:8;width:100%;height:100%;overflow:visible;
+  pointer-events:none;touch-action:none
 }
+.watchlist-drawing-overlay.active{pointer-events:auto;cursor:crosshair}
+.watchlist-drawing-hit{pointer-events:stroke;cursor:move}
+.watchlist-drawing-line{pointer-events:none;filter:drop-shadow(0 0 3px rgba(255,215,128,.24))}
+.watchlist-drawing-handle{pointer-events:all;cursor:grab;filter:drop-shadow(0 1px 3px rgba(0,0,0,.48))}
+.watchlist-drawing-handle:active{cursor:grabbing}
+.watchlist-drawing-preview{pointer-events:none;filter:drop-shadow(0 0 4px rgba(255,215,128,.35))}
+.watchlist-chart-canvas.watchlist-drawing-active,
+.watchlist-chart-canvas.watchlist-drawing-active *{cursor:crosshair!important}
 .watchlist-drawing-manager{
   margin:0 0 7px;
   border:1px solid #46566c;
@@ -288,8 +297,8 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
   padding:5px 8px;border-bottom:1px solid #344257;background:#151f2d
 }
 .watchlist-drawing-manager-head>div{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
-.watchlist-drawing-manager-head strong{font-size:11px;color:#fff}
-.watchlist-drawing-manager-help{font-size:9px;color:#93a5b8}
+.watchlist-drawing-manager-head strong{font-size:10px;color:#fff}
+.watchlist-drawing-manager-help{font-size:8px;color:#93a5b8}
 .watchlist-drawing-manager-close{
   width:23px;height:23px;padding:0;border:1px solid #4a5a70;border-radius:6px;
   background:#101722;color:#dce7f1;font-size:15px;font-weight:800;cursor:pointer
@@ -303,7 +312,7 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
   padding:5px;border-right:1px solid #344257;background:#0b121c
 }
 .watchlist-drawing-list-empty,.watchlist-drawing-empty{
-  padding:8px;color:#8fa0b2;font-size:9.5px;line-height:1.3
+  padding:7px;color:#8fa0b2;font-size:8.5px;line-height:1.25
 }
 .watchlist-drawing-row{
   display:flex;width:100%;min-height:34px;align-items:center;gap:6px;box-sizing:border-box;
@@ -321,9 +330,9 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
   box-shadow:0 0 6px rgba(255,255,255,.12)
 }
 .watchlist-drawing-row-copy{display:flex;min-width:0;flex-direction:column;gap:1px}
-.watchlist-drawing-row-copy strong{font-size:9.5px;color:inherit}
+.watchlist-drawing-row-copy strong{font-size:8.5px;color:inherit}
 .watchlist-drawing-row-copy small{
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#96a7b9;font-size:8.5px
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#96a7b9;font-size:7.5px
 }
 .watchlist-drawing-editor{
   height:84px;box-sizing:border-box;overflow:auto;padding:6px 8px;background:#0f1722
@@ -331,24 +340,24 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
 .watchlist-drawing-editor-title{
   display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:5px
 }
-.watchlist-drawing-editor-title strong{font-size:10px;color:#fff}
-.watchlist-drawing-editor-title span{font-size:8.5px;color:#91a3b7}
+.watchlist-drawing-editor-title strong{font-size:9px;color:#fff}
+.watchlist-drawing-editor-title span{font-size:7.5px;color:#91a3b7}
 .watchlist-drawing-fields{
   display:grid;grid-template-columns:minmax(90px,.7fr) minmax(82px,.55fr) minmax(95px,.7fr);
   gap:5px;margin-bottom:5px
 }
-.watchlist-drawing-fields label{display:flex;flex-direction:column;gap:2px;color:#9aaabd;font-size:8.5px;font-weight:700}
+.watchlist-drawing-fields label{display:flex;flex-direction:column;gap:2px;color:#9aaabd;font-size:7.5px;font-weight:700}
 .watchlist-drawing-fields input[type="color"],
 .watchlist-drawing-fields select{
   width:100%;height:26px;box-sizing:border-box;border:1px solid #46566c;border-radius:6px;
-  background:#111a27;color:#eaf1f8;padding:3px 5px;font:700 9px system-ui;cursor:pointer
+  background:#111a27;color:#eaf1f8;padding:3px 5px;font:700 8px system-ui;cursor:pointer
 }
 .watchlist-drawing-fields input[type="color"]{padding:3px}
 .watchlist-drawing-editor-actions{display:flex;gap:4px;flex-wrap:wrap}
 .watchlist-drawing-editor-actions button{
   padding:4px 7px;border:1px solid #53647a;border-radius:6px;
   background:linear-gradient(180deg,#303b4b,#1c2532);color:#eef4fb;
-  font:800 9px system-ui;cursor:pointer;
+  font:800 8px system-ui;cursor:pointer;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 4px rgba(0,0,0,.22)
 }
 .watchlist-drawing-editor-actions button:hover{filter:brightness(1.13);border-color:#7e91aa}
@@ -357,7 +366,7 @@ body:not(.dark-mode) .watchlist-chart-tool.active{
 }
 .watchlist-drawing-status{
   padding:4px 8px;border-top:1px solid #344257;background:#0b121b;color:#aebccd;
-  font-size:9px;line-height:1.25
+  font-size:8px;line-height:1.2
 }
 
 /* Drawing Manager — Light mode */
