@@ -4,1117 +4,707 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Historical Market Sentiment — Public Sentiment Dash</title>
-  <meta name="description" content="Track historical Global Public Sentiment Index and U.S. market sentiment with hourly, daily, weekly, and monthly dashboard charts.">
+  <title>Forex Sentiment Today — Public Sentiment Dash</title>
+  <meta name="description" content="Track today’s foreign-exchange sentiment across the U.S. Dollar Index, major FX pairs, and leading currency crosses using Public Sentiment Dash PSI data.">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://publicsentimentdash.com/sentiment-history.html">
+  <link rel="canonical" href="https://publicsentimentdash.com/forex-sentiment-today.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
-  <link rel="stylesheet" href="site-theme.css">
 
   <style>
-    /* Historical Sentiment Dashboard v3: hourly charts forward-fill missing hours so graphs stay complete when scraper cadence changes. */
-    :root{
-      --hist-bg:#070b17;
-      --hist-card:rgba(19,16,39,.74);
-      --hist-card-2:rgba(28,18,50,.76);
-      --hist-line:rgba(255,215,128,.14);
-      --hist-soft:rgba(235,241,255,.76);
-      --hist-muted:rgba(202,211,229,.62);
-      --hist-gold:#ffd780;
-      --hist-gold-2:#d29922;
-      --hist-purple:#9b2cff;
-      --hist-pink:#ff3f86;
-      --hist-orange:#ff9f1c;
-      --hist-cyan:#2ee6d6;
-      --hist-green:#55f0a1;
-      --hist-red:#ff4b6e;
+    .crypto-page{
+      max-width:1480px;
+      margin:0 auto;
+      padding:14px 26px 26px;
     }
 
-    .history-dashboard-hero{
+    .crypto-hero{
+      position:relative;
+      overflow:hidden;
+      padding:15px 18px;
+      margin-bottom:12px;
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.18),transparent 18rem),
+        radial-gradient(circle at bottom left,rgba(88,166,255,.12),transparent 22rem),
+        linear-gradient(180deg,rgba(17,24,33,.92),rgba(8,13,21,.96));
+      box-shadow:0 22px 60px rgba(0,0,0,.26);
+    }
+
+    .crypto-hero-grid{
       display:grid;
       grid-template-columns:minmax(0,1fr) auto;
       gap:18px;
       align-items:end;
-      margin-bottom:18px;
     }
 
-    .history-lead{font-size:16px;max-width:850px;margin-bottom:0;}
-
-    .dashboard-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .dash-btn{
-      border:1px solid rgba(255,215,128,.16);
-      color:var(--hist-soft);
-      background:rgba(17,24,39,.72);
-      border-radius:999px;
-      padding:8px 11px;
-      font-size:11px;
-      font-weight:800;
-      letter-spacing:.02em;
-      cursor:pointer;
-      transition:transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
-    }
-
-    .dash-btn:hover,.dash-btn.active{
-      transform:translateY(-1px);
+    .crypto-hero h1{
+      margin:0 0 5px;
+      font-size:clamp(30px,3vw,46px);
+      line-height:1;
+      letter-spacing:-.035em;
       color:#fff;
-      border-color:rgba(255,215,128,.48);
-      background:linear-gradient(135deg,rgba(210,153,34,.22),rgba(155,44,255,.18));
     }
 
-    .dash-stage-shell{
-      position:relative;
-      padding:10px;
-      border-radius:26px;
-      background:linear-gradient(135deg,rgba(255,215,128,.24),rgba(210,153,34,.18),rgba(161,107,24,.13));
-      box-shadow:0 24px 70px rgba(0,0,0,.28);
+    .crypto-hero p{
+      max-width:980px;
+      margin:0;
+      color:var(--soft);
+      font-size:13.5px;
+      line-height:1.38;
+    }
+
+    .crypto-live-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      width:max-content;
+      max-width:100%;
+      padding:6px 10px;
+      margin-bottom:7px;
+      border-radius:999px;
+      background:rgba(210,153,34,.12);
+      border:1px solid rgba(210,153,34,.38);
+      color:#ffd780;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .crypto-updated{
+      min-width:210px;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:rgba(8,13,21,.62);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .crypto-updated b{
+      display:block;
+      color:#fff;
+      font-size:17px;
+      line-height:1;
+      margin-bottom:4px;
+    }
+
+    .crypto-top-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:13px;
       margin-bottom:18px;
     }
 
-    .dash-stage{
+    .crypto-card{
       position:relative;
       overflow:hidden;
-      min-height:640px;
-      aspect-ratio:16/9;
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.09);
+      min-height:238px;
+      border:1px solid var(--line);
+      border-radius:20px;
       background:
-        radial-gradient(circle at 73% 17%, rgba(210,153,34,.30), transparent 26%),
-        radial-gradient(circle at 34% 38%, rgba(255,215,128,.18), transparent 30%),
-        radial-gradient(circle at 92% 78%, rgba(210,153,34,.18), transparent 28%),
-        linear-gradient(135deg,#070b17 0%,#101322 33%,#2a210f 69%,#17120a 100%);
-      isolation:isolate;
+        radial-gradient(circle at top right,rgba(210,153,34,.15),transparent 10rem),
+        linear-gradient(180deg,#111927,#0c121c);
+      box-shadow:0 18px 42px rgba(0,0,0,.24);
+      padding:15px;
     }
 
-    .dash-stage:before{
+    .crypto-card:before{
       content:"";
       position:absolute;
-      inset:0;
-      z-index:-2;
-      opacity:.42;
-      background-image:
-        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
-      background-size:82px 82px;
-      animation:dashGridMove 18s linear infinite;
+      inset:-1px;
+      border-radius:20px;
+      padding:1px;
+      background:linear-gradient(135deg,rgba(210,153,34,.32),transparent 40%,rgba(88,166,255,.18));
+      pointer-events:none;
+      opacity:.30;
+      mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
     }
 
-    .dash-stage:after{
-      content:"";
-      position:absolute;
-      inset:-8% -4%;
-      z-index:-1;
-      opacity:.23;
-      background:
-        radial-gradient(ellipse at 22% 33%, transparent 0 8%, rgba(255,255,255,.18) 8.4% 10.8%, transparent 11.2%),
-        radial-gradient(ellipse at 49% 34%, transparent 0 9%, rgba(255,255,255,.18) 9.4% 13.4%, transparent 13.9%),
-        radial-gradient(ellipse at 70% 42%, transparent 0 8%, rgba(255,255,255,.18) 8.4% 12.5%, transparent 13%),
-        radial-gradient(ellipse at 38% 66%, transparent 0 7%, rgba(255,255,255,.14) 7.4% 11.5%, transparent 12%),
-        radial-gradient(ellipse at 83% 66%, transparent 0 7%, rgba(255,255,255,.14) 7.5% 11%, transparent 11.5%);
-      filter:blur(.3px);
-      transform:rotate(-2deg);
-    }
-
-    @keyframes dashGridMove{
-      from{background-position:0 0,0 0;}
-      to{background-position:82px 82px,82px 82px;}
-    }
-
-    .dash-layout{
-      position:absolute;
-      inset:28px;
-      display:grid;
-      grid-template-columns:150px repeat(24,minmax(0,1fr));
-      grid-template-rows:1fr 1fr 1fr;
-      gap:16px;
-    }
-
-    .dash-side{
-      grid-column:1/2;
-      grid-row:1/3;
+    .crypto-card-top{
+      position:relative;
+      z-index:1;
       display:flex;
-      flex-direction:column;
+      justify-content:space-between;
+      align-items:flex-start;
       gap:10px;
-      min-width:0;
-      padding-top:45px;
+      margin-bottom:12px;
     }
 
-    .side-pill{
-      height:38px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:7px;
-      background:rgba(255,255,255,.075);
-      border:1px solid rgba(255,255,255,.06);
-      color:rgba(255,255,255,.86);
-      font-size:11px;
+    .crypto-rank{
+      width:28px;
+      height:28px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:rgba(210,153,34,.16);
+      color:#ffd780;
       font-weight:900;
-      letter-spacing:.06em;
-      text-transform:uppercase;
+      font-size:12px;
+      border:1px solid rgba(210,153,34,.28);
+    }
+
+    .crypto-name{
+      color:#fff;
+      font-size:15px;
+      line-height:1.25;
+      font-weight:900;
+    }
+
+    .crypto-symbol{
+      margin-top:2px;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .sentiment-pill{
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      padding:5px 8px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:900;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .crypto-score-wrap{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:88px 1fr;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+
+    .crypto-gauge{
+      --score:50;
+      --accent:#58a6ff;
+      width:88px;
+      height:88px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:conic-gradient(var(--accent) calc(var(--score)*1%), #26313f 0);
+      box-shadow:0 0 30px rgba(210,153,34,.10);
+    }
+
+    .crypto-gauge-inner{
+      width:62px;
+      height:62px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.06);
+      text-align:center;
+    }
+
+    .crypto-score{
+      color:#fff;
+      font-size:23px;
+      line-height:1;
+      font-weight:950;
+    }
+
+    .crypto-score-label{
+      color:var(--muted);
+      font-size:9px;
+      font-weight:800;
+      margin-top:2px;
+    }
+
+    .crypto-metrics{
+      display:grid;
+      gap:6px;
+    }
+
+    .crypto-line{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      color:var(--muted);
+      font-size:11px;
+      border-bottom:1px solid rgba(255,255,255,.05);
+      padding-bottom:5px;
+    }
+
+    .crypto-line b{
+      color:#fff;
+      font-weight:800;
+      text-align:right;
+    }
+
+    .history-btn{
+      position:relative;
+      z-index:1;
+      width:100%;
+      border:1px solid rgba(210,153,34,.38);
+      border-radius:12px;
+      padding:8px 10px;
+      background:linear-gradient(180deg,rgba(210,153,34,.18),rgba(17,24,33,.92));
+      color:#ffd780;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:900;
       cursor:pointer;
-      user-select:none;
       transition:.18s ease;
     }
 
-    .side-pill:hover,.side-pill.active{
-      background:linear-gradient(135deg,rgba(255,215,128,.2),rgba(155,44,255,.22));
-      border-color:rgba(255,215,128,.34);
-      color:#fff;
-      box-shadow:0 8px 24px rgba(155,44,255,.18);
+    .history-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(210,153,34,.70);
+      background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(17,24,33,.96));
     }
-
-    .side-spacer{height:6px;}
-    .side-note{
-      color:rgba(255,255,255,.56);
-      font-size:10px;
-      line-height:1.35;
-      text-align:center;
-      padding:0 4px;
-      margin-top:-2px;
-    }
-
-    .dash-card{
+    .compare-control{
       position:relative;
-      overflow:hidden;
-      border-radius:11px;
-      background:linear-gradient(180deg,rgba(24,13,39,.78),rgba(12,10,29,.82));
-      border:1px solid rgba(255,255,255,.075);
-      box-shadow:0 16px 34px rgba(0,0,0,.24);
-      backdrop-filter:blur(7px);
+      z-index:2;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      width:max-content;
+      margin-top:8px;
+      color:var(--muted);
+      font-size:10px;
+      line-height:1;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .compare-control input{
+      width:12px;
+      height:12px;
+      margin:0;
+      accent-color:var(--gold);
+      cursor:pointer;
+    }
+
+    .crypto-card.compare-selected{
+      border-color:rgba(210,153,34,.82);
+      box-shadow:0 18px 46px rgba(0,0,0,.28),0 0 24px rgba(210,153,34,.18);
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.24),transparent 10rem),
+        linear-gradient(180deg,#141e2d,#0c121c);
+    }
+
+    .crypto-card.compare-selected .compare-control{
+      color:#ffd780;
+    }
+
+    .history-card.compare-card{
+      width:min(1420px,96vw);
+    }
+
+    .history-grid.compare-mode{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .history-compare-item{
+      min-width:0;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at top right,rgba(45,212,191,.09),transparent 14rem),
+        linear-gradient(180deg,rgba(8,13,21,.76),rgba(6,10,16,.94));
+      padding:10px;
+    }
+
+    .history-compare-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+      margin-bottom:8px;
       min-width:0;
     }
 
-    .dash-card:before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);
-      transform:translateX(-120%);
-      animation:cardSweep 6.8s ease-in-out infinite;
-    }
-
-    @keyframes cardSweep{
-      0%,45%{transform:translateX(-120%);}
-      72%,100%{transform:translateX(120%);}
-    }
-
-    .card-head{
-      position:absolute;
-      inset:0 0 auto 0;
-      height:36px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 14px;
-      background:rgba(6,7,18,.34);
-      border-bottom:1px solid rgba(255,255,255,.04);
-      z-index:2;
-    }
-
-    .card-title{
+    .history-compare-title b{
       color:#fff;
       font-size:13px;
+      line-height:1.1;
       font-weight:900;
-      letter-spacing:.02em;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
 
-    .card-icons{display:flex;gap:10px;color:rgba(255,255,255,.42);font-weight:800;}
-
-    .mini-tabs{
-      display:flex;
-      gap:5px;
-      color:rgba(255,255,255,.6);
-      font-size:9px;
+    .history-compare-title span{
+      color:var(--muted);
+      font-size:10px;
       font-weight:800;
       white-space:nowrap;
     }
 
-    .mini-tabs span.active{color:var(--hist-gold);}
-
-    .card-body{
-      position:absolute;
-      inset:36px 12px 12px 12px;
-      z-index:1;
+    .history-compare-chart-wrap{
+      min-height:330px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.08),transparent 12rem),
+        linear-gradient(180deg,rgba(8,13,21,.88),rgba(6,10,16,.98));
+      padding:8px;
     }
 
-    .dash-canvas{width:100%;height:100%;display:block;}
+    .history-compare-chart{
+      width:100%;
+      height:330px;
+      display:block;
+    }
 
-    .chart-legend{
-      position:absolute;
-      left:12px;
-      top:46px;
+    .history-compare-stats{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin-top:8px;
+    }
+
+    .history-compare-stats .history-stat{
+      padding:9px;
+    }
+
+    .history-compare-stats .history-stat b{
+      font-size:15px;
+    }
+
+    @media(max-width:900px){
+      .history-grid.compare-mode{
+        grid-template-columns:1fr;
+      }
+    }
+
+
+    .crypto-panels{
       display:grid;
-      gap:3px;
-      color:rgba(255,255,255,.75);
-      font-size:10px;
-      font-weight:700;
-      z-index:3;
+      grid-template-columns:1fr;
+      gap:16px;
+      width:100%;
     }
 
-    .legend-row{display:flex;align-items:center;gap:6px;}
-    .legend-dot{width:14px;height:2px;border-radius:999px;background:var(--hist-gold);}
-    .legend-dot.us{background:var(--hist-pink);}
-    .legend-dot.mom{background:var(--hist-purple);}
-    .legend-dot.vol{background:var(--hist-cyan);}
-
-    .metric-big{
-      position:absolute;
-      left:16px;
-      top:46px;
-      font-size:36px;
-      line-height:1;
-      font-weight:900;
-      letter-spacing:.04em;
-      color:var(--hist-pink);
-      text-shadow:0 0 24px rgba(255,63,134,.25);
-      z-index:3;
+    .crypto-panel{
+      width:100%;
+      padding:20px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:rgba(13,17,23,.82);
+      box-shadow:0 18px 46px rgba(0,0,0,.22);
     }
 
-    .metric-caption{
-      position:absolute;
-      left:106px;
-      top:58px;
-      color:rgba(255,255,255,.7);
-      font-size:9px;
-      font-weight:800;
-      z-index:3;
+    .crypto-panel h2{
+      margin:0 0 8px;
+      color:#fff;
+      font-size:22px;
+      letter-spacing:-.015em;
     }
 
-    .progress-stack{
-      position:absolute;
-      left:16px;
-      right:16px;
-      bottom:30px;
+    .crypto-panel p{
+      margin:0 0 14px;
+      color:var(--muted);
+      line-height:1.5;
+      font-size:13px;
+    }
+
+    .headline-list{
       display:grid;
       gap:10px;
-      z-index:3;
     }
 
-    .progress-line{height:5px;border-radius:999px;background:rgba(0,0,0,.32);overflow:hidden;}
-    .progress-line span{display:block;height:100%;width:0;border-radius:999px;transition:width .8s ease;}
-    .progress-line:nth-child(1) span{background:var(--hist-pink);}
-    .progress-line:nth-child(2) span{background:var(--hist-purple);}
-    .progress-line:nth-child(3) span{background:var(--hist-gold);}
-
-    .small-note{
-      position:absolute;
-      left:16px;
-      bottom:10px;
-      color:rgba(255,255,255,.8);
-      font-size:11px;
-      font-weight:800;
-      z-index:3;
-    }
-
-    .driver-list{
-      position:absolute;
-      inset:44px 14px 12px 14px;
-      z-index:3;
+    .headline-row{
       display:grid;
-      gap:8px;
-      align-content:start;
-      overflow:hidden;
-    }
-
-    .driver-item{
-      display:grid;
-      grid-template-columns:auto 1fr;
-      gap:8px;
-      align-items:start;
-      color:rgba(255,255,255,.82);
-      font-size:10px;
-      line-height:1.25;
-      min-width:0;
-      padding-bottom:5px;
-      border-bottom:1px solid rgba(255,255,255,.055);
-    }
-
-    .driver-item:last-child{border-bottom:0;}
-
-    .driver-rank{
-      color:var(--hist-gold);
-      font-weight:900;
-    }
-
-    .driver-text{min-width:0;}
-    .driver-main{
-      display:block;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .driver-meta{
-      display:flex;
-      gap:6px;
+      grid-template-columns:72px minmax(0,1fr);
+      gap:14px;
       align-items:center;
-      margin-top:3px;
-      color:rgba(255,255,255,.48);
-      font-size:9px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .driver-badge{
-      display:inline-flex;
-      border-radius:999px;
-      padding:1px 6px;
-      font-size:8px;
-      font-weight:900;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.045);
-    }
-
-    .driver-item a{color:inherit;text-decoration:none;}
-    .driver-item a:hover{color:#fff;text-decoration:underline;}
-
-    .bias-legend{
-      position:absolute;
-      top:40px;
-      right:12px;
-      z-index:5;
-      display:grid;
-      gap:5px;
-      min-width:92px;
-      color:rgba(255,255,255,.86);
-      font-size:10px;
-      font-weight:800;
-      text-align:left;
-      pointer-events:none;
-    }
-
-    .bias-legend-row{
-      display:flex;
-      align-items:center;
-      justify-content:flex-start;
-      gap:6px;
-      white-space:nowrap;
-    }
-
-    .bias-legend-dot{
-      width:7px;
-      height:7px;
-      border-radius:2px;
-      display:inline-block;
-      flex:0 0 auto;
-    }
-
-    .bias-body{
-      inset:70px 14px 12px 14px;
-    }
-
-    .card-a{grid-column:2/10;grid-row:1/2;}
-    .card-b{grid-column:10/18;grid-row:1/2;}
-    .card-c{grid-column:18/26;grid-row:1/2;}
-    .card-d{grid-column:2/12;grid-row:2/3;}
-    .card-e{grid-column:12/26;grid-row:2/3;}
-    .card-f{grid-column:1/6;grid-row:3/4;}
-    .card-g{grid-column:6/18;grid-row:3/4;}
-    .card-i{grid-column:18/26;grid-row:3/4;}
-
-    .dash-empty{
-      position:absolute;
-      right:22px;
-      bottom:18px;
-      z-index:5;
-      max-width:420px;
-      display:none;
+      width:100%;
+      min-height:88px;
       padding:12px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,215,128,.22);
-      background:rgba(4,7,14,.78);
-      color:rgba(255,255,255,.82);
-      font-size:12px;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:15px;
+      background:linear-gradient(180deg,rgba(17,24,33,.78),rgba(8,13,21,.90));
+    }
+
+    .headline-logo{
+      width:56px;
+      height:56px;
+      max-width:56px;
+      max-height:56px;
+      object-fit:contain;
+      justify-self:center;
+      align-self:center;
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      padding:4px;
+    }
+
+    .headline-logo-fallback{
+      width:56px;
+      height:56px;
+      display:grid;
+      place-items:center;
+      justify-self:center;
+      align-self:center;
+      border-radius:12px;
+      background:linear-gradient(135deg,rgba(210,153,34,.20),rgba(88,166,255,.16));
+      border:1px solid rgba(255,255,255,.08);
+      color:#ffd780;
+      font-size:18px;
+      font-weight:900;
+    }
+
+    .headline-body{
+      min-width:0;
+    }
+
+    .headline-source{
+      color:#58a6ff;
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .headline-title{
+      color:#fff;
+      font-size:13px;
+      line-height:1.32;
+      font-weight:800;
+      max-width:100%;
+    }
+
+    .headline-meta{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .headline-open{
+      color:#ffd780;
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .method-list{
+      display:grid;
+      gap:9px;
+      color:var(--soft);
+      font-size:13px;
       line-height:1.45;
     }
 
-    .stats-strip{
-      display:grid;
-      grid-template-columns:repeat(6,minmax(0,1fr));
-      gap:12px;
-      margin-top:14px;
-    }
-
-    .stat-tile{
-      position:relative;
-      overflow:hidden;
-      background:
-        radial-gradient(circle at 18% 0%, rgba(255,215,128,.10), transparent 42%),
-        linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));
-      border:1px solid rgba(255,215,128,.12);
-      border-radius:14px;
-      padding:13px;
-      min-width:0;
-      transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
-    }
-
-    .stat-tile::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:linear-gradient(90deg,transparent,rgba(255,255,255,.055),transparent);
-      transform:translateX(-120%);
-      animation:statSweep 7.2s ease-in-out infinite;
-    }
-
-    @keyframes statSweep{
-      0%,48%{transform:translateX(-120%);}
-      74%,100%{transform:translateX(120%);}
-    }
-
-    .stat-tile:hover{
-      transform:translateY(-2px);
-      border-color:rgba(255,215,128,.34);
-      box-shadow:0 12px 32px rgba(0,0,0,.28);
-    }
-
-    .stat-tile.stat-bull{border-color:rgba(85,240,161,.24);background:radial-gradient(circle at 18% 0%,rgba(85,240,161,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
-    .stat-tile.stat-bear{border-color:rgba(255,75,110,.25);background:radial-gradient(circle at 18% 0%,rgba(255,75,110,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
-    .stat-tile.stat-neutral{border-color:rgba(80,160,255,.22);background:radial-gradient(circle at 18% 0%,rgba(80,160,255,.11),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
-    .stat-tile.stat-gold{border-color:rgba(255,215,128,.28);}
-    .stat-tile.stat-purple{border-color:rgba(155,44,255,.24);background:radial-gradient(circle at 18% 0%,rgba(155,44,255,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
-
-    .stat-label{position:relative;z-index:1;color:var(--muted);font-size:11px;font-weight:700;margin-bottom:6px;}
-    .stat-value{
-      position:relative;
-      z-index:1;
-      color:#fff;
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:.01em;
-      text-align:center;
-      display:block;
-    }
-    .stat-note{position:relative;z-index:1;color:var(--muted);font-size:10px;margin-top:5px;line-height:1.3;}
-
-    .history-info-grid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-      margin-top:12px;
-    }
-
-    .history-table-wrap{
-      position:relative;
-      overflow:hidden;
-      border:1px solid rgba(255,215,128,.16);
-      border-radius:16px;
-      margin-top:12px;
-      background:
-        radial-gradient(circle at 12% 0%, rgba(255,215,128,.10), transparent 34%),
-        linear-gradient(135deg,rgba(17,24,39,.72),rgba(10,13,25,.94));
-      box-shadow:0 18px 48px rgba(0,0,0,.22);
-    }
-
-    .history-table-wrap::before{
-      content:"";
-      position:absolute;
-      top:0;
-      bottom:0;
-      left:-35%;
-      width:35%;
-      pointer-events:none;
-      background:linear-gradient(90deg,transparent,rgba(255,215,128,.09),transparent);
-      animation:tableSweep 12s ease-in-out infinite;
-      z-index:3;
-    }
-
-    .history-table-wrap::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),
-        linear-gradient(180deg,rgba(255,255,255,.018) 1px,transparent 1px);
-      background-size:64px 64px;
-      opacity:.45;
-      z-index:0;
-    }
-
-    @keyframes tableSweep{
-      0%,50%{left:-35%;}
-      78%,100%{left:100%;}
-    }
-
-    .history-table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:0;
-      table-layout:fixed;
-      font-size:13px;
-      position:relative;
-      z-index:2;
-    }
-
-    .history-table th,.history-table td{
+    .method-list div{
       padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.075);
-      text-align:left;
-      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:14px;
+      background:rgba(17,24,33,.62);
+    }
+
+    .history-layer{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(0,0,0,.70);
+      backdrop-filter:blur(7px);
+      z-index:1800;
+    }
+
+    .history-layer.open{
+      display:flex;
+    }
+
+    .history-card{
+      width:min(1180px,96vw);
+      height:min(760px,90vh);
       overflow:hidden;
-      text-overflow:ellipsis;
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:24px;
+      background:linear-gradient(180deg,rgba(16,24,36,.98),rgba(7,11,18,.98));
+      box-shadow:0 30px 100px rgba(0,0,0,.60);
     }
 
-    .history-table tbody tr{
-      transition:background .28s ease, box-shadow .28s ease;
-      animation:tableRowPulse 9.5s ease-in-out infinite;
+    .history-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      min-height:48px;
+      padding:10px 14px;
+      border-bottom:1px solid rgba(148,163,184,.16);
     }
 
-    .history-table tbody tr:nth-child(2n){animation-delay:1.4s;}
-    .history-table tbody tr:nth-child(3n){animation-delay:2.8s;}
-
-    @keyframes tableRowPulse{
-      0%,100%{background:rgba(255,255,255,.006);}
-      50%{background:rgba(255,215,128,.045);}
-    }
-
-    .history-table tbody tr:hover{
-      background:rgba(255,215,128,.09);
-      box-shadow:inset 3px 0 rgba(255,215,128,.38);
-    }
-
-    .history-table th{
-      color:#fff;
-      background:linear-gradient(90deg,rgba(255,215,128,.09),rgba(255,255,255,.035));
-      font-size:12px;
-    }
-
-    .history-table td{color:var(--soft);}
-    .bias-pill{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);}
-
-    @media(max-width:1180px){
-      .dash-stage{aspect-ratio:auto;min-height:0;}
-      .dash-layout{position:relative;inset:auto;padding:18px;grid-template-columns:1fr 1fr;grid-template-rows:auto;}
-      .dash-side{grid-column:1/-1;grid-row:auto;display:grid;grid-template-columns:repeat(6,1fr);}
-      .card-a,.card-b,.card-c,.card-d,.card-e,.card-f,.card-g,.card-h,.card-i{grid-column:auto;grid-row:auto;min-height:190px;}
-      .card-d,.card-e{grid-column:span 2;}
-      .stats-strip{grid-template-columns:repeat(3,1fr);}
-    }
-
-    @media(max-width:760px){
-      .history-dashboard-hero{grid-template-columns:1fr;}
-      .dashboard-actions{justify-content:flex-start;}
-      .dash-layout{grid-template-columns:1fr;padding:14px;gap:12px;}
-      .dash-side{grid-template-columns:repeat(2,1fr);}
-      .card-a,.card-b,.card-c,.card-d,.card-e,.card-f,.card-g,.card-h,.card-i{grid-column:1/-1;min-height:190px;}
-      .stats-strip,.history-info-grid{grid-template-columns:1fr 1fr;}
-    }
-
-    @media(max-width:520px){.stats-strip,.history-info-grid{grid-template-columns:1fr;}}
-
-    /* Historical Sentiment page theme bridge.
-       Dark mode keeps the existing design unchanged.
-       Light mode uses the same shared palette as the rest of the website. */
-    body:not(.dark-mode){
-      --hist-bg:#e9eff5;
-      --hist-card:#ffffff;
-      --hist-card-2:#eef4f9;
-      --hist-line:#9eb4c6;
-      --hist-soft:#10263b;
-      --hist-muted:#344e64;
-      --hist-gold:#7b5400;
-      --hist-gold-2:#9a6900;
-      --hist-purple:#6d28d9;
-      --hist-pink:#b42368;
-      --hist-orange:#a44a00;
-      --hist-cyan:#007c72;
-      --hist-green:#087443;
-      --hist-red:#b42318;
-    }
-
-    body:not(.dark-mode) main.page{
-      color:var(--theme-text)!important;
-    }
-
-    body:not(.dark-mode) .history-dashboard-hero,
-    body:not(.dark-mode) main.page > .panel.section{
-      background:var(--theme-card)!important;
-      border-color:var(--theme-line)!important;
-      color:var(--theme-text)!important;
-    }
-
-    body:not(.dark-mode) .history-dashboard-hero h1,
-    body:not(.dark-mode) main.page > .panel.section h2{
-      color:var(--theme-text)!important;
-    }
-
-    body:not(.dark-mode) .history-lead,
-    body:not(.dark-mode) main.page > .panel.section .muted{
-      color:var(--theme-soft)!important;
-      opacity:1!important;
-    }
-
-    body:not(.dark-mode) .history-kicker{
-      background:#fff3cf!important;
-      border-color:#b68922!important;
-      color:#523700!important;
-    }
-
-    body:not(.dark-mode) .dash-stage-shell{
-      background:linear-gradient(135deg,#e2bd5f,#fff0bf,#c99a2f)!important;
-      box-shadow:0 18px 44px rgba(28,58,83,.18)!important;
-    }
-
-    body:not(.dark-mode) .dash-stage{
-      border-color:#9eb4c6!important;
-      background:
-        radial-gradient(circle at 73% 17%,rgba(255,214,102,.28),transparent 26%),
-        radial-gradient(circle at 34% 38%,rgba(109,40,217,.08),transparent 30%),
-        radial-gradient(circle at 92% 78%,rgba(0,124,114,.08),transparent 28%),
-        linear-gradient(135deg,#f8fbfe 0%,#eef4f9 42%,#fff8df 74%,#f4f7fa 100%)!important;
-    }
-
-    body:not(.dark-mode) .dash-stage:before{
-      opacity:.55!important;
-      background-image:
-        linear-gradient(rgba(52,78,100,.10) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(52,78,100,.10) 1px,transparent 1px)!important;
-    }
-
-    body:not(.dark-mode) .dash-stage:after{
-      opacity:.10!important;
-    }
-
-    body:not(.dark-mode) .dash-card{
-      background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(238,244,249,.96))!important;
-      border-color:#a9bfd2!important;
-      box-shadow:0 12px 28px rgba(28,58,83,.14)!important;
-    }
-
-    body:not(.dark-mode) .dash-card:before{
-      background:linear-gradient(90deg,transparent,rgba(123,84,0,.055),transparent)!important;
-    }
-
-    body:not(.dark-mode) .card-head{
-      background:rgba(226,235,243,.88)!important;
-      border-bottom-color:#b7c9d8!important;
-    }
-
-    body:not(.dark-mode) .card-title,
-    body:not(.dark-mode) .mini-tabs,
-    body:not(.dark-mode) .chart-legend,
-    body:not(.dark-mode) .bias-legend,
-    body:not(.dark-mode) .driver-item,
-    body:not(.dark-mode) .small-note,
-    body:not(.dark-mode) .metric-caption{
-      color:#10263b!important;
-    }
-
-    body:not(.dark-mode) .card-icons{
-      color:#526f87!important;
-    }
-
-    body:not(.dark-mode) .side-pill{
-      background:#ffffff!important;
-      border-color:#a9bfd2!important;
-      color:#10263b!important;
-    }
-
-    body:not(.dark-mode) .side-pill:hover,
-    body:not(.dark-mode) .side-pill.active{
-      background:linear-gradient(135deg,#fff3cf,#efe7ff)!important;
-      border-color:#b68922!important;
-      color:#3f2b00!important;
-      box-shadow:0 7px 18px rgba(123,84,0,.13)!important;
-    }
-
-    body:not(.dark-mode) .side-note,
-    body:not(.dark-mode) .driver-meta{
-      color:#344e64!important;
-    }
-
-    body:not(.dark-mode) .driver-item{
-      border-bottom-color:#c7d5e1!important;
-    }
-
-    body:not(.dark-mode) .driver-item a:hover{
-      color:#004f91!important;
-    }
-
-    body:not(.dark-mode) .dash-empty{
-      background:rgba(255,255,255,.96)!important;
-      border-color:#b68922!important;
-      color:#10263b!important;
-    }
-
-    body:not(.dark-mode) .stat-tile{
-      background:
-        radial-gradient(circle at 18% 0%,rgba(123,84,0,.07),transparent 42%),
-        linear-gradient(135deg,#ffffff,#eef4f9)!important;
-      border-color:#a9bfd2!important;
-      box-shadow:0 8px 20px rgba(28,58,83,.10)!important;
-    }
-
-    body:not(.dark-mode) .stat-tile.stat-bull{
-      border-color:#63a684!important;
-      background:radial-gradient(circle at 18% 0%,rgba(8,116,67,.09),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
-    }
-
-    body:not(.dark-mode) .stat-tile.stat-bear{
-      border-color:#c77870!important;
-      background:radial-gradient(circle at 18% 0%,rgba(180,35,24,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
-    }
-
-    body:not(.dark-mode) .stat-tile.stat-neutral{
-      border-color:#7da9cc!important;
-      background:radial-gradient(circle at 18% 0%,rgba(0,79,145,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
-    }
-
-    body:not(.dark-mode) .stat-tile.stat-gold{
-      border-color:#b68922!important;
-    }
-
-    body:not(.dark-mode) .stat-tile.stat-purple{
-      border-color:#9a7fd0!important;
-      background:radial-gradient(circle at 18% 0%,rgba(109,40,217,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
-    }
-
-    body:not(.dark-mode) .stat-label,
-    body:not(.dark-mode) .stat-note{
-      color:#344e64!important;
-    }
-
-    body:not(.dark-mode) .stat-value{
-      color:#061522!important;
-    }
-
-    body:not(.dark-mode) .history-table-wrap{
-      border-color:#a9bfd2!important;
-      background:
-        radial-gradient(circle at 12% 0%,rgba(123,84,0,.07),transparent 34%),
-        linear-gradient(135deg,#ffffff,#eef4f9)!important;
-      box-shadow:0 12px 28px rgba(28,58,83,.12)!important;
-    }
-
-    body:not(.dark-mode) .history-table-wrap::before{
-      background:linear-gradient(90deg,transparent,rgba(123,84,0,.07),transparent)!important;
-    }
-
-    body:not(.dark-mode) .history-table-wrap::after{
-      background:
-        linear-gradient(90deg,rgba(52,78,100,.04) 1px,transparent 1px),
-        linear-gradient(180deg,rgba(52,78,100,.04) 1px,transparent 1px)!important;
-    }
-
-    body:not(.dark-mode) .history-table th{
-      color:#061522!important;
-      background:linear-gradient(90deg,#fff3cf,#eef4f9)!important;
-      border-bottom-color:#b7c9d8!important;
-    }
-
-    body:not(.dark-mode) .history-table td{
-      color:#10263b!important;
-      border-bottom-color:#c7d5e1!important;
-    }
-
-    body:not(.dark-mode) .history-table tbody tr:hover{
-      background:rgba(123,84,0,.07)!important;
-      box-shadow:inset 3px 0 #9a6900!important;
-    }
-
-    body:not(.dark-mode) .progress-line{
-      background:#d8e2ea!important;
-    }
-
-
-    /* Historical Sentiment finishing touches — page-only, shared ribbon files untouched. */
-
-    /* Keep shared social labels fully readable in both themes. */
-    .psd-shared-header .social-label,
-    .psd-shared-header .social-pill,
-    .psd-shared-header .social-pill span{
-      opacity:1!important;
-      font-weight:900!important;
-      text-shadow:none!important;
-    }
-    body:not(.dark-mode) .psd-shared-header .social-label,
-    body:not(.dark-mode) .psd-shared-header .social-pill,
-    body:not(.dark-mode) .psd-shared-header .social-pill span{
-      color:#061522!important;
-    }
-    body:not(.dark-mode) .psd-shared-header .social-pill{
-      background:#fff!important;
-      border-color:#8da8bd!important;
-    }
-    body.dark-mode .psd-shared-header .social-label,
-    body.dark-mode .psd-shared-header .social-pill,
-    body.dark-mode .psd-shared-header .social-pill span{
-      color:#fff!important;
-    }
-
-    /* Match the compact title treatment used by the newer market pages. */
-    main.page{
-      padding-top:10px!important;
-    }
-    .history-dashboard-hero{
-      grid-template-columns:1fr!important;
-      align-items:start!important;
-      padding:15px 18px!important;
-      margin-bottom:10px!important;
-      border-radius:20px!important;
-    }
-    .history-dashboard-hero h1{
-      margin:0 0 6px!important;
-      font-size:clamp(30px,3vw,46px)!important;
-      line-height:1!important;
-      letter-spacing:-.035em!important;
-    }
-    .history-lead{
-      margin:0!important;
-      max-width:980px!important;
-      font-size:13.5px!important;
-      line-height:1.38!important;
-    }
-
-    /* Tighten vertical rhythm without changing dashboard geometry. */
-    .dash-stage-shell{
-      margin-bottom:10px!important;
-    }
-    .stats-strip{
-      gap:8px!important;
-      margin-top:9px!important;
-    }
-    .history-info-grid{
-      gap:8px!important;
-      margin-top:8px!important;
-    }
-    .history-table-wrap{
-      margin-top:8px!important;
-    }
-    main.page > .panel.section{
-      margin-top:10px!important;
-    }
-
-    /* Page-local glossary buttons. */
-    .hist-title-with-info,
-    .hist-label-with-info{
-      display:inline-flex!important;
-      align-items:center!important;
-      gap:5px!important;
+    .history-title-row{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      flex-wrap:wrap;
       min-width:0;
     }
-    .card-title.hist-title-with-info{
-      max-width:calc(100% - 8px);
-    }
-    .hist-info-btn{
-      display:inline-grid;
-      place-items:center;
-      width:16px;
-      height:16px;
-      min-width:16px;
-      padding:0;
-      border:1px solid #64748b;
-      border-radius:50%;
-      background:#18202e;
-      color:#ef4444;
-      font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
-      cursor:pointer;
-      vertical-align:1px;
-      transition:.15s ease;
-    }
-    .hist-info-btn:hover,
-    .hist-info-btn:focus-visible,
-    .hist-info-btn[aria-expanded="true"]{
-      border-color:#60a5fa;
-      background:#1d4ed8;
+
+    .history-title{
+      margin:0;
       color:#fff;
-      outline:none;
-    }
-    .hist-glossary-popover{
-      position:fixed;
-      z-index:2147483000;
-      width:min(320px,calc(100vw - 24px));
-      padding:12px 14px;
-      border:1px solid #334155;
-      border-radius:10px;
-      background:#111827;
-      color:#cbd5e1;
-      box-shadow:0 14px 40px rgba(0,0,0,.45);
-      font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
-    }
-    .hist-glossary-popover[hidden]{display:none}
-    .hist-glossary-title{
-      margin:0 22px 5px 0;
-      color:#f8fafc;
-      font-size:13px;
-      font-weight:800;
-    }
-    .hist-glossary-text{margin:0}
-    .hist-glossary-close{
-      position:absolute;
-      right:8px;
-      top:6px;
-      border:0;
-      background:transparent;
-      color:#94a3b8;
       font-size:18px;
+      line-height:1;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .history-subtitle{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .history-close{
+      width:32px;
+      height:32px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(148,163,184,.26);
+      border-radius:10px;
+      background:rgba(13,19,29,.86);
+      color:#fff;
+      font-size:20px;
       line-height:1;
       cursor:pointer;
     }
-    .hist-glossary-close:hover{color:#fff}
 
-    body:not(.dark-mode) .hist-info-btn{
-      border-color:#8299ad;
-      background:#fff;
-      color:#c62828;
-    }
-    body:not(.dark-mode) .hist-info-btn:hover,
-    body:not(.dark-mode) .hist-info-btn:focus-visible,
-    body:not(.dark-mode) .hist-info-btn[aria-expanded="true"]{
-      border-color:#004f91;
-      background:#e7f2fb;
-      color:#8a1c12;
-    }
-    body:not(.dark-mode) .hist-glossary-popover{
-      border-color:#9eb4c6;
-      background:#fff;
-      color:#10263b;
-      box-shadow:0 14px 40px rgba(31,54,73,.20);
-    }
-    body:not(.dark-mode) .hist-glossary-title{
-      color:#020b12;
-    }
-    body:not(.dark-mode) .hist-glossary-text{
-      color:#10263b;
-    }
-    body:not(.dark-mode) .hist-glossary-close{
-      color:#061522;
+    .history-close:hover{
+      border-color:rgba(210,153,34,.55);
+      background:rgba(210,153,34,.12);
     }
 
-
-    /* Historical Sentiment — final width + light-mode visual parity refinements.
-       Dark-mode styling is intentionally left unchanged. */
-
-    /* Match the 1480px content width used by the current market pages. */
-    main.page{
-      width:100%!important;
-      max-width:none!important;
-      margin:0!important;
-      padding:14px 26px 26px!important;
-      box-sizing:border-box!important;
+    .history-body{
+      height:calc(100% - 49px);
+      padding:16px;
+      overflow:auto;
     }
 
-    /* Future advertising hooks. Empty slots remain completely invisible today. */
-    .historical-ad-slot:empty{
-      display:none!important;
-    }
-    .historical-ad-slot:not(:empty){
+    .history-controls{
       display:flex;
-      align-items:center;
-      justify-content:center;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .history-period{
+      border:1px solid rgba(255,255,255,.11);
+      border-radius:999px;
+      padding:7px 10px;
+      background:rgba(17,24,33,.80);
+      color:var(--soft);
+      font-family:inherit;
+      font-size:11px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .history-period.active,
+    .history-period:hover{
+      color:#ffd780;
+      border-color:rgba(210,153,34,.45);
+      background:rgba(210,153,34,.13);
+    }
+
+    .history-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 250px;
+      gap:14px;
+      align-items:stretch;
+    }
+
+    .history-chart-wrap{
+      min-height:420px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at top right,rgba(210,153,34,.10),transparent 14rem),
+        linear-gradient(180deg,rgba(8,13,21,.88),rgba(6,10,16,.98));
+      padding:10px;
+    }
+
+    #historyChart{
       width:100%;
-      min-height:90px;
-      margin:10px 0;
-      padding:8px;
-      box-sizing:border-box;
-      border:1px dashed var(--theme-line);
-      border-radius:14px;
-      background:var(--theme-surface);
-      color:var(--theme-muted);
-      overflow:hidden;
+      height:420px;
+      display:block;
     }
 
-    /*
-      Light mode was visually flatter than dark mode because the original
-      dashboard effects use white highlights over a dark surface. Rebuild
-      those same effects with light-mode-appropriate gold/blue/purple tones.
-    */
-    body:not(.dark-mode) .dash-stage-shell{
-      background:
-        linear-gradient(135deg,#d9ae43 0%,#f8e7ae 31%,#d4a32b 65%,#ead48b 100%)!important;
-      box-shadow:
-        0 22px 54px rgba(28,58,83,.19),
-        0 0 0 1px rgba(154,105,0,.11)!important;
+    .history-stats{
+      display:grid;
+      gap:10px;
     }
 
-    body:not(.dark-mode) .dash-stage{
-      background:
-        radial-gradient(circle at 73% 17%,rgba(201,154,47,.25),transparent 27%),
-        radial-gradient(circle at 34% 38%,rgba(109,40,217,.12),transparent 31%),
-        radial-gradient(circle at 92% 78%,rgba(0,124,114,.12),transparent 29%),
-        radial-gradient(circle at 16% 76%,rgba(0,79,145,.08),transparent 26%),
-        linear-gradient(135deg,#f8fbfe 0%,#eef4f9 38%,#fff4cf 70%,#edf3f7 100%)!important;
-      border-color:#9eb4c6!important;
-      box-shadow:inset 0 0 38px rgba(123,84,0,.055)!important;
+    .history-stat{
+      padding:12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:15px;
+      background:rgba(17,24,33,.74);
     }
 
-    body:not(.dark-mode) .dash-stage:before{
-      opacity:.72!important;
-      background-image:
-        linear-gradient(rgba(52,78,100,.11) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(52,78,100,.11) 1px,transparent 1px)!important;
+    .history-stat span{
+      display:block;
+      color:var(--muted);
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      margin-bottom:5px;
     }
 
-    body:not(.dark-mode) .dash-stage:after{
-      opacity:.34!important;
-      background:
-        radial-gradient(ellipse at 22% 33%,transparent 0 8%,rgba(154,105,0,.23) 8.4% 10.8%,transparent 11.2%),
-        radial-gradient(ellipse at 49% 34%,transparent 0 9%,rgba(0,79,145,.16) 9.4% 13.4%,transparent 13.9%),
-        radial-gradient(ellipse at 70% 42%,transparent 0 8%,rgba(109,40,217,.14) 8.4% 12.5%,transparent 13%),
-        radial-gradient(ellipse at 38% 66%,transparent 0 7%,rgba(154,105,0,.18) 7.4% 11.5%,transparent 12%),
-        radial-gradient(ellipse at 83% 66%,transparent 0 7%,rgba(0,124,114,.15) 7.5% 11%,transparent 11.5%)!important;
-      filter:blur(.2px)!important;
+    .history-stat b{
+      display:block;
+      color:#fff;
+      font-size:20px;
+      line-height:1.05;
     }
 
-    body:not(.dark-mode) .dash-card{
-      background:
-        radial-gradient(circle at 92% 4%,rgba(123,84,0,.075),transparent 34%),
-        radial-gradient(circle at 8% 96%,rgba(0,79,145,.045),transparent 30%),
-        linear-gradient(180deg,rgba(255,255,255,.98),rgba(238,244,249,.97))!important;
-      box-shadow:
-        0 13px 29px rgba(28,58,83,.15),
-        inset 0 1px 0 rgba(255,255,255,.90)!important;
+    .empty-note{
+      padding:14px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background:rgba(17,24,33,.70);
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
     }
 
-    body:not(.dark-mode) .dash-card:before{
-      background:
-        linear-gradient(90deg,transparent,rgba(154,105,0,.12),rgba(255,255,255,.30),transparent)!important;
-    }
-
-    body:not(.dark-mode) .card-head{
-      background:
-        linear-gradient(90deg,rgba(224,234,243,.96),rgba(238,244,249,.90),rgba(255,243,207,.64))!important;
-      border-bottom-color:#b5c7d6!important;
-    }
-
-    body:not(.dark-mode) .stat-tile::before{
-      background:
-        linear-gradient(90deg,transparent,rgba(154,105,0,.10),rgba(255,255,255,.32),transparent)!important;
-    }
-
-    body:not(.dark-mode) .history-table-wrap::before{
-      background:
-        linear-gradient(90deg,transparent,rgba(154,105,0,.12),rgba(255,255,255,.32),transparent)!important;
-    }
-
-    body:not(.dark-mode) .history-table-wrap::after{
-      opacity:.66!important;
-      background:
-        linear-gradient(90deg,rgba(52,78,100,.055) 1px,transparent 1px),
-        linear-gradient(180deg,rgba(52,78,100,.055) 1px,transparent 1px)!important;
+    @media(max-width:1240px){
+      .crypto-top-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .crypto-panels{grid-template-columns:1fr}
+      .headline-list{grid-template-columns:repeat(3,minmax(0,1fr))}
     }
 
     @media(max-width:760px){
-      main.page{
-        padding:10px 14px 20px!important;
-      }
-      .historical-ad-slot:not(:empty){
-        min-height:64px;
-      }
+      .crypto-page{padding:14px}
+      .crypto-hero-grid{grid-template-columns:1fr}
+      .crypto-top-grid{grid-template-columns:1fr}
+      .headline-list{grid-template-columns:1fr}
+      .headline-row{grid-template-columns:62px minmax(0,1fr);gap:12px}
+      .headline-logo,.headline-logo-fallback{width:48px;height:48px;max-width:48px;max-height:48px}
+      .crypto-score-wrap{grid-template-columns:82px 1fr}
+      .history-grid{grid-template-columns:1fr}
+      .history-card{height:92vh}
+    }
+
+  
+    .nav-row-break{
+      flex-basis:100%;
+      height:0;
     }
 
   </style>
@@ -1122,1284 +712,958 @@
 
 <body>
   <div id="site-header"></div>
-  <script src="site-nav.js" defer></script>
-  <script src="site-theme.js" defer></script>
+  <script src="site-nav.js?v=1"></script>
 
-  <main class="page">
-    <section class="panel history-dashboard-hero">
-      <div>
-        <h1>Historical Market Sentiment Dashboard</h1>
-        <p class="history-lead">A market-desk style view of <span class="hist-label-with-info">Global PSI<button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Public Sentiment Index" aria-expanded="false">i</button></span> and U.S. sentiment history with animated trend, momentum, bias mix, range, volatility, and top-driver panels.</p>
-      </div>
-
-    </section>
-
-    <div class="historical-ad-slot ad-slot" id="historical-ad-top" data-ad-position="historical-top" aria-label="Advertising space"></div>
-
-    <section class="dash-stage-shell" aria-label="Historical sentiment dashboard">
-      <div class="dash-stage">
-        <div class="dash-layout">
-          <aside class="dash-side" aria-label="Dashboard controls">
-            <div class="side-pill active" data-side-scope="global">Global</div>
-            <div class="side-pill" data-side-scope="us">U.S.</div>
-            <div class="side-spacer"></div>
-            <div class="side-pill" data-period="hourly">Hourly</div>
-            <div class="side-pill active" data-period="daily">Daily</div>
-            <div class="side-pill" data-period="weekly">Weekly</div>
-            <div class="side-pill" data-period="monthly">Monthly</div>
-            <div class="side-spacer"></div>
-            <div class="side-pill" data-export="csv" title="Exports past 6 months of hourly Global/U.S. history.">Export CSV</div>
-            <div class="side-note">CSV exports past 6 months of hourly history.</div>
-          </aside>
-
-          <article class="dash-card card-a">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span>Hourly sentiment pulse</span><button class="hist-info-btn" type="button" data-hist-glossary="hourly-pulse" aria-label="Explain Hourly sentiment pulse" aria-expanded="false">i</button></div></div>
-            <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
-              <span class="active">NY Time</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
-            </div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartHourly"></canvas></div>
-          </article>
-
-          <article class="dash-card card-b">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span>Global vs U.S. flow</span><button class="hist-info-btn" type="button" data-hist-glossary="global-us-flow" aria-label="Explain Global versus U.S. flow" aria-expanded="false">i</button></div></div>
-            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
-          </article>
-
-          <article class="dash-card card-c">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span>Sentiment history</span><button class="hist-info-btn" type="button" data-hist-glossary="sentiment-history" aria-label="Explain Sentiment history" aria-expanded="false">i</button></div></div>
-            <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
-              <span class="active">Past 5D</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-purple);display:inline-block;"></i>Momentum</span>
-            </div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartBars"></canvas></div>
-          </article>
-
-          <article class="dash-card card-d">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span id="skylineTitle">Daily Global vs U.S. skyline</span><button class="hist-info-btn" type="button" data-hist-glossary="skyline" aria-label="Explain Global versus U.S. skyline" aria-expanded="false">i</button></div></div>
-            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
-            <div class="metric-caption" id="skylineYear">Daily</div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartSkyline"></canvas></div>
-          </article>
-
-          <article class="dash-card card-e">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span id="momentumTitle">Daily Global momentum performance</span><button class="hist-info-btn" type="button" data-hist-glossary="momentum-chart" aria-label="Explain Sentiment momentum performance" aria-expanded="false">i</button></div></div>
-            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(4,auto);gap:12px;">
-              <div class="legend-row"><span class="legend-dot"></span>Global</div>
-              <div class="legend-row"><span class="legend-dot us"></span>U.S.</div>
-              <div class="legend-row"><span class="legend-dot mom"></span>Momentum</div>
-              <div class="legend-row"><span class="legend-dot vol"></span>Volatility</div>
-            </div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartMomentum"></canvas></div>
-          </article>
-
-          <article class="dash-card card-f">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span id="biasTitle">Daily Global bias mix</span><button class="hist-info-btn" type="button" data-hist-glossary="bias-mix" aria-label="Explain Sentiment bias mix" aria-expanded="false">i</button></div></div>
-            <div class="bias-legend" id="biasLegend"></div>
-            <div class="card-body bias-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
-          </article>
-
-          <article class="dash-card card-g">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span id="divergenceTitle">Daily Global vs U.S. divergence</span><button class="hist-info-btn" type="button" data-hist-glossary="divergence" aria-label="Explain Global versus U.S. divergence" aria-expanded="false">i</button></div></div>
-            <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:20px;" id="divergenceValue">--</div>
-            <div class="small-note" id="divergenceNote" style="position:absolute;right:14px;top:76px;text-align:right;max-width:56%;">Waiting for data</div>
-            <div class="card-body"><canvas class="dash-canvas" id="chartDivergence"></canvas></div>
-          </article>
-
-          <article class="dash-card card-i">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span id="driversTitle">Daily Global sentiment drivers</span><button class="hist-info-btn" type="button" data-hist-glossary="drivers" aria-label="Explain Sentiment drivers" aria-expanded="false">i</button></div></div>
-            <div class="driver-list" id="driverList"></div>
-          </article>
+  <main class="crypto-page">
+    <section class="crypto-hero">
+      <div class="crypto-hero-grid">
+        <div>
+          <div class="crypto-live-pill">Forex Sentiment Today</div>
+          <h1>Top Forex Sentiment</h1>
+          <p>Track current public sentiment across the U.S. Dollar Index, major currency pairs, and leading FX crosses.</p>
         </div>
-        <div class="dash-empty" id="dashEmpty">No usable sentiment history records were found. Check that <b>sentiment_history.json</b> contains numeric <b>global_psi</b> or <b>us_psi</b> values.</div>
+        <div class="crypto-updated">
+          <b id="overallScore">--</b>
+          <span id="updatedText">Loading latest forex sentiment...</span>
+        </div>
       </div>
     </section>
 
-    <section class="stats-strip" aria-label="Historical sentiment summary stats">
-      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Current</span><button class="hist-info-btn" type="button" data-hist-glossary="current" aria-label="Explain Current sentiment reading" aria-expanded="false">i</button></div><div class="stat-value" id="statCurrent">--</div><div class="stat-note">Latest selected reading</div></div>
-      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Change</span><button class="hist-info-btn" type="button" data-hist-glossary="change" aria-label="Explain Sentiment change" aria-expanded="false">i</button></div><div class="stat-value" id="statChange">--</div><div class="stat-note">First to latest in selected view</div></div>
-      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Average</span><button class="hist-info-btn" type="button" data-hist-glossary="average" aria-label="Explain Average sentiment" aria-expanded="false">i</button></div><div class="stat-value" id="statAverage">--</div><div class="stat-note">Mean PSI across selected view</div></div>
-      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Range</span><button class="hist-info-btn" type="button" data-hist-glossary="range" aria-label="Explain Sentiment range" aria-expanded="false">i</button></div><div class="stat-value" id="statRange">--</div><div class="stat-note">Lowest / highest reading</div></div>
-      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Volatility</span><button class="hist-info-btn" type="button" data-hist-glossary="volatility" aria-label="Explain Sentiment volatility" aria-expanded="false">i</button></div><div class="stat-value" id="statVolatility">--</div><div class="stat-note">Average absolute move</div></div>
-      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Bull / Bear</span><button class="hist-info-btn" type="button" data-hist-glossary="bull-bear" aria-label="Explain Bull versus Bear count" aria-expanded="false">i</button></div><div class="stat-value" id="statBullBear">--</div><div class="stat-note">Bullish vs bearish count</div></div>
-    </section>
+    <section class="crypto-top-grid" id="cryptoTopGrid"></section>
 
-    <section class="panel section">
-      <h2>Filtered Historical Records</h2>
-      <p class="muted">Newest records first. Use the dashboard controls above to switch source, period, and range.</p>
-      <div class="history-table-wrap">
-        <table class="history-table">
-          <thead><tr><th>Date / Period</th><th><span class="hist-label-with-info">Global PSI<button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Global PSI" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">U.S. PSI<button class="hist-info-btn" type="button" data-hist-glossary="us-psi" aria-label="Explain U.S. PSI" aria-expanded="false">i</button></span></th><th>Selected</th><th><span class="hist-label-with-info">Move<button class="hist-info-btn" type="button" data-hist-glossary="move" aria-label="Explain Historical move" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">Bias<button class="hist-info-btn" type="button" data-hist-glossary="bias" aria-label="Explain Sentiment bias" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">Records<button class="hist-info-btn" type="button" data-hist-glossary="records" aria-label="Explain Historical records" aria-expanded="false">i</button></span></th></tr></thead>
-          <tbody id="historyRows"><tr><td colspan="7">Waiting for sentiment history.</td></tr></tbody>
-        </table>
+    <section class="crypto-panels">
+      <div class="crypto-panel">
+        <h2>Latest Forex Headlines</h2>
+        <p id="headlineStatus">Loading forex headlines...</p>
+        <div class="headline-list" id="headlineList"></div>
       </div>
     </section>
 
-    <div class="historical-ad-slot ad-slot" id="historical-ad-bottom" data-ad-position="historical-bottom" aria-label="Advertising space"></div>
+    <div id="historyLayer" class="history-layer" role="dialog" aria-modal="true" aria-label="Forex history" onclick="if(event.target===this) closeHistory();">
+      <section class="history-card">
+        <div class="history-head">
+          <div class="history-title-row">
+            <h2 id="historyTitle" class="history-title">Forex History</h2>
+            <div id="historySubtitle" class="history-subtitle">Daily</div>
+          </div>
+          <button class="history-close" type="button" aria-label="Close history" onclick="closeHistory()">×</button>
+        </div>
+        <div class="history-body">
+          <div class="history-controls">
+            <button class="history-period active" type="button" data-period="daily" onclick="setHistoryPeriod('daily')">Daily</button>
+            <button class="history-period" type="button" data-period="weekly" onclick="setHistoryPeriod('weekly')">Weekly</button>
+            <button class="history-period" type="button" data-period="monthly" onclick="setHistoryPeriod('monthly')">Monthly</button>
+          </div>
+          <div class="history-grid">
+            <div class="history-chart-wrap">
+              <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="history-stats" id="historyStats"></div>
+          </div>
+        </div>
+      </section>
+    </div>
 
-    <footer class="footer psd-shared-footer">
+    <footer class="footer">
       <div class="footer-links">
         <a href="dashboard.html">Interactive Dashboard</a>
-        <a href="public-sentiment-index.html">Public Sentiment Index</a>
-        <a href="sentiment-history.html" class="active">Historical Sentiment</a>
+        <a href="crypto.html">Crypto Sentiment</a>
+        <a href="forex-sentiment-today.html">💱 Forex Sentiment</a>
+        <a href="sentiment-history.html">Historical Sentiment</a>
         <a href="news-articles.html">News & Articles</a>
-        <a href="market-sentiment.html">Guides</a>
+        <a href="market-sentiment.html" class="active">Guides</a>
         <a href="contact.html">Get in Touch</a>
-        <a href="how-it-works.html">How the Dashboard Works</a>
-        <a href="advertise.html">Business Opportunities</a>
         <a href="about.html">About</a>
-        <a href="privacy.html">Privacy</a>
-        <a href="terms.html">Terms</a>
-        <a href="disclaimer.html">Disclaimer</a>
       </div>
-
-      <div class="legal">
-        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
-      </div>
-
-      <p class="psd-copyright">© 2026 Public Sentiment Dash. All rights reserved.</p>
+      <div class="legal"><b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.</div>
+      <p>© 2026 Public Sentiment Dash. All rights reserved.</p>
     </footer>
   </main>
 
   <script src="sentiment-core.js?v=5"></script>
+
   <script>
-    const state = {
-      raw:[],
-      hourly:[],
-      drivers:[],
-      scope:"global",
-      period:"daily",
-      range:"all",
-      anim:0,
-      reduced:window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    };
+    let CRYPTO_ITEMS = [
+      {name:"US Dollar Index / DXY", dataKey:"US Dollar / DXY", symbol:"DXY", aliases:["dxy","us dollar","dollar index","usd index"], official:true},
+      {name:"EUR/USD", dataKey:"EUR / EURUSD", symbol:"EURUSD", aliases:["eurusd","eur/usd","euro","euro dollar"], official:true},
+      {name:"GBP/USD", dataKey:"GBP / GBPUSD", symbol:"GBPUSD", aliases:["gbpusd","gbp/usd","sterling","pound dollar"], official:true},
+      {name:"USD/JPY", dataKey:"JPY / USDJPY", symbol:"USDJPY", aliases:["usdjpy","usd/jpy","yen","dollar yen"], official:true},
+      {name:"USD/CHF", dataKey:"CHF / USDCHF", symbol:"USDCHF", aliases:["usdchf","usd/chf","swiss franc"], official:true},
+      {name:"USD/CAD", dataKey:"CAD / USDCAD", symbol:"USDCAD", aliases:["usdcad","usd/cad","canadian dollar"], official:true},
+      {name:"AUD/USD", dataKey:"AUD / AUDUSD", symbol:"AUDUSD", aliases:["audusd","aud/usd","australian dollar"], official:true},
+      {name:"NZD/USD", dataKey:"NZD / NZDUSD", symbol:"NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","kiwi dollar"], official:true},
+      {name:"EUR/JPY", dataKey:"EURJPY", symbol:"EURJPY", aliases:["eurjpy","eur/jpy","euro yen"], official:true},
+      {name:"EUR/GBP", dataKey:"EURGBP", symbol:"EURGBP", aliases:["eurgbp","eur/gbp","euro sterling"], official:true}
+    ];
 
-    const COLORS = {
-      gold:"#ffd780", gold2:"#d29922", purple:"#9b2cff", pink:"#ff3f86",
-      orange:"#ff9f1c", cyan:"#2ee6d6", green:"#55f0a1", red:"#ff4b6e",
-      grid:"rgba(255,255,255,.13)", text:"rgba(255,255,255,.72)"
-    };
+    const DEFAULT_TOP_N = 10;
 
-    function syncHistoricalThemeColors(){
-      const dark=document.body.classList.contains("dark-mode");
-      if(dark){
-        Object.assign(COLORS,{
-          gold:"#ffd780",gold2:"#d29922",purple:"#9b2cff",pink:"#ff3f86",
-          orange:"#ff9f1c",cyan:"#2ee6d6",green:"#55f0a1",red:"#ff4b6e",
-          grid:"rgba(255,255,255,.13)",text:"rgba(255,255,255,.72)"
-        });
-      }else{
-        Object.assign(COLORS,{
-          gold:"#7b5400",gold2:"#9a6900",purple:"#6d28d9",pink:"#b42368",
-          orange:"#a44a00",cyan:"#007c72",green:"#087443",red:"#b42318",
-          grid:"rgba(25,54,78,.18)",text:"rgba(16,38,59,.78)"
-        });
-      }
+    function uniqueTerms(values){
+      return Array.from(new Set((values || []).map(x => normalizeText(x)).filter(Boolean)));
     }
 
-    function refreshHistoricalTheme(){
-      syncHistoricalThemeColors();
-      state.anim=1;
-      renderStats();
-      renderRows();
-      renderDrivers();
-      drawAll();
+    function categoryEntry(asset, categoryKey){
+      return (Array.isArray(asset?.categories) ? asset.categories : []).find(c => c?.category === categoryKey && c?.enabled !== false);
     }
 
-    syncHistoricalThemeColors();
-
-    const historicalThemeObserver=new MutationObserver(mutations=>{
-      if(mutations.some(m=>m.type==="attributes" && m.attributeName==="class")){
-        refreshHistoricalTheme();
-      }
-    });
-    historicalThemeObserver.observe(document.body,{attributes:true,attributeFilter:["class"]});
-
-    function num(v){
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
+    function isForexAsset(asset){
+      const key = String(asset?.data_key || asset?.name || "");
+      const marketSymbol = String(asset?.market_data?.symbol || "");
+      return key === "US Dollar / DXY" || marketSymbol.endsWith("=X");
     }
 
-    function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
-    function avg(arr){const clean=arr.filter(v=>Number.isFinite(v));return clean.length?clean.reduce((a,b)=>a+b,0)/clean.length:null;}
-    function round(v){return Number.isFinite(v)?Math.round(v):null;}
-    function signed(v){if(!Number.isFinite(v))return "--"; const n=Math.round(v); return (n>0?"+":"") + n;}
-    function esc(value){return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
-
-    function dateFromRecord(r){
-      const raw = r.timestamp || r.ts || r.datetime || r.created_at || r.updated_at || r.time || r.sample_key || r.date || r.day;
-      if(!raw) return null;
-      if(typeof raw === "number") return new Date(raw > 9999999999 ? raw : raw * 1000);
-      const s = String(raw);
-      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s + "T12:00:00");
-      const d = new Date(s);
-      return Number.isNaN(d.getTime()) ? null : d;
-    }
-
-    function ymd(d){
-      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-    }
-
-    function labelDate(d){return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});}
-    function labelMonth(key){const d=new Date(key+"-01T12:00:00");return d.toLocaleDateString(undefined,{month:"short",year:"2-digit"});}
-
-    function isoWeekKey(d){
-      const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      const day = x.getUTCDay() || 7;
-      x.setUTCDate(x.getUTCDate() + 4 - day);
-      const yearStart = new Date(Date.UTC(x.getUTCFullYear(),0,1));
-      const week = Math.ceil((((x - yearStart) / 86400000) + 1) / 7);
-      return x.getUTCFullYear() + "-W" + String(week).padStart(2,"0");
-    }
-
-    function valueFrom(r, scope){
-      const global = num(r.global_psi ?? r.psi_global ?? r.globalPSI ?? r.global ?? r.psi ?? r.score);
-      const us = num(r.us_psi ?? r.us_market_psi ?? r.usa_psi ?? r.usPSI ?? r.us ?? r.us_score);
-      return scope === "us" ? us : global;
-    }
-
-    function normalizePayload(payload){
-      const pools = [];
-      if(Array.isArray(payload)) pools.push(payload);
-      if(payload && typeof payload === "object"){
-        ["records","history","daily","hourly","hourly_records","data","items","readings"].forEach(k => {
-          if(Array.isArray(payload[k])) pools.push(payload[k]);
-        });
-      }
-      const source = pools.find(a => a.length) || [];
-      return source.map((r,i) => {
-        const d = dateFromRecord(r);
-        if(!d) return null;
-        const global = valueFrom(r,"global");
-        const us = valueFrom(r,"us");
-        if(global === null && us === null) return null;
-        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i};
-      }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
-    }
-
-    function normalizeHourlyPayload(payload){
-      const pools = [];
-      if(Array.isArray(payload)) pools.push(payload);
-      if(payload && typeof payload === "object"){
-        ["intraday","hourly","hourly_records","readings"].forEach(k => {
-          if(Array.isArray(payload[k])) pools.push(payload[k]);
-        });
-      }
-      const source = pools.find(a => a.length) || [];
-      return source.map((r,i) => {
-        const d = dateFromRecord(r);
-        if(!d) return null;
-        const global = valueFrom(r,"global");
-        const us = valueFrom(r,"us");
-        if(global === null && us === null) return null;
-        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i};
-      }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
-    }
-
-    function nyHourParts(d){
-      const parts = new Intl.DateTimeFormat("en-US",{
-        timeZone:"America/New_York",
-        year:"numeric",
-        month:"2-digit",
-        day:"2-digit",
-        hour:"2-digit",
-        hour12:false
-      }).formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
-      const hour = parts.hour === "24" ? "00" : parts.hour;
-      return {
-        key:parts.year+"-"+parts.month+"-"+parts.day+" "+hour+":00",
-        label:hour+":00"
-      };
-    }
-
-    function aggregateHourlyComparison(records){
-      const clean = records.filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()) && (Number.isFinite(r.global) || Number.isFinite(r.us))).sort((a,b)=>a.ts-b.ts);
-      if(!clean.length) return [];
-
-      const groups = new Map();
-      clean.forEach(r => {
-        const ny = nyHourParts(r.ts);
-        if(!groups.has(ny.key)){
-          groups.set(ny.key,{key:ny.key,label:ny.label,global:[],us:[],lastTs:r.ts});
-        }
-        const g = groups.get(ny.key);
-        if(Number.isFinite(r.global)) g.global.push(r.global);
-        if(Number.isFinite(r.us)) g.us.push(r.us);
-        if(r.ts > g.lastTs) g.lastTs = r.ts;
-      });
-
-      // Forward-fill hourly slots so charts stay complete even when scraper cadence changes.
-      // Example: if the scraper runs every 4 or 6 hours, missing hours reuse the most recent real scan.
-      // If the last scan is very old, the chart anchors to the last scan instead of pretending it is current.
-      const grouped = [...groups.values()].map(g => ({
-        key:g.key,
-        label:g.label,
-        sort:g.lastTs.getTime(),
-        lastTs:g.lastTs,
-        global:avg(g.global),
-        us:avg(g.us)
-      })).sort((a,b)=>a.sort-b.sort);
-
-      const latest = clean[clean.length-1].ts;
-      const now = new Date();
-      const recentEnoughMs = 48 * 3600000;
-      const endBase = (now.getTime() > latest.getTime() && now.getTime() - latest.getTime() <= recentEnoughMs) ? now : latest;
-      const endHour = new Date(endBase);
-      endHour.setMinutes(0,0,0);
-
-      const slots = [];
-      for(let i=7;i>=0;i--){
-        const slotDate = new Date(endHour.getTime() - i * 3600000);
-        const ny = nyHourParts(slotDate);
-        const exact = groups.get(ny.key);
-        let direct = exact ? {
-          key:ny.key,
-          label:ny.label,
-          sort:slotDate.getTime(),
-          lastTs:exact.lastTs,
-          global:avg(exact.global),
-          us:avg(exact.us),
-          carried:false
-        } : null;
-
-        let carry = null;
-        if(!direct){
-          for(let j=grouped.length-1;j>=0;j--){
-            if(grouped[j].sort <= slotDate.getTime()){ carry = grouped[j]; break; }
-          }
-          if(!carry){
-            carry = grouped.find(g => g.sort >= slotDate.getTime()) || grouped[0] || null;
-          }
-        }
-
-        const chosen = direct || carry;
-        slots.push({
-          key:ny.key,
-          label:ny.label,
-          sort:slotDate.getTime(),
-          lastTs:chosen?.lastTs || slotDate,
-          global:Number.isFinite(chosen?.global) ? chosen.global : null,
-          us:Number.isFinite(chosen?.us) ? chosen.us : null,
-          value:Number.isFinite(chosen?.global) ? chosen.global : null,
-          carried:!direct
-        });
-      }
-      return slots;
-    }
-
-    function bias(v){
-      if(!Number.isFinite(v)) return {text:"Unknown", color:COLORS.text, cls:""};
-      const label = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
-        ? window.PSDCore.classifySentiment(v)
-        : (v >= 70 ? "Strong Bullish" : v >= 56 ? "Bullish" : v >= 45 ? "Mixed/Neutral" : v >= 31 ? "Bearish" : "Strong Bearish");
-      if(label === "Strong Bullish") return {text:label, color:COLORS.green, cls:"bull"};
-      if(label === "Bullish") return {text:label, color:COLORS.cyan, cls:"bull"};
-      if(label === "Mixed/Neutral") return {text:label, color:COLORS.gold, cls:"neutral"};
-      if(label === "Bearish") return {text:label, color:COLORS.orange, cls:"bear"};
-      if(label === "Strong Bearish") return {text:label, color:COLORS.red, cls:"bear"};
-      return {text:label, color:COLORS.text, cls:""};
-    }
-
-    function filterByRange(records){
-      if(state.range === "all" || !records.length) return records;
-      const days = Number(state.range);
-      const maxTime = records[records.length-1].ts.getTime();
-      const minTime = maxTime - days * 86400000;
-      return records.filter(r => r.ts.getTime() >= minTime);
-    }
-
-    function aggregate(scope=state.scope, period=state.period, range=true){
-      const records = range ? filterByRange(state.raw) : state.raw;
-      const groups = new Map();
-      records.forEach(r => {
-        const val = scope === "us" ? r.us : r.global;
-        if(!Number.isFinite(val)) return;
-        let key, label, sort;
-        if(period === "hourly"){
-          key = r.date + " " + String(r.hour).padStart(2,"0") + ":00";
-          label = String(r.hour).padStart(2,"0") + ":00";
-          sort = r.ts.getTime();
-        }else if(period === "weekly"){
-          key = isoWeekKey(r.ts);
-          label = key.replace("-W"," W");
-          sort = key;
-        }else if(period === "monthly"){
-          key = r.date.slice(0,7);
-          label = labelMonth(key);
-          sort = key;
-        }else{
-          key = r.date;
-          label = labelDate(r.ts);
-          sort = r.date;
-        }
-        if(!groups.has(key)) groups.set(key,{key,label,sort,global:[],us:[],count:0,lastTs:r.ts});
-        const g = groups.get(key);
-        if(Number.isFinite(r.global)) g.global.push(r.global);
-        if(Number.isFinite(r.us)) g.us.push(r.us);
-        g.count++;
-        if(r.ts > g.lastTs) g.lastTs = r.ts;
-      });
-      return [...groups.values()].map(g => ({
-        key:g.key,label:g.label,sort:g.sort,count:g.count,lastTs:g.lastTs,
-        global:avg(g.global),us:avg(g.us),value:avg(scope === "us" ? g.us : g.global)
-      })).filter(p => Number.isFinite(p.value)).sort((a,b)=>String(a.sort).localeCompare(String(b.sort)) || a.lastTs-b.lastTs);
-    }
-
-    function periodLabel(period){
-      if(period === "hourly") return "Hourly";
-      if(period === "weekly") return "Weekly";
-      if(period === "monthly") return "Monthly";
-      return "Daily";
-    }
-
-    function skylineLimit(period){
-      if(period === "hourly") return 8;
-      if(period === "weekly") return 4;
-      if(period === "monthly") return 6;
-      return 7;
-    }
-
-    function skylinePoints(scope){
-      if(state.period === "hourly"){
-        return aggregateHourlyComparison(state.hourly)
-          .map(p => ({...p, value: scope === "us" ? p.us : p.global}))
-          .filter(p => Number.isFinite(p.value))
-          .slice(-skylineLimit(state.period));
-      }
-      return aggregate(scope,state.period,true).slice(-skylineLimit(state.period));
-    }
-
-    function updateSkylineHeader(){
-      const label = periodLabel(state.period);
-      const title = document.getElementById("skylineTitle");
-      const mode = document.getElementById("skylineYear");
-      if(title) title.textContent = label + " Global vs U.S. skyline";
-      if(mode) mode.textContent = label;
-    }
-
-    function updateMomentumHeader(){
-      const label = periodLabel(state.period);
-      const scopeLabel = state.scope === "us" ? "U.S." : "Global";
-      const title = document.getElementById("momentumTitle");
-      if(title) title.textContent = label + " " + scopeLabel + " momentum performance";
-    }
-
-    function updateBiasHeader(){
-      const label = periodLabel(state.period);
-      const scopeLabel = state.scope === "us" ? "U.S." : "Global";
-      const title = document.getElementById("biasTitle");
-      if(title) title.textContent = label + " " + scopeLabel + " bias mix";
-    }
-
-    function updateBiasLegend(items){
-      const box=document.getElementById("biasLegend");
-      if(!box) return;
-      box.innerHTML=items.map(item=>`<div class="bias-legend-row"><span class="bias-legend-dot" style="background:${item.color};"></span><span>${esc(item.label)} ${Math.round(item.value)}</span></div>`).join("");
-    }
-
-    function divergencePoints(){
-      if(state.period === "hourly"){
-        return aggregateHourlyComparison(state.hourly).slice(-8).map(p => {
-          const gap = (Number.isFinite(p.us) && Number.isFinite(p.global)) ? (p.us - p.global) : null;
+    function assetsFromConfig(config, fallbackItems){
+      const assets = Array.isArray(config?.assets) ? config.assets : [];
+      const rows = assets
+        .filter(asset => asset?.enabled !== false && isForexAsset(asset))
+        .map(asset => {
+          const cat = categoryEntry(asset, "dashboard_extras") || {};
+          const dataKey = String(asset.data_key || asset.name || "").trim();
+          const displayName = String(asset.display_name || asset?.market_data?.label || asset.name || dataKey).trim();
           return {
-            label:p.label,
-            global:p.global,
-            us:p.us,
-            gap,
-            value:Number.isFinite(gap) ? clamp(50 + gap * 2, 0, 100) : null
+            name: displayName,
+            dataKey,
+            symbol: asset.symbol || displayName,
+            aliases: uniqueTerms([...(asset.aliases || []), displayName, dataKey, asset.name, asset.symbol]),
+            official: asset.official === true,
+            priority: Number(cat?.priority || 999),
+            historyKeys: uniqueTerms([dataKey, asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
-        }).filter(p => Number.isFinite(p.value));
-      }
-      const globalPoints = aggregate("global", state.period, true);
-      const usMap = new Map(aggregate("us", state.period, true).map(p => [p.key, p]));
-      return globalPoints.map(g => {
-        const u = usMap.get(g.key);
-        const gap = (u && Number.isFinite(u.value) && Number.isFinite(g.value)) ? (u.value - g.value) : null;
+        })
+        .sort((a,b) => a.priority - b.priority)
+        .slice(0, DEFAULT_TOP_N);
+      return rows.length ? rows : fallbackItems;
+    }
+
+    function applyAssetConfig(config){
+      CRYPTO_ITEMS = assetsFromConfig(config, CRYPTO_ITEMS);
+      if(typeof activeHistoryName !== "undefined") activeHistoryName = CRYPTO_ITEMS[0]?.name || activeHistoryName;
+      try{
+        if(typeof CRYPTO_BACKEND_INSTRUMENTS !== "undefined" && CRYPTO_BACKEND_INSTRUMENTS?.add){
+          CRYPTO_ITEMS.flatMap(item => [item.dataKey, item.name, item.symbol, ...(item.historyKeys || [])]).forEach(term => CRYPTO_BACKEND_INSTRUMENTS.add(normalizeText(term)));
+        }
+      }catch(e){}
+      try{
+        if(typeof CRYPTO_STRONG_TERMS !== "undefined" && Array.isArray(CRYPTO_STRONG_TERMS)){
+          uniqueTerms(CRYPTO_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])).forEach(term => {
+            if(!CRYPTO_STRONG_TERMS.includes(term)) CRYPTO_STRONG_TERMS.push(term);
+          });
+        }
+      }catch(e){}
+    }
+
+
+    const HISTORY_RETENTION_DAYS = 180;
+
+    let dashboardData = null;
+    let historyData = null;
+    let currentRows = [];
+    let activeHistoryName = "US Dollar Index / DXY";
+    let activeHistoryPeriod = "daily";
+    let selectedCompareNames = [];
+    let activeCompareNames = [];
+
+    function esc(v){
+      return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+    }
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+    function normalizeText(v){ return String(v || "").toLowerCase(); }
+
+    function labelForScore(score){
+      if(score == null) return "No PSI";
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+      return "Strong Bearish";
+    }
+
+    function colorForScore(score){
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#14b8a6";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f97316";
+      return "#ef4444";
+    }
+
+    function pillStyle(score){
+      const c = colorForScore(score);
+      return `color:#fff;background:${c}26;border-color:${c}70;`;
+    }
+
+    function headlineText(h){
+      return normalizeText([
+        h.title,
+        h.description,
+        h.source,
+        ...(Array.isArray(h.instruments) ? h.instruments : []),
+        ...(Array.isArray(h.markets) ? h.markets : [])
+      ].join(" "));
+    }
+
+    function exactInstrumentMatch(item, h){
+      const instruments = Array.isArray(h.instruments) ? h.instruments.map(x => normalizeText(x)) : [];
+      return instruments.some(x => x === normalizeText(item.dataKey || item.name));
+    }
+
+    function itemMatchesHeadline(item, h){
+      if(exactInstrumentMatch(item, h)) return true;
+      const text = headlineText(h);
+      return item.aliases.some(alias => text.includes(normalizeText(alias)));
+    }
+
+    function scoreFromHeadlineSet(name, symbol, headlines, source){
+      if(!headlines.length){
         return {
-          label:g.label,
-          global:g.value,
-          us:u ? u.value : null,
-          gap,
-          value:Number.isFinite(gap) ? clamp(50 + gap * 2, 0, 100) : null
+          name,
+          symbol,
+          score:null,
+          label:"No PSI",
+          headlineCount:0,
+          bullish:0,
+          bearish:0,
+          neutral:0,
+          source,
+          topHeadlines:[]
         };
-      }).filter(p => Number.isFinite(p.value));
-    }
-
-    function updateDivergenceHeader(){
-      const title = document.getElementById("divergenceTitle");
-      if(title) title.textContent = periodLabel(state.period) + " Global vs U.S. divergence";
-    }
-
-    function updateDivergenceSummary(){
-      const valueEl = document.getElementById("divergenceValue");
-      const noteEl = document.getElementById("divergenceNote");
-      if(!valueEl || !noteEl) return;
-
-      const pts = divergencePoints();
-      if(!pts.length){
-        valueEl.textContent = "--";
-        valueEl.style.color = "var(--hist-gold)";
-        noteEl.textContent = "Waiting for Global + U.S. data";
-        return;
       }
 
-      const last = pts[pts.length-1];
-      const prev = pts.length > 1 ? pts[pts.length-2] : null;
-      const gap = Number.isFinite(last.gap) ? last.gap : 0;
-      const absGap = Math.abs(gap);
+      let total = 0;
+      let bullish = 0;
+      let bearish = 0;
+      let neutral = 0;
 
-      if(absGap < 1){
-        valueEl.textContent = "Aligned";
-        valueEl.style.color = "var(--hist-muted)";
-      }else if(gap > 0){
-        valueEl.textContent = "U.S. +" + round(absGap);
-        valueEl.style.color = "var(--hist-pink)";
-      }else{
-        valueEl.textContent = "Global +" + round(absGap);
-        valueEl.style.color = "var(--hist-gold)";
-      }
+      headlines.forEach(h => {
+        const s = Number(h.weighted_score ?? h.score ?? 0);
+        total += Number.isFinite(s) ? s : 0;
 
-      let trend = "stable";
-      if(prev && Number.isFinite(prev.gap)){
-        const prevAbs = Math.abs(prev.gap);
-        if(absGap > prevAbs + 0.5) trend = "widening";
-        else if(absGap < prevAbs - 0.5) trend = "narrowing";
-      }
-
-      if(absGap < 1){
-        noteEl.textContent = "Global and U.S. are nearly aligned";
-      }else{
-        noteEl.textContent = trend + " gap • Global " + round(last.global) + " vs U.S. " + round(last.us);
-      }
-    }
-
-    function movingAverage(points, key="value", window=3){
-      return points.map((p,i) => {
-        const slice = points.slice(Math.max(0,i-window+1), i+1).map(x=>x[key]).filter(Number.isFinite);
-        return {...p, smooth:avg(slice)};
+        const vote = normalizeText(h.vote);
+        if(vote.includes("bull")) bullish++;
+        else if(vote.includes("bear")) bearish++;
+        else neutral++;
       });
-    }
 
-    function stats(points){
-      const values = points.map(p=>p.value).filter(Number.isFinite);
-      if(!values.length) return null;
-      const moves = values.slice(1).map((v,i)=>v-values[i]);
-      const bulls = values.filter(v=>v>=56).length;
-      const bears = values.filter(v=>v<45).length;
+      const avg = total / headlines.length;
+      const score = Math.round(clamp(50 + avg * 6, 0, 100));
+
       return {
-        current:values[values.length-1], change:values[values.length-1]-values[0], average:avg(values),
-        min:Math.min(...values), max:Math.max(...values), volatility:avg(moves.map(Math.abs)) || 0,
-        bulls,bears,total:values.length, last:points[points.length-1]
+        name,
+        symbol,
+        score,
+        label:labelForScore(score),
+        headlineCount:headlines.length,
+        bullish,
+        bearish,
+        neutral,
+        source,
+        topHeadlines:headlines.slice(0,5)
       };
     }
 
-    function setStatTileClass(id, cls){
-      const el=document.getElementById(id)?.closest(".stat-tile");
-      if(!el) return;
-      el.classList.remove("stat-bull","stat-bear","stat-neutral","stat-gold","stat-purple");
-      if(cls) el.classList.add(cls);
+    function currentLatestRecord(){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      return records[records.length - 1] || null;
     }
 
-    function updateStatTileColors(s){
-      setStatTileClass("statCurrent", s.current>=56 ? "stat-bull" : (s.current<45 ? "stat-bear" : "stat-neutral"));
-      setStatTileClass("statChange", s.change>0 ? "stat-bull" : (s.change<0 ? "stat-bear" : "stat-neutral"));
-      setStatTileClass("statAverage", s.average>=56 ? "stat-bull" : (s.average<45 ? "stat-bear" : "stat-neutral"));
-      setStatTileClass("statRange", "stat-gold");
-      setStatTileClass("statVolatility", "stat-purple");
-      setStatTileClass("statBullBear", s.bulls>s.bears ? "stat-bull" : (s.bears>s.bulls ? "stat-bear" : "stat-neutral"));
-    }
+    function getOfficialCurrent(item){
+      const latest = currentLatestRecord();
+      const row = latest?.instruments?.[item.dataKey || item.name];
 
-    function setupCanvas(canvas){
-      const rect = canvas.getBoundingClientRect();
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.max(240, Math.floor(rect.width * ratio));
-      canvas.height = Math.max(150, Math.floor(rect.height * ratio));
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(ratio,0,0,ratio,0,0);
-      return {ctx,w:rect.width,h:rect.height};
-    }
-
-    function drawGrid(ctx,w,h,pad={l:26,r:12,t:12,b:20}){
-      ctx.clearRect(0,0,w,h);
-      ctx.lineWidth=1;
-      ctx.strokeStyle=COLORS.grid;
-      ctx.fillStyle=COLORS.text;
-      ctx.font="10px Inter, Arial";
-      [0,25,50,75,100].forEach(v=>{
-        const y = pad.t + (100-v)/100*(h-pad.t-pad.b);
-        ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
-        if(w>220) ctx.fillText(v,3,y+3);
-      });
-      return {iw:w-pad.l-pad.r,ih:h-pad.t-pad.b,pad};
-    }
-
-    function xAt(i,n,box){return box.pad.l + (n<=1 ? box.iw/2 : i/(n-1)*box.iw);}
-    function yAt(v,box){return box.pad.t + (100-clamp(v,0,100))/100*box.ih;}
-
-    function drawLine(canvas, series, opts={}){
-      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,opts.pad);
-      const n = Math.max(...series.map(s=>s.points.length),1);
-      const progress = state.anim;
-      series.forEach((s,si)=>{
-        const pts=s.points; if(!pts.length) return;
-        const drawN = Math.max(1,Math.ceil(pts.length*progress));
-        const shown=pts.slice(0,drawN);
-        ctx.lineWidth=s.width||2;
-        ctx.strokeStyle=s.color;
-        ctx.beginPath();
-        shown.forEach((p,i)=>{const x=xAt(i,pts.length,box), y=yAt(p.value,box); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);});
-        ctx.stroke();
-        if(s.fill && shown.length>1){
-          const grad=ctx.createLinearGradient(0,box.pad.t,0,h-box.pad.b);
-          grad.addColorStop(0,s.fill); grad.addColorStop(1,"rgba(0,0,0,0)");
-          ctx.lineTo(xAt(shown.length-1,pts.length,box),h-box.pad.b);
-          ctx.lineTo(xAt(0,pts.length,box),h-box.pad.b);
-          ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
-        }
-        if(opts.dots){
-          shown.forEach((p,i)=>{const x=xAt(i,pts.length,box), y=yAt(p.value,box); ctx.fillStyle=s.color; ctx.beginPath();ctx.arc(x,y,2.4,0,Math.PI*2);ctx.fill();});
-        }
-      });
-      const labels=series[0]?.points||[];
-      if(labels.length){
-        ctx.fillStyle=COLORS.text; ctx.font="10px Inter, Arial";
-        const count=opts.labelAll ? labels.length : Math.min(5,labels.length);
-        for(let i=0;i<count;i++){
-          const idx=opts.labelAll ? i : (count===1?0:Math.round(i*(labels.length-1)/(count-1)));
-          const x=xAt(idx,labels.length,box);
-          ctx.textAlign=i===0?"left":i===count-1?"right":"center";
-          ctx.fillText(labels[idx].label,x,h-6);
-        }
-        ctx.textAlign="left";
+      if(row && row.psi != null){
+        return {
+          name:item.name,
+          symbol:item.symbol,
+          score:Number(row.psi),
+          label:row.sentiment_label || labelForScore(Number(row.psi)),
+          headlineCount:Number(row.headline_count || 0),
+          bullish:Number(row.bullish_count || 0),
+          bearish:Number(row.bearish_count || 0),
+          neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
+          source:"official",
+          topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
+        };
       }
-      if(opts.scan && progress >= .98){
-        const x = box.pad.l + ((Date.now()/35) % Math.max(1,box.iw));
-        ctx.strokeStyle="rgba(255,255,255,.18)"; ctx.beginPath(); ctx.moveTo(x,box.pad.t); ctx.lineTo(x,h-box.pad.b); ctx.stroke();
+
+      const backendTagged = getForexHeadlines().filter(h => exactInstrumentMatch(item, h));
+      if(backendTagged.length){
+        return scoreFromHeadlineSet(item.name, item.symbol, backendTagged, "backend");
       }
+
+      return null;
     }
 
-    function drawBars(canvas, points, colors=[COLORS.gold,COLORS.pink,COLORS.purple]){
-      const {ctx,w,h}=setupCanvas(canvas);
-      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:26});
-      const pts=points.slice(-5);
-      if(!pts.length) return;
-
-      const groupW = box.iw / Math.max(pts.length,1);
-      const barW = Math.max(5, Math.min(13, groupW * .17));
-
-      ctx.font="10px Inter, Arial";
-      ctx.textBaseline="middle";
-
-      pts.forEach((p,i)=>{
-        const center = box.pad.l + (i + .5) * groupW;
-        const momentum = Math.abs((p.us ?? p.value) - (p.global ?? p.value)) + 35;
-        const vals=[
-          {value:p.global, color:colors[0], offset:-barW*.95},
-          {value:p.us, color:colors[1], offset:0},
-          {value:momentum, color:colors[2], offset:barW*.95}
-        ];
-
-        vals.forEach(item=>{
-          if(!Number.isFinite(item.value)) return;
-          const y=yAt(item.value*state.anim,box);
-          const bh=h-box.pad.b-y;
-          const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
-          grad.addColorStop(0,item.color);
-          grad.addColorStop(1,"rgba(255,255,255,.06)");
-          ctx.fillStyle=grad;
-          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
-        });
-
-        ctx.fillStyle=COLORS.text;
-        ctx.textAlign="center";
-        ctx.fillText(p.label, center, h-8);
-      });
-
-      ctx.textAlign="left";
-      ctx.textBaseline="alphabetic";
+    function getDerivedCurrent(item){
+      const headlines = getForexHeadlines().filter(h => itemMatchesHeadline(item, h));
+      return scoreFromHeadlineSet(item.name, item.symbol, headlines, "derived");
     }
 
-    function drawDonut(canvas, items){
-      const {ctx,w,h}=setupCanvas(canvas);
-      ctx.clearRect(0,0,w,h);
-
-      // Bias Mix only: draw the donut centered inside its own safe canvas area.
-      // Radius includes stroke margin so the ring never clips left/right/top/bottom.
-      const margin=18;
-      const maxR=Math.max(22, Math.min((w-margin*2)/2, (h-margin*2)/2));
-      const r=maxR;
-      const thick=Math.max(18, Math.min(24, r*.46));
-      const cx=w/2;
-      const cy=h/2;
-      const total=items.reduce((a,b)=>a+b.value,0) || 1;
-
-      ctx.strokeStyle="rgba(255,255,255,.08)";
-      ctx.lineWidth=thick;
-      ctx.lineCap="butt";
-      ctx.beginPath();
-      ctx.arc(cx,cy,r,0,Math.PI*2);
-      ctx.stroke();
-
-      let start=-Math.PI/2;
-      items.forEach(item=>{
-        const a=(item.value/total)*Math.PI*2*state.anim;
-        ctx.strokeStyle=item.color;
-        ctx.lineWidth=thick;
-        ctx.lineCap="butt";
-        ctx.beginPath();
-        ctx.arc(cx,cy,r,start,start+a);
-        ctx.stroke();
-        start+=a;
-      });
-    }
-
-    function drawHourly(){
-      const canvas=document.getElementById("chartHourly");
-      let pts = aggregateHourlyComparison(state.hourly);
-
-      // Comparison card: always shows Global + U.S. together.
-      // Live intraday samples are sorted oldest to newest.
-      // New hourly readings enter from the right while older bars shift left.
-      pts = pts.slice(-8);
-
-      const {ctx,w,h}=setupCanvas(canvas);
-      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:30});
-      if(!pts.length) return;
-
-      const groupW = box.iw / Math.max(pts.length,1);
-      const barW=Math.max(6,Math.min(16,groupW*.22));
-
-      ctx.font="10px Inter, Arial";
-      ctx.textBaseline="middle";
-
-      pts.forEach((p,i)=>{
-        const center=box.pad.l + ((i + 0.5) / pts.length) * box.iw;
-        const values=[
-          {value:p.global, color:COLORS.gold, offset:-barW*.62},
-          {value:p.us, color:COLORS.pink, offset:barW*.62}
-        ];
-
-        values.forEach(item=>{
-          if(!Number.isFinite(item.value)) return;
-          const y=yAt(item.value*state.anim,box);
-          const bh=h-box.pad.b-y;
-          const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
-          grad.addColorStop(0,item.color);
-          grad.addColorStop(1,"rgba(255,255,255,.06)");
-          ctx.fillStyle=grad;
-          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
-        });
-
-        ctx.fillStyle=COLORS.text;
-        ctx.textAlign="center";
-        ctx.fillText(String(p.label || ""), center, h-9);
-      });
-
-      ctx.textAlign="left";
-      ctx.textBaseline="alphabetic";
-    }
-
-    function drawAll(){
-      const dailyGlobal=movingAverage(aggregate("global","daily",true)).slice(-40).map(p=>({...p,value:p.smooth??p.value}));
-      const dailyUs=movingAverage(aggregate("us","daily",true)).slice(-40).map(p=>({...p,value:p.smooth??p.value}));
-      const selected=movingAverage(aggregate(state.scope,state.period,true)).slice(-50).map(p=>({...p,value:p.smooth??p.value}));
-      const allSelected=movingAverage(aggregate(state.scope,state.period,false)).slice(-50).map(p=>({...p,value:p.smooth??p.value}));
-
-      drawHourly();
-      const weeklyGlobal=aggregate("global","weekly",true).slice(-4);
-      const weeklyUs=aggregate("us","weekly",true).slice(-4);
-      drawLine(document.getElementById("chartFlow"),[
-        {points:weeklyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
-        {points:weeklyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
-      ],{dots:false,scan:true,pad:{l:34,r:10,t:30,b:20}});
-      drawBars(document.getElementById("chartBars"), aggregate("global","daily",true));
-      updateSkylineHeader();
-      const skylineGlobal=movingAverage(skylinePoints("global")).map(p=>({...p,value:p.smooth??p.value}));
-      const skylineUs=movingAverage(skylinePoints("us")).map(p=>({...p,value:p.smooth??p.value}));
-      drawLine(document.getElementById("chartSkyline"),[
-        {points:skylineGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2},
-        {points:skylineUs,color:COLORS.pink,fill:"rgba(255,63,134,.16)",width:2}
-      ],{dots:false,scan:true,labelAll:true,pad:{l:28,r:10,t:28,b:22}});
-
-      updateMomentumHeader();
-      const momentumGlobal=skylinePoints("global");
-      const momentumUs=skylinePoints("us");
-      const momBase=skylinePoints(state.scope);
-      const mom=momBase.map((p,i,a)=>({label:p.label,value:i?clamp(50+(p.value-a[i-1].value)*3,0,100):50}));
-      const vol=momBase.map((p,i,a)=>({label:p.label,value:i?clamp(Math.abs(p.value-a[i-1].value)*6,0,100):0}));
-      drawLine(document.getElementById("chartMomentum"),[
-        {points:momentumGlobal,color:COLORS.gold,width:2},
-        {points:momentumUs,color:COLORS.pink,width:1.8},
-        {points:mom,color:COLORS.purple,width:1.7},
-        {points:vol,color:COLORS.cyan,width:1.5}
-      ],{dots:true,scan:false,labelAll:true,pad:{l:30,r:10,t:30,b:22}});
-
-      updateBiasHeader();
-      const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
-      const biasItems=[
-        {label:"Bullish",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
-        {label:"Mixed/Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
-        {label:"Bearish",value:vals.filter(v=>v<45).length,color:COLORS.pink}
+    function getForexHeadlines(){
+      const all = [
+        ...(Array.isArray(dashboardData?.psi_headlines) ? dashboardData.psi_headlines : []),
+        ...(Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines : []),
+        ...(Array.isArray(dashboardData?.headlines) ? dashboardData.headlines : [])
       ];
-      updateBiasLegend(biasItems);
-      drawDonut(document.getElementById("chartBias"),biasItems);
-      updateDivergenceHeader();
-      const divPts = divergencePoints();
-      const divColor = divPts.length && divPts[divPts.length-1].gap > 0 ? COLORS.pink : COLORS.gold;
-      drawLine(document.getElementById("chartDivergence"),[
-        {points:divPts,color:divColor,fill:"rgba(255,215,128,.12)",width:2.2}
-      ],{dots:true,scan:false,labelAll:false,pad:{l:24,r:10,t:40,b:20}});
+
+      const seen = new Set();
+      const forexWords = ["forex","foreign exchange","currency","currencies","fx market","dollar","euro","yen","sterling","pound","swiss franc","australian dollar","canadian dollar","new zealand dollar","dxy","eurusd","eur/usd","gbpusd","gbp/usd","usdjpy","usd/jpy","usdchf","usd/chf","usdcad","usd/cad","audusd","aud/usd","nzdusd","nzd/usd"];
+      const dataKeys = new Set(CRYPTO_ITEMS.map(item => normalizeText(item.dataKey || item.name)));
+
+      return all.filter(h => {
+        const key = h.link || `${h.source}|${h.title}`;
+        if(seen.has(key)) return false;
+        const text = headlineText(h);
+        const tagged = (Array.isArray(h.instruments) ? h.instruments : []).some(name => dataKeys.has(normalizeText(name)));
+        const isForex = tagged || forexWords.some(w => text.includes(w));
+        if(!isForex) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
-    function renderStats(){
-      const points=aggregate(state.scope,state.period,true);
-      const s=stats(points);
-      document.getElementById("dashEmpty").style.display = points.length ? "none" : "block";
-      if(!s){
-        ["statCurrent","statChange","statAverage","statRange","statVolatility","statBullBear","levelValue","divergenceValue"].forEach(id=>{
-          const el=document.getElementById(id);
-          if(el) el.textContent="--";
-        });
-        const levelNoteEl=document.getElementById("levelNote");
-        if(levelNoteEl) levelNoteEl.textContent="Waiting for data";
-        ["levelBar1","levelBar2","levelBar3"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.width="0%"; });
-        updateDivergenceHeader();
-        updateDivergenceSummary();
-        return;
-      }
-      const b=bias(s.current);
-      document.getElementById("statCurrent").textContent=round(s.current);
-      document.getElementById("statChange").textContent=signed(s.change);
-      document.getElementById("statAverage").textContent=round(s.average);
-      document.getElementById("statRange").textContent=round(s.min)+" / "+round(s.max);
-      document.getElementById("statVolatility").textContent=round(s.volatility);
-      document.getElementById("statBullBear").textContent=s.bulls+" / "+s.bears;
-      updateStatTileColors(s);
-      const levelValueEl=document.getElementById("levelValue");
-      if(levelValueEl){
-        levelValueEl.textContent=round(s.current);
-        levelValueEl.style.color=b.color;
-      }
-      const levelNoteEl=document.getElementById("levelNote");
-      if(levelNoteEl) levelNoteEl.textContent=b.text + " • " + s.total + " records";
-      updateDivergenceSummary();
-      const levelBar1El=document.getElementById("levelBar1");
-      const levelBar2El=document.getElementById("levelBar2");
-      const levelBar3El=document.getElementById("levelBar3");
-      if(levelBar1El) levelBar1El.style.width=clamp(s.current,0,100)+"%";
-      if(levelBar2El) levelBar2El.style.width=clamp(s.average,0,100)+"%";
-      if(levelBar3El) levelBar3El.style.width=clamp(50+s.change,0,100)+"%";
-      updateSkylineHeader();
-      updateDivergenceHeader();
+    function buildRows(){
+      return CRYPTO_ITEMS.map(item => getOfficialCurrent(item) || getDerivedCurrent(item)).slice(0,10);
     }
 
-    function renderRows(){
-      const rows=aggregate(state.scope,state.period,true).slice().reverse().slice(0,18);
-      const body=document.getElementById("historyRows");
-      if(!rows.length){body.innerHTML='<tr><td colspan="7">Waiting for sentiment history.</td></tr>';return;}
-      body.innerHTML=rows.map((r,i,arr)=>{
-        const next=arr[i+1];
-        const move=next ? r.value-next.value : null;
-        const b=bias(r.value);
-        return `<tr><td>${esc(r.label)}</td><td>${r.global==null?"--":round(r.global)}</td><td>${r.us==null?"--":round(r.us)}</td><td>${round(r.value)}</td><td>${move==null?"--":signed(move)}</td><td><span class="bias-pill" style="color:${b.color};background:${b.color}18;">${b.text}</span></td><td>${r.count}</td></tr>`;
-      }).join("");
-    }
+    function renderTopCards(){
+      const grid = document.getElementById("cryptoTopGrid");
+      if(!grid) return;
 
-    function updateDriversHeader(){
-      const title=document.getElementById("driversTitle");
-      if(title) title.textContent = periodLabel(state.period) + " " + (state.scope==="us"?"U.S.":"Global") + " sentiment drivers";
-    }
-
-    function driverBadge(d){
-      const s = Number.isFinite(d.score) ? d.score : 0;
-      if(s > .15 || s > 15) return {text:"Bullish", color:COLORS.green};
-      if(s < -.15 || s < -15) return {text:"Bearish", color:COLORS.red};
-      return {text:"Mixed/Neutral", color:COLORS.gold};
-    }
-
-    function driverSourceText(d){
-      const parts=[];
-      if(d.source) parts.push(d.source);
-      if(d.timeLabel) parts.push(d.timeLabel);
-      return parts.join(" • ") || "Latest headline";
-    }
-
-    function fallbackDrivers(){
-      const points=aggregate(state.scope,state.period,true);
-      const s=stats(points);
-      const div=divergencePoints();
-      const latestDiv=div.length ? div[div.length-1] : null;
-      if(!s) return [{title:"Waiting for sentiment history data", source:"No selected records yet", score:0}];
-
-      const b=bias(s.current);
-      const trend=s.change>1?"improving":(s.change<-1?"weakening":"stable");
-      const period=periodLabel(state.period).toLowerCase();
-      const scope=state.scope==="us"?"U.S.":"Global";
-      const out=[
-        {title:`${scope} PSI is ${round(s.current)} — ${b.text}`, source:`Current ${period} reading`, score:s.current-50},
-        {title:`Selected trend is ${trend} by ${signed(s.change)} points`, source:`First-to-latest move`, score:s.change},
-        {title:`Average volatility is ${round(s.volatility)} points`, source:`Movement pressure`, score:s.volatility}
-      ];
-      if(latestDiv && Number.isFinite(latestDiv.gap)){
-        const gap=Math.round(Math.abs(latestDiv.gap));
-        out.push({
-          title: latestDiv.gap>=0 ? `U.S. sentiment is ${gap} points stronger than Global` : `Global sentiment is ${gap} points stronger than U.S.`,
-          source:"Global vs U.S. divergence",
-          score:latestDiv.gap
-        });
-      }
-      return out;
-    }
-
-    function filteredDrivers(){
-      const raw=state.drivers || [];
-      if(!raw.length) return [];
-      if(state.scope!=="us") return raw.slice(0,4);
-
-      const usWords=/\b(u\.s\.|us|united states|america|american|fed|federal reserve|wall street|s&p|sp500|nasdaq|dow|treasury|white house|congress|nyse)\b/i;
-      const us=raw.filter(d=>usWords.test((d.title||"")+" "+(d.source||"")));
-      return (us.length>=2 ? us : raw).slice(0,4);
-    }
-
-    function renderDrivers(){
-      updateDriversHeader();
-      const box=document.getElementById("driverList");
-      const items=filteredDrivers();
-      const finalItems=items.length ? items : fallbackDrivers();
-
-      box.innerHTML=finalItems.slice(0,4).map((d,i)=>{
-        const badge=driverBadge(d);
-        const title=d.title || "Untitled driver";
-        const titleHtml=d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(title)}</a>`:esc(title);
-        return `<div class="driver-item">
-          <span class="driver-rank">${String(i+1).padStart(2,"0")}</span>
-          <span class="driver-text">
-            <span class="driver-main">${titleHtml}</span>
-            <span class="driver-meta"><span class="driver-badge" style="color:${badge.color};border-color:${badge.color}55;background:${badge.color}14;">${badge.text}</span>${esc(driverSourceText(d))}</span>
-          </span>
-        </div>`;
-      }).join("");
-    }
-
-    function animate(){
-      const start=performance.now();
-      const dur=state.reduced?1:900;
-      function step(now){
-        state.anim=clamp((now-start)/dur,0,1);
-        drawAll();
-        if(state.anim<1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-
-    function render(){
-      renderStats(); renderRows(); renderDrivers(); animate();
-    }
-
-    function setScope(scope){
-      state.scope=scope;
-      document.querySelectorAll("[data-scope]").forEach(b=>b.classList.toggle("active",b.dataset.scope===scope));
-      document.querySelectorAll("[data-side-scope]").forEach(b=>b.classList.toggle("active",b.dataset.sideScope===scope));
-      render();
-    }
-
-    function bindControls(){
-      document.querySelectorAll("[data-scope]").forEach(btn=>btn.addEventListener("click",()=>setScope(btn.dataset.scope)));
-      document.querySelectorAll("[data-side-scope]").forEach(btn=>btn.addEventListener("click",()=>setScope(btn.dataset.sideScope)));
-      document.querySelectorAll("[data-period]").forEach(btn=>btn.addEventListener("click",()=>{
-        state.period=btn.dataset.period;
-        document.querySelectorAll("[data-period]").forEach(b=>b.classList.toggle("active",b===btn));
-        render();
-      }));
-      document.querySelectorAll("[data-range]").forEach(btn=>btn.addEventListener("click",()=>{
-        state.range=btn.dataset.range;
-        document.querySelectorAll("[data-range]").forEach(b=>b.classList.toggle("active",b===btn));
-        render();
-      }));
-      document.querySelector("[data-export='csv']")?.addEventListener("click",exportCSV);
-      window.addEventListener("resize",()=>{state.anim=1;drawAll();});
-    }
-
-    function exportCSV(){
-      const source = (state.hourly && state.hourly.length ? state.hourly : state.raw)
-        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()));
-
-      if(!source.length){
-        alert("No hourly history is available to export yet.");
+      if(!currentRows.length){
+        grid.innerHTML = `<div class="empty-note">No forex sentiment data loaded yet.</div>`;
         return;
       }
 
-      const latestTs = Math.max(...source.map(r => r.ts.getTime()));
-      const cutoffTs = latestTs - (180 * 86400000);
-      const groups = new Map();
+      grid.innerHTML = currentRows.map((row, idx) => {
+        const score = row.score == null ? 0 : row.score;
+        const color = colorForScore(row.score);
+        const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend tagged PSI" : "Headline fallback");
+        return `
+          <article class="crypto-card">
+            <div class="crypto-card-top">
+              <div style="min-width:0;">
+                <div class="crypto-name">${esc(row.name)}</div>
+                <div class="crypto-symbol">${esc(row.symbol)} • ${sourceText}</div>
+              </div>
+              <span class="sentiment-pill" style="${pillStyle(row.score)}">${esc(row.label)}</span>
+            </div>
 
-      source.filter(r => r.ts.getTime() >= cutoffTs).forEach(r => {
-        const ny = nyHourParts(r.ts);
-        if(!groups.has(ny.key)){
-          groups.set(ny.key,{key:ny.key, global:[], us:[], count:0});
-        }
-        const g = groups.get(ny.key);
-        if(Number.isFinite(r.global)) g.global.push(r.global);
-        if(Number.isFinite(r.us)) g.us.push(r.us);
-        g.count += 1;
+            <div class="crypto-score-wrap">
+              <div class="crypto-gauge" style="--score:${score};--accent:${color};">
+                <div class="crypto-gauge-inner">
+                  <div>
+                    <div class="crypto-score">${row.score == null ? "--" : row.score}</div>
+                    <div class="crypto-score-label" data-glossary="psi">PSI</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="crypto-metrics">
+                <div class="crypto-line"><span data-glossary="headline-count">Headlines</span><b>${row.headlineCount}</b></div>
+                <div class="crypto-line"><span>Bullish</span><b>${row.bullish}</b></div>
+                <div class="crypto-line"><span>Bearish</span><b>${row.bearish}</b></div>
+                <div class="crypto-line"><span>Neutral/Mixed</span><b>${row.neutral}</b></div>
+              </div>
+            </div>
+
+            <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
+            <label class="compare-control">
+              <input class="compare-checkbox" type="checkbox" data-name="${esc(row.name)}" onchange='toggleCompare(${JSON.stringify(row.name).replace(/</g,"\\u003c")}, this.checked, this)'>
+              <span>Compare</span>
+            </label>
+          </article>
+        `;
+      }).join("");
+      updateCompareVisuals();
+    }
+
+    function updateCompareVisuals(){
+      document.querySelectorAll(".compare-checkbox").forEach(cb => {
+        const isSelected = selectedCompareNames.includes(cb.dataset.name);
+        cb.checked = isSelected;
+        const card = cb.closest(".crypto-card");
+        if(card) card.classList.toggle("compare-selected", isSelected);
       });
-
-      const rows = [...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
-      const csv=["ny_hour,global_psi,us_psi,records"].concat(rows.map(r=>[
-        r.key,
-        round(avg(r.global)),
-        round(avg(r.us)),
-        r.count
-      ].map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(","))).join("\n");
-
-      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url; a.download="public-sentiment-hourly-6months.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    async function fetchJSON(path){
-      const res=await fetch(path,{cache:"no-store"});
-      if(!res.ok) throw new Error(path+" "+res.status);
-      return res.json();
-    }
-
-    function collectDriverCandidates(data){
-      const out=[];
-      const seen=new Set();
-      function walk(v,depth=0){
-        if(!v || out.length>=1200 || depth>5) return;
-        if(Array.isArray(v)){
-          for(const item of v){ walk(item,depth+1); if(out.length>=1200) break; }
-          return;
-        }
-        if(typeof v==="object"){
-          const title=v.title||v.headline||v.name||v.text;
-          if(title && typeof title==="string"){
-            const key=title.trim().toLowerCase();
-            if(key && !seen.has(key)){ seen.add(key); out.push(v); }
+    function toggleCompare(name, checked, input){
+      if(checked){
+        if(!selectedCompareNames.includes(name)){
+          if(selectedCompareNames.length >= 2){
+            input.checked = false;
             return;
           }
-          ["articles","news","items","records","headlines","data","results","latest","stories","psi_headlines"].forEach(k=>walk(v[k],depth+1));
+          selectedCompareNames.push(name);
         }
+      }else{
+        selectedCompareNames = selectedCompareNames.filter(x => x !== name);
       }
-      walk(data);
+
+      updateCompareVisuals();
+
+      if(selectedCompareNames.length === 2){
+        openCompareHistory();
+      }
+    }
+
+    function openCompareHistory(){
+      if(selectedCompareNames.length !== 2) return;
+
+      activeCompareNames = [...selectedCompareNames];
+      activeHistoryPeriod = "daily";
+
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.add("open");
+      if(card) card.classList.add("compare-card");
+      document.body.style.overflow = "hidden";
+
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
+      renderHistory();
+    }
+
+    function domainFromUrl(url){
+      try{ return new URL(url).hostname.replace(/^www\./, ""); }
+      catch(e){ return ""; }
+    }
+
+
+    function releaseDateText(h){
+      const raw = h.published_utc || h.published || h.date || "";
+      if(!raw) return "Release date: latest scan";
+      return "Release date: " + String(raw).replace(" UTC","").replace(" GMT","");
+    }
+
+    function sourceLogoUrl(h){
+      const domain = domainFromUrl(h.source_url || h.link || "");
+      return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
+    }
+
+    function renderHeadlines(){
+      const list = document.getElementById("headlineList");
+      const status = document.getElementById("headlineStatus");
+      const headlines = getForexHeadlines().slice(0,30);
+
+      if(status){
+        status.textContent = `Up to 30 latest forex headline(s) shown from the latest dashboard feed.`;
+      }
+
+      if(!list) return;
+
+      if(!headlines.length){
+        list.innerHTML = `<div class="empty-note">No forex headlines found in the latest data file.</div>`;
+        return;
+      }
+
+      list.innerHTML = headlines.map(h => {
+        const logo = sourceLogoUrl(h);
+        const sourceInitial = esc(String(h.source || "N").trim().slice(0,1).toUpperCase() || "N");
+        const logoHtml = logo
+          ? `<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source || "Source")} logo" loading="lazy" onerror="this.outerHTML='<div class=&quot;headline-logo-fallback&quot;>${sourceInitial}</div>'">`
+          : `<div class="headline-logo-fallback">${sourceInitial}</div>`;
+
+        return `
+          <a class="headline-row" href="${esc(h.link || "#")}" target="_blank" rel="noopener">
+            ${logoHtml}
+            <div class="headline-body">
+              <div class="headline-source">${esc(h.source || "Source")}</div>
+              <div class="headline-title">${esc(h.title || "Untitled headline")}</div>
+              <div class="headline-meta">${esc(releaseDateText(h))} • ${esc((h.instruments || []).join(", "))} • ${esc(h.vote || "Neutral")}</div>
+              <div class="headline-open">Open →</div>
+            </div>
+          </a>
+        `;
+      }).join("");
+    }
+
+    function renderHero(){
+      const overall = currentRows.length
+        ? Math.round(currentRows.filter(r => r.score != null).reduce((a,r) => a + r.score, 0) / Math.max(1,currentRows.filter(r => r.score != null).length))
+        : null;
+
+      const overallEl = document.getElementById("overallScore");
+      const updatedEl = document.getElementById("updatedText");
+
+      if(overallEl) overallEl.textContent = overall == null ? "--" : `${overall}/100`;
+      if(updatedEl){
+        updatedEl.textContent = `${labelForScore(overall)} • Updated: ${dashboardData?.updated_ny || historyData?.updated_ny || "latest scan"}`;
+      }
+    }
+
+    function savedHeadlinesForRecord(record){
+      const out = [];
+      const seen = new Set();
+      const instruments = record?.instruments || {};
+      Object.values(instruments).forEach(row => {
+        (Array.isArray(row?.top_headlines) ? row.top_headlines : []).forEach(h => {
+          const key = h.link || `${h.source || ""}|${h.title || ""}`;
+          if(!key || seen.has(key)) return;
+          seen.add(key);
+          out.push(h);
+        });
+      });
       return out;
     }
 
-    function timeLabelFrom(value){
-      if(!value) return "";
-      const d=new Date(value);
-      if(Number.isNaN(d.getTime())) return "";
-      return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    function derivedHistoryRowForItem(record, item){
+      const matches = savedHeadlinesForRecord(record).filter(h => itemMatchesHeadline(item, h));
+      if(!matches.length) return null;
+
+      let total = 0;
+      let bullish = 0;
+      let bearish = 0;
+      let neutral = 0;
+
+      matches.forEach(h => {
+        const s = Number(h.weighted_score ?? h.score ?? 0);
+        total += Number.isFinite(s) ? s : 0;
+
+        const vote = normalizeText(h.vote);
+        if(vote.includes("bull")) bullish++;
+        else if(vote.includes("bear")) bearish++;
+        else neutral++;
+      });
+
+      const avg = total / matches.length;
+      const value = Math.round(clamp(50 + avg * 6, 0, 100));
+
+      return {
+        date:record.date,
+        label:record.date,
+        value:value,
+        count:matches.length,
+        bullish:bullish,
+        bearish:bearish,
+        neutral:neutral,
+        sentiment:labelForScore(value)
+      };
     }
 
-    function normalizeDriver(x,index){
-      const title=String(x.title||x.headline||x.name||x.text||"").trim();
-      const url=x.url||x.link||x.href||"";
-      const source=x.source||x.publisher||x.site||x.domain||"";
-      const rawScore=num(x.score??x.sentiment_score??x.signed_score??x.impact??x.weight??x.psi_score);
-      const score=Number.isFinite(rawScore) ? rawScore : 0;
-      const rawDate=x.published_at||x.published||x.date||x.time||x.created_at||x.updated_at||"";
-      const d=rawDate ? new Date(rawDate) : null;
-      const sortDate=d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
-      return {title,url,source,score,timeLabel:timeLabelFrom(rawDate),sortDate,index};
+    function keepRecentHistoryDays(series){
+      const clean = series.filter(row => row && row.date);
+      if(!clean.length) return clean;
+      const latest = clean.reduce((max,row) => {
+        const d = new Date(row.date + "T00:00:00");
+        return Number.isNaN(d.getTime()) || d <= max ? max : d;
+      }, new Date(0));
+      const cutoff = new Date(latest.getTime() - (HISTORY_RETENTION_DAYS - 1) * 86400000);
+      return clean.filter(row => {
+        const d = new Date(row.date + "T00:00:00");
+        return !Number.isNaN(d.getTime()) && d >= cutoff;
+      });
     }
 
-    async function loadDrivers(){
-      const paths=["hot_news.json","news_cache.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
-      for(const path of paths){
-        try{
-          const data=await fetchJSON(path);
-          const arr=collectDriverCandidates(data);
-          state.drivers=arr.map(normalizeDriver)
-            .filter(x=>x.title)
-            .sort((a,b)=>(b.sortDate-a.sortDate) || (Math.abs(b.score)-Math.abs(a.score)) || (a.index-b.index));
-          if(state.drivers.length) break;
-        }catch(e){}
+    function dailySeries(name){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      const item = CRYPTO_ITEMS.find(x => x.name === name);
+      const dataKey = item?.dataKey || name;
+
+      return keepRecentHistoryDays(records.map(r => {
+        const row = r.instruments?.[dataKey];
+
+        if(row && row.psi != null){
+          return {
+            date:r.date,
+            label:r.date,
+            value:Number(row.psi),
+            count:Number(row.headline_count || 0),
+            sentiment:row.sentiment_label || labelForScore(Number(row.psi)),
+            source:"official"
+          };
+        }
+
+        if(item){
+          return derivedHistoryRowForItem(r, item);
+        }
+
+        return null;
+      }).filter(Boolean));
+    }
+
+    function weekKey(dateText){
+      const d = new Date(dateText + "T00:00:00");
+      const oneJan = new Date(d.getFullYear(),0,1);
+      const week = Math.ceil((((d - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
+      return `${d.getFullYear()} W${String(week).padStart(2,"0")}`;
+    }
+
+    function monthKey(dateText){
+      const d = new Date(dateText + "T00:00:00");
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    }
+
+    function aggregateSeries(series, mode){
+      if(mode === "daily") return series;
+      const map = new Map();
+      series.forEach(row => {
+        const key = mode === "weekly" ? weekKey(row.date) : monthKey(row.date);
+        if(!map.has(key)) map.set(key, {label:key, total:0, count:0, headlines:0});
+        const item = map.get(key);
+        item.total += Number(row.value || 0);
+        item.count += 1;
+        item.headlines += Number(row.count || 0);
+      });
+      return Array.from(map.values()).map(x => ({
+        label:x.label,
+        value:Math.round(x.total / Math.max(1,x.count)),
+        count:x.headlines,
+        sentiment:labelForScore(Math.round(x.total / Math.max(1,x.count)))
+      }));
+    }
+
+    function drawHistoryChart(series, svgId = "historyChart"){
+      const svg = document.getElementById(svgId);
+      if(!svg) return;
+
+      if(!series.length){
+        svg.innerHTML = `<text x="450" y="210" text-anchor="middle" fill="#8b949e" font-size="18" font-weight="800">No saved history yet</text>`;
+        return;
       }
+
+      const w = 900;
+      const h = 420;
+      const padL = 58;
+      const padR = 28;
+      const padT = 30;
+      const padB = 50;
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+      const n = series.length;
+
+      const points = series.map((row, i) => {
+        const x = n === 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW;
+        const y = padT + (100 - clamp(row.value,0,100)) / 100 * innerH;
+        return {x,y,row};
+      });
+
+      const d = points.map((p,i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+      const area = `${d} L ${points[points.length-1].x.toFixed(1)} ${padT + innerH} L ${points[0].x.toFixed(1)} ${padT + innerH} Z`;
+      const last = series[series.length - 1];
+      const color = colorForScore(last.value);
+
+      const yTicks = [0,25,50,75,100].map(v => {
+        const y = padT + (100 - v) / 100 * innerH;
+        return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="rgba(45,212,191,.16)" stroke-dasharray="3 9"></line>
+                <text x="${padL-12}" y="${y+4}" text-anchor="end" fill="#78a6c8" font-size="11" font-weight="800">${v}</text>`;
+      }).join("");
+
+      const vLines = points.map((p,i) => {
+        if(n > 10 && i % Math.ceil(n/6) !== 0 && i !== n-1) return "";
+        return `<line x1="${p.x}" y1="${padT}" x2="${p.x}" y2="${padT+innerH}" stroke="rgba(88,166,255,.08)" stroke-dasharray="2 10"></line>`;
+      }).join("");
+
+      const labels = points.map((p,i) => {
+        if(n > 8 && i % Math.ceil(n/6) !== 0 && i !== n-1) return "";
+        return `<text x="${p.x}" y="${h-18}" text-anchor="middle" fill="#8fb8d8" font-size="10" font-weight="800">${esc(p.row.label).slice(5)}</text>`;
+      }).join("");
+
+      const circles = points.map((p,i) => `
+        <g>
+          <circle cx="${p.x}" cy="${p.y}" r="9" fill="${color}" opacity=".10"></circle>
+          <circle cx="${p.x}" cy="${p.y}" r="4.2" fill="#07101d" stroke="${color}" stroke-width="2.2">
+            <title>${esc(p.row.label)}: ${p.row.value}/100 • ${esc(p.row.sentiment)}</title>
+          </circle>
+        </g>
+      `).join("");
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="neonFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity=".34"></stop>
+            <stop offset="46%" stop-color="#2dd4bf" stop-opacity=".12"></stop>
+            <stop offset="100%" stop-color="#050b12" stop-opacity=".02"></stop>
+          </linearGradient>
+          <linearGradient id="neonLine" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#2dd4bf"></stop>
+            <stop offset="50%" stop-color="${color}"></stop>
+            <stop offset="100%" stop-color="#ffd780"></stop>
+          </linearGradient>
+          <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+            <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+          </filter>
+        </defs>
+        <rect x="${padL}" y="${padT}" width="${innerW}" height="${innerH}" fill="rgba(3,10,18,.30)" stroke="rgba(88,166,255,.10)"></rect>
+        ${vLines}
+        ${yTicks}
+        <path d="${area}" fill="url(#neonFill)"></path>
+        <path d="${d}" fill="none" stroke="rgba(45,212,191,.20)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="${d}" fill="none" stroke="url(#neonLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)"></path>
+        ${circles}
+        ${labels}
+        <text x="${w-padR}" y="${padT+16}" text-anchor="end" fill="#ffd780" font-size="12" font-weight="950">LATEST ${last.value}/100</text>
+        <text x="${padL}" y="${padT-10}" text-anchor="start" fill="#2dd4bf" font-size="10" font-weight="900" letter-spacing="2">SENTIMENT SIGNAL</text>
+      `;
     }
 
-    async function loadHistory(){
+    function renderHistoryStats(series, name, mode, boxId = "historyStats"){
+      const box = document.getElementById(boxId);
+      if(!box) return;
+
+      if(!series.length){
+        box.innerHTML = `<div class="empty-note">No saved or derived history exists yet for ${esc(name)}. This will fill in as matching headlines are saved over time.</div>`;
+        return;
+      }
+
+      const latest = series[series.length - 1];
+      const avg = Math.round(series.reduce((a,x) => a + x.value, 0) / series.length);
+      const high = Math.max(...series.map(x => x.value));
+      const low = Math.min(...series.map(x => x.value));
+
+      box.innerHTML = `
+        <div class="history-stat"><span data-glossary="current-sentiment">Latest</span><b>${latest.value}/100</b></div>
+        <div class="history-stat"><span data-glossary="sentiment-average">Average</span><b>${avg}/100</b></div>
+        <div class="history-stat"><span>High</span><b>${high}/100</b></div>
+        <div class="history-stat"><span>Low</span><b>${low}/100</b></div>
+        <div class="history-stat"><span data-glossary="record-count">Chart Points</span><b>${series.length}</b></div>
+        <div class="history-stat"><span>View</span><b>${mode.charAt(0).toUpperCase()+mode.slice(1)}</b></div>
+      `;
+    }
+
+    function openHistory(name){
+      activeCompareNames = [];
+      activeHistoryName = name;
+      activeHistoryPeriod = "daily";
+
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.add("open");
+      if(card) card.classList.remove("compare-card");
+      document.body.style.overflow = "hidden";
+
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === "daily"));
+      renderHistory();
+    }
+
+    function closeHistory(){
+      const layer = document.getElementById("historyLayer");
+      const card = document.querySelector(".history-card");
+      if(layer) layer.classList.remove("open");
+      if(card) card.classList.remove("compare-card");
+      document.body.style.overflow = "";
+    }
+
+    function setHistoryPeriod(period){
+      activeHistoryPeriod = period;
+      document.querySelectorAll(".history-period").forEach(btn => btn.classList.toggle("active", btn.dataset.period === period));
+      renderHistory();
+    }
+
+    function restoreSingleHistoryGrid(){
+      const grid = document.querySelector(".history-grid");
+      if(!grid) return;
+      grid.classList.remove("compare-mode");
+      grid.innerHTML = `
+        <div class="history-chart-wrap">
+          <svg id="historyChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="history-stats" id="historyStats"></div>
+      `;
+    }
+
+    function renderCompareHistory(){
+      const title = document.getElementById("historyTitle");
+      const subtitle = document.getElementById("historySubtitle");
+      const grid = document.querySelector(".history-grid");
+      const card = document.querySelector(".history-card");
+      if(!grid || activeCompareNames.length !== 2) return;
+
+      if(card) card.classList.add("compare-card");
+      grid.classList.add("compare-mode");
+
+      const periodLabel = activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1);
+      if(title) title.textContent = "Forex Comparison";
+      if(subtitle) subtitle.textContent = `${periodLabel} • ${activeCompareNames[0]} vs ${activeCompareNames[1]}`;
+
+      grid.innerHTML = activeCompareNames.map((name, idx) => {
+        const base = dailySeries(name);
+        const series = aggregateSeries(base, activeHistoryPeriod);
+        const latest = series.length ? `${series[series.length - 1].value}/100` : "No history";
+        return `
+          <div class="history-compare-item">
+            <div class="history-compare-title">
+              <b>${esc(name)}</b>
+              <span>${latest}</span>
+            </div>
+            <div class="history-compare-chart-wrap">
+              <svg id="historyCompareChart${idx}" class="history-compare-chart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="history-stats history-compare-stats" id="historyCompareStats${idx}"></div>
+          </div>
+        `;
+      }).join("");
+
+      activeCompareNames.forEach((name, idx) => {
+        const series = aggregateSeries(dailySeries(name), activeHistoryPeriod);
+        drawHistoryChart(series, `historyCompareChart${idx}`);
+        renderHistoryStats(series, name, activeHistoryPeriod, `historyCompareStats${idx}`);
+      });
+    }
+
+    function renderHistory(){
+      if(activeCompareNames.length === 2){
+        renderCompareHistory();
+        return;
+      }
+
+      const title = document.getElementById("historyTitle");
+      const subtitle = document.getElementById("historySubtitle");
+      const card = document.querySelector(".history-card");
+      if(card) card.classList.remove("compare-card");
+
+      restoreSingleHistoryGrid();
+
+      const base = dailySeries(activeHistoryName);
+      const series = aggregateSeries(base, activeHistoryPeriod);
+
+      if(title) title.textContent = activeHistoryName;
+      if(subtitle) subtitle.textContent = `${activeHistoryPeriod.charAt(0).toUpperCase()+activeHistoryPeriod.slice(1)} view`;
+
+      drawHistoryChart(series);
+      renderHistoryStats(series, activeHistoryName, activeHistoryPeriod);
+    }
+
+    document.addEventListener("keydown", e => {
+      if(e.key === "Escape") closeHistory();
+    });
+
+    async function init(){
       try{
-        const payload=await fetchJSON("sentiment_history.json");
-        state.raw=normalizePayload(payload);
-        state.hourly=normalizeHourlyPayload(payload);
-      }catch(error){
-        console.warn("sentiment_history.json not available yet", error);
-        state.raw=[];
-        state.hourly=[];
+        const [dashResp, histResp, configResp] = await Promise.all([
+          fetch("dashboard_live.json", {cache:"no-store"}),
+          fetch("instrument_history_compact.json", {cache:"no-store"}),
+          fetch("assets_config.json", {cache:"no-store"}).catch(() => null)
+        ]);
+
+        dashboardData = await dashResp.json();
+        historyData = await histResp.json();
+        const assetConfig = configResp && configResp.ok ? await configResp.json() : null;
+        applyAssetConfig(assetConfig);
+
+        currentRows = buildRows();
+        renderHero();
+        renderTopCards();
+        renderHeadlines();
+      }catch(err){
+        document.getElementById("updatedText").textContent = "Data could not be loaded.";
+        document.getElementById("cryptoTopGrid").innerHTML = `<div class="empty-note">Forex data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
       }
-      await loadDrivers();
-      render();
     }
 
-    bindControls();
-    loadHistory();
+    window.openHistory = openHistory;
+    window.closeHistory = closeHistory;
+    window.setHistoryPeriod = setHistoryPeriod;
+    window.toggleCompare = toggleCompare;
+    window.openCompareHistory = openCompareHistory;
+
+    init();
   </script>
 
+  <script src="glossary.js?v=2"></script>
   <script>
+    /* Self-contained glossary fallback for this lab page. */
     (() => {
       "use strict";
-
-      const HIST_GLOSSARY = {
-        "psi": {
-          title:"Public Sentiment Index (PSI)",
-          text:"A 0–100 score showing public market sentiment. Higher readings are more bullish, lower readings are more bearish, and readings near the middle are mixed or neutral."
-        },
-        "us-psi": {
-          title:"U.S. PSI",
-          text:"A 0–100 Public Sentiment Index focused on major U.S. markets, rates, indexes, and U.S.-focused financial headlines."
-        },
-        "hourly-pulse": {
-          title:"Hourly Sentiment Pulse",
-          text:"Shows recent hourly Global and U.S. sentiment observations. When a new hourly reading is unavailable, the most recent valid reading may be carried forward so the timeline remains continuous."
-        },
-        "global-us-flow": {
-          title:"Global vs. U.S. Flow",
-          text:"Compares the movement of Global PSI and U.S. PSI over the same periods so you can see whether the two sentiment views are moving together or separating."
-        },
-        "sentiment-history": {
-          title:"Sentiment History",
-          text:"Compares saved Global PSI, U.S. PSI, and relative momentum across recent periods. Taller values indicate stronger readings on the 0–100 sentiment scale."
-        },
-        "skyline": {
-          title:"Global vs. U.S. Skyline",
-          text:"Shows the recent paths of Global PSI and U.S. PSI together. It helps show whether sentiment is rising, falling, converging, or separating."
-        },
-        "momentum-chart": {
-          title:"Sentiment Momentum Performance",
-          text:"Shows the direction and size of recent sentiment changes alongside volatility. Momentum describes the recent pace of change; it is not a market-price forecast."
-        },
-        "bias-mix": {
-          title:"Sentiment Bias Mix",
-          text:"Summarizes how saved sentiment observations are distributed across bullish, mixed/neutral, and bearish readings for the selected scope and period."
-        },
-        "divergence": {
-          title:"Global vs. U.S. Divergence",
-          text:"Shows the difference between Global PSI and U.S. PSI. A larger gap means the two sentiment views are further apart."
-        },
-        "drivers": {
-          title:"Sentiment Drivers",
-          text:"Lists recent relevant headlines contributing to the displayed sentiment context. Ordering reflects recency and signal strength, not source quality."
-        },
-        "current": {
-          title:"Current",
-          text:"The latest available sentiment reading for the selected Global or U.S. view and selected period."
-        },
-        "change": {
-          title:"Change",
-          text:"The difference between the first and latest sentiment reading in the selected view. Positive means sentiment rose; negative means it fell."
-        },
-        "average": {
-          title:"Average",
-          text:"The arithmetic mean of the sentiment readings included in the selected view."
-        },
-        "range": {
-          title:"Range",
-          text:"The lowest and highest sentiment readings recorded within the selected view."
-        },
-        "volatility": {
-          title:"Volatility",
-          text:"The average absolute change between consecutive sentiment readings. Higher values mean the sentiment reading moved around more."
-        },
-        "bull-bear": {
-          title:"Bull / Bear",
-          text:"The count of bullish readings compared with bearish readings in the selected period. Mixed or neutral readings are not included in either side of this pair."
-        },
-        "move": {
-          title:"Move",
-          text:"The change in the selected sentiment reading from the prior comparable saved period."
-        },
-        "bias": {
-          title:"Bias",
-          text:"A simplified label describing whether the selected sentiment reading is bullish, bearish, or mixed/neutral."
-        },
-        "records": {
-          title:"Records",
-          text:"The number of saved sentiment observations combined into the displayed date or period."
-        }
+      if(window.PSDGlossary) return;
+      const definitions = {
+        "psi": ["Public Sentiment Index (PSI)", "A 0–100 score showing public-news sentiment for the selected currency market. Higher values are more bullish; lower values are more bearish."],
+        "headline-count": ["Headline Count", "The number of relevant headlines currently included in the sentiment reading for this instrument."],
+        "current-sentiment": ["Latest", "The latest available saved sentiment reading for the selected instrument and view."],
+        "sentiment-average": ["Average", "The average sentiment reading across all chart points in the displayed period."],
+        "record-count": ["Chart Points", "The number of saved sentiment observations included in the selected historical view."]
       };
 
+      const style = document.createElement("style");
+      style.textContent = `
+        .psd-glossary-info{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:5px;padding:0;border:1px solid #64748b;border-radius:50%;background:#18202e;color:#ef4444;font:700 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;vertical-align:1px}
+        .psd-glossary-info:hover,.psd-glossary-info:focus-visible,.psd-glossary-info[aria-expanded="true"]{border-color:#60a5fa;background:#1d4ed8;color:#fff;outline:none}
+        .psd-glossary-popover{position:fixed;z-index:100000;width:min(300px,calc(100vw - 24px));padding:12px 14px;border:1px solid #334155;border-radius:10px;background:#111827;color:#cbd5e1;box-shadow:0 14px 40px rgba(0,0,0,.45);font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+        .psd-glossary-popover[hidden]{display:none}.psd-glossary-title{margin:0 20px 5px 0;color:#f8fafc;font-size:13px;font-weight:750}.psd-glossary-text{margin:0}.psd-glossary-close{position:absolute;right:8px;top:6px;border:0;background:transparent;color:#94a3b8;font-size:18px;cursor:pointer}
+      `;
+      document.head.appendChild(style);
+
       let activeButton = null;
-
-      function getPopover(){
-        let popover=document.getElementById("histGlossaryPopover");
-        if(popover) return popover;
-
-        popover=document.createElement("div");
-        popover.id="histGlossaryPopover";
-        popover.className="hist-glossary-popover";
-        popover.setAttribute("role","dialog");
-        popover.setAttribute("aria-live","polite");
-        popover.hidden=true;
-        popover.innerHTML='<button class="hist-glossary-close" type="button" aria-label="Close explanation">×</button><div class="hist-glossary-title"></div><p class="hist-glossary-text"></p>';
-        document.body.appendChild(popover);
-        popover.querySelector(".hist-glossary-close").addEventListener("click",closePopover);
-        return popover;
+      function popover(){
+        let box = document.getElementById("psdGlossaryPopover");
+        if(box) return box;
+        box = document.createElement("div");
+        box.id = "psdGlossaryPopover";
+        box.className = "psd-glossary-popover";
+        box.hidden = true;
+        box.innerHTML = '<button class="psd-glossary-close" type="button" aria-label="Close explanation">×</button><div class="psd-glossary-title"></div><p class="psd-glossary-text"></p>';
+        document.body.appendChild(box);
+        box.querySelector(".psd-glossary-close").onclick = close;
+        return box;
       }
-
-      function closePopover(){
-        const popover=document.getElementById("histGlossaryPopover");
-        if(popover) popover.hidden=true;
+      function close(){
+        const box = document.getElementById("psdGlossaryPopover");
+        if(box) box.hidden = true;
         if(activeButton) activeButton.setAttribute("aria-expanded","false");
-        activeButton=null;
+        activeButton = null;
       }
-
-      function positionPopover(popover,button){
-        const rect=button.getBoundingClientRect();
-        const width=popover.offsetWidth;
-        const height=popover.offsetHeight;
-        const gap=8;
-        let left=Math.min(rect.left,window.innerWidth-width-12);
-        left=Math.max(12,left);
-        let top=rect.bottom+gap;
-        if(top+height>window.innerHeight-12) top=Math.max(12,rect.top-height-gap);
-        popover.style.left=left+"px";
-        popover.style.top=top+"px";
-      }
-
-      function openPopover(button){
-        const def=HIST_GLOSSARY[button.dataset.histGlossary];
+      function open(button,key){
+        const def = definitions[key];
         if(!def) return;
-
-        const popover=getPopover();
-        if(activeButton && activeButton!==button) activeButton.setAttribute("aria-expanded","false");
-        activeButton=button;
+        const box = popover();
+        if(activeButton && activeButton !== button) activeButton.setAttribute("aria-expanded","false");
+        activeButton = button;
         button.setAttribute("aria-expanded","true");
-        popover.querySelector(".hist-glossary-title").textContent=def.title;
-        popover.querySelector(".hist-glossary-text").textContent=def.text;
-        popover.hidden=false;
-        positionPopover(popover,button);
+        box.querySelector(".psd-glossary-title").textContent = def[0];
+        box.querySelector(".psd-glossary-text").textContent = def[1];
+        box.hidden = false;
+        const rect = button.getBoundingClientRect();
+        const left = Math.max(12,Math.min(rect.left,window.innerWidth-box.offsetWidth-12));
+        let top = rect.bottom+8;
+        if(top+box.offsetHeight>window.innerHeight-12) top=Math.max(12,rect.top-box.offsetHeight-8);
+        box.style.left=left+"px"; box.style.top=top+"px";
       }
-
+      function decorate(root){
+        const nodes=[];
+        if(root?.nodeType===1 && root.matches?.("[data-glossary]")) nodes.push(root);
+        root?.querySelectorAll?.("[data-glossary]").forEach(node=>nodes.push(node));
+        nodes.forEach(node=>{
+          if(node.querySelector(":scope > .psd-glossary-info")) return;
+          const key=node.dataset.glossary;
+          if(!definitions[key]) return;
+          const button=document.createElement("button");
+          button.type="button"; button.className="psd-glossary-info"; button.textContent="i";
+          button.dataset.glossaryKey=key; button.setAttribute("aria-label","Explain "+definitions[key][0]); button.setAttribute("aria-expanded","false");
+          node.appendChild(button);
+        });
+      }
       document.addEventListener("click",event=>{
-        const button=event.target.closest(".hist-info-btn");
-        if(button){
-          event.preventDefault();
-          event.stopPropagation();
-          if(activeButton===button) closePopover();
-          else openPopover(button);
-          return;
-        }
-
-        const popover=document.getElementById("histGlossaryPopover");
-        if(popover && !popover.hidden && !event.target.closest("#histGlossaryPopover")) closePopover();
+        const button=event.target.closest?.(".psd-glossary-info");
+        if(button){event.preventDefault();event.stopPropagation();activeButton===button?close():open(button,button.dataset.glossaryKey);return;}
+        if(!event.target.closest?.("#psdGlossaryPopover")) close();
       });
-
-      document.addEventListener("keydown",event=>{
-        if(event.key==="Escape") closePopover();
-      });
-
-      window.addEventListener("resize",closePopover);
-      window.addEventListener("scroll",closePopover,true);
+      document.addEventListener("keydown",event=>{if(event.key==="Escape") close();});
+      window.addEventListener("resize",close); window.addEventListener("scroll",close,true);
+      decorate(document);
+      new MutationObserver(mutations=>mutations.forEach(m=>m.addedNodes.forEach(node=>{if(node.nodeType===1) decorate(node);}))).observe(document.body,{childList:true,subtree:true});
     })();
   </script>
 
-  <script src="vote-widget.js" defer></script>
+  <script>
+    /* Forex-page PDF control: prints this page, not the dashboard report template. */
+    (() => {
+      const style = document.createElement("style");
+      style.textContent = `
+        .psd-pdf-widget{position:fixed;left:18px;top:calc(50% + 96px);transform:translateY(-50%);z-index:999;font-family:Arial,Segoe UI,sans-serif}
+        .psd-pdf-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:54px;min-height:78px;border:1px solid rgba(115,176,255,.72);border-radius:18px;background:#132844;color:#fff;cursor:pointer;box-shadow:0 0 14px rgba(88,166,255,.20);padding:8px 5px;text-align:center}
+        .psd-pdf-tab:hover{background:#18365c;transform:translateX(2px)}.psd-pdf-tab-icon{font-size:18px;line-height:1;font-weight:800}.psd-pdf-tab-text{font-size:10.5px;font-weight:700;line-height:1.05}
+        @media(max-width:760px){.psd-pdf-widget{left:10px;top:calc(50% + 96px)}}
+        @media print{.psd-pdf-widget,.history-btn,.compare-control,.psd-glossary-info,#psdGlossaryPopover{display:none!important}}
+      `;
+      document.head.appendChild(style);
+      const wrap=document.createElement("div");
+      wrap.className="psd-pdf-widget";
+      wrap.innerHTML='<button class="psd-pdf-tab" type="button" aria-label="Save Forex page as PDF" title="Save Forex page as PDF"><span class="psd-pdf-tab-icon">PDF</span><span class="psd-pdf-tab-text">Save<br>PDF</span></button>';
+      document.body.appendChild(wrap);
+      wrap.querySelector("button").addEventListener("click",()=>window.print());
+    })();
+  </script>
+  <script src="vote-widget.js?v=19"></script>
 </body>
 </html>
