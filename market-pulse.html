@@ -55,6 +55,45 @@
       color:#fff!important;
     }
 
+
+    /* Final Market Pulse X.com visibility fix. */
+    .psd-shared-header .psd-x-link,
+    .psd-shared-header .psd-x-link:link,
+    .psd-shared-header .psd-x-link:visited{
+      opacity:1!important;
+      visibility:visible!important;
+      filter:none!important;
+      -webkit-filter:none!important;
+      mix-blend-mode:normal!important;
+      pointer-events:auto!important;
+      text-decoration:none!important;
+      text-shadow:none!important;
+      -webkit-text-fill-color:#061522!important;
+      color:#061522!important;
+      background:#fff!important;
+      border:1px solid #7896ad!important;
+      box-shadow:0 1px 4px rgba(28,58,83,.14)!important;
+      font-weight:900!important;
+    }
+    .psd-shared-header .psd-x-link:hover,
+    .psd-shared-header .psd-x-link:focus-visible{
+      -webkit-text-fill-color:#061522!important;
+      color:#061522!important;
+      background:#eef5fa!important;
+      border-color:#526f87!important;
+      box-shadow:0 2px 7px rgba(28,58,83,.20)!important;
+      outline:none!important;
+    }
+    body.dark-mode .psd-shared-header .psd-x-link,
+    body.dark-mode .psd-shared-header .psd-x-link:link,
+    body.dark-mode .psd-shared-header .psd-x-link:visited{
+      -webkit-text-fill-color:#fff!important;
+      color:#fff!important;
+      background:#132844!important;
+      border-color:rgba(115,176,255,.72)!important;
+      box-shadow:0 0 10px rgba(88,166,255,.16)!important;
+    }
+
     /* Homepage-style glossary icon: red "i" in BOTH light and dark modes. */
     .psd-glossary-info{
       display:inline-grid;
@@ -282,39 +321,63 @@
       letter-spacing:-.01em;
     }
 
-    /* Floating full-page Print / PDF widget. */
-    .pulse-print-widget{
+    /* Standard Public Sentiment Dash PDF widget — same shape/colors as other pages. */
+    .psd-pdf-widget{
       position:fixed;
-      right:14px;
-      top:58%;
-      z-index:10040;
+      left:18px;
+      top:calc(50% + 96px);
+      transform:translateY(-50%);
+      z-index:999;
+      font-family:Arial,"Segoe UI",sans-serif;
+    }
+    .psd-pdf-tab{
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      width:58px;
-      height:58px;
-      padding:4px;
-      border:1px solid rgba(255,127,142,.65);
-      border-radius:50%;
-      background:linear-gradient(145deg,#fff,#e8eef4);
-      color:#b4233c;
-      font:900 9px/1.05 system-ui,-apple-system,"Segoe UI",sans-serif;
-      box-shadow:0 10px 24px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.95);
+      gap:5px;
+      width:54px;
+      min-height:78px;
+      border:1px solid rgba(115,176,255,.72);
+      border-radius:18px;
+      background:#132844;
+      color:#ffffff;
       cursor:pointer;
+      box-shadow:0 0 14px rgba(88,166,255,.20);
+      animation:psdPdfFloat 3.5s ease-in-out infinite;
+      padding:8px 5px;
+      text-align:center;
+      -webkit-font-smoothing:auto;
+      text-rendering:geometricPrecision;
     }
-    .pulse-print-widget .print-icon{font-size:18px;line-height:1;margin-bottom:2px}
-    .pulse-print-widget:hover,
-    .pulse-print-widget:focus-visible{
-      transform:translateY(-2px);
-      border-color:#d32f2f;
-      box-shadow:0 14px 28px rgba(0,0,0,.26),0 0 14px rgba(211,47,47,.14);
-      outline:none;
+    .psd-pdf-tab:hover{
+      background:#18365c;
+      transform:translateX(2px);
     }
-    body.dark-mode .pulse-print-widget{
-      background:linear-gradient(145deg,#162233,#0b131e);
-      color:#ff9aa5;
-      border-color:rgba(255,127,142,.60);
+    .psd-pdf-tab-icon{
+      font-size:18px;
+      line-height:1;
+      font-weight:800;
+      color:#ffffff;
+      letter-spacing:0;
+    }
+    .psd-pdf-tab-text{
+      font-size:10.5px;
+      font-weight:700;
+      line-height:1.05;
+      text-align:center;
+      max-width:48px;
+      color:#ffffff;
+      text-shadow:0 1px 1px rgba(0,0,0,.55);
+      letter-spacing:0;
+    }
+    @keyframes psdPdfFloat{
+      0%,100%{transform:translateY(4px)}
+      50%{transform:translateY(-4px)}
+    }
+    @media(max-width:760px){
+      .psd-pdf-widget{left:10px;top:calc(50% + 96px)}
+      .psd-pdf-tab{width:54px;min-height:78px}
     }
 
     @media (prefers-reduced-motion:reduce){
@@ -344,7 +407,7 @@
         page-break-inside:avoid!important;
       }
       .signal-card{break-inside:avoid!important;page-break-inside:avoid!important}
-      .scroll-arrow,.pulse-print-widget,.psd-glossary-popover,.viewer,.intel-dialog{display:none!important}
+      .scroll-arrow,#psdPdfWidget,.psd-glossary-popover,.viewer,.intel-dialog{display:none!important}
       .mini-chart,.full-chart,.news-item,.intel-card,.signal-card{
         box-shadow:none!important;
         -webkit-print-color-adjust:exact!important;
@@ -364,7 +427,12 @@
     <nav class="controls"><div class="tabs" id="tabs"><button class="tab active" data-view="top_movers">Top Movers</button><button class="tab" data-view="reversals">Reversals</button><button class="tab" data-view="extremes">Extremes</button><button class="tab" data-view="divergences">Divergences</button><button class="tab" data-view="universe">Explore All</button></div><div class="filters"><select id="category"><option value="all">All markets</option></select><input id="search" type="search" placeholder="Search an asset…"><button class="surprise" id="surprise">Surprise me ✦</button></div></nav>
     <section class="content"><div class="content-head"><div><h2><span id="sectionTitle">Today’s Strongest Shifts</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="strongest-shifts" aria-label="Explain strongest shifts" aria-expanded="false">i</button></h2><p id="sectionText">News, sentiment, and market context in one view.</p></div><div class="carousel-tools"><span class="count" id="count"></span><button class="scroll-arrow" data-scroll="grid" data-direction="-1" aria-label="Previous signals">‹</button><button class="scroll-arrow" data-scroll="grid" data-direction="1" aria-label="Next signals">›</button></div></div><div class="signal-grid" id="grid"><div class="empty">Loading…</div></div></section>
   </section></main>
-  <button class="pulse-print-widget" id="pulsePrintWidget" type="button" aria-label="Print or save the full Market Pulse page as PDF" title="Print / Save full page as PDF"><span class="print-icon">⎙</span><span>PRINT<br>PDF</span></button>
+  <div id="psdPdfWidget" class="psd-pdf-widget">
+    <button class="psd-pdf-tab" id="pulsePrintWidget" type="button" aria-label="Save this page as PDF report" title="Save this page as PDF report">
+      <span class="psd-pdf-tab-icon">PDF</span>
+      <span class="psd-pdf-tab-text">Save<br>PDF</span>
+    </button>
+  </div>
   <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle"><section class="viewer-card" id="viewerCard"><header class="viewer-head"><div class="viewer-title"><span id="viewerCategory"></span><h2><span id="viewerTitle">Signal Details</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="signal-details" aria-label="Explain signal details" aria-expanded="false">i</button></h2></div><div class="viewer-tools"><button id="closeViewer" title="Close">Close ×</button></div></header><div class="viewer-body"><span class="range-note" id="rangeNote"></span><div class="full-charts"><section class="full-chart" data-chart-panel="sentiment"><div class="chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain sentiment history" aria-expanded="false">i</button></h3><button class="chart-size" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="full-chart" data-chart-panel="market"><div class="chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain market price history" aria-expanded="false">i</button></h3><button class="chart-size" data-chart-size="market">Maximize</button></div><div class="interactive-chart" id="marketChart"></div></section></div><section class="viewer-news"><h3>Latest News <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-news" aria-label="Explain latest news" aria-expanded="false">i</button></h3><div class="viewer-news-list" id="viewerNews"></div></section></div></section></div>
   <div class="intel-dialog" id="intelDialog" role="dialog" aria-modal="true" aria-labelledby="intelTitle"><section class="intel-panel"><header><div><span id="intelLabel">Cross-outlet analysis</span><h2><span id="intelTitle">News Consensus</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="news-consensus" aria-label="Explain news consensus" aria-expanded="false">i</button></h2></div><button class="intel-close" id="intelClose">Close ×</button></header><div class="intel-body"><p class="intel-summary" id="intelSummary"></p><div class="evidence-points" id="intelPoints"></div><div id="intelNews"></div></div></section></div>
   <script>
