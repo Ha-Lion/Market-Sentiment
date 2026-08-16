@@ -737,7 +737,17 @@
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
-    const primaryLinks = mainLinks.filter(link => link.href !== "auth.html").map(link => linkHtml(link, current)).join("\n        ");
+    const marketPulseLink =
+      `<a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">Market Pulse</a>`;
+    const primaryLinks = mainLinks
+      .filter(link => link.href !== "auth.html")
+      .map(link => {
+        const html = linkHtml(link, current);
+        return link.href === "dashboard.html"
+          ? html + "\n        " + marketPulseLink
+          : html;
+      })
+      .join("\n        ");
     const accountLink = linkHtml(mainLinks.find(link => link.href === "auth.html"), current);
     const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n        ");
     mount.outerHTML = `
@@ -754,27 +764,33 @@
     </a>
     <div class="header-center">
       <div class="header-pill psd-dancing-label psd-learning-label">✨ Constantly learning & improving</div>
-      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
-        <span>🚀 Help take Public Sentiment Dash to the next level</span>
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
-      </a>
-      <button
-        class="site-tour-banner"
-        id="site-tour-button"
-        type="button"
-        aria-label="Play the two-minute Public Sentiment Dash website tour"
-        style="margin:8px 0 0 12px;transform:translateY(25px);min-height:28px!important;padding:5px 15px!important;flex-shrink:0;"
-      >
-        <span aria-hidden="true">🎬</span>
-        <span>Take a 2-Minute Website Tour</span>
-      </button>
     </div>
     <nav class="nav" aria-label="Main navigation">
       <div class="psd-nav-row psd-nav-main">
         ${primaryLinks}
+        ${accountLink}
         <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
       </div>
-      <div class="psd-nav-row psd-nav-social">
+      <div class="psd-nav-row psd-nav-assets">
+        ${linksTwo}
+      </div>
+      <div class="psd-nav-row psd-nav-bottom">
+        <div class="psd-bottom-promos">
+          <a class="psd-bottom-donate" href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:0;transform:none;min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+            <span>🚀 Help take Public Sentiment Dash to the next level</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
+          </a>
+          <button
+            class="site-tour-banner"
+            id="site-tour-button"
+            type="button"
+            aria-label="Play the two-minute Public Sentiment Dash website tour"
+            style="margin:0;transform:none;min-height:28px!important;padding:5px 15px!important;flex-shrink:0;"
+          >
+            <span aria-hidden="true">🎬</span>
+            <span>Take a 2-Minute Website Tour</span>
+          </button>
+        </div>
         <div class="psd-ribbon-social-wrap">
           <div class="social-links">
             <span class="social-label psd-follow-us" aria-label="Follow us">
@@ -784,13 +800,6 @@
             <span class="social-pill linkedin psd-social-brand" aria-label="Public Sentiment Dash on LinkedIn"><span class="psd-social-logo psd-linkedin-logo" aria-hidden="true">in</span><span class="psd-social-text">LinkedIn</span></span>
           </div>
         </div>
-        ${accountLink}
-      </div>
-      <div class="psd-nav-row psd-nav-assets">
-        ${linksTwo}
-      </div>
-      <div class="psd-nav-row psd-nav-fourth">
-        <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">Market Pulse</a>
         <div class="psd-ribbon-actions">
           <a href="watchlist.html" id="psd-ribbon-watchlist-link"${cachedMemberUI() ? "" : " hidden"}>My Watchlist</a>
         </div>
