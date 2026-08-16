@@ -1,6 +1,6 @@
 (function(){
   "use strict";
-  const STORAGE_KEY="psd-site-theme";
+  const STORAGE_KEY="psd-theme";
 
   function savedTheme(){
     try{return localStorage.getItem(STORAGE_KEY)==="dark"?"dark":"light"}catch(_error){return"light"}
