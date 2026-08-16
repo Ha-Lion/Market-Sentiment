@@ -665,13 +665,21 @@
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
 
     if(aiBuilt && learning){
-      /* Keep the approved left-edge alignment. */
-      learning.style.translate = "0px 2px";
-
       window.requestAnimationFrame(function(){
         const aiRect = aiBuilt.getBoundingClientRect();
         const learningRect = learning.getBoundingClientRect();
-        const horizontalShift = Math.round(aiRect.left - learningRect.left);
+
+        /*
+         * getBoundingClientRect() includes the translate already applied by
+         * the previous alignment pass. Subtract that existing X shift before
+         * calculating the new one, otherwise repeated calls alternate between
+         * aligned and unaligned positions.
+         */
+        const currentInlineTranslate = String(learning.style.translate || "");
+        const currentShiftX = Number.parseFloat(currentInlineTranslate) || 0;
+        const unshiftedLearningLeft = learningRect.left - currentShiftX;
+        const horizontalShift = Math.round(aiRect.left - unshiftedLearningLeft);
+
         learning.style.translate = horizontalShift + "px 2px";
 
         /*
