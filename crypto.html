@@ -1464,12 +1464,33 @@
     }
 
     function tradingViewSymbol(name){
-      const symbol=CRYPTO_ITEMS.find(item=>item.name===name)?.symbol||String(name||"").split("/").pop().trim();
-      const nyse=new Set(["TSM","ORCL"]);
-      return `${nyse.has(symbol)?"NYSE":"NASDAQ"}:${symbol}`;
+      const symbol=String(
+        CRYPTO_ITEMS.find(item=>item.name===name)?.symbol ||
+        String(name||"").split("/").pop().trim()
+      ).toUpperCase();
+
+      const cryptoChartSymbols={
+        BTC:"BINANCE:BTCUSDT",
+        ETH:"BINANCE:ETHUSDT",
+        SOL:"BINANCE:SOLUSDT",
+        XRP:"BINANCE:XRPUSDT",
+        BNB:"BINANCE:BNBUSDT",
+        DOGE:"BINANCE:DOGEUSDT",
+        ADA:"BINANCE:ADAUSDT",
+        LINK:"BINANCE:LINKUSDT",
+        LTC:"BINANCE:LTCUSDT",
+        AVAX:"BINANCE:AVAXUSDT",
+        DOT:"BINANCE:DOTUSDT",
+        BCH:"BINANCE:BCHUSDT"
+      };
+
+      return cryptoChartSymbols[symbol] || "";
     }
 
-    function fullMarketChartHref(name){return `charts.html?symbol=${encodeURIComponent(tradingViewSymbol(name))}`}
+    function fullMarketChartHref(name){
+      const symbol=tradingViewSymbol(name);
+      return symbol ? `charts.html?symbol=${encodeURIComponent(symbol)}` : "charts.html";
+    }
 
     function renderHeadlines(){
       const list = document.getElementById("headlineList");
