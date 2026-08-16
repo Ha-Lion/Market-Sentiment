@@ -24,6 +24,23 @@
   ];
 
   const supportUrl = "https://gofund.me/0d687f045";
+  const MEMBER_UI_CACHE_KEY = "psd-ribbon-member-ui";
+
+  function cachedMemberUI(){
+    try{
+      return sessionStorage.getItem(MEMBER_UI_CACHE_KEY) === "true";
+    }catch(error){
+      return false;
+    }
+  }
+
+  function cacheMemberUI(active){
+    try{
+      if(active) sessionStorage.setItem(MEMBER_UI_CACHE_KEY, "true");
+      else sessionStorage.removeItem(MEMBER_UI_CACHE_KEY);
+    }catch(error){}
+  }
+
   const tourVideoUrl = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
   const homeUrl = "https://publicsentimentdash.com/";
 
@@ -453,6 +470,7 @@
         document.getElementById("psd-ribbon-watchlist-link");
 
       if(!session){
+        cacheMemberUI(false);
         if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = true;
         accountLink.textContent = "Sign In";
         accountLink.href = "auth.html";
@@ -464,6 +482,12 @@
         return;
       }
 
+      /* A confirmed auth session is enough to keep My Watchlist visible.
+         Show it before the optional profile lookup so changing pages cannot
+         make the ribbon link disappear while profile data is loading. */
+      cacheMemberUI(true);
+      if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = false;
+
       const profileResult = await client
         .from("profiles")
         .select("username,display_name,is_admin")
@@ -474,8 +498,6 @@
       const name = profile.username || profile.display_name || "Member";
       const reportLink = document.getElementById("psd-activity-report-link");
       if(reportLink) reportLink.hidden = profile.is_admin !== true;
-
-      if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = false;
 
       accountLink.textContent = name;
       accountLink.href = "#";
@@ -770,7 +792,7 @@
       <div class="psd-nav-row psd-nav-fourth">
         <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">Market Pulse</a>
         <div class="psd-ribbon-actions">
-          <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
+          <a href="watchlist.html" id="psd-ribbon-watchlist-link"${cachedMemberUI() ? "" : " hidden"}>My Watchlist</a>
         </div>
       </div>
     </nav>
