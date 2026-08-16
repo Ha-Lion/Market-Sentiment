@@ -87,7 +87,7 @@
       }
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
         position:relative;
-        top:40px;
+        top:38px;
         margin-top:3px;
         font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
         font-size:14.5px!important;
@@ -716,7 +716,7 @@
         <span class="psd-home-label" style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
       </span>
       <div class="brand-copy">
-        <div class="brand-stamp psd-dancing-label">AI-built public market sentiment dashboard</div>
+        <div class="brand-stamp psd-dancing-label">AI-built public market sentiment website</div>
         <div class="site-subtitle psd-ai-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
