@@ -2,25 +2,25 @@
   "use strict";
 
   const mainLinks = [
-    { href: "dashboard.html", label: "📊 Interactive Dashboard" },
-    { href: "sentiment-history.html", label: "📈 Historical Sentiment" },
-    { href: "news-articles.html", label: "📰 News & Articles" },
-    { href: "charts.html", label: "📈 Market Charts" },
-    { href: "market-sentiment.html", label: "📘 Guides" },
-    { href: "advertise.html", label: "💼 Business Opportunities" },
-    { href: "about.html", label: "ℹ️ About" },
-    { href: "contact.html", label: "✉️ Get in Touch" },
+    { href: "dashboard.html", icon: "📊", label: "Interactive Dashboard" },
+    { href: "sentiment-history.html", icon: "📈", label: "Historical Sentiment" },
+    { href: "news-articles.html", icon: "📰", label: "News & Articles" },
+    { href: "charts.html", icon: "📈", label: "Market Charts" },
+    { href: "market-sentiment.html", icon: "📘", label: "Guides" },
+    { href: "advertise.html", icon: "💼", label: "Business Opportunities" },
+    { href: "about.html", icon: "ℹ️", label: "About" },
+    { href: "contact.html", icon: "✉️", label: "Get in Touch" },
     { href: "auth.html", label: "Sign In" }
   ];
 
   const assetLinks = [
-    { href: "crypto.html", label: "🪙 Crypto Sentiment" },
-    { href: "forex-sentiment-today.html", label: "💱 Forex Sentiment" },
-    { href: "energy.html", label: "⚡ Energy Sentiment" },
-    { href: "precious-metals.html", label: "🥇 Precious Metals" },
-    { href: "indices.html", label: "📊 Indices" },
-    { href: "policy-assets.html", label: "🏛️ Policy & Geo Assets" },
-    { href: "ai-assets.html", label: "🤖 AI Assets" }
+    { href: "crypto.html", icon: "🪙", label: "Crypto Sentiment" },
+    { href: "forex-sentiment-today.html", icon: "💱", label: "Forex Sentiment" },
+    { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
+    { href: "precious-metals.html", icon: "🥇", label: "Precious Metals" },
+    { href: "indices.html", icon: "📊", label: "Indices" },
+    { href: "policy-assets.html", icon: "🏛️", label: "Policy & Geo Assets" },
+    { href: "ai-assets.html", icon: "🤖", label: "AI Assets" }
   ];
 
   const supportUrl = "https://gofund.me/0d687f045";
@@ -49,7 +49,11 @@
         </span>`;
     }
 
-    return '<a href="' + link.href + '"' + (isActive ? ' class="active"' : '') + '>' + link.label + '</a>';
+    const content = link.icon
+      ? '<span class="psd-nav-icon" aria-hidden="true">' + link.icon + '</span><span class="psd-nav-label">' + link.label + '</span>'
+      : link.label;
+
+    return '<a class="psd-nav-link' + (isActive ? ' active' : '') + '" href="' + link.href + '">' + content + '</a>';
   }
 
   function ensureTourStyles(){
@@ -70,6 +74,8 @@
         50%{box-shadow:0 0 25px rgba(240,183,47,.55),inset 0 0 12px rgba(255,215,128,.12);filter:brightness(1.12)}
       }
       .psd-shared-header .psd-dancing-label{
+        position:relative!important;
+        top:2px!important;
         width:340px!important;
         min-width:340px!important;
         max-width:340px!important;
@@ -604,6 +610,37 @@
     }
   }
 
+  function alignDancingLabels(){
+    const aiBuilt = document.querySelector(".psd-shared-header .brand-stamp.psd-dancing-label");
+    const learning = document.querySelector(".psd-shared-header .psd-learning-label");
+    if(!aiBuilt || !learning) return;
+
+    learning.style.left = "0px";
+    const aiRect = aiBuilt.getBoundingClientRect();
+    const learningRect = learning.getBoundingClientRect();
+    learning.style.left = Math.round(aiRect.left - learningRect.left) + "px";
+  }
+
+  function installThemeTogglePlacement(){
+    const nav = document.querySelector(".psd-shared-header .nav");
+    const slot = document.querySelector(".psd-shared-header .psd-theme-toggle-slot");
+    if(!nav || !slot) return;
+
+    const placeToggle = function(){
+      const toggle = document.querySelector(".psd-shared-header .psd-theme-toggle");
+      if(toggle && toggle.parentElement !== slot) slot.appendChild(toggle);
+    };
+
+    placeToggle();
+
+    const observer = new MutationObserver(placeToggle);
+    observer.observe(nav, { childList:true, subtree:true });
+
+    window.setTimeout(placeToggle, 0);
+    window.setTimeout(placeToggle, 80);
+    window.setTimeout(placeToggle, 250);
+  }
+
   function render(){
     const mount = document.getElementById("site-header");
     if(!mount) return;
@@ -624,7 +661,7 @@
       </div>
     </a>
     <div class="header-center">
-      <div class="header-pill psd-dancing-label" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;position:relative;top:3px;">✨ Constantly learning & improving</div>
+      <div class="header-pill psd-dancing-label psd-learning-label">✨ Constantly learning & improving</div>
       <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
         <span>🚀 Help take Public Sentiment Dash to the next level</span>
         <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
@@ -658,15 +695,18 @@
         ${linksTwo}
       </div>
       <div class="psd-nav-row psd-nav-fourth">
-        <a class="psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">✨ Market Pulse</a>
+        <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html"><span class="psd-nav-icon" aria-hidden="true">✨</span><span class="psd-nav-label">Market Pulse</span></a>
         <div class="psd-ribbon-actions">
           <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
+          <span class="psd-theme-toggle-slot" aria-label="Theme control position"></span>
         </div>
       </div>
     </nav>
   </header>`;
 
     ensureTourStyles();
+    alignDancingLabels();
+    installThemeTogglePlacement();
 
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton){
@@ -682,6 +722,9 @@
   }
 
   installTourClickFallback();
+  window.addEventListener("resize", function(){
+    window.requestAnimationFrame(alignDancingLabels);
+  });
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
   else render();
