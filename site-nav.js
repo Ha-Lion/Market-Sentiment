@@ -80,12 +80,8 @@
         transform-origin:center!important;
         will-change:transform,filter,box-shadow;
       }
-      /* Constantly Learning is 31px tall from the shared 13px font + 8px/8px padding + 1px/1px border.
-         Match AI-Built to that exact height without changing the Learning widget. */
+      /* AI-Built copies the live rendered height of Constantly Learning in alignRibbonGeometry(). */
       .psd-shared-header .brand-stamp.psd-dancing-label{
-        height:31px!important;
-        min-height:31px!important;
-        max-height:31px!important;
         animation-delay:.35s,.35s!important;
       }
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
@@ -93,7 +89,7 @@
         top:42px;
         margin-top:3px;
         font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
-        font-size:14px!important;
+        font-size:14.5px!important;
         font-weight:700!important;
         letter-spacing:.7px!important;
       }
@@ -610,20 +606,53 @@
   }
 
 
-  function alignRibbonDancingWidgets(){
+  function alignRibbonGeometry(){
     const aiBuilt = document.querySelector(".psd-shared-header .brand-stamp.psd-dancing-label");
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
-    if(!aiBuilt || !learning) return;
 
-    /* Reset horizontal adjustment before measuring. */
-    learning.style.translate = "0px 2px";
+    if(aiBuilt && learning){
+      /* Keep the approved left-edge alignment. */
+      learning.style.translate = "0px 2px";
 
-    window.requestAnimationFrame(function(){
-      const aiRect = aiBuilt.getBoundingClientRect();
-      const learningRect = learning.getBoundingClientRect();
-      const horizontalShift = Math.round(aiRect.left - learningRect.left);
-      learning.style.translate = horizontalShift + "px 2px";
-    });
+      window.requestAnimationFrame(function(){
+        const aiRect = aiBuilt.getBoundingClientRect();
+        const learningRect = learning.getBoundingClientRect();
+        const horizontalShift = Math.round(aiRect.left - learningRect.left);
+        learning.style.translate = horizontalShift + "px 2px";
+
+        /*
+         * Copy the ACTUAL layout height of Constantly Learning to AI-Built.
+         * offsetHeight ignores the dancing transform/rotation, so both pills
+         * become exactly the same physical height without guessing pixels.
+         */
+        const learningHeight = learning.offsetHeight;
+        if(learningHeight > 0){
+          aiBuilt.style.setProperty("height", learningHeight + "px", "important");
+          aiBuilt.style.setProperty("min-height", learningHeight + "px", "important");
+          aiBuilt.style.setProperty("max-height", learningHeight + "px", "important");
+        }
+      });
+    }
+
+    /*
+     * Align Market Pulse's icon/link left edge exactly with Crypto Sentiment.
+     * This is measured from the live ribbon, so it stays exact even if the
+     * browser width changes.
+     */
+    const crypto = document.querySelector('.psd-shared-header .psd-nav-assets a[href="crypto.html"]');
+    const pulse = document.querySelector('.psd-shared-header .psd-market-pulse-link');
+    const pulseRow = document.querySelector('.psd-shared-header .psd-nav-fourth');
+
+    if(crypto && pulse && pulseRow){
+      if(window.matchMedia("(max-width:1180px)").matches){
+        pulse.style.removeProperty("margin-left");
+      }else{
+        const cryptoLeft = crypto.getBoundingClientRect().left;
+        const rowLeft = pulseRow.getBoundingClientRect().left;
+        const exactMargin = Math.max(0, Math.round(cryptoLeft - rowLeft));
+        pulse.style.setProperty("margin-left", exactMargin + "px", "important");
+      }
+    }
   }
 
 
@@ -715,8 +744,8 @@
         <div class="psd-ribbon-social-wrap">
           <div class="social-links">
             <span class="social-label">Follow us</span>
-            <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer">X.com</a>
-            <span class="social-pill linkedin">LinkedIn</span>
+            <a class="social-pill psd-social-brand psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer" aria-label="Follow Public Sentiment Dash on X.com"><span class="psd-social-logo psd-x-logo" aria-hidden="true">X</span><span class="psd-social-text">X.com</span></a>
+            <span class="social-pill linkedin psd-social-brand" aria-label="Public Sentiment Dash on LinkedIn"><span class="psd-social-logo psd-linkedin-logo" aria-hidden="true">in</span><span class="psd-social-text">LinkedIn</span></span>
           </div>
         </div>
         ${accountLink}
@@ -738,9 +767,9 @@
     initializeRibbonThemeButton();
 
     /* Align after the header has had time to settle into its final grid geometry. */
-    alignRibbonDancingWidgets();
-    window.setTimeout(alignRibbonDancingWidgets, 80);
-    window.setTimeout(alignRibbonDancingWidgets, 240);
+    alignRibbonGeometry();
+    window.setTimeout(alignRibbonGeometry, 80);
+    window.setTimeout(alignRibbonGeometry, 240);
 
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton){
@@ -757,7 +786,7 @@
 
   installTourClickFallback();
   window.addEventListener("resize", function(){
-    window.requestAnimationFrame(alignRibbonDancingWidgets);
+    window.requestAnimationFrame(alignRibbonGeometry);
   });
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
