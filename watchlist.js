@@ -636,18 +636,43 @@
         color:opts.color||"#ffd780",
         width:safeLineWidth(opts.width||2),
         style:opts.style||"solid",
-        series:null
+        series:opts.series||previewTrendSeries||null
       };
-      drawing.series=chart.addSeries(LightweightCharts.LineSeries,{
-        color:drawing.color,
-        lineWidth:drawing.width,
-        lineStyle:lineStyleValue(drawing.style),
-        priceScaleId:"right",
-        priceLineVisible:false,
-        lastValueVisible:false,
-        crosshairMarkerVisible:false
-      });
-      drawing.series.setData(orderedPair(drawing.p1,drawing.p2));
+
+      if(drawing.series===previewTrendSeries) previewTrendSeries=null;
+
+      if(!drawing.series){
+        drawing.series=chart.addSeries(LightweightCharts.LineSeries,{
+          color:drawing.color,
+          lineWidth:drawing.width,
+          lineStyle:lineStyleValue(drawing.style),
+          priceScaleId:"right",
+          priceLineVisible:false,
+          lastValueVisible:false,
+          crosshairMarkerVisible:false
+        });
+      }else{
+        drawing.series.applyOptions({
+          color:drawing.color,
+          lineWidth:drawing.width,
+          lineStyle:lineStyleValue(drawing.style),
+          priceScaleId:"right",
+          priceLineVisible:false,
+          lastValueVisible:false,
+          crosshairMarkerVisible:false
+        });
+      }
+
+      const pair=orderedPair(drawing.p1,drawing.p2);
+      if(timeOrderValue(pair[0].time)===timeOrderValue(pair[1].time)){
+        if(drawing.series){
+          try{chart.removeSeries(drawing.series);}catch(error){}
+        }
+        drawingSetStatus("Choose a second point farther left or right so the trend line has two different dates.");
+        return null;
+      }
+
+      drawing.series.setData(pair);
       drawings.push(drawing);
       selectedDrawingId=drawing.id;
       updateDrawingCount();
@@ -764,6 +789,12 @@
       editState={id:drawing.id,part:part};
       chartBox.classList.add("watchlist-drawing-active");
       openDrawingManager();
+
+      if(drawing.type==="trend"){
+        ensureTrendPreviewSeries(drawing.color,drawing.width,drawing.style);
+        updateTrendPreview(drawing.p1,drawing.p2,drawing.color,drawing.width,drawing.style);
+      }
+
       if(part==="p1") drawingSetStatus(drawing.name+": move the mouse to preview Point 1, then click its new position.");
       else if(part==="p2") drawingSetStatus(drawing.name+": move the mouse to preview Point 2, then click its new position.");
       else drawingSetStatus(drawing.name+": move the mouse to preview the new level, then click to place it.");
@@ -888,25 +919,33 @@
       drawingEditor.appendChild(actions);
     }
 
+    function ensureTrendPreviewSeries(color,width,style){
+      if(previewTrendSeries) return previewTrendSeries;
+      previewTrendSeries=chart.addSeries(LightweightCharts.LineSeries,{
+        color:color||"#ffd780",
+        lineWidth:safeLineWidth(width||2),
+        lineStyle:lineStyleValue(style||"dashed"),
+        priceScaleId:"right",
+        priceLineVisible:false,
+        lastValueVisible:false,
+        crosshairMarkerVisible:false
+      });
+      return previewTrendSeries;
+    }
+
     function updateTrendPreview(startPoint,endPoint,color,width,style){
-      if(!previewTrendSeries){
-        previewTrendSeries=chart.addSeries(LightweightCharts.LineSeries,{
-          color:color||"#ffd780",
-          lineWidth:safeLineWidth(width||2),
-          lineStyle:lineStyleValue(style||"dashed"),
-          priceScaleId:"right",
-          priceLineVisible:false,
-          lastValueVisible:false,
-          crosshairMarkerVisible:false
-        });
-      }else{
-        previewTrendSeries.applyOptions({
-          color:color||"#ffd780",
-          lineWidth:safeLineWidth(width||2),
-          lineStyle:lineStyleValue(style||"dashed")
-        });
+      if(!previewTrendSeries) return;
+      previewTrendSeries.applyOptions({
+        color:color||"#ffd780",
+        lineWidth:safeLineWidth(width||2),
+        lineStyle:lineStyleValue(style||"dashed")
+      });
+      const pair=orderedPair(startPoint,endPoint);
+      if(timeOrderValue(pair[0].time)===timeOrderValue(pair[1].time)){
+        previewTrendSeries.setData([{time:pair[0].time,value:pair[0].value}]);
+        return;
       }
-      previewTrendSeries.setData(orderedPair(startPoint,endPoint));
+      previewTrendSeries.setData(pair);
     }
 
     function updateLevelPreview(price,color,width,style){
@@ -966,13 +1005,17 @@
 
       if(!trendStart){
         trendStart={time:point.time,value:point.value};
+        ensureTrendPreviewSeries("#ffd780",2,"dashed");
+        previewTrendSeries.setData([{time:trendStart.time,value:trendStart.value}]);
         drawingSetStatus("Trend line: first point set. Move the mouse to preview the line, then click the second point.");
         return;
       }
 
-      createTrendDrawing(trendStart,point);
-      cancelDrawingInteraction("Trend line added. Select it in Drawing Manager to modify it.");
-      openDrawingManager();
+      const completedTrend=createTrendDrawing(trendStart,point,{series:previewTrendSeries});
+      if(completedTrend){
+        cancelDrawingInteraction("Trend line added. Select it in Drawing Manager to modify it.");
+        openDrawingManager();
+      }
     });
 
     chart.subscribeCrosshairMove(function(param){
