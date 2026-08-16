@@ -82,6 +82,7 @@
       }
       /* AI-Built copies the live rendered height of Constantly Learning in alignRibbonGeometry(). */
       .psd-shared-header .brand-stamp.psd-dancing-label{
+        translate:0 6px;
         animation-delay:.35s,.35s!important;
       }
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
@@ -739,6 +740,7 @@
     <nav class="nav" aria-label="Main navigation">
       <div class="psd-nav-row psd-nav-main">
         ${primaryLinks}
+        <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
       </div>
       <div class="psd-nav-row psd-nav-social">
         <div class="psd-ribbon-social-wrap">
@@ -757,7 +759,6 @@
         <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">Market Pulse</a>
         <div class="psd-ribbon-actions">
           <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
-          <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
         </div>
       </div>
     </nav>
