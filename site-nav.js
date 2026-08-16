@@ -87,7 +87,7 @@
       }
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
         position:relative;
-        top:42px;
+        top:40px;
         margin-top:3px;
         font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
         font-size:14.5px!important;
