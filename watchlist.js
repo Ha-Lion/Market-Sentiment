@@ -493,569 +493,270 @@
     chartBox.addEventListener("pointermove",function(event){if(!edgeDrag) return;applyLinkedMargin(edgeDrag.margin+((event.clientY-edgeDrag.y)/Math.max(200,chartBox.clientHeight))*.35);});
     chartBox.addEventListener("pointerup",function(){edgeDrag=null;});chartBox.addEventListener("pointercancel",function(){edgeDrag=null;});
 
-    let drawingMode="",trendStart=null,freeCursor=false,editState=null;
-    let previewTrendSeries=null,previewPriceLine=null;
+    let drawingMode="",freeCursor=false,editState=null;
+    let previewPriceLine=null;
     let drawingCounter=0,selectedDrawingId=null;
+    let pointerDrag=null;
     const drawings=[];
+
+    /* Trend lines use a transparent SVG overlay instead of a data series.
+       This gives true click-hold-drag-release placement at any angle and
+       allows positions between chart bars. */
+    const drawingOverlay=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    drawingOverlay.classList.add("watchlist-drawing-overlay");
+    drawingOverlay.setAttribute("aria-label","Chart drawing layer");
+    chartBox.appendChild(drawingOverlay);
 
     const drawingList=drawingManager.querySelector(".watchlist-drawing-list");
     const drawingEditor=drawingManager.querySelector(".watchlist-drawing-editor");
     const drawingStatus=drawingManager.querySelector(".watchlist-drawing-status");
     const drawingClose=drawingManager.querySelector(".watchlist-drawing-manager-close");
 
-    function drawingSetStatus(message){
-      drawingStatus.textContent=message;
-    }
-
-    function openDrawingManager(){
-      drawingManager.hidden=false;
-      drawingsTool.classList.add("active");
-    }
-
-    function closeDrawingManager(){
-      drawingManager.hidden=true;
-      drawingsTool.classList.remove("active");
-    }
-
-    drawingsTool.addEventListener("click",function(){
-      if(drawingManager.hidden) openDrawingManager();
-      else closeDrawingManager();
-    });
+    function drawingSetStatus(message){drawingStatus.textContent=message;}
+    function openDrawingManager(){drawingManager.hidden=false;drawingsTool.classList.add("active");}
+    function closeDrawingManager(){drawingManager.hidden=true;drawingsTool.classList.remove("active");}
+    drawingsTool.addEventListener("click",function(){drawingManager.hidden?openDrawingManager():closeDrawingManager();});
     drawingClose.addEventListener("click",closeDrawingManager);
+    function updateDrawingCount(){drawingsTool.textContent="Drawings ("+drawings.length+")";}
+    function lineDashArray(style){if(style==="dotted")return "2 5";if(style==="dashed")return "9 6";return "";}
+    function safeLineWidth(width){return Math.max(1,Math.min(4,Number(width)||1));}
 
-    function updateDrawingCount(){
-      drawingsTool.textContent="Drawings ("+drawings.length+")";
+    function setChartDragEnabled(enabled){
+      chart.applyOptions({handleScroll:{mouseWheel:true,pressedMouseMove:enabled,horzTouchDrag:enabled,vertTouchDrag:false}});
     }
 
-    function chartPointFromParam(param){
-      if(!param||!param.point) return null;
-      let time=param.time;
-      if(time==null && chart.timeScale().coordinateToTime){
-        time=chart.timeScale().coordinateToTime(param.point.x);
-      }
-      let value=priceSeries.coordinateToPrice(param.point.y);
-      if(!Number.isFinite(value)){
-        const item=param.seriesData&&param.seriesData.get(priceSeries);
-        value=item&&Number.isFinite(item.value)?item.value:NaN;
-      }
-      if(time==null||!Number.isFinite(value)) return null;
-      return {time:time,value:value};
+    function localPointerPoint(event){
+      const rect=chartBox.getBoundingClientRect();
+      const x=Math.max(0,Math.min(rect.width,event.clientX-rect.left));
+      const y=Math.max(0,Math.min(rect.height,event.clientY-rect.top));
+      const logical=chart.timeScale().coordinateToLogical(x);
+      const value=priceSeries.coordinateToPrice(y);
+      if(!Number.isFinite(logical)||!Number.isFinite(value))return null;
+      return {logical:logical,value:value,x:x,y:y};
     }
 
-    function timeOrderValue(time){
-      if(typeof time==="number") return time;
-      if(typeof time==="string"){
-        const parsed=Date.parse(time);
-        return Number.isFinite(parsed)?parsed:0;
-      }
-      if(time&&typeof time==="object"&&Number.isFinite(time.year)){
-        return Date.UTC(time.year,Number(time.month||1)-1,Number(time.day||1));
-      }
-      return 0;
-    }
-
-    function orderedPair(a,b){
-      return timeOrderValue(a.time)<=timeOrderValue(b.time)?[a,b]:[b,a];
+    function timeFromLogical(logical){
+      const x=chart.timeScale().logicalToCoordinate(logical);
+      if(!Number.isFinite(x)||!chart.timeScale().coordinateToTime)return null;
+      return chart.timeScale().coordinateToTime(x);
     }
 
     function displayTime(time){
-      if(typeof time==="string") return time;
+      if(typeof time==="string")return time;
       if(typeof time==="number"){
         try{return new Date(time*1000).toLocaleDateString();}catch(error){return String(time);}
       }
       if(time&&typeof time==="object"&&time.year){
         return String(time.year)+"-"+String(time.month).padStart(2,"0")+"-"+String(time.day).padStart(2,"0");
       }
-      return "N/A";
+      return "";
     }
 
-    function lineStyleValue(style){
-      if(style==="dotted") return LightweightCharts.LineStyle.Dotted;
-      if(style==="dashed") return LightweightCharts.LineStyle.Dashed;
-      return LightweightCharts.LineStyle.Solid;
+    function nextDrawingName(type){drawingCounter+=1;return (type==="trend"?"Trend ":"Level ")+drawingCounter;}
+
+    function trendCoordinates(drawing){
+      const x1=chart.timeScale().logicalToCoordinate(drawing.p1.logical);
+      const x2=chart.timeScale().logicalToCoordinate(drawing.p2.logical);
+      const y1=priceSeries.priceToCoordinate(drawing.p1.value);
+      const y2=priceSeries.priceToCoordinate(drawing.p2.value);
+      if(![x1,x2,y1,y2].every(Number.isFinite))return null;
+      return {x1:x1,y1:y1,x2:x2,y2:y2};
     }
 
-    function safeLineWidth(width){
-      return Math.max(1,Math.min(4,Number(width)||1));
+    function svgElement(name,attrs){
+      const node=document.createElementNS("http://www.w3.org/2000/svg",name);
+      Object.keys(attrs||{}).forEach(function(key){node.setAttribute(key,String(attrs[key]));});
+      return node;
     }
 
-    function removePreview(){
-      if(previewTrendSeries){
-        try{chart.removeSeries(previewTrendSeries);}catch(error){}
-        previewTrendSeries=null;
+    function renderTrendOverlay(){
+      const width=Math.max(1,chartBox.clientWidth),height=Math.max(1,chartBox.clientHeight);
+      drawingOverlay.setAttribute("viewBox","0 0 "+width+" "+height);
+      drawingOverlay.setAttribute("width",String(width));
+      drawingOverlay.setAttribute("height",String(height));
+      drawingOverlay.textContent="";
+
+      drawings.filter(function(d){return d.type==="trend";}).forEach(function(drawing){
+        const c=trendCoordinates(drawing);if(!c)return;
+        const group=svgElement("g",{"data-drawing-id":drawing.id});
+        group.classList.add("watchlist-drawing-group");
+        if(drawing.id===selectedDrawingId)group.classList.add("selected");
+
+        const hit=svgElement("line",{x1:c.x1,y1:c.y1,x2:c.x2,y2:c.y2,stroke:"transparent","stroke-width":Math.max(12,drawing.width+10)});
+        hit.classList.add("watchlist-drawing-hit");
+        hit.addEventListener("pointerdown",function(event){
+          if(drawingMode)return;
+          event.preventDefault();event.stopPropagation();
+          selectedDrawingId=drawing.id;
+          const point=localPointerPoint(event);if(!point)return;
+          pointerDrag={kind:"move-line",id:drawing.id,start:point,originalP1:{logical:drawing.p1.logical,value:drawing.p1.value},originalP2:{logical:drawing.p2.logical,value:drawing.p2.value}};
+          drawingOverlay.setPointerCapture(event.pointerId);setChartDragEnabled(false);openDrawingManager();renderDrawingManager();
+          drawingSetStatus(drawing.name+": drag the line to move it.");
+        });
+
+        const line=svgElement("line",{x1:c.x1,y1:c.y1,x2:c.x2,y2:c.y2,stroke:drawing.color,"stroke-width":drawing.width,"stroke-linecap":"round","stroke-dasharray":lineDashArray(drawing.style)});
+        line.classList.add("watchlist-drawing-line");group.append(hit,line);
+
+        if(drawing.id===selectedDrawingId){
+          [["p1",c.x1,c.y1],["p2",c.x2,c.y2]].forEach(function(item){
+            const handle=svgElement("circle",{cx:item[1],cy:item[2],r:5.5,fill:drawing.color,stroke:"#ffffff","stroke-width":1.5});
+            handle.classList.add("watchlist-drawing-handle");
+            handle.addEventListener("pointerdown",function(event){
+              if(drawingMode)return;
+              event.preventDefault();event.stopPropagation();selectedDrawingId=drawing.id;
+              pointerDrag={kind:"handle",id:drawing.id,part:item[0]};
+              drawingOverlay.setPointerCapture(event.pointerId);setChartDragEnabled(false);
+              drawingSetStatus(drawing.name+": drag "+(item[0]==="p1"?"Point 1":"Point 2")+" anywhere on the chart.");
+            });
+            group.appendChild(handle);
+          });
+        }
+        drawingOverlay.appendChild(group);
+      });
+
+      if(pointerDrag&&pointerDrag.kind==="new-trend"&&pointerDrag.start&&pointerDrag.current){
+        const preview=svgElement("line",{x1:pointerDrag.start.x,y1:pointerDrag.start.y,x2:pointerDrag.current.x,y2:pointerDrag.current.y,stroke:"#ffd780","stroke-width":2,"stroke-linecap":"round","stroke-dasharray":"9 6"});
+        preview.classList.add("watchlist-drawing-preview");drawingOverlay.appendChild(preview);
       }
-      if(previewPriceLine){
-        try{priceSeries.removePriceLine(previewPriceLine);}catch(error){}
-        previewPriceLine=null;
-      }
-    }
-
-    function cancelDrawingInteraction(message){
-      removePreview();
-      drawingMode="";
-      trendStart=null;
-      editState=null;
-      trendTool.classList.remove("active");
-      levelTool.classList.remove("active");
-      chartBox.classList.remove("watchlist-drawing-active");
-      if(message) drawingSetStatus(message);
-      renderDrawingManager();
-    }
-
-    function setMode(mode,button){
-      const same=drawingMode===mode&&!editState;
-      removePreview();
-      editState=null;
-      drawingMode=same?"":mode;
-      trendStart=null;
-      [trendTool,levelTool].forEach(function(x){x.classList.remove("active");});
-      if(drawingMode){
-        button.classList.add("active");
-        chartBox.classList.add("watchlist-drawing-active");
-        openDrawingManager();
-        drawingSetStatus(drawingMode==="trend"?"Trend line: click the first point.":"Price level: move the mouse to preview the level, then click to place it.");
-      }else{
-        chartBox.classList.remove("watchlist-drawing-active");
-        drawingSetStatus("Drawing mode cancelled.");
-      }
-    }
-
-    function nextDrawingName(type){
-      drawingCounter+=1;
-      return (type==="trend"?"Trend ":"Level ")+drawingCounter;
     }
 
     function createTrendDrawing(p1,p2,options){
       const opts=options||{};
-      const drawing={
-        id:"drawing-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
-        type:"trend",
-        name:opts.name||nextDrawingName("trend"),
-        p1:{time:p1.time,value:p1.value},
-        p2:{time:p2.time,value:p2.value},
-        color:opts.color||"#ffd780",
-        width:safeLineWidth(opts.width||2),
-        style:opts.style||"solid",
-        series:opts.series||previewTrendSeries||null
-      };
-
-      if(drawing.series===previewTrendSeries) previewTrendSeries=null;
-
-      if(!drawing.series){
-        drawing.series=chart.addSeries(LightweightCharts.LineSeries,{
-          color:drawing.color,
-          lineWidth:drawing.width,
-          lineStyle:lineStyleValue(drawing.style),
-          priceScaleId:"right",
-          priceLineVisible:false,
-          lastValueVisible:false,
-          crosshairMarkerVisible:false
-        });
-      }else{
-        drawing.series.applyOptions({
-          color:drawing.color,
-          lineWidth:drawing.width,
-          lineStyle:lineStyleValue(drawing.style),
-          priceScaleId:"right",
-          priceLineVisible:false,
-          lastValueVisible:false,
-          crosshairMarkerVisible:false
-        });
-      }
-
-      const pair=orderedPair(drawing.p1,drawing.p2);
-      if(timeOrderValue(pair[0].time)===timeOrderValue(pair[1].time)){
-        if(drawing.series){
-          try{chart.removeSeries(drawing.series);}catch(error){}
-        }
-        drawingSetStatus("Choose a second point farther left or right so the trend line has two different dates.");
-        return null;
-      }
-
-      drawing.series.setData(pair);
-      drawings.push(drawing);
-      selectedDrawingId=drawing.id;
-      updateDrawingCount();
-      openDrawingManager();
-      renderDrawingManager();
-      return drawing;
+      const screenDx=Math.abs((p2.x||0)-(p1.x||0)),screenDy=Math.abs((p2.y||0)-(p1.y||0));
+      if(screenDx<4&&screenDy<4){drawingSetStatus("Drag farther before releasing the mouse to create the trend line.");return null;}
+      const drawing={id:"drawing-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),type:"trend",name:opts.name||nextDrawingName("trend"),p1:{logical:Number(p1.logical),value:Number(p1.value)},p2:{logical:Number(p2.logical),value:Number(p2.value)},color:opts.color||"#ffd780",width:safeLineWidth(opts.width||2),style:opts.style||"solid"};
+      drawings.push(drawing);selectedDrawingId=drawing.id;updateDrawingCount();openDrawingManager();renderDrawingManager();renderTrendOverlay();return drawing;
     }
 
     function createLevelDrawing(price,options){
       const opts=options||{};
-      const drawing={
-        id:"drawing-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
-        type:"level",
-        name:opts.name||nextDrawingName("level"),
-        price:Number(price),
-        color:opts.color||"#ffd780",
-        width:safeLineWidth(opts.width||1),
-        style:opts.style||"dashed",
-        priceLine:null
-      };
-      drawing.priceLine=priceSeries.createPriceLine({
-        price:drawing.price,
-        color:drawing.color,
-        lineWidth:drawing.width,
-        lineStyle:lineStyleValue(drawing.style),
-        axisLabelVisible:true,
-        title:drawing.name
-      });
-      drawings.push(drawing);
-      selectedDrawingId=drawing.id;
-      updateDrawingCount();
-      openDrawingManager();
-      renderDrawingManager();
-      return drawing;
+      const drawing={id:"drawing-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),type:"level",name:opts.name||nextDrawingName("level"),price:Number(price),color:opts.color||"#ffd780",width:safeLineWidth(opts.width||1),style:opts.style||"dashed",priceLine:null};
+      drawing.priceLine=priceSeries.createPriceLine({price:drawing.price,color:drawing.color,lineWidth:drawing.width,lineStyle:lineStyleValue(drawing.style),axisLabelVisible:true,title:drawing.name});
+      drawings.push(drawing);selectedDrawingId=drawing.id;updateDrawingCount();openDrawingManager();renderDrawingManager();return drawing;
     }
 
     function refreshDrawing(drawing){
-      if(!drawing) return;
-      if(drawing.type==="trend"){
-        drawing.series.applyOptions({
-          color:drawing.color,
-          lineWidth:safeLineWidth(drawing.width),
-          lineStyle:lineStyleValue(drawing.style)
-        });
-        drawing.series.setData(orderedPair(drawing.p1,drawing.p2));
-      }else{
-        if(drawing.priceLine){
-          try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}
-        }
-        drawing.priceLine=priceSeries.createPriceLine({
-          price:drawing.price,
-          color:drawing.color,
-          lineWidth:safeLineWidth(drawing.width),
-          lineStyle:lineStyleValue(drawing.style),
-          axisLabelVisible:true,
-          title:drawing.name
-        });
-      }
+      if(!drawing)return;
+      if(drawing.type==="trend"){renderTrendOverlay();return;}
+      if(drawing.priceLine){try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}}
+      drawing.priceLine=priceSeries.createPriceLine({price:drawing.price,color:drawing.color,lineWidth:safeLineWidth(drawing.width),lineStyle:lineStyleValue(drawing.style),axisLabelVisible:true,title:drawing.name});
+    }
+
+    function removeLevelPreview(){if(previewPriceLine){try{priceSeries.removePriceLine(previewPriceLine);}catch(error){}previewPriceLine=null;}}
+
+    function cancelDrawingInteraction(message){
+      pointerDrag=null;editState=null;drawingMode="";removeLevelPreview();trendTool.classList.remove("active");levelTool.classList.remove("active");chartBox.classList.remove("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);renderTrendOverlay();if(message)drawingSetStatus(message);renderDrawingManager();
+    }
+
+    function setMode(mode,button){
+      const same=drawingMode===mode;pointerDrag=null;editState=null;removeLevelPreview();drawingMode=same?"":mode;[trendTool,levelTool].forEach(function(x){x.classList.remove("active");});
+      if(drawingMode){
+        button.classList.add("active");
+        chartBox.classList.add("watchlist-drawing-active");
+        drawingOverlay.classList.toggle("active",drawingMode==="trend");
+        setChartDragEnabled(drawingMode!=="trend");
+        openDrawingManager();
+        drawingSetStatus(drawingMode==="trend"?"Trend line: click and hold, drag anywhere on the chart, then release.":"Price level: move the mouse to preview the level, then click to place it.");
+      }else{chartBox.classList.remove("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);drawingSetStatus("Drawing mode cancelled.");}
+      renderTrendOverlay();
+    }
+
+    function updateLevelPreview(price,color,width,style){
+      if(previewPriceLine){try{priceSeries.removePriceLine(previewPriceLine);}catch(error){}}
+      previewPriceLine=priceSeries.createPriceLine({price:price,color:color||"#ffd780",lineWidth:safeLineWidth(width||1),lineStyle:lineStyleValue(style||"dashed"),axisLabelVisible:true,title:"Preview"});
     }
 
     function deleteDrawing(id){
-      const index=drawings.findIndex(function(drawing){return drawing.id===id;});
-      if(index<0) return;
-      const drawing=drawings[index];
-      if(drawing.type==="trend"&&drawing.series){
-        try{chart.removeSeries(drawing.series);}catch(error){}
-      }
-      if(drawing.type==="level"&&drawing.priceLine){
-        try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}
-      }
-      drawings.splice(index,1);
-      if(selectedDrawingId===id) selectedDrawingId=drawings.length?drawings[Math.max(0,index-1)].id:null;
-      updateDrawingCount();
-      renderDrawingManager();
-      drawingSetStatus(drawings.length?"Drawing deleted.":"No drawings on this chart.");
+      const index=drawings.findIndex(function(d){return d.id===id;});if(index<0)return;const drawing=drawings[index];
+      if(drawing.type==="level"&&drawing.priceLine){try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}}
+      drawings.splice(index,1);if(selectedDrawingId===id)selectedDrawingId=drawings.length?drawings[Math.max(0,index-1)].id:null;updateDrawingCount();renderDrawingManager();renderTrendOverlay();drawingSetStatus(drawings.length?"Drawing deleted.":"No drawings on this chart.");
     }
 
     function clearAllDrawings(){
-      removePreview();
-      drawings.splice(0).forEach(function(drawing){
-        if(drawing.type==="trend"&&drawing.series){
-          try{chart.removeSeries(drawing.series);}catch(error){}
-        }
-        if(drawing.type==="level"&&drawing.priceLine){
-          try{priceSeries.removePriceLine(drawing.priceLine);}catch(error){}
-        }
-      });
-      selectedDrawingId=null;
-      drawingMode="";
-      trendStart=null;
-      editState=null;
-      trendTool.classList.remove("active");
-      levelTool.classList.remove("active");
-      chartBox.classList.remove("watchlist-drawing-active");
-      updateDrawingCount();
-      renderDrawingManager();
-      drawingSetStatus("All drawings cleared.");
+      removeLevelPreview();drawings.splice(0).forEach(function(d){if(d.type==="level"&&d.priceLine){try{priceSeries.removePriceLine(d.priceLine);}catch(error){}}});
+      selectedDrawingId=null;pointerDrag=null;editState=null;drawingMode="";trendTool.classList.remove("active");levelTool.classList.remove("active");chartBox.classList.remove("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);updateDrawingCount();renderDrawingManager();renderTrendOverlay();drawingSetStatus("All drawings cleared.");
     }
 
-    function selectDrawing(id){
-      selectedDrawingId=id;
-      renderDrawingManager();
-    }
-
-    function selectedDrawing(){
-      return drawings.find(function(drawing){return drawing.id===selectedDrawingId;})||null;
-    }
+    function selectDrawing(id){selectedDrawingId=id;renderDrawingManager();renderTrendOverlay();}
+    function selectedDrawing(){return drawings.find(function(d){return d.id===selectedDrawingId;})||null;}
 
     function beginEdit(drawing,part){
-      removePreview();
-      drawingMode="";
-      trendStart=null;
-      [trendTool,levelTool].forEach(function(button){button.classList.remove("active");});
-      editState={id:drawing.id,part:part};
-      chartBox.classList.add("watchlist-drawing-active");
-      openDrawingManager();
-
-      if(drawing.type==="trend"){
-        ensureTrendPreviewSeries(drawing.color,drawing.width,drawing.style);
-        updateTrendPreview(drawing.p1,drawing.p2,drawing.color,drawing.width,drawing.style);
-      }
-
-      if(part==="p1") drawingSetStatus(drawing.name+": move the mouse to preview Point 1, then click its new position.");
-      else if(part==="p2") drawingSetStatus(drawing.name+": move the mouse to preview Point 2, then click its new position.");
-      else drawingSetStatus(drawing.name+": move the mouse to preview the new level, then click to place it.");
+      selectedDrawingId=drawing.id;renderTrendOverlay();openDrawingManager();
+      if(drawing.type==="trend")drawingSetStatus(drawing.name+": drag the visible "+(part==="p1"?"Point 1":"Point 2")+" handle to the new position.");
+      else{editState={id:drawing.id,part:"level"};drawingMode="";chartBox.classList.add("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);drawingSetStatus(drawing.name+": move the mouse to preview the new level, then click to place it.");}
       renderDrawingManager();
     }
 
     function renderDrawingManager(){
       drawingList.textContent="";
-      if(!drawings.length){
-        const empty=document.createElement("div");
-        empty.className="watchlist-drawing-list-empty";
-        empty.textContent="No drawings yet.";
-        drawingList.appendChild(empty);
-      }else{
+      if(!drawings.length){const empty=document.createElement("div");empty.className="watchlist-drawing-list-empty";empty.textContent="No drawings yet.";drawingList.appendChild(empty);}else{
         drawings.forEach(function(drawing){
-          const row=document.createElement("button");
-          row.type="button";
-          row.className="watchlist-drawing-row"+(drawing.id===selectedDrawingId?" selected":"");
-          row.setAttribute("role","option");
-          row.setAttribute("aria-selected",drawing.id===selectedDrawingId?"true":"false");
-          const swatch=document.createElement("span");
-          swatch.className="watchlist-drawing-swatch";
-          swatch.style.background=drawing.color;
-          const copy=document.createElement("span");
-          copy.className="watchlist-drawing-row-copy";
-          const name=document.createElement("strong");
-          name.textContent=drawing.name;
-          const meta=document.createElement("small");
-          meta.textContent=drawing.type==="trend"
-            ? displayTime(drawing.p1.time)+" "+formatValue(drawing.p1.value,priceDecimals)+" → "+displayTime(drawing.p2.time)+" "+formatValue(drawing.p2.value,priceDecimals)
-            : valueLabel+" "+formatValue(drawing.price,priceDecimals);
-          copy.append(name,meta);
-          row.append(swatch,copy);
-          row.addEventListener("click",function(){selectDrawing(drawing.id);});
-          drawingList.appendChild(row);
+          const row=document.createElement("button");row.type="button";row.className="watchlist-drawing-row"+(drawing.id===selectedDrawingId?" selected":"");row.setAttribute("role","option");row.setAttribute("aria-selected",drawing.id===selectedDrawingId?"true":"false");
+          const swatch=document.createElement("span");swatch.className="watchlist-drawing-swatch";swatch.style.background=drawing.color;
+          const copy=document.createElement("span");copy.className="watchlist-drawing-row-copy";const name=document.createElement("strong");name.textContent=drawing.name;const meta=document.createElement("small");
+          if(drawing.type==="trend"){const t1=displayTime(timeFromLogical(drawing.p1.logical)),t2=displayTime(timeFromLogical(drawing.p2.logical));meta.textContent=(t1?t1+" ":"")+formatValue(drawing.p1.value,priceDecimals)+" → "+(t2?t2+" ":"")+formatValue(drawing.p2.value,priceDecimals);}else meta.textContent=valueLabel+" "+formatValue(drawing.price,priceDecimals);
+          copy.append(name,meta);row.append(swatch,copy);row.addEventListener("click",function(){selectDrawing(drawing.id);});drawingList.appendChild(row);
         });
       }
 
-      const drawing=selectedDrawing();
-      drawingEditor.textContent="";
-      if(!drawing){
-        const empty=document.createElement("div");
-        empty.className="watchlist-drawing-empty";
-        empty.textContent="Select a drawing to modify color, width, style, position, or delete it.";
-        drawingEditor.appendChild(empty);
-        return;
-      }
-
-      const title=document.createElement("div");
-      title.className="watchlist-drawing-editor-title";
-      title.innerHTML="<strong>"+drawing.name+"</strong><span>"+(drawing.type==="trend"?"Trend line":"Price level")+"</span>";
-      drawingEditor.appendChild(title);
-
-      const fields=document.createElement("div");
-      fields.className="watchlist-drawing-fields";
-
-      function field(labelText,control){
-        const label=document.createElement("label");
-        const caption=document.createElement("span");
-        caption.textContent=labelText;
-        label.append(caption,control);
-        fields.appendChild(label);
-      }
-
-      const color=document.createElement("input");
-      color.type="color";
-      color.value=drawing.color;
-      color.addEventListener("input",function(){
-        drawing.color=color.value;
-        refreshDrawing(drawing);
-        renderDrawingManager();
-      });
-      field("Color",color);
-
-      const width=document.createElement("select");
-      [1,2,3,4].forEach(function(value){
-        const option=document.createElement("option");
-        option.value=String(value);
-        option.textContent=value+" px";
-        if(value===drawing.width) option.selected=true;
-        width.appendChild(option);
-      });
-      width.addEventListener("change",function(){
-        drawing.width=safeLineWidth(width.value);
-        refreshDrawing(drawing);
-      });
-      field("Width",width);
-
-      const style=document.createElement("select");
-      [["solid","Solid"],["dashed","Dashed"],["dotted","Dotted"]].forEach(function(pair){
-        const option=document.createElement("option");
-        option.value=pair[0];
-        option.textContent=pair[1];
-        if(pair[0]===drawing.style) option.selected=true;
-        style.appendChild(option);
-      });
-      style.addEventListener("change",function(){
-        drawing.style=style.value;
-        refreshDrawing(drawing);
-      });
-      field("Style",style);
-
-      drawingEditor.appendChild(fields);
-
-      const actions=document.createElement("div");
-      actions.className="watchlist-drawing-editor-actions";
-      function action(label,handler,className){
-        const button=document.createElement("button");
-        button.type="button";
-        button.textContent=label;
-        if(className) button.className=className;
-        button.addEventListener("click",handler);
-        actions.appendChild(button);
-      }
-      if(drawing.type==="trend"){
-        action("Move Point 1",function(){beginEdit(drawing,"p1");});
-        action("Move Point 2",function(){beginEdit(drawing,"p2");});
-      }else{
-        action("Move Level",function(){beginEdit(drawing,"level");});
-      }
-      action("Delete",function(){deleteDrawing(drawing.id);},"danger");
-      drawingEditor.appendChild(actions);
-    }
-
-    function ensureTrendPreviewSeries(color,width,style){
-      if(previewTrendSeries) return previewTrendSeries;
-      previewTrendSeries=chart.addSeries(LightweightCharts.LineSeries,{
-        color:color||"#ffd780",
-        lineWidth:safeLineWidth(width||2),
-        lineStyle:lineStyleValue(style||"dashed"),
-        priceScaleId:"right",
-        priceLineVisible:false,
-        lastValueVisible:false,
-        crosshairMarkerVisible:false
-      });
-      return previewTrendSeries;
-    }
-
-    function updateTrendPreview(startPoint,endPoint,color,width,style){
-      if(!previewTrendSeries) return;
-      previewTrendSeries.applyOptions({
-        color:color||"#ffd780",
-        lineWidth:safeLineWidth(width||2),
-        lineStyle:lineStyleValue(style||"dashed")
-      });
-      const pair=orderedPair(startPoint,endPoint);
-      if(timeOrderValue(pair[0].time)===timeOrderValue(pair[1].time)){
-        previewTrendSeries.setData([{time:pair[0].time,value:pair[0].value}]);
-        return;
-      }
-      previewTrendSeries.setData(pair);
-    }
-
-    function updateLevelPreview(price,color,width,style){
-      if(previewPriceLine){
-        try{priceSeries.removePriceLine(previewPriceLine);}catch(error){}
-      }
-      previewPriceLine=priceSeries.createPriceLine({
-        price:price,
-        color:color||"#ffd780",
-        lineWidth:safeLineWidth(width||1),
-        lineStyle:lineStyleValue(style||"dashed"),
-        axisLabelVisible:true,
-        title:"Preview"
-      });
+      const drawing=selectedDrawing();drawingEditor.textContent="";
+      if(!drawing){const empty=document.createElement("div");empty.className="watchlist-drawing-empty";empty.textContent="Select a drawing to modify color, width, style, position, or delete it.";drawingEditor.appendChild(empty);return;}
+      const title=document.createElement("div");title.className="watchlist-drawing-editor-title";const titleStrong=document.createElement("strong");titleStrong.textContent=drawing.name;const titleType=document.createElement("span");titleType.textContent=drawing.type==="trend"?"Trend line":"Price level";title.append(titleStrong,titleType);drawingEditor.appendChild(title);
+      const fields=document.createElement("div");fields.className="watchlist-drawing-fields";
+      function field(labelText,control){const label=document.createElement("label"),caption=document.createElement("span");caption.textContent=labelText;label.append(caption,control);fields.appendChild(label);}
+      const color=document.createElement("input");color.type="color";color.value=drawing.color;color.addEventListener("input",function(){drawing.color=color.value;refreshDrawing(drawing);renderDrawingManager();});field("Color",color);
+      const width=document.createElement("select");[1,2,3,4].forEach(function(v){const o=document.createElement("option");o.value=String(v);o.textContent=v+" px";if(v===drawing.width)o.selected=true;width.appendChild(o);});width.addEventListener("change",function(){drawing.width=safeLineWidth(width.value);refreshDrawing(drawing);});field("Width",width);
+      const style=document.createElement("select");[["solid","Solid"],["dashed","Dashed"],["dotted","Dotted"]].forEach(function(pair){const o=document.createElement("option");o.value=pair[0];o.textContent=pair[1];if(pair[0]===drawing.style)o.selected=true;style.appendChild(o);});style.addEventListener("change",function(){drawing.style=style.value;refreshDrawing(drawing);});field("Style",style);drawingEditor.appendChild(fields);
+      const actions=document.createElement("div");actions.className="watchlist-drawing-editor-actions";function action(label,handler,className){const b=document.createElement("button");b.type="button";b.textContent=label;if(className)b.className=className;b.addEventListener("click",handler);actions.appendChild(b);}
+      if(drawing.type==="trend"){action("Move Point 1",function(){beginEdit(drawing,"p1");});action("Move Point 2",function(){beginEdit(drawing,"p2");});}else action("Move Level",function(){beginEdit(drawing,"level");});action("Delete",function(){deleteDrawing(drawing.id);},"danger");drawingEditor.appendChild(actions);
     }
 
     trendTool.addEventListener("click",function(){setMode("trend",trendTool);});
     levelTool.addEventListener("click",function(){setMode("level",levelTool);});
-    cursorTool.addEventListener("click",function(){
-      freeCursor=!freeCursor;
-      chart.applyOptions({crosshair:{mode:freeCursor?LightweightCharts.CrosshairMode.Normal:LightweightCharts.CrosshairMode.Magnet}});
-      cursorTool.classList.toggle("active",freeCursor);
-      cursorTool.textContent=freeCursor?"⊕ Magnet cursor":"＋ Free cursor";
-    });
+    cursorTool.addEventListener("click",function(){freeCursor=!freeCursor;chart.applyOptions({crosshair:{mode:freeCursor?LightweightCharts.CrosshairMode.Normal:LightweightCharts.CrosshairMode.Magnet}});cursorTool.classList.toggle("active",freeCursor);cursorTool.textContent=freeCursor?"⊕ Magnet cursor":"＋ Free cursor";});
     resetTool.addEventListener("click",resetSevenDays);
-    fitTool.addEventListener("click",function(){chart.timeScale().fitContent();});
+    fitTool.addEventListener("click",function(){chart.timeScale().fitContent();window.requestAnimationFrame(renderTrendOverlay);});
     clearTool.addEventListener("click",clearAllDrawings);
 
+    drawingOverlay.addEventListener("pointerdown",function(event){
+      if(drawingMode!=="trend")return;
+      const point=localPointerPoint(event);if(!point)return;
+      event.preventDefault();event.stopPropagation();pointerDrag={kind:"new-trend",start:point,current:point};drawingOverlay.setPointerCapture(event.pointerId);setChartDragEnabled(false);drawingSetStatus("Trend line: keep holding and drag to the second point.");renderTrendOverlay();
+    });
+
+    drawingOverlay.addEventListener("pointermove",function(event){
+      if(!pointerDrag)return;const point=localPointerPoint(event);if(!point)return;event.preventDefault();
+      if(pointerDrag.kind==="new-trend"){pointerDrag.current=point;renderTrendOverlay();return;}
+      const drawing=drawings.find(function(d){return d.id===pointerDrag.id;});if(!drawing||drawing.type!=="trend")return;
+      if(pointerDrag.kind==="handle"){drawing[pointerDrag.part]={logical:point.logical,value:point.value};renderTrendOverlay();renderDrawingManager();return;}
+      if(pointerDrag.kind==="move-line"){const dl=point.logical-pointerDrag.start.logical,dv=point.value-pointerDrag.start.value;drawing.p1={logical:pointerDrag.originalP1.logical+dl,value:pointerDrag.originalP1.value+dv};drawing.p2={logical:pointerDrag.originalP2.logical+dl,value:pointerDrag.originalP2.value+dv};renderTrendOverlay();renderDrawingManager();}
+    });
+
+    function finishOverlayPointer(event){
+      if(!pointerDrag)return;const drag=pointerDrag;const point=localPointerPoint(event);pointerDrag=null;
+      try{if(drawingOverlay.hasPointerCapture(event.pointerId))drawingOverlay.releasePointerCapture(event.pointerId);}catch(error){}
+      if(drag.kind==="new-trend"){
+        if(point){const created=createTrendDrawing(drag.start,point);if(created){drawingMode="";trendTool.classList.remove("active");chartBox.classList.remove("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);drawingSetStatus("Trend line added. Drag either endpoint handle or drag the line itself to reposition it.");}}
+      }else{setChartDragEnabled(true);const drawing=drawings.find(function(d){return d.id===drag.id;});if(drawing)drawingSetStatus(drag.kind==="move-line"?drawing.name+" moved.":drawing.name+" endpoint updated.");}
+      renderDrawingManager();renderTrendOverlay();
+    }
+    drawingOverlay.addEventListener("pointerup",finishOverlayPointer);drawingOverlay.addEventListener("pointercancel",finishOverlayPointer);
+
     chart.subscribeClick(function(param){
-      const point=chartPointFromParam(param);
-      if(!point) return;
-
-      if(editState){
-        const drawing=drawings.find(function(item){return item.id===editState.id;});
-        if(!drawing){
-          cancelDrawingInteraction("Drawing no longer exists.");
-          return;
-        }
-        if(editState.part==="p1") drawing.p1={time:point.time,value:point.value};
-        else if(editState.part==="p2") drawing.p2={time:point.time,value:point.value};
-        else drawing.price=point.value;
-        refreshDrawing(drawing);
-        selectedDrawingId=drawing.id;
-        cancelDrawingInteraction(drawing.name+" updated.");
-        openDrawingManager();
-        return;
-      }
-
-      if(!drawingMode) return;
-
-      if(drawingMode==="level"){
-        createLevelDrawing(point.value);
-        cancelDrawingInteraction("Price level added. Select it in Drawing Manager to modify it.");
-        openDrawingManager();
-        return;
-      }
-
-      if(!trendStart){
-        trendStart={time:point.time,value:point.value};
-        ensureTrendPreviewSeries("#ffd780",2,"dashed");
-        previewTrendSeries.setData([{time:trendStart.time,value:trendStart.value}]);
-        drawingSetStatus("Trend line: first point set. Move the mouse to preview the line, then click the second point.");
-        return;
-      }
-
-      const completedTrend=createTrendDrawing(trendStart,point,{series:previewTrendSeries});
-      if(completedTrend){
-        cancelDrawingInteraction("Trend line added. Select it in Drawing Manager to modify it.");
-        openDrawingManager();
-      }
+      if(drawingMode==="trend")return;if(!param||!param.point)return;const value=priceSeries.coordinateToPrice(param.point.y);if(!Number.isFinite(value))return;
+      if(editState&&editState.part==="level"){const drawing=drawings.find(function(d){return d.id===editState.id;});if(!drawing)return;drawing.price=value;refreshDrawing(drawing);editState=null;removeLevelPreview();chartBox.classList.remove("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);drawingSetStatus(drawing.name+" updated.");renderDrawingManager();return;}
+      if(drawingMode==="level"){createLevelDrawing(value);drawingMode="";levelTool.classList.remove("active");chartBox.classList.remove("watchlist-drawing-active");drawingOverlay.classList.remove("active");setChartDragEnabled(true);removeLevelPreview();drawingSetStatus("Price level added. Select it in Drawing Manager to modify it.");}
     });
 
     chart.subscribeCrosshairMove(function(param){
-      const point=chartPointFromParam(param);
-      if(!point) return;
-
-      if(editState){
-        const drawing=drawings.find(function(item){return item.id===editState.id;});
-        if(!drawing) return;
-        if(drawing.type==="trend"){
-          const p1=editState.part==="p1"?point:drawing.p1;
-          const p2=editState.part==="p2"?point:drawing.p2;
-          updateTrendPreview(p1,p2,drawing.color,drawing.width,drawing.style);
-        }else{
-          updateLevelPreview(point.value,drawing.color,drawing.width,drawing.style);
-        }
-        return;
-      }
-
-      if(drawingMode==="trend"&&trendStart){
-        updateTrendPreview(trendStart,point,"#ffd780",2,"dashed");
-      }else if(drawingMode==="level"){
-        updateLevelPreview(point.value,"#ffd780",1,"dashed");
-      }
+      if(!(drawingMode==="level"||(editState&&editState.part==="level")))return;if(!param||!param.point)return;const price=priceSeries.coordinateToPrice(param.point.y);if(!Number.isFinite(price))return;const drawing=editState?drawings.find(function(d){return d.id===editState.id;}):null;updateLevelPreview(price,drawing?drawing.color:"#ffd780",drawing?drawing.width:1,drawing?drawing.style:"dashed");
     });
 
-    const drawingKeyHandler=function(event){
-      const tag=event.target&&event.target.tagName?event.target.tagName.toLowerCase():"";
-      if(tag==="input"||tag==="select"||tag==="textarea") return;
-      if(event.key==="Escape"&&(drawingMode||editState)){
-        cancelDrawingInteraction("Drawing action cancelled.");
-      }else if((event.key==="Delete"||event.key==="Backspace")&&selectedDrawingId&&!drawingManager.hidden){
-        event.preventDefault();
-        deleteDrawing(selectedDrawingId);
-      }
-    };
+    const visibleRangeHandler=function(){window.requestAnimationFrame(renderTrendOverlay);};
+    if(chart.timeScale().subscribeVisibleLogicalRangeChange)chart.timeScale().subscribeVisibleLogicalRangeChange(visibleRangeHandler);
+    const drawingKeyHandler=function(event){const tag=event.target&&event.target.tagName?event.target.tagName.toLowerCase():"";if(tag==="input"||tag==="select"||tag==="textarea")return;if(event.key==="Escape"&&(drawingMode||editState||pointerDrag))cancelDrawingInteraction("Drawing action cancelled.");else if((event.key==="Delete"||event.key==="Backspace")&&selectedDrawingId&&!drawingManager.hidden){event.preventDefault();deleteDrawing(selectedDrawingId);}};
     document.addEventListener("keydown",drawingKeyHandler);
-
-    updateDrawingCount();
-    renderDrawingManager();
+    updateDrawingCount();renderDrawingManager();renderTrendOverlay();
 
     chart.subscribeCrosshairMove(function(param){
       const market=param.seriesData.get(priceSeries);const sentiment=param.seriesData.get(psiSeries);
@@ -1073,12 +774,20 @@
       });
     }
     window.addEventListener("psd-theme-change",applyChartTheme);
-    const observer=new ResizeObserver(function(entries){entries.forEach(function(entry){chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});});});
+    const observer=new ResizeObserver(function(entries){
+      entries.forEach(function(entry){
+        chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});
+      });
+      window.requestAnimationFrame(renderTrendOverlay);
+    });
     observer.observe(chartBox);
     activeChartCleanup=function(){
       window.removeEventListener("psd-theme-change",applyChartTheme);
       document.removeEventListener("keydown",drawingKeyHandler);
-      removePreview();
+      if(chart.timeScale().unsubscribeVisibleLogicalRangeChange){
+        chart.timeScale().unsubscribeVisibleLogicalRangeChange(visibleRangeHandler);
+      }
+      removeLevelPreview();
       observer.disconnect();
       chart.remove();
     };
