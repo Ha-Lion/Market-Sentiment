@@ -447,9 +447,6 @@
       '</div>'+
       '<div class="watchlist-drawing-manager-body">'+
         '<div class="watchlist-drawing-list" role="listbox" aria-label="Chart drawings"></div>'+
-        '<div class="watchlist-drawing-editor">'+
-          '<div class="watchlist-drawing-empty">No drawing selected.</div>'+
-        '</div>'+
       '</div>'+
       '<div class="watchlist-drawing-status" aria-live="polite">Choose Trend line or Price level to start drawing.</div>';
 
@@ -508,7 +505,6 @@
     chartBox.appendChild(drawingOverlay);
 
     const drawingList=drawingManager.querySelector(".watchlist-drawing-list");
-    const drawingEditor=drawingManager.querySelector(".watchlist-drawing-editor");
     const drawingStatus=drawingManager.querySelector(".watchlist-drawing-status");
     const drawingClose=drawingManager.querySelector(".watchlist-drawing-manager-close");
 
@@ -689,27 +685,164 @@
 
     function renderDrawingManager(){
       drawingList.textContent="";
-      if(!drawings.length){const empty=document.createElement("div");empty.className="watchlist-drawing-list-empty";empty.textContent="No drawings yet.";drawingList.appendChild(empty);}else{
-        drawings.forEach(function(drawing){
-          const row=document.createElement("button");row.type="button";row.className="watchlist-drawing-row"+(drawing.id===selectedDrawingId?" selected":"");row.setAttribute("role","option");row.setAttribute("aria-selected",drawing.id===selectedDrawingId?"true":"false");
-          const swatch=document.createElement("span");swatch.className="watchlist-drawing-swatch";swatch.style.background=drawing.color;
-          const copy=document.createElement("span");copy.className="watchlist-drawing-row-copy";const name=document.createElement("strong");name.textContent=drawing.name;const meta=document.createElement("small");
-          if(drawing.type==="trend"){const t1=displayTime(timeFromLogical(drawing.p1.logical)),t2=displayTime(timeFromLogical(drawing.p2.logical));meta.textContent=(t1?t1+" ":"")+formatValue(drawing.p1.value,priceDecimals)+" → "+(t2?t2+" ":"")+formatValue(drawing.p2.value,priceDecimals);}else meta.textContent=valueLabel+" "+formatValue(drawing.price,priceDecimals);
-          copy.append(name,meta);row.append(swatch,copy);row.addEventListener("click",function(){selectDrawing(drawing.id);});drawingList.appendChild(row);
-        });
+      drawingManager.querySelectorAll(".watchlist-drawing-dropdown").forEach(function(menu){
+        menu.remove();
+      });
+
+      if(!drawings.length){
+        const empty=document.createElement("div");
+        empty.className="watchlist-drawing-list-empty";
+        empty.textContent="No drawings yet.";
+        drawingList.appendChild(empty);
+        return;
       }
 
-      const drawing=selectedDrawing();drawingEditor.textContent="";
-      if(!drawing){const empty=document.createElement("div");empty.className="watchlist-drawing-empty";empty.textContent="Select a drawing to modify color, width, style, position, or delete it.";drawingEditor.appendChild(empty);return;}
-      const title=document.createElement("div");title.className="watchlist-drawing-editor-title";const titleStrong=document.createElement("strong");titleStrong.textContent=drawing.name;const titleType=document.createElement("span");titleType.textContent=drawing.type==="trend"?"Trend line":"Price level";title.append(titleStrong,titleType);drawingEditor.appendChild(title);
-      const fields=document.createElement("div");fields.className="watchlist-drawing-fields";
-      function field(labelText,control){const label=document.createElement("label"),caption=document.createElement("span");caption.textContent=labelText;label.append(caption,control);fields.appendChild(label);}
-      const color=document.createElement("input");color.type="color";color.value=drawing.color;color.addEventListener("input",function(){drawing.color=color.value;refreshDrawing(drawing);renderDrawingManager();});field("Color",color);
-      const width=document.createElement("select");[1,2,3,4].forEach(function(v){const o=document.createElement("option");o.value=String(v);o.textContent=v+" px";if(v===drawing.width)o.selected=true;width.appendChild(o);});width.addEventListener("change",function(){drawing.width=safeLineWidth(width.value);refreshDrawing(drawing);});field("Width",width);
-      const style=document.createElement("select");[["solid","Solid"],["dashed","Dashed"],["dotted","Dotted"]].forEach(function(pair){const o=document.createElement("option");o.value=pair[0];o.textContent=pair[1];if(pair[0]===drawing.style)o.selected=true;style.appendChild(o);});style.addEventListener("change",function(){drawing.style=style.value;refreshDrawing(drawing);});field("Style",style);drawingEditor.appendChild(fields);
-      const actions=document.createElement("div");actions.className="watchlist-drawing-editor-actions";function action(label,handler,className){const b=document.createElement("button");b.type="button";b.textContent=label;if(className)b.className=className;b.addEventListener("click",handler);actions.appendChild(b);}
-      if(drawing.type==="trend"){action("Move Point 1",function(){beginEdit(drawing,"p1");});action("Move Point 2",function(){beginEdit(drawing,"p2");});}else action("Move Level",function(){beginEdit(drawing,"level");});action("Delete",function(){deleteDrawing(drawing.id);},"danger");drawingEditor.appendChild(actions);
+      let selectedNameButton=null;
+
+      drawings.forEach(function(drawing){
+        const item=document.createElement("div");
+        item.className="watchlist-drawing-item";
+
+        const nameButton=document.createElement("button");
+        nameButton.type="button";
+        nameButton.className="watchlist-drawing-name"+(drawing.id===selectedDrawingId?" selected":"");
+        nameButton.setAttribute("role","option");
+        nameButton.setAttribute("aria-selected",drawing.id===selectedDrawingId?"true":"false");
+        nameButton.setAttribute("aria-haspopup","menu");
+        nameButton.setAttribute("aria-expanded",drawing.id===selectedDrawingId?"true":"false");
+        nameButton.textContent=drawing.name;
+
+        nameButton.addEventListener("click",function(event){
+          event.preventDefault();
+          event.stopPropagation();
+
+          if(selectedDrawingId===drawing.id){
+            selectedDrawingId=null;
+            renderDrawingManager();
+            renderTrendOverlay();
+            drawingSetStatus("Drawing menu closed.");
+            return;
+          }
+
+          selectedDrawingId=drawing.id;
+          renderDrawingManager();
+          renderTrendOverlay();
+          drawingSetStatus(drawing.name+" selected. Use the dropdown to modify it.");
+        });
+
+        item.appendChild(nameButton);
+        drawingList.appendChild(item);
+
+        if(drawing.id===selectedDrawingId) selectedNameButton=nameButton;
+      });
+
+      const drawing=selectedDrawing();
+      if(!drawing||!selectedNameButton) return;
+
+      const menu=document.createElement("div");
+      menu.className="watchlist-drawing-dropdown";
+      menu.setAttribute("role","menu");
+      menu.setAttribute("aria-label",drawing.name+" drawing settings");
+
+      const menuFields=document.createElement("div");
+      menuFields.className="watchlist-drawing-dropdown-fields";
+
+      function dropdownField(labelText,control){
+        const label=document.createElement("label");
+        const caption=document.createElement("span");
+        caption.textContent=labelText;
+        label.append(caption,control);
+        menuFields.appendChild(label);
+      }
+
+      const color=document.createElement("input");
+      color.type="color";
+      color.value=drawing.color;
+      color.setAttribute("aria-label","Drawing color");
+      color.addEventListener("input",function(){
+        drawing.color=color.value;
+        refreshDrawing(drawing);
+      });
+      dropdownField("Color",color);
+
+      const width=document.createElement("select");
+      width.setAttribute("aria-label","Drawing width");
+      [1,2,3,4].forEach(function(value){
+        const option=document.createElement("option");
+        option.value=String(value);
+        option.textContent=value+" px";
+        if(value===drawing.width) option.selected=true;
+        width.appendChild(option);
+      });
+      width.addEventListener("change",function(){
+        drawing.width=safeLineWidth(width.value);
+        refreshDrawing(drawing);
+      });
+      dropdownField("Width",width);
+
+      const style=document.createElement("select");
+      style.setAttribute("aria-label","Drawing style");
+      [["solid","Solid"],["dashed","Dashed"],["dotted","Dotted"]].forEach(function(pair){
+        const option=document.createElement("option");
+        option.value=pair[0];
+        option.textContent=pair[1];
+        if(pair[0]===drawing.style) option.selected=true;
+        style.appendChild(option);
+      });
+      style.addEventListener("change",function(){
+        drawing.style=style.value;
+        refreshDrawing(drawing);
+      });
+      dropdownField("Style",style);
+
+      menu.appendChild(menuFields);
+
+      const actions=document.createElement("div");
+      actions.className="watchlist-drawing-dropdown-actions";
+
+      function action(label,handler,className){
+        const button=document.createElement("button");
+        button.type="button";
+        button.textContent=label;
+        if(className) button.className=className;
+        button.addEventListener("click",function(event){
+          event.preventDefault();
+          event.stopPropagation();
+          handler();
+        });
+        actions.appendChild(button);
+      }
+
+      if(drawing.type==="trend"){
+        action("Move Point 1",function(){beginEdit(drawing,"p1");});
+        action("Move Point 2",function(){beginEdit(drawing,"p2");});
+      }else{
+        action("Move Level",function(){beginEdit(drawing,"level");});
+      }
+
+      action("Delete",function(){deleteDrawing(drawing.id);},"danger");
+      menu.appendChild(actions);
+      drawingManager.appendChild(menu);
+
+      const managerRect=drawingManager.getBoundingClientRect();
+      const buttonRect=selectedNameButton.getBoundingClientRect();
+      const preferredLeft=Math.max(8,Math.min(
+        managerRect.width-menu.offsetWidth-8,
+        buttonRect.left-managerRect.left
+      ));
+      menu.style.left=preferredLeft+"px";
+      menu.style.top=(buttonRect.bottom-managerRect.top+3)+"px";
     }
+
+    modalBody.addEventListener("click",function(event){
+      if(!selectedDrawingId) return;
+      if(event.target.closest(".watchlist-drawing-name")) return;
+      if(event.target.closest(".watchlist-drawing-dropdown")) return;
+      if(event.target.closest(".watchlist-drawing-overlay")) return;
+      selectedDrawingId=null;
+      renderDrawingManager();
+      renderTrendOverlay();
+    });
 
     trendTool.addEventListener("click",function(){setMode("trend",trendTool);});
     levelTool.addEventListener("click",function(){setMode("level",levelTool);});
