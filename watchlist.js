@@ -74,6 +74,78 @@
     return map;
   }
 
+  function marketChartHrefFor(asset,instrument){
+    const rawSymbol = String(asset && asset.symbol || "").trim();
+    const symbol = rawSymbol.replace(/\s+/g,"");
+    const name = String(instrument || asset && (asset.display_name || asset.name) || "").trim();
+    const key = normalizedKey(name);
+    const symbolKey = normalizedKey(symbol);
+    const type = String(asset && asset.type || "").toLowerCase();
+
+    const direct = {
+      "sp500es":"CME_MINI:ES1!",
+      "nasdaqnq":"CME_MINI:NQ1!",
+      "dowym":"CBOT_MINI:YM1!",
+      "russellrty":"CME_MINI:RTY1!",
+      "vix":"CBOE:VIX",
+      "dax":"EUREX:FDAX1!",
+      "ftse100":"OANDA:UK100GBP",
+      "nikkei225":"OANDA:JP225USD",
+      "hangseng":"OANDA:HK33HKD",
+      "eurostoxx50":"EUREX:FESX1!",
+
+      "crudeoil":"NYMEX:CL1!",
+      "wtioil":"NYMEX:CL1!",
+      "naturalgas":"NYMEX:NG1!",
+      "brentoil":"NYMEX:BZ1!",
+      "gasoline":"NYMEX:RB1!",
+      "heatingoil":"NYMEX:HO1!",
+
+      "gold":"AMEX:GLD",
+      "silver":"AMEX:SLV",
+      "platinum":"NYMEX:PL1!",
+      "palladium":"NYMEX:PA1!",
+      "copper":"COMEX:HG1!",
+      "goldetfsflows":"AMEX:GLD",
+      "miningstocks":"AMEX:GDX",
+
+      "trump":"BINANCE:TRUMPUSDT",
+      "wlfi":"BINANCE:WLFIUSDT",
+      "djt":"NASDAQ:DJT",
+      "coin":"NASDAQ:COIN",
+      "mstr":"NASDAQ:MSTR",
+      "ita":"CBOE:ITA",
+      "lmt":"NYSE:LMT",
+      "remx":"AMEX:REMX",
+      "fxi":"AMEX:FXI",
+      "ura":"AMEX:URA",
+      "geo":"NYSE:GEO"
+    };
+
+    if(direct[key]) return "charts.html?symbol="+encodeURIComponent(direct[key]);
+    if(direct[symbolKey]) return "charts.html?symbol="+encodeURIComponent(direct[symbolKey]);
+
+    // Forex pairs need the TradingView exchange prefix.
+    if((type === "forex" || type === "fx" || type === "currency" || /^[A-Z]{6}$/.test(symbol.toUpperCase()))
+      && /^[A-Za-z]{6}$/.test(symbol)){
+      return "charts.html?symbol="+encodeURIComponent("OANDA:"+symbol.toUpperCase());
+    }
+
+    // Crypto chart symbols are explicit so the chart page cannot fall back.
+    const crypto = new Set(["BTC","ETH","SOL","XRP","BNB","DOGE","ADA","LINK","LTC","AVAX","DOT","BCH"]);
+    if(type === "crypto" && crypto.has(symbol.toUpperCase())){
+      return "charts.html?symbol="+encodeURIComponent("BINANCE:"+symbol.toUpperCase()+"USDT");
+    }
+
+    // Stocks, ETFs, and most supported chart items can be resolved by
+    // the short ticker already registered in charts.html.
+    if(symbol){
+      return "charts.html?symbol="+encodeURIComponent(symbol);
+    }
+
+    return "charts.html";
+  }
+
   function relatedPageFor(asset,instrument,category){
     const categoryName = String(category && category.category || "").toLowerCase();
     const categoryPages = {
@@ -607,7 +679,7 @@
       const actions = document.createElement("div");
       actions.className = "watchlist-card-actions";
       actions.appendChild(makeLink("Related Sentiment Page",relatedPage));
-      actions.appendChild(makeLink("Market Charts","charts.html"));
+      actions.appendChild(makeLink("Market Charts",marketChartHrefFor(asset,item.instrument)));
       actions.appendChild(makeButton("News & Articles",function(){
         openNewsPopup(item.instrument,asset).catch(function(error){
           console.error(error);
