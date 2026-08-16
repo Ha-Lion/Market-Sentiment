@@ -182,7 +182,7 @@
       position:absolute;
       right:18px;
       top:16px;
-      color:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.16);
       font-size:34px;
       font-weight:900;
       letter-spacing:-1px;
@@ -1269,6 +1269,9 @@
     }
     body:not(.dark-mode) .sentiment-card{
       background:radial-gradient(circle at top right,rgba(210,153,34,.12),transparent 10rem),linear-gradient(180deg,#fff,#f2f7fc)!important;
+    }
+    body:not(.dark-mode) .chart-watermark{
+      color:rgba(7,20,38,.18)!important;
     }
     body:not(.dark-mode) .svm-lab-head,
     body:not(.dark-mode) .svm-controls,
@@ -2994,7 +2997,7 @@
     function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
     function renderSkyline(data){
       const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:270,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
-      const dark=document.body.classList.contains("dark-mode"),grid=dark?"rgba(255,255,255,.13)":"rgba(26,57,88,.17)",axis=dark?"#a9b4c1":"#263b53",labelBg=dark?"rgba(9,14,22,.88)":"rgba(255,255,255,.96)",labelText=dark?"#fff":"#071426";
+      const dark=document.body.classList.contains("dark-mode"),grid=dark?"rgba(255,255,255,.13)":"rgba(26,57,88,.17)",axis=dark?"#a9b4c1":"#263b53",labelBg=dark?"rgba(9,14,22,.88)":"rgba(255,255,255,.96)",labelText=dark?"#fff":"#071426",areaOpacity=dark?".065":".14";
       let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
       [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="${grid}" stroke-width="1"/><text x="18" y="${y+4}" fill="${axis}" font-size="14" font-weight="800">${v}</text>`;});
       const labelRows=data.map((d,idx)=>{
@@ -3013,7 +3016,7 @@
         const path=smoothPath(points);
         const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
         const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
-        out+=`<path d="${fill}" fill="${c}" opacity=".055"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="${dark?'#fff':'#071426'}" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-17}" width="240" height="28" rx="14" fill="${labelBg}" stroke="${c}" stroke-opacity=".70"/><text x="${lx+10}" y="${ly+1.5}" fill="${labelText}" font-size="9.6" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
+        out+=`<path d="${fill}" fill="${c}" opacity="${areaOpacity}"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="${dark?'#fff':'#071426'}" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-17}" width="240" height="28" rx="14" fill="${labelBg}" stroke="${c}" stroke-opacity=".70"/><text x="${lx+10}" y="${ly+1.5}" fill="${labelText}" font-size="9.6" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
       });
       out+=`<text x="${pad.l}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
     }
