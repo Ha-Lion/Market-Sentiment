@@ -419,6 +419,16 @@
         border:1px solid rgba(210,153,34,.32);
         background:rgba(210,153,34,.10);
       }
+      #psd-account-nav-link.psd-member-link::after{
+        content:"▾";
+        display:inline-block;
+        margin-left:6px;
+        font-size:9px;
+        font-weight:900;
+        line-height:1;
+        color:currentColor;
+        vertical-align:middle;
+      }
 
       /* Shared ribbon rows are rendered explicitly in render(); theme CSS owns row placement.
          Do not suppress .nav a::before here: those pseudo-elements carry the ribbon page icons. */
@@ -476,6 +486,8 @@
         accountLink.href = "auth.html";
         accountLink.classList.remove("psd-member-link");
         accountLink.dataset.signedIn = "false";
+        accountLink.removeAttribute("aria-haspopup");
+        accountLink.removeAttribute("aria-expanded");
         const reportLink = document.getElementById("psd-activity-report-link");
         if(reportLink) reportLink.hidden = true;
         menu.hidden = true;
@@ -503,6 +515,8 @@
       accountLink.href = "#";
       accountLink.classList.add("psd-member-link");
       accountLink.dataset.signedIn = "true";
+      accountLink.setAttribute("aria-haspopup","menu");
+      accountLink.setAttribute("aria-expanded","false");
     }catch(error){
       console.error(error);
     }
@@ -520,6 +534,7 @@
       if(accountLink.dataset.signedIn === "true"){
         event.preventDefault();
         menu.hidden = !menu.hidden;
+        accountLink.setAttribute("aria-expanded",menu.hidden ? "false" : "true");
         return;
       }
 
@@ -560,11 +575,17 @@
     }
 
     document.addEventListener("click", function(event){
-      if(!event.target.closest(".psd-account-nav-wrap")) menu.hidden = true;
+      if(!event.target.closest(".psd-account-nav-wrap")){
+        menu.hidden = true;
+        if(accountLink.dataset.signedIn === "true") accountLink.setAttribute("aria-expanded","false");
+      }
     });
 
     document.addEventListener("keydown", function(event){
-      if(event.key === "Escape") menu.hidden = true;
+      if(event.key === "Escape"){
+        menu.hidden = true;
+        if(accountLink.dataset.signedIn === "true") accountLink.setAttribute("aria-expanded","false");
+      }
     });
 
     window.addEventListener("psd-member-status-change", function(){
