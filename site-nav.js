@@ -112,6 +112,11 @@
         position:relative!important;
         z-index:100!important;
         overflow:visible!important;
+        pointer-events:none!important;
+      }
+      .psd-shared-header .header-center > a[target="_blank"],
+      .psd-shared-header #site-tour-button{
+        pointer-events:auto!important;
       }
       .psd-shared-header .nav{
         position:relative!important;
@@ -722,7 +727,7 @@
       </span>
       <div class="brand-copy">
         <div class="brand-stamp psd-dancing-label">AI-built public market sentiment website</div>
-        <div class="site-subtitle psd-ai-subtitle">Global market public sentiment dashboard</div>
+        <div class="site-subtitle psd-ai-subtitle"><span class="psd-follow-us psd-ai-subtitle-wave" aria-label="Global market public sentiment dashboard" style="font-size:inherit!important;line-height:inherit!important;letter-spacing:inherit!important;"><span aria-hidden="true" style="--follow-i:0">G</span><span aria-hidden="true" style="--follow-i:1">l</span><span aria-hidden="true" style="--follow-i:2">o</span><span aria-hidden="true" style="--follow-i:3">b</span><span aria-hidden="true" style="--follow-i:4">a</span><span aria-hidden="true" style="--follow-i:5">l</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:6">m</span><span aria-hidden="true" style="--follow-i:7">a</span><span aria-hidden="true" style="--follow-i:8">r</span><span aria-hidden="true" style="--follow-i:9">k</span><span aria-hidden="true" style="--follow-i:10">e</span><span aria-hidden="true" style="--follow-i:11">t</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:12">p</span><span aria-hidden="true" style="--follow-i:13">u</span><span aria-hidden="true" style="--follow-i:14">b</span><span aria-hidden="true" style="--follow-i:15">l</span><span aria-hidden="true" style="--follow-i:16">i</span><span aria-hidden="true" style="--follow-i:17">c</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:18">s</span><span aria-hidden="true" style="--follow-i:19">e</span><span aria-hidden="true" style="--follow-i:20">n</span><span aria-hidden="true" style="--follow-i:21">t</span><span aria-hidden="true" style="--follow-i:22">i</span><span aria-hidden="true" style="--follow-i:23">m</span><span aria-hidden="true" style="--follow-i:24">e</span><span aria-hidden="true" style="--follow-i:25">n</span><span aria-hidden="true" style="--follow-i:26">t</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:27">d</span><span aria-hidden="true" style="--follow-i:28">a</span><span aria-hidden="true" style="--follow-i:29">s</span><span aria-hidden="true" style="--follow-i:30">h</span><span aria-hidden="true" style="--follow-i:31">b</span><span aria-hidden="true" style="--follow-i:32">o</span><span aria-hidden="true" style="--follow-i:33">a</span><span aria-hidden="true" style="--follow-i:34">r</span><span aria-hidden="true" style="--follow-i:35">d</span></span></div>
       </div>
     </a>
     <div class="header-center">
