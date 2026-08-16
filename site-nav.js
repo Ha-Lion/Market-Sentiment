@@ -82,7 +82,7 @@
       .psd-shared-header .brand-stamp.psd-dancing-label{animation-delay:.35s,.35s!important}
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
         position:relative;
-        top:5px;
+        top:36px;
         margin-top:3px;
         font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
         font-size:14px!important;
@@ -97,7 +97,7 @@
       }
       .psd-shared-header .psd-market-pulse-link{
         margin-right:auto!important;
-        margin-left:58px!important;
+        margin-left:92px!important;
         pointer-events:auto!important;
       }
       @media(prefers-reduced-motion:reduce){
@@ -691,7 +691,7 @@
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
       <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
         <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+        <span class="psd-home-label">Home</span>
       </span>
       <div class="brand-copy">
         <div class="brand-stamp psd-dancing-label">AI-built public market sentiment dashboard</div>
@@ -700,7 +700,7 @@
     </a>
     <div class="header-center">
       <div class="header-pill psd-dancing-label" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;position:relative;top:3px;">✨ Constantly learning & improving</div>
-      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+      <a class="psd-ribbon-donation-link" href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
         <span>🚀 Help take Public Sentiment Dash to the next level</span>
         <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
       </a>
@@ -724,7 +724,7 @@
       <div class="psd-ribbon-social-wrap">
         <div class="social-links">
           <span class="social-label">Follow us</span>
-          <span class="social-pill">X.com</span>
+          <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer">X.com</a>
           <span class="social-pill linkedin">LinkedIn</span>
         </div>
         <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
