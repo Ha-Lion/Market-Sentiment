@@ -310,10 +310,12 @@
       summaryItems.push({key:"market",text:valueLabel+": "+formatValue(latestMarket.close,priceDecimals),className:"market-value series-label"});
     }
     summaryItems.push({key:"sentiment",text:"PSI: "+(Number.isFinite(latestSentiment.psi)?Math.round(latestSentiment.psi)+"/100":"N/A"),className:"psi-value series-label"});
-    if(hasNumericalFeed){
-      summaryItems.push({text:valueLabel+" RSI(14): "+formatValue(marketRsi,1),className:"market-rsi series-label"});
+    /* On full market-comparison charts, RSI readouts live in the toolbar
+       as beveled indicators instead of the oval summary row. Keep the
+       sentiment RSI in the summary only for sentiment-only instruments. */
+    if(!hasNumericalFeed){
+      summaryItems.push({text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi series-label"});
     }
-    summaryItems.push({text:"Sentiment RSI(14): "+formatValue(sentimentRsi,1),className:"sentiment-rsi series-label"});
     if(hasNumericalFeed){
       summaryItems.push({key:"marketEma20",text:"Market EMA20: "+(marketEma20.length?formatValue(marketEma20[marketEma20.length-1].value,priceDecimals):"N/A"),className:"market-ema20-value series-label"});
       summaryItems.push({key:"marketEma50",text:"Market EMA50: "+(marketEma50.length?formatValue(marketEma50[marketEma50.length-1].value,priceDecimals):"N/A"),className:"market-ema50-value series-label"});
@@ -335,6 +337,27 @@
     const resetTool=tool("Reset 7D");
     const fitTool=tool("Fit");
     const clearTool=tool("Clear drawings");
+
+    function rsiIndicator(label,value,className){
+      const badge=document.createElement("span");
+      badge.className="watchlist-rsi-indicator "+className;
+      badge.setAttribute("aria-label",label+" "+formatValue(value,1));
+      const name=document.createElement("span");
+      name.className="watchlist-rsi-indicator-label";
+      name.textContent=label;
+      const number=document.createElement("strong");
+      number.className="watchlist-rsi-indicator-value";
+      number.textContent=formatValue(value,1);
+      badge.appendChild(name);
+      badge.appendChild(number);
+      toolbar.appendChild(badge);
+      return badge;
+    }
+
+    if(hasNumericalFeed){
+      rsiIndicator(valueLabel+" RSI(14)",marketRsi,"market-rsi");
+      rsiIndicator("Sentiment RSI(14)",sentimentRsi,"sentiment-rsi");
+    }
     toolbar.hidden=!hasNumericalFeed;
 
     const wrap=document.createElement("div");
