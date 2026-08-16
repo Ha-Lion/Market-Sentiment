@@ -89,6 +89,17 @@
         font-weight:700!important;
         letter-spacing:.7px!important;
       }
+      .psd-shared-header .psd-market-pulse-row{
+        flex-basis:100%!important;
+        width:100%!important;
+        height:0!important;
+        pointer-events:none!important;
+      }
+      .psd-shared-header .psd-market-pulse-link{
+        margin-right:auto!important;
+        margin-left:58px!important;
+        pointer-events:auto!important;
+      }
       @media(prefers-reduced-motion:reduce){
         .psd-shared-header .psd-dancing-label{animation:psdLabelShine 2.8s ease-in-out infinite!important}
       }
@@ -673,65 +684,50 @@
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
-    const primaryLinks = mainLinks.filter(link => link.href !== "auth.html").map(link => linkHtml(link, current)).join("\n        ");
-    const accountLink = linkHtml(mainLinks.find(link => link.href === "auth.html"), current);
-    const assetRowLinks = assetLinks.map(link => linkHtml(link, current)).join("\n        ");
+    const linksOne = mainLinks.map(link => linkHtml(link, current)).join("\n      ");
+    const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n      ");
     mount.outerHTML = `
   <header class="header psd-shared-header">
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
       <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
         <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span class="psd-home-label">Home</span>
+        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
       </span>
       <div class="brand-copy">
         <div class="brand-stamp psd-dancing-label">AI-built public market sentiment dashboard</div>
         <div class="site-subtitle psd-ai-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
-
     <div class="header-center">
       <div class="header-pill psd-dancing-label" style="display:inline-flex;align-items:center;justify-content:center;height:26px;min-height:26px;padding:0 26px;line-height:1;border-radius:999px;box-sizing:border-box;position:relative;top:3px;">✨ Constantly learning & improving</div>
-
-      <div class="psd-support-actions">
-        <a class="psd-donation-banner" href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash">
-          <span>🚀 Help take Public Sentiment Dash to the next level</span>
-          <span class="psd-donate-button">Donate Now</span>
-        </a>
-
-        <button
-          class="site-tour-banner"
-          id="site-tour-button"
-          type="button"
-          aria-label="Play the two-minute Public Sentiment Dash website tour"
-        >
-          <span aria-hidden="true">🎬</span>
-          <span>Take a 2-Minute Website Tour</span>
-        </button>
-      </div>
+      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+        <span>🚀 Help take Public Sentiment Dash to the next level</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
+      </a>
+      <button
+        class="site-tour-banner"
+        id="site-tour-button"
+        type="button"
+        aria-label="Play the two-minute Public Sentiment Dash website tour"
+        style="margin:8px 0 0 12px;transform:translateY(25px);min-height:28px!important;padding:5px 15px!important;flex-shrink:0;"
+      >
+        <span aria-hidden="true">🎬</span>
+        <span>Take a 2-Minute Website Tour</span>
+      </button>
     </div>
-
     <nav class="nav" aria-label="Main navigation">
-      <div class="psd-nav-row psd-nav-main">
-        ${primaryLinks}
-        <div class="psd-ribbon-social-wrap">
-          <div class="social-links">
-            <span class="social-label">Follow us</span>
-            <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer">X.com</a>
-            <span class="social-pill linkedin">LinkedIn</span>
-          </div>
+      ${linksOne}
+      <span class="nav-row-break" aria-hidden="true"></span>
+      ${linksTwo}
+      <span class="psd-market-pulse-row" aria-hidden="true"></span>
+      <a class="psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">✨ Market Pulse</a>
+      <div class="psd-ribbon-social-wrap">
+        <div class="social-links">
+          <span class="social-label">Follow us</span>
+          <a class="social-pill psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer">X.com</a>
+          <span class="social-pill linkedin">LinkedIn</span>
         </div>
-        ${accountLink}
-      </div>
-
-      <div class="psd-nav-row psd-nav-assets">
-        ${assetRowLinks}
-      </div>
-
-      <div class="psd-nav-row psd-nav-fourth">
-        <a class="psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">✨ Market Pulse</a>
-        <div class="psd-ribbon-actions">
-          <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
-        </div>
+        <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
       </div>
     </nav>
   </header>`;
