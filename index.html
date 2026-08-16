@@ -1745,6 +1745,55 @@
       .action-card{min-height:0}
     }
 
+
+    /* Market Pulse light-mode parity: restore the richer red/blue/cyan atmosphere
+       and circuit effects visible in dark mode without changing dark mode. */
+    body:not(.dark-mode) .market-pulse-panel{
+      background:
+        radial-gradient(circle at 50% 44%,rgba(59,130,246,.19),transparent 18rem),
+        radial-gradient(circle at 14% 20%,rgba(239,68,68,.15),transparent 15rem),
+        radial-gradient(circle at 90% 18%,rgba(20,184,166,.15),transparent 15rem),
+        linear-gradient(rgba(145,171,193,.25) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(145,171,193,.25) 1px,transparent 1px),
+        linear-gradient(180deg,#f9fcff 0%,#edf4fa 62%,#e8f0f7 100%)!important;
+      background-size:auto,auto,auto,34px 34px,34px 34px,auto!important;
+      border-color:#7899b2!important;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.92),
+        inset 0 0 55px rgba(59,130,246,.07),
+        0 18px 38px rgba(28,58,83,.16)!important;
+    }
+    body:not(.dark-mode) .market-pulse-panel:before{
+      background:
+        linear-gradient(90deg,transparent 0 23%,rgba(37,99,235,.20) 23.2%,transparent 23.5% 58%,rgba(220,38,38,.15) 58.2%,transparent 58.5%),
+        linear-gradient(0deg,transparent 0 34%,rgba(37,99,235,.15) 34.2%,transparent 34.5% 77%,rgba(220,38,38,.13) 77.2%,transparent 77.5%)!important;
+      opacity:.78!important;
+    }
+    body:not(.dark-mode) .market-pulse-panel .hud-grid-bg{
+      background-image:
+        linear-gradient(rgba(37,99,235,.10) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(37,99,235,.10) 1px,transparent 1px)!important;
+      opacity:.78!important;
+    }
+    body:not(.dark-mode) .market-pulse-panel .hud-circuit-line{
+      background:linear-gradient(90deg,transparent,rgba(37,99,235,.47),rgba(239,68,68,.40),transparent)!important;
+      box-shadow:0 0 14px rgba(37,99,235,.20)!important;
+      opacity:.72!important;
+    }
+    body:not(.dark-mode) .market-pulse-panel .hud-circuit-line:after{
+      background:#ef6b63!important;
+      box-shadow:0 0 11px rgba(239,68,68,.42)!important;
+    }
+    body:not(.dark-mode) .hud-speedometer-card{
+      background:
+        radial-gradient(circle at 50% 28%,rgba(59,130,246,.10),transparent 10rem),
+        linear-gradient(180deg,#ffffff,#e8f0f6)!important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.95),
+        0 12px 27px rgba(28,58,83,.18),
+        0 0 18px rgba(59,130,246,.06)!important;
+    }
+
 </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6256462799096639" crossorigin="anonymous"></script>
 </head>
@@ -1834,7 +1883,6 @@
             <div class="hud-title-row">
               <div class="scope-pill">Market Pulse</div>
               <div class="score-label">Global · U.S. · Europe Sentiment</div>
-              <div class="pulse-small" id="pulseUpdated">Loading...</div>
             </div>
 
             <div class="hud-speedometer-grid">
@@ -1904,7 +1952,7 @@
             <div>
               <div class="sources-pill">These are our sources for sentiment</div>
               <h2>Live Sentiment Sources</h2>
-              <p>We currently monitor <span class="source-count" id="sourceMonitorCount">53</span> prioritized public financial and macro sources. Qualified, relevant headline signals from these outlets are included in the sentiment calculation to build a cleaner view of the public market narrative.</p>
+              <p>Our engine currently uses <span class="source-count" id="sourceConfiguredCount">53</span> configured priority financial and macro sources, supplemented by dynamically discovered global RSS outlets. Recent runs can include <span class="source-count" id="sourceActiveCount">173</span> active source entries contributing relevant headline signals to the sentiment calculation.</p>
             </div>
 
             <div class="sources-wall-wrap">
@@ -1917,13 +1965,6 @@
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section class="panel section">
-          <h2>Daily Public Sentiment Brief</h2>
-          <div class="summary-lines" id="dailySummary">
-            <div class="summary-line">Loading daily brief...</div>
           </div>
         </section>
 
@@ -2234,25 +2275,6 @@
       count.textContent = countText;
     }
 
-    function cleanPulseTimestamp(value){
-      const raw = String(value || "").trim();
-      if(!raw) return "Last Scan: Latest data";
-
-      const dateMatch = raw.match(/(\d{4}-\d{2}-\d{2})/);
-      const ampmMatch = raw.match(/(\d{1,2}):\d{2}(?::\d{2})?\s*(AM|PM)/i);
-
-      if(dateMatch && ampmMatch){
-        return `Last Scan: ${dateMatch[1]} ${ampmMatch[1].padStart(2, "0")}:00 ${ampmMatch[2].toUpperCase()} NY`;
-      }
-
-      const twentyFour = raw.match(/(\d{4}-\d{2}-\d{2}).*?(\d{1,2}):\d{2}(?::\d{2})?/);
-      if(twentyFour){
-        const hour = String(Number(twentyFour[2])).padStart(2, "0");
-        return `Last Scan: ${twentyFour[1]} ${hour}:00 NY`;
-      }
-
-      return `Last Scan: ${raw}`;
-    }
 
     function renderScore(data){
       const pulse = getUniversalRegionalPulse(data);
@@ -2264,8 +2286,6 @@
       updatePulseCard("US", us.score, us.label || scoreLabel(us.score), pulseCountText("U.S.", us));
       updatePulseCard("Europe", europe.score, europe.label || scoreLabel(europe.score), pulseCountText("Europe", europe));
 
-      const updated = document.getElementById("pulseUpdated");
-      if(updated) updated.textContent = cleanPulseTimestamp(data?.updated_ny || statusData?.updated || "Latest scan");
     }
 
     function renderStats(data){
@@ -2279,13 +2299,6 @@
       if(sourcesWorking) sourcesWorking.textContent = `${trust.sources_working ?? "N/A"} / ${trust.sources_configured ?? ((data.sources || []).length || "N/A")}`;
     }
 
-    function renderDailySummary(data){
-      const items = Array.isArray(data.daily_summary) ? data.daily_summary : [];
-
-      document.getElementById("dailySummary").innerHTML = items.length
-        ? items.map(item => `<div class="summary-line">${escapeHTML(item)}</div>`).join("")
-        : `<div class="summary-line">No daily summary available yet.</div>`;
-    }
 
     function focusCard(item, type){
       const headline = Array.isArray(item.headlines) && item.headlines[0] ? item.headlines[0] : null;
@@ -2361,10 +2374,16 @@
       const dashboardSources = Array.isArray(data.sources) ? data.sources.filter(s => s.name && s.url) : [];
       const weightedSources = Array.isArray(prioritized) ? prioritized.filter(s => s.name && s.url) : [];
       const fallback = document.getElementById("sourcesWaterfall");
-      const countEl = document.getElementById("sourceMonitorCount");
+      const configuredCountEl = document.getElementById("sourceConfiguredCount");
+      const activeCountEl = document.getElementById("sourceActiveCount");
 
-      const sourceCount = weightedSources.length || dashboardSources.length;
-      if(countEl && sourceCount) countEl.textContent = sourceCount.toLocaleString();
+      const configuredCount = Number(data?.trust_layer?.sources_configured || weightedSources.length || 0);
+      const activeCount = dashboardSources.length || configuredCount;
+
+      if(configuredCountEl && configuredCount) configuredCountEl.textContent = configuredCount.toLocaleString();
+      if(activeCountEl && activeCount) activeCountEl.textContent = activeCount.toLocaleString();
+
+      const sourceCount = activeCount || weightedSources.length;
 
       if(!sourceCount){
         fallback.innerHTML = `<div class="muted">Source list unavailable.</div>`;
@@ -2477,7 +2496,6 @@
         renderTopInstruments();
         renderScore(dashboardData);
         renderStats(dashboardData);
-        renderDailySummary(dashboardData);
         renderMarketFocus(dashboardData);
         renderSourcesWaterfall(dashboardData, prioritySources);
       }catch(error){
