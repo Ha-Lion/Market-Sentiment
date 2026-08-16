@@ -745,7 +745,9 @@
       <div class="psd-nav-row psd-nav-social">
         <div class="psd-ribbon-social-wrap">
           <div class="social-links">
-            <span class="social-label">Follow us</span>
+            <span class="social-label psd-follow-us" aria-label="Follow us">
+              <span aria-hidden="true" style="--follow-i:0">F</span><span aria-hidden="true" style="--follow-i:1">o</span><span aria-hidden="true" style="--follow-i:2">l</span><span aria-hidden="true" style="--follow-i:3">l</span><span aria-hidden="true" style="--follow-i:4">o</span><span aria-hidden="true" style="--follow-i:5">w</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:6">u</span><span aria-hidden="true" style="--follow-i:7">s</span>
+            </span>
             <a class="social-pill psd-social-brand psd-x-link" href="https://x.com/PublicSentDash" target="_blank" rel="noopener noreferrer" aria-label="Follow Public Sentiment Dash on X.com"><span class="psd-social-logo psd-x-logo" aria-hidden="true">X</span><span class="psd-social-text">X.com</span></a>
             <span class="social-pill linkedin psd-social-brand" aria-label="Public Sentiment Dash on LinkedIn"><span class="psd-social-logo psd-linkedin-logo" aria-hidden="true">in</span><span class="psd-social-text">LinkedIn</span></span>
           </div>
