@@ -29,7 +29,7 @@
     mount.outerHTML=`<footer class="footer psd-shared-footer">
       <nav class="footer-links" aria-label="Footer navigation">${nav}</nav>
       <div class="legal"><strong>Legal & Disclaimer:</strong> Public Sentiment Dash is operated by PublicSentimentDash, LLC. Content is provided for informational and educational purposes only and does not constitute financial, investment, trading, tax, or legal advice, or a recommendation to buy, sell, hold, or trade any asset.</div>
-      <p class="psd-copyright">© ${new Date().getFullYear()} Public Sentiment Dash. All rights reserved. Operated by PublicSentimentDash, LLC.</p>
+      <p class="psd-copyright">© ${new Date().getFullYear()} PublicSentimentDash, LLC. All rights reserved. Operated by PublicSentimentDash, LLC.</p>
     </footer>`;
   }
 
