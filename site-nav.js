@@ -49,11 +49,7 @@
         </span>`;
     }
 
-    const linkContent = link.icon
-      ? '<span class="psd-nav-icon" aria-hidden="true">' + link.icon + '</span><span class="psd-nav-label">' + link.label + '</span>'
-      : link.label;
-
-    return '<a href="' + link.href + '" class="psd-nav-link' + (isActive ? ' active' : '') + '">' + linkContent + '</a>';
+    return '<a href="' + link.href + '" class="psd-nav-link' + (isActive ? ' active' : '') + '">' + link.label + '</a>';
   }
 
   function ensureTourStyles(){
@@ -84,7 +80,14 @@
         transform-origin:center!important;
         will-change:transform,filter,box-shadow;
       }
-      .psd-shared-header .brand-stamp.psd-dancing-label{animation-delay:.35s,.35s!important}
+      /* Constantly Learning is 31px tall from the shared 13px font + 8px/8px padding + 1px/1px border.
+         Match AI-Built to that exact height without changing the Learning widget. */
+      .psd-shared-header .brand-stamp.psd-dancing-label{
+        height:31px!important;
+        min-height:31px!important;
+        max-height:31px!important;
+        animation-delay:.35s,.35s!important;
+      }
       .psd-shared-header .site-subtitle.psd-ai-subtitle{
         position:relative;
         top:42px;
@@ -393,11 +396,8 @@
         background:rgba(210,153,34,.10);
       }
 
-      /* Shared ribbon rows are rendered explicitly in render(); theme CSS owns row placement. */
-      .nav a::before{
-        display:none!important;
-        content:none!important;
-      }
+      /* Shared ribbon rows are rendered explicitly in render(); theme CSS owns row placement.
+         Do not suppress .nav a::before here: those pseudo-elements carry the ribbon page icons. */
       .psd-ribbon-social-wrap{
         display:inline-flex;
         align-items:center;
@@ -683,7 +683,7 @@
     <a class="brand" href="index.html" aria-label="Go to Public Sentiment Dash home page">
       <span class="brand-logo-block" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
         <img src="logo.png" alt="Public Sentiment Dash Logo" class="logo">
-        <span style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
+        <span class="psd-home-label" style="font-size:12px;font-weight:600;color:#ffd780;line-height:1;">Home</span>
       </span>
       <div class="brand-copy">
         <div class="brand-stamp psd-dancing-label">AI-built public market sentiment dashboard</div>
@@ -725,7 +725,7 @@
         ${linksTwo}
       </div>
       <div class="psd-nav-row psd-nav-fourth">
-        <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html"><span class="psd-nav-icon" aria-hidden="true">✦</span><span class="psd-nav-label">Market Pulse</span></a>
+        <a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">Market Pulse</a>
         <div class="psd-ribbon-actions">
           <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
           <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
