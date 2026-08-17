@@ -915,13 +915,12 @@
     body:not(.dark-mode) .psd-glossary-text{color:#10263b}
 
   
-    /* Forex: dark-mode headline readability only. */
+    /* Forex: keep article text explicitly readable in dark mode. */
     body.dark-mode .headline-title{color:#f4f7fb!important}
     body.dark-mode .headline-meta{color:#9fb0c3!important}
     body.dark-mode .headline-source{color:#69b9ff!important}
     body.dark-mode .headline-open{color:#ffd36f!important}
-
-  </style>
+</style>
 </head>
 
 <body>
@@ -985,13 +984,19 @@
     let ENERGY_ITEMS = [
       {name:"US Dollar Index / DXY", dataKey:"US Dollar / DXY", symbol:"DXY", aliases:["dxy","us dollar index","dollar index","usd index"], historyKeys:["US Dollar / DXY","US Dollar Index / DXY","DXY"], official:true},
       {name:"EUR/USD", dataKey:"EUR / EURUSD", symbol:"EURUSD", aliases:["eurusd","eur/usd","euro dollar","euro vs dollar"], historyKeys:["EUR / EURUSD","EURUSD","EUR/USD"], official:true},
-      {name:"GBP/USD", dataKey:"GBP / GBPUSD", symbol:"GBPUSD", aliases:["gbpusd","gbp/usd","sterling dollar","pound dollar"], historyKeys:["GBP / GBPUSD","GBPUSD","GBP/USD"], official:true},
       {name:"USD/JPY", dataKey:"JPY / USDJPY", symbol:"USDJPY", aliases:["usdjpy","usd/jpy","dollar yen","yen"], historyKeys:["JPY / USDJPY","USDJPY","USD/JPY"], official:true},
+      {name:"GBP/USD", dataKey:"GBP / GBPUSD", symbol:"GBPUSD", aliases:["gbpusd","gbp/usd","sterling dollar","pound dollar"], historyKeys:["GBP / GBPUSD","GBPUSD","GBP/USD"], official:true},
+      {name:"USD/CNH", dataKey:"USD/CNH", symbol:"USDCNH", aliases:["usdcnh","usd/cnh","offshore yuan","offshore renminbi","chinese yuan","renminbi","yuan","cnh"], historyKeys:["USD/CNH","USDCNH"], official:true},
       {name:"USD/CHF", dataKey:"CHF / USDCHF", symbol:"USDCHF", aliases:["usdchf","usd/chf","dollar swiss franc","swiss franc"], historyKeys:["CHF / USDCHF","USDCHF","USD/CHF"], official:true},
       {name:"USD/CAD", dataKey:"CAD / USDCAD", symbol:"USDCAD", aliases:["usdcad","usd/cad","dollar canadian dollar","canadian dollar"], historyKeys:["CAD / USDCAD","USDCAD","USD/CAD"], official:true},
       {name:"AUD/USD", dataKey:"AUD / AUDUSD", symbol:"AUDUSD", aliases:["audusd","aud/usd","australian dollar","aussie dollar"], historyKeys:["AUD / AUDUSD","AUDUSD","AUD/USD"], official:true},
       {name:"NZD/USD", dataKey:"NZD / NZDUSD", symbol:"NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","kiwi dollar"], historyKeys:["NZD / NZDUSD","NZDUSD","NZD/USD"], official:true},
-      {name:"EUR/JPY", dataKey:"EURJPY", symbol:"EURJPY", aliases:["eurjpy","eur/jpy","euro yen"], historyKeys:["EURJPY","EUR/JPY"], official:true}
+      {name:"EUR/JPY", dataKey:"EURJPY", symbol:"EURJPY", aliases:["eurjpy","eur/jpy","euro yen"], historyKeys:["EURJPY","EUR/JPY"], official:true},
+      {name:"EUR/GBP", dataKey:"EURGBP", symbol:"EURGBP", aliases:["eurgbp","eur/gbp","euro sterling","euro pound"], historyKeys:["EURGBP","EUR/GBP"], official:true},
+      {name:"GBP/JPY", dataKey:"GBPJPY", symbol:"GBPJPY", aliases:["gbpjpy","gbp/jpy","sterling yen","pound yen"], historyKeys:["GBPJPY","GBP/JPY"], official:true},
+      {name:"USD/MXN", dataKey:"USDMXN", symbol:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso","peso"], historyKeys:["USDMXN","USD/MXN"], official:true},
+      {name:"USD/HKD", dataKey:"USD/HKD", symbol:"USDHKD", aliases:["usdhkd","usd/hkd","hong kong dollar","hkd"], historyKeys:["USD/HKD","USDHKD"], official:true},
+      {name:"USD/SGD", dataKey:"USD/SGD", symbol:"USDSGD", aliases:["usdsgd","usd/sgd","singapore dollar","sgd"], historyKeys:["USD/SGD","USDSGD"], official:true}
     ];
 
     let dashboardData = null;
@@ -1074,13 +1079,16 @@
         .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
         .map(asset => {
           const cat = categoryEntry(asset, categoryKey);
+          const dataKey = String(asset.data_key || asset.name || "").trim();
+          const displayName = String(asset.display_name || asset?.market_data?.label || asset.name || dataKey).trim();
           return {
-            name: asset.name,
-            symbol: asset.symbol || asset.name,
-            aliases: uniqueTerms([...(asset.aliases || []), asset.name, asset.symbol]),
+            name: displayName,
+            dataKey,
+            symbol: asset.symbol || displayName,
+            aliases: uniqueTerms([...(asset.aliases || []), displayName, dataKey, asset.name, asset.symbol]),
             official: false,
             priority: Number(cat?.priority || 999),
-            historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
+            historyKeys: uniqueTerms([dataKey, asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
         })
         .sort((a,b) => a.priority - b.priority)
