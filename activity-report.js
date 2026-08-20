@@ -101,9 +101,9 @@
   async function loadHealth(){
     healthValue("health-dashboard","Checking…","");healthValue("health-feeds","Checking…","");healthValue("health-failed","Checking…","");healthValue("health-workflow","Checking…","");
     const results=await Promise.all([
-      fetch("dashboard_live.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error();return r.json();}),
-      fetch("technical_data.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error();return r.json();}),
-      fetch("status.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error();return r.json();})
+      fetch("dashboard_live.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error();return r.json();}),
+      fetch("technical_data.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error();return r.json();}),
+      fetch("status.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error();return r.json();})
     ]).catch(function(){return null;});
     if(!results){["health-dashboard","health-feeds","health-failed","health-workflow"].forEach(function(id){healthValue(id,"Unavailable","bad");});return;}
     const dashboard=results[0]||{},technical=results[1]||{},status=results[2]||{},health=technical.health||{};
