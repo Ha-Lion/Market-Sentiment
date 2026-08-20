@@ -3080,12 +3080,12 @@
     async function load(){
       try{
         const [configRes, res, techRes, statusRes, instrumentHistoryRes, newsLatestRes] = await Promise.all([
-          fetch("assets_config.json",{cache:"no-store"}).catch(() => null),
-          fetch("dashboard_live.json",{cache:"no-store"}).catch(() => null),
-          fetch("technical_data.json",{cache:"no-store"}).catch(() => null),
-          fetch("status.json",{cache:"no-store"}).catch(() => null),
-          fetch("instrument_history_compact.json",{cache:"no-store"}).catch(() => null),
-          fetch("news_latest.json",{cache:"no-store"}).catch(() => null)
+          fetch("assets_config.json",{cache:"no-cache"}).catch(() => null),
+          fetch("dashboard_live.json",{cache:"no-cache"}).catch(() => null),
+          fetch("technical_data.json",{cache:"no-cache"}).catch(() => null),
+          fetch("status.json",{cache:"no-cache"}).catch(() => null),
+          fetch("instrument_history_compact.json",{cache:"no-cache"}).catch(() => null),
+          fetch("news_latest.json",{cache:"no-cache"}).catch(() => null)
         ]);
         if(configRes && configRes.ok){
           assetsConfigData = await configRes.json();
@@ -3099,7 +3099,7 @@
       }catch(e){}
       renderAll();
     }
-    load();
+    window.PSD_DASH_LOAD_PROMISE = load();
   </script>
   <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
   <script>
@@ -3794,15 +3794,30 @@
         if(!buildCharts()) return;
         bindControls();
         try{
-          const [historyResponse,configResponse,technicalResponse] = await Promise.all([
-            fetch("instrument_history_compact.json",{cache:"no-store"}),
-            fetch("assets_config.json",{cache:"no-store"}).catch(() => null),
-            fetch("technical_data.json",{cache:"no-store"}).catch(() => null)
-          ]);
-          if(!historyResponse.ok) throw new Error("HTTP " + historyResponse.status);
-          state.history = await historyResponse.json();
-          if(configResponse && configResponse.ok) loadDisplayNames(await configResponse.json());
-          if(technicalResponse && technicalResponse.ok) state.technical = await technicalResponse.json();
+          if(window.PSD_DASH_LOAD_PROMISE){
+            try{ await window.PSD_DASH_LOAD_PROMISE; }catch(_error){}
+          }
+
+          state.history = instrumentHistoryData || null;
+          state.technical = technicalData || null;
+          if(assetsConfigData) loadDisplayNames(assetsConfigData);
+
+          if(!state.history || !assetsConfigData || !state.technical){
+            const [historyResponse,configResponse,technicalResponse] = await Promise.all([
+              state.history ? null : fetch("instrument_history_compact.json",{cache:"no-cache"}),
+              assetsConfigData ? null : fetch("assets_config.json",{cache:"no-cache"}).catch(() => null),
+              state.technical ? null : fetch("technical_data.json",{cache:"no-cache"}).catch(() => null)
+            ]);
+
+            if(historyResponse){
+              if(!historyResponse.ok) throw new Error("HTTP " + historyResponse.status);
+              state.history = await historyResponse.json();
+            }
+            if(configResponse && configResponse.ok) loadDisplayNames(await configResponse.json());
+            if(technicalResponse && technicalResponse.ok) state.technical = await technicalResponse.json();
+          }
+
+          if(!state.history) throw new Error("Instrument history unavailable");
           if(!populateInstruments()) return;
           setSeriesData();
         }catch(error){
