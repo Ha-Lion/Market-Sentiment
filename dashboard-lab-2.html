@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSD Market Forecast Intelligence Lab 2 — Public Sentiment Dash</title>
+  <meta name="description" content="Isolated PublicSentimentDash market forecast intelligence laboratory.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab-2.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css">
+
+  <style>
+    :root{
+      --pf-bg:#edf3f8;
+      --pf-panel:#ffffff;
+      --pf-soft:#f6f9fc;
+      --pf-ink:#101b26;
+      --pf-muted:#53697c;
+      --pf-line:#bfd0df;
+      --pf-gold:#c99626;
+      --pf-gold-soft:#fff7df;
+      --pf-green:#159b7e;
+      --pf-red:#e26c2b;
+      --pf-blue:#5d98ef;
+      --pf-navy:#10283b;
+      --pf-shadow:0 8px 22px rgba(32,58,78,.10);
+    }
+    body.dark-mode{
+      --pf-bg:#101820;
+      --pf-panel:#17232e;
+      --pf-soft:#1d2c38;
+      --pf-ink:#f3f7fa;
+      --pf-muted:#b7c5d2;
+      --pf-line:#3e5365;
+      --pf-gold-soft:#332b19;
+      --pf-shadow:0 8px 22px rgba(0,0,0,.30);
+    }
+    *{box-sizing:border-box}
+    .forecast-page{max-width:1760px;margin:0 auto;padding:12px 18px 36px;color:var(--pf-ink);font-family:"Segoe UI",Arial,sans-serif}
+    .forecast-page button{font:inherit}
+    .forecast-shell{background:var(--pf-bg);border:1px solid var(--pf-line);border-radius:18px;padding:14px;min-height:760px}
+    .lab-banner{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:7px 12px;margin-bottom:10px;border:1px dashed var(--pf-gold);border-radius:10px;background:var(--pf-gold-soft);font-size:12px;font-weight:800}
+    .lab-banner span:last-child{color:var(--pf-muted);font-weight:600}
+
+    .forecast-hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,.7fr);gap:12px;margin-bottom:12px}
+    .panel{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:15px;box-shadow:var(--pf-shadow)}
+    .hero-copy{padding:20px 22px;position:relative;overflow:hidden}
+    .hero-copy:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--pf-gold),#f0c35b)}
+    .eyebrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px;font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:var(--pf-muted)}
+    .pill{display:inline-flex;align-items:center;border:1px solid var(--pf-line);border-radius:999px;padding:5px 9px;background:var(--pf-soft);font-size:11px;font-weight:800;color:var(--pf-ink);text-transform:none;letter-spacing:0}
+    .pill.gold{border-color:#dbb45a;background:var(--pf-gold-soft);color:#7c5312}
+    .hero-copy h1{font-size:32px;line-height:1.06;margin:0 0 8px;font-weight:850;letter-spacing:-.02em}
+    .hero-copy p{margin:0;font-size:14px;line-height:1.48}
+    .hero-copy .subtle{margin-top:10px;color:var(--pf-muted);font-size:12px}
+    .hero-rules{padding:16px 18px}
+    .hero-rules h2{margin:0 0 8px;font-size:17px}
+    .rule-row{display:grid;grid-template-columns:116px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid var(--pf-line);font-size:12px}
+    .rule-row:last-child{border-bottom:0}.rule-row b{color:var(--pf-muted)}
+
+    .section{padding:14px;margin-bottom:12px}
+    .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}
+    .section-head h2{font-size:20px;margin:1px 0 3px}.section-head p{margin:0;color:var(--pf-muted);font-size:11.5px}
+    .kicker{display:block;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.11em;color:#a97208}
+    .data-status{font-size:11px;color:var(--pf-muted);text-align:right}
+
+    .forecast-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .forecast-tile{
+      appearance:none;width:100%;text-align:left;color:var(--pf-ink);cursor:pointer;position:relative;
+      border:1px solid #aebdcb;border-radius:12px;padding:11px 11px 12px;
+      background:linear-gradient(180deg,#ffffff 0%,#f5f8fb 58%,#e7edf3 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -2px 0 rgba(124,145,164,.18),0 4px 9px rgba(29,52,70,.14);
+      transition:transform .13s ease,box-shadow .13s ease,border-color .13s ease;
+    }
+    body.dark-mode .forecast-tile{background:linear-gradient(180deg,#263746 0%,#1c2a36 60%,#15232e 100%);border-color:#4b6172;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.28),0 5px 10px rgba(0,0,0,.28)}
+    .forecast-tile:hover,.forecast-tile:focus-visible{transform:translateY(-2px);border-color:var(--pf-gold);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 8px 16px rgba(35,59,78,.20)}
+    .forecast-tile.selected{border-color:var(--pf-gold);outline:2px solid rgba(201,150,38,.18)}
+    .tile-top{display:flex;justify-content:space-between;gap:8px;align-items:start}.rank{font-size:10px;font-weight:900;color:var(--pf-muted);text-transform:uppercase}.signal{font-size:10px;font-weight:900;border-radius:999px;padding:4px 7px;border:1px solid var(--pf-line);background:var(--pf-soft)}
+    .signal.bullish{border-color:#35b99d;color:#08725e;background:#ebfbf7}.signal.bearish{border-color:#f09a6b;color:#98400f;background:#fff1e9}.signal.neutral{border-color:#8fb9f4;color:#275fbe;background:#eef5ff}
+    body.dark-mode .signal.bullish{background:#15382f;color:#a8f2df}body.dark-mode .signal.bearish{background:#45291b;color:#ffd0b8}body.dark-mode .signal.neutral{background:#1d3554;color:#cde1ff}
+    .forecast-tile h3{font-size:13px;margin:7px 0 2px;line-height:1.2}.symbol-line{font-size:10px;color:var(--pf-muted);font-weight:700}
+    .tile-price{display:flex;gap:10px;align-items:baseline;margin:9px 0}.tile-price strong{font-size:22px}.tile-price span{font-size:10px;color:var(--pf-muted)}
+    .tile-horizons{display:grid;grid-template-columns:1fr 1fr;gap:6px}.hbox{background:rgba(255,255,255,.52);border:1px solid var(--pf-line);border-radius:8px;padding:6px}
+    body.dark-mode .hbox{background:rgba(0,0,0,.10)}.hbox b{display:block;font-size:11px}.hbox span{display:block;font-size:9.5px;color:var(--pf-muted);margin-top:2px}
+    .tile-confidence{margin-top:7px;font-size:10px;color:var(--pf-muted)}.tile-confidence b{color:var(--pf-ink)}
+
+    .detail-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:12px}
+    .detail-card{padding:15px}
+    .detail-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:11px}.detail-title h2{margin:0 0 3px;font-size:22px}.detail-title p{margin:0;font-size:11px;color:var(--pf-muted)}
+    .detail-score{font-size:30px;font-weight:900;text-align:right}.detail-score span{display:block;font-size:10px;color:var(--pf-muted);font-weight:800;text-transform:uppercase}
+    .signal-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:12px}.metric{border:1px solid var(--pf-line);border-radius:10px;padding:8px;background:var(--pf-soft)}.metric b{display:block;font-size:14px}.metric span{display:block;font-size:9.5px;color:var(--pf-muted);margin-top:2px}
+    .forecast-boxes{display:grid;grid-template-columns:1fr 1fr;gap:9px}.forecast-box{border:1px solid var(--pf-line);border-radius:12px;padding:11px;background:var(--pf-soft)}.forecast-box h3{margin:0 0 7px;font-size:13px}.big-range{font-size:22px;font-weight:900}.target-range{font-size:11px;color:var(--pf-muted);margin-top:3px}.confidence-line{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:10.5px}
+    .thesis{padding:15px}.thesis h3{font-size:15px;margin:0 0 7px}.thesis-list{display:grid;gap:7px}.thesis-item{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--pf-line);border-radius:10px;padding:9px;background:var(--pf-soft);font-size:11px;line-height:1.4}.thesis-item i{font-style:normal;width:20px;height:20px;border-radius:50%;background:var(--pf-navy);color:white;display:grid;place-items:center;flex:0 0 auto;font-size:10px;font-weight:900}
+    .record-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.action{appearance:none;border:1px solid #d7ad4f;border-radius:9px;padding:8px 11px;background:var(--pf-gold-soft);color:#5f430f;font-size:11px;font-weight:850;cursor:pointer}.action.primary{background:linear-gradient(180deg,#3d2b16,#20160d);color:#f9e6b4}.action.danger{border-color:#d5a18b;background:#fff1ec;color:#8b3514}.action:hover{transform:translateY(-1px)}
+
+    .ledger-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:10px}.stat{border:1px solid var(--pf-line);border-radius:10px;padding:10px;background:var(--pf-soft)}.stat b{font-size:20px;display:block}.stat span{font-size:9.5px;color:var(--pf-muted)}
+    .table-wrap{overflow:auto;border:1px solid var(--pf-line);border-radius:10px}.ledger-table{width:100%;border-collapse:collapse;min-width:1100px;font-size:10.5px}.ledger-table th,.ledger-table td{padding:7px 8px;border-bottom:1px solid var(--pf-line);text-align:left;white-space:nowrap}.ledger-table th{position:sticky;top:0;background:var(--pf-soft);font-size:9.5px;text-transform:uppercase;color:var(--pf-muted)}.ledger-table tr:last-child td{border-bottom:0}.ok{color:#08725e;font-weight:900}.miss{color:#a33f14;font-weight:900}.open{color:#6a7180;font-weight:900}
+    .empty{padding:18px;text-align:center;color:var(--pf-muted);font-size:11px}
+
+    .contract{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.contract-item{border:1px solid var(--pf-line);border-radius:10px;padding:10px;background:var(--pf-soft)}.contract-item b{display:block;font-size:12px;margin-bottom:4px}.contract-item span{font-size:10px;color:var(--pf-muted);line-height:1.4}
+    .toast{position:fixed;right:20px;bottom:20px;z-index:9999;padding:10px 13px;border-radius:10px;background:#17232e;color:white;font-size:11px;font-weight:750;box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s ease}.toast.show{opacity:1;transform:translateY(0)}
+
+    @media(max-width:1250px){.forecast-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.contract{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:900px){.forecast-hero,.detail-grid{grid-template-columns:1fr}.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.signal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ledger-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:580px){.forecast-page{padding:8px}.forecast-shell{padding:8px}.forecast-grid,.forecast-boxes,.contract{grid-template-columns:1fr}.hero-copy h1{font-size:25px}.lab-banner{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+  <script src="site-nav.js" defer></script>
+  <script src="site-theme.js" defer></script>
+
+  <main class="forecast-page">
+    <div class="forecast-shell">
+      <div class="lab-banner">
+        <span>🧪 PSD Market Forecast Intelligence — Dashboard Lab 2</span>
+        <span>Completely isolated • no production page depends on this experiment</span>
+      </div>
+
+      <section class="forecast-hero">
+        <article class="panel hero-copy">
+          <div class="eyebrow">
+            <span>PSD Forecast Intelligence</span>
+            <span class="pill gold">Calibration Mode</span>
+            <span class="pill">Model v0.1</span>
+          </div>
+          <h1>Forecast → Record → Verify → Build a Track Record</h1>
+          <p>This laboratory turns existing PSD sentiment, sentiment momentum, headline breadth and market-price history into test forecasts. Every recorded forecast is frozen with its original timestamp, price, move range and confidence so future results can be measured instead of rewritten.</p>
+          <p class="subtle">This is a research/calibration prototype, not a published trading signal. The goal is to create the auditable architecture first and improve the forecast model before anything becomes public.</p>
+        </article>
+
+        <aside class="panel hero-rules">
+          <h2>Initial Forecast Contract</h2>
+          <div class="rule-row"><b>Short horizon</b><span>7 calendar days / approximately 5 trading sessions</span></div>
+          <div class="rule-row"><b>Longer horizon</b><span>30 calendar days / approximately 20 trading sessions</span></div>
+          <div class="rule-row"><b>Inputs</b><span>PSI level + 24H/7D PSI momentum + price momentum + realized volatility + breadth</span></div>
+          <div class="rule-row"><b>Verification</b><span>Original forecast remains immutable; later market price determines hit/miss</span></div>
+        </aside>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Current model output</span>
+            <h2>Top 10 Forecast Candidates</h2>
+            <p>Ranked by signal strength × confidence. Click a tile for the full forecast breakdown.</p>
+          </div>
+          <div class="data-status" id="dataStatus">Loading current PSD market data…</div>
+        </div>
+        <div class="forecast-grid" id="forecastGrid"></div>
+      </section>
+
+      <section class="detail-grid" style="margin-bottom:12px">
+        <article class="panel detail-card">
+          <div class="detail-title">
+            <div>
+              <span class="kicker">Selected forecast</span>
+              <h2 id="detailName">Loading…</h2>
+              <p id="detailMeta">Waiting for current market data.</p>
+            </div>
+            <div class="detail-score"><span>Forecast score</span><b id="detailScore">—</b></div>
+          </div>
+          <div class="signal-grid" id="signalGrid"></div>
+          <div class="forecast-boxes">
+            <div class="forecast-box">
+              <h3>Short Term · 7 Days</h3>
+              <div class="big-range" id="shortRange">—</div>
+              <div class="target-range" id="shortTarget">—</div>
+              <div class="confidence-line"><span>Direction: <b id="shortDirection">—</b></span><span>Confidence: <b id="shortConfidence">—</b></span></div>
+            </div>
+            <div class="forecast-box">
+              <h3>Longer Term · 30 Days</h3>
+              <div class="big-range" id="longRange">—</div>
+              <div class="target-range" id="longTarget">—</div>
+              <div class="confidence-line"><span>Direction: <b id="longDirection">—</b></span><span>Confidence: <b id="longConfidence">—</b></span></div>
+            </div>
+          </div>
+          <div class="record-row">
+            <button class="action primary" id="recordSelected" type="button">Record This Forecast</button>
+            <button class="action" id="recordTop10" type="button">Record Current Top 10</button>
+          </div>
+        </article>
+
+        <aside class="panel thesis">
+          <span class="kicker">Explainability layer</span>
+          <h3>Why PSD Is Producing This Forecast</h3>
+          <div class="thesis-list" id="thesisList"></div>
+        </aside>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Permanent lab audit trail</span>
+            <h2>PSD Forecast Track Record</h2>
+            <p>Forecasts recorded here are stored only in this browser for lab testing. Production will move this ledger into the engine/publishing system.</p>
+          </div>
+          <div class="record-row" style="margin-top:0">
+            <button class="action" id="evaluateLedger" type="button">Evaluate Due Forecasts</button>
+            <button class="action danger" id="resetLedger" type="button">Reset Lab Ledger</button>
+          </div>
+        </div>
+
+        <div class="ledger-stats">
+          <div class="stat"><b id="statIssued">0</b><span>Forecast horizons recorded</span></div>
+          <div class="stat"><b id="statEvaluated">0</b><span>Evaluated forecasts</span></div>
+          <div class="stat"><b id="statDirection">—</b><span>Directional accuracy</span></div>
+          <div class="stat"><b id="statRange">—</b><span>Inside expected range</span></div>
+          <div class="stat"><b id="statError">—</b><span>Average range error</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="ledger-table">
+            <thead><tr>
+              <th>Issued</th><th>Asset</th><th>Horizon</th><th>Start Price</th><th>Direction</th><th>Expected Move</th><th>Confidence</th><th>Target Date</th><th>Actual Move</th><th>Direction</th><th>Range</th><th>Model</th>
+            </tr></thead>
+            <tbody id="ledgerBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel section" style="margin-bottom:0">
+        <div class="section-head">
+          <div><span class="kicker">Designed for future expansion</span><h2>Forecast Integrity Rules</h2></div>
+        </div>
+        <div class="contract">
+          <div class="contract-item"><b>1. Immutable Forecasts</b><span>Once recorded, the original direction, range, confidence, model version and starting price are never rewritten.</span></div>
+          <div class="contract-item"><b>2. Wins + Misses Stay Visible</b><span>Future public credibility comes from showing the complete record, including forecasts that fail.</span></div>
+          <div class="contract-item"><b>3. Versioned Models</b><span>Every prediction carries a model version so accuracy improvements can be compared fairly over time.</span></div>
+          <div class="contract-item"><b>4. Expandable Horizons</b><span>The schema already supports adding intraday, 3-day, 90-day, event-specific and member-only forecasts later.</span></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="site-footer.js" defer></script>
+  <script src="vote-widget.js" defer></script>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const MODEL_VERSION = "PSD-Forecast-v0.1";
+    const LEDGER_KEY = "psd_forecast_lab2_ledger_v1";
+    const $ = id => document.getElementById(id);
+    const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
+    const num = v => Number.isFinite(Number(v)) ? Number(v) : null;
+    const esc = s => String(s ?? "").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+    const pct = v => {
+      const n=num(v); if(n===null) return "—";
+      return `${n>0?"+":""}${n.toFixed(Math.abs(n)>=10?1:2)}%`;
+    };
+    const money = v => {
+      const n=num(v); if(n===null) return "—";
+      if(Math.abs(n)>=1000) return n.toLocaleString(undefined,{maximumFractionDigits:2});
+      if(Math.abs(n)>=10) return n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+      return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3});
+    };
+    const parseDate = v => {
+      if(!v) return null;
+      const d = new Date(String(v).replace(/ UTC$/i,"Z").replace(" ","T"));
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+    const isoDate = d => d.toISOString().slice(0,10);
+    const addDays = (d,days) => { const x=new Date(d.getTime()); x.setUTCDate(x.getUTCDate()+days); return x; };
+
+    let pulse = null;
+    let forecasts = [];
+    let selectedInstrument = null;
+
+    function historyValues(row){
+      return (Array.isArray(row?.market_history)?row.market_history:[])
+        .map(x=>({date:String(x?.date||""),value:num(x?.value)}))
+        .filter(x=>x.date && x.value!==null)
+        .sort((a,b)=>a.date.localeCompare(b.date));
+    }
+
+    function trailingReturn(hist,periods){
+      if(hist.length < periods+1) return 0;
+      const last=hist[hist.length-1].value, prev=hist[hist.length-1-periods].value;
+      if(!prev) return 0;
+      return (last/prev-1)*100;
+    }
+
+    function dailyVol(hist,lookback=20){
+      if(hist.length<3) return 1;
+      const slice=hist.slice(-(lookback+1));
+      const rets=[];
+      for(let i=1;i<slice.length;i++){
+        const a=slice[i-1].value,b=slice[i].value;
+        if(a>0 && b>0) rets.push((b/a-1)*100);
+      }
+      if(rets.length<2) return 1;
+      const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+      const variance=rets.reduce((s,r)=>s+(r-mean)**2,0)/(rets.length-1);
+      return Math.sqrt(Math.max(variance,0));
+    }
+
+    function factor(v,scale){ return clamp((num(v)??0)/scale,-1,1); }
+
+    function signalFor(row){
+      const hist=historyValues(row);
+      const psi=num(row.psi)??50;
+      const psiLevel=clamp((psi-50)/25,-1,1);
+      const psi1=factor(row.change_1d,20);
+      const psi7=factor(row.change_7d,30);
+      const mom5=factor(trailingReturn(hist,5),6);
+      const mom20=factor(trailingReturn(hist,20),12);
+
+      let score = 35*psiLevel + 20*psi1 + 20*psi7 + 12.5*mom5 + 12.5*mom20;
+      if(row.is_divergence) score *= .82;
+      score = clamp(score,-100,100);
+
+      const headlines=Math.max(0,num(row.headline_count)??0);
+      const vol=dailyVol(hist,20);
+      let confidence = 46 + Math.abs(score)*.30 + Math.min(8,Math.log2(headlines+1)*1.6);
+      if(row.is_divergence) confidence -= 10;
+      if(row.is_reversal) confidence -= 5;
+      if(vol>4) confidence -= Math.min(8,(vol-4)*1.5);
+      confidence=clamp(Math.round(confidence),42,82);
+
+      return {score,confidence,psi,psi1:num(row.change_1d)??0,psi7:num(row.change_7d)??0,mom5:trailingReturn(hist,5),mom20:trailingReturn(hist,20),vol,headlines,hist};
+    }
+
+    function direction(score){
+      if(score>=12) return "Bullish";
+      if(score<=-12) return "Bearish";
+      return "Neutral";
+    }
+
+    function horizonForecast(row,sig,calendarDays,tradingDays){
+      const sigma=Math.max(.35,sig.vol);
+      const strength=Math.abs(sig.score)/100;
+      let center=(sig.score/100)*sigma*Math.sqrt(tradingDays)*1.20;
+      const half=Math.max(.55,sigma*Math.sqrt(tradingDays)*(.58 + .12*(1-strength)));
+      let low=center-half, high=center+half;
+      const dir=direction(sig.score);
+
+      if(dir==="Bullish" && sig.score>=28) low=Math.max(-half*.25,low);
+      if(dir==="Bearish" && sig.score<=-28) high=Math.min(half*.25,high);
+      low=clamp(low,-35,35); high=clamp(high,-35,35);
+      if(low>high){const t=low;low=high;high=t;}
+
+      const price=num(row.price_close) ?? (sig.hist.length?sig.hist[sig.hist.length-1].value:null);
+      const targetLow=price===null?null:price*(1+low/100);
+      const targetHigh=price===null?null:price*(1+high/100);
+      const confidence=clamp(Math.round(sig.confidence - (calendarDays>7?4:0)),40,82);
+
+      return {calendarDays,tradingDays,dir,low,high,targetLow,targetHigh,confidence,center};
+    }
+
+    function buildForecast(row){
+      const sig=signalFor(row);
+      const short=horizonForecast(row,sig,7,5);
+      const long=horizonForecast(row,sig,30,20);
+      const price=num(row.price_close) ?? (sig.hist.length?sig.hist[sig.hist.length-1].value:null);
+      return {
+        row,sig,short,long,price,
+        strength:Math.abs(sig.score)*(sig.confidence/100)
+      };
+    }
+
+    function validUniverse(){
+      const rows=Array.isArray(pulse?.universe)?pulse.universe:[];
+      return rows.filter(r=>{
+        const h=historyValues(r);
+        return num(r.psi)!==null && (num(r.price_close)!==null || h.length) && h.length>=25 && (num(r.headline_count)??0)>=2;
+      });
+    }
+
+    function rankForecasts(){
+      forecasts=validUniverse().map(buildForecast).sort((a,b)=>b.strength-a.strength).slice(0,10);
+      if(!selectedInstrument || !forecasts.some(f=>f.row.instrument===selectedInstrument)){
+        selectedInstrument=forecasts[0]?.row.instrument||null;
+      }
+    }
+
+    function signalClass(dir){return dir==="Bullish"?"bullish":dir==="Bearish"?"bearish":"neutral"}
+
+    function renderTiles(){
+      $("forecastGrid").innerHTML=forecasts.length?forecasts.map((f,i)=>{
+        const r=f.row;
+        return `<button type="button" class="forecast-tile ${r.instrument===selectedInstrument?"selected":""}" data-inst="${esc(r.instrument)}">
+          <div class="tile-top"><span class="rank">#${i+1} Signal</span><span class="signal ${signalClass(f.short.dir)}">${esc(f.short.dir)}</span></div>
+          <h3>${esc(r.display_name||r.instrument)}</h3>
+          <div class="symbol-line">${esc(r.symbol||r.instrument)} • ${esc(String(r.category||"").replaceAll("_"," "))}</div>
+          <div class="tile-price"><strong>${money(f.price)}</strong><span>Current price • PSI ${Math.round(f.sig.psi)}</span></div>
+          <div class="tile-horizons">
+            <div class="hbox"><b>${pct(f.short.low)} to ${pct(f.short.high)}</b><span>7-day expected move</span></div>
+            <div class="hbox"><b>${pct(f.long.low)} to ${pct(f.long.high)}</b><span>30-day expected move</span></div>
+          </div>
+          <div class="tile-confidence">Confidence: <b>${f.short.confidence}%</b> short • <b>${f.long.confidence}%</b> longer</div>
+        </button>`;
+      }).join(""):'<div class="empty" style="grid-column:1/-1">No current assets meet the minimum lab requirements.</div>';
+
+      $("forecastGrid").querySelectorAll("[data-inst]").forEach(btn=>btn.addEventListener("click",()=>{
+        selectedInstrument=btn.dataset.inst;
+        renderTiles();
+        renderDetail();
+      }));
+    }
+
+    function thesisFor(f){
+      const s=f.sig,r=f.row,items=[];
+      const psiText=s.psi>=56?"bullish":s.psi<=44?"bearish":"neutral";
+      items.push(`PSI is ${Math.round(s.psi)}/100 (${psiText}), while 24H and 7D PSI momentum are ${s.psi1>0?"rising":s.psi1<0?"falling":"flat"} and ${s.psi7>0?"rising":s.psi7<0?"falling":"flat"}.`);
+      items.push(`Price momentum is ${pct(s.mom5)} over roughly 5 sessions and ${pct(s.mom20)} over roughly 20 sessions; the model uses both to avoid forecasting from sentiment alone.`);
+      items.push(`Recent realized daily volatility is about ${s.vol.toFixed(2)}%. That volatility determines how wide the expected move range should be.`);
+      if(r.is_divergence) items.push(`Sentiment/price divergence is currently flagged, so confidence is deliberately reduced until the two signals align.`);
+      else if(r.is_reversal) items.push(`A recent reversal is flagged, so confidence is reduced because the new direction has less persistence.`);
+      else items.push(`No current divergence flag is present, so sentiment and price behavior are not receiving an additional disagreement penalty.`);
+      const invalidation = f.short.dir==="Bullish"
+        ? "Near-term invalidation: PSI falls materially toward/below neutral while price momentum turns negative."
+        : f.short.dir==="Bearish"
+          ? "Near-term invalidation: PSI recovers materially toward/above neutral while price momentum turns positive."
+          : "Neutral view changes when sentiment and price momentum align strongly in the same direction.";
+      items.push(invalidation);
+      return items.slice(0,5);
+    }
+
+    function renderDetail(){
+      const f=forecasts.find(x=>x.row.instrument===selectedInstrument)||forecasts[0];
+      if(!f)return;
+      const r=f.row,s=f.sig;
+      $("detailName").textContent=r.display_name||r.instrument;
+      $("detailMeta").textContent=`${r.symbol||r.instrument} • ${String(r.category||"").replaceAll("_"," ")} • ${s.headlines} headlines • model ${MODEL_VERSION}`;
+      $("detailScore").textContent=`${s.score>0?"+":""}${Math.round(s.score)}`;
+
+      const metrics=[
+        ["PSI",`${Math.round(s.psi)}/100`],
+        ["24H PSI",`${s.psi1>0?"+":""}${s.psi1.toFixed(1)}`],
+        ["7D PSI",`${s.psi7>0?"+":""}${s.psi7.toFixed(1)}`],
+        ["5D Price",pct(s.mom5)],
+        ["20D Price",pct(s.mom20)],
+        ["20D Daily Vol",`${s.vol.toFixed(2)}%`],
+        ["Headlines",String(s.headlines)],
+        ["Divergence",r.is_divergence?"Yes":"No"]
+      ];
+      $("signalGrid").innerHTML=metrics.map(([k,v])=>`<div class="metric"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
+
+      const fillH=(prefix,h)=>{
+        $(prefix+"Range").textContent=`${pct(h.low)} to ${pct(h.high)}`;
+        $(prefix+"Target").textContent=f.price===null?"Target price unavailable":`Projected price range: ${money(h.targetLow)} – ${money(h.targetHigh)} from ${money(f.price)}`;
+        $(prefix+"Direction").textContent=h.dir;
+        $(prefix+"Confidence").textContent=`${h.confidence}%`;
+      };
+      fillH("short",f.short); fillH("long",f.long);
+
+      $("thesisList").innerHTML=thesisFor(f).map((t,i)=>`<div class="thesis-item"><i>${i+1}</i><span>${esc(t)}</span></div>`).join("");
+    }
+
+    function feedTime(){
+      return parseDate(pulse?.data_updated_utc)||parseDate(pulse?.generated_utc)||new Date();
+    }
+
+    function loadLedger(){
+      try{
+        const parsed=JSON.parse(localStorage.getItem(LEDGER_KEY)||"[]");
+        return Array.isArray(parsed)?parsed:[];
+      }catch(_){return []}
+    }
+    function saveLedger(rows){ localStorage.setItem(LEDGER_KEY,JSON.stringify(rows)); }
+
+    function ledgerRecord(f,h){
+      const issued=feedTime();
+      const startPrice=f.price;
+      return {
+        id:`${MODEL_VERSION}|${f.row.instrument}|${h.calendarDays}|${issued.toISOString()}`,
+        model:MODEL_VERSION,
+        instrument:f.row.instrument,
+        displayName:f.row.display_name||f.row.instrument,
+        symbol:f.row.symbol||"",
+        issuedAt:issued.toISOString(),
+        feedTimestamp:pulse?.data_updated_utc||pulse?.generated_utc||issued.toISOString(),
+        horizonDays:h.calendarDays,
+        targetDate:isoDate(addDays(issued,h.calendarDays)),
+        entryPrice:startPrice,
+        direction:h.dir,
+        rangeLowPct:Number(h.low.toFixed(4)),
+        rangeHighPct:Number(h.high.toFixed(4)),
+        confidence:h.confidence,
+        forecastScore:Number(f.sig.score.toFixed(3)),
+        psi:Number(f.sig.psi.toFixed(2)),
+        status:"open",
+        evaluatedAt:null,
+        evaluationPrice:null,
+        actualReturnPct:null,
+        directionHit:null,
+        rangeHit:null,
+        rangeErrorPct:null
+      };
+    }
+
+    function recordForecast(f){
+      if(!f || f.price===null)return 0;
+      const ledger=loadLedger();
+      const records=[ledgerRecord(f,f.short),ledgerRecord(f,f.long)];
+      let added=0;
+      records.forEach(rec=>{
+        if(!ledger.some(x=>x.id===rec.id)){ledger.push(rec);added++;}
+      });
+      saveLedger(ledger);
+      renderLedger();
+      return added;
+    }
+
+    function rowForInstrument(instrument){
+      return (Array.isArray(pulse?.universe)?pulse.universe:[]).find(r=>String(r.instrument)===String(instrument))||null;
+    }
+
+    function evaluationPoint(row,targetDate){
+      const hist=historyValues(row);
+      const eligible=hist.find(x=>x.date>=targetDate);
+      return eligible||null;
+    }
+
+    function evaluateLedger(){
+      const ledger=loadLedger();
+      let changed=0;
+      ledger.forEach(rec=>{
+        if(rec.status==="evaluated")return;
+        const row=rowForInstrument(rec.instrument); if(!row)return;
+        const point=evaluationPoint(row,rec.targetDate); if(!point)return;
+        const entry=num(rec.entryPrice); if(!entry || !point.value)return;
+        const actual=(point.value/entry-1)*100;
+        const dirHit=rec.direction==="Bullish"?actual>0:rec.direction==="Bearish"?actual<0:Math.abs(actual)<=1;
+        const lo=Math.min(rec.rangeLowPct,rec.rangeHighPct), hi=Math.max(rec.rangeLowPct,rec.rangeHighPct);
+        const rangeHit=actual>=lo && actual<=hi;
+        const err=rangeHit?0:actual<lo?lo-actual:actual-hi;
+        rec.status="evaluated";
+        rec.evaluatedAt=point.date;
+        rec.evaluationPrice=point.value;
+        rec.actualReturnPct=Number(actual.toFixed(4));
+        rec.directionHit=dirHit;
+        rec.rangeHit=rangeHit;
+        rec.rangeErrorPct=Number(err.toFixed(4));
+        changed++;
+      });
+      if(changed)saveLedger(ledger);
+      renderLedger();
+      toast(changed?`${changed} due forecast${changed===1?"":"s"} evaluated.`:"No additional forecasts are due yet.");
+    }
+
+    function renderLedger(){
+      const ledger=loadLedger().sort((a,b)=>String(b.issuedAt).localeCompare(String(a.issuedAt)));
+      const evaluated=ledger.filter(x=>x.status==="evaluated");
+      const dirHits=evaluated.filter(x=>x.directionHit).length;
+      const rangeHits=evaluated.filter(x=>x.rangeHit).length;
+      const avgErr=evaluated.length?evaluated.reduce((s,x)=>s+(num(x.rangeErrorPct)??0),0)/evaluated.length:null;
+
+      $("statIssued").textContent=ledger.length;
+      $("statEvaluated").textContent=evaluated.length;
+      $("statDirection").textContent=evaluated.length?`${Math.round(dirHits/evaluated.length*100)}%`:"—";
+      $("statRange").textContent=evaluated.length?`${Math.round(rangeHits/evaluated.length*100)}%`:"—";
+      $("statError").textContent=avgErr===null?"—":`${avgErr.toFixed(2)}%`;
+
+      $("ledgerBody").innerHTML=ledger.length?ledger.map(r=>{
+        const dir=r.status==="evaluated"?(r.directionHit?'<span class="ok">Hit</span>':'<span class="miss">Miss</span>'):'<span class="open">Open</span>';
+        const rng=r.status==="evaluated"?(r.rangeHit?'<span class="ok">Hit</span>':'<span class="miss">Miss</span>'):'<span class="open">Open</span>';
+        return `<tr>
+          <td>${esc(String(r.issuedAt).slice(0,10))}</td>
+          <td>${esc(r.displayName)}</td>
+          <td>${r.horizonDays}D</td>
+          <td>${money(r.entryPrice)}</td>
+          <td>${esc(r.direction)}</td>
+          <td>${pct(r.rangeLowPct)} to ${pct(r.rangeHighPct)}</td>
+          <td>${r.confidence}%</td>
+          <td>${esc(r.targetDate)}</td>
+          <td>${r.status==="evaluated"?pct(r.actualReturnPct):"—"}</td>
+          <td>${dir}</td>
+          <td>${rng}</td>
+          <td>${esc(r.model)}</td>
+        </tr>`;
+      }).join(""):'<tr><td colspan="12"><div class="empty">No forecasts recorded yet. Select an asset above and use “Record This Forecast.”</div></td></tr>';
+    }
+
+    function toast(msg){
+      const el=$("toast");el.textContent=msg;el.classList.add("show");
+      clearTimeout(window.__pfToast);window.__pfToast=setTimeout(()=>el.classList.remove("show"),2600);
+    }
+
+    async function loadPulse(){
+      try{
+        const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
+        const resp=await fetch("market_pulse.json",{cache:"no-cache",signal:ctrl.signal});
+        clearTimeout(timer);
+        if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+        pulse=await resp.json();
+        const ts=pulse?.data_updated_ny||pulse?.data_updated_utc||pulse?.generated_utc||"latest available";
+        $("dataStatus").textContent=`Live PSD feed loaded • ${ts}`;
+        rankForecasts();renderTiles();renderDetail();renderLedger();
+      }catch(err){
+        console.warn("Forecast Lab 2 could not load market_pulse.json",err);
+        $("dataStatus").textContent="Live PSD feed unavailable — forecast generation paused. Page remains isolated and safe.";
+        $("forecastGrid").innerHTML='<div class="empty" style="grid-column:1/-1">Forecast Lab 2 needs <code>market_pulse.json</code> to generate test forecasts. No production page is affected.</div>';
+        renderLedger();
+      }
+    }
+
+    $("recordSelected").addEventListener("click",()=>{
+      const f=forecasts.find(x=>x.row.instrument===selectedInstrument)||forecasts[0];
+      const added=recordForecast(f);toast(added?`Recorded ${added} immutable forecast horizons.`:"This exact forecast is already recorded.");
+    });
+    $("recordTop10").addEventListener("click",()=>{
+      let added=0;forecasts.forEach(f=>added+=recordForecast(f));
+      toast(added?`Recorded ${added} forecast horizons across the current Top 10.`:"Current Top 10 forecasts are already recorded.");
+    });
+    $("evaluateLedger").addEventListener("click",evaluateLedger);
+    $("resetLedger").addEventListener("click",()=>{
+      if(!confirm("Reset only the Dashboard Lab 2 forecast ledger stored in this browser?"))return;
+      localStorage.removeItem(LEDGER_KEY);renderLedger();toast("Lab ledger reset.");
+    });
+
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",loadPulse);else loadPulse();
+  })();
+  </script>
+</body>
+</html>
