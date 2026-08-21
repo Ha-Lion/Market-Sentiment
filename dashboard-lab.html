@@ -173,6 +173,27 @@
     body.dark-mode .mini-metric{background:#243645}
     body.dark-mode .score-ring{background:conic-gradient(var(--ei-gold) calc(var(--score)*1%),#405364 0)}
 
+
+    /* Iteration 4: compact forward-outlook layer, shared conceptually with Forecast Lab 2. */
+    .event-forecast-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+    .forecast-lab-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #c99626;border-radius:9px;padding:8px 11px;background:linear-gradient(180deg,#fff9e7,#f4e4b6);color:#5f430f;font-size:11px;font-weight:900;box-shadow:inset 0 1px 0 #fff,0 3px 7px rgba(38,57,72,.13)}
+    body.dark-mode .forecast-lab-link{background:linear-gradient(180deg,#49391d,#2c2417);color:#ffe9aa;border-color:#c99626;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 8px rgba(0,0,0,.28)}
+    .event-forecast-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+    .event-forecast-card{border:1px solid var(--ei-line);border-radius:12px;padding:11px;background:linear-gradient(180deg,#fff 0%,#f4f8fb 68%,#e8eef4 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -2px 0 rgba(111,134,153,.12),0 4px 10px rgba(29,52,70,.11);min-width:0}
+    body.dark-mode .event-forecast-card{background:linear-gradient(180deg,#263746 0%,#1f303d 68%,#192733 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 -2px 0 rgba(0,0,0,.25),0 5px 11px rgba(0,0,0,.24)}
+    .event-forecast-top{display:flex;justify-content:space-between;gap:7px;align-items:flex-start}.event-forecast-top h3{font-size:12px;line-height:1.2;margin:0;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .event-forecast-dir{font-size:9px;font-weight:900;padding:4px 6px;border:1px solid var(--ei-line);border-radius:999px;white-space:nowrap;background:var(--ei-card)}
+    .event-forecast-dir.bullish{border-color:#31ad92;color:#08715d;background:#ecfbf7}.event-forecast-dir.bearish{border-color:#e78b5b;color:#903b0d;background:#fff1e8}.event-forecast-dir.neutral{border-color:#80aceb;color:#275dab;background:#eef5ff}
+    body.dark-mode .event-forecast-dir.bullish{background:#163a31;color:#a7f0dd}.body-dark-mode .event-forecast-dir.bearish{background:#46291c;color:#ffd0b8}
+    body.dark-mode .event-forecast-dir.bearish{background:#46291c;color:#ffd0b8}body.dark-mode .event-forecast-dir.neutral{background:#203a58;color:#d3e4ff}
+    .event-forecast-price{margin:9px 0 7px}.event-forecast-price strong{font-size:19px;font-weight:900}.event-forecast-price span{font-size:9px;color:var(--ei-muted);margin-left:4px}
+    .event-horizon-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}.event-horizon{border:1px solid var(--ei-line);border-radius:8px;padding:6px;background:color-mix(in srgb,var(--ei-card) 80%,var(--ei-bg))}.event-horizon b{display:block;font-size:10.5px}.event-horizon span{display:block;font-size:8.8px;color:var(--ei-muted);margin-top:2px}
+    .event-forecast-foot{margin-top:7px;display:flex;justify-content:space-between;gap:5px;font-size:9px;color:var(--ei-muted)}.event-forecast-foot b{color:var(--ei-text)}
+    .forecast-model-note{margin-top:8px;font-size:9.5px;color:var(--ei-muted)}
+    @media(max-width:1450px){.event-forecast-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:900px){.event-forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.event-forecast-grid{grid-template-columns:1fr}.event-forecast-head{align-items:flex-start;flex-direction:column}}
+
     @media(max-width:1450px){.asset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.queue-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
     @media(max-width:1080px){.event-hero,.intelligence-grid,.watch-grid{grid-template-columns:1fr}.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.driver-grid,.channel-grid{grid-template-columns:1fr}.hero-score{justify-content:flex-start}.queue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.event-page{padding:8px}.event-shell{padding:8px}.hero-main h1{font-size:25px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-row{grid-template-columns:115px 1fr 58px}.queue-grid{grid-template-columns:1fr}.queue-head{align-items:flex-start;flex-direction:column}}
@@ -248,6 +269,16 @@
         <div class="asset-grid" id="assetGrid"></div>
       </section>
 
+
+      <section class="section-card" style="margin-bottom:12px">
+        <div class="section-head event-forecast-head">
+          <div><span class="section-kicker">Experimental forward outlook</span><h2>PSD Forward Market Outlook</h2><p>Concise 7-day and 30-day model outlook for the assets most affected by the selected event. Full audit and calibration remain in Forecast Lab 2.</p></div>
+          <a class="forecast-lab-link" href="dashboard-lab-2.html">Open Forecast Lab 2 →</a>
+        </div>
+        <div class="event-forecast-grid" id="eventForecastGrid"></div>
+        <div class="forecast-model-note">Forecast model uses current PSI, 24H/7D PSI momentum, recent price momentum, realized volatility, headline breadth and divergence. Experimental calibration only; forecasts are not rewritten after being recorded in Forecast Lab 2.</div>
+      </section>
+
       <section class="section-card" style="margin-bottom:12px">
         <div class="section-head">
           <div><span class="section-kicker">How the shock is traveling</span><h2>Transmission Channels</h2><p>Aggregates the affected assets into market mechanisms instead of treating every move in isolation.</p></div>
@@ -272,7 +303,7 @@
       </section>
 
       <div class="methodology">
-        <span><b>Iteration 3 lab architecture:</b> the Top 10 priority tiles are the event navigation. Click any tile to load its full intelligence view below.</span>
+        <span><b>Iteration 4 lab architecture:</b> the Top 10 priority tiles are the event navigation. The selected event now also receives a compact, model-consistent 7-day/30-day forward outlook; the full immutable forecast ledger remains isolated in Forecast Lab 2.</span>
         <span><b>Priority formula:</b> 35% market impact • 25% freshness • 20% cross-market reach • 10% source quality • 10% persistence. Experimental; not investment advice.</span>
       </div>
     </div>
@@ -769,6 +800,80 @@
       return {psi:Math.round(subset.reduce((s,r)=>s+(num(r.psi)??50),0)/subset.length),d1:subset.reduce((s,r)=>s+(num(r.change_1d)??0),0)/subset.length};
     }
 
+
+    function forecastHistoryValues(row){
+      return (Array.isArray(row?.market_history)?row.market_history:[])
+        .map(x=>({date:String(x?.date||""),value:num(x?.value)}))
+        .filter(x=>x.date && x.value!==null)
+        .sort((a,b)=>a.date.localeCompare(b.date));
+    }
+
+    function forecastTrailingReturn(hist,periods){
+      if(hist.length<periods+1)return 0;
+      const last=hist[hist.length-1].value,prev=hist[hist.length-1-periods].value;
+      return prev?((last/prev)-1)*100:0;
+    }
+
+    function forecastDailyVol(hist,lookback=20){
+      if(hist.length<3)return 1;
+      const slice=hist.slice(-(lookback+1)),rets=[];
+      for(let i=1;i<slice.length;i++){
+        const a=slice[i-1].value,b=slice[i].value;
+        if(a>0&&b>0)rets.push((b/a-1)*100);
+      }
+      if(rets.length<2)return 1;
+      const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+      const variance=rets.reduce((s,r)=>s+(r-mean)**2,0)/(rets.length-1);
+      return Math.sqrt(Math.max(variance,0));
+    }
+
+    function forecastFactor(v,scale){return clamp((num(v)??0)/scale,-1,1)}
+
+    function eventAssetForecast(row){
+      const hist=forecastHistoryValues(row);
+      if(hist.length<25)return null;
+      const psi=num(row.psi)??50;
+      const psiLevel=clamp((psi-50)/25,-1,1);
+      const psi1=forecastFactor(row.change_1d,20),psi7=forecastFactor(row.change_7d,30);
+      const mom5=forecastFactor(forecastTrailingReturn(hist,5),6),mom20=forecastFactor(forecastTrailingReturn(hist,20),12);
+      let score=35*psiLevel+20*psi1+20*psi7+12.5*mom5+12.5*mom20;
+      if(row.is_divergence)score*=.82;
+      score=clamp(score,-100,100);
+      const vol=forecastDailyVol(hist,20),headlines=Math.max(0,num(row.headline_count)??0);
+      let confidence=46+Math.abs(score)*.30+Math.min(8,Math.log2(headlines+1)*1.6);
+      if(row.is_divergence)confidence-=10;if(row.is_reversal)confidence-=5;if(vol>4)confidence-=Math.min(8,(vol-4)*1.5);
+      confidence=clamp(Math.round(confidence),42,82);
+      const dir=score>=12?'Bullish':score<=-12?'Bearish':'Neutral';
+      const price=num(row.price_close)??hist[hist.length-1]?.value??null;
+      const horizon=(calendarDays,tradingDays)=>{
+        const sigma=Math.max(.35,vol),strength=Math.abs(score)/100;
+        let center=(score/100)*sigma*Math.sqrt(tradingDays)*1.20;
+        const half=Math.max(.55,sigma*Math.sqrt(tradingDays)*(.58+.12*(1-strength)));
+        let low=center-half,high=center+half;
+        if(dir==='Bullish'&&score>=28)low=Math.max(-half*.25,low);
+        if(dir==='Bearish'&&score<=-28)high=Math.min(half*.25,high);
+        low=clamp(low,-35,35);high=clamp(high,-35,35);
+        return {low,high,confidence:clamp(Math.round(confidence-(calendarDays>7?4:0)),40,82)};
+      };
+      return {dir,score,price,short:horizon(7,5),long:horizon(30,20),historyCount:hist.length};
+    }
+
+    function forecastPct(v){const n=num(v);return n===null?'—':`${n>0?'+':''}${n.toFixed(Math.abs(n)>=10?1:2)}%`}
+    function forecastMoney(v){const n=num(v);if(n===null)return '—';return Math.abs(n)>=1000?n.toLocaleString(undefined,{maximumFractionDigits:2}):n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:3})}
+
+    function renderEventForecast(rows){
+      const candidates=[...rows].sort((a,b)=>assetPressure(b)-assetPressure(a)).map(r=>({row:r,forecast:eventAssetForecast(r)})).filter(x=>x.forecast).slice(0,5);
+      $('eventForecastGrid').innerHTML=candidates.length?candidates.map(({row:r,forecast:f})=>`<article class="event-forecast-card">
+        <div class="event-forecast-top"><h3>${esc(r.display_name||r.instrument)}</h3><span class="event-forecast-dir ${f.dir.toLowerCase()}">${f.dir}</span></div>
+        <div class="event-forecast-price"><strong>${forecastMoney(f.price)}</strong><span>current • PSI ${Math.round(num(r.psi)??50)}</span></div>
+        <div class="event-horizon-grid">
+          <div class="event-horizon"><b>${forecastPct(f.short.low)} to ${forecastPct(f.short.high)}</b><span>7-day expected move</span></div>
+          <div class="event-horizon"><b>${forecastPct(f.long.low)} to ${forecastPct(f.long.high)}</b><span>30-day expected move</span></div>
+        </div>
+        <div class="event-forecast-foot"><span>Confidence <b>${f.short.confidence}%</b></span><span>Model <b>v0.1</b></span></div>
+      </article>`).join(''):'<div class="empty-note" style="grid-column:1/-1">Current affected assets do not yet have enough market history for the forecast model.</div>';
+    }
+
     function renderChannels(rows){
       const defs=[
         {name:"Energy Supply",assets:["Crude Oil","Brent Oil","Natural Gas"],text:"Measures how directly the event is transmitting through oil and gas sentiment."},
@@ -813,7 +918,7 @@
 
     function renderEvent(){
       const rows=getUniverseRows(activeEvent);
-      renderHero(rows);renderDrivers();renderProfile(rows);renderAssets(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
+      renderHero(rows);renderDrivers();renderProfile(rows);renderAssets(rows);renderEventForecast(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
       const ts=pulseData?.data_updated_ny||pulseData?.data_updated_utc||pulseData?.generated_utc||"fallback snapshot";
       $("assetTimestamp").textContent=ts;
     }
