@@ -921,26 +921,27 @@
     body.dark-mode .headline-open{color:#ffd36f!important}
 
     /* Roadmap Iteration 2 lab: Share & Grow */
-    .psd-share-grow{
-      margin:8px 0 18px;
-      padding:14px 16px;
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:linear-gradient(180deg,rgba(17,24,33,.94),rgba(8,13,21,.96));
-      box-shadow:0 16px 38px rgba(0,0,0,.18);
-    }
-    .psd-share-grow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
-    .psd-share-grow-title{margin:0;color:#fff;font-size:17px;font-weight:900}
-    .psd-share-grow-badge{padding:4px 8px;border-radius:999px;border:1px solid rgba(210,153,34,.38);background:rgba(210,153,34,.12);color:#ffd780;font-size:11px;font-weight:900}
-    .psd-share-grow-preview{margin:0 0 11px;padding:10px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:rgba(5,10,17,.48);color:#d7e2ed;font-size:13px;line-height:1.48}
-    .psd-share-grow-actions{display:flex;flex-wrap:wrap;gap:8px}
-    .psd-share-grow-btn{appearance:none;border:1px solid rgba(210,153,34,.48);border-radius:11px;background:rgba(210,153,34,.12);color:#ffd780;padding:8px 11px;font-size:12px;font-weight:900;cursor:pointer;text-decoration:none}
-    .psd-share-grow-btn:hover{background:rgba(210,153,34,.2)}
-    .psd-share-grow-note{margin:8px 0 0;color:var(--muted);font-size:11px}
-    body.light-mode .psd-share-grow,body:not(.dark-mode) .psd-share-grow{background:#fff;box-shadow:0 14px 34px rgba(28,58,83,.10)}
-    body.light-mode .psd-share-grow-title,body:not(.dark-mode) .psd-share-grow-title{color:#061522}
-    body.light-mode .psd-share-grow-preview,body:not(.dark-mode) .psd-share-grow-preview{background:#f6f8fb;color:#10263b;border-color:#d8e1e8}
-    @media(max-width:680px){.psd-share-grow-head{align-items:flex-start;flex-direction:column}.psd-share-grow-btn{flex:1 1 auto;text-align:center}}
+
+    .asset-share-menu{position:relative;margin-top:8px;z-index:12}
+    .asset-share-menu summary{list-style:none;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:30px;padding:6px 10px;border:1px solid rgba(210,153,34,.62);border-radius:11px;background:linear-gradient(180deg,rgba(255,239,190,.23),rgba(210,153,34,.10));color:#f4c867;font-size:11px;font-weight:900;cursor:pointer;user-select:none;box-sizing:border-box}
+    .asset-share-menu summary::-webkit-details-marker{display:none}
+    .asset-share-menu summary:hover{background:rgba(210,153,34,.18)}
+    .asset-share-menu[open] summary{background:rgba(210,153,34,.20)}
+    .asset-share-chevron{font-size:10px;transition:transform .16s ease}
+    .asset-share-menu[open] .asset-share-chevron{transform:rotate(180deg)}
+    .asset-share-popover{position:relative;margin-top:5px;z-index:2;padding:10px;border:1px solid rgba(210,153,34,.52);border-radius:12px;background:#101823;box-shadow:0 18px 40px rgba(0,0,0,.34)}
+    .asset-share-title{margin:0 0 8px;color:#fff;font-size:12px;font-weight:900;line-height:1.3}
+    .asset-share-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .asset-share-action{appearance:none;border:1px solid rgba(210,153,34,.42);border-radius:9px;background:rgba(210,153,34,.11);color:#ffd780;padding:7px 6px;font-size:10px;font-weight:900;cursor:pointer;text-decoration:none;text-align:center;line-height:1.2}
+    .asset-share-action:hover{background:rgba(210,153,34,.21)}
+    .asset-share-action.asset-share-primary{grid-column:1/-1;background:linear-gradient(180deg,rgba(210,153,34,.28),rgba(210,153,34,.14))}
+    .asset-share-status{min-height:14px;margin:7px 1px 0;color:var(--muted);font-size:9px;line-height:1.3}
+    body.light-mode .asset-share-menu summary,body:not(.dark-mode) .asset-share-menu summary{background:#fff8e2;color:#8d6511;border-color:#d9a632}
+    body.light-mode .asset-share-popover,body:not(.dark-mode) .asset-share-popover{background:#fff;border-color:#d6b257;box-shadow:0 16px 34px rgba(28,58,83,.18)}
+    body.light-mode .asset-share-title,body:not(.dark-mode) .asset-share-title{color:#0b1722}
+    body.light-mode .asset-share-action,body:not(.dark-mode) .asset-share-action{background:#fff8e2;color:#8d6511;border-color:#dfbf72}
+    body.light-mode .asset-share-action:hover,body:not(.dark-mode) .asset-share-action:hover{background:#fff0bd}
+    @media(max-width:680px){.asset-share-actions{grid-template-columns:1fr}.asset-share-action.asset-share-primary{grid-column:auto}}
 
   </style>
 </head>
@@ -978,20 +979,6 @@
 
     <section id="categoryIntelligence" class="category-intelligence-mount" aria-live="polite"></section>
 
-    <section id="shareGrowLab" class="psd-share-grow" aria-live="polite">
-      <div class="psd-share-grow-head">
-        <h2 class="psd-share-grow-title">Share AI Insight</h2>
-        <span class="psd-share-grow-badge">Roadmap Lab</span>
-      </div>
-      <p id="shareGrowPreview" class="psd-share-grow-preview">Preparing the latest AI sentiment insight…</p>
-      <div class="psd-share-grow-actions">
-        <button id="shareGrowCopy" class="psd-share-grow-btn" type="button">Copy Insight</button>
-        <a id="shareGrowX" class="psd-share-grow-btn" href="#" target="_blank" rel="noopener">Share on X</a>
-        <a id="shareGrowLinkedIn" class="psd-share-grow-btn" href="#" target="_blank" rel="noopener">Share on LinkedIn</a>
-        <button id="shareGrowNative" class="psd-share-grow-btn" type="button" hidden>Share…</button>
-      </div>
-      <p id="shareGrowStatus" class="psd-share-grow-note">Uses the current AI asset PSI already loaded on this page.</p>
-    </section>
 
     <section class="ai-panels">
       <div class="ai-panel">
@@ -1378,6 +1365,21 @@
             <div class="market-insight"><span>Daily market insight <button class="psd-glossary-info" type="button" data-pulse-glossary="daily-market-insight" aria-label="Explain Daily Market Insight" aria-expanded="false">i</button></span><b>${esc(marketDirection(row.name))}</b></div>
             <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
 
+            <details class="asset-share-menu" data-share-name="${esc(row.name)}">
+              <summary>AI Insight by PSD <span class="asset-share-chevron">▼</span></summary>
+              <div class="asset-share-popover">
+                <div class="asset-share-title">${esc(assetShareTitle(row))}</div>
+                <div class="asset-share-actions">
+                  <button class="asset-share-action asset-share-primary" type="button" data-asset-share="native" data-share-name="${esc(row.name)}">Share Card + Link</button>
+                  <button class="asset-share-action" type="button" data-asset-share="x" data-share-name="${esc(row.name)}">Share on X</button>
+                  <button class="asset-share-action" type="button" data-asset-share="linkedin" data-share-name="${esc(row.name)}">Share on LinkedIn</button>
+                  <button class="asset-share-action" type="button" data-asset-share="copy" data-share-name="${esc(row.name)}">Copy Insight</button>
+                  <button class="asset-share-action" type="button" data-asset-share="image" data-share-name="${esc(row.name)}">Save Card Image</button>
+                </div>
+                <div class="asset-share-status" data-share-status="${esc(row.name)}">Asset title + insight + page link. Card image is included when the browser supports file sharing.</div>
+              </div>
+            </details>
+
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
             <label class="compare-control">
               <input class="compare-checkbox" type="checkbox" data-name="${esc(row.name)}" onchange='toggleCompare(${JSON.stringify(row.name).replace(/</g,"\\u003c")}, this.checked, this)'>
@@ -1386,6 +1388,7 @@
           </article>
         `;
       }).join("");
+      wireAssetShareMenus();
       const previous = document.querySelector('[data-ai-scroll="-1"]');
       const next = document.querySelector('[data-ai-scroll="1"]');
       if(previous) previous.disabled = aiCardPage === 0;
@@ -1560,46 +1563,141 @@
     window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
 
 
-    function buildShareGrowInsight(){
-      const rows=(Array.isArray(currentRows)?currentRows:[]).filter(row=>Number.isFinite(Number(row?.score)));
-      if(!rows.length) return null;
-      const average=rows.reduce((sum,row)=>sum+Number(row.score),0)/rows.length;
-      const strongest=rows.reduce((best,row)=>Number(row.score)>Number(best.score)?row:best,rows[0]);
-      const weakest=rows.reduce((best,row)=>Number(row.score)<Number(best.score)?row:best,rows[0]);
-      const label=labelForScore(average);
-      const shortName=row=>String(row?.symbol||row?.name||'').trim();
-      const text=`AI Assets PSI ${average.toFixed(1)} — ${label}. Strongest: ${shortName(strongest)} ${Number(strongest.score).toFixed(1)}. Weakest: ${shortName(weakest)} ${Number(weakest.score).toFixed(1)}. Tracking ${rows.length} AI-related assets on PublicSentimentDash.`;
-      return {text, url:'https://publicsentimentdash.com/ai-assets.html'};
+
+    const ASSET_SHARE_URL='https://publicsentimentdash.com/ai-assets.html';
+
+    function assetShareDisplayName(row){
+      const raw=String(row?.name||row?.symbol||'AI Asset').trim();
+      const first=raw.split('/')[0].trim();
+      return first||String(row?.symbol||'AI Asset').trim();
     }
 
-    function renderShareGrowLab(){
-      try{
-        const insight=buildShareGrowInsight();
-        const preview=document.getElementById('shareGrowPreview');
-        const status=document.getElementById('shareGrowStatus');
-        const copyButton=document.getElementById('shareGrowCopy');
-        const xLink=document.getElementById('shareGrowX');
-        const linkedInLink=document.getElementById('shareGrowLinkedIn');
-        const nativeButton=document.getElementById('shareGrowNative');
-        if(!preview||!status||!copyButton||!xLink||!linkedInLink) return;
-        if(!insight){preview.textContent='Share insight is unavailable until AI sentiment data loads.';return;}
-        preview.textContent=insight.text;
-        xLink.href=`https://twitter.com/intent/tweet?text=${encodeURIComponent(insight.text)}&url=${encodeURIComponent(insight.url)}`;
-        linkedInLink.href=`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(insight.url)}`;
-        copyButton.onclick=async()=>{
-          const copyText=`${insight.text} ${insight.url}`;
-          try{await navigator.clipboard.writeText(copyText);status.textContent='Insight copied to clipboard.';}
-          catch(_error){
-            const area=document.createElement('textarea');area.value=copyText;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();status.textContent='Insight copied to clipboard.';
-          }
-        };
-        if(nativeButton&&navigator.share){
-          nativeButton.hidden=false;
-          nativeButton.onclick=()=>navigator.share({title:'AI Assets Sentiment',text:insight.text,url:insight.url}).catch(()=>{});
-        }
-      }catch(error){
-        console.warn('Share & Grow lab could not render; core page remains active.',error);
+    function assetShareTitle(row){
+      return `${assetShareDisplayName(row)} AI Insight by PSD`;
+    }
+
+    function assetShareText(row){
+      const score=Number(row?.score);
+      const scoreText=Number.isFinite(score)?`${score.toFixed(0)}/100`:'Unavailable';
+      const direction=marketDirection(row?.name);
+      const headlineCount=Number(row?.headlineCount)||0;
+      const bullish=Number(row?.bullish)||0,bearish=Number(row?.bearish)||0,neutral=Number(row?.neutral)||0;
+      return `${assetShareTitle(row)}\nPSI ${scoreText} — ${row?.label||'Sentiment unavailable'}. Daily market insight: ${direction}. Headlines: ${headlineCount} (${bullish} bullish, ${bearish} bearish, ${neutral} neutral/mixed).`;
+    }
+
+    function assetShareRow(name){
+      return (Array.isArray(currentRows)?currentRows:[]).find(row=>String(row?.name||'')===String(name||''))||null;
+    }
+
+    function setAssetShareStatus(name,message){
+      document.querySelectorAll('[data-share-status]').forEach(node=>{
+        if(node.dataset.shareStatus===String(name||'')) node.textContent=message;
+      });
+    }
+
+    function roundedRectPath(ctx,x,y,w,h,r){
+      const radius=Math.max(0,Math.min(r,w/2,h/2));
+      ctx.beginPath();ctx.moveTo(x+radius,y);ctx.arcTo(x+w,y,x+w,y+h,radius);ctx.arcTo(x+w,y+h,x,y+h,radius);ctx.arcTo(x,y+h,x,y,radius);ctx.arcTo(x,y,x+w,y,radius);ctx.closePath();
+    }
+
+    function fitCanvasText(ctx,text,maxWidth,maxSize,minSize=24){
+      let size=maxSize;
+      while(size>minSize){ctx.font=`900 ${size}px Arial, sans-serif`;if(ctx.measureText(text).width<=maxWidth)break;size-=2;}
+      return size;
+    }
+
+    async function assetShareImageBlob(row){
+      const canvas=document.createElement('canvas');
+      canvas.width=1200;canvas.height=630;
+      const ctx=canvas.getContext('2d');
+      if(!ctx) throw new Error('Canvas unavailable');
+      const score=Number(row?.score),safeScore=Number.isFinite(score)?Math.max(0,Math.min(100,score)):0;
+      const accent=colorForScore(Number.isFinite(score)?score:50)||'#d2a34a';
+      const title=assetShareTitle(row);
+      const symbol=String(row?.symbol||'').trim();
+      const direction=marketDirection(row?.name);
+      const updated=String(document.getElementById('updatedText')?.textContent||'').replace(/^.*?Updated:\s*/i,'').trim();
+
+      const grad=ctx.createLinearGradient(0,0,1200,630);grad.addColorStop(0,'#f8fbff');grad.addColorStop(1,'#edf3f8');ctx.fillStyle=grad;ctx.fillRect(0,0,1200,630);
+      ctx.fillStyle='#0f1d2a';roundedRectPath(ctx,35,35,1130,560,28);ctx.fill();
+      ctx.fillStyle='#152839';roundedRectPath(ctx,57,57,1086,516,22);ctx.fill();
+      ctx.fillStyle='#d2a34a';ctx.fillRect(57,57,8,516);
+
+      ctx.fillStyle='#f2c96b';ctx.font='900 25px Arial, sans-serif';ctx.fillText('PUBLIC SENTIMENT DASH',92,108);
+      const titleSize=fitCanvasText(ctx,title,790,47,30);ctx.font=`900 ${titleSize}px Arial, sans-serif`;ctx.fillStyle='#ffffff';ctx.fillText(title,92,170);
+      ctx.fillStyle='#a9bccb';ctx.font='700 24px Arial, sans-serif';ctx.fillText(`${symbol ? symbol+' • ' : ''}Public Sentiment Index`,92,212);
+
+      const cx=238,cy=352,r=92;ctx.lineWidth=24;ctx.strokeStyle='#314557';ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,Math.PI*1.5);ctx.stroke();
+      ctx.strokeStyle=accent;ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+(Math.PI*2*safeScore/100));ctx.stroke();
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='900 58px Arial, sans-serif';ctx.fillText(Number.isFinite(score)?String(Math.round(score)):'--',cx,365);ctx.fillStyle='#a9bccb';ctx.font='900 19px Arial, sans-serif';ctx.fillText('PSI',cx,398);ctx.textAlign='left';
+
+      ctx.fillStyle='#fff';ctx.font='900 34px Arial, sans-serif';ctx.fillText(String(row?.label||'Sentiment unavailable'),382,294);
+      ctx.fillStyle='#a9bccb';ctx.font='700 22px Arial, sans-serif';ctx.fillText('Daily market insight',382,341);ctx.fillStyle='#fff';ctx.font='900 29px Arial, sans-serif';ctx.fillText(direction,382,379);
+      ctx.fillStyle='#a9bccb';ctx.font='700 22px Arial, sans-serif';ctx.fillText('Headlines',382,426);ctx.fillStyle='#fff';ctx.font='900 29px Arial, sans-serif';ctx.fillText(`${Number(row?.headlineCount)||0} total  •  ${Number(row?.bullish)||0} bullish  •  ${Number(row?.bearish)||0} bearish`,382,464);
+
+      ctx.fillStyle='#f2c96b';ctx.font='800 21px Arial, sans-serif';ctx.fillText('publicsentimentdash.com/ai-assets.html',92,535);
+      if(updated){ctx.textAlign='right';ctx.fillStyle='#90a5b6';ctx.font='600 17px Arial, sans-serif';ctx.fillText(updated.slice(0,75),1100,535);ctx.textAlign='left';}
+      return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Image creation failed')),'image/png',0.95));
+    }
+
+    function assetShareFilename(row){
+      const base=assetShareDisplayName(row).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'asset';
+      return `${base}-ai-insight-by-psd.png`;
+    }
+
+    async function copyAssetInsight(row){
+      const full=`${assetShareText(row)}\n${ASSET_SHARE_URL}`;
+      try{await navigator.clipboard.writeText(full);return true;}
+      catch(_error){
+        const area=document.createElement('textarea');area.value=full;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const ok=document.execCommand('copy');area.remove();return ok;
       }
+    }
+
+    async function downloadAssetShareImage(row){
+      const blob=await assetShareImageBlob(row);const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=assetShareFilename(row);document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(link.href),1500);
+    }
+
+    async function nativeAssetShare(row){
+      const title=assetShareTitle(row),text=assetShareText(row);let blob=null,file=null;
+      try{blob=await assetShareImageBlob(row);file=new File([blob],assetShareFilename(row),{type:'image/png'});}catch(_error){}
+      if(navigator.share){
+        try{
+          if(file && navigator.canShare && navigator.canShare({files:[file]})){
+            await navigator.share({title,text,url:ASSET_SHARE_URL,files:[file]});
+            return 'Shared card image + link.';
+          }
+          await navigator.share({title,text,url:ASSET_SHARE_URL});
+          return 'Shared insight + link. This browser did not support attaching the generated card image.';
+        }catch(error){if(error?.name==='AbortError')return 'Share canceled.';throw error;}
+      }
+      if(blob){await downloadAssetShareImage(row);await copyAssetInsight(row);return 'Card image saved and insight + link copied. Attach the image to your post.';}
+      await copyAssetInsight(row);return 'Insight + link copied.';
+    }
+
+    async function runAssetShare(name,action){
+      const row=assetShareRow(name);if(!row)return;
+      try{
+        setAssetShareStatus(name,'Preparing share…');
+        if(action==='native') setAssetShareStatus(name,await nativeAssetShare(row));
+        else if(action==='copy'){await copyAssetInsight(row);setAssetShareStatus(name,'Insight + page link copied.');}
+        else if(action==='image'){await downloadAssetShareImage(row);setAssetShareStatus(name,'Card image saved.');}
+        else if(action==='x'){
+          const text=assetShareText(row);window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(ASSET_SHARE_URL)}`,'_blank','noopener');
+          setAssetShareStatus(name,'X opened with the title, insight and page link. Use “Save Card Image” if you want to attach the image on desktop.');
+        }else if(action==='linkedin'){
+          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ASSET_SHARE_URL)}`,'_blank','noopener');
+          await copyAssetInsight(row);setAssetShareStatus(name,'LinkedIn opened and the titled insight + link were copied for pasting.');
+        }
+      }catch(error){console.warn('Asset share action failed',error);setAssetShareStatus(name,'Share action could not complete. The asset card remains unaffected.');}
+    }
+
+    function wireAssetShareMenus(){
+      document.querySelectorAll('[data-asset-share]').forEach(button=>button.addEventListener('click',event=>{
+        event.preventDefault();event.stopPropagation();runAssetShare(button.dataset.shareName,button.dataset.assetShare);
+      }));
+      document.querySelectorAll('.asset-share-menu').forEach(menu=>menu.addEventListener('toggle',()=>{
+        if(!menu.open)return;document.querySelectorAll('.asset-share-menu[open]').forEach(other=>{if(other!==menu)other.open=false;});
+      }));
     }
 
     async function init(){
@@ -1623,7 +1721,6 @@
         renderHero();
         renderTopCards();
         renderHeadlines();
-        try{renderShareGrowLab();}catch(shareGrowError){console.warn("Share & Grow lab could not start; core page remains active.",shareGrowError);}
         try {
           if (typeof scheduleCategoryIntelligence === "function") {
             scheduleCategoryIntelligence({categoryKey:CATEGORY_KEY});
