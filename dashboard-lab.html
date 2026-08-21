@@ -933,7 +933,7 @@
     .asset-share-menu.is-open .asset-share-popover{display:block}
     .ai-card.asset-share-open{z-index:210!important;overflow:visible!important}
     .asset-share-actions{display:flex;flex-direction:column;gap:0}
-    .asset-share-action{appearance:none;width:100%;border:0;border-bottom:1px solid #ead7a6;border-radius:0;background:transparent;color:#111;padding:8px 10px;font-family:"Segoe UI",Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;text-align:left;line-height:1.2;white-space:nowrap}
+    .asset-share-action{appearance:none;width:100%;border:0;border-bottom:1px solid #ead7a6;border-radius:0;background:transparent;color:#111;padding:8px 10px;font-family:"Segoe UI",Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;text-align:left;line-height:1.3;white-space:nowrap}
     .asset-share-action:last-child{border-bottom:0}
     .asset-share-action:hover,.asset-share-action:focus-visible{background:#fff0bd;outline:none}
     .asset-share-action.asset-share-primary{background:transparent}
@@ -1370,11 +1370,11 @@
               <button class="asset-share-trigger" type="button" data-share-toggle="${esc(row.name)}" aria-expanded="false">AI Insight by PSD <span class="asset-share-chevron">▼</span></button>
               <div class="asset-share-popover" role="menu" aria-label="${esc(assetShareTitle(row))} sharing options">
                 <div class="asset-share-actions">
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="x" data-share-name="${esc(row.name)}">X · Copy card + open post</button>
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="linkedin" data-share-name="${esc(row.name)}">LinkedIn · Copy card + open post</button>
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="native" data-share-name="${esc(row.name)}">More apps · Share card + link</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="x" data-share-name="${esc(row.name)}">Share on X</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="linkedin" data-share-name="${esc(row.name)}">Share on LinkedIn</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="native" data-share-name="${esc(row.name)}">More social apps</button>
                   <button class="asset-share-action" type="button" role="menuitem" data-asset-share="copy" data-share-name="${esc(row.name)}">Copy insight + link</button>
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="image" data-share-name="${esc(row.name)}">Save card image</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="image" data-share-name="${esc(row.name)}">Save social card</button>
                 </div>
               </div>
             </div>
@@ -1564,6 +1564,7 @@
 
 
     const ASSET_SHARE_URL='https://publicsentimentdash.com/ai-assets.html';
+    // LAB ONLY: production X/LinkedIn card previews will use engine-generated per-asset share URLs/images.
 
     function assetShareDisplayName(row){
       const raw=String(row?.name||row?.symbol||'AI Asset').trim();
@@ -1693,13 +1694,16 @@
         else if(action==='copyimage'){const copied=await copyAssetShareImage(row);setAssetShareStatus(name,copied?'Card image copied. Paste it into the social post.':'This browser cannot copy images directly. Use Save Card Image instead.');}
         else if(action==='image'){await downloadAssetShareImage(row);setAssetShareStatus(name,'Card image saved.');}
         else if(action==='x'){
-          const text=assetShareText(row);window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(ASSET_SHARE_URL)}`,'_blank','noopener');
-          const copied=await copyAssetShareImage(row);
-          setAssetShareStatus(name,copied?'Card copied. X is open — press Ctrl+V in the post to attach the image.':'X is open. This browser could not copy the card image; use Save card image.');
+          const shareUrl=ASSET_SHARE_URL;
+          const shareText=`${assetShareText(row)}
+${shareUrl}`;
+          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,'_blank','noopener');
+          setAssetShareStatus(name,'X opened with this asset’s current insight + page link.');
         }else if(action==='linkedin'){
-          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ASSET_SHARE_URL)}`,'_blank','noopener');
-          const copied=await copyAssetShareImage(row);
-          setAssetShareStatus(name,copied?'Card copied. LinkedIn is open — press Ctrl+V in the post to attach the image.':'LinkedIn is open. This browser could not copy the card image; use Save card image.');
+          const shareUrl=ASSET_SHARE_URL;
+          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,'_blank','noopener');
+          try{await navigator.clipboard.writeText(assetShareText(row));setAssetShareStatus(name,'LinkedIn opened. Asset insight copied for the post text.');}
+          catch(_error){setAssetShareStatus(name,'LinkedIn opened with the AI Assets page link.');}
         }
       }catch(error){console.warn('Asset share action failed',error);setAssetShareStatus(name,'Share action could not complete. The asset card remains unaffected.');}
     }
