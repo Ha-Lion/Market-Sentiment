@@ -1,8 +1,3 @@
-/* PublicSentimentDash Category Page Core v2
-   Iteration 3 lab-safe shared category utilities.
-   Namespaced to avoid global collisions. */
-(function(global){
-  "use strict";
 /* PublicSentimentDash Category Page Core v1
    Website Optimization Iteration 3
    Shared, behavior-preserving functions extracted from category pages.
@@ -495,54 +490,3 @@ async function fetchOptionalJson(url){
         return null;
       }
     }
-
-
-  global.PSDCategoryCore = Object.freeze({
-    clamp,
-    normalizeText,
-    labelForScore,
-    colorForScore,
-    pillStyle,
-    headlineText,
-    uniqueTerms,
-    categoryEntry,
-    currentInstrumentRow,
-    historyInstrumentRow,
-    headlineInstruments,
-    headlineMarkets,
-    titleDescriptionText,
-    hasTerm,
-    scoreFromHeadlineSet,
-    currentLatestRecord,
-    priorityValue,
-    priorityHeadlines,
-    technicalForItem,
-    changeAiCardPage,
-    updateCompareVisuals,
-    toggleCompare,
-    openCompareHistory,
-    domainFromUrl,
-    releaseDateText,
-    sourceLogoUrl,
-    renderHero,
-    savedHeadlinesForRecord,
-    derivedHistoryRowForItem,
-    weekKey,
-    monthKey,
-    aggregateSeries,
-    drawHistoryChart,
-    ensureCharts,
-    clearComparisonSync,
-    clearCharts,
-    makeInteractiveChart,
-    nearestChartPoint,
-    comparisonGroups,
-    activateComparisonSync,
-    newsHtml,
-    toggleChart,
-    openHistory,
-    closeHistory,
-    setHistoryPeriod
-  });
-  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V2";
-})(window);
