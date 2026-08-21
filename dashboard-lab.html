@@ -979,9 +979,72 @@
   </main>
 
   <script src="sentiment-core.js?v=5"></script>
-  <script src="category-page-core.js?v=1"></script>
+  <script src="category-page-core.js?v=3"></script>
 
   <script>
+    // Iteration 3 lab guard: shared core must be available before initialization.
+    const PSDCategoryCore = window.PSDCategoryCore;
+    if (!PSDCategoryCore) {
+      document.addEventListener("DOMContentLoaded", () => {
+        const targets = [document.getElementById("statusText"), document.getElementById("newsStatus")].filter(Boolean);
+        targets.forEach(el => {
+          el.textContent = "Shared category core failed to load. Check category-page-core.js.";
+          el.style.color = "#b42318";
+          el.style.fontWeight = "800";
+        });
+      });
+      throw new Error("PublicSentimentDash: category-page-core.js v3 did not load.");
+    }
+
+    const {
+      clamp,
+      normalizeText,
+      labelForScore,
+      colorForScore,
+      pillStyle,
+      headlineText,
+      uniqueTerms,
+      categoryEntry,
+      currentInstrumentRow,
+      historyInstrumentRow,
+      headlineInstruments,
+      headlineMarkets,
+      titleDescriptionText,
+      hasTerm,
+      scoreFromHeadlineSet,
+      currentLatestRecord,
+      priorityValue,
+      priorityHeadlines,
+      technicalForItem,
+      changeAiCardPage,
+      updateCompareVisuals,
+      toggleCompare,
+      openCompareHistory,
+      domainFromUrl,
+      releaseDateText,
+      sourceLogoUrl,
+      renderHero,
+      savedHeadlinesForRecord,
+      derivedHistoryRowForItem,
+      weekKey,
+      monthKey,
+      aggregateSeries,
+      drawHistoryChart,
+      ensureCharts,
+      fetchOptionalJson,
+      clearComparisonSync,
+      clearCharts,
+      makeInteractiveChart,
+      nearestChartPoint,
+      comparisonGroups,
+      activateComparisonSync,
+      newsHtml,
+      toggleChart,
+      openHistory,
+      closeHistory,
+      setHistoryPeriod
+    } = PSDCategoryCore;
+
     let AI_ITEMS = [
       {name:"NVIDIA / NVDA", symbol:"NVDA", aliases:["nvidia","nvda","nvidia stock","ai chips","gpu demand","blackwell chips","data center gpu","ai accelerator"], official:false},
       {name:"Broadcom / AVGO", symbol:"AVGO", aliases:["broadcom","avgo","broadcom stock","ai networking","custom ai chips","ai accelerators","semiconductor networking"], official:false},
@@ -1633,5 +1696,6 @@
   <script src="site-footer.js" defer></script>
   <script src="vote-widget.js" defer></script>
 
+  <script>console.info("PSD Iteration 3 lab: CATEGORY_CORE_V3 active", window.PSDCategoryCoreVersion || "missing");</script>
 </body>
 </html>
