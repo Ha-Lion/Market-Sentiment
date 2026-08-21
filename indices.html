@@ -1881,16 +1881,15 @@
 
     async function init(){
       try{
-        const [dashResp, histResp, assetConfig, technical] = await Promise.all([
+        const [dashResp, histResp, assetConfig] = await Promise.all([
           fetch("dashboard_live.json", {cache:"no-cache"}),
           fetch("instrument_history_compact.json", {cache:"no-cache"}),
-          fetchOptionalJson("assets_config.json"),
-          fetchOptionalJson("technical_data.json")
+          fetchOptionalJson("assets_config.json")
         ]);
 
         dashboardData = await dashResp.json();
         historyData = await histResp.json();
-        technicalData = technical || {};
+        technicalData = {};
         applyAssetConfig(assetConfig);
 
         currentRows = buildRows();
