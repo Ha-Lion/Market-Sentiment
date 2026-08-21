@@ -980,11 +980,11 @@
   </main>
 
   <script src="sentiment-core.js?v=5"></script>
-  <script src="category-page-core.js?v=3"></script>
+  <script src="category-page-core.js?v=4"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v3 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core.js v4 did not load.");
     }
     const {
       clamp,
@@ -1449,22 +1449,31 @@
 
     async function init(){
       try{
-        const [dashResp, histResp, assetConfig] = await Promise.all([
-          fetch("dashboard_live.json", {cache:"no-cache"}),
-          fetch("instrument_history_compact.json", {cache:"no-cache"}),
-          fetchOptionalJson("assets_config.json")
+        const [dashboardPayload, historyPayload, assetConfig] = await Promise.all([
+          fetchOptionalJson("dashboard_live.json", 15000),
+          fetchOptionalJson("instrument_history_compact.json", 30000),
+          fetchOptionalJson("assets_config.json", 15000)
         ]);
 
-        dashboardData = await dashResp.json();
-        historyData = await histResp.json();
+        dashboardData = dashboardPayload;
+        historyData = historyPayload;
         technicalData = {};
         applyAssetConfig(assetConfig);
+
+        if(!dashboardData && !historyData){
+          throw new Error("Primary category data feeds are unavailable.");
+        }
 
         currentRows = buildRows();
         renderHero();
         renderTopCards();
         renderHeadlines();
         document.querySelectorAll("[data-ai-scroll]").forEach(button=>button.addEventListener("click",()=>changeAiCardPage(button.dataset.aiScroll)));
+
+        if(!dashboardData || !historyData){
+          const updated = document.getElementById("updatedText");
+          if(updated && !updated.textContent.includes("Partial data")) updated.textContent += " • Partial data";
+        }
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
         document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">market indices asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
