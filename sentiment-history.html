@@ -1148,8 +1148,8 @@
             <div class="side-pill" data-period="weekly">Weekly</div>
             <div class="side-pill" data-period="monthly">Monthly</div>
             <div class="side-spacer"></div>
-            <div class="side-pill" data-export="csv" title="Exports past 6 months of hourly Global/U.S. history.">Export CSV</div>
-            <div class="side-note">CSV exports past 6 months of hourly history.</div>
+            <div class="side-pill" data-export="csv" title="Exports available Global/U.S. history plus detailed instrument history.">Export CSV</div>
+            <div class="side-note">CSV exports available market history plus instrument-level detail.</div>
           </aside>
 
           <article class="dash-card card-a">
@@ -2124,42 +2124,149 @@
       window.addEventListener("resize",()=>{state.anim=1;drawAll();});
     }
 
-    function exportCSV(){
-      const source = (state.hourly && state.hourly.length ? state.hourly : state.raw)
-        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()));
+    function csvCell(value){
+      return `"${String(value ?? "").replaceAll('"','""')}"`;
+    }
+
+    function sentimentLabelForCSV(value){
+      if(!Number.isFinite(value)) return "";
+      if(window.PSDCore && typeof window.PSDCore.classifySentiment === "function"){
+        return window.PSDCore.classifySentiment(value);
+      }
+      return bias(value).text;
+    }
+
+    function dailyMarketMap(){
+      const groups=new Map();
+      state.raw.forEach(r=>{
+        if(!r || !r.date) return;
+        if(!groups.has(r.date)) groups.set(r.date,{global:[],us:[]});
+        const g=groups.get(r.date);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+      });
+      return new Map([...groups.entries()].map(([date,g])=>[date,{global:avg(g.global),us:avg(g.us)}]));
+    }
+
+    async function exportCSV(){
+      const source=(state.hourly && state.hourly.length ? state.hourly : state.raw)
+        .filter(r=>r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()))
+        .sort((a,b)=>a.ts-b.ts);
 
       if(!source.length){
-        alert("No hourly history is available to export yet.");
+        alert("No historical sentiment data is available to export yet.");
         return;
       }
 
-      const latestTs = Math.max(...source.map(r => r.ts.getTime()));
-      const cutoffTs = latestTs - (180 * 86400000);
-      const groups = new Map();
+      const button=document.querySelector("[data-export='csv']");
+      const originalText=button?.textContent || "Export CSV";
+      if(button){ button.textContent="Preparing..."; button.style.pointerEvents="none"; }
 
-      source.filter(r => r.ts.getTime() >= cutoffTs).forEach(r => {
-        const ny = nyHourParts(r.ts);
-        if(!groups.has(ny.key)){
-          groups.set(ny.key,{key:ny.key, global:[], us:[], count:0});
+      try{
+        let instrumentPayload=null;
+        try{
+          instrumentPayload=await fetchJSON("instrument_history_compact.json");
+        }catch(error){
+          console.warn("instrument_history_compact.json unavailable for detailed CSV export",error);
         }
-        const g = groups.get(ny.key);
-        if(Number.isFinite(r.global)) g.global.push(r.global);
-        if(Number.isFinite(r.us)) g.us.push(r.us);
-        g.count += 1;
-      });
 
-      const rows = [...groups.values()].sort((a,b)=>a.key.localeCompare(b.key));
-      const csv=["ny_hour,global_psi,us_psi,records"].concat(rows.map(r=>[
-        r.key,
-        round(avg(r.global)),
-        round(avg(r.us)),
-        r.count
-      ].map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(","))).join("\n");
+        const header=[
+          "record_type","date_time_ny","date",
+          "global_psi","global_change","global_sentiment",
+          "us_psi","us_change","us_sentiment",
+          "instrument","instrument_psi","instrument_change","instrument_sentiment",
+          "headline_count","bullish_count","bearish_count","neutral_count","mixed_count",
+          "technical_daily_direction","technical_daily_score","close","rsi14",
+          "technical_weekly_direction","technical_monthly_direction",
+          "source_headlines","formula_version"
+        ];
+        const output=[header.map(csvCell).join(",")];
 
-      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url; a.download="public-sentiment-hourly-6months.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        // 1) Hourly Global/U.S. history. No meaningless records=1 column.
+        const hourGroups=new Map();
+        source.forEach(r=>{
+          const ny=nyHourParts(r.ts);
+          if(!hourGroups.has(ny.key)) hourGroups.set(ny.key,{key:ny.key,global:[],us:[]});
+          const g=hourGroups.get(ny.key);
+          if(Number.isFinite(r.global)) g.global.push(r.global);
+          if(Number.isFinite(r.us)) g.us.push(r.us);
+        });
+
+        let prevHourlyGlobal=null, prevHourlyUs=null;
+        [...hourGroups.values()].sort((a,b)=>a.key.localeCompare(b.key)).forEach(g=>{
+          const global=avg(g.global), us=avg(g.us);
+          const globalChange=Number.isFinite(global) && Number.isFinite(prevHourlyGlobal) ? global-prevHourlyGlobal : null;
+          const usChange=Number.isFinite(us) && Number.isFinite(prevHourlyUs) ? us-prevHourlyUs : null;
+          const date=g.key.slice(0,10);
+          const row=[
+            "hourly_market",g.key,date,
+            round(global),Number.isFinite(globalChange)?round(globalChange):"",sentimentLabelForCSV(global),
+            round(us),Number.isFinite(usChange)?round(usChange):"",sentimentLabelForCSV(us),
+            "","","","","","","","","","","","","","","","",""
+          ];
+          output.push(row.map(csvCell).join(","));
+          if(Number.isFinite(global)) prevHourlyGlobal=global;
+          if(Number.isFinite(us)) prevHourlyUs=us;
+        });
+
+        // 2) Detailed daily instrument history, loaded only when Export CSV is clicked.
+        const records=Array.isArray(instrumentPayload?.records) ? instrumentPayload.records.slice() : [];
+        records.sort((a,b)=>String(a?.date||"").localeCompare(String(b?.date||"")));
+        const dailyMap=dailyMarketMap();
+        const prevInstrumentPsi=new Map();
+        let prevDailyGlobal=null, prevDailyUs=null;
+
+        records.forEach(record=>{
+          const date=String(record?.date||"");
+          if(!date) return;
+          const daily=dailyMap.get(date)||{};
+          const global=Number.isFinite(Number(record?.global_psi)) ? Number(record.global_psi) : daily.global;
+          const us=Number.isFinite(Number(record?.us_psi)) ? Number(record.us_psi) : daily.us;
+          const globalChange=Number.isFinite(global) && Number.isFinite(prevDailyGlobal) ? global-prevDailyGlobal : null;
+          const usChange=Number.isFinite(us) && Number.isFinite(prevDailyUs) ? us-prevDailyUs : null;
+          const instruments=record?.instruments && typeof record.instruments==="object" ? record.instruments : {};
+
+          Object.entries(instruments).forEach(([name,item])=>{
+            const psi=Number(item?.psi);
+            const prior=prevInstrumentPsi.get(name);
+            const psiChange=Number.isFinite(psi) && Number.isFinite(prior) ? psi-prior : null;
+            const td=item?.technical?.daily || {};
+            const tw=item?.technical?.weekly || {};
+            const tm=item?.technical?.monthly || {};
+            const row=[
+              "daily_instrument",date,date,
+              round(global),Number.isFinite(globalChange)?round(globalChange):"",record?.global_sentiment_label || sentimentLabelForCSV(global),
+              round(us),Number.isFinite(usChange)?round(usChange):"",sentimentLabelForCSV(us),
+              name,Number.isFinite(psi)?round(psi):"",Number.isFinite(psiChange)?round(psiChange):"",item?.sentiment_label || sentimentLabelForCSV(psi),
+              item?.headline_count ?? "",item?.bullish_count ?? "",item?.bearish_count ?? "",item?.neutral_count ?? "",item?.mixed_count ?? "",
+              td?.direction ?? "",td?.score ?? "",td?.close ?? "",td?.rsi14 ?? "",
+              tw?.direction ?? "",tm?.direction ?? "",
+              record?.source_headlines ?? "",record?.formula_version || instrumentPayload?.formula_version || ""
+            ];
+            output.push(row.map(csvCell).join(","));
+            if(Number.isFinite(psi)) prevInstrumentPsi.set(name,psi);
+          });
+
+          if(Number.isFinite(global)) prevDailyGlobal=global;
+          if(Number.isFinite(us)) prevDailyUs=us;
+        });
+
+        const dates=source.map(r=>ymd(r.ts)).sort();
+        const firstDate=dates[0] || "history";
+        const lastDate=dates[dates.length-1] || "latest";
+        const csv="\uFEFF"+output.join("\n");
+        const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url;
+        a.download=`public-sentiment-detailed-${firstDate}-to-${lastDate}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }finally{
+        if(button){ button.textContent=originalText; button.style.pointerEvents=""; }
+      }
     }
 
     async function fetchJSON(path){
