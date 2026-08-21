@@ -923,24 +923,26 @@
     /* Roadmap Iteration 2 lab: Share & Grow */
 
     .asset-share-menu{position:relative;margin-top:8px;z-index:12}
-    .asset-share-trigger{appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:30px;padding:6px 10px;border:1px solid rgba(210,153,34,.62);border-radius:11px;background:linear-gradient(180deg,rgba(255,239,190,.23),rgba(210,153,34,.10));color:#f4c867;font-size:11px;font-weight:900;cursor:pointer;user-select:none;box-sizing:border-box}
+    .asset-share-trigger{appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:30px;padding:6px 10px;border:1px solid #d9a632;border-radius:11px;background:#fff8e2;color:#111;font-family:"Segoe UI",Arial,sans-serif;font-size:11px;font-weight:800;cursor:pointer;user-select:none;box-sizing:border-box}
     .asset-share-trigger:hover{background:rgba(210,153,34,.18)}
     .asset-share-menu.is-open .asset-share-trigger{background:rgba(210,153,34,.20)}
     .asset-share-chevron{font-size:10px;transition:transform .16s ease}
     .asset-share-menu.is-open .asset-share-chevron{transform:rotate(180deg)}
     /* True compact dropdown: floats above the card; never expands card height. */
-    .asset-share-popover{display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:220;width:210px;max-width:calc(100% - 18px);padding:4px;border:1px solid rgba(210,153,34,.58);border-radius:8px;background:#101823;box-shadow:0 10px 24px rgba(0,0,0,.28);overflow:hidden}
+    .asset-share-popover{display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:220;width:245px;max-width:calc(100% - 18px);padding:4px;border:1px solid #d6b257;border-radius:8px;background:#fffdf8;box-shadow:0 10px 24px rgba(28,58,83,.18);overflow:hidden}
     .asset-share-menu.is-open .asset-share-popover{display:block}
     .ai-card.asset-share-open{z-index:210!important;overflow:visible!important}
     .asset-share-actions{display:flex;flex-direction:column;gap:0}
-    .asset-share-action{appearance:none;width:100%;border:0;border-bottom:1px solid rgba(210,153,34,.18);border-radius:0;background:transparent;color:#ffd780;padding:8px 10px;font-size:10px;font-weight:850;cursor:pointer;text-decoration:none;text-align:left;line-height:1.15;white-space:nowrap}
+    .asset-share-action{appearance:none;width:100%;border:0;border-bottom:1px solid #ead7a6;border-radius:0;background:transparent;color:#111;padding:8px 10px;font-family:"Segoe UI",Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;text-align:left;line-height:1.2;white-space:nowrap}
     .asset-share-action:last-child{border-bottom:0}
-    .asset-share-action:hover,.asset-share-action:focus-visible{background:rgba(210,153,34,.18);outline:none}
+    .asset-share-action:hover,.asset-share-action:focus-visible{background:#fff0bd;outline:none}
     .asset-share-action.asset-share-primary{background:transparent}
-    body.light-mode .asset-share-trigger,body:not(.dark-mode) .asset-share-trigger{background:#fff8e2;color:#8d6511;border-color:#d9a632}
-    body.light-mode .asset-share-popover,body:not(.dark-mode) .asset-share-popover{background:#fffdf8;border-color:#d6b257;box-shadow:0 10px 24px rgba(28,58,83,.18)}
-    body.light-mode .asset-share-action,body:not(.dark-mode) .asset-share-action{background:transparent;color:#6f4c06;border-bottom-color:#ead7a6}
-    body.light-mode .asset-share-action:hover,body:not(.dark-mode) .asset-share-action:hover{background:#fff0bd}
+    body.dark-mode .asset-share-trigger,body.light-mode .asset-share-trigger,body:not(.dark-mode) .asset-share-trigger{background:#fff8e2;color:#111;border-color:#d9a632}
+    body.dark-mode .asset-share-popover,body.light-mode .asset-share-popover,body:not(.dark-mode) .asset-share-popover{background:#fffdf8;border-color:#d6b257;box-shadow:0 10px 24px rgba(28,58,83,.18)}
+    body.dark-mode .asset-share-action,body.light-mode .asset-share-action,body:not(.dark-mode) .asset-share-action{background:transparent;color:#111;border-bottom-color:#ead7a6}
+    body.dark-mode .asset-share-action:hover,body.light-mode .asset-share-action:hover,body:not(.dark-mode) .asset-share-action:hover{background:#fff0bd}
+    .asset-share-toast{position:fixed;right:18px;bottom:18px;z-index:3000;max-width:360px;padding:10px 13px;border:1px solid #d6b257;border-radius:9px;background:#fffdf8;color:#111;font-family:"Segoe UI",Arial,sans-serif;font-size:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .18s ease,transform .18s ease}
+    .asset-share-toast.show{opacity:1;transform:translateY(0)}
 
   </style>
 </head>
@@ -1368,9 +1370,9 @@
               <button class="asset-share-trigger" type="button" data-share-toggle="${esc(row.name)}" aria-expanded="false">AI Insight by PSD <span class="asset-share-chevron">▼</span></button>
               <div class="asset-share-popover" role="menu" aria-label="${esc(assetShareTitle(row))} sharing options">
                 <div class="asset-share-actions">
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="x" data-share-name="${esc(row.name)}">X · Post + card</button>
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="linkedin" data-share-name="${esc(row.name)}">LinkedIn · Post + card</button>
-                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="native" data-share-name="${esc(row.name)}">More apps · Card + link</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="x" data-share-name="${esc(row.name)}">X · Copy card + open post</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="linkedin" data-share-name="${esc(row.name)}">LinkedIn · Copy card + open post</button>
+                  <button class="asset-share-action" type="button" role="menuitem" data-asset-share="native" data-share-name="${esc(row.name)}">More apps · Share card + link</button>
                   <button class="asset-share-action" type="button" role="menuitem" data-asset-share="copy" data-share-name="${esc(row.name)}">Copy insight + link</button>
                   <button class="asset-share-action" type="button" role="menuitem" data-asset-share="image" data-share-name="${esc(row.name)}">Save card image</button>
                 </div>
@@ -1586,10 +1588,12 @@
       return (Array.isArray(currentRows)?currentRows:[]).find(row=>String(row?.name||'')===String(name||''))||null;
     }
 
-    function setAssetShareStatus(name,message){
-      document.querySelectorAll('[data-share-status]').forEach(node=>{
-        if(node.dataset.shareStatus===String(name||'')) node.textContent=message;
-      });
+    let assetShareToastTimer=null;
+    function setAssetShareStatus(_name,message){
+      let toast=document.getElementById('assetShareToast');
+      if(!toast){toast=document.createElement('div');toast.id='assetShareToast';toast.className='asset-share-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast);}
+      toast.textContent=message;toast.classList.add('show');
+      clearTimeout(assetShareToastTimer);assetShareToastTimer=setTimeout(()=>toast.classList.remove('show'),3200);
     }
 
     function roundedRectPath(ctx,x,y,w,h,r){
@@ -1691,11 +1695,11 @@
         else if(action==='x'){
           const text=assetShareText(row);window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(ASSET_SHARE_URL)}`,'_blank','noopener');
           const copied=await copyAssetShareImage(row);
-          setAssetShareStatus(name,copied?'X opened with title + insight + link. Card image copied — paste it into the X composer (Ctrl/Cmd+V).':'X opened with title + insight + link. Use Save Card Image to attach the card image.');
+          setAssetShareStatus(name,copied?'Card copied. X is open — press Ctrl+V in the post to attach the image.':'X is open. This browser could not copy the card image; use Save card image.');
         }else if(action==='linkedin'){
           window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ASSET_SHARE_URL)}`,'_blank','noopener');
           const copied=await copyAssetShareImage(row);
-          setAssetShareStatus(name,copied?'LinkedIn opened with the page link. Card image copied — paste it into your post, then add the asset title/insight if desired.':'LinkedIn opened with the page link. Use Save Card Image to attach the card image.');
+          setAssetShareStatus(name,copied?'Card copied. LinkedIn is open — press Ctrl+V in the post to attach the image.':'LinkedIn is open. This browser could not copy the card image; use Save card image.');
         }
       }catch(error){console.warn('Asset share action failed',error);setAssetShareStatus(name,'Share action could not complete. The asset card remains unaffected.');}
     }
@@ -1720,7 +1724,7 @@
         trigger.setAttribute('aria-expanded',opening?'true':'false');
       }));
       document.querySelectorAll('[data-asset-share]').forEach(button=>button.addEventListener('click',event=>{
-        event.preventDefault();event.stopPropagation();runAssetShare(button.dataset.shareName,button.dataset.assetShare);
+        event.preventDefault();event.stopPropagation();closeAssetShareMenus();runAssetShare(button.dataset.shareName,button.dataset.assetShare);
       }));
     }
 
