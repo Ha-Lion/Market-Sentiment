@@ -1,5 +1,5 @@
-/* PublicSentimentDash Category Page Core v2
-   Iteration 3 lab-safe shared category utilities.
+/* PublicSentimentDash Category Page Core v4
+   Website Optimization Iteration 4 — reliability-hardened shared category utilities.
    Namespaced to avoid global collisions. */
 (function(global){
   "use strict";
@@ -486,13 +486,19 @@ function closeHistory(){clearCharts();document.getElementById("historyLayer").cl
 
 function setHistoryPeriod(){renderHistory()}
 
-async function fetchOptionalJson(url){
+async function fetchOptionalJson(url, timeoutMs=30000){
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = controller ? setTimeout(()=>controller.abort(), Math.max(1000, Number(timeoutMs) || 30000)) : null;
       try{
-        const resp = await fetch(url, {cache:"no-cache"});
+        const options = {cache:"no-cache"};
+        if(controller) options.signal = controller.signal;
+        const resp = await fetch(url, options);
         if(!resp.ok) return null;
         return await resp.json();
       }catch(err){
         return null;
+      }finally{
+        if(timer) clearTimeout(timer);
       }
     }
 
@@ -545,5 +551,5 @@ async function fetchOptionalJson(url){
     closeHistory,
     setHistoryPeriod
   });
-  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V2";
+  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V4";
 })(window);
