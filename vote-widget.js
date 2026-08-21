@@ -248,6 +248,9 @@ function psdApplyCompactRibbonLayout(){
     }
   `;
   document.head.appendChild(style);
+
+  /* Tell site-nav.js that the compact ribbon geometry has just changed. */
+  window.dispatchEvent(new Event("psd:ribbon-layout-changed"));
 }
 
 function psdNormalizeTopNavIcons(){
