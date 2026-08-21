@@ -1809,6 +1809,38 @@
     let statusData = null;
     let instrumentHistoryData = null;
     let newsLatestData = null;
+    let newsLatestLoadPromise = null;
+
+    function technicalSnapshotFromHistory(history){
+      const records = Array.isArray(history?.records) ? history.records : [];
+      const latest = records[records.length - 1];
+      const instruments = latest?.instruments && typeof latest.instruments === "object" ? latest.instruments : {};
+      const technical = {};
+      Object.entries(instruments).forEach(([name,row]) => {
+        if(row?.technical && typeof row.technical === "object" && Object.keys(row.technical).length){
+          technical[name] = row.technical;
+        }
+      });
+      return Object.keys(technical).length ? {
+        updated_utc: latest?.updated_utc || "",
+        technical_version: "instrument_history_compact",
+        technical
+      } : null;
+    }
+
+    function ensureNewsLatestData(){
+      if(newsLatestData) return Promise.resolve(newsLatestData);
+      if(newsLatestLoadPromise) return newsLatestLoadPromise;
+      newsLatestLoadPromise = fetch("news_latest.json",{cache:"no-cache"})
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if(data) newsLatestData = data;
+          return newsLatestData;
+        })
+        .catch(() => null)
+        .finally(() => { newsLatestLoadPromise = null; });
+      return newsLatestLoadPromise;
+    }
 
     function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
     function norm(v){return String(v||"").toLowerCase()}
@@ -2753,7 +2785,14 @@
         page.setAttribute("role","dialog");
         document.body.appendChild(page);
       }
-      renderArticleLoadPage(Number(slot), "priority");
+      const numericSlot = Number(slot);
+      renderArticleLoadPage(numericSlot, "priority");
+      ensureNewsLatestData().then(() => {
+        const activePage = document.getElementById("deepArticlePage");
+        if(activePage && Number(activePage.getAttribute("data-article-slot")) === numericSlot){
+          renderArticleLoadPage(numericSlot, "priority");
+        }
+      });
     }
 
     function closeArticleLoadPage(){
@@ -3079,23 +3118,24 @@
     function renderAll(){bindPeriodButtons();renderControls();const data=selectedData();renderCards(data);renderSkyline(data);renderRadar(data);renderHeatmap(data);renderRanking(data);renderLegend(data);updateAllDeepWindows()}
     async function load(){
       try{
-        const [configRes, res, techRes, statusRes, instrumentHistoryRes, newsLatestRes] = await Promise.all([
+        const [configRes, res, statusRes, instrumentHistoryRes] = await Promise.all([
           fetch("assets_config.json",{cache:"no-cache"}).catch(() => null),
           fetch("dashboard_live.json",{cache:"no-cache"}).catch(() => null),
-          fetch("technical_data.json",{cache:"no-cache"}).catch(() => null),
           fetch("status.json",{cache:"no-cache"}).catch(() => null),
-          fetch("instrument_history_compact.json",{cache:"no-cache"}).catch(() => null),
-          fetch("news_latest.json",{cache:"no-cache"}).catch(() => null)
+          fetch("instrument_history_compact.json",{cache:"no-cache"}).catch(() => null)
         ]);
         if(configRes && configRes.ok){
           assetsConfigData = await configRes.json();
           loadInstrumentsFromConfig(assetsConfigData);
         }
         if(res && res.ok) dashboardData = await res.json();
-        if(techRes && techRes.ok) technicalData = await techRes.json();
         if(statusRes && statusRes.ok) statusData = await statusRes.json();
         if(instrumentHistoryRes && instrumentHistoryRes.ok) instrumentHistoryData = await instrumentHistoryRes.json();
-        if(newsLatestRes && newsLatestRes.ok) newsLatestData = await newsLatestRes.json();
+        technicalData = technicalSnapshotFromHistory(instrumentHistoryData);
+        if(!technicalData){
+          const techFallback = await fetch("technical_data.json",{cache:"no-cache"}).catch(() => null);
+          if(techFallback && techFallback.ok) technicalData = await techFallback.json();
+        }
       }catch(e){}
       renderAll();
     }
