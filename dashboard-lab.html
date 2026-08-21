@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>AI Assets Sentiment — Public Sentiment Dash</title>
+  <title>Share & Grow Lab — Public Sentiment Dash</title>
   <meta name="description" content="Track today’s AI asset sentiment across AI chips, cloud platforms, software, data infrastructure, memory, semiconductor supply chain, and AI-focused ETFs using Public Sentiment Dash PSI data.">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://publicsentimentdash.com/ai-assets.html">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css">
@@ -920,6 +920,28 @@
     body.dark-mode .headline-source{color:#69b9ff!important}
     body.dark-mode .headline-open{color:#ffd36f!important}
 
+    /* Roadmap Iteration 2 lab: Share & Grow */
+    .psd-share-grow{
+      margin:8px 0 18px;
+      padding:14px 16px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg,rgba(17,24,33,.94),rgba(8,13,21,.96));
+      box-shadow:0 16px 38px rgba(0,0,0,.18);
+    }
+    .psd-share-grow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+    .psd-share-grow-title{margin:0;color:#fff;font-size:17px;font-weight:900}
+    .psd-share-grow-badge{padding:4px 8px;border-radius:999px;border:1px solid rgba(210,153,34,.38);background:rgba(210,153,34,.12);color:#ffd780;font-size:11px;font-weight:900}
+    .psd-share-grow-preview{margin:0 0 11px;padding:10px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:rgba(5,10,17,.48);color:#d7e2ed;font-size:13px;line-height:1.48}
+    .psd-share-grow-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .psd-share-grow-btn{appearance:none;border:1px solid rgba(210,153,34,.48);border-radius:11px;background:rgba(210,153,34,.12);color:#ffd780;padding:8px 11px;font-size:12px;font-weight:900;cursor:pointer;text-decoration:none}
+    .psd-share-grow-btn:hover{background:rgba(210,153,34,.2)}
+    .psd-share-grow-note{margin:8px 0 0;color:var(--muted);font-size:11px}
+    body.light-mode .psd-share-grow,body:not(.dark-mode) .psd-share-grow{background:#fff;box-shadow:0 14px 34px rgba(28,58,83,.10)}
+    body.light-mode .psd-share-grow-title,body:not(.dark-mode) .psd-share-grow-title{color:#061522}
+    body.light-mode .psd-share-grow-preview,body:not(.dark-mode) .psd-share-grow-preview{background:#f6f8fb;color:#10263b;border-color:#d8e1e8}
+    @media(max-width:680px){.psd-share-grow-head{align-items:flex-start;flex-direction:column}.psd-share-grow-btn{flex:1 1 auto;text-align:center}}
+
   </style>
 </head>
 
@@ -954,6 +976,23 @@
     <div class="ai-carousel" id="aiCarousel"><section class="ai-top-grid" id="aiTopGrid"></section></div>
 
 
+    <section id="categoryIntelligence" class="category-intelligence-mount" aria-live="polite"></section>
+
+    <section id="shareGrowLab" class="psd-share-grow" aria-live="polite">
+      <div class="psd-share-grow-head">
+        <h2 class="psd-share-grow-title">Share AI Insight</h2>
+        <span class="psd-share-grow-badge">Roadmap Lab</span>
+      </div>
+      <p id="shareGrowPreview" class="psd-share-grow-preview">Preparing the latest AI sentiment insight…</p>
+      <div class="psd-share-grow-actions">
+        <button id="shareGrowCopy" class="psd-share-grow-btn" type="button">Copy Insight</button>
+        <a id="shareGrowX" class="psd-share-grow-btn" href="#" target="_blank" rel="noopener">Share on X</a>
+        <a id="shareGrowLinkedIn" class="psd-share-grow-btn" href="#" target="_blank" rel="noopener">Share on LinkedIn</a>
+        <button id="shareGrowNative" class="psd-share-grow-btn" type="button" hidden>Share…</button>
+      </div>
+      <p id="shareGrowStatus" class="psd-share-grow-note">Uses the current AI asset PSI already loaded on this page.</p>
+    </section>
+
     <section class="ai-panels">
       <div class="ai-panel">
         <h2>Latest AI Asset Headlines <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-ai-headlines" aria-label="Explain Latest AI Asset Headlines" aria-expanded="false">i</button></h2>
@@ -979,23 +1018,12 @@
   </main>
 
   <script src="sentiment-core.js?v=5"></script>
-  <script src="category-page-core.js?v=3"></script>
-
+  <script src="category-page-core.js?v=5"></script>
   <script>
-    // Iteration 3 lab guard: shared core must be available before initialization.
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      document.addEventListener("DOMContentLoaded", () => {
-        const targets = [document.getElementById("statusText"), document.getElementById("newsStatus")].filter(Boolean);
-        targets.forEach(el => {
-          el.textContent = "Shared category core failed to load. Check category-page-core.js.";
-          el.style.color = "#b42318";
-          el.style.fontWeight = "800";
-        });
-      });
-      throw new Error("PublicSentimentDash: category-page-core.js v3 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core.js v5 did not load.");
     }
-
     const {
       clamp,
       normalizeText,
@@ -1032,6 +1060,7 @@
       drawHistoryChart,
       ensureCharts,
       fetchOptionalJson,
+      scheduleCategoryIntelligence,
       clearComparisonSync,
       clearCharts,
       makeInteractiveChart,
@@ -1044,7 +1073,10 @@
       closeHistory,
       setHistoryPeriod
     } = PSDCategoryCore;
+  </script>
 
+
+  <script>
     let AI_ITEMS = [
       {name:"NVIDIA / NVDA", symbol:"NVDA", aliases:["nvidia","nvda","nvidia stock","ai chips","gpu demand","blackwell chips","data center gpu","ai accelerator"], official:false},
       {name:"Broadcom / AVGO", symbol:"AVGO", aliases:["broadcom","avgo","broadcom stock","ai networking","custom ai chips","ai accelerators","semiconductor networking"], official:false},
@@ -1527,24 +1559,84 @@
     document.addEventListener("keydown", e => {if(e.key!=="Escape")return;const expanded=document.querySelector(".pulse-chart-panel.expanded");if(expanded){expanded.classList.remove("expanded");const button=expanded.querySelector("[data-chart-size]");if(button)button.textContent="Maximize"}else closeHistory()});
     window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
 
+
+    function buildShareGrowInsight(){
+      const rows=(Array.isArray(currentRows)?currentRows:[]).filter(row=>Number.isFinite(Number(row?.score)));
+      if(!rows.length) return null;
+      const average=rows.reduce((sum,row)=>sum+Number(row.score),0)/rows.length;
+      const strongest=rows.reduce((best,row)=>Number(row.score)>Number(best.score)?row:best,rows[0]);
+      const weakest=rows.reduce((best,row)=>Number(row.score)<Number(best.score)?row:best,rows[0]);
+      const label=labelForScore(average);
+      const shortName=row=>String(row?.symbol||row?.name||'').trim();
+      const text=`AI Assets PSI ${average.toFixed(1)} — ${label}. Strongest: ${shortName(strongest)} ${Number(strongest.score).toFixed(1)}. Weakest: ${shortName(weakest)} ${Number(weakest.score).toFixed(1)}. Tracking ${rows.length} AI-related assets on PublicSentimentDash.`;
+      return {text, url:'https://publicsentimentdash.com/ai-assets.html'};
+    }
+
+    function renderShareGrowLab(){
+      try{
+        const insight=buildShareGrowInsight();
+        const preview=document.getElementById('shareGrowPreview');
+        const status=document.getElementById('shareGrowStatus');
+        const copyButton=document.getElementById('shareGrowCopy');
+        const xLink=document.getElementById('shareGrowX');
+        const linkedInLink=document.getElementById('shareGrowLinkedIn');
+        const nativeButton=document.getElementById('shareGrowNative');
+        if(!preview||!status||!copyButton||!xLink||!linkedInLink) return;
+        if(!insight){preview.textContent='Share insight is unavailable until AI sentiment data loads.';return;}
+        preview.textContent=insight.text;
+        xLink.href=`https://twitter.com/intent/tweet?text=${encodeURIComponent(insight.text)}&url=${encodeURIComponent(insight.url)}`;
+        linkedInLink.href=`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(insight.url)}`;
+        copyButton.onclick=async()=>{
+          const copyText=`${insight.text} ${insight.url}`;
+          try{await navigator.clipboard.writeText(copyText);status.textContent='Insight copied to clipboard.';}
+          catch(_error){
+            const area=document.createElement('textarea');area.value=copyText;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();status.textContent='Insight copied to clipboard.';
+          }
+        };
+        if(nativeButton&&navigator.share){
+          nativeButton.hidden=false;
+          nativeButton.onclick=()=>navigator.share({title:'AI Assets Sentiment',text:insight.text,url:insight.url}).catch(()=>{});
+        }
+      }catch(error){
+        console.warn('Share & Grow lab could not render; core page remains active.',error);
+      }
+    }
+
     async function init(){
       try{
-        const [dashResp, histResp, assetConfig] = await Promise.all([
-          fetch("dashboard_live.json", {cache:"no-cache"}),
-          fetch("instrument_history_compact.json", {cache:"no-cache"}),
-          fetchOptionalJson("assets_config.json")
+        const [dashboardPayload, historyPayload, assetConfig] = await Promise.all([
+          fetchOptionalJson("dashboard_live.json", 15000),
+          fetchOptionalJson("instrument_history_compact.json", 30000),
+          fetchOptionalJson("assets_config.json", 15000)
         ]);
 
-        dashboardData = await dashResp.json();
-        historyData = await histResp.json();
+        dashboardData = dashboardPayload;
+        historyData = historyPayload;
         technicalData = {};
         applyAssetConfig(assetConfig);
+
+        if(!dashboardData && !historyData){
+          throw new Error("Primary category data feeds are unavailable.");
+        }
 
         currentRows = buildRows();
         renderHero();
         renderTopCards();
         renderHeadlines();
+        try{renderShareGrowLab();}catch(shareGrowError){console.warn("Share & Grow lab could not start; core page remains active.",shareGrowError);}
+        try {
+          if (typeof scheduleCategoryIntelligence === "function") {
+            scheduleCategoryIntelligence({categoryKey:CATEGORY_KEY});
+          }
+        } catch (categoryIntelligenceError) {
+          console.warn("Category intelligence could not start; core page remains active.", categoryIntelligenceError);
+        }
         document.querySelectorAll("[data-ai-scroll]").forEach(button=>button.addEventListener("click",()=>changeAiCardPage(button.dataset.aiScroll)));
+
+        if(!dashboardData || !historyData){
+          const updated = document.getElementById("updatedText");
+          if(updated && !updated.textContent.includes("Partial data")) updated.textContent += " • Partial data";
+        }
       }catch(err){
         document.getElementById("updatedText").textContent = "Data could not be loaded.";
         document.getElementById("aiTopGrid").innerHTML = `<div class="empty-note">AI asset data could not be loaded. Confirm the latest dashboard and history feeds are available.</div>`;
@@ -1696,6 +1788,5 @@
   <script src="site-footer.js" defer></script>
   <script src="vote-widget.js" defer></script>
 
-  <script>console.info("PSD Iteration 3 lab: CATEGORY_CORE_V3 active", window.PSDCategoryCoreVersion || "missing");</script>
 </body>
 </html>
