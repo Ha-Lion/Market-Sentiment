@@ -2251,7 +2251,10 @@
           if(Number.isFinite(us)) prevDailyUs=us;
         });
 
-        const dates=source.map(r=>ymd(r.ts)).sort();
+        const dates=[
+          ...source.map(r=>ymd(r.ts)),
+          ...records.map(r=>String(r?.date||"")).filter(Boolean)
+        ].filter(Boolean).sort();
         const firstDate=dates[0] || "history";
         const lastDate=dates[dates.length-1] || "latest";
         const csv="\uFEFF"+output.join("\n");
@@ -2269,10 +2272,18 @@
       }
     }
 
-    async function fetchJSON(path){
-      const res=await fetch(path,{cache:"no-cache"});
-      if(!res.ok) throw new Error(path+" "+res.status);
-      return res.json();
+    async function fetchJSON(path, timeoutMs=30000){
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = controller ? setTimeout(()=>controller.abort(), Math.max(1000, Number(timeoutMs) || 30000)) : null;
+      try{
+        const options={cache:"no-cache"};
+        if(controller) options.signal=controller.signal;
+        const res=await fetch(path,options);
+        if(!res.ok) throw new Error(path+" "+res.status);
+        return await res.json();
+      }finally{
+        if(timer) clearTimeout(timer);
+      }
     }
 
     function collectDriverCandidates(data){
@@ -2318,7 +2329,7 @@
     }
 
     async function loadDrivers(){
-      const paths=["hot_news.json","news_cache.json","news_articles.json","latest_news.json","articles.json","news.json","data/news_articles.json"];
+      const paths=["news_latest.json","news_cache.json"];
       for(const path of paths){
         try{
           const data=await fetchJSON(path);
