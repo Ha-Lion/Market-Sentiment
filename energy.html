@@ -891,6 +891,8 @@
     <div class="ai-carousel" id="aiCarousel"><section class="ai-top-grid" id="aiTopGrid"></section></div>
 
 
+    <section id="categoryIntelligence" class="category-intelligence-mount" aria-live="polite"></section>
+
     <section class="ai-panels">
       <div class="ai-panel">
         <h2>Latest Energy Headlines</h2>
@@ -916,11 +918,11 @@
   </main>
 
   <script src="sentiment-core.js?v=5"></script>
-  <script src="category-page-core.js?v=4"></script>
+  <script src="category-page-core.js?v=5"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v4 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core.js v5 did not load.");
     }
     const {
       clamp,
@@ -958,6 +960,7 @@
       drawHistoryChart,
       ensureCharts,
       fetchOptionalJson,
+      scheduleCategoryIntelligence,
       clearComparisonSync,
       clearCharts,
       makeInteractiveChart,
@@ -1400,6 +1403,13 @@
         renderHero();
         renderTopCards();
         renderHeadlines();
+        try {
+          if (typeof scheduleCategoryIntelligence === "function") {
+            scheduleCategoryIntelligence({categoryKey:CATEGORY_KEY});
+          }
+        } catch (categoryIntelligenceError) {
+          console.warn("Category intelligence could not start; core page remains active.", categoryIntelligenceError);
+        }
         document.querySelectorAll("[data-ai-scroll]").forEach(button=>button.addEventListener("click",()=>changeAiCardPage(button.dataset.aiScroll)));
 
         if(!dashboardData || !historyData){
