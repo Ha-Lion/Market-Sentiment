@@ -1,6 +1,7 @@
-/* PublicSentimentDash Category Page Core v4
-   Website Optimization Iteration 4 — reliability-hardened shared category utilities.
-   Namespaced to avoid global collisions. */
+/* PublicSentimentDash Category Page Core v5
+   Roadmap Iteration 1 — Category Intelligence.
+   Keeps the reliability hardening from Website Optimization Iteration 4 and adds
+   lazy, non-blocking category intelligence powered by existing published feeds. */
 (function(global){
   "use strict";
 /* PublicSentimentDash Category Page Core v1
@@ -503,6 +504,194 @@ async function fetchOptionalJson(url, timeoutMs=30000){
     }
 
 
+/* ---------- Roadmap Phase 2: Category Intelligence ---------- */
+const CATEGORY_INTELLIGENCE_CONFIG = Object.freeze({
+  ai_assets: {label:"AI Assets", pulseCategory:"ai_assets", consensusTopics:["ai"], consensusLabel:"14-day AI & technology news consensus"},
+  crypto: {label:"Crypto", pulseCategory:"crypto", consensusTopics:["bitcoin"], consensusLabel:"14-day crypto news consensus"},
+  energy: {label:"Energy", pulseCategory:"energy", consensusTopics:["oil"], consensusLabel:"14-day energy news consensus"},
+  forex: {label:"Forex", pulseCategory:"forex", consensusTopics:["dollar"], consensusLabel:"14-day U.S. dollar news consensus"},
+  indices: {label:"Indices", pulseCategory:"indices", consensusTopics:["equities"], consensusLabel:"14-day U.S. equities news consensus"},
+  policy_geopolitical: {label:"Policy & Geo", pulseCategory:"policy_geopolitical", consensusTopics:["rates","inflation"], consensusLabel:"Related 14-day macro news consensus"},
+  precious_metals: {label:"Precious Metals", pulseCategory:"precious_metals", consensusTopics:["gold"], consensusLabel:"14-day precious-metals news consensus"}
+});
+
+function ciEsc(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+}
+
+function ciNum(value){
+  const n=Number(value);
+  return Number.isFinite(n)?n:null;
+}
+
+function ciSigned(value, digits=0, suffix=""){
+  const n=ciNum(value);
+  if(n==null) return "—";
+  const rounded=n.toFixed(digits);
+  return `${n>0?"+":""}${rounded}${suffix}`;
+}
+
+function ciInstrumentName(row){
+  return String(row?.display_name || row?.instrument || row?.symbol || "Asset");
+}
+
+function ciBucket(score){
+  const n=ciNum(score);
+  if(n==null) return "neutral";
+  if(n>=56) return "bullish";
+  if(n<=44) return "bearish";
+  return "neutral";
+}
+
+function ciInjectStyles(){
+  if(document.getElementById("psd-category-intelligence-styles")) return;
+  const style=document.createElement("style");
+  style.id="psd-category-intelligence-styles";
+  style.textContent=`
+    .category-intelligence-mount{margin:7px 0 8px}
+    .ci-shell{border:1px solid var(--theme-line,#31475c);border-radius:16px;background:linear-gradient(145deg,var(--theme-card,#111b27),var(--theme-card-2,#0b141f));box-shadow:0 10px 28px rgba(0,0,0,.10);overflow:hidden}
+    .ci-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:15px 17px 11px;border-bottom:1px solid var(--theme-line,#31475c)}
+    .ci-head h2{margin:0;color:var(--theme-text,#fff);font-size:20px;line-height:1.2}
+    .ci-head p{margin:5px 0 0;color:var(--theme-muted,#9fb0c3);font-size:12px;line-height:1.45;font-weight:650}
+    .ci-updated{flex:0 0 auto;color:var(--theme-muted,#9fb0c3);font-size:10px;font-weight:850;text-align:right;white-space:nowrap}
+    .ci-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:8px}
+    .ci-card{min-width:0;padding:11px 12px;border:1px solid var(--theme-line,#31475c);border-radius:12px;background:var(--theme-card-2,#0b141f)}
+    .ci-kicker{display:block;margin-bottom:5px;color:var(--theme-muted,#9fb0c3);font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+    .ci-value{display:block;color:var(--theme-text,#fff);font-size:17px;font-weight:950;line-height:1.2;overflow-wrap:anywhere}
+    .ci-value[data-tone="bullish"]{color:#22c55e}.ci-value[data-tone="bearish"]{color:#ef6b61}.ci-value[data-tone="neutral"]{color:#69b9ff}
+    .ci-note{display:block;margin-top:5px;color:var(--theme-muted,#9fb0c3);font-size:10px;font-weight:700;line-height:1.4}
+    .ci-bottom{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:7px;padding:0 8px 8px}
+    .ci-story,.ci-consensus{padding:12px 13px;border:1px solid var(--theme-line,#31475c);border-radius:12px;background:var(--theme-card-2,#0b141f)}
+    .ci-story h3,.ci-consensus h3{margin:0 0 6px;color:var(--theme-text,#fff);font-size:12px;font-weight:950}
+    .ci-story p,.ci-consensus p{margin:0;color:var(--theme-text,#fff);font-size:11px;line-height:1.5;font-weight:650}
+    .ci-consensus-row+.ci-consensus-row{margin-top:8px;padding-top:8px;border-top:1px dashed var(--theme-line,#31475c)}
+    .ci-consensus-meta{display:block;margin-top:4px;color:var(--theme-muted,#9fb0c3);font-size:9px;font-weight:800}
+    .ci-loading,.ci-unavailable{padding:12px 15px;border:1px solid var(--theme-line,#31475c);border-radius:14px;background:var(--theme-card-2,#0b141f);color:var(--theme-muted,#9fb0c3);font-size:11px;font-weight:800}
+    body:not(.dark-mode) .ci-shell,body:not(.dark-mode) .ci-card,body:not(.dark-mode) .ci-story,body:not(.dark-mode) .ci-consensus,body:not(.dark-mode) .ci-loading,body:not(.dark-mode) .ci-unavailable{box-shadow:0 7px 18px rgba(28,58,83,.08)}
+    body:not(.dark-mode) .ci-head h2,body:not(.dark-mode) .ci-value,body:not(.dark-mode) .ci-story p,body:not(.dark-mode) .ci-consensus p{color:#061522}
+    body:not(.dark-mode) .ci-head p,body:not(.dark-mode) .ci-updated,body:not(.dark-mode) .ci-kicker,body:not(.dark-mode) .ci-note,body:not(.dark-mode) .ci-consensus-meta{color:#334e68}
+    @media(max-width:1180px){.ci-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.ci-head{display:block}.ci-updated{margin-top:7px;text-align:left}.ci-grid,.ci-bottom{grid-template-columns:1fr}}
+  `;
+  document.head.appendChild(style);
+}
+
+function ciBestChange(rows, field, minimumHeadlines){
+  return rows
+    .filter(row=>ciNum(row?.[field])!=null && Number(row?.headline_count||0)>=minimumHeadlines)
+    .sort((a,b)=>Math.abs(Number(b[field]))-Math.abs(Number(a[field])))[0] || null;
+}
+
+function ciDivergenceText(row){
+  if(!row) return {value:"None flagged", note:"No qualified sentiment/price divergence is flagged today.", tone:"neutral"};
+  const sent=ciNum(row.change_1d), price=ciNum(row.price_change_1d_pct);
+  const sentText=ciSigned(sent,0," PSI");
+  const priceText=ciSigned(price,2,"%");
+  return {
+    value:ciInstrumentName(row),
+    note:`Sentiment ${sentText} while price moved ${priceText}.`,
+    tone:sent>0?"bullish":(sent<0?"bearish":"neutral")
+  };
+}
+
+function ciConsensusHtml(consensusPayload, cfg){
+  const analyses=Array.isArray(consensusPayload?.analyses)?consensusPayload.analyses:[];
+  const selected=(cfg.consensusTopics||[]).map(id=>analyses.find(a=>a?.topic_id===id)).filter(Boolean);
+  if(!selected.length) return `<p>Consensus feed is not available for this category right now.</p>`;
+  return selected.map(item=>{
+    const score=ciNum(item.outlook_score);
+    const scoreText=score==null?"":` • outlook ${ciSigned(score,0)}`;
+    const meta=`${Number(item.outlet_count||0).toLocaleString()} independent outlets • ${Number(item.article_count||0).toLocaleString()} articles${scoreText}`;
+    return `<div class="ci-consensus-row"><p><b>${ciEsc(item.topic)}:</b> ${ciEsc(item.consensus||"Mixed/Neutral")} — ${ciEsc(item.outlook||"Mixed outlook")}</p><span class="ci-consensus-meta">${ciEsc(meta)}</span></div>`;
+  }).join("");
+}
+
+function ciBuildStory(rows, average, strongest24, divergence, counts){
+  const tone=ciBucket(average);
+  const breadth=counts.bullish>counts.bearish?"bullish breadth leads":counts.bearish>counts.bullish?"bearish breadth leads":"breadth is balanced";
+  const parts=[`Category PSI averages ${Math.round(average)}/100 (${labelForScore(average)}), and ${breadth}.`];
+  if(strongest24) parts.push(`${ciInstrumentName(strongest24)} has the largest qualified 24H sentiment move at ${ciSigned(strongest24.change_1d,0," PSI")}.`);
+  if(divergence) parts.push(`${ciInstrumentName(divergence)} is the clearest flagged sentiment/price divergence to watch.`);
+  else if(rows.some(r=>r?.is_reversal)) parts.push(`${rows.filter(r=>r?.is_reversal).length} reversal signal${rows.filter(r=>r?.is_reversal).length===1?" is":"s are"} currently flagged.`);
+  return {text:parts.join(" "),tone};
+}
+
+async function loadCategoryIntelligence(options={}){
+  const mount=document.getElementById(options.mountId||"categoryIntelligence");
+  if(!mount) return;
+  ciInjectStyles();
+  const cfg=CATEGORY_INTELLIGENCE_CONFIG[options.categoryKey];
+  if(!cfg){mount.innerHTML='<div class="ci-unavailable">Category intelligence is not configured for this page.</div>';return;}
+  mount.innerHTML='<div class="ci-loading">Loading category intelligence…</div>';
+
+  const [pulse,consensus]=await Promise.all([
+    fetchOptionalJson("market_pulse.json",20000),
+    fetchOptionalJson("news_consensus.json",20000)
+  ]);
+
+  const universe=Array.isArray(pulse?.universe)?pulse.universe:[];
+  const rows=universe.filter(row=>row?.category===cfg.pulseCategory && ciNum(row?.psi)!=null);
+  if(!rows.length){
+    mount.innerHTML='<div class="ci-unavailable">Category intelligence is temporarily unavailable. The rest of this page is unaffected.</div>';
+    return;
+  }
+
+  const minimumHeadlines=Math.max(1,Number(pulse?.selection_rules?.minimum_headlines||5));
+  const average=rows.reduce((sum,row)=>sum+Number(row.psi),0)/rows.length;
+  const counts=rows.reduce((acc,row)=>{acc[ciBucket(row.psi)]++;return acc;},{bullish:0,neutral:0,bearish:0});
+  const strongest24=ciBestChange(rows,"change_1d",minimumHeadlines);
+  const strongest7=ciBestChange(rows,"change_7d",minimumHeadlines);
+  const divergences=rows.filter(row=>row?.is_divergence).sort((a,b)=>Math.abs(Number(b.change_1d||0))-Math.abs(Number(a.change_1d||0)));
+  const divergence=divergences[0]||null;
+  const reversals=rows.filter(row=>row?.is_reversal).length;
+  const extremes=rows.filter(row=>row?.is_extreme).length;
+  const story=ciBuildStory(rows,average,strongest24,divergence,counts);
+  const div=ciDivergenceText(divergence);
+  const updated=String(pulse?.data_updated_ny||pulse?.data_updated_utc||"").trim();
+
+  mount.innerHTML=`
+    <section class="ci-shell" aria-label="${ciEsc(cfg.label)} Category Intelligence">
+      <div class="ci-head">
+        <div><h2>${ciEsc(cfg.label)} Category Intelligence</h2><p>What changed, what is leading, and where sentiment disagrees with market price.</p></div>
+        <div class="ci-updated">${updated?`Updated ${ciEsc(updated)}`:"Latest published data"}</div>
+      </div>
+      <div class="ci-grid">
+        <article class="ci-card"><span class="ci-kicker">Category PSI</span><b class="ci-value" data-tone="${ciEsc(story.tone)}">${Math.round(average)}/100</b><span class="ci-note">${counts.bullish} bullish • ${counts.neutral} neutral • ${counts.bearish} bearish</span></article>
+        <article class="ci-card"><span class="ci-kicker">Strongest 24H shift</span><b class="ci-value" data-tone="${ciBucket(strongest24?.psi)}">${strongest24?ciEsc(ciInstrumentName(strongest24)):"No qualified move"}</b><span class="ci-note">${strongest24?`${ciEsc(ciSigned(strongest24.change_1d,0," PSI"))} • PSI ${Math.round(Number(strongest24.psi))}/100`:`Requires at least ${minimumHeadlines} headlines.`}</span></article>
+        <article class="ci-card"><span class="ci-kicker">Strongest 7D shift</span><b class="ci-value" data-tone="${ciBucket(strongest7?.psi)}">${strongest7?ciEsc(ciInstrumentName(strongest7)):"Building history"}</b><span class="ci-note">${strongest7?`${ciEsc(ciSigned(strongest7.change_7d,0," PSI"))} • PSI ${Math.round(Number(strongest7.psi))}/100`:"Not enough qualified 7-day history yet."}</span></article>
+        <article class="ci-card"><span class="ci-kicker">Divergence watch</span><b class="ci-value" data-tone="${ciEsc(div.tone)}">${ciEsc(div.value)}</b><span class="ci-note">${ciEsc(div.note)}</span></article>
+      </div>
+      <div class="ci-bottom">
+        <article class="ci-story"><h3>What stands out</h3><p>${ciEsc(story.text)} <b>Signal map:</b> ${reversals} reversal${reversals===1?"":"s"}, ${divergences.length} divergence${divergences.length===1?"":"s"}, ${extremes} extreme${extremes===1?"":"s"}.</p></article>
+        <article class="ci-consensus"><h3>${ciEsc(cfg.consensusLabel)}</h3>${ciConsensusHtml(consensus,cfg)}</article>
+      </div>
+    </section>`;
+}
+
+function scheduleCategoryIntelligence(options={}){
+  const mount=document.getElementById(options.mountId||"categoryIntelligence");
+  if(!mount || mount.dataset.ciScheduled==="1") return;
+  mount.dataset.ciScheduled="1";
+  ciInjectStyles();
+  mount.innerHTML='<div class="ci-loading">Category intelligence will load as this section comes into view…</div>';
+  let observer=null;
+  const start=()=>{
+    if(mount.dataset.ciStarted==="1") return;
+    mount.dataset.ciStarted="1";
+    if(observer) observer.disconnect();
+    loadCategoryIntelligence(options).catch(()=>{
+      mount.innerHTML='<div class="ci-unavailable">Category intelligence is temporarily unavailable. The rest of this page is unaffected.</div>';
+    });
+  };
+  if("IntersectionObserver" in global){
+    observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)) start();},{rootMargin:"500px 0px"});
+    observer.observe(mount);
+  }else{
+    global.setTimeout(start,200);
+  }
+}
+
+
   global.PSDCategoryCore = Object.freeze({
     clamp,
     normalizeText,
@@ -539,6 +728,8 @@ async function fetchOptionalJson(url, timeoutMs=30000){
     drawHistoryChart,
     ensureCharts,
     fetchOptionalJson,
+    loadCategoryIntelligence,
+    scheduleCategoryIntelligence,
     clearComparisonSync,
     clearCharts,
     makeInteractiveChart,
@@ -551,5 +742,5 @@ async function fetchOptionalJson(url, timeoutMs=30000){
     closeHistory,
     setHistoryPeriod
   });
-  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V4";
+  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V5";
 })(window);
