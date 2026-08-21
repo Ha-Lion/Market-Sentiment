@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PSD Market Forecast Intelligence Lab 2 — Public Sentiment Dash</title>
+  <title>PSD Market Forecast Intelligence Lab 2 — Iteration 2 — Public Sentiment Dash</title>
   <meta name="description" content="Isolated PublicSentimentDash market forecast intelligence laboratory.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab-2.html">
@@ -101,6 +101,19 @@
     .contract{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.contract-item{border:1px solid var(--pf-line);border-radius:10px;padding:10px;background:var(--pf-soft)}.contract-item b{display:block;font-size:12px;margin-bottom:4px}.contract-item span{font-size:10px;color:var(--pf-muted);line-height:1.4}
     .toast{position:fixed;right:20px;bottom:20px;z-index:9999;padding:10px 13px;border-radius:10px;background:#17232e;color:white;font-size:11px;font-weight:750;box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s ease}.toast.show{opacity:1;transform:translateY(0)}
 
+
+    /* Iteration 2: quality gate, change tracking and honest calibration metrics. */
+    .quality-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}.quality-card{border:1px solid var(--pf-line);border-radius:10px;padding:9px 10px;background:var(--pf-soft)}.quality-card b{font-size:12px}.quality-card span{display:block;margin-top:3px;color:var(--pf-muted);font-size:10px;line-height:1.35}
+    .quality-grade{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:25px;margin-right:6px;border-radius:7px;border:1px solid var(--pf-line);font-weight:900;background:var(--pf-panel)}
+    .calibration-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}.cal-stat{border:1px solid var(--pf-line);border-radius:10px;padding:10px;background:var(--pf-soft)}.cal-stat b{display:block;font-size:19px}.cal-stat span{display:block;font-size:9.5px;color:var(--pf-muted);margin-top:2px}
+    .cal-health{display:inline-flex;align-items:center;border:1px solid var(--pf-line);border-radius:999px;padding:4px 8px;font-size:10px;font-weight:900}.cal-health.building{background:#eef5ff;color:#315f9e}.cal-health.learning{background:#fff7df;color:#80580f}.cal-health.measured{background:#ebfbf7;color:#08715d}
+    body.dark-mode .cal-health.building{background:#1d3550;color:#c8ddff}body.dark-mode .cal-health.learning{background:#3d3118;color:#ffe3a1}body.dark-mode .cal-health.measured{background:#15382f;color:#a8efdd}
+    .calibration-table{width:100%;border-collapse:collapse;font-size:10.5px}.calibration-table th,.calibration-table td{padding:7px 8px;border-bottom:1px solid var(--pf-line);text-align:left}.calibration-table th{font-size:9px;color:var(--pf-muted);text-transform:uppercase;background:var(--pf-soft)}.calibration-table tr:last-child td{border-bottom:0}
+    .change-positive{color:#08715d;font-weight:850}.change-negative{color:#a24217;font-weight:850}.change-neutral{color:var(--pf-muted);font-weight:850}
+    .export-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.tile-grade{font-size:9px;font-weight:900;border:1px solid var(--pf-line);border-radius:999px;padding:3px 6px;background:var(--pf-panel);color:var(--pf-ink)}
+    @media(max-width:1150px){.calibration-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:720px){.quality-strip{grid-template-columns:1fr}.calibration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
     @media(max-width:1250px){.forecast-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.contract{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:900px){.forecast-hero,.detail-grid{grid-template-columns:1fr}.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.signal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ledger-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:580px){.forecast-page{padding:8px}.forecast-shell{padding:8px}.forecast-grid,.forecast-boxes,.contract{grid-template-columns:1fr}.hero-copy h1{font-size:25px}.lab-banner{align-items:flex-start;flex-direction:column}}
@@ -114,7 +127,7 @@
   <main class="forecast-page">
     <div class="forecast-shell">
       <div class="lab-banner">
-        <span>🧪 PSD Market Forecast Intelligence — Dashboard Lab 2</span>
+        <span>🧪 PSD Market Forecast Intelligence — Dashboard Lab 2 · Iteration 2</span>
         <span>Completely isolated • no production page depends on this experiment</span>
       </div>
 
@@ -162,6 +175,10 @@
             <div class="detail-score"><span>Forecast score</span><b id="detailScore">—</b></div>
           </div>
           <div class="signal-grid" id="signalGrid"></div>
+          <div class="quality-strip">
+            <div class="quality-card" id="qualityGate">Quality gate loading…</div>
+            <div class="quality-card" id="forecastChange">No previous recorded forecast yet.</div>
+          </div>
           <div class="forecast-boxes">
             <div class="forecast-box">
               <h3>Short Term · 7 Days</h3>
@@ -189,6 +206,32 @@
         </aside>
       </section>
 
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <span class="kicker">Model learning layer</span>
+            <h2>Model Health & Calibration</h2>
+            <p>This section does not claim accuracy before there is a meaningful evaluated sample. It measures how confidence and outcomes behave as the immutable ledger grows.</p>
+          </div>
+          <span class="cal-health building" id="calHealth">Building sample</span>
+        </div>
+        <div class="calibration-grid">
+          <div class="cal-stat"><b id="calSample">0</b><span>Evaluated horizons</span></div>
+          <div class="cal-stat"><b id="cal7d">—</b><span>7-day direction accuracy</span></div>
+          <div class="cal-stat"><b id="cal30d">—</b><span>30-day direction accuracy</span></div>
+          <div class="cal-stat"><b id="calHigh">—</b><span>High-confidence direction accuracy</span></div>
+          <div class="cal-stat"><b id="calGap">—</b><span>Confidence calibration gap</span></div>
+          <div class="cal-stat"><b id="calRange">—</b><span>Overall range hit rate</span></div>
+        </div>
+        <div class="table-wrap">
+          <table class="calibration-table">
+            <thead><tr><th>Confidence bucket</th><th>Evaluated</th><th>Avg confidence</th><th>Direction hit rate</th><th>Calibration gap</th></tr></thead>
+            <tbody id="calibrationBody"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="panel section">
         <div class="section-head">
           <div>
@@ -198,6 +241,7 @@
           </div>
           <div class="record-row" style="margin-top:0">
             <button class="action" id="evaluateLedger" type="button">Evaluate Due Forecasts</button>
+            <button class="action" id="exportLedger" type="button">Export Ledger CSV</button>
             <button class="action danger" id="resetLedger" type="button">Reset Lab Ledger</button>
           </div>
         </div>
@@ -228,7 +272,7 @@
           <div class="contract-item"><b>1. Immutable Forecasts</b><span>Once recorded, the original direction, range, confidence, model version and starting price are never rewritten.</span></div>
           <div class="contract-item"><b>2. Wins + Misses Stay Visible</b><span>Future public credibility comes from showing the complete record, including forecasts that fail.</span></div>
           <div class="contract-item"><b>3. Versioned Models</b><span>Every prediction carries a model version so accuracy improvements can be compared fairly over time.</span></div>
-          <div class="contract-item"><b>4. Expandable Horizons</b><span>The schema already supports adding intraday, 3-day, 90-day, event-specific and member-only forecasts later.</span></div>
+          <div class="contract-item"><b>4. Expandable Horizons</b><span>The schema already supports adding intraday, 3-day, 90-day, event-specific and member-only forecasts later. Iteration 2 also adds quality grading, forecast-change tracking and confidence calibration without altering old records.</span></div>
         </div>
       </section>
     </div>
@@ -353,14 +397,27 @@
       return {calendarDays,tradingDays,dir,low,high,targetLow,targetHigh,confidence,center};
     }
 
+
+    function forecastQuality(row,sig){
+      const history=Math.min(25,(sig.hist.length/40)*25);
+      const breadth=Math.min(20,Math.log2(sig.headlines+1)*4.2);
+      const alignment=row.is_divergence?7:20;
+      const persistence=Math.min(20,(Math.abs(sig.psi7)/12)*20);
+      const volFit=sig.vol<=4?15:Math.max(4,15-(sig.vol-4)*2);
+      const score=clamp(Math.round(history+breadth+alignment+persistence+volFit),0,100);
+      const grade=score>=82?'A':score>=70?'B':score>=58?'C':'D';
+      return {score,grade};
+    }
+
     function buildForecast(row){
       const sig=signalFor(row);
       const short=horizonForecast(row,sig,7,5);
       const long=horizonForecast(row,sig,30,20);
       const price=num(row.price_close) ?? (sig.hist.length?sig.hist[sig.hist.length-1].value:null);
+      const quality=forecastQuality(row,sig);
       return {
-        row,sig,short,long,price,
-        strength:Math.abs(sig.score)*(sig.confidence/100)
+        row,sig,short,long,price,quality,
+        strength:Math.abs(sig.score)*(sig.confidence/100)*(0.65+quality.score/285)
       };
     }
 
@@ -368,7 +425,8 @@
       const rows=Array.isArray(pulse?.universe)?pulse.universe:[];
       return rows.filter(r=>{
         const h=historyValues(r);
-        return num(r.psi)!==null && (num(r.price_close)!==null || h.length) && h.length>=25 && (num(r.headline_count)??0)>=2;
+        if(!(num(r.psi)!==null && (num(r.price_close)!==null || h.length) && h.length>=25 && (num(r.headline_count)??0)>=2))return false;
+        return forecastQuality(r,signalFor(r)).score>=52;
       });
     }
 
@@ -385,7 +443,7 @@
       $("forecastGrid").innerHTML=forecasts.length?forecasts.map((f,i)=>{
         const r=f.row;
         return `<button type="button" class="forecast-tile ${r.instrument===selectedInstrument?"selected":""}" data-inst="${esc(r.instrument)}">
-          <div class="tile-top"><span class="rank">#${i+1} Signal</span><span class="signal ${signalClass(f.short.dir)}">${esc(f.short.dir)}</span></div>
+          <div class="tile-top"><span class="rank">#${i+1} Signal · <span class="tile-grade">Grade ${f.quality.grade}</span></span><span class="signal ${signalClass(f.short.dir)}">${esc(f.short.dir)}</span></div>
           <h3>${esc(r.display_name||r.instrument)}</h3>
           <div class="symbol-line">${esc(r.symbol||r.instrument)} • ${esc(String(r.category||"").replaceAll("_"," "))}</div>
           <div class="tile-price"><strong>${money(f.price)}</strong><span>Current price • PSI ${Math.round(f.sig.psi)}</span></div>
@@ -422,6 +480,26 @@
       return items.slice(0,5);
     }
 
+
+    function latestPriorRecord(f,horizonDays){
+      const currentFeed=feedTime().toISOString();
+      return loadLedger()
+        .filter(r=>r.instrument===f.row.instrument && Number(r.horizonDays)===Number(horizonDays) && String(r.issuedAt)<currentFeed)
+        .sort((a,b)=>String(b.issuedAt).localeCompare(String(a.issuedAt)))[0]||null;
+    }
+
+    function renderQualityAndChange(f){
+      const q=f.quality;
+      const qualityText=q.grade==='A'?'Strong data quality':q.grade==='B'?'Good data quality':q.grade==='C'?'Usable with caution':'Below preferred quality';
+      $('qualityGate').innerHTML=`<span class="quality-grade">${q.grade}</span><b>${qualityText} · ${q.score}/100</b><span>Quality combines history depth, headline breadth, signal alignment, persistence and volatility fit. It affects ranking but never rewrites a recorded forecast.</span>`;
+      const prev=latestPriorRecord(f,7);
+      if(!prev){$('forecastChange').innerHTML='<b>First recorded view for this asset</b><span>After a later feed is recorded, this box will show whether direction, range and confidence strengthened, weakened or changed.</span>';return;}
+      const centerNow=(f.short.low+f.short.high)/2,centerPrev=(Number(prev.rangeLowPct)+Number(prev.rangeHighPct))/2;
+      const delta=centerNow-centerPrev,confDelta=f.short.confidence-Number(prev.confidence||0),dirChanged=prev.direction!==f.short.dir;
+      const cls=dirChanged?'change-negative':Math.abs(delta)<.25?'change-neutral':delta>0?'change-positive':'change-negative';
+      $('forecastChange').innerHTML=`<b>Change vs last recorded 7-day forecast</b><span class="${cls}">${dirChanged?`${prev.direction} → ${f.short.dir}`:`Range center ${delta>=0?'+':''}${delta.toFixed(2)} pts`} · Confidence ${confDelta>=0?'+':''}${confDelta} pts</span><span>Previous issue: ${String(prev.issuedAt).slice(0,10)}. The prior forecast remains unchanged in the ledger.</span>`;
+    }
+
     function renderDetail(){
       const f=forecasts.find(x=>x.row.instrument===selectedInstrument)||forecasts[0];
       if(!f)return;
@@ -449,6 +527,7 @@
         $(prefix+"Confidence").textContent=`${h.confidence}%`;
       };
       fillH("short",f.short); fillH("long",f.long);
+      renderQualityAndChange(f);
 
       $("thesisList").innerHTML=thesisFor(f).map((t,i)=>`<div class="thesis-item"><i>${i+1}</i><span>${esc(t)}</span></div>`).join("");
     }
@@ -485,6 +564,8 @@
         confidence:h.confidence,
         forecastScore:Number(f.sig.score.toFixed(3)),
         psi:Number(f.sig.psi.toFixed(2)),
+        qualityScore:f.quality.score,
+        qualityGrade:f.quality.grade,
         status:"open",
         evaluatedAt:null,
         evaluationPrice:null,
@@ -518,7 +599,7 @@
       return eligible||null;
     }
 
-    function evaluateLedger(){
+    function evaluateLedger(silent=false){
       const ledger=loadLedger();
       let changed=0;
       ledger.forEach(rec=>{
@@ -542,7 +623,46 @@
       });
       if(changed)saveLedger(ledger);
       renderLedger();
-      toast(changed?`${changed} due forecast${changed===1?"":"s"} evaluated.`:"No additional forecasts are due yet.");
+      if(!silent)toast(changed?`${changed} due forecast${changed===1?"":"s"} evaluated.`:"No additional forecasts are due yet.");
+    }
+
+
+    function pctRate(hit,total){return total?`${Math.round(hit/total*100)}%`:'—'}
+
+    function renderCalibration(){
+      const ledger=loadLedger(),evaluated=ledger.filter(x=>x.status==='evaluated');
+      const byH=h=>evaluated.filter(x=>Number(x.horizonDays)===h);
+      const hitRate=rows=>rows.length?rows.filter(x=>x.directionHit).length/rows.length:null;
+      const seven=byH(7),thirty=byH(30),high=evaluated.filter(x=>Number(x.confidence)>=70);
+      const dirRate=hitRate(evaluated),avgConf=evaluated.length?evaluated.reduce((s,x)=>s+Number(x.confidence||0),0)/evaluated.length:null;
+      const gap=(dirRate===null||avgConf===null)?null:Math.abs(dirRate*100-avgConf);
+      $('calSample').textContent=evaluated.length;
+      $('cal7d').textContent=seven.length?pctRate(seven.filter(x=>x.directionHit).length,seven.length):'—';
+      $('cal30d').textContent=thirty.length?pctRate(thirty.filter(x=>x.directionHit).length,thirty.length):'—';
+      $('calHigh').textContent=high.length?pctRate(high.filter(x=>x.directionHit).length,high.length):'—';
+      $('calGap').textContent=gap===null?'—':`${gap.toFixed(1)} pts`;
+      $('calRange').textContent=evaluated.length?pctRate(evaluated.filter(x=>x.rangeHit).length,evaluated.length):'—';
+      const health=evaluated.length>=100?['Measured','measured']:evaluated.length>=30?['Learning','learning']:['Building sample','building'];
+      $('calHealth').textContent=health[0];$('calHealth').className=`cal-health ${health[1]}`;
+      const buckets=[['40–54',40,54],['55–69',55,69],['70+',70,100]];
+      $('calibrationBody').innerHTML=buckets.map(([label,lo,hi])=>{
+        const rows=evaluated.filter(x=>Number(x.confidence)>=lo&&Number(x.confidence)<=hi);
+        if(!rows.length)return `<tr><td>${label}</td><td>0</td><td>—</td><td>—</td><td>—</td></tr>`;
+        const avg=rows.reduce((s,x)=>s+Number(x.confidence||0),0)/rows.length;
+        const rate=rows.filter(x=>x.directionHit).length/rows.length*100;
+        return `<tr><td>${label}</td><td>${rows.length}</td><td>${avg.toFixed(1)}%</td><td>${rate.toFixed(1)}%</td><td>${Math.abs(avg-rate).toFixed(1)} pts</td></tr>`;
+      }).join('');
+    }
+
+    function exportLedgerCsv(){
+      const rows=loadLedger();if(!rows.length){toast('No forecast records to export yet.');return;}
+      const headers=['issued_at','asset','instrument','horizon_days','entry_price','direction','range_low_pct','range_high_pct','confidence','quality_grade','quality_score','target_date','status','evaluation_date','evaluation_price','actual_return_pct','direction_hit','range_hit','range_error_pct','model'];
+      const q=v=>`"${String(v??'').replaceAll('"','""')}"`;
+      const lines=[headers.join(',')].concat(rows.map(r=>[
+        r.issuedAt,r.displayName,r.instrument,r.horizonDays,r.entryPrice,r.direction,r.rangeLowPct,r.rangeHighPct,r.confidence,r.qualityGrade,r.qualityScore,r.targetDate,r.status,r.evaluatedAt,r.evaluationPrice,r.actualReturnPct,r.directionHit,r.rangeHit,r.rangeErrorPct,r.model
+      ].map(q).join(',')));
+      const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=`psd-forecast-lab-ledger-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Forecast ledger CSV exported.');
     }
 
     function renderLedger(){
@@ -576,6 +696,7 @@
           <td>${esc(r.model)}</td>
         </tr>`;
       }).join(""):'<tr><td colspan="12"><div class="empty">No forecasts recorded yet. Select an asset above and use “Record This Forecast.”</div></td></tr>';
+      renderCalibration();
     }
 
     function toast(msg){
@@ -592,7 +713,7 @@
         pulse=await resp.json();
         const ts=pulse?.data_updated_ny||pulse?.data_updated_utc||pulse?.generated_utc||"latest available";
         $("dataStatus").textContent=`Live PSD feed loaded • ${ts}`;
-        rankForecasts();renderTiles();renderDetail();renderLedger();
+        rankForecasts();renderTiles();renderDetail();renderLedger();evaluateLedger(true);
       }catch(err){
         console.warn("Forecast Lab 2 could not load market_pulse.json",err);
         $("dataStatus").textContent="Live PSD feed unavailable — forecast generation paused. Page remains isolated and safe.";
@@ -609,7 +730,8 @@
       let added=0;forecasts.forEach(f=>added+=recordForecast(f));
       toast(added?`Recorded ${added} forecast horizons across the current Top 10.`:"Current Top 10 forecasts are already recorded.");
     });
-    $("evaluateLedger").addEventListener("click",evaluateLedger);
+    $("evaluateLedger").addEventListener("click",()=>evaluateLedger(false));
+    $("exportLedger").addEventListener("click",exportLedgerCsv);
     $("resetLedger").addEventListener("click",()=>{
       if(!confirm("Reset only the Dashboard Lab 2 forecast ledger stored in this browser?"))return;
       localStorage.removeItem(LEDGER_KEY);renderLedger();toast("Lab ledger reset.");
