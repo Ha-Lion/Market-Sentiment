@@ -545,5 +545,5 @@ async function fetchOptionalJson(url){
     closeHistory,
     setHistoryPeriod
   });
-  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V3";
+  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V2";
 })(window);
