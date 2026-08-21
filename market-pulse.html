@@ -330,7 +330,25 @@
     function close(){clearCharts();document.querySelectorAll("[data-chart-panel]").forEach(panel=>panel.classList.remove("expanded"));document.querySelectorAll("[data-chart-size]").forEach(button=>button.textContent="Maximize");document.getElementById("viewer").classList.remove("open");document.body.style.overflow=""}
     function summary(){const p=state.pulse,g=p.global||{},regions=p.regions||{},us=regions.us||{},europe=regions.europe||{},warning=document.getElementById("dataWarning");document.getElementById("globalScore").textContent=Number.isFinite(Number(g.psi))?`${Number(g.psi).toFixed(0)}/100`:'—';document.getElementById("globalChange").textContent=Number.isFinite(Number(g.change_1d))?`${change(g.change_1d)} points`:'Unavailable';document.getElementById("usScore").textContent=Number.isFinite(Number(us.psi))?`${Number(us.psi).toFixed(0)}/100`:'—';document.getElementById("usLabel").textContent=us.sentiment_label||"Unavailable";document.getElementById("europeScore").textContent=Number.isFinite(Number(europe.psi))?`${Number(europe.psi).toFixed(0)}/100`:'—';document.getElementById("europeLabel").textContent=europe.sentiment_label||"Unavailable";const dates=(p.universe||[]).flatMap(r=>(r.market_history||[]).map(x=>x.date)).filter(Boolean).sort(),latestMarket=dates.at(-1),updated=Date.parse(String(p.data_updated_utc||"").replace(" UTC","Z")),age=Number.isFinite(updated)?(Date.now()-updated)/36e5:0,messages=[];if(age>24)messages.push("Sentiment data is more than 24 hours old.");if(latestMarket){const marketAge=(Date.now()-Date.parse(`${latestMarket}T23:59:59Z`))/864e5;if(marketAge>3)messages.push(`Latest available market series ends ${latestMarket}.`)}warning.textContent=messages.join(" ");warning.classList.toggle("show",messages.length>0)}
     function bind(){document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(!b)return;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));state.view=b.dataset.view;render()});document.getElementById("category").addEventListener("change",e=>{state.category=e.target.value;render()});document.getElementById("search").addEventListener("input",e=>{state.query=e.target.value.trim().toLowerCase();render()});document.getElementById("surprise").addEventListener("click",()=>{const u=state.pulse.universe||[];if(u.length)open(u[Math.floor(Math.random()*u.length)])});document.querySelectorAll("[data-scroll]").forEach(button=>button.addEventListener("click",()=>{const target=document.getElementById(button.dataset.scroll);target.scrollBy({left:Number(button.dataset.direction)*Math.max(320,target.clientWidth*.78),behavior:"smooth"})}));document.getElementById("closeViewer").addEventListener("click",close);document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));document.getElementById("viewer").addEventListener("click",e=>{if(e.target.id==="viewer")close()});document.getElementById("intelClose").addEventListener("click",closeConsensus);document.getElementById("intelDialog").addEventListener("click",e=>{if(e.target.id==="intelDialog")closeConsensus()});document.addEventListener("keydown",e=>{if(e.key==="Escape"){const expanded=document.querySelector(".full-chart.expanded");if(expanded){expanded.classList.remove("expanded");expanded.querySelector("[data-chart-size]").textContent="Maximize";setTimeout(drawViewer,30)}else{close();closeConsensus()}}})}
-    async function init(){try{const [pulseRes,consensusRes]=await Promise.all([fetch("market_pulse.json",{cache:"no-cache"}),fetch("news_consensus.json",{cache:"no-cache"})]);if(!pulseRes.ok)throw Error("Market Pulse data unavailable");state.pulse=await pulseRes.json();state.consensus=consensusRes.ok?await consensusRes.json():{analyses:[]};const categories=[...new Set((state.pulse.universe||[]).map(r=>r.category))].sort();document.getElementById("category").innerHTML='<option value="all">All markets</option>'+categories.map(x=>`<option value="${esc(x)}">${esc(cat(x))}</option>`).join("");summary();bind();renderConsensus();render()}catch(e){document.getElementById("grid").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+    async function init(){
+      try{
+        const pulseRes=await fetch("market_pulse.json",{cache:"no-cache"});
+        if(!pulseRes.ok) throw Error("Market Pulse data unavailable");
+        state.pulse=await pulseRes.json();
+        const categories=[...new Set((state.pulse.universe||[]).map(r=>r.category))].sort();
+        document.getElementById("category").innerHTML='<option value="all">All markets</option>'+categories.map(x=>`<option value="${esc(x)}">${esc(cat(x))}</option>`).join("");
+        summary();
+        bind();
+        render();
+
+        fetch("news_consensus.json",{cache:"no-cache"})
+          .then(response=>response.ok?response.json():{analyses:[]})
+          .then(data=>{state.consensus=data||{analyses:[]};renderConsensus()})
+          .catch(()=>{state.consensus={analyses:[]};renderConsensus()});
+      }catch(e){
+        document.getElementById("grid").innerHTML=`<div class="empty">${esc(e.message)}</div>`;
+      }
+    }
     window.addEventListener("psd-theme-change",()=>{if(state.active)setTimeout(drawViewer,30)});
     init();
   })();
