@@ -75,6 +75,23 @@
     .event-selector{min-width:240px;border:1px solid var(--ei-line);border-radius:9px;background:var(--ei-panel);color:var(--ei-ink);padding:8px 10px;font-size:12px;font-weight:700}
     .toolbar-note{font-size:11px;color:var(--ei-muted);text-align:right}
 
+    .event-queue{margin:-2px 0 12px;padding:11px 12px;background:var(--ei-panel);border:1px solid var(--ei-line);border-radius:13px;box-shadow:var(--ei-shadow)}
+    .queue-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+    .queue-head strong{font-size:12px}.queue-head span{font-size:10.5px;color:var(--ei-muted)}
+    .queue-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+    .queue-item{border:1px solid var(--ei-line);border-radius:9px;background:var(--ei-panel-soft);padding:8px 9px;min-width:0;cursor:pointer;text-align:left;color:var(--ei-ink)}
+    .queue-item:hover,.queue-item.is-selected{border-color:var(--ei-gold);background:var(--ei-gold-soft)}
+    .queue-item-top{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:4px}
+    .queue-rank{font-size:9px;font-weight:900;color:var(--ei-muted);text-transform:uppercase}.queue-score{font-size:11px;font-weight:900}
+    .queue-title{display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .queue-meta{display:flex;gap:5px;align-items:center;margin-top:5px;color:var(--ei-muted);font-size:9.5px}
+    .life-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 6px;font-size:9px;font-weight:900;border:1px solid var(--ei-line);background:var(--ei-panel)}
+    .life-pill.active{border-color:#2cb899;color:#087b65;background:#ebfff9}.life-pill.emerging{border-color:#d8a429;color:#8a5b00;background:#fff8df}.life-pill.watch{border-color:#7b9bc0;color:#315b87;background:#f0f6ff}.life-pill.archived{color:var(--ei-muted)}
+    body.dark-mode .life-pill.active{background:#173e34;color:#80e1cb} body.dark-mode .life-pill.emerging{background:#453819;color:#ffd575} body.dark-mode .life-pill.watch{background:#22374f;color:#9cc5f3}
+    .event-policy{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .policy-chip{border:1px solid var(--ei-line);border-radius:999px;background:var(--ei-panel-soft);padding:4px 7px;color:var(--ei-muted);font-size:9.5px;font-weight:700}
+    .priority-detail{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:10px;color:var(--ei-muted)}
+
     .intelligence-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,.7fr);gap:12px;margin-bottom:12px}
     .section-card{padding:16px}
     .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
@@ -138,9 +155,9 @@
     .methodology{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:10px 12px;border:1px solid var(--ei-line);border-radius:10px;background:var(--ei-panel-soft);font-size:10.5px;line-height:1.4;color:var(--ei-muted)}
     .methodology b{color:var(--ei-ink)}
 
-    @media(max-width:1450px){.asset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-    @media(max-width:1080px){.event-hero,.intelligence-grid,.watch-grid{grid-template-columns:1fr}.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.driver-grid,.channel-grid{grid-template-columns:1fr}.hero-score{justify-content:flex-start}}
-    @media(max-width:720px){.event-page{padding:8px}.event-shell{padding:8px}.hero-main h1{font-size:25px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-row{grid-template-columns:115px 1fr 58px}.event-toolbar{align-items:flex-start;flex-direction:column}.toolbar-note{text-align:left}}
+    @media(max-width:1450px){.asset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.queue-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:1080px){.event-hero,.intelligence-grid,.watch-grid{grid-template-columns:1fr}.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.driver-grid,.channel-grid{grid-template-columns:1fr}.hero-score{justify-content:flex-start}.queue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:720px){.event-page{padding:8px}.event-shell{padding:8px}.hero-main h1{font-size:25px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-row{grid-template-columns:115px 1fr 58px}.event-toolbar{align-items:flex-start;flex-direction:column}.toolbar-note{text-align:left}.queue-grid{grid-template-columns:1fr}.queue-head{align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body>
@@ -151,7 +168,7 @@
   <main class="event-page">
     <div class="event-shell">
       <div class="lab-banner">
-        <span>🧪 PSD Event Impact Intelligence — Iteration 1 Lab</span>
+        <span>🧪 PSD Event Impact Intelligence — Iteration 2 Lab</span>
         <span>Isolated test page • no production page depends on this prototype</span>
       </div>
 
@@ -163,11 +180,27 @@
         <div class="toolbar-note" id="dataStatus">Loading current PSD market data…</div>
       </div>
 
+      <section class="event-queue" aria-label="PSD event priority queue">
+        <div class="queue-head">
+          <strong>Live Event Queue</strong>
+          <span>Top 5 active events are ranked automatically from market impact + news evidence.</span>
+        </div>
+        <div class="queue-grid" id="eventQueue"></div>
+        <div class="event-policy">
+          <span class="policy-chip">14-day evidence window</span>
+          <span class="policy-chip">20–40 supporting articles retained/event</span>
+          <span class="policy-chip">Top 10 shown to users</span>
+          <span class="policy-chip">72h cooling rule</span>
+          <span class="policy-chip">180-day event history target</span>
+        </div>
+      </section>
+
       <section class="event-hero">
         <article class="hero-main">
           <div class="eyebrow">
             <span>PSD Event Intelligence</span>
             <span id="eventStatus" class="status-pill high">High Impact</span>
+            <span id="eventLifecycle" class="life-pill active">Active</span>
             <span id="eventHorizon" class="event-chip">Short-Term</span>
           </div>
           <h1 id="eventTitle">Middle East Escalation — Cross-Market Impact</h1>
@@ -187,6 +220,7 @@
             <h2>PSD Market Impact</h2>
             <p>Cross-asset pressure derived from current PSI shifts, 7-day persistence, price moves, and divergence signals across affected assets.</p>
             <span class="score-label" id="impactLabel">Calculating…</span>
+            <div class="priority-detail" id="priorityDetail">Priority score loading…</div>
           </div>
         </aside>
       </section>
@@ -232,15 +266,15 @@
 
         <article class="section-card">
           <div class="section-head">
-            <div><span class="section-kicker">Traceability</span><h2>Supporting PSD News</h2><p>Recent related headlines drawn from the affected assets in the existing market pulse feed.</p></div>
+            <div><span class="section-kicker">Traceability</span><h2>Supporting PSD News</h2><p>Top event-specific evidence, ranked by source priority and recency. Up to 10 are shown; the future engine layer can retain 20–40 per event.</p></div>
           </div>
           <div class="source-list" id="sourceList"></div>
         </article>
       </section>
 
       <div class="methodology">
-        <span><b>Iteration 1 architecture:</b> one reusable event definition + one renderer. Future events can be added to the event library without creating a new page design.</span>
-        <span><b>Lab score:</b> experimental prioritization metric, not investment advice or a forecast.</span>
+        <span><b>Iteration 2 architecture:</b> automatic priority + lifecycle management. The dropdown is ranked from evidence, not manually ordered.</span>
+        <span><b>Priority formula:</b> 35% market impact • 25% freshness • 20% cross-market reach • 10% source quality • 10% persistence. Experimental; not investment advice.</span>
       </div>
     </div>
   </main>
@@ -253,6 +287,16 @@
   (()=>{
     "use strict";
 
+    const EVENT_POLICY = Object.freeze({
+      maxActive:5,
+      evidenceLookbackDays:14,
+      internalArticleTarget:[20,40],
+      displayArticles:10,
+      coolingHours:72,
+      historyDays:180,
+      weights:{marketImpact:.35,freshness:.25,crossMarketReach:.20,sourceQuality:.10,persistence:.10}
+    });
+
     const EVENT_LIBRARY = [
       {
         id:"middle-east-escalation",
@@ -260,6 +304,7 @@
         horizon:"Short-Term",
         regions:["Global","U.S.","Europe","Middle East","Asia"],
         channels:["Energy Supply","Safe-Haven Flows","Risk Appetite"],
+        keywords:["iran","israel","middle east","hormuz","red sea","persian gulf","ceasefire","missile","conflict","war-risk","war risk"],
         assets:[
           {instrument:"Crude Oil", role:"Direct energy-risk transmission", weight:1.30},
           {instrument:"Brent Oil", role:"Global energy benchmark", weight:1.20},
@@ -280,6 +325,114 @@
           {icon:"🚢",title:"Shipping & logistics",text:"Changes in key maritime routes, insurance costs, and transit availability can reinforce or reduce the inflation channel."},
           {icon:"🏦",title:"Rates & inflation response",text:"Watch whether higher energy prices begin influencing inflation expectations, bond yields, and central-bank expectations."}
         ]
+      },
+      {
+        id:"rates-inflation-repricing",
+        title:"U.S. Rates & Inflation Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","Global"],
+        channels:["Rates","Dollar","Equities","Real Yields"],
+        keywords:["federal reserve","fed","powell","inflation","cpi","pce","interest rate","treasury yield","bond yield","yields"],
+        assets:[
+          {instrument:"US Dollar / DXY",role:"Dollar reaction",weight:1.10},
+          {instrument:"Gold",role:"Real-yield sensitivity",weight:1.00},
+          {instrument:"Inflation / Real Yields",role:"Inflation transmission",weight:1.25},
+          {instrument:"S&P 500 / ES",role:"Broad equity valuation",weight:1.00},
+          {instrument:"Nasdaq / NQ",role:"Duration-sensitive growth equities",weight:1.20},
+          {instrument:"VIX",role:"Risk repricing",weight:.80}
+        ],
+        drivers:[
+          {title:"Rate-path repricing",text:"Changes in expected policy rates alter bond yields, equity valuation and dollar demand across markets."},
+          {title:"Inflation persistence",text:"Inflation surprises can reinforce or challenge the expected pace of policy easing or tightening."},
+          {title:"Duration sensitivity",text:"Growth equities and precious metals can react sharply when real yields and long-term rates move."}
+        ],
+        catalysts:[
+          {icon:"🏦",title:"Federal Reserve communication",text:"Watch policy statements, speeches and changes in the expected rate path."},
+          {icon:"📊",title:"Inflation releases",text:"CPI, PCE and wage data can change the market's inflation and rate assumptions quickly."},
+          {icon:"📈",title:"Treasury yields",text:"Watch whether long-end yields confirm or reject the sentiment move."},
+          {icon:"💵",title:"Dollar confirmation",text:"Dollar direction can reveal whether repricing is becoming a broader global move."}
+        ]
+      },
+      {
+        id:"ai-megacap-repricing",
+        title:"AI & Mega-Cap Technology Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","Global Technology"],
+        channels:["AI Demand","Semiconductors","Mega-Cap Risk"],
+        keywords:["artificial intelligence","nvidia","semiconductor","chips","data center","microsoft","meta","alphabet","openai","ai spending"],
+        assets:[
+          {instrument:"NVIDIA / NVDA",role:"AI compute bellwether",weight:1.25},
+          {instrument:"AMD / AMD",role:"AI accelerator competition",weight:1.00},
+          {instrument:"Broadcom / AVGO",role:"AI networking/custom silicon",weight:1.00},
+          {instrument:"Microsoft / MSFT",role:"AI software and cloud",weight:1.00},
+          {instrument:"Alphabet / GOOGL",role:"AI platform/search",weight:.95},
+          {instrument:"Meta / META",role:"AI infrastructure demand",weight:.90},
+          {instrument:"Nasdaq / NQ",role:"Technology risk appetite",weight:1.10}
+        ],
+        drivers:[
+          {title:"AI capital spending",text:"Data-center and model investment expectations influence semiconductors, cloud platforms and infrastructure providers."},
+          {title:"Earnings & valuation",text:"High expectations make AI-linked assets sensitive to growth, margins, guidance and financing conditions."},
+          {title:"Cross-asset tech concentration",text:"Large AI-linked companies can transmit sentiment directly into major indices and broader risk appetite."}
+        ],
+        catalysts:[
+          {icon:"🧠",title:"AI demand signals",text:"Watch capex guidance, cloud demand and accelerator orders."},
+          {icon:"🧩",title:"Chip supply & export policy",text:"Export restrictions, supply constraints and new chip launches can reshape expectations."},
+          {icon:"💰",title:"Earnings revisions",text:"Changes to revenue, margin or capex guidance can move the entire AI complex."},
+          {icon:"📉",title:"Index spillover",text:"Watch Nasdaq breadth to see whether the move is isolated or becoming systemic."}
+        ]
+      },
+      {
+        id:"crypto-risk-regulation",
+        title:"Crypto Risk Appetite & Regulation",
+        horizon:"Near-Term",
+        regions:["Global","U.S."],
+        channels:["Bitcoin","Liquidity","Regulation","ETF Flows"],
+        keywords:["bitcoin","ethereum","crypto","stablecoin","crypto regulation","token","digital asset","bitcoin etf","ethereum etf"],
+        assets:[
+          {instrument:"Bitcoin / BTC",role:"Crypto market benchmark",weight:1.30},
+          {instrument:"Ethereum / ETH",role:"Smart-contract benchmark",weight:1.10},
+          {instrument:"Crypto ETFs / Flows",role:"Institutional flow channel",weight:1.00},
+          {instrument:"Crypto Regulation",role:"Policy transmission",weight:1.00},
+          {instrument:"Stablecoins / Depeg Risk",role:"Liquidity infrastructure",weight:.80}
+        ],
+        drivers:[
+          {title:"Liquidity & institutional flows",text:"ETF flows and global liquidity conditions can amplify crypto sentiment and price moves."},
+          {title:"Regulatory repricing",text:"Policy, enforcement and legislation can change perceived market access and risk quickly."},
+          {title:"Crypto breadth",text:"Bitcoin leadership versus broader-token participation helps show whether risk appetite is narrow or broad."}
+        ],
+        catalysts:[
+          {icon:"₿",title:"Bitcoin confirmation",text:"Watch whether Bitcoin price and PSI confirm each other or diverge."},
+          {icon:"🏛️",title:"Regulatory developments",text:"Policy decisions can change sentiment across exchanges, tokens and institutional products."},
+          {icon:"💧",title:"Liquidity conditions",text:"Watch stablecoins, ETF flows and risk appetite across related assets."},
+          {icon:"🔗",title:"Cross-crypto breadth",text:"A broader move across Ethereum and altcoins can confirm persistence."}
+        ]
+      },
+      {
+        id:"trade-tariff-shock",
+        title:"Global Trade & Tariff Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","China","Europe","Global"],
+        channels:["Trade Policy","FX","Industrials","Equities"],
+        keywords:["tariff","trade war","export control","import duty","trade deal","sanction","trade restrictions","china trade"],
+        assets:[
+          {instrument:"USD/CNH",role:"China/U.S. FX transmission",weight:1.15},
+          {instrument:"Copper",role:"Global growth sensitivity",weight:1.00},
+          {instrument:"Hang Seng",role:"China/Hong Kong equity response",weight:1.00},
+          {instrument:"S&P 500 / ES",role:"U.S. broad-market risk",weight:.90},
+          {instrument:"Nasdaq / NQ",role:"Technology/export exposure",weight:1.00},
+          {instrument:"US Dollar / DXY",role:"Global defensive currency response",weight:.90}
+        ],
+        drivers:[
+          {title:"Trade-policy uncertainty",text:"Tariffs and export restrictions change expected costs, margins and cross-border demand."},
+          {title:"Currency transmission",text:"Dollar and yuan moves can reveal how markets are repricing trade and growth risk."},
+          {title:"Growth & supply-chain sensitivity",text:"Copper and major equity indices help show whether policy risk is spreading into broader growth expectations."}
+        ],
+        catalysts:[
+          {icon:"🌐",title:"Policy announcements",text:"Watch new tariffs, exemptions, export controls and negotiation developments."},
+          {icon:"💱",title:"FX response",text:"USD/CNH and DXY can confirm whether trade risk is becoming globally significant."},
+          {icon:"🏭",title:"Corporate guidance",text:"Watch margin, sourcing and supply-chain commentary from exposed companies."},
+          {icon:"📦",title:"Trade-flow data",text:"Import/export and shipping data can show whether policy changes are becoming economically persistent."}
+        ]
       }
     ];
 
@@ -294,6 +447,7 @@
     };
 
     let pulseData=null;
+    let eventRankings=[];
     let activeEvent=EVENT_LIBRARY[0];
 
     const $=id=>document.getElementById(id);
@@ -308,6 +462,81 @@
       if(score>=42)return {label:"Medium",cls:"medium"};
       return {label:"Low",cls:"low"};
     }
+
+    function normalizeNewsTime(value){
+      if(!value)return null;
+      const cleaned=String(value).replace(/ UTC$/i,'Z').replace(' ','T');
+      const d=new Date(cleaned);return Number.isNaN(d.getTime())?null:d;
+    }
+
+    function referenceTime(){
+      const candidates=[pulseData?.data_updated_utc,pulseData?.generated_utc].map(normalizeNewsTime).filter(Boolean);
+      if(candidates.length)return new Date(Math.max(...candidates.map(d=>d.getTime())));
+      return new Date();
+    }
+
+    function keywordMatch(title,keyword){
+      const text=String(title||'').toLowerCase(),key=String(keyword||'').toLowerCase().trim();
+      if(!key)return false;
+      if(/[\s\-/]/.test(key))return text.includes(key);
+      const escaped=key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`,'i').test(text);
+    }
+
+    function allUniqueNews(){
+      const seen=new Set(),out=[];
+      (Array.isArray(pulseData?.universe)?pulseData.universe:[]).forEach(row=>{
+        (Array.isArray(row?.latest_news)?row.latest_news:[]).forEach(n=>{
+          const key=String(n?.link||n?.title||'').trim();if(!key||seen.has(key))return;seen.add(key);
+          out.push({...n,instrument:row.instrument,category:row.category});
+        });
+      });
+      return out;
+    }
+
+    function eventEvidence(event){
+      const now=referenceTime(),lookback=EVENT_POLICY.evidenceLookbackDays*86400000;
+      const matches=allUniqueNews().filter(n=>{
+        const dt=normalizeNewsTime(n.published_utc);if(dt && now-dt>lookback)return false;
+        return event.keywords.some(k=>keywordMatch(n.title,k));
+      });
+      const uniqueSources=new Set(matches.map(n=>String(n.source||'').trim()).filter(Boolean));
+      const categories=new Set(matches.map(n=>n.category).filter(Boolean));
+      const within24=matches.filter(n=>{const dt=normalizeNewsTime(n.published_utc);return dt && now-dt<=86400000}).length;
+      const within48=matches.filter(n=>{const dt=normalizeNewsTime(n.published_utc);return dt && now-dt<=172800000}).length;
+      const latestMs=Math.max(0,...matches.map(n=>normalizeNewsTime(n.published_utc)?.getTime()||0));
+      const hoursSinceLatest=latestMs?Math.max(0,(now.getTime()-latestMs)/3600000):999;
+      return {matches,sourceCount:uniqueSources.size,categoryCount:categories.size,within24,within48,hoursSinceLatest};
+    }
+
+    function eventPriority(event){
+      const rows=getUniverseRows(event),evidence=eventEvidence(event);
+      const impact=eventImpactScore(rows);
+      const freshness=clamp(Math.round(evidence.within24*10 + evidence.within48*5 + (evidence.hoursSinceLatest<=12?25:evidence.hoursSinceLatest<=24?15:evidence.hoursSinceLatest<=48?8:0)),0,100);
+      const availableRows=rows.filter(r=>num(r.psi)!==null).length;
+      const reach=clamp(Math.round(evidence.categoryCount*18 + availableRows/Math.max(1,event.assets.length)*40),0,100);
+      const qualityValues=evidence.matches.map(n=>{const p=Number(n.priority||3);return p<=1?100:p===2?82:p===3?65:50});
+      const sourceQuality=clamp(Math.round((qualityValues.length?qualityValues.reduce((a,b)=>a+b,0)/qualityValues.length:35)+Math.min(20,evidence.sourceCount*2)),0,100);
+      const persistence=profileMetrics(rows).find(x=>x[0]==='Persistence')?.[1]||0;
+      const w=EVENT_POLICY.weights;
+      const priority=Math.round(impact*w.marketImpact+freshness*w.freshness+reach*w.crossMarketReach+sourceQuality*w.sourceQuality+persistence*w.persistence);
+      let lifecycle='Archived';
+      if(priority>=55 && evidence.matches.length>=4 && evidence.sourceCount>=3 && evidence.hoursSinceLatest<=EVENT_POLICY.coolingHours) lifecycle='Active';
+      else if(priority>=45 && evidence.matches.length>=2 && evidence.hoursSinceLatest<=EVENT_POLICY.coolingHours*1.5) lifecycle='Emerging';
+      else if(priority>=35 || evidence.matches.length>=1) lifecycle='Watch';
+      return {event,rows,evidence,impact,freshness,reach,sourceQuality,persistence,priority,lifecycle};
+    }
+
+    function rankEvents(){
+      eventRankings=EVENT_LIBRARY.map(eventPriority).sort((a,b)=>b.priority-a.priority);
+      // Guarantee the lab remains usable even if the current feed is unusually sparse.
+      if(!eventRankings.some(r=>r.lifecycle==='Active') && eventRankings[0] && eventRankings[0].priority>=45) eventRankings[0].lifecycle='Active';
+      return eventRankings;
+    }
+
+    function activeRankings(){return eventRankings.filter(r=>r.lifecycle==='Active').slice(0,EVENT_POLICY.maxActive)}
+
+    function rankingFor(event){return eventRankings.find(r=>r.event.id===event.id)||null}
 
     function getUniverseRows(event){
       const universe=Array.isArray(pulseData?.universe)?pulseData.universe:[];
@@ -347,20 +576,11 @@
     }
 
     function summaryText(rows,score){
-      const byName=Object.fromEntries(rows.map(r=>[r.instrument,r]));
-      const crude=byName["Crude Oil"],gold=byName["Gold"],dxy=byName["US Dollar / DXY"],sp=byName["S&P 500 / ES"],vix=byName["VIX"];
-      const energyBull=[crude].filter(Boolean).some(r=>(num(r.psi)??50)>55);
-      const defensive=[gold,dxy].filter(Boolean).filter(r=>(num(r.psi)??50)>55).length;
-      const equityWeak=(num(sp?.change_1d)??0)<0;
-      const volUp=(num(vix?.price_change_1d_pct)??0)>0;
-      let parts=[];
-      if(energyBull)parts.push("energy sentiment remains positively biased");
-      if(defensive>=1)parts.push("defensive assets are attracting stronger public sentiment");
-      if(equityWeak)parts.push("broad-equity sentiment has weakened over the last 24 hours");
-      if(volUp)parts.push("market volatility is rising in price terms");
-      const band=impactBand(score).label.toLowerCase();
-      const body=parts.length?parts.join(", while "):"multiple affected markets are showing non-uniform sentiment and price responses";
-      return `PSD currently classifies this as a ${band}-impact cross-market event: ${body}. The key question is whether the move remains concentrated in energy and defensive assets or broadens into a more persistent risk-off regime.`;
+      const ranking=rankingFor(activeEvent),band=impactBand(score).label.toLowerCase();
+      const strongest=[...rows].filter(r=>num(r.psi)!==null).sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,3);
+      const strongestText=strongest.length?strongest.map(r=>`${r.display_name||r.instrument} (${Math.round(num(r.psi)??50)} PSI)`).join(', '):'the affected asset set';
+      const evidenceText=ranking?`${ranking.evidence.matches.length} related headlines from ${ranking.evidence.sourceCount} sources are contributing to the current priority assessment`:'current PSD evidence is being evaluated';
+      return `PSD currently classifies this as a ${band}-impact event. The strongest cross-market pressure is concentrated in ${strongestText}. ${evidenceText}. The assessment will automatically move between Emerging, Active, Watch and Archive as evidence and market impact change.`;
     }
 
     function renderHero(rows){
@@ -375,6 +595,12 @@
       $("impactRing").style.setProperty("--score",score);
       $("impactLabel").textContent=`${band.label} Impact`;
       $("eventStatus").textContent=`${band.label} Impact`;
+      const ranking=rankingFor(activeEvent);
+      if(ranking){
+        $("eventLifecycle").textContent=ranking.lifecycle;
+        $("eventLifecycle").className=`life-pill ${ranking.lifecycle.toLowerCase()}`;
+        $("priorityDetail").textContent=`Priority ${ranking.priority}/100 • ${ranking.evidence.matches.length} related headlines • ${ranking.evidence.sourceCount} sources`;
+      }
     }
 
     function renderDrivers(){
@@ -425,22 +651,44 @@
     }
 
     function collectSources(rows){
-      const seen=new Set(),all=[];
-      rows.forEach(r=>(Array.isArray(r.latest_news)?r.latest_news:[]).forEach(n=>{
-        const key=(n.link||n.title||"").trim();
-        if(!key||seen.has(key))return;seen.add(key);all.push({...n,asset:r.display_name||r.instrument});
-      }));
-      return all.sort((a,b)=>(Number(a.priority||9)-Number(b.priority||9)) || String(b.published_utc||"").localeCompare(String(a.published_utc||""))).slice(0,7);
+      const ranking=rankingFor(activeEvent);
+      if(!ranking)return [];
+      return [...ranking.evidence.matches].sort((a,b)=>{
+        const pa=Number(a.priority||9),pb=Number(b.priority||9);if(pa!==pb)return pa-pb;
+        return String(b.published_utc||'').localeCompare(String(a.published_utc||''));
+      }).slice(0,EVENT_POLICY.displayArticles);
     }
 
     function renderSources(rows){
       const sources=collectSources(rows);
-      $("sourceList").innerHTML=sources.length?sources.map(n=>`<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")} • ${esc(n.asset||"")}</span></div>`).join(""):'<div class="empty-note">No related live headlines were available in the current market pulse payload.</div>';
+      $("sourceList").innerHTML=sources.length?sources.map(n=>`<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")} • ${esc(n.instrument||"")}</span></div>`).join(""):'<div class="empty-note">No event-specific live headlines met the current evidence rules.</div>';
+    }
+
+    function renderQueue(){
+      const ranked=eventRankings.slice(0,EVENT_POLICY.maxActive);
+      $("eventQueue").innerHTML=ranked.map((r,i)=>`<button type="button" class="queue-item ${r.event.id===activeEvent.id?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="${esc(r.event.title)}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${r.evidence.matches.length} news • ${r.evidence.sourceCount} sources</span></span></button>`).join('');
+      $("eventQueue").querySelectorAll('[data-event-id]').forEach(btn=>btn.addEventListener('click',()=>{
+        const found=EVENT_LIBRARY.find(e=>e.id===btn.dataset.eventId);if(!found)return;activeEvent=found;
+        const selector=$("eventSelector");selector.value=activeEvent.id;renderEvent();renderQueue();
+      }));
+    }
+
+    function populateSelector(){
+      const active=activeRankings();
+      const emerging=eventRankings.filter(r=>r.lifecycle==='Emerging').slice(0,5);
+      const watch=eventRankings.filter(r=>r.lifecycle==='Watch').slice(0,5);
+      let html='';
+      if(active.length)html+=`<optgroup label="Active events">${active.map(r=>`<option value="${esc(r.event.id)}">${esc(r.event.title)}</option>`).join('')}</optgroup>`;
+      if(emerging.length)html+=`<optgroup label="Emerging">${emerging.map(r=>`<option value="${esc(r.event.id)}">${esc(r.event.title)}</option>`).join('')}</optgroup>`;
+      if(watch.length)html+=`<optgroup label="Watch / recent">${watch.map(r=>`<option value="${esc(r.event.id)}">${esc(r.event.title)}</option>`).join('')}</optgroup>`;
+      $("eventSelector").innerHTML=html||EVENT_LIBRARY.map(e=>`<option value="${esc(e.id)}">${esc(e.title)}</option>`).join('');
+      if(!EVENT_LIBRARY.some(e=>e.id===activeEvent.id))activeEvent=eventRankings[0]?.event||EVENT_LIBRARY[0];
+      $("eventSelector").value=activeEvent.id;
     }
 
     function renderEvent(){
       const rows=getUniverseRows(activeEvent);
-      renderHero(rows);renderDrivers();renderProfile(rows);renderAssets(rows);renderChannels(rows);renderWatch();renderSources(rows);
+      renderHero(rows);renderDrivers();renderProfile(rows);renderAssets(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
       const ts=pulseData?.data_updated_ny||pulseData?.data_updated_utc||pulseData?.generated_utc||"fallback snapshot";
       $("assetTimestamp").textContent=ts;
     }
@@ -457,14 +705,16 @@
         pulseData={universe:Object.values(FALLBACK_ROWS)};
         $("dataStatus").textContent="Live feed unavailable — using embedded lab fallback snapshot";
       }
+      rankEvents();
+      activeEvent=activeRankings()[0]?.event||eventRankings[0]?.event||EVENT_LIBRARY[0];
+      populateSelector();
       renderEvent();
     }
 
     function init(){
       const selector=$("eventSelector");
-      selector.innerHTML=EVENT_LIBRARY.map(e=>`<option value="${esc(e.id)}">${esc(e.title)}</option>`).join("");
       selector.addEventListener("change",()=>{activeEvent=EVENT_LIBRARY.find(e=>e.id===selector.value)||EVENT_LIBRARY[0];renderEvent()});
-      renderDrivers();renderWatch();loadPulse();
+      loadPulse();
     }
 
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
