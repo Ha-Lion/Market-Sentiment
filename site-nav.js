@@ -858,9 +858,24 @@
   }
 
   installTourClickFallback();
-  window.addEventListener("resize", function(){
+
+  /*
+   * Keep the ribbon geometry stable when late-loading ribbon CSS or fonts
+   * change the header after the first render. vote-widget.js still owns the
+   * legacy compact-ribbon CSS, so it signals us after that CSS is installed.
+   */
+  function scheduleRibbonGeometryAlignment(){
     window.requestAnimationFrame(alignRibbonGeometry);
-  });
+    window.setTimeout(alignRibbonGeometry, 60);
+  }
+
+  window.addEventListener("resize", scheduleRibbonGeometryAlignment);
+  window.addEventListener("load", scheduleRibbonGeometryAlignment);
+  window.addEventListener("psd:ribbon-layout-changed", scheduleRibbonGeometryAlignment);
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(scheduleRibbonGeometryAlignment).catch(function(){});
+  }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
   else render();
