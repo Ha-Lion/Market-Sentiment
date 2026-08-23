@@ -294,6 +294,8 @@
     .mi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:7px;color:var(--ei-muted);font-size:9.5px;font-weight:800}.mi-flow span{border:1px solid var(--ei-line);border-radius:999px;padding:3px 6px;background:var(--ei-panel-soft);color:var(--ei-ink)}.mi-flow i{font-style:normal;color:var(--ei-gold)}
     .mi-method{position:relative;flex:0 0 auto}.mi-method summary{list-style:none;cursor:pointer;border:1px solid #c79524;border-radius:999px;padding:7px 10px;background:var(--ei-gold-soft);color:var(--ei-accent-text);font-size:10px;font-weight:900;white-space:nowrap;user-select:none}.mi-method summary::-webkit-details-marker{display:none}.mi-method[open] summary{border-radius:10px 10px 0 0}.mi-method-box{position:absolute;z-index:20;top:calc(100% - 1px);right:0;width:min(420px,80vw);padding:10px 11px;border:1px solid #c79524;border-radius:10px 0 10px 10px;background:var(--ei-panel);color:var(--ei-muted);box-shadow:0 16px 38px rgba(0,0,0,.24);font-size:10.5px;line-height:1.45}.mi-method-box b{color:var(--ei-ink)}.mi-method-box p{margin:0 0 6px;font-size:10.5px}.mi-method-box p:last-child{margin-bottom:0}
     .ai-intel-meta .ai-intel-brand{border-color:#c79524;background:var(--ei-gold-soft);color:var(--ei-accent-text);font-weight:900}.ai-proof{margin:1px 0 2px;max-width:780px}.ai-proof summary{cursor:pointer;color:var(--ei-accent-text);font-size:10.5px;font-weight:850;width:max-content;max-width:100%}.ai-proof-box{margin-top:5px;padding:8px 10px;border:1px solid var(--ei-line);border-radius:8px;background:var(--ei-panel-soft);color:var(--ei-muted);font-size:10.7px;line-height:1.45}.ai-proof-box b{color:var(--ei-ink)}.ai-source-line,.ai-confidence{margin:0!important;padding:5px 0 0;color:var(--ei-muted);font-size:10.7px;line-height:1.4}.ai-source-line b,.ai-confidence b{color:var(--ei-ink)}
+    .article-source-name{color:#2368c4;font-weight:900}
+    body.dark-mode .article-source-name{color:#7db5ff}
     body.dark-mode .mi-intro{background:radial-gradient(circle at 88% 15%,rgba(240,191,77,.10),transparent 15rem),var(--ei-panel)}body.dark-mode .mi-method summary,body.dark-mode .ai-intel-meta .ai-intel-brand{background:#3a3019;color:#ffd36a;border-color:#9c7b2c}body.dark-mode .mi-method-box,body.dark-mode .ai-proof-box{background:#223341}
     @media(max-width:800px){.mi-intro{grid-template-columns:1fr}.mi-method{justify-self:start}.mi-method-box{left:0;right:auto;border-radius:0 10px 10px 10px}}
 
@@ -932,6 +934,31 @@
       return aiIntelligenceData.events.find(item=>String(item?.event_id||"")===String(event.id||""))||null;
     }
 
+
+    function softenPsiForReading(value){
+      let text=String(value||"");
+      if(!text)return "";
+      text=text.replace(/Public Sentiment Index\s*\(PSI\)/gi,"Public Sentiment Index (PSI)");
+      let seenPsi=false;
+      text=text.replace(/\bPSI\b/gi,()=>{
+        if(!seenPsi){seenPsi=true;return "PSI";}
+        return "sentiment";
+      });
+      text=text.replace(/\bsentiment points\b/gi,"sentiment points");
+      return text;
+    }
+
+    function highlightSourceNames(value,sources){
+      let html=esc(softenPsiForReading(value));
+      const names=[...new Set((sources||[]).map(v=>String(v||"").trim()).filter(Boolean))]
+        .sort((a,b)=>b.length-a.length);
+      names.forEach(name=>{
+        const safe=esc(name);
+        if(safe)html=html.split(safe).join(`<span class="article-source-name">${safe}</span>`);
+      });
+      return html;
+    }
+
     function renderAiSummary(aiEvent,rows,score){
       const intel=aiEvent?.intelligence||{};
       if(aiEvent?.quality?.status!=="validated"||!intel.assessment||!intel.news_synthesis)return "";
@@ -939,16 +966,17 @@
       const sourceCount=Number(aiEvent?.quality?.unique_sources||new Set((aiEvent.evidence||[]).map(x=>x.source).filter(Boolean)).size||0);
       const referenced=Array.isArray(intel.referenced_sources)?intel.referenced_sources.filter(Boolean).slice(0,8):[];
       const confidence=String(intel.confidence_note||"").trim();
+      const namedSources=[...new Set([...referenced,...(aiEvent.evidence||[]).map(n=>n?.source)].map(v=>String(v||"").trim()).filter(Boolean))];
       const meta=`<div class="ai-intel-meta"><span class="ai-intel-brand">PSD AI Editorial Intelligence</span><span>${evidenceCount} source-ranked articles • ${sourceCount} independent outlets • PSD market data</span></div>`;
       const proof=`<details class="ai-proof"><summary>How this intelligence was built</summary><div class="ai-proof-box"><b>Evidence first:</b> PSD supplied ${evidenceCount} source-ranked articles from ${sourceCount} independent outlets plus current sentiment and market data. Source authority is controlled by PSD's centralized source policy; the AI synthesizes only the supplied evidence, compares reporting with market confirmation, and is instructed to preserve material conflicts rather than force a consensus.</div></details>`;
       const perspectives=Array.isArray(intel.outlet_perspectives)?intel.outlet_perspectives.slice(0,6):[];
-      const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b>${esc(p.source||"Source")}:</b> ${esc(p.emphasis||"")}</span>`).join("")}</div>`:"";
+      const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b class="article-source-name">${esc(p.source||"Source")}:</b> ${highlightSourceNames(p.emphasis||"",namedSources)}</span>`).join("")}</div>`:"";
       const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
-      const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b>${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
+      const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b class="article-source-name">${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
       const conflict=String(intel.conflicting_evidence||"").trim();
-      const sourcesHtml=referenced.length?`<p class="ai-source-line"><b>Referenced outlets:</b> ${referenced.map(esc).join(" • ")}</p>`:"";
+      const sourcesHtml=referenced.length?`<p class="ai-source-line"><b>Referenced outlets:</b> ${referenced.map(name=>`<span class="article-source-name">${esc(name)}</span>`).join(" • ")}</p>`:"";
       const confidenceHtml=confidence?`<p class="ai-confidence"><b>Evidence note:</b> ${esc(confidence)}</p>`:"";
-      return `${meta}${proof}<p><b>PSD AI assessment:</b> ${esc(intel.assessment)}</p><p class="summary-news"><b>News synthesis:</b> ${esc(intel.news_synthesis)}</p><p class="summary-context"><b>Market confirmation:</b> ${esc(intel.market_confirmation||"")}</p>${conflict?`<p class="summary-conflict"><b>Conflicting / incomplete evidence:</b> ${esc(conflict)}</p>`:""}<p class="summary-context"><b>Why this matters now:</b> ${esc(intel.why_it_matters||"")}</p>${sourcesHtml}${confidenceHtml}${perspectiveHtml}${exampleHtml}`;
+      return `${meta}${proof}<p><b>PSD AI assessment:</b> ${highlightSourceNames(intel.assessment,namedSources)}</p><p class="summary-news"><b>News synthesis:</b> ${highlightSourceNames(intel.news_synthesis,namedSources)}</p><p class="summary-context"><b>Market confirmation:</b> ${highlightSourceNames(intel.market_confirmation||"",namedSources)}</p>${conflict?`<p class="summary-conflict"><b>Conflicting / incomplete evidence:</b> ${highlightSourceNames(conflict,namedSources)}</p>`:""}<p class="summary-context"><b>Why this matters now:</b> ${highlightSourceNames(intel.why_it_matters||"",namedSources)}</p>${sourcesHtml}${confidenceHtml}${perspectiveHtml}${exampleHtml}`;
     }
 
     function summaryText(rows,score){
@@ -958,7 +986,7 @@
       const ranking=rankingFor(activeEvent),band=impactBand(score).label.toLowerCase();
       const available=rows.filter(r=>num(r.psi)!==null);
       const strongest=[...available].sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5);
-      const strongestText=strongest.length?strongest.map(r=>`${r.display_name||r.instrument} (${Math.round(num(r.psi)??50)} PSI)`).join(', '):'the affected asset set';
+      const strongestText=strongest.length?strongest.map(r=>`${r.display_name||r.instrument} (${Math.round(num(r.psi)??50)} sentiment)`).join(', '):'the affected asset set';
       const bullish=available.filter(r=>(num(r.psi)??50)>=56).length;
       const bearish=available.filter(r=>(num(r.psi)??50)<=44).length;
       const neutral=Math.max(0,available.length-bullish-bearish);
@@ -980,8 +1008,8 @@
       const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b>${esc(n.source||'Source')}:</b> ${esc(String(n.title||'').slice(0,175))}</span>`).join('')}</div>`:'';
 
       return `<p><b>PSD assessment:</b> This is currently a ${esc(band)}-impact event. The strongest cross-market pressure is concentrated in ${esc(strongestText)}. Across the ${available.length} affected assets, ${bullish} are bullish, ${bearish} bearish and ${neutral} mixed/neutral, so ${esc(balance)}.</p>
-      <p class="summary-context"><b>Market context:</b> The affected group is averaging ${avg24>=0?'+':''}${avg24.toFixed(1)} points of 24H PSI change, ${avg7>=0?'+':''}${avg7.toFixed(1)} points over 7 days and ${avgPrice>=0?'+':''}${avgPrice.toFixed(2)}% in the latest one-day price move. ${divergences} asset${divergences===1?' is':'s are'} showing sentiment/price divergence${reversals?`, while ${reversals} reversal flag${reversals===1?' is':'s are'} also active`:''}. That combination helps distinguish a broad, confirmed repricing from a headline-driven move that price has not fully confirmed.</p>
-      <p class="summary-news"><b>News synthesis:</b> ${esc(evidenceText)} are feeding the assessment. Current coverage includes ${esc(outletText)}. The reporting is clustering around ${esc(driverTitles)}. PSD weighs that source evidence together with PSI direction, 24H/7D persistence, price response and divergence rather than treating article volume by itself as conviction.</p>
+      <p class="summary-context"><b>Market context:</b> The affected group is averaging ${avg24>=0?'+':''}${avg24.toFixed(1)} sentiment points over 24 hours, ${avg7>=0?'+':''}${avg7.toFixed(1)} points over 7 days and ${avgPrice>=0?'+':''}${avgPrice.toFixed(2)}% in the latest one-day price move. ${divergences} asset${divergences===1?' is':'s are'} showing sentiment/price divergence${reversals?`, while ${reversals} reversal flag${reversals===1?' is':'s are'} also active`:''}. That combination helps distinguish a broad, confirmed repricing from a headline-driven move that price has not fully confirmed.</p>
+      <p class="summary-news"><b>News synthesis:</b> ${esc(evidenceText)} are feeding the assessment. Current coverage includes ${esc(outletText)}. The reporting is clustering around ${esc(driverTitles)}. PSD weighs that source evidence together with sentiment direction, 24H/7D persistence, price response and divergence rather than treating article volume by itself as conviction.</p>
       <p class="summary-context"><b>Why this matters now:</b> The event remains important while the same themes continue appearing across independent outlets and while multiple affected assets confirm the move. The next meaningful reassessment points are ${esc(catalysts||'new market-moving catalysts')}—developments there could strengthen, weaken or reverse the current impact classification.</p>${exampleHtml}`;
     }
 
