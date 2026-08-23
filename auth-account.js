@@ -176,15 +176,6 @@
     return requestedReturnPage() || "account.html";
   }
 
-  async function confirmSignedInSession() {
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const result = await client.auth.getSession();
-      if (result.data && result.data.session) return result.data.session;
-      await new Promise(function (resolve) { window.setTimeout(resolve, 80); });
-    }
-    return null;
-  }
-
   function normalizeUsername(value) {
     return String(value || "")
       .trim()
@@ -355,7 +346,6 @@
 
     const sessionResult = await client.auth.getSession();
     if (sessionResult.data.session && !recoveryRequested) {
-      try { sessionStorage.setItem("psd-ribbon-member-ui", "true"); } catch (_error) {}
       window.location.replace(postLoginDestination());
       return;
     }
@@ -387,9 +377,14 @@
         return;
       }
 
-      const confirmedSession = await confirmSignedInSession();
-      if (!confirmedSession) {
-        setStatus(status, "Sign-in succeeded, but the session could not be restored. Please try once more.", "error");
+      let signedInSession = result.data && result.data.session ? result.data.session : null;
+      if (!signedInSession) {
+        const confirmed = await client.auth.getSession();
+        signedInSession = confirmed.data && confirmed.data.session ? confirmed.data.session : null;
+      }
+
+      if (!signedInSession) {
+        setStatus(status, "Sign-in did not create an active session. Please try again.", "error");
         return;
       }
 
@@ -397,7 +392,6 @@
         "psd_show_remember_toast",
         remember ? "remembered" : "session"
       );
-      try { sessionStorage.setItem("psd-ribbon-member-ui", "true"); } catch (_error) {}
       window.location.replace(postLoginDestination());
     });
 
