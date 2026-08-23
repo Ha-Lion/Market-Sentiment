@@ -320,13 +320,26 @@
     .profile-row label{font-size:12.7px}.profile-value{font-size:11.7px}
     body.dark-mode .summary-context{background:#223341;border-left-color:#71899d}
 
-    /* Market Intelligence V3: read-aloud control for the written AI summary only. */
-    .summary-audio-controls{display:flex;justify-content:flex-end;align-items:center;margin:1px 0 6px}
-    .summary-listen-button{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid rgba(174,128,28,.58);border-radius:999px;background:transparent;color:var(--ei-accent-text);font:800 10.8px/1.1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;transition:transform .16s ease,color .16s ease,border-color .16s ease,background .16s ease}
-    .summary-listen-button:hover,.summary-listen-button:focus-visible{transform:translateY(-1px);border-color:#c79524;background:var(--ei-gold-soft);outline:none}
-    .summary-listen-button[aria-pressed="true"]{border-color:#c79524;background:var(--ei-gold-soft)}
+    /* Market Intelligence V4: cross-browser free read-aloud + compact speed control. */
+    .hero-main{padding-top:62px}
+    .summary-audio-controls{position:absolute;top:14px;right:20px;z-index:4;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    .summary-listen-button{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:7px 14px;border:1px solid #b78212;border-radius:999px;background:linear-gradient(180deg,#ffe8a8,#e7b94f);color:#3e2900;font:900 11.5px/1.1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;box-shadow:0 4px 12px rgba(157,107,0,.24),inset 0 1px 0 rgba(255,255,255,.72);transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+    .summary-listen-button:hover,.summary-listen-button:focus-visible{transform:translateY(-1px);filter:brightness(1.04);outline:none;box-shadow:0 6px 16px rgba(157,107,0,.30),inset 0 1px 0 rgba(255,255,255,.8)}
+    .summary-listen-button[aria-pressed="true"]{background:linear-gradient(180deg,#ffd269,#d89b13);box-shadow:0 0 0 2px rgba(203,143,12,.16),0 5px 14px rgba(157,107,0,.28)}
     .summary-listen-button:disabled{opacity:.45;cursor:not-allowed;transform:none}
-    body.dark-mode .summary-listen-button{color:#ffd36a}
+    .summary-speed-wrap{display:inline-flex;align-items:center;gap:5px;padding:4px 6px 4px 9px;border:1px solid rgba(183,130,18,.44);border-radius:999px;background:rgba(255,250,235,.96);box-shadow:0 2px 8px rgba(157,107,0,.10);color:#6a4800;font:900 10.5px/1 Inter,"Segoe UI",Arial,sans-serif}
+    .summary-speed-options{display:inline-flex;align-items:center;gap:3px}
+    .summary-speed-button{min-height:25px;padding:4px 8px;border:1px solid transparent;border-radius:999px;background:transparent;color:#5c430c;font:900 10px/1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer}
+    .summary-speed-button:hover,.summary-speed-button:focus-visible{border-color:rgba(183,130,18,.55);background:#fff0bd;outline:none}
+    .summary-speed-button.active{border-color:#b78212;background:#f0c45b;color:#2f2000;box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}
+    body.dark-mode .summary-listen-button{background:linear-gradient(180deg,#f0c45b,#a87108);color:#130d00;border-color:#f1c95f}
+    body.dark-mode .summary-speed-wrap{background:#182532;color:#ffd36a;border-color:#806722}
+    body.dark-mode .summary-speed-button{color:#f6d986}
+    body.dark-mode .summary-speed-button.active{background:#8b6718;color:#fff2c3;border-color:#d4a93c}
+    @media(max-width:900px){
+      .hero-main{padding-top:20px}
+      .summary-audio-controls{position:static;justify-content:flex-start;margin:0 0 12px}
+    }
 
   </style>
 </head>
@@ -371,6 +384,14 @@
             <button type="button" class="summary-listen-button" id="summaryListenButton" aria-pressed="false">
               <span aria-hidden="true">🔊</span><span class="summary-listen-label">Listen to Summary</span>
             </button>
+            <div class="summary-speed-wrap" aria-label="Summary reading speed">
+              <span>Speed:</span>
+              <div class="summary-speed-options" role="group" aria-label="Choose reading speed">
+                <button type="button" class="summary-speed-button" data-rate="0.80">Slow</button>
+                <button type="button" class="summary-speed-button active" data-rate="0.89" aria-pressed="true">Normal</button>
+                <button type="button" class="summary-speed-button" data-rate="1.05">Fast</button>
+              </div>
+            </div>
           </div>
           <div class="summary" id="eventSummary">Loading event assessment…</div>
           <div class="hero-meta">
@@ -1022,42 +1043,65 @@
 
     let summarySpeechActive=false;
     let summarySpeechToken=0;
+    let summarySpeechRateValue=.89;
 
     function preferredSummaryVoice(){
       if(!("speechSynthesis" in window))return null;
-      const voices=window.speechSynthesis.getVoices().filter(v=>/^en(?:-|_)/i.test(v.lang||""));
-      if(!voices.length)return null;
+      const allVoices=window.speechSynthesis.getVoices();
+      if(!allVoices.length)return null;
+
+      const englishVoices=allVoices.filter(v=>/^en(?:-|_)/i.test(v.lang||""));
+      const voices=englishVoices.length?englishVoices:allVoices;
 
       const warmFemaleNames=[
-        "aria","jenny","ava","sonia","emma","samantha","serena","susan",
-        "moira","karen","victoria","fiona","tessa","joanna","salli"
+        "ava","aria","jenny","samantha","victoria","karen","moira","fiona",
+        "serena","tessa","zira","hazel","susan","allison","joanna","salli",
+        "amy","emma","olivia","sophie","libby","michelle","natasha","sonia",
+        "linda","lisa","veena","female"
       ];
-      const likelyMaleNames=["david","mark","guy","daniel","george","james","richard","thomas","fred"];
+      const likelyMaleNames=[
+        "david","mark","guy","daniel","george","james","richard","thomas",
+        "fred","alex","ralph","bruce","lee","aaron","ryan"
+      ];
 
       return voices.map(voice=>{
-        const name=String(voice.name||"").toLowerCase();
+        const name=(String(voice.name||"")+" "+String(voice.voiceURI||"")).toLowerCase();
         let score=0;
 
-        /* Prefer the better free browser/OS voices when they exist. */
-        if(name.includes("online")&&name.includes("natural"))score+=420;
-        else if(name.includes("natural"))score+=340;
-        if(name.includes("neural"))score+=320;
-        if(name.includes("enhanced"))score+=220;
-        if(name.includes("premium"))score+=200;
-        if(voice.localService===false)score+=45;
+        /* Prefer the highest-quality free voice exposed by this browser/device. */
+        if(name.includes("online")&&name.includes("natural"))score+=520;
+        else if(name.includes("natural"))score+=430;
+        if(name.includes("neural"))score+=410;
+        if(name.includes("enhanced"))score+=300;
+        if(name.includes("premium"))score+=280;
+        if(name.includes("high quality"))score+=240;
 
-        warmFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=155-index;});
-        if(name.includes("microsoft"))score+=45;
-        if(name.includes("google"))score+=28;
-        if(/en[-_]us/i.test(voice.lang||""))score+=20;
-        else if(/en[-_]gb/i.test(voice.lang||""))score+=14;
+        warmFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=220-index;});
+        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=260;});
 
-        /* Older desktop/eSpeak-style voices are usually noticeably more robotic. */
+        /* Useful browser/platform fallbacks when gender is not exposed in the API. */
+        if(name.includes("microsoft"))score+=65;
+        if(name.includes("google us english"))score+=95;
+        else if(name.includes("google")&&/^en/i.test(voice.lang||""))score+=48;
+        if(name.includes("apple"))score+=35;
+        if(voice.default)score+=30;
+
+        if(/en[-_]us/i.test(voice.lang||""))score+=30;
+        else if(/en[-_]gb/i.test(voice.lang||""))score+=22;
+        else if(/^en/i.test(voice.lang||""))score+=14;
+
+        /* Penalize older synthetic engines when a smoother alternative exists. */
         if(name.includes("desktop"))score-=120;
-        if(name.includes("espeak"))score-=220;
-        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=180;});
+        if(name.includes("espeak"))score-=260;
+        if(name.includes("festival"))score-=220;
+        if(name.includes("compact"))score-=35;
+
         return {voice,score};
       }).sort((a,b)=>b.score-a.score)[0].voice;
+    }
+
+    function summarySpeechRate(){
+      return Math.min(1.25,Math.max(.65,Number(summarySpeechRateValue)||.89));
     }
 
     function summarySpeechParagraphs(){
@@ -1152,11 +1196,12 @@
         const voice=preferredSummaryVoice();
         if(voice)utterance.voice=voice;
         utterance.lang=voice?.lang||"en-US";
-        /* A slightly slower neutral pitch keeps free system voices warmer and less synthetic. */
-        utterance.rate=.89;
+        /* Keep V3's softer delivery while allowing the visitor to choose speed. */
+        utterance.rate=summarySpeechRate();
         utterance.pitch=1.0;
         utterance.volume=.94;
-        utterance.onend=()=>window.setTimeout(speakNext,140);
+        const pauseMs=summarySpeechRate()<.85?175:summarySpeechRate()>1?105:140;
+        utterance.onend=()=>window.setTimeout(speakNext,pauseMs);
         utterance.onerror=()=>{
           summarySpeechActive=false;
           setSummarySpeechButton(false);
@@ -1168,15 +1213,39 @@
 
     function initializeSummarySpeech(){
       const button=$("summaryListenButton");
+      const speedButtons=Array.from(document.querySelectorAll(".summary-speed-button"));
       if(!button)return;
       if(!("speechSynthesis" in window)||typeof window.SpeechSynthesisUtterance!=="function"){
-        button.hidden=true;
+        const controls=button.closest(".summary-audio-controls");
+        if(controls)controls.hidden=true;
+        else button.hidden=true;
         return;
       }
-      /* Prime the voice list; some browsers populate their natural voices asynchronously. */
+
+      /* Prime the voice list; Chrome, Edge and Safari may populate voices asynchronously. */
       window.speechSynthesis.getVoices();
-      window.speechSynthesis.addEventListener?.("voiceschanged",()=>window.speechSynthesis.getVoices(),{once:true});
+      if(typeof window.speechSynthesis.addEventListener==="function"){
+        window.speechSynthesis.addEventListener("voiceschanged",()=>window.speechSynthesis.getVoices(),{once:true});
+      }
+
       button.addEventListener("click",speakSummary);
+
+      speedButtons.forEach(speedButton=>{
+        speedButton.addEventListener("click",()=>{
+          const rate=Number(speedButton.dataset.rate);
+          if(Number.isFinite(rate))summarySpeechRateValue=rate;
+          speedButtons.forEach(item=>{
+            const active=item===speedButton;
+            item.classList.toggle("active",active);
+            item.setAttribute("aria-pressed",active?"true":"false");
+          });
+          if(summarySpeechActive){
+            stopSummarySpeech();
+            window.setTimeout(speakSummary,60);
+          }
+        });
+      });
+
       window.addEventListener("beforeunload",stopSummarySpeech,{once:true});
     }
 
