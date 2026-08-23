@@ -1739,7 +1739,7 @@
     }
 
 
-    /* Simple welcome popup — three clear actions only — Version 14 (Version 8 base) */
+    /* Simple welcome popup — three clear actions only — Version 15 (clean Version 8 base) */
     .home-welcome-box{
       width:min(620px,calc(100vw - 32px));
       max-width:100%;
@@ -1756,20 +1756,11 @@
       0%,100%{border-color:rgba(255,215,128,.42);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.05),0 0 18px rgba(255,205,96,.05)}
       50%{border-color:rgba(255,222,145,.62);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.08),0 0 28px rgba(255,205,96,.13)}
     }
-    /* Version 14: subtle motion is limited to the three action icons. */
-    .home-welcome-icon svg{
-      transform-origin:50% 50%;
-      will-change:transform,filter,opacity;
-    }
-    .home-welcome-member .home-welcome-icon svg{
-      animation:psdAccountIconPulse 3.8s ease-in-out infinite;
-    }
-    .home-welcome-tour .home-welcome-icon svg{
-      animation:psdVideoIconPulse 3.4s ease-in-out .45s infinite;
-    }
-    .home-welcome-donate .home-welcome-icon svg{
-      animation:psdHeartBeat 3.1s ease-in-out .9s infinite;
-    }
+    /* Version 15: subtle motion only on the three icons. */
+    .home-welcome-icon svg{transform-origin:50% 50%;will-change:transform,filter,opacity}
+    .home-welcome-member .home-welcome-icon svg{animation:psdAccountIconPulse 3.8s ease-in-out infinite}
+    .home-welcome-tour .home-welcome-icon svg{animation:psdVideoIconPulse 3.4s ease-in-out .45s infinite}
+    .home-welcome-donate .home-welcome-icon svg{animation:psdHeartBeat 3.1s ease-in-out .9s infinite}
     @keyframes psdAccountIconPulse{
       0%,72%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(143,232,199,0));opacity:.96}
       82%{transform:scale(1.08);filter:drop-shadow(0 0 5px rgba(143,232,199,.48));opacity:1}
@@ -1877,7 +1868,7 @@
   <script src="site-nav.js" defer></script>
   <script src="site-theme.js" defer></script>
 
-  <!-- PSD Homepage Welcome Popup v14 — Version 8 base + requested changes only -->
+  <!-- PSD Homepage Welcome Popup v15 — clean Version 8 base + requested changes -->
   <div class="home-welcome-backdrop" id="home-welcome-popup" aria-hidden="true">
     <section class="home-welcome-box" role="dialog" aria-modal="true" aria-labelledby="home-welcome-title" tabindex="-1">
       <button class="home-welcome-close" id="home-welcome-close" type="button" aria-label="Close welcome message">×</button>
@@ -2630,14 +2621,13 @@
 
       if(!popup || !dialog || !closeButton || !joinButton || !tourButton || !donateButton) return;
 
-      /* PSD Homepage Welcome Popup v14 — Version 8 base
+      /* PSD Homepage Welcome Popup v15 — clean Version 8 logic
          - First popup: 2 minutes after page load, once per browser session.
          - Second popup: guests only, one time, 5 minutes after first close.
-         - If the tab is hidden or the website tour is open, wait until the page is available.
          - Never a third popup in the same session. */
-      const FIRST_SEEN_KEY = "psd_home_welcome_v14_first_seen";
-      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v14_first_closed_at";
-      const REMINDER_SEEN_KEY = "psd_home_welcome_v14_reminder_seen";
+      const FIRST_SEEN_KEY = "psd_home_welcome_v15_first_seen";
+      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v15_first_closed_at";
+      const REMINDER_SEEN_KEY = "psd_home_welcome_v15_reminder_seen";
       const FIRST_DELAY_MS = 2 * 60 * 1000;
       const REMINDER_DELAY_MS = 5 * 60 * 1000;
       const TOUR_FALLBACK_URL = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
@@ -2708,9 +2698,8 @@
       }
 
       function openPopup(isReminder = false){
-        if(document.getElementById("site-tour-overlay")) return false;
-        if(document.visibilityState !== "visible") return false;
-        if(popup.classList.contains("is-open")) return true;
+        if(document.getElementById("site-tour-overlay")) return;
+        if(popup.classList.contains("is-open")) return;
 
         popup.dataset.reminder = isReminder ? "true" : "false";
         lastFocused = document.activeElement;
@@ -2718,24 +2707,6 @@
         popup.setAttribute("aria-hidden", "false");
         document.body.classList.add("home-welcome-open");
         window.setTimeout(() => closeButton.focus(), 80);
-        return true;
-      }
-
-      function openWhenReady(isReminder = false){
-        const tryOpen = async () => {
-          if(isReminder){
-            if(reminderSeen()) return;
-            const signedIn = await resolveAuthState();
-            if(signedIn || reminderSeen()) return;
-          }else if(firstSeen()){
-            return;
-          }
-
-          if(openPopup(isReminder)) return;
-          window.setTimeout(tryOpen, 1000);
-        };
-
-        tryOpen();
       }
 
       async function scheduleGuestReminder(){
@@ -2746,8 +2717,10 @@
         if(!closedAt) return;
 
         const wait = Math.max(0, REMINDER_DELAY_MS - (Date.now() - closedAt));
-        reminderTimer = window.setTimeout(() => {
-          openWhenReady(true);
+        reminderTimer = window.setTimeout(async () => {
+          const signedIn = await resolveAuthState();
+          if(signedIn || reminderSeen()) return;
+          openPopup(true);
         }, wait);
       }
 
@@ -2843,9 +2816,9 @@
         }
       });
 
-      /* Fresh v14 session keys keep this version isolated from older popup tests. */
+      /* Fresh v15 session keys isolate this test from all older versions. */
       if(!firstSeen()){
-        firstTimer = window.setTimeout(() => openWhenReady(false), FIRST_DELAY_MS);
+        firstTimer = window.setTimeout(() => openPopup(false), FIRST_DELAY_MS);
       }else if(!reminderSeen()){
         scheduleGuestReminder();
       }
