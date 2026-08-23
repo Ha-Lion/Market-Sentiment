@@ -1072,6 +1072,7 @@
     }
 
     let summarySpeechActive=false;
+    let summarySpeechPaused=false;
     let summarySpeechToken=0;
     let summarySpeechRateValue=.89;
 
@@ -1169,39 +1170,70 @@
       return chunks;
     }
 
-    function setSummarySpeechButton(active){
+    function setSummarySpeechButton(state){
       const button=$("summaryListenButton");
       if(!button)return;
-      button.setAttribute("aria-pressed",active?"true":"false");
       const label=button.querySelector(".summary-listen-label");
-      if(label)label.textContent=active?"Stop Reading":"Listen to Summary";
       const icon=button.querySelector("span[aria-hidden='true']");
-      if(icon)icon.textContent=active?"■":"🔊";
+
+      if(state==="paused"){
+        button.setAttribute("aria-pressed","true");
+        if(label)label.textContent="Resume";
+        if(icon)icon.textContent="▶";
+        return;
+      }
+
+      if(state==="playing"){
+        button.setAttribute("aria-pressed","true");
+        if(label)label.textContent="Pause";
+        if(icon)icon.textContent="⏸";
+        return;
+      }
+
+      button.setAttribute("aria-pressed","false");
+      if(label)label.textContent="Listen to Summary";
+      if(icon)icon.textContent="🔊";
     }
 
     function stopSummarySpeech(){
       summarySpeechToken+=1;
       summarySpeechActive=false;
+      summarySpeechPaused=false;
       if("speechSynthesis" in window)window.speechSynthesis.cancel();
-      setSummarySpeechButton(false);
+      setSummarySpeechButton("idle");
     }
 
     function speakSummary(){
       if(!("speechSynthesis" in window))return;
-      if(summarySpeechActive){stopSummarySpeech();return;}
+
+      if(summarySpeechActive){
+        if(summarySpeechPaused){
+          window.speechSynthesis.resume();
+          summarySpeechPaused=false;
+          setSummarySpeechButton("playing");
+        }else{
+          window.speechSynthesis.pause();
+          summarySpeechPaused=true;
+          setSummarySpeechButton("paused");
+        }
+        return;
+      }
+
       const chunks=splitSpeechText(summarySpeechParagraphs());
       if(!chunks.length)return;
       stopSummarySpeech();
       summarySpeechActive=true;
+      summarySpeechPaused=false;
       const token=summarySpeechToken;
-      setSummarySpeechButton(true);
+      setSummarySpeechButton("playing");
       let index=0;
 
       const speakNext=()=>{
         if(!summarySpeechActive||token!==summarySpeechToken)return;
         if(index>=chunks.length){
           summarySpeechActive=false;
-          setSummarySpeechButton(false);
+          summarySpeechPaused=false;
+          setSummarySpeechButton("idle");
           return;
         }
         const utterance=new SpeechSynthesisUtterance(chunks[index++]);
@@ -1216,7 +1248,8 @@
         utterance.onend=()=>window.setTimeout(speakNext,pauseMs);
         utterance.onerror=()=>{
           summarySpeechActive=false;
-          setSummarySpeechButton(false);
+          summarySpeechPaused=false;
+          setSummarySpeechButton("idle");
         };
         window.speechSynthesis.speak(utterance);
       };
