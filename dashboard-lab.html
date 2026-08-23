@@ -431,23 +431,40 @@
     body.dark-mode .mi-method summary,
     body.dark-mode .hero-main .ai-proof summary{background:transparent!important;color:#ffd36a!important;border:0!important}
 
+    /* One exact glossary/info-icon shape everywhere on this page. */
     .mi-glossary-info,
     .mi-help-icon{
-      display:inline-grid;place-items:center;width:16px;height:16px;min-width:16px;padding:0;
-      border:1px solid #9aa9b7;border-radius:50%;background:#f7fafc;color:#d32f2f;
-      font:800 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;vertical-align:1px;box-shadow:none!important
+      display:inline-flex!important;align-items:center!important;justify-content:center!important;
+      width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
+      max-width:16px!important;max-height:16px!important;flex:0 0 16px!important;box-sizing:border-box!important;
+      margin:0!important;padding:0!important;border:1px solid #9aa9b7!important;border-radius:50%!important;
+      background:#ffffff!important;color:#d32f2f!important;box-shadow:none!important;outline:0;
+      font:800 10px/14px system-ui,-apple-system,"Segoe UI",sans-serif!important;
+      text-align:center!important;vertical-align:middle!important;appearance:none!important;-webkit-appearance:none!important;
+      overflow:hidden!important;transform:none!important
     }
-    .mi-glossary-info{margin-left:4px;cursor:pointer;transition:.15s ease}
-    .mi-help-icon{margin:0 5px 0 0;cursor:inherit;pointer-events:none}
+    .mi-glossary-info{margin-left:5px!important;cursor:pointer!important;transition:.15s ease}
+    .mi-help-icon{margin-right:5px!important;cursor:inherit!important;pointer-events:none!important}
     .mi-glossary-info:hover,.mi-glossary-info:focus-visible,.mi-glossary-info[aria-expanded="true"]{
-      border-color:#60a5fa;background:#eaf3ff;color:#d32f2f;outline:none
+      border-color:#60a5fa!important;background:#eaf3ff!important;color:#d32f2f!important;outline:none!important
     }
     body.dark-mode .mi-glossary-info,
-    body.dark-mode .mi-help-icon{background:#18202e;color:#ef4444;border-color:#64748b}
+    body.dark-mode .mi-help-icon{
+      background:#18202e!important;color:#ef4444!important;border-color:#64748b!important
+    }
     body.dark-mode .mi-glossary-info:hover,
     body.dark-mode .mi-glossary-info:focus-visible,
     body.dark-mode .mi-glossary-info[aria-expanded="true"]{
-      border-color:#60a5fa;background:#1d4ed8;color:#fff
+      border-color:#60a5fa!important;background:#1d4ed8!important;color:#fff!important
+    }
+
+    /* Read-aloud tracking: highlight the word currently being spoken. */
+    .summary-speech-word{border-radius:3px;transition:background-color .08s ease,box-shadow .08s ease,color .08s ease}
+    .summary-speech-word-active{
+      background:#ffe29a!important;box-shadow:0 0 0 2px rgba(210,153,34,.18)!important;color:#17120a!important
+    }
+    body.dark-mode .summary-speech-word-active{
+      background:#705819!important;box-shadow:0 0 0 2px rgba(255,211,106,.18)!important;color:#fff4c7!important
     }
     .mi-glossary-popover{
       position:fixed;z-index:100000;width:min(320px,calc(100vw - 24px));padding:12px 14px;
@@ -1238,6 +1255,10 @@
     let summarySpeechNextIndex=0;
     let summarySpeechCurrentIndex=-1;
     let summarySpeechNeedsRestartOnResume=false;
+    let summarySpeechCurrentCharIndex=0;
+    let summarySpeechChunkWordMaps=[];
+    let summarySpeechWordSpans=[];
+    let summarySpeechActiveWord=null;
 
     function preferredSummaryVoice(){
       if(!("speechSynthesis" in window))return null;
@@ -1333,6 +1354,110 @@
       return chunks;
     }
 
+    function spokenSummaryParagraphElements(){
+      const root=$("eventSummary");
+      if(!root)return [];
+      return Array.from(root.querySelectorAll("p")).filter(p=>
+        !p.classList.contains("ai-source-line") &&
+        !p.classList.contains("ai-confidence")
+      );
+    }
+
+    function clearSummarySpeechWordHighlight(){
+      if(summarySpeechActiveWord)summarySpeechActiveWord.classList.remove("summary-speech-word-active");
+      summarySpeechActiveWord=null;
+    }
+
+    function activateSummarySpeechWord(span){
+      if(!span||span===summarySpeechActiveWord)return;
+      clearSummarySpeechWordHighlight();
+      summarySpeechActiveWord=span;
+      span.classList.add("summary-speech-word-active");
+    }
+
+    function normalizeSpeechToken(value){
+      return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+    }
+
+    function prepareSummarySpeechWordMarkup(){
+      clearSummarySpeechWordHighlight();
+      summarySpeechWordSpans=[];
+      const globalTokens=[];
+      const paragraphs=spokenSummaryParagraphElements();
+
+      paragraphs.forEach(paragraph=>{
+        const walker=document.createTreeWalker(paragraph,NodeFilter.SHOW_TEXT,{
+          acceptNode(node){
+            if(!node.nodeValue||!node.nodeValue.trim())return NodeFilter.FILTER_REJECT;
+            const parent=node.parentElement;
+            if(!parent||parent.closest("script,style,button,.summary-speech-word"))return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        });
+        const nodes=[];
+        while(walker.nextNode())nodes.push(walker.currentNode);
+
+        nodes.forEach(node=>{
+          const parts=node.nodeValue.split(/(\s+)/);
+          const frag=document.createDocumentFragment();
+          parts.forEach(part=>{
+            if(!part)return;
+            if(/^\s+$/.test(part)){
+              frag.appendChild(document.createTextNode(part));
+              return;
+            }
+            const span=document.createElement("span");
+            span.className="summary-speech-word";
+            span.textContent=part;
+            frag.appendChild(span);
+            summarySpeechWordSpans.push(span);
+
+            const friendly=speechFriendlyText(part).match(/\S+/g)||[];
+            friendly.forEach(token=>{
+              const norm=normalizeSpeechToken(token);
+              if(norm)globalTokens.push({norm,span});
+            });
+          });
+          node.replaceWith(frag);
+        });
+      });
+      return globalTokens;
+    }
+
+    function buildSummarySpeechChunkWordMaps(chunks,globalTokens){
+      let cursor=0;
+      return chunks.map(chunk=>{
+        const map=[];
+        const regex=/\S+/g;
+        let match;
+        while((match=regex.exec(chunk))){
+          const norm=normalizeSpeechToken(match[0]);
+          if(!norm)continue;
+          let found=-1;
+          const limit=Math.min(globalTokens.length,cursor+12);
+          for(let i=cursor;i<limit;i++){
+            if(globalTokens[i].norm===norm){found=i;break;}
+          }
+          if(found<0&&cursor<globalTokens.length)found=cursor;
+          const span=found>=0&&found<globalTokens.length?globalTokens[found].span:null;
+          if(found>=0)cursor=found+1;
+          map.push({start:match.index,end:match.index+match[0].length,span});
+        }
+        return map;
+      });
+    }
+
+    function highlightSummaryBoundary(chunkIndex,charIndex){
+      const map=summarySpeechChunkWordMaps[chunkIndex]||[];
+      if(!map.length)return;
+      let hit=map[0];
+      for(const item of map){
+        if(item.start<=charIndex)hit=item;
+        else break;
+      }
+      if(hit&&hit.span)activateSummarySpeechWord(hit.span);
+    }
+
     function setSummarySpeechButton(state){
       const button=$("summaryListenButton");
       if(!button)return;
@@ -1365,7 +1490,11 @@
       summarySpeechChunks=[];
       summarySpeechNextIndex=0;
       summarySpeechCurrentIndex=-1;
+      summarySpeechCurrentCharIndex=0;
       summarySpeechNeedsRestartOnResume=false;
+      summarySpeechCurrentCharIndex=0;
+      summarySpeechChunkWordMaps=[];
+      clearSummarySpeechWordHighlight();
       if("speechSynthesis" in window)window.speechSynthesis.cancel();
       setSummarySpeechButton("idle");
     }
@@ -1377,12 +1506,16 @@
         summarySpeechPaused=false;
         summarySpeechCurrentIndex=-1;
         summarySpeechNeedsRestartOnResume=false;
+        summarySpeechCurrentCharIndex=0;
+        clearSummarySpeechWordHighlight();
         setSummarySpeechButton("idle");
         return;
       }
 
       summarySpeechCurrentIndex=summarySpeechNextIndex;
+      summarySpeechCurrentCharIndex=0;
       const utterance=new SpeechSynthesisUtterance(summarySpeechChunks[summarySpeechNextIndex++]);
+      const activeChunkIndex=summarySpeechCurrentIndex;
       const voice=preferredSummaryVoice();
       if(voice)utterance.voice=voice;
       utterance.lang=voice?.lang||"en-US";
@@ -1391,8 +1524,18 @@
       utterance.pitch=1.0;
       utterance.volume=.94;
       const pauseMs=summarySpeechRate()<.85?175:summarySpeechRate()>1?105:140;
+      utterance.onboundary=event=>{
+        if(token!==summarySpeechToken||!summarySpeechActive)return;
+        if(Number.isFinite(event.charIndex)){
+          summarySpeechCurrentCharIndex=Math.max(0,event.charIndex);
+          highlightSummaryBoundary(activeChunkIndex,summarySpeechCurrentCharIndex);
+        }
+      };
+      /* Give browsers without boundary events at least a chunk-start cue. */
+      highlightSummaryBoundary(activeChunkIndex,0);
       utterance.onend=()=>{
         if(token!==summarySpeechToken||!summarySpeechActive)return;
+        clearSummarySpeechWordHighlight();
         window.setTimeout(()=>speakNextSummaryChunk(token),pauseMs);
       };
       utterance.onerror=()=>{
@@ -1409,10 +1552,25 @@
     function restartSummaryAtCurrentSegment(keepPaused){
       if(!summarySpeechActive)return;
       const restartIndex=summarySpeechCurrentIndex>=0?summarySpeechCurrentIndex:Math.max(0,summarySpeechNextIndex-1);
+      if(restartIndex>=0&&restartIndex<summarySpeechChunks.length&&summarySpeechCurrentCharIndex>0){
+        const original=summarySpeechChunks[restartIndex];
+        const cut=Math.min(summarySpeechCurrentCharIndex,Math.max(0,original.length-1));
+        const remainder=original.slice(cut).replace(/^\s+/,"");
+        const removed=original.slice(cut).length-remainder.length;
+        const shift=cut+removed;
+        if(remainder){
+          summarySpeechChunks[restartIndex]=remainder;
+          const oldMap=summarySpeechChunkWordMaps[restartIndex]||[];
+          summarySpeechChunkWordMaps[restartIndex]=oldMap
+            .filter(item=>item.end>cut)
+            .map(item=>({start:Math.max(0,item.start-shift),end:Math.max(1,item.end-shift),span:item.span}));
+        }
+      }
       summarySpeechToken+=1;
       if("speechSynthesis" in window)window.speechSynthesis.cancel();
       summarySpeechNextIndex=restartIndex;
       summarySpeechCurrentIndex=-1;
+      summarySpeechCurrentCharIndex=0;
       summarySpeechPaused=!!keepPaused;
       summarySpeechNeedsRestartOnResume=!!keepPaused;
       if(keepPaused){
@@ -1446,8 +1604,10 @@
         return;
       }
 
+      const speechTokens=prepareSummarySpeechWordMarkup();
       summarySpeechChunks=splitSpeechText(summarySpeechParagraphs());
       if(!summarySpeechChunks.length)return;
+      summarySpeechChunkWordMaps=buildSummarySpeechChunkWordMaps(summarySpeechChunks,speechTokens);
       summarySpeechToken+=1;
       if("speechSynthesis" in window)window.speechSynthesis.cancel();
       summarySpeechActive=true;
