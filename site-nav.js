@@ -344,7 +344,7 @@
     if(event) event.preventDefault();
 
     try{
-      await loadStylesheet("account.css?v=20260802-ribbon-final2", "psd-account-styles");
+      await loadStylesheet("account.css?v=12", "psd-account-styles");
 
       if(!window.supabase || typeof window.supabase.createClient !== "function"){
         await loadScript(
@@ -354,19 +354,19 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=12", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=20260802-ribbon-final2", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=11", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
         throw new Error("Account popup did not initialize.");
       }
 
-      const sessionResult = await window.psdSupabase.auth.getSession();
-      if(sessionResult.data && sessionResult.data.session){
+      const session = await getStableSession(window.psdSupabase);
+      if(session){
         window.location.href = "account.html";
         return;
       }
@@ -508,8 +508,7 @@
     try{
       const client = await ensureAccountInfrastructure();
       if(!client) return false;
-      const sessionResult = await client.auth.getSession();
-      return !!(sessionResult.data && sessionResult.data.session);
+      return !!(await getStableSession(client));
     }catch(error){
       console.error(error);
       return false;
@@ -641,10 +640,34 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=12", "psd-supabase-client");
     }
 
     return window.psdSupabase;
+  }
+
+  async function getStableSession(client){
+    const readSession = async function(){
+      const result = await client.auth.getSession();
+      if(result && result.error) throw result.error;
+      return result && result.data ? result.data.session : null;
+    };
+
+    let session = await readSession();
+    if(session) return session;
+
+    /* When moving between pages, Supabase can need a brief moment to restore
+       the persisted browser session. Retry only when this tab already knows
+       it was a signed-in member, preventing a false logout during navigation. */
+    if(!cachedMemberUI()) return null;
+
+    for(let attempt = 0; attempt < 4; attempt += 1){
+      await new Promise(function(resolve){ window.setTimeout(resolve, 150); });
+      session = await readSession();
+      if(session) return session;
+    }
+
+    return null;
   }
 
   async function refreshAccountNavigation(){
@@ -656,8 +679,7 @@
       const client = await ensureAccountInfrastructure();
       if(!client) return;
 
-      const sessionResult = await client.auth.getSession();
-      const session = sessionResult.data && sessionResult.data.session;
+      const session = await getStableSession(client);
 
       const ribbonWatchlistLink =
         document.getElementById("psd-ribbon-watchlist-link");
