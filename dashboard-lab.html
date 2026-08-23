@@ -174,7 +174,7 @@
     body.dark-mode .score-ring{background:conic-gradient(var(--ei-gold) calc(var(--score)*1%),#405364 0)}
 
 
-    /* Iteration 4: compact forward-outlook layer, shared conceptually with Forecast Lab 2. */
+    /* Iteration 5: compact forward-outlook layer, shared conceptually with Forecast Lab 2. */
     .event-forecast-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
     .forecast-lab-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #c99626;border-radius:9px;padding:8px 11px;background:linear-gradient(180deg,#fff9e7,#f4e4b6);color:#5f430f;font-size:11px;font-weight:900;box-shadow:inset 0 1px 0 #fff,0 3px 7px rgba(38,57,72,.13)}
     body.dark-mode .forecast-lab-link{background:linear-gradient(180deg,#49391d,#2c2417);color:#ffe9aa;border-color:#c99626;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 8px rgba(0,0,0,.28)}
@@ -197,6 +197,28 @@
     @media(max-width:1450px){.asset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.queue-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
     @media(max-width:1080px){.event-hero,.intelligence-grid,.watch-grid{grid-template-columns:1fr}.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.driver-grid,.channel-grid{grid-template-columns:1fr}.hero-score{justify-content:flex-start}.queue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.event-page{padding:8px}.event-shell{padding:8px}.hero-main h1{font-size:25px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-row{grid-template-columns:115px 1fr 58px}.queue-grid{grid-template-columns:1fr}.queue-head{align-items:flex-start;flex-direction:column}}
+
+    /* Iteration 5: event evolution / change memory */
+    .evolution-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+    .evolution-stat{border:1px solid var(--ei-line);border-radius:12px;padding:10px;background:var(--ei-soft);min-height:76px}
+    .evolution-stat b{display:block;font-size:20px;line-height:1.05;color:var(--ei-ink)}
+    .evolution-stat span{display:block;margin-top:5px;font-size:10px;color:var(--ei-muted);font-weight:700}
+    .evolution-stat small{display:block;margin-top:4px;font-size:9px;color:var(--ei-muted)}
+    .evolution-trend{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;border:1px solid var(--ei-line);font-size:10px;font-weight:900}
+    .evolution-trend.rising{background:#fff0e7;border-color:#ef9d70;color:#9a4214}
+    .evolution-trend.easing{background:#eafaf5;border-color:#49bfa3;color:#08725e}
+    .evolution-trend.stable{background:var(--ei-soft);color:var(--ei-ink)}
+    body.dark-mode .evolution-trend.rising{background:#47291b;color:#ffd1ba}
+    body.dark-mode .evolution-trend.easing{background:#15382f;color:#b7f4e3}
+    .evolution-timeline{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}
+    .evolution-point{border:1px solid var(--ei-line);border-radius:10px;padding:8px;background:var(--ei-panel);position:relative;overflow:hidden}
+    .evolution-point:before{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#52c8a5,#ecc84d,#ed8a56);opacity:.78}
+    .evolution-point strong{display:block;font-size:13px;color:var(--ei-ink)}
+    .evolution-point span{display:block;font-size:9px;color:var(--ei-muted);margin-top:3px}
+    .evolution-empty{padding:10px;border:1px dashed var(--ei-line);border-radius:10px;color:var(--ei-muted);font-size:10px}
+    @media(max-width:1080px){.evolution-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.evolution-timeline{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:620px){.evolution-grid,.evolution-timeline{grid-template-columns:1fr 1fr}}
+
   </style>
 </head>
 <body>
@@ -243,6 +265,15 @@
             <div class="priority-detail" id="priorityDetail">Priority score loading…</div>
           </div>
         </aside>
+      </section>
+
+      <section class="section-card" style="margin-bottom:12px" id="eventEvolutionSection">
+        <div class="section-head">
+          <div><span class="section-kicker">Event evolution</span><h2>What Changed Since the Previous PSD Snapshot?</h2><p>Lab memory tracks the selected event across new PSD feed timestamps so we can see whether market impact is intensifying, easing or remaining stable.</p></div>
+          <span id="evolutionTrend" class="evolution-trend stable">Building history</span>
+        </div>
+        <div class="evolution-grid" id="evolutionGrid"></div>
+        <div class="evolution-timeline" id="evolutionTimeline"></div>
       </section>
 
       <section class="intelligence-grid">
@@ -303,7 +334,7 @@
       </section>
 
       <div class="methodology">
-        <span><b>Iteration 4 lab architecture:</b> the Top 10 priority tiles are the event navigation. The selected event now also receives a compact, model-consistent 7-day/30-day forward outlook; the full immutable forecast ledger remains isolated in Forecast Lab 2.</span>
+        <span><b>Iteration 5 lab architecture:</b> the Top 10 priority tiles are the event navigation. The selected event now also receives a compact, model-consistent 7-day/30-day forward outlook; the full immutable forecast ledger remains isolated in Forecast Lab 2.</span>
         <span><b>Priority formula:</b> 35% market impact • 25% freshness • 20% cross-market reach • 10% source quality • 10% persistence. Experimental; not investment advice.</span>
       </div>
     </div>
@@ -316,6 +347,8 @@
   <script>
   (()=>{
     "use strict";
+
+    const EVENT_HISTORY_KEY = "psd_event_intelligence_lab_history_v1";
 
     const EVENT_POLICY = Object.freeze({
       maxActive:10,
@@ -746,6 +779,64 @@
       return `PSD currently classifies this as a ${band}-impact event. The strongest cross-market pressure is concentrated in ${strongestText}. ${evidenceText}. The assessment will automatically move between Emerging, Active, Watch and Archive as evidence and market impact change.`;
     }
 
+    function loadEventHistory(){
+      try{const v=JSON.parse(localStorage.getItem(EVENT_HISTORY_KEY)||"[]");return Array.isArray(v)?v:[]}catch(_){return []}
+    }
+
+    function saveEventHistory(rows){
+      try{localStorage.setItem(EVENT_HISTORY_KEY,JSON.stringify(rows))}catch(_){/* lab memory can fail without affecting page */}
+    }
+
+    function currentFeedStamp(){
+      return pulseData?.data_updated_utc||pulseData?.generated_utc||pulseData?.data_updated_ny||new Date().toISOString();
+    }
+
+    function recordEventSnapshots(){
+      const history=loadEventHistory(),stamp=String(currentFeedStamp());
+      eventRankings.forEach(r=>{
+        const id=`${r.event.id}|${stamp}`;
+        if(history.some(x=>x.id===id))return;
+        const strongest=[...r.rows].filter(x=>num(x.psi)!==null).sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5).map(x=>({instrument:x.instrument,psi:num(x.psi),d1:num(x.change_1d),price:num(x.price_change_1d_pct)}));
+        history.push({id,eventId:r.event.id,stamp,impact:r.impact,priority:r.priority,lifecycle:r.lifecycle,news:r.evidence.matches.length,sources:r.evidence.sourceCount,strongest});
+      });
+      const cutoff=Date.now()-EVENT_POLICY.historyDays*86400000;
+      const trimmed=history.filter(x=>{const d=new Date(x.stamp);return Number.isNaN(d.getTime())||d.getTime()>=cutoff}).slice(-1500);
+      saveEventHistory(trimmed);
+    }
+
+    function eventSnapshots(eventId){
+      return loadEventHistory().filter(x=>x.eventId===eventId).sort((a,b)=>String(a.stamp).localeCompare(String(b.stamp)));
+    }
+
+    function signedDelta(v,suffix=''){
+      const n=Number(v||0);return `${n>0?'+':''}${n}${suffix}`;
+    }
+
+    function renderEvolution(){
+      const ranking=rankingFor(activeEvent),snaps=eventSnapshots(activeEvent.id);
+      const latest=snaps[snaps.length-1]||null,previous=snaps.length>1?snaps[snaps.length-2]:null;
+      if(!ranking){$('evolutionGrid').innerHTML='<div class="evolution-empty" style="grid-column:1/-1">Event ranking unavailable.</div>';return;}
+      const dImpact=previous?ranking.impact-Number(previous.impact||0):0;
+      const dPriority=previous?ranking.priority-Number(previous.priority||0):0;
+      const dNews=previous?ranking.evidence.matches.length-Number(previous.news||0):0;
+      const dSources=previous?ranking.evidence.sourceCount-Number(previous.sources||0):0;
+      let trend='Stable',cls='stable';
+      if(dImpact>=3||dPriority>=4){trend='Intensifying',cls='rising'}
+      else if(dImpact<=-3||dPriority<=-4){trend='Easing',cls='easing'}
+      $('evolutionTrend').textContent=previous?`${trend} • Impact ${signedDelta(dImpact)}`:'Building history • first snapshot';
+      $('evolutionTrend').className=`evolution-trend ${cls}`;
+      const metrics=[
+        ['Impact Score',ranking.impact,previous?`Change ${signedDelta(dImpact)}`:'Baseline created'],
+        ['Priority',`${ranking.priority}/100`,previous?`Change ${signedDelta(dPriority)}`:'Baseline created'],
+        ['Evidence',`${ranking.evidence.matches.length} news`,previous?`${signedDelta(dNews)} vs prior`:`${ranking.evidence.sourceCount} sources`],
+        ['Sources',ranking.evidence.sourceCount,previous?`${signedDelta(dSources)} vs prior`:'Current breadth'],
+        ['Lifecycle',ranking.lifecycle,previous&&previous.lifecycle!==ranking.lifecycle?`Was ${previous.lifecycle}`:'No lifecycle change']
+      ];
+      $('evolutionGrid').innerHTML=metrics.map(([label,value,note])=>`<div class="evolution-stat"><b>${esc(value)}</b><span>${esc(label)}</span><small>${esc(note)}</small></div>`).join('');
+      const recent=snaps.slice(-6);
+      $('evolutionTimeline').innerHTML=recent.length?recent.map(s=>{const d=new Date(s.stamp);const when=Number.isNaN(d.getTime())?String(s.stamp):d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});return `<div class="evolution-point"><strong>Impact ${esc(s.impact)} • P${esc(s.priority)}</strong><span>${esc(s.lifecycle)} • ${esc(s.news)} news / ${esc(s.sources)} sources</span><span>${esc(when)}</span></div>`}).join(''):'<div class="evolution-empty" style="grid-column:1/-1">The timeline will build automatically as new PSD feed timestamps are loaded in this lab.</div>';
+    }
+
     function renderHero(rows){
       const score=eventImpactScore(rows),band=impactBand(score);
       $("eventTitle").textContent=activeEvent.title;
@@ -918,7 +1009,7 @@
 
     function renderEvent(){
       const rows=getUniverseRows(activeEvent);
-      renderHero(rows);renderDrivers();renderProfile(rows);renderAssets(rows);renderEventForecast(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
+      renderHero(rows);renderEvolution();renderDrivers();renderProfile(rows);renderAssets(rows);renderEventForecast(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
       const ts=pulseData?.data_updated_ny||pulseData?.data_updated_utc||pulseData?.generated_utc||"fallback snapshot";
       $("assetTimestamp").textContent=ts;
     }
@@ -936,6 +1027,7 @@
         $("dataStatus").textContent="Live feed unavailable — using embedded lab fallback snapshot";
       }
       rankEvents();
+      recordEventSnapshots();
       activeEvent=activeRankings()[0]?.event||eventRankings[0]?.event||EVENT_LIBRARY[0];
       renderEvent();
     }
