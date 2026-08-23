@@ -1749,8 +1749,21 @@
       overflow:hidden;
       border-color:rgba(255,215,128,.46);
       box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.06);
+      animation:psdWelcomeGlow 6s ease-in-out infinite;
     }
     .home-welcome-box::before{display:none!important}
+    @keyframes psdWelcomeGlow{
+      0%,100%{border-color:rgba(255,215,128,.42);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.05),0 0 18px rgba(255,205,96,.05)}
+      50%{border-color:rgba(255,222,145,.62);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.08),0 0 28px rgba(255,205,96,.13)}
+    }
+    .home-welcome-member .home-welcome-action{animation:psdAccountLight 4.8s ease-in-out infinite}
+    @keyframes psdAccountLight{
+      0%,100%{box-shadow:0 10px 24px rgba(0,0,0,.22)}
+      50%{box-shadow:0 10px 24px rgba(0,0,0,.22),0 0 18px rgba(255,211,105,.16)}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .home-welcome-box,.home-welcome-member .home-welcome-action{animation:none!important}
+    }
     .home-welcome-box > *{position:relative;z-index:1}
     .home-welcome-box > .home-welcome-close{
       position:absolute!important;
@@ -2584,18 +2597,15 @@
       const dialog = popup ? popup.querySelector(".home-welcome-box") : null;
       const closeButton = document.getElementById("home-welcome-close");
       const joinButton = document.getElementById("home-welcome-join");
-      const joinTitle = document.getElementById("home-welcome-member-title");
-      const joinCopy = document.getElementById("home-welcome-member-copy");
-      const memberRow = document.getElementById("home-welcome-member-row");
       const tourButton = document.getElementById("home-welcome-tour");
       const donateButton = document.getElementById("home-welcome-donate");
 
       if(!popup || !dialog || !closeButton || !joinButton || !tourButton || !donateButton) return;
 
-      const GUEST_SEEN_KEY = "psd_home_welcome_seen_guest_session_v2";
-      const MEMBER_SEEN_KEY = "psd_home_welcome_seen_member_session_v2";
-      const GUEST_FIRST_CLOSED_AT_KEY = "psd_home_welcome_guest_first_closed_at_v1";
-      const GUEST_REMINDER_SEEN_KEY = "psd_home_welcome_guest_reminder_seen_v1";
+      /* Guest-only welcome. Signed-in members never see this popup. */
+      const GUEST_SEEN_KEY = "psd_home_welcome_seen_guest_session_v3";
+      const GUEST_FIRST_CLOSED_AT_KEY = "psd_home_welcome_guest_first_closed_at_v2";
+      const GUEST_REMINDER_SEEN_KEY = "psd_home_welcome_guest_reminder_seen_v2";
       const GUEST_REMINDER_DELAY_MS = 3 * 60 * 1000;
       const MEMBER_CACHE_KEY = "psd-ribbon-member-ui";
       const TOUR_FALLBACK_URL = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
@@ -2604,7 +2614,6 @@
       let showTimer = null;
       let reminderTimer = null;
       let authState = null;
-      let activeMode = null;
 
       function storageGet(key){
         try{ return sessionStorage.getItem(key); }
@@ -2616,60 +2625,25 @@
         catch(error){}
       }
 
-      function seenKey(signedIn){
-        return signedIn ? MEMBER_SEEN_KEY : GUEST_SEEN_KEY;
+      function firstPopupSeen(){
+        return storageGet(GUEST_SEEN_KEY) === "1";
       }
 
-      function wasSeen(signedIn){
-        return storageGet(seenKey(signedIn)) === "1";
-      }
-
-      function rememberCurrentMode(){
-        if(activeMode === true){
-          storageSet(MEMBER_SEEN_KEY, "1");
-          return;
-        }
-
-        if(activeMode === false && !wasSeen(false)){
-          storageSet(GUEST_SEEN_KEY, "1");
-          storageSet(GUEST_FIRST_CLOSED_AT_KEY, String(Date.now()));
-        }
-      }
-
-      function guestReminderWasSeen(){
+      function reminderSeen(){
         return storageGet(GUEST_REMINDER_SEEN_KEY) === "1";
       }
 
-      function clearGuestReminderTimer(){
+      function rememberFirstClose(){
+        if(firstPopupSeen()) return;
+        storageSet(GUEST_SEEN_KEY, "1");
+        storageSet(GUEST_FIRST_CLOSED_AT_KEY, String(Date.now()));
+      }
+
+      function clearReminder(){
         if(reminderTimer){
           window.clearTimeout(reminderTimer);
           reminderTimer = null;
         }
-      }
-
-      function scheduleGuestReminder(){
-        clearGuestReminderTimer();
-        if(authState === true || !wasSeen(false) || guestReminderWasSeen()) return;
-
-        const firstClosedAt = Number(storageGet(GUEST_FIRST_CLOSED_AT_KEY)) || Date.now();
-        const elapsed = Math.max(0, Date.now() - firstClosedAt);
-        const delay = Math.max(1000, GUEST_REMINDER_DELAY_MS - elapsed);
-
-        reminderTimer = window.setTimeout(async function tryGuestReminder(){
-          reminderTimer = null;
-          const signedIn = await resolveAuthState();
-          if(signedIn || guestReminderWasSeen()) return;
-
-          if(document.getElementById("site-tour-overlay") || popup.classList.contains("is-open")){
-            reminderTimer = window.setTimeout(tryGuestReminder, 30000);
-            return;
-          }
-
-          const opened = await openPopup({ signedIn:false, force:true, reminder:true });
-          if(!opened && !guestReminderWasSeen() && authState !== true){
-            reminderTimer = window.setTimeout(tryGuestReminder, 30000);
-          }
-        }, delay);
       }
 
       function navAuthState(){
@@ -2680,74 +2654,23 @@
         return null;
       }
 
-      function cachedMemberState(){
-        return storageGet(MEMBER_CACHE_KEY) === "true" ? true : null;
-      }
-
-      function applyMemberState(signedIn){
-        activeMode = Boolean(signedIn);
-        popup.dataset.visitorType = signedIn ? "member" : "guest";
-        if(memberRow) memberRow.classList.toggle("is-member", Boolean(signedIn));
-
-        if(signedIn){
-          if(joinTitle) joinTitle.textContent = "Your Free Account";
-          if(joinCopy) joinCopy.textContent = "Open your watchlist and preferences.";
-          joinButton.textContent = "Open My Account →";
-          joinButton.href = "account.html";
-          joinButton.setAttribute("aria-label", "Open my PSD account");
-        }else{
-          if(joinTitle) joinTitle.textContent = "Create a Free Account to Unlock More AI-Built Features";
-          if(joinCopy) joinCopy.textContent = "Just email + password.";
-          joinButton.textContent = "Create Free Account →";
-          joinButton.href = "auth.html";
-          joinButton.setAttribute("aria-label", "Create a free PSD account");
-        }
-      }
-
-      function focusableElements(){
-        return Array.from(dialog.querySelectorAll(
-          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
-        )).filter(el => el.getClientRects().length > 0 && !el.hasAttribute("hidden"));
-      }
-
-      function closePopup(restoreFocus = true){
-        if(showTimer){
-          window.clearTimeout(showTimer);
-          showTimer = null;
-        }
-        if(!popup.classList.contains("is-open")) return;
-
-        const wasGuest = activeMode === false;
-        const wasReminder = popup.dataset.reminder === "true";
-        rememberCurrentMode();
-        popup.classList.remove("is-open");
-        popup.setAttribute("aria-hidden", "true");
-        document.body.classList.remove("home-welcome-open");
-        popup.dataset.reminder = "false";
-
-        if(wasGuest && !wasReminder && !guestReminderWasSeen()){
-          scheduleGuestReminder();
-        }
-
-        if(restoreFocus && lastFocused && typeof lastFocused.focus === "function"){
-          window.setTimeout(() => lastFocused.focus(), 120);
-        }
-      }
-
       async function resolveAuthState(){
-        if(authState === true || authState === false) return authState;
-
         const fromNav = navAuthState();
         if(fromNav !== null){
           authState = fromNav;
           return authState;
         }
 
+        if(storageGet(MEMBER_CACHE_KEY) === "true"){
+          authState = true;
+          return true;
+        }
+
         if(window.psdSupabase && window.psdSupabase.auth && typeof window.psdSupabase.auth.getSession === "function"){
           try{
             const result = await Promise.race([
               window.psdSupabase.auth.getSession(),
-              new Promise(resolve => window.setTimeout(() => resolve(null), 800))
+              new Promise(resolve => window.setTimeout(() => resolve(null), 900))
             ]);
             if(result && result.data){
               authState = Boolean(result.data.session);
@@ -2756,43 +2679,93 @@
           }catch(error){}
         }
 
-        await new Promise(resolve => window.setTimeout(resolve, 450));
-        if(authState === true || authState === false) return authState;
-
+        /* Give site-nav/auth a final moment to publish the real state. */
+        await new Promise(resolve => window.setTimeout(resolve, 500));
         const afterWait = navAuthState();
         if(afterWait !== null){
           authState = afterWait;
           return authState;
         }
 
-        const cached = cachedMemberState();
-        authState = cached === true;
+        authState = storageGet(MEMBER_CACHE_KEY) === "true";
         return authState;
       }
 
-      async function openPopup(options = {}){
-        if(document.getElementById("site-tour-overlay")) return false;
-        if(popup.classList.contains("is-open")) return false;
+      function focusableElements(){
+        return Array.from(dialog.querySelectorAll(
+          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        )).filter(el => el.getClientRects().length > 0 && !el.hasAttribute("hidden"));
+      }
 
-        const signedIn = typeof options.signedIn === "boolean"
-          ? options.signedIn
-          : await resolveAuthState();
+      function closePopup(restoreFocus = true, suppressReminder = false){
+        if(showTimer){
+          window.clearTimeout(showTimer);
+          showTimer = null;
+        }
+        if(!popup.classList.contains("is-open")) return;
 
-        if(options.reminder){
-          if(signedIn || guestReminderWasSeen()) return false;
+        const wasReminder = popup.dataset.reminder === "true";
+        if(wasReminder){
           storageSet(GUEST_REMINDER_SEEN_KEY, "1");
+        }else{
+          rememberFirstClose();
         }
 
-        applyMemberState(signedIn);
-        if(!options.force && wasSeen(signedIn)) return false;
+        popup.classList.remove("is-open");
+        popup.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("home-welcome-open");
+        popup.dataset.reminder = "false";
 
-        popup.dataset.reminder = options.reminder ? "true" : "false";
+        if(!suppressReminder && authState !== true && !wasReminder && !reminderSeen()){
+          scheduleGuestReminder();
+        }
+
+        if(restoreFocus && lastFocused && typeof lastFocused.focus === "function"){
+          window.setTimeout(() => lastFocused.focus(), 120);
+        }
+      }
+
+      async function openGuestPopup(reminder = false){
+        if(document.getElementById("site-tour-overlay") || popup.classList.contains("is-open")) return false;
+
+        const signedIn = await resolveAuthState();
+        if(signedIn) return false;
+        if(reminder && reminderSeen()) return false;
+        if(!reminder && firstPopupSeen()) return false;
+
+        popup.dataset.visitorType = "guest";
+        popup.dataset.reminder = reminder ? "true" : "false";
         lastFocused = document.activeElement;
         popup.classList.add("is-open");
         popup.setAttribute("aria-hidden", "false");
         document.body.classList.add("home-welcome-open");
         window.setTimeout(() => closeButton.focus(), 60);
         return true;
+      }
+
+      function scheduleGuestReminder(){
+        clearReminder();
+        if(authState === true || !firstPopupSeen() || reminderSeen()) return;
+
+        const firstClosedAt = Number(storageGet(GUEST_FIRST_CLOSED_AT_KEY)) || Date.now();
+        const elapsed = Math.max(0, Date.now() - firstClosedAt);
+        const delay = Math.max(1000, GUEST_REMINDER_DELAY_MS - elapsed);
+
+        reminderTimer = window.setTimeout(async function tryReminder(){
+          reminderTimer = null;
+          const signedIn = await resolveAuthState();
+          if(signedIn || reminderSeen()) return;
+
+          if(document.getElementById("site-tour-overlay") || popup.classList.contains("is-open")){
+            reminderTimer = window.setTimeout(tryReminder, 30000);
+            return;
+          }
+
+          const opened = await openGuestPopup(true);
+          if(!opened && authState !== true && !reminderSeen()){
+            reminderTimer = window.setTimeout(tryReminder, 30000);
+          }
+        }, delay);
       }
 
       closeButton.addEventListener("click", () => closePopup());
@@ -2811,13 +2784,6 @@
 
       popup.addEventListener("click", event => {
         if(event.target === popup) closePopup();
-      });
-
-      document.addEventListener("click", event => {
-        if(event.target.closest && event.target.closest("#site-tour-button")){
-          rememberCurrentMode();
-          closePopup(false);
-        }
       });
 
       document.addEventListener("keydown", event => {
@@ -2850,46 +2816,27 @@
 
       window.addEventListener("psd-member-status-change", event => {
         const visitorType = event && event.detail ? event.detail.visitor_type : "";
-        const nextState = visitorType === "member" ? true : visitorType === "guest" ? false : null;
-        if(nextState === null) return;
-
-        const previousState = authState;
-        authState = nextState;
-
-        if(nextState === true){
-          clearGuestReminderTimer();
-        }
-
-        if(popup.classList.contains("is-open")){
-          applyMemberState(nextState);
-          return;
-        }
-
-        /* If a guest signs in during this browsing session, show the member
-           version once so the newly available features are not missed. */
-        if(previousState === false && nextState === true && !wasSeen(true)){
-          window.setTimeout(() => openPopup({ signedIn:true }), 250);
+        if(visitorType === "member"){
+          authState = true;
+          clearReminder();
+          if(popup.classList.contains("is-open")) closePopup(false, true);
+        }else if(visitorType === "guest"){
+          authState = false;
         }
       });
 
-      /* Give shared navigation/auth enough time to resolve before deciding
-         whether to show the guest or member version. Guests get one reminder
-         three minutes after the first popup is closed, and never a third popup. */
+      /* First appearance: guests only. Second appearance: guests only, once,
+         three minutes after the first popup is closed. Never a third time. */
       showTimer = window.setTimeout(async () => {
         const signedIn = await resolveAuthState();
+        if(signedIn) return;
 
-        if(signedIn){
-          await openPopup({ signedIn:true });
-          return;
+        if(!firstPopupSeen()){
+          await openGuestPopup(false);
+        }else{
+          scheduleGuestReminder();
         }
-
-        if(!wasSeen(false)){
-          await openPopup({ signedIn:false });
-          return;
-        }
-
-        scheduleGuestReminder();
-      }, 1050);
+      }, 1200);
     })();
   </script>
 
