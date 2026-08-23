@@ -117,6 +117,24 @@
     @media(max-width:1250px){.forecast-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.contract{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:900px){.forecast-hero,.detail-grid{grid-template-columns:1fr}.forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.signal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ledger-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:580px){.forecast-page{padding:8px}.forecast-shell{padding:8px}.forecast-grid,.forecast-boxes,.contract{grid-template-columns:1fr}.hero-copy h1{font-size:25px}.lab-banner{align-items:flex-start;flex-direction:column}}
+
+    /* Iteration 3: automatic shadow sample + publish readiness */
+    .shadow-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--pf-line);border-radius:11px;padding:9px 11px;background:var(--pf-soft);margin-bottom:10px}
+    .shadow-copy b{display:block;font-size:12px}.shadow-copy span{display:block;font-size:10px;color:var(--pf-muted);margin-top:2px}
+    .shadow-toggle{border:1px solid #d3a94b;border-radius:999px;padding:7px 11px;background:var(--pf-gold-soft);color:#61430e;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}
+    .shadow-toggle.on{background:#e9faf5;border-color:#3db598;color:#08715e}
+    body.dark-mode .shadow-toggle.on{background:#15382f;color:#baf5e5}
+    .readiness-grid{display:grid;grid-template-columns:1.15fr repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+    .readiness-main,.readiness-stat{border:1px solid var(--pf-line);border-radius:11px;padding:10px;background:var(--pf-soft)}
+    .readiness-main b{display:block;font-size:18px}.readiness-main span,.readiness-stat span{display:block;color:var(--pf-muted);font-size:9.5px;margin-top:3px}.readiness-stat b{display:block;font-size:16px}
+    .readiness-main.ready{border-color:#3db598;background:#eafaf5;color:#08715e}.readiness-main.learning{border-color:#d5aa4d;background:var(--pf-gold-soft)}
+    body.dark-mode .readiness-main.ready{background:#15382f;color:#baf5e5}
+    .asset-performance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+    .asset-perf-card{border:1px solid var(--pf-line);border-radius:10px;padding:9px;background:var(--pf-soft)}
+    .asset-perf-card h3{font-size:11px;margin:0 0 6px}.asset-perf-line{display:flex;justify-content:space-between;gap:8px;font-size:9.5px;margin-top:3px;color:var(--pf-muted)}.asset-perf-line b{color:var(--pf-ink)}
+    @media(max-width:1000px){.readiness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.readiness-main{grid-column:1/-1}.asset-performance{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:580px){.shadow-strip{align-items:flex-start;flex-direction:column}.readiness-grid,.asset-performance{grid-template-columns:1fr}.readiness-main{grid-column:auto}}
+
   </style>
 </head>
 <body>
@@ -127,7 +145,7 @@
   <main class="forecast-page">
     <div class="forecast-shell">
       <div class="lab-banner">
-        <span>🧪 PSD Market Forecast Intelligence — Dashboard Lab 2 · Iteration 2</span>
+        <span>🧪 PSD Market Forecast Intelligence — Dashboard Lab 2 · Iteration 3</span>
         <span>Completely isolated • no production page depends on this experiment</span>
       </div>
 
@@ -235,6 +253,29 @@
       <section class="panel section">
         <div class="section-head">
           <div>
+            <span class="kicker">Evidence before publicity</span>
+            <h2>Publish Readiness & Shadow Sample</h2>
+            <p>The lab automatically freezes one forecast set per new PSD feed timestamp while Shadow Mode is on. This builds an unbiased sample before forecasts are promoted publicly.</p>
+          </div>
+        </div>
+        <div class="shadow-strip">
+          <div class="shadow-copy"><b>Automatic Shadow Recording</b><span>Records the current Top 10 once per unique PSD feed timestamp. Reopening the same feed does not duplicate records.</span></div>
+          <button class="shadow-toggle on" id="shadowToggle" type="button">Shadow Mode: ON</button>
+        </div>
+        <div class="readiness-grid">
+          <div class="readiness-main learning" id="readinessMain"><b id="readinessLabel">Building Evidence</b><span id="readinessNote">Need evaluated forecasts before public claims.</span></div>
+          <div class="readiness-stat"><b id="readySample">0 / 100</b><span>Evaluated sample target</span></div>
+          <div class="readiness-stat"><b id="readyDirection">—</b><span>Direction target ≥55%</span></div>
+          <div class="readiness-stat"><b id="readyRange">—</b><span>Range target ≥45%</span></div>
+          <div class="readiness-stat"><b id="readyGap">—</b><span>Calibration gap target ≤15 pts</span></div>
+        </div>
+        <div class="section-head" style="margin-top:2px"><div><span class="kicker">Where the model works</span><h2 style="font-size:16px">Performance by Asset</h2><p>Only evaluated forecasts count. Small samples remain clearly labeled.</p></div></div>
+        <div class="asset-performance" id="assetPerformance"></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
             <span class="kicker">Permanent lab audit trail</span>
             <h2>PSD Forecast Track Record</h2>
             <p>Forecasts recorded here are stored only in this browser for lab testing. Production will move this ledger into the engine/publishing system.</p>
@@ -257,7 +298,7 @@
         <div class="table-wrap">
           <table class="ledger-table">
             <thead><tr>
-              <th>Issued</th><th>Asset</th><th>Horizon</th><th>Start Price</th><th>Direction</th><th>Expected Move</th><th>Confidence</th><th>Target Date</th><th>Actual Move</th><th>Direction</th><th>Range</th><th>Model</th>
+              <th>Issued</th><th>Type</th><th>Asset</th><th>Horizon</th><th>Start Price</th><th>Direction</th><th>Expected Move</th><th>Confidence</th><th>Target Date</th><th>Actual Move</th><th>Direction</th><th>Range</th><th>Model</th>
             </tr></thead>
             <tbody id="ledgerBody"></tbody>
           </table>
@@ -272,7 +313,7 @@
           <div class="contract-item"><b>1. Immutable Forecasts</b><span>Once recorded, the original direction, range, confidence, model version and starting price are never rewritten.</span></div>
           <div class="contract-item"><b>2. Wins + Misses Stay Visible</b><span>Future public credibility comes from showing the complete record, including forecasts that fail.</span></div>
           <div class="contract-item"><b>3. Versioned Models</b><span>Every prediction carries a model version so accuracy improvements can be compared fairly over time.</span></div>
-          <div class="contract-item"><b>4. Expandable Horizons</b><span>The schema already supports adding intraday, 3-day, 90-day, event-specific and member-only forecasts later. Iteration 2 also adds quality grading, forecast-change tracking and confidence calibration without altering old records.</span></div>
+          <div class="contract-item"><b>4. Expandable Horizons</b><span>The schema already supports adding intraday, 3-day, 90-day, event-specific and member-only forecasts later. Iteration 3 adds automatic shadow recording, publish-readiness gates and asset-level performance while preserving every earlier record.</span></div>
         </div>
       </section>
     </div>
@@ -290,6 +331,7 @@
 
     const MODEL_VERSION = "PSD-Forecast-v0.1";
     const LEDGER_KEY = "psd_forecast_lab2_ledger_v1";
+    const SHADOW_KEY = "psd_forecast_lab2_shadow_enabled_v1";
     const $ = id => document.getElementById(id);
     const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
     const num = v => Number.isFinite(Number(v)) ? Number(v) : null;
@@ -544,12 +586,13 @@
     }
     function saveLedger(rows){ localStorage.setItem(LEDGER_KEY,JSON.stringify(rows)); }
 
-    function ledgerRecord(f,h){
+    function ledgerRecord(f,h,recordType="manual"){
       const issued=feedTime();
       const startPrice=f.price;
       return {
         id:`${MODEL_VERSION}|${f.row.instrument}|${h.calendarDays}|${issued.toISOString()}`,
         model:MODEL_VERSION,
+        recordType,
         instrument:f.row.instrument,
         displayName:f.row.display_name||f.row.instrument,
         symbol:f.row.symbol||"",
@@ -579,7 +622,7 @@
     function recordForecast(f){
       if(!f || f.price===null)return 0;
       const ledger=loadLedger();
-      const records=[ledgerRecord(f,f.short),ledgerRecord(f,f.long)];
+      const records=[ledgerRecord(f,f.short,"manual"),ledgerRecord(f,f.long,"manual")];
       let added=0;
       records.forEach(rec=>{
         if(!ledger.some(x=>x.id===rec.id)){ledger.push(rec);added++;}
@@ -626,6 +669,50 @@
       if(!silent)toast(changed?`${changed} due forecast${changed===1?"":"s"} evaluated.`:"No additional forecasts are due yet.");
     }
 
+
+    function shadowEnabled(){
+      const v=localStorage.getItem(SHADOW_KEY);return v===null?true:v!=="false";
+    }
+
+    function setShadowEnabled(on){localStorage.setItem(SHADOW_KEY,on?"true":"false");renderShadowToggle()}
+
+    function renderShadowToggle(){
+      const on=shadowEnabled(),btn=$("shadowToggle");if(!btn)return;
+      btn.textContent=`Shadow Mode: ${on?'ON':'OFF'}`;btn.className=`shadow-toggle ${on?'on':''}`;
+    }
+
+    function autoRecordShadow(){
+      if(!shadowEnabled()||!forecasts.length)return 0;
+      const ledger=loadLedger();let added=0;
+      forecasts.forEach(f=>[f.short,f.long].forEach(h=>{
+        const rec=ledgerRecord(f,h,"shadow");
+        if(!ledger.some(x=>x.id===rec.id)){ledger.push(rec);added++;}
+      }));
+      if(added)saveLedger(ledger);
+      return added;
+    }
+
+    function renderReadiness(){
+      const ledger=loadLedger(),evaluated=ledger.filter(x=>x.status==='evaluated');
+      const n=evaluated.length,dir=n?evaluated.filter(x=>x.directionHit).length/n*100:null,range=n?evaluated.filter(x=>x.rangeHit).length/n*100:null;
+      const avgConf=n?evaluated.reduce((s,x)=>s+Number(x.confidence||0),0)/n:null;
+      const gap=(dir===null||avgConf===null)?null:Math.abs(dir-avgConf);
+      const gates={sample:n>=100,direction:dir!==null&&dir>=55,range:range!==null&&range>=45,gap:gap!==null&&gap<=15};
+      const ready=Object.values(gates).every(Boolean);
+      $('readySample').textContent=`${n} / 100`;
+      $('readyDirection').textContent=dir===null?'—':`${dir.toFixed(1)}%`;
+      $('readyRange').textContent=range===null?'—':`${range.toFixed(1)}%`;
+      $('readyGap').textContent=gap===null?'—':`${gap.toFixed(1)} pts`;
+      $('readinessLabel').textContent=ready?'Meets Lab Publish Gate':'Building Evidence';
+      $('readinessNote').textContent=ready?'All four internal lab thresholds are currently met. This is not a guarantee of future performance.':`Passed ${Object.values(gates).filter(Boolean).length}/4 internal lab gates. Public claims should wait.`;
+      $('readinessMain').className=`readiness-main ${ready?'ready':'learning'}`;
+
+      const groups=new Map();
+      evaluated.forEach(x=>{const k=x.displayName||x.instrument;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)});
+      const cards=[...groups.entries()].map(([name,rows])=>({name,rows,n:rows.length,dir:rows.filter(x=>x.directionHit).length/rows.length*100,range:rows.filter(x=>x.rangeHit).length/rows.length*100,err:rows.reduce((s,x)=>s+Number(x.rangeErrorPct||0),0)/rows.length})).sort((a,b)=>b.n-a.n||b.dir-a.dir).slice(0,8);
+      $('assetPerformance').innerHTML=cards.length?cards.map(x=>`<div class="asset-perf-card"><h3>${esc(x.name)}</h3><div class="asset-perf-line"><span>Evaluated</span><b>${x.n}${x.n<10?' · small sample':''}</b></div><div class="asset-perf-line"><span>Direction</span><b>${x.dir.toFixed(1)}%</b></div><div class="asset-perf-line"><span>Range</span><b>${x.range.toFixed(1)}%</b></div><div class="asset-perf-line"><span>Avg range error</span><b>${x.err.toFixed(2)}%</b></div></div>`).join(''):'<div class="empty" style="grid-column:1/-1">Asset performance will appear after recorded forecasts reach their evaluation dates.</div>';
+      renderShadowToggle();
+    }
 
     function pctRate(hit,total){return total?`${Math.round(hit/total*100)}%`:'—'}
 
@@ -683,6 +770,7 @@
         const rng=r.status==="evaluated"?(r.rangeHit?'<span class="ok">Hit</span>':'<span class="miss">Miss</span>'):'<span class="open">Open</span>';
         return `<tr>
           <td>${esc(String(r.issuedAt).slice(0,10))}</td>
+          <td>${esc(r.recordType||"manual")}</td>
           <td>${esc(r.displayName)}</td>
           <td>${r.horizonDays}D</td>
           <td>${money(r.entryPrice)}</td>
@@ -695,8 +783,9 @@
           <td>${rng}</td>
           <td>${esc(r.model)}</td>
         </tr>`;
-      }).join(""):'<tr><td colspan="12"><div class="empty">No forecasts recorded yet. Select an asset above and use “Record This Forecast.”</div></td></tr>';
+      }).join(""):'<tr><td colspan="13"><div class="empty">No forecasts recorded yet. Select an asset above and use “Record This Forecast.”</div></td></tr>';
       renderCalibration();
+      renderReadiness();
     }
 
     function toast(msg){
@@ -713,7 +802,7 @@
         pulse=await resp.json();
         const ts=pulse?.data_updated_ny||pulse?.data_updated_utc||pulse?.generated_utc||"latest available";
         $("dataStatus").textContent=`Live PSD feed loaded • ${ts}`;
-        rankForecasts();renderTiles();renderDetail();renderLedger();evaluateLedger(true);
+        rankForecasts();renderTiles();renderDetail();autoRecordShadow();renderLedger();evaluateLedger(true);
       }catch(err){
         console.warn("Forecast Lab 2 could not load market_pulse.json",err);
         $("dataStatus").textContent="Live PSD feed unavailable — forecast generation paused. Page remains isolated and safe.";
@@ -732,6 +821,10 @@
     });
     $("evaluateLedger").addEventListener("click",()=>evaluateLedger(false));
     $("exportLedger").addEventListener("click",exportLedgerCsv);
+    $("shadowToggle").addEventListener("click",()=>{
+      setShadowEnabled(!shadowEnabled());
+      if(shadowEnabled()){const added=autoRecordShadow();renderLedger();toast(added?`Shadow Mode enabled — ${added} current forecast horizons recorded.`:"Shadow Mode enabled. Current feed was already recorded.")}else toast("Shadow Mode paused for this browser.");
+    });
     $("resetLedger").addEventListener("click",()=>{
       if(!confirm("Reset only the Dashboard Lab 2 forecast ledger stored in this browser?"))return;
       localStorage.removeItem(LEDGER_KEY);renderLedger();toast("Lab ledger reset.");
