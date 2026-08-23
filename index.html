@@ -2594,11 +2594,15 @@
 
       const GUEST_SEEN_KEY = "psd_home_welcome_seen_guest_session_v2";
       const MEMBER_SEEN_KEY = "psd_home_welcome_seen_member_session_v2";
+      const GUEST_FIRST_CLOSED_AT_KEY = "psd_home_welcome_guest_first_closed_at_v1";
+      const GUEST_REMINDER_SEEN_KEY = "psd_home_welcome_guest_reminder_seen_v1";
+      const GUEST_REMINDER_DELAY_MS = 3 * 60 * 1000;
       const MEMBER_CACHE_KEY = "psd-ribbon-member-ui";
       const TOUR_FALLBACK_URL = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
 
       let lastFocused = null;
       let showTimer = null;
+      let reminderTimer = null;
       let authState = null;
       let activeMode = null;
 
@@ -2621,9 +2625,51 @@
       }
 
       function rememberCurrentMode(){
-        if(activeMode === true || activeMode === false){
-          storageSet(seenKey(activeMode), "1");
+        if(activeMode === true){
+          storageSet(MEMBER_SEEN_KEY, "1");
+          return;
         }
+
+        if(activeMode === false && !wasSeen(false)){
+          storageSet(GUEST_SEEN_KEY, "1");
+          storageSet(GUEST_FIRST_CLOSED_AT_KEY, String(Date.now()));
+        }
+      }
+
+      function guestReminderWasSeen(){
+        return storageGet(GUEST_REMINDER_SEEN_KEY) === "1";
+      }
+
+      function clearGuestReminderTimer(){
+        if(reminderTimer){
+          window.clearTimeout(reminderTimer);
+          reminderTimer = null;
+        }
+      }
+
+      function scheduleGuestReminder(){
+        clearGuestReminderTimer();
+        if(authState === true || !wasSeen(false) || guestReminderWasSeen()) return;
+
+        const firstClosedAt = Number(storageGet(GUEST_FIRST_CLOSED_AT_KEY)) || Date.now();
+        const elapsed = Math.max(0, Date.now() - firstClosedAt);
+        const delay = Math.max(1000, GUEST_REMINDER_DELAY_MS - elapsed);
+
+        reminderTimer = window.setTimeout(async function tryGuestReminder(){
+          reminderTimer = null;
+          const signedIn = await resolveAuthState();
+          if(signedIn || guestReminderWasSeen()) return;
+
+          if(document.getElementById("site-tour-overlay") || popup.classList.contains("is-open")){
+            reminderTimer = window.setTimeout(tryGuestReminder, 30000);
+            return;
+          }
+
+          const opened = await openPopup({ signedIn:false, force:true, reminder:true });
+          if(!opened && !guestReminderWasSeen() && authState !== true){
+            reminderTimer = window.setTimeout(tryGuestReminder, 30000);
+          }
+        }, delay);
       }
 
       function navAuthState(){
@@ -2671,10 +2717,17 @@
         }
         if(!popup.classList.contains("is-open")) return;
 
+        const wasGuest = activeMode === false;
+        const wasReminder = popup.dataset.reminder === "true";
         rememberCurrentMode();
         popup.classList.remove("is-open");
         popup.setAttribute("aria-hidden", "true");
         document.body.classList.remove("home-welcome-open");
+        popup.dataset.reminder = "false";
+
+        if(wasGuest && !wasReminder && !guestReminderWasSeen()){
+          scheduleGuestReminder();
+        }
 
         if(restoreFocus && lastFocused && typeof lastFocused.focus === "function"){
           window.setTimeout(() => lastFocused.focus(), 120);
@@ -2718,21 +2771,28 @@
       }
 
       async function openPopup(options = {}){
-        if(document.getElementById("site-tour-overlay")) return;
-        if(popup.classList.contains("is-open")) return;
+        if(document.getElementById("site-tour-overlay")) return false;
+        if(popup.classList.contains("is-open")) return false;
 
         const signedIn = typeof options.signedIn === "boolean"
           ? options.signedIn
           : await resolveAuthState();
 
-        applyMemberState(signedIn);
-        if(!options.force && wasSeen(signedIn)) return;
+        if(options.reminder){
+          if(signedIn || guestReminderWasSeen()) return false;
+          storageSet(GUEST_REMINDER_SEEN_KEY, "1");
+        }
 
+        applyMemberState(signedIn);
+        if(!options.force && wasSeen(signedIn)) return false;
+
+        popup.dataset.reminder = options.reminder ? "true" : "false";
         lastFocused = document.activeElement;
         popup.classList.add("is-open");
         popup.setAttribute("aria-hidden", "false");
         document.body.classList.add("home-welcome-open");
         window.setTimeout(() => closeButton.focus(), 60);
+        return true;
       }
 
       closeButton.addEventListener("click", () => closePopup());
@@ -2796,6 +2856,10 @@
         const previousState = authState;
         authState = nextState;
 
+        if(nextState === true){
+          clearGuestReminderTimer();
+        }
+
         if(popup.classList.contains("is-open")){
           applyMemberState(nextState);
           return;
@@ -2809,8 +2873,23 @@
       });
 
       /* Give shared navigation/auth enough time to resolve before deciding
-         whether to show the guest or member version. */
-      showTimer = window.setTimeout(() => openPopup(), 1050);
+         whether to show the guest or member version. Guests get one reminder
+         three minutes after the first popup is closed, and never a third popup. */
+      showTimer = window.setTimeout(async () => {
+        const signedIn = await resolveAuthState();
+
+        if(signedIn){
+          await openPopup({ signedIn:true });
+          return;
+        }
+
+        if(!wasSeen(false)){
+          await openPopup({ signedIn:false });
+          return;
+        }
+
+        scheduleGuestReminder();
+      }, 1050);
     })();
   </script>
 
