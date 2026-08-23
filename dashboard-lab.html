@@ -320,7 +320,7 @@
     .profile-row label{font-size:12.7px}.profile-value{font-size:11.7px}
     body.dark-mode .summary-context{background:#223341;border-left-color:#71899d}
 
-    /* Market Intelligence V2: read-aloud control for the written AI summary only. */
+    /* Market Intelligence V3: read-aloud control for the written AI summary only. */
     .summary-audio-controls{display:flex;justify-content:flex-end;align-items:center;margin:1px 0 6px}
     .summary-listen-button{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid rgba(174,128,28,.58);border-radius:999px;background:transparent;color:var(--ei-accent-text);font:800 10.8px/1.1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;transition:transform .16s ease,color .16s ease,border-color .16s ease,background .16s ease}
     .summary-listen-button:hover,.summary-listen-button:focus-visible{transform:translateY(-1px);border-color:#c79524;background:var(--ei-gold-soft);outline:none}
@@ -1027,17 +1027,35 @@
       if(!("speechSynthesis" in window))return null;
       const voices=window.speechSynthesis.getVoices().filter(v=>/^en(?:-|_)/i.test(v.lang||""));
       if(!voices.length)return null;
-      const preferredFemaleNames=["aria","jenny","ava","samantha","zira","serena","susan","moira","karen","victoria","fiona","tessa","joanna","salli"];
+
+      const warmFemaleNames=[
+        "aria","jenny","ava","sonia","emma","samantha","serena","susan",
+        "moira","karen","victoria","fiona","tessa","joanna","salli"
+      ];
       const likelyMaleNames=["david","mark","guy","daniel","george","james","richard","thomas","fred"];
+
       return voices.map(voice=>{
         const name=String(voice.name||"").toLowerCase();
         let score=0;
-        if(name.includes("natural")||name.includes("neural"))score+=120;
-        preferredFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=100-index;});
-        if(name.includes("microsoft"))score+=24;
-        if(name.includes("google"))score+=18;
-        if(/en[-_]us/i.test(voice.lang||""))score+=12;
-        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=120;});
+
+        /* Prefer the better free browser/OS voices when they exist. */
+        if(name.includes("online")&&name.includes("natural"))score+=420;
+        else if(name.includes("natural"))score+=340;
+        if(name.includes("neural"))score+=320;
+        if(name.includes("enhanced"))score+=220;
+        if(name.includes("premium"))score+=200;
+        if(voice.localService===false)score+=45;
+
+        warmFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=155-index;});
+        if(name.includes("microsoft"))score+=45;
+        if(name.includes("google"))score+=28;
+        if(/en[-_]us/i.test(voice.lang||""))score+=20;
+        else if(/en[-_]gb/i.test(voice.lang||""))score+=14;
+
+        /* Older desktop/eSpeak-style voices are usually noticeably more robotic. */
+        if(name.includes("desktop"))score-=120;
+        if(name.includes("espeak"))score-=220;
+        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=180;});
         return {voice,score};
       }).sort((a,b)=>b.score-a.score)[0].voice;
     }
@@ -1054,10 +1072,24 @@
       return fallback?[fallback]:[];
     }
 
-    function splitSpeechText(paragraphs,maxLength=260){
+    function speechFriendlyText(text){
+      return String(text||"")
+        .replace(/\s*[—–]\s*/g,", ")
+        .replace(/\bPSD\b/g,"P S D")
+        .replace(/\bETFs\b/g,"E T F's")
+        .replace(/\bETF\b/g,"E T F")
+        .replace(/\bSEC\b/g,"S E C")
+        .replace(/\bCPI\b/g,"C P I")
+        .replace(/\bAI\b/g,"A I")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    function splitSpeechText(paragraphs,maxLength=520){
       const chunks=[];
       paragraphs.forEach(paragraph=>{
-        const sentences=paragraph.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[paragraph];
+        const clean=speechFriendlyText(paragraph);
+        const sentences=clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[clean];
         let chunk="";
         sentences.forEach(sentence=>{
           const part=sentence.trim();
@@ -1120,10 +1152,11 @@
         const voice=preferredSummaryVoice();
         if(voice)utterance.voice=voice;
         utterance.lang=voice?.lang||"en-US";
-        utterance.rate=.92;
-        utterance.pitch=1.04;
-        utterance.volume=.88;
-        utterance.onend=speakNext;
+        /* A slightly slower neutral pitch keeps free system voices warmer and less synthetic. */
+        utterance.rate=.89;
+        utterance.pitch=1.0;
+        utterance.volume=.94;
+        utterance.onend=()=>window.setTimeout(speakNext,140);
         utterance.onerror=()=>{
           summarySpeechActive=false;
           setSummarySpeechButton(false);
@@ -1140,7 +1173,9 @@
         button.hidden=true;
         return;
       }
+      /* Prime the voice list; some browsers populate their natural voices asynchronously. */
       window.speechSynthesis.getVoices();
+      window.speechSynthesis.addEventListener?.("voiceschanged",()=>window.speechSynthesis.getVoices(),{once:true});
       button.addEventListener("click",speakSummary);
       window.addEventListener("beforeunload",stopSummarySpeech,{once:true});
     }
