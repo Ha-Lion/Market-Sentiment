@@ -273,6 +273,16 @@
     body.dark-mode .queue-item.is-selected .queue-action{background:#f3c63c;color:#2d2305;border-color:#b68400}
     body.dark-mode .summary-news,body.dark-mode .summary-example{background:#223341}
 
+
+    /* AI Gateway intelligence layer */
+    .ai-intel-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:2px 0 4px;color:var(--ei-muted);font-size:10.8px;font-weight:700}
+    .ai-intel-meta span{border:1px solid var(--ei-line);border-radius:999px;background:var(--ei-panel-soft);padding:4px 7px}
+    .summary-conflict{padding:9px 11px;border-radius:8px;background:var(--ei-panel-soft);border-left:3px solid #d9864b}
+    .summary-outlets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    .summary-outlet{padding:8px 9px;border:1px solid var(--ei-line);border-radius:8px;background:var(--ei-panel-soft);font-size:11.2px;line-height:1.4;color:var(--ei-muted)}
+    .summary-outlet b{color:var(--ei-ink)}
+    body.dark-mode .ai-intel-meta span,body.dark-mode .summary-conflict,body.dark-mode .summary-outlet{background:#223341}
+
     @media(max-width:1150px){.event-hero{grid-template-columns:minmax(0,1.7fr) minmax(330px,.7fr)}.hero-title-row h1{flex-basis:100%;font-size:28px}.summary-examples{grid-template-columns:1fr}}
     @media(max-width:900px){.event-hero{grid-template-columns:1fr}.hero-side{grid-template-columns:1fr 1fr;grid-template-rows:auto}.hero-title-row h1{font-size:27px}}
     @media(max-width:650px){.hero-side{grid-template-columns:1fr}.evolution-compact .evolution-stat{grid-template-columns:76px 70px minmax(0,1fr)}.title-badges{width:100%}}
@@ -719,6 +729,7 @@
     };
 
     let pulseData=null;
+    let aiIntelligenceData=null;
     let eventRankings=[];
     let activeEvent=EVENT_LIBRARY[0];
 
@@ -800,7 +811,18 @@
     }
 
     function rankEvents(){
-      eventRankings=EVENT_LIBRARY.map(eventPriority).sort((a,b)=>b.priority-a.priority);
+      eventRankings=EVENT_LIBRARY.map(eventPriority);
+      const central=new Map((Array.isArray(aiIntelligenceData?.event_rankings)?aiIntelligenceData.event_rankings:[]).map(x=>[String(x?.event_id||""),x]));
+      eventRankings.forEach(r=>{
+        const c=central.get(String(r.event.id||""));
+        if(!c)return;
+        if(Number.isFinite(Number(c.priority)))r.priority=Number(c.priority);
+        if(Number.isFinite(Number(c.impact)))r.impact=Number(c.impact);
+        if(c.lifecycle)r.lifecycle=String(c.lifecycle);
+        if(Number.isFinite(Number(c.evidence_count)))r.centralEvidenceCount=Number(c.evidence_count);
+        if(Number.isFinite(Number(c.source_count)))r.centralSourceCount=Number(c.source_count);
+      });
+      eventRankings.sort((a,b)=>b.priority-a.priority);
       // Guarantee the lab remains usable even if the current feed is unusually sparse.
       if(!eventRankings.some(r=>r.lifecycle==='Active') && eventRankings[0] && eventRankings[0].priority>=45) eventRankings[0].lifecycle='Active';
       return eventRankings;
@@ -809,6 +831,8 @@
     function activeRankings(){return eventRankings.filter(r=>r.lifecycle==='Active').slice(0,EVENT_POLICY.maxActive)}
 
     function rankingFor(event){return eventRankings.find(r=>r.event.id===event.id)||null}
+    function rankingEvidenceCount(r){return Number.isFinite(Number(r?.centralEvidenceCount))?Number(r.centralEvidenceCount):Number(r?.evidence?.matches?.length||0)}
+    function rankingSourceCount(r){return Number.isFinite(Number(r?.centralSourceCount))?Number(r.centralSourceCount):Number(r?.evidence?.sourceCount||0)}
 
     function getUniverseRows(event){
       const universe=Array.isArray(pulseData?.universe)?pulseData.universe:[];
@@ -847,7 +871,38 @@
       ];
     }
 
+    function aiEventFor(event){
+      if(!aiIntelligenceData||!Array.isArray(aiIntelligenceData.events)||!event)return null;
+      return aiIntelligenceData.events.find(item=>String(item?.event_id||"")===String(event.id||""))||null;
+    }
+
+    function renderAiSummary(aiEvent,rows,score){
+      const intel=aiEvent?.intelligence||{};
+      if(aiEvent?.quality?.status!=="validated"||!intel.assessment||!intel.news_synthesis)return "";
+      const provider=String(aiEvent.provider||aiIntelligenceData?.ai?.active_provider||"AI");
+      const model=String(aiEvent.model||aiIntelligenceData?.ai?.active_model||"");
+      const evidenceCount=Number(aiEvent?.quality?.evidence_articles||aiEvent?.evidence?.length||0);
+      const sourceCount=Number(aiEvent?.quality?.unique_sources||new Set((aiEvent.evidence||[]).map(x=>x.source).filter(Boolean)).size||0);
+      const generated=String(aiEvent.generated_utc||aiIntelligenceData?.generated_utc||"");
+      const meta=`<div class="ai-intel-meta"><span>PSD AI synthesis</span><span>${esc(provider)}${model?` • ${esc(model)}`:""}</span><span>${evidenceCount} source-ranked articles • ${sourceCount} outlets</span>${generated?`<span>${esc(generated)}</span>`:""}</div>`;
+      const perspectives=Array.isArray(intel.outlet_perspectives)?intel.outlet_perspectives.slice(0,6):[];
+      const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b>${esc(p.source||"Source")}:</b> ${esc(p.emphasis||"")}</span>`).join("")}</div>`:"";
+      const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
+      const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b>${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
+      const conflict=String(intel.conflicting_evidence||"").trim();
+      return `${meta}
+        <p><b>PSD assessment:</b> ${esc(intel.assessment)}</p>
+        <p class="summary-news"><b>News synthesis:</b> ${esc(intel.news_synthesis)}</p>
+        <p class="summary-context"><b>Market confirmation:</b> ${esc(intel.market_confirmation||"")}</p>
+        ${conflict?`<p class="summary-conflict"><b>Conflicting / incomplete evidence:</b> ${esc(conflict)}</p>`:""}
+        <p class="summary-context"><b>Why this matters now:</b> ${esc(intel.why_it_matters||"")}</p>
+        ${perspectiveHtml}${exampleHtml}`;
+    }
+
     function summaryText(rows,score){
+      const aiEvent=aiEventFor(activeEvent);
+      const aiHtml=renderAiSummary(aiEvent,rows,score);
+      if(aiHtml)return aiHtml;
       const ranking=rankingFor(activeEvent),band=impactBand(score).label.toLowerCase();
       const available=rows.filter(r=>num(r.psi)!==null);
       const strongest=[...available].sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5);
@@ -866,7 +921,7 @@
       const outlets=[...new Set(ordered.map(n=>String(n.source||'').trim()).filter(Boolean))].slice(0,6);
       const outletText=outlets.length?outlets.join(', '):'the current PSD source set';
       const driverTitles=activeEvent.drivers.slice(0,3).map(d=>d.title).join(', ');
-      const evidenceText=ranking?`${ranking.evidence.matches.length} matched headlines from ${ranking.evidence.sourceCount} sources`:'the current PSD evidence set';
+      const evidenceText=ranking?`${rankingEvidenceCount(ranking)} matched headlines from ${rankingSourceCount(ranking)} sources`:'the current PSD evidence set';
       const catalysts=(activeEvent.catalysts||[]).slice(0,2).map(c=>c.title).join(' and ');
 
       const examples=ordered.filter(n=>n.title).slice(0,4);
@@ -896,7 +951,7 @@
         const id=`${r.event.id}|${stamp}`;
         if(history.some(x=>x.id===id))return;
         const strongest=[...r.rows].filter(x=>num(x.psi)!==null).sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5).map(x=>({instrument:x.instrument,psi:num(x.psi),d1:num(x.change_1d),price:num(x.price_change_1d_pct)}));
-        history.push({id,eventId:r.event.id,stamp,impact:r.impact,priority:r.priority,lifecycle:r.lifecycle,news:r.evidence.matches.length,sources:r.evidence.sourceCount,strongest});
+        history.push({id,eventId:r.event.id,stamp,impact:r.impact,priority:r.priority,lifecycle:r.lifecycle,news:rankingEvidenceCount(r),sources:rankingSourceCount(r),strongest});
       });
       const cutoff=Date.now()-EVENT_POLICY.historyDays*86400000;
       const trimmed=history.filter(x=>{const d=new Date(x.stamp);return Number.isNaN(d.getTime())||d.getTime()>=cutoff}).slice(-1500);
@@ -917,8 +972,8 @@
       if(!ranking){$('evolutionGrid').innerHTML='<div class="evolution-empty" style="grid-column:1/-1">Event ranking unavailable.</div>';return;}
       const dImpact=previous?ranking.impact-Number(previous.impact||0):0;
       const dPriority=previous?ranking.priority-Number(previous.priority||0):0;
-      const dNews=previous?ranking.evidence.matches.length-Number(previous.news||0):0;
-      const dSources=previous?ranking.evidence.sourceCount-Number(previous.sources||0):0;
+      const dNews=previous?rankingEvidenceCount(ranking)-Number(previous.news||0):0;
+      const dSources=previous?rankingSourceCount(ranking)-Number(previous.sources||0):0;
       let trend='Stable',cls='stable';
       if(dImpact>=3||dPriority>=4){trend='Intensifying',cls='rising'}
       else if(dImpact<=-3||dPriority<=-4){trend='Easing',cls='easing'}
@@ -927,8 +982,8 @@
       const metrics=[
         ['Impact Score',ranking.impact,previous?`Change ${signedDelta(dImpact)}`:'Baseline created'],
         ['Priority',`${ranking.priority}/100`,previous?`Change ${signedDelta(dPriority)}`:'Baseline created'],
-        ['Evidence',`${ranking.evidence.matches.length} news`,previous?`${signedDelta(dNews)} vs prior`:`${ranking.evidence.sourceCount} sources`],
-        ['Sources',ranking.evidence.sourceCount,previous?`${signedDelta(dSources)} vs prior`:'Current breadth'],
+        ['Evidence',`${rankingEvidenceCount(ranking)} news`,previous?`${signedDelta(dNews)} vs prior`:`${rankingSourceCount(ranking)} sources`],
+        ['Sources',rankingSourceCount(ranking),previous?`${signedDelta(dSources)} vs prior`:'Current breadth'],
         ['Lifecycle',ranking.lifecycle,previous&&previous.lifecycle!==ranking.lifecycle?`Was ${previous.lifecycle}`:'No lifecycle change']
       ];
       $('evolutionGrid').innerHTML=metrics.map(([label,value,note])=>`<div class="evolution-stat"><b>${esc(value)}</b><span>${esc(label)}</span><small>${esc(note)}</small></div>`).join('');
@@ -952,7 +1007,7 @@
       if(ranking){
         $("eventLifecycle").textContent=ranking.lifecycle;
         $("eventLifecycle").className=`life-pill ${ranking.lifecycle.toLowerCase()}`;
-        $("priorityDetail").textContent=`Priority ${ranking.priority}/100 • ${ranking.evidence.matches.length} related headlines • ${ranking.evidence.sourceCount} sources`;
+        $("priorityDetail").textContent=`Priority ${ranking.priority}/100 • ${rankingEvidenceCount(ranking)} related headlines • ${rankingSourceCount(ranking)} sources`;
       }
     }
 
@@ -1074,10 +1129,20 @@
     }
 
     function renderWatch(){
+      const aiEvent=aiEventFor(activeEvent);
+      const aiWatch=aiEvent?.quality?.status==="validated"&&Array.isArray(aiEvent?.intelligence?.what_to_watch_next)?aiEvent.intelligence.what_to_watch_next:[];
+      if(aiWatch.length){
+        $("watchList").innerHTML=aiWatch.slice(0,5).map((c,i)=>`<div class="watch-item"><span class="watch-icon">${i+1}</span><div><b>${esc(c.title||"Next catalyst")}</b><span>${esc(c.context||"")}</span></div></div>`).join("");
+        return;
+      }
       $("watchList").innerHTML=activeEvent.catalysts.map(c=>`<div class="watch-item"><span class="watch-icon">${c.icon}</span><div><b>${esc(c.title)}</b><span>${esc(c.text)}</span></div></div>`).join("");
     }
 
     function collectSources(rows){
+      const aiEvent=aiEventFor(activeEvent);
+      if(aiEvent?.quality?.status==="validated"&&Array.isArray(aiEvent.evidence)&&aiEvent.evidence.length){
+        return aiEvent.evidence.slice(0,EVENT_POLICY.displayArticles);
+      }
       const ranking=rankingFor(activeEvent);
       if(!ranking)return [];
       return [...ranking.evidence.matches].sort((a,b)=>{
@@ -1088,14 +1153,14 @@
 
     function renderSources(rows){
       const sources=collectSources(rows);
-      $("sourceList").innerHTML=sources.length?sources.map(n=>`<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")} • ${esc(n.instrument||"")}</span></div>`).join(""):'<div class="empty-note">No event-specific live headlines met the current evidence rules.</div>';
+      $("sourceList").innerHTML=sources.length?sources.map(n=>`<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")}${n.source_priority?` • P${esc(n.source_priority)}`:""} • ${esc(n.instrument||"")}</span></div>`).join(""):'<div class="empty-note">No event-specific live headlines met the current evidence rules.</div>';
     }
 
     function renderQueue(){
       const ranked=eventRankings.slice(0,EVENT_POLICY.maxActive);
       $("eventQueue").innerHTML=ranked.map((r,i)=>{
         const selected=r.event.id===activeEvent.id;
-        return `<button type="button" class="queue-item ${selected?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="View ${esc(r.event.title)} intelligence" aria-pressed="${selected?'true':'false'}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-bottom"><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${r.evidence.matches.length} news • ${r.evidence.sourceCount} sources</span></span><span class="queue-action">${selected?'Viewing':'View →'}</span></span></button>`;
+        return `<button type="button" class="queue-item ${selected?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="View ${esc(r.event.title)} intelligence" aria-pressed="${selected?'true':'false'}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-bottom"><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${rankingEvidenceCount(r)} news • ${rankingSourceCount(r)} sources</span></span><span class="queue-action">${selected?'Viewing':'View →'}</span></span></button>`;
       }).join('');
       $("eventQueue").querySelectorAll('[data-event-id]').forEach(btn=>btn.addEventListener('click',()=>{
         const found=EVENT_LIBRARY.find(e=>e.id===btn.dataset.eventId);if(!found)return;
@@ -1114,17 +1179,24 @@
     }
 
     async function loadPulse(){
+      const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
       try{
-        const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
-        const resp=await fetch("market_pulse.json",{cache:"no-cache",signal:ctrl.signal});clearTimeout(timer);
-        if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
-        pulseData=await resp.json();
-        $("dataStatus").textContent=`Live PSD feed loaded • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}`;
+        const results=await Promise.allSettled([
+          fetch("market_pulse.json",{cache:"no-cache",signal:ctrl.signal}).then(r=>{if(!r.ok)throw new Error(`market_pulse HTTP ${r.status}`);return r.json()}),
+          fetch("event_intelligence.json",{cache:"no-cache",signal:ctrl.signal}).then(r=>{if(!r.ok)throw new Error(`event_intelligence HTTP ${r.status}`);return r.json()})
+        ]);
+        const pulseResult=results[0],aiResult=results[1];
+        if(pulseResult.status!=="fulfilled")throw pulseResult.reason;
+        pulseData=pulseResult.value;
+        aiIntelligenceData=aiResult.status==="fulfilled"?aiResult.value:null;
+        const aiNote=aiIntelligenceData?.ai?.active_provider?` • AI ${aiIntelligenceData.ai.active_provider}`:" • AI synthesis pending";
+        $("dataStatus").textContent=`Live PSD feed loaded • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}${aiNote}`;
       }catch(err){
         console.warn("Event Intelligence lab using fallback snapshot",err);
         pulseData={universe:Object.values(FALLBACK_ROWS)};
+        aiIntelligenceData=null;
         $("dataStatus").textContent="Live feed unavailable — using embedded lab fallback snapshot";
-      }
+      }finally{clearTimeout(timer)}
       rankEvents();
       recordEventSnapshots();
       activeEvent=activeRankings()[0]?.event||eventRankings[0]?.event||EVENT_LIBRARY[0];
