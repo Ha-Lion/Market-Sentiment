@@ -97,21 +97,68 @@
     const control=results[1].data||{};renderReport(results[0].data||{},control.accounts||{});renderBanner(control.site_status||{});setStatus("Ready","success");
   }
 
-  function healthValue(id,value,state){const node=document.getElementById(id);node.textContent=value;node.className=state||"";}
+  function healthValue(id,value,state){const node=document.getElementById(id);if(!node)return;node.textContent=value;node.className=state||"";}
+
+  function healthTimestamp(value){
+    if(!value)return "";
+    const text=String(value).replace(/ UTC$/i,"Z").replace(" ","T");
+    const date=new Date(text);
+    if(Number.isNaN(date.getTime()))return String(value);
+    return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(date)+" ET";
+  }
+
+  function freshnessState(value,maxGoodHours,maxWarnHours){
+    if(!value)return "warn";
+    const text=String(value).replace(/ UTC$/i,"Z").replace(" ","T");
+    const date=new Date(text);if(Number.isNaN(date.getTime()))return "warn";
+    const age=(Date.now()-date.getTime())/3600000;
+    return age<=maxGoodHours?"good":age<=maxWarnHours?"warn":"bad";
+  }
+
+  async function healthJson(path){
+    try{const response=await fetch(path,{cache:"no-cache"});if(!response.ok)throw new Error(String(response.status));return await response.json();}
+    catch(_){return null;}
+  }
+
   async function loadHealth(){
-    healthValue("health-dashboard","Checking…","");healthValue("health-feeds","Checking…","");healthValue("health-failed","Checking…","");healthValue("health-workflow","Checking…","");
+    ["health-engine","health-ai","health-ai-provider","health-sources","health-derived","health-feeds"].forEach(function(id){healthValue(id,"Checking…","");});
     const results=await Promise.all([
-      fetch("dashboard_live.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error();return r.json();}),
-      fetch("technical_data.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error();return r.json();}),
-      fetch("status.json",{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error();return r.json();})
-    ]).catch(function(){return null;});
-    if(!results){["health-dashboard","health-feeds","health-failed","health-workflow"].forEach(function(id){healthValue(id,"Unavailable","bad");});return;}
-    const dashboard=results[0]||{},technical=results[1]||{},status=results[2]||{},health=technical.health||{};
-    healthValue("health-dashboard",dashboard.updated_ny||dashboard.updated_utc||"Available","good");
-    healthValue("health-feeds",number(health.fresh_instruments)+" fresh",Number(health.fresh_instruments)>0?"good":"warn");
-    const failures=Number(health.failed_without_fallback||0),stale=Number(health.preserved_stale_instruments||0);
-    healthValue("health-failed",failures+" failed / "+stale+" stale",failures?"bad":stale?"warn":"good");
-    healthValue("health-workflow",status.updated_ny||status.updated||status.updated_utc||"Available","good");
+      healthJson("status.json"),
+      healthJson("technical_data.json"),
+      healthJson("market_pulse.json"),
+      healthJson("news_consensus.json"),
+      healthJson("ai_status.json"),
+      healthJson("event_intelligence.json")
+    ]);
+    const status=results[0]||{},technical=results[1]||{},pulse=results[2],consensus=results[3],ai=results[4],intel=results[5];
+    const technicalHealth=technical.health||{};
+
+    const engineFreshStamp=technical.updated_utc||(pulse&&pulse.data_updated_utc)||status.updated_utc||"";
+    const engineDisplay=status.updated_ny||status.updated||status.updated_utc||technical.updated_utc||"";
+    healthValue("health-engine",engineDisplay?"Healthy • "+(String(engineDisplay).includes("NY Time")?engineDisplay:healthTimestamp(engineDisplay)):"Unavailable",engineFreshStamp?freshnessState(engineFreshStamp,8,18):"warn");
+
+    if(ai){
+      const aiState=String(ai.status||"unknown").toLowerCase();
+      const generated=Number(ai.events_generated||0),reused=Number(ai.events_reused||0),failed=Number(ai.events_failed||0);
+      const label=(aiState==="healthy"?"Healthy":aiState==="degraded"?"Degraded":aiState==="not_configured"?"Not configured":aiState==="disabled"?"Disabled":"Issue")+` • ${generated} new / ${reused} reused${failed?` / ${failed} failed`:""}`;
+      const state=aiState==="healthy"?"good":aiState==="degraded"||aiState==="not_configured"||aiState==="disabled"?"warn":"bad";
+      healthValue("health-ai",label,state);
+      const provider=ai.active_provider||"—",model=ai.active_model||((ai.providers||{}).gemini||{}).model||"—";
+      healthValue("health-ai-provider",provider==="—"?`Waiting • ${model}`:`${provider} • ${model}${ai.fallback_used?" • fallback":""}`,provider==="—"?"warn":"good");
+      const sources=ai.source_registry||{};
+      healthValue("health-sources",sources.enabled_sources!=null?`${sources.enabled_sources} enabled • P1 ${sources.priority_1||0} / P2 ${sources.priority_2||0} / P3 ${sources.priority_3||0}`:"Unavailable",sources.enabled_sources?"good":"warn");
+    }else{
+      healthValue("health-ai","Not published yet","warn");
+      healthValue("health-ai-provider","Waiting for AI gateway","warn");
+      healthValue("health-sources","Waiting for AI gateway","warn");
+    }
+
+    const pulseOk=!!pulse,consensusOk=!!consensus,intelEvents=Array.isArray(intel&&intel.events)?intel.events.length:0;
+    const derivedLabel=`Pulse ${pulseOk?"OK":"missing"} • Consensus ${consensusOk?"OK":"missing"}${intel?` • AI events ${intelEvents}`:""}`;
+    healthValue("health-derived",derivedLabel,pulseOk&&consensusOk?"good":pulseOk||consensusOk?"warn":"bad");
+
+    const fresh=Number(technicalHealth.fresh_instruments||0),failures=Number(technicalHealth.failed_without_fallback||0),stale=Number(technicalHealth.preserved_stale_instruments||0);
+    healthValue("health-feeds",`${fresh} fresh • ${failures} failed • ${stale} stale`,failures?"bad":stale||!fresh?"warn":"good");
   }
 
   async function saveBanner(){
