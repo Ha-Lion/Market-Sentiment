@@ -364,32 +364,39 @@
     }
 
 
-    /* TEST7: move the explanatory proof link into the top gap and remove its vertical footprint. */
+    /* TEST8: center the proof link in the gap between the title and audio controls. */
     @media(min-width:1200px){
       .hero-main .ai-proof{
         position:absolute;
-        top:20px;
-        right:310px;
+        top:18px;
+        left:62%;
+        right:auto;
+        transform:translateX(-50%);
         z-index:6;
         margin:0;
         max-width:620px;
       }
       .hero-main .ai-proof summary{
-        margin:0;
+        margin:0 auto;
         padding:4px 7px;
         border-radius:999px;
         background:transparent;
         white-space:nowrap;
+        text-align:center;
       }
       .hero-main .ai-proof[open] .ai-proof-box{
         position:absolute;
         top:25px;
-        right:0;
-        width:min(620px,calc(100vw - 420px));
+        left:50%;
+        right:auto;
+        transform:translateX(-50%);
+        width:min(620px,calc(100vw - 430px));
         margin-top:4px;
         z-index:7;
         box-shadow:0 8px 22px rgba(18,32,48,.16);
       }
+      .hero-main .ai-proof-box p{margin:0 0 6px}
+      .hero-main .ai-proof-box p:last-child{margin-bottom:0}
       .hero-main .summary{gap:7px}
       .hero-main .ai-intel-meta{margin-top:0}
     }
@@ -1058,8 +1065,8 @@
         ...perspectives.map(p=>p?.source),
         ...rankingSources
       ].map(v=>String(v||"").trim()).filter(Boolean))];
-      const meta=`<div class="ai-intel-meta"><span class="ai-intel-brand">PSD AI Editorial Intelligence</span><span>${evidenceCount} source-ranked articles • ${sourceCount} independent outlets • PSD market data</span></div>`;
-      const proof=`<details class="ai-proof"><summary>How this intelligence was built</summary><div class="ai-proof-box"><b>Evidence first:</b> PSD supplied ${evidenceCount} source-ranked articles from ${sourceCount} independent outlets plus current sentiment and market data. Source authority is controlled by PSD's centralized source policy; the AI synthesizes only the supplied evidence, compares reporting with market confirmation, and is instructed to preserve material conflicts rather than force a consensus.</div></details>`;
+      const meta=`<div class="ai-intel-meta"><span class="ai-intel-brand">PSD AI Editorial Intelligence</span><span>${evidenceCount} selected articles • ${sourceCount} independent outlets • PSD market data</span></div>`;
+      const proof=`<details class="ai-proof"><summary>How this intelligence was built</summary><div class="ai-proof-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p><p><b>This analysis:</b> ${evidenceCount} selected articles from ${sourceCount} independent outlets matched this event and were supplied to the AI. This is the event-specific evidence set, not PSD's full source pool.</p></div></details>`;
       const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b class="article-source-name">${esc(p.source||"Source")}:</b> ${highlightSourceNames(p.emphasis||"",namedSources)}</span>`).join("")}</div>`:"";
       const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
       const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b class="article-source-name">${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
