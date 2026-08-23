@@ -1008,24 +1008,48 @@
     }
 
     function rankEvents(){
-      eventRankings=EVENT_LIBRARY.map(eventPriority);
-      const central=new Map((Array.isArray(aiIntelligenceData?.event_rankings)?aiIntelligenceData.event_rankings:[]).map(x=>[String(x?.event_id||""),x]));
-      eventRankings.forEach(r=>{
-        const c=central.get(String(r.event.id||""));
-        if(!c)return;
-        if(Number.isFinite(Number(c.priority)))r.priority=Number(c.priority);
-        if(Number.isFinite(Number(c.impact)))r.impact=Number(c.impact);
-        if(c.lifecycle)r.lifecycle=String(c.lifecycle);
-        if(Number.isFinite(Number(c.evidence_count)))r.centralEvidenceCount=Number(c.evidence_count);
-        if(Number.isFinite(Number(c.source_count)))r.centralSourceCount=Number(c.source_count);
+      const centralRows=Array.isArray(aiIntelligenceData?.event_rankings)?aiIntelligenceData.event_rankings:[];
+      const central=new Map(centralRows.map(x=>[String(x?.event_id||""),x]));
+      eventRankings=EVENT_LIBRARY.map(event=>{
+        const c=central.get(String(event.id||""))||null;
+        const preview=Array.isArray(c?.evidence_preview)?c.evidence_preview:[];
+        return {
+          event,
+          rows:getUniverseRows(event),
+          evidence:{
+            matches:preview,
+            sourceCount:Number(c?.source_count||0),
+            categoryCount:0,
+            within24:0,
+            within48:0,
+            hoursSinceLatest:999
+          },
+          impact:Number.isFinite(Number(c?.impact))?Number(c.impact):0,
+          marketPressure:Number.isFinite(Number(c?.market_pressure))?Number(c.market_pressure):0,
+          marketCoveragePct:Number.isFinite(Number(c?.market_coverage_pct))?Number(c.market_coverage_pct):0,
+          freshness:Number.isFinite(Number(c?.freshness))?Number(c.freshness):0,
+          reach:Number.isFinite(Number(c?.cross_market_reach))?Number(c.cross_market_reach):0,
+          sourceQuality:Number.isFinite(Number(c?.source_quality))?Number(c.source_quality):0,
+          persistence:Number.isFinite(Number(c?.persistence))?Number(c.persistence):0,
+          priority:Number.isFinite(Number(c?.priority))?Number(c.priority):0,
+          lifecycle:String(c?.lifecycle||"Archived"),
+          centralEvidenceCount:Number.isFinite(Number(c?.evidence_count))?Number(c.evidence_count):0,
+          centralSourceCount:Number.isFinite(Number(c?.source_count))?Number(c.source_count):0,
+          totalMatchingArticles:Number.isFinite(Number(c?.total_matching_articles))?Number(c.total_matching_articles):0,
+          totalMatchingSources:Number.isFinite(Number(c?.total_matching_sources))?Number(c.total_matching_sources):0
+        };
       });
       eventRankings.sort((a,b)=>b.priority-a.priority);
-      // Guarantee the page remains usable even if the current feed is unusually sparse.
-      if(!eventRankings.some(r=>r.lifecycle==='Active') && eventRankings[0] && eventRankings[0].priority>=45) eventRankings[0].lifecycle='Active';
       return eventRankings;
     }
 
-    function activeRankings(){return eventRankings.filter(r=>r.lifecycle==='Active').slice(0,EVENT_POLICY.maxActive)}
+    function currentRankings(){
+      return eventRankings
+        .filter(r=>rankingEvidenceCount(r)>0 && r.lifecycle!=="Archived")
+        .slice(0,EVENT_POLICY.maxActive);
+    }
+
+    function activeRankings(){return currentRankings().filter(r=>r.lifecycle==="Active")}
 
     function rankingFor(event){return eventRankings.find(r=>r.event.id===event.id)||null}
     function rankingEvidenceCount(r){return Number.isFinite(Number(r?.centralEvidenceCount))?Number(r.centralEvidenceCount):Number(r?.evidence?.matches?.length||0)}
@@ -1040,14 +1064,15 @@
     }
 
     function assetPressure(row){
-      const psi=num(row.psi)??50,d1=Math.abs(num(row.change_1d)??0),d7=Math.abs(num(row.change_7d)??0),price=Math.abs(num(row.price_change_1d_pct)??0);
-      return clamp(40 + Math.min(22,Math.abs(psi-50)*.72) + Math.min(16,d1*1.05) + Math.min(13,d7*.45) + Math.min(9,price*1.8) + (row.is_divergence?6:0) + (row.is_extreme?5:0),0,100);
+      const psi=num(row.psi);
+      if(psi===null)return 0;
+      const d1=Math.abs(num(row.change_1d)??0),d7=Math.abs(num(row.change_7d)??0),price=Math.abs(num(row.price_change_1d_pct)??0);
+      return clamp(Math.min(35,Math.abs(psi-50)*1.4)+Math.min(25,d1*1.25)+Math.min(20,d7*.5)+Math.min(15,price*3)+(row.is_extreme?5:0),0,100);
     }
 
-    function eventImpactScore(rows){
-      let weighted=0,total=0;
-      rows.forEach(r=>{const w=num(r.weight)??1;weighted+=assetPressure(r)*w;total+=w});
-      return total?Math.round(weighted/total):50;
+    function eventImpactScore(){
+      const ranking=rankingFor(activeEvent);
+      return Number.isFinite(Number(ranking?.impact))?Number(ranking.impact):0;
     }
 
     function profileMetrics(rows){
@@ -1070,7 +1095,11 @@
 
     function aiEventFor(event){
       if(!aiIntelligenceData||!Array.isArray(aiIntelligenceData.events)||!event)return null;
-      return aiIntelligenceData.events.find(item=>String(item?.event_id||"")===String(event.id||""))||null;
+      const ranking=rankingFor(event);
+      if(!ranking||rankingEvidenceCount(ranking)<2||rankingSourceCount(ranking)<2)return null;
+      const item=aiIntelligenceData.events.find(entry=>String(entry?.event_id||"")===String(event.id||""))||null;
+      if(!item||item?.quality?.status!=="validated"||item.stale_reason)return null;
+      return item;
     }
 
 
@@ -1668,7 +1697,7 @@
 
     function renderHero(rows){
       stopSummarySpeech();
-      const score=eventImpactScore(rows),band=impactBand(score);
+      const ranking=rankingFor(activeEvent);const score=Number.isFinite(Number(ranking?.impact))?Number(ranking.impact):0,band=impactBand(score);
       $("eventTitle").textContent=activeEvent.title;
       $("eventHorizon").textContent=activeEvent.horizon;
       $("primaryChannels").textContent=activeEvent.channels.join(" • ");
@@ -1679,7 +1708,6 @@
       $("impactRing").style.setProperty("--score",score);
       $("impactLabel").textContent=`${band.label} Impact`;
       $("eventStatus").textContent=`${band.label} Impact`;
-      const ranking=rankingFor(activeEvent);
       if(ranking){
         $("eventLifecycle").textContent=ranking.lifecycle;
         $("eventLifecycle").className=`life-pill ${ranking.lifecycle.toLowerCase()}`;
@@ -1829,15 +1857,15 @@
 
     function renderSources(rows){
       const sources=collectSources(rows);
-      $("sourceList").innerHTML=sources.length?sources.map(n=>`<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")}${n.source_priority?` • P${esc(n.source_priority)}`:""} • ${esc(n.instrument||"")}</span></div>`).join(""):'<div class="empty-note">No event-specific live headlines met the current evidence rules.</div>';
+      $("sourceList").innerHTML=sources.length?sources.map(n=>{const instrumentText=String(n.instrument||((Array.isArray(n.instruments)&&n.instruments.length)?n.instruments.slice(0,3).join(" • "):""));return `<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")}${n.source_priority?` • P${esc(n.source_priority)}`:""}${instrumentText?` • ${esc(instrumentText)}`:""}</span></div>`}).join(""):'<div class="empty-note">No event-specific live headlines met the current evidence rules.</div>';
     }
 
     function renderQueue(){
-      const ranked=eventRankings.slice(0,EVENT_POLICY.maxActive);
-      $("eventQueue").innerHTML=ranked.map((r,i)=>{
+      const ranked=currentRankings();
+      $("eventQueue").innerHTML=ranked.length?ranked.map((r,i)=>{
         const selected=r.event.id===activeEvent.id;
-        return `<button type="button" class="queue-item ${selected?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="View ${esc(r.event.title)} intelligence" aria-pressed="${selected?'true':'false'}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-bottom"><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${rankingEvidenceCount(r)} news • ${rankingSourceCount(r)} sources</span></span><span class="queue-action">${selected?'Viewing':'View →'}</span></span></button>`;
-      }).join('');
+        return `<button type="button" class="queue-item ${selected?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="View ${esc(r.event.title)} intelligence" aria-pressed="${selected?'true':'false'}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-bottom"><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${rankingEvidenceCount(r)} evidence • ${rankingSourceCount(r)} sources</span></span><span class="queue-action">${selected?'Viewing':'View →'}</span></span></button>`;
+      }).join(''):'<div class="empty-note">No current events meet PSD evidence and priority rules.</div>';
       $("eventQueue").querySelectorAll('[data-event-id]').forEach(btn=>btn.addEventListener('click',()=>{
         const found=EVENT_LIBRARY.find(e=>e.id===btn.dataset.eventId);if(!found)return;
         const keepY=window.scrollY;
@@ -1874,7 +1902,7 @@
       }finally{clearTimeout(timer)}
       rankEvents();
       recordEventSnapshots();
-      activeEvent=activeRankings()[0]?.event||eventRankings[0]?.event||EVENT_LIBRARY[0];
+      activeEvent=currentRankings()[0]?.event||EVENT_LIBRARY[0];
       renderEvent();
     }
 
@@ -1892,7 +1920,7 @@
     "use strict";
     const defs={
       "market-intelligence":{title:"AI Market Intelligence",text:"PSD combines source-ranked news, Public Sentiment Dash market data, and AI editorial synthesis to explain what changed, why it matters, and what to watch next."},
-      "event-priority":{title:"Market Event Priority",text:"Ranks tracked market events by current impact, evidence freshness, cross-market reach, source quality, and persistence. A higher score means the event currently deserves more attention; it is not a trading recommendation."},
+      "event-priority":{title:"Market Event Priority",text:"Ranks up to 10 current events only after fresh, source-ranked evidence is found. The score then combines market confirmation, evidence freshness, cross-market reach, source quality, and persistence. An event with no qualifying current evidence is not promoted as a current priority. This is not a trading recommendation."},
       "market-impact":{title:"PSD Market Impact",text:"A cross-market severity score built from current sentiment shifts, persistence, price response, and divergence signals across the assets affected by the selected event."},
       "event-evolution":{title:"Event Evolution",text:"Compares the selected event with earlier PSD snapshots so you can see whether impact, priority, evidence breadth, source breadth, and lifecycle are rising, easing, or stable."},
       "affected-assets":{title:"Most Affected Assets",text:"Shows the assets most connected to the selected event using current PSD sentiment, recent sentiment change, market-price context, and divergence or reversal signals."},
