@@ -163,6 +163,28 @@
     return new URL(path, window.location.origin + window.location.pathname).href;
   }
 
+  function requestedReturnPage() {
+    const params = new URLSearchParams(window.location.search);
+    const value = String(params.get("next") || "").trim();
+    if (!value) return "";
+    if (!/^[a-z0-9][a-z0-9._-]*\.html(?:[?#].*)?$/i.test(value)) return "";
+    if (value.split(/[?#]/, 1)[0].toLowerCase() === "auth.html") return "";
+    return value;
+  }
+
+  function postLoginDestination() {
+    return requestedReturnPage() || "account.html";
+  }
+
+  async function confirmSignedInSession() {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const result = await client.auth.getSession();
+      if (result.data && result.data.session) return result.data.session;
+      await new Promise(function (resolve) { window.setTimeout(resolve, 80); });
+    }
+    return null;
+  }
+
   function normalizeUsername(value) {
     return String(value || "")
       .trim()
@@ -333,7 +355,8 @@
 
     const sessionResult = await client.auth.getSession();
     if (sessionResult.data.session && !recoveryRequested) {
-      window.location.replace("account.html");
+      try { sessionStorage.setItem("psd-ribbon-member-ui", "true"); } catch (_error) {}
+      window.location.replace(postLoginDestination());
       return;
     }
 
@@ -364,11 +387,18 @@
         return;
       }
 
+      const confirmedSession = await confirmSignedInSession();
+      if (!confirmedSession) {
+        setStatus(status, "Sign-in succeeded, but the session could not be restored. Please try once more.", "error");
+        return;
+      }
+
       sessionStorage.setItem(
         "psd_show_remember_toast",
         remember ? "remembered" : "session"
       );
-      window.location.replace("account.html");
+      try { sessionStorage.setItem("psd-ribbon-member-ui", "true"); } catch (_error) {}
+      window.location.replace(postLoginDestination());
     });
 
     const signupForm = document.getElementById("signup-form");
@@ -401,7 +431,10 @@
             username: username,
             display_name: username
           },
-          emailRedirectTo: redirectUrl("auth.html?confirmed=1")
+          emailRedirectTo: redirectUrl(
+            "auth.html?confirmed=1" +
+            (requestedReturnPage() ? "&next=" + encodeURIComponent(requestedReturnPage()) : "")
+          )
         }
       });
 
