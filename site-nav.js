@@ -1,10 +1,11 @@
 (function(){
   "use strict";
 
+  /* Ribbon Version 11 — AI member-feature navigation */
   const mainLinks = [
     { href: "dashboard.html", icon: "▦", label: "Interactive Dashboard" },
     { href: "sentiment-history.html", icon: "↗", label: "Historical Sentiment" },
-    { href: "news-articles.html", icon: "▤", label: "News & Articles" },
+    { href: "news-articles.html", icon: "▤", label: "Search World News & Articles" },
     { href: "charts.html", icon: "⌁", label: "Market Charts" },
     { href: "market-sentiment.html", icon: "▣", label: "Guides" },
     { href: "advertise.html", icon: "◆", label: "Business Opportunities" },
@@ -14,6 +15,8 @@
   ];
 
   const assetLinks = [
+    { href: "market-pulse.html", icon: "✦", label: "AI Market Pulse", memberOnly: true },
+    { href: "dashboard-lab.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
     { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" },
     { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
     { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
@@ -24,25 +27,14 @@
   ];
 
   const supportUrl = "https://gofund.me/0d687f045";
-  const MEMBER_UI_CACHE_KEY = "psd-ribbon-member-ui";
-
-  function cachedMemberUI(){
-    try{
-      return sessionStorage.getItem(MEMBER_UI_CACHE_KEY) === "true";
-    }catch(error){
-      return false;
-    }
-  }
-
-  function cacheMemberUI(active){
-    try{
-      if(active) sessionStorage.setItem(MEMBER_UI_CACHE_KEY, "true");
-      else sessionStorage.removeItem(MEMBER_UI_CACHE_KEY);
-    }catch(error){}
-  }
-
   const tourVideoUrl = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
   const homeUrl = "https://publicsentimentdash.com/";
+  const memberFeaturePages = Object.freeze({
+    "market-pulse.html": "AI Market Pulse",
+    "dashboard-lab.html": "AI Market Intelligence"
+  });
+  const memberFeatureTargetKey = "psd-member-feature-target-v1";
+  let accountStateReady = Promise.resolve();
 
   function currentFile(){
     const path = (window.location.pathname || "").split("/").pop();
@@ -66,7 +58,11 @@
         </span>`;
     }
 
-    return '<a href="' + link.href + '" class="psd-nav-link' + (isActive ? ' active' : '') + '">' + link.label + '</a>';
+    const memberAttrs = link.memberOnly
+      ? ' data-psd-member-feature="true" aria-label="' + link.label + ' — free account required"'
+      : '';
+
+    return '<a href="' + link.href + '" class="psd-nav-link' + (isActive ? ' active' : '') + '"' + memberAttrs + '>' + link.label + '</a>';
   }
 
   function ensureTourStyles(){
@@ -129,11 +125,6 @@
         position:relative!important;
         z-index:100!important;
         overflow:visible!important;
-        pointer-events:none!important;
-      }
-      .psd-shared-header .header-center > a[target="_blank"],
-      .psd-shared-header #site-tour-button{
-        pointer-events:auto!important;
       }
       .psd-shared-header .nav{
         position:relative!important;
@@ -368,6 +359,236 @@
   }
 
 
+  function ensureMemberFeatureGateStyles(){
+    if(document.getElementById("psd-member-feature-gate-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "psd-member-feature-gate-styles";
+    style.textContent = `
+      body.psd-member-feature-gate-open{overflow:hidden!important}
+      .psd-member-feature-gate{
+        position:fixed;
+        inset:0;
+        z-index:2147483600;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:18px;
+        background:rgba(3,7,12,.76);
+        backdrop-filter:blur(7px);
+      }
+      .psd-member-feature-card{
+        position:relative;
+        width:min(560px,calc(100vw - 28px));
+        padding:26px 28px 24px;
+        border:1px solid rgba(226,173,56,.66);
+        border-radius:22px;
+        background:linear-gradient(145deg,#121923,#090e15);
+        color:#f6f8fb;
+        box-shadow:0 28px 80px rgba(0,0,0,.58),0 0 34px rgba(226,173,56,.12);
+        font-family:Inter,"Segoe UI",Arial,sans-serif;
+        text-align:left;
+      }
+      .psd-member-feature-kicker{
+        display:inline-flex;
+        margin:0 0 12px;
+        padding:6px 11px;
+        border:1px solid rgba(255,211,111,.68);
+        border-radius:999px;
+        background:#fff8df;
+        color:#624812;
+        font-size:12px;
+        font-weight:900;
+      }
+      .psd-member-feature-card h2{
+        margin:0 48px 9px 0;
+        color:#fff;
+        font-size:24px;
+        line-height:1.13;
+        letter-spacing:-.02em;
+      }
+      .psd-member-feature-card p{
+        margin:0;
+        color:#dbe4ed;
+        font-size:14px;
+        line-height:1.45;
+      }
+      .psd-member-feature-privacy{
+        margin-top:10px!important;
+        color:#aebdca!important;
+        font-size:12px!important;
+      }
+      .psd-member-feature-actions{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        margin-top:20px;
+      }
+      .psd-member-feature-signin{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:42px;
+        padding:0 18px;
+        border:1px solid #d8a633;
+        border-radius:999px;
+        background:linear-gradient(180deg,#5a4315,#211b10);
+        color:#ffe08a;
+        font:900 13px Inter,"Segoe UI",Arial,sans-serif;
+        cursor:pointer;
+        box-shadow:0 0 18px rgba(226,173,56,.16);
+      }
+      .psd-member-feature-signin:hover,.psd-member-feature-signin:focus-visible{
+        border-color:#ffe08a;
+        background:linear-gradient(180deg,#72571c,#2b2211);
+        outline:none;
+      }
+      .psd-member-feature-close{
+        position:absolute;
+        top:14px;
+        right:14px;
+        width:40px;
+        height:40px;
+        display:grid;
+        place-items:center;
+        border:2px solid #fff0ad;
+        border-radius:50%;
+        background:#f4b92f;
+        color:#171006;
+        font:900 23px/1 Arial,sans-serif;
+        cursor:pointer;
+        box-shadow:0 5px 18px rgba(0,0,0,.42),0 0 0 3px rgba(244,185,47,.16);
+      }
+      .psd-member-feature-close:hover,.psd-member-feature-close:focus-visible{
+        background:#ffd35c;
+        outline:none;
+      }
+      @media(max-width:620px){
+        .psd-member-feature-card{padding:23px 20px 21px}
+        .psd-member-feature-card h2{font-size:21px}
+        .psd-member-feature-actions{align-items:stretch}
+        .psd-member-feature-signin{width:100%}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function rememberMemberFeatureTarget(target){
+    if(!memberFeaturePages[target]) return;
+    try{ sessionStorage.setItem(memberFeatureTargetKey, target); }catch(error){}
+  }
+
+  function takeMemberFeatureTarget(){
+    try{
+      const target = sessionStorage.getItem(memberFeatureTargetKey) || "";
+      sessionStorage.removeItem(memberFeatureTargetKey);
+      return memberFeaturePages[target] ? target : "";
+    }catch(error){
+      return "";
+    }
+  }
+
+  function closeMemberFeatureGate(returnHome){
+    const gate = document.getElementById("psd-member-feature-gate");
+    if(gate) gate.remove();
+    document.body.classList.remove("psd-member-feature-gate-open");
+    if(returnHome) window.location.replace("index.html");
+  }
+
+  function showMemberFeatureGate(target, directVisit){
+    if(!memberFeaturePages[target]) return;
+    ensureMemberFeatureGateStyles();
+
+    const oldGate = document.getElementById("psd-member-feature-gate");
+    if(oldGate) oldGate.remove();
+
+    const gate = document.createElement("div");
+    gate.id = "psd-member-feature-gate";
+    gate.className = "psd-member-feature-gate";
+    gate.setAttribute("role", "dialog");
+    gate.setAttribute("aria-modal", "true");
+    gate.setAttribute("aria-labelledby", "psd-member-feature-title");
+    gate.innerHTML = `
+      <section class="psd-member-feature-card">
+        <button class="psd-member-feature-close" type="button" aria-label="Close">×</button>
+        <div class="psd-member-feature-kicker">Free Account</div>
+        <h2 id="psd-member-feature-title">Create a Free Account to Unlock More AI-Built Features</h2>
+        <p>Just email + password.</p>
+        <p class="psd-member-feature-privacy">No spam. No marketing emails.</p>
+        <div class="psd-member-feature-actions">
+          <button class="psd-member-feature-signin" type="button">Sign Up / Log In →</button>
+        </div>
+      </section>`;
+
+    document.body.appendChild(gate);
+    document.body.classList.add("psd-member-feature-gate-open");
+
+    const closeButton = gate.querySelector(".psd-member-feature-close");
+    const signinButton = gate.querySelector(".psd-member-feature-signin");
+
+    const closeGate = function(){ closeMemberFeatureGate(directVisit === true); };
+    closeButton.addEventListener("click", closeGate);
+    gate.addEventListener("click", function(event){
+      if(event.target === gate) closeGate();
+    });
+    gate.addEventListener("keydown", function(event){
+      if(event.key === "Escape") closeGate();
+    });
+
+    signinButton.addEventListener("click", async function(event){
+      event.preventDefault();
+      rememberMemberFeatureTarget(target);
+      closeMemberFeatureGate(false);
+      await openAuthPopup();
+    });
+
+    window.setTimeout(function(){ signinButton.focus(); }, 0);
+  }
+
+  function isRibbonMemberSignedIn(){
+    const accountLink = document.getElementById("psd-account-nav-link");
+    return !!accountLink && accountLink.dataset.signedIn === "true";
+  }
+
+  function initializeMemberFeatureAccess(){
+    document.querySelectorAll('a[data-psd-member-feature="true"]').forEach(function(link){
+      link.addEventListener("click", async function(event){
+        event.preventDefault();
+        const target = link.getAttribute("href") || "";
+
+        try{ await accountStateReady; }catch(error){}
+
+        if(isRibbonMemberSignedIn()){
+          window.location.href = target;
+          return;
+        }
+
+        showMemberFeatureGate(target, false);
+      });
+    });
+
+    window.addEventListener("psd-member-status-change", function(event){
+      const detail = event && event.detail ? event.detail : {};
+      if(detail.visitor_type !== "member") return;
+
+      const target = takeMemberFeatureTarget();
+      if(!target) return;
+
+      if(currentFile() === target){
+        closeMemberFeatureGate(false);
+      }else{
+        window.location.href = target;
+      }
+    });
+
+    accountStateReady.finally(function(){
+      const current = currentFile();
+      if(!memberFeaturePages[current]) return;
+      if(isRibbonMemberSignedIn()) return;
+      showMemberFeatureGate(current, true);
+    });
+  }
+
   function ensureAccountNavStyles(){
     if(document.getElementById("psd-account-nav-styles")) return;
 
@@ -419,16 +640,6 @@
         border:1px solid rgba(210,153,34,.32);
         background:rgba(210,153,34,.10);
       }
-      #psd-account-nav-link.psd-member-link::after{
-        content:"▾";
-        display:inline-block;
-        margin-left:6px;
-        font-size:9px;
-        font-weight:900;
-        line-height:1;
-        color:currentColor;
-        vertical-align:middle;
-      }
 
       /* Shared ribbon rows are rendered explicitly in render(); theme CSS owns row placement.
          Do not suppress .nav a::before here: those pseudo-elements carry the ribbon page icons. */
@@ -445,6 +656,11 @@
         outline:none;
       }
       #psd-ribbon-watchlist-link[hidden]{display:none!important}
+      .psd-shared-header .psd-nav-link[href="dashboard-lab.html"]::before{
+        content:"AI"!important;
+        font-family:Inter,"Segoe UI",Arial,sans-serif!important;
+        font-size:8px!important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -480,25 +696,16 @@
         document.getElementById("psd-ribbon-watchlist-link");
 
       if(!session){
-        cacheMemberUI(false);
         if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = true;
         accountLink.textContent = "Sign In";
         accountLink.href = "auth.html";
         accountLink.classList.remove("psd-member-link");
         accountLink.dataset.signedIn = "false";
-        accountLink.removeAttribute("aria-haspopup");
-        accountLink.removeAttribute("aria-expanded");
         const reportLink = document.getElementById("psd-activity-report-link");
         if(reportLink) reportLink.hidden = true;
         menu.hidden = true;
         return;
       }
-
-      /* A confirmed auth session is enough to keep My Watchlist visible.
-         Show it before the optional profile lookup so changing pages cannot
-         make the ribbon link disappear while profile data is loading. */
-      cacheMemberUI(true);
-      if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = false;
 
       const profileResult = await client
         .from("profiles")
@@ -511,12 +718,12 @@
       const reportLink = document.getElementById("psd-activity-report-link");
       if(reportLink) reportLink.hidden = profile.is_admin !== true;
 
+      if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = false;
+
       accountLink.textContent = name;
       accountLink.href = "#";
       accountLink.classList.add("psd-member-link");
       accountLink.dataset.signedIn = "true";
-      accountLink.setAttribute("aria-haspopup","menu");
-      accountLink.setAttribute("aria-expanded","false");
     }catch(error){
       console.error(error);
     }
@@ -534,7 +741,6 @@
       if(accountLink.dataset.signedIn === "true"){
         event.preventDefault();
         menu.hidden = !menu.hidden;
-        accountLink.setAttribute("aria-expanded",menu.hidden ? "false" : "true");
         return;
       }
 
@@ -575,17 +781,11 @@
     }
 
     document.addEventListener("click", function(event){
-      if(!event.target.closest(".psd-account-nav-wrap")){
-        menu.hidden = true;
-        if(accountLink.dataset.signedIn === "true") accountLink.setAttribute("aria-expanded","false");
-      }
+      if(!event.target.closest(".psd-account-nav-wrap")) menu.hidden = true;
     });
 
     document.addEventListener("keydown", function(event){
-      if(event.key === "Escape"){
-        menu.hidden = true;
-        if(accountLink.dataset.signedIn === "true") accountLink.setAttribute("aria-expanded","false");
-      }
+      if(event.key === "Escape") menu.hidden = true;
     });
 
     window.addEventListener("psd-member-status-change", function(){
@@ -596,7 +796,7 @@
       refreshAccountNavigation();
     });
 
-    refreshAccountNavigation();
+    return refreshAccountNavigation();
   }
 
   function installTourClickFallback(){
@@ -665,21 +865,13 @@
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
 
     if(aiBuilt && learning){
+      /* Keep the approved left-edge alignment. */
+      learning.style.translate = "0px 2px";
+
       window.requestAnimationFrame(function(){
         const aiRect = aiBuilt.getBoundingClientRect();
         const learningRect = learning.getBoundingClientRect();
-
-        /*
-         * getBoundingClientRect() includes the translate already applied by
-         * the previous alignment pass. Subtract that existing X shift before
-         * calculating the new one, otherwise repeated calls alternate between
-         * aligned and unaligned positions.
-         */
-        const currentInlineTranslate = String(learning.style.translate || "");
-        const currentShiftX = Number.parseFloat(currentInlineTranslate) || 0;
-        const unshiftedLearningLeft = learningRect.left - currentShiftX;
-        const horizontalShift = Math.round(aiRect.left - unshiftedLearningLeft);
-
+        const horizontalShift = Math.round(aiRect.left - learningRect.left);
         learning.style.translate = horizontalShift + "px 2px";
 
         /*
@@ -696,25 +888,6 @@
       });
     }
 
-    /*
-     * Align Market Pulse's icon/link left edge exactly with Crypto Sentiment.
-     * This is measured from the live ribbon, so it stays exact even if the
-     * browser width changes.
-     */
-    const crypto = document.querySelector('.psd-shared-header .psd-nav-assets a[href="crypto.html"]');
-    const pulse = document.querySelector('.psd-shared-header .psd-market-pulse-link');
-    const pulseRow = document.querySelector('.psd-shared-header .psd-nav-fourth');
-
-    if(crypto && pulse && pulseRow){
-      if(window.matchMedia("(max-width:1180px)").matches){
-        pulse.style.removeProperty("margin-left");
-      }else{
-        const cryptoLeft = crypto.getBoundingClientRect().left;
-        const rowLeft = pulseRow.getBoundingClientRect().left;
-        const exactMargin = Math.max(0, Math.round(cryptoLeft - rowLeft));
-        pulse.style.setProperty("margin-left", exactMargin + "px", "important");
-      }
-    }
   }
 
 
@@ -766,17 +939,7 @@
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
-    const marketPulseLink =
-      `<a class="psd-nav-link psd-market-pulse-link${current === "market-pulse.html" ? ' active' : ''}" href="market-pulse.html">Market Pulse</a>`;
-    const primaryLinks = mainLinks
-      .filter(link => link.href !== "auth.html")
-      .map(link => {
-        const html = linkHtml(link, current);
-        return link.href === "dashboard.html"
-          ? html + "\n        " + marketPulseLink
-          : html;
-      })
-      .join("\n        ");
+    const primaryLinks = mainLinks.filter(link => link.href !== "auth.html").map(link => linkHtml(link, current)).join("\n        ");
     const accountLink = linkHtml(mainLinks.find(link => link.href === "auth.html"), current);
     const linksTwo = assetLinks.map(link => linkHtml(link, current)).join("\n        ");
     mount.outerHTML = `
@@ -788,38 +951,32 @@
       </span>
       <div class="brand-copy">
         <div class="brand-stamp psd-dancing-label">AI-built public market sentiment website</div>
-        <div class="site-subtitle psd-ai-subtitle"><span class="psd-follow-us psd-ai-subtitle-wave" aria-label="Global market public sentiment dashboard" style="font-size:inherit!important;line-height:inherit!important;letter-spacing:inherit!important;"><span aria-hidden="true" style="--follow-i:0">G</span><span aria-hidden="true" style="--follow-i:1">l</span><span aria-hidden="true" style="--follow-i:2">o</span><span aria-hidden="true" style="--follow-i:3">b</span><span aria-hidden="true" style="--follow-i:4">a</span><span aria-hidden="true" style="--follow-i:5">l</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:6">m</span><span aria-hidden="true" style="--follow-i:7">a</span><span aria-hidden="true" style="--follow-i:8">r</span><span aria-hidden="true" style="--follow-i:9">k</span><span aria-hidden="true" style="--follow-i:10">e</span><span aria-hidden="true" style="--follow-i:11">t</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:12">p</span><span aria-hidden="true" style="--follow-i:13">u</span><span aria-hidden="true" style="--follow-i:14">b</span><span aria-hidden="true" style="--follow-i:15">l</span><span aria-hidden="true" style="--follow-i:16">i</span><span aria-hidden="true" style="--follow-i:17">c</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:18">s</span><span aria-hidden="true" style="--follow-i:19">e</span><span aria-hidden="true" style="--follow-i:20">n</span><span aria-hidden="true" style="--follow-i:21">t</span><span aria-hidden="true" style="--follow-i:22">i</span><span aria-hidden="true" style="--follow-i:23">m</span><span aria-hidden="true" style="--follow-i:24">e</span><span aria-hidden="true" style="--follow-i:25">n</span><span aria-hidden="true" style="--follow-i:26">t</span><span class="psd-follow-space" aria-hidden="true">&nbsp;</span><span aria-hidden="true" style="--follow-i:27">d</span><span aria-hidden="true" style="--follow-i:28">a</span><span aria-hidden="true" style="--follow-i:29">s</span><span aria-hidden="true" style="--follow-i:30">h</span><span aria-hidden="true" style="--follow-i:31">b</span><span aria-hidden="true" style="--follow-i:32">o</span><span aria-hidden="true" style="--follow-i:33">a</span><span aria-hidden="true" style="--follow-i:34">r</span><span aria-hidden="true" style="--follow-i:35">d</span></span></div>
+        <div class="site-subtitle psd-ai-subtitle">Global market public sentiment dashboard</div>
       </div>
     </a>
     <div class="header-center">
       <div class="header-pill psd-dancing-label psd-learning-label">✨ Constantly learning & improving</div>
+      <a href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transform:translateY(25px);min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
+        <span>🚀 Help take Public Sentiment Dash to the next level</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
+      </a>
+      <button
+        class="site-tour-banner"
+        id="site-tour-button"
+        type="button"
+        aria-label="Play the two-minute Public Sentiment Dash website tour"
+        style="margin:8px 0 0 12px;transform:translateY(25px);min-height:28px!important;padding:5px 15px!important;flex-shrink:0;"
+      >
+        <span aria-hidden="true">🎬</span>
+        <span>Take a 2-Minute Website Tour</span>
+      </button>
     </div>
     <nav class="nav" aria-label="Main navigation">
       <div class="psd-nav-row psd-nav-main">
         ${primaryLinks}
-        ${accountLink}
         <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
       </div>
-      <div class="psd-nav-row psd-nav-assets">
-        ${linksTwo}
-      </div>
-      <div class="psd-nav-row psd-nav-bottom">
-        <div class="psd-bottom-promos">
-          <a class="psd-bottom-donate" href="${supportUrl}" target="_blank" rel="noopener" aria-label="Donate to support Public Sentiment Dash" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:0;transform:none;min-height:28px!important;padding:3px 12px!important;border:1px solid rgba(210,153,34,.45);border-radius:999px;background:rgba(16,20,31,.92);box-shadow:0 0 18px rgba(210,153,34,.16);color:#ffd780;text-decoration:none;font-size:11px;font-weight:800;line-height:1;white-space:nowrap;">
-            <span>🚀 Help take Public Sentiment Dash to the next level</span>
-            <span style="display:inline-flex;align-items:center;justify-content:center;min-height:22px!important;padding:4px 10px!important;border-radius:999px;background:linear-gradient(180deg,#f4d17d,#d29922);color:#05070b;font-weight:900;">Donate Now</span>
-          </a>
-          <button
-            class="site-tour-banner"
-            id="site-tour-button"
-            type="button"
-            aria-label="Play the two-minute Public Sentiment Dash website tour"
-            style="margin:0;transform:none;min-height:28px!important;padding:5px 15px!important;flex-shrink:0;"
-          >
-            <span aria-hidden="true">🎬</span>
-            <span>Take a 2-Minute Website Tour</span>
-          </button>
-        </div>
+      <div class="psd-nav-row psd-nav-social">
         <div class="psd-ribbon-social-wrap">
           <div class="social-links">
             <span class="social-label psd-follow-us" aria-label="Follow us">
@@ -829,8 +986,14 @@
             <span class="social-pill linkedin psd-social-brand" aria-label="Public Sentiment Dash on LinkedIn"><span class="psd-social-logo psd-linkedin-logo" aria-hidden="true">in</span><span class="psd-social-text">LinkedIn</span></span>
           </div>
         </div>
+        ${accountLink}
+      </div>
+      <div class="psd-nav-row psd-nav-assets">
+        ${linksTwo}
+      </div>
+      <div class="psd-nav-row psd-nav-fourth">
         <div class="psd-ribbon-actions">
-          <a href="watchlist.html" id="psd-ribbon-watchlist-link"${cachedMemberUI() ? "" : " hidden"}>My Watchlist</a>
+          <a href="watchlist.html" id="psd-ribbon-watchlist-link" hidden>My Watchlist</a>
         </div>
       </div>
     </nav>
@@ -853,29 +1016,15 @@
       };
     }
 
-    initializeAccountNavigation();
+    accountStateReady = Promise.resolve(initializeAccountNavigation());
+    initializeMemberFeatureAccess();
     loadSiteStatus();
   }
 
   installTourClickFallback();
-
-  /*
-   * Keep the ribbon geometry stable when late-loading ribbon CSS or fonts
-   * change the header after the first render. vote-widget.js still owns the
-   * legacy compact-ribbon CSS, so it signals us after that CSS is installed.
-   */
-  function scheduleRibbonGeometryAlignment(){
+  window.addEventListener("resize", function(){
     window.requestAnimationFrame(alignRibbonGeometry);
-    window.setTimeout(alignRibbonGeometry, 60);
-  }
-
-  window.addEventListener("resize", scheduleRibbonGeometryAlignment);
-  window.addEventListener("load", scheduleRibbonGeometryAlignment);
-  window.addEventListener("psd:ribbon-layout-changed", scheduleRibbonGeometryAlignment);
-
-  if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(scheduleRibbonGeometryAlignment).catch(function(){});
-  }
+  });
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
   else render();
