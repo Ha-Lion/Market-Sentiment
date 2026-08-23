@@ -49,7 +49,6 @@
     "market-pulse.html": "AI Market Pulse",
     "dashboard-lab.html": "AI Market Intelligence"
   });
-  const MEMBER_FEATURE_TARGET_KEY = "psd-member-feature-target-v1";
 
   function currentFile(){
     const path = (window.location.pathname || "").split("/").pop();
@@ -326,56 +325,42 @@
     });
   }
 
-  function loadScript(src, id){
-    if(document.getElementById(id)) return Promise.resolve();
+  const psdScriptLoadPromises = Object.create(null);
 
-    return new Promise(function(resolve, reject){
+  function loadScript(src, id){
+    if(id && psdScriptLoadPromises[id]) return psdScriptLoadPromises[id];
+
+    const existing = id ? document.getElementById(id) : null;
+    if(existing){
+      return Promise.resolve(existing);
+    }
+
+    const promise = new Promise(function(resolve, reject){
       const script = document.createElement("script");
-      script.id = id;
+      if(id) script.id = id;
       script.src = src;
       script.defer = true;
-      script.addEventListener("load", resolve, { once:true });
-      script.addEventListener("error", reject, { once:true });
+      script.addEventListener("load", function(){ resolve(script); }, { once:true });
+      script.addEventListener("error", function(){
+        if(id) delete psdScriptLoadPromises[id];
+        reject(new Error("Failed to load " + src));
+      }, { once:true });
       document.head.appendChild(script);
     });
+
+    if(id) psdScriptLoadPromises[id] = promise;
+    return promise;
   }
 
-  async function openAuthPopup(event){
+  function authPageUrl(nextPage){
+    return nextPage && memberFeaturePages[nextPage]
+      ? "auth.html?next=" + encodeURIComponent(nextPage)
+      : "auth.html";
+  }
+
+  function openAuthPage(event, nextPage){
     if(event) event.preventDefault();
-
-    try{
-      await loadStylesheet("account.css?v=20260802-ribbon-final2", "psd-account-styles");
-
-      if(!window.supabase || typeof window.supabase.createClient !== "function"){
-        await loadScript(
-          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
-          "psd-supabase-sdk"
-        );
-      }
-
-      if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=16-auth-stable", "psd-supabase-client");
-      }
-
-      if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=20260802-ribbon-final2", "psd-auth-modal-script");
-      }
-
-      if(!window.psdSupabase || !window.PSDAuthModal){
-        throw new Error("Account popup did not initialize.");
-      }
-
-      const sessionResult = await window.psdSupabase.auth.getSession();
-      if(sessionResult.data && sessionResult.data.session){
-        window.location.href = "account.html";
-        return;
-      }
-
-      window.PSDAuthModal.open();
-    }catch(error){
-      console.error(error);
-      window.location.href = "auth.html";
-    }
+    window.location.href = authPageUrl(nextPage);
   }
 
 
@@ -430,20 +415,6 @@
     document.head.appendChild(style);
   }
 
-  function rememberMemberFeatureTarget(target){
-    if(!memberFeaturePages[target]) return;
-    try{ sessionStorage.setItem(MEMBER_FEATURE_TARGET_KEY, target); }catch(error){}
-  }
-
-  function takeMemberFeatureTarget(){
-    try{
-      const target = sessionStorage.getItem(MEMBER_FEATURE_TARGET_KEY) || "";
-      sessionStorage.removeItem(MEMBER_FEATURE_TARGET_KEY);
-      return memberFeaturePages[target] ? target : "";
-    }catch(error){
-      return "";
-    }
-  }
 
   function closeMemberFeatureGate(returnHome){
     const gate = document.getElementById("psd-member-feature-gate");
@@ -496,9 +467,8 @@
 
     signinButton.addEventListener("click", function(event){
       event.preventDefault();
-      rememberMemberFeatureTarget(target);
       closeMemberFeatureGate(false);
-      window.location.href = "auth.html";
+      openAuthPage(null, target);
     });
 
     window.setTimeout(function(){ signinButton.focus(); }, 0);
@@ -508,7 +478,8 @@
     try{
       const client = await ensureAccountInfrastructure();
       if(!client) return false;
-      return !!(await getStableActiveSession(client));
+      const sessionResult = await client.auth.getSession();
+      return !!(sessionResult.data && sessionResult.data.session);
     }catch(error){
       console.error(error);
       return false;
@@ -530,12 +501,6 @@
       });
     });
 
-    window.addEventListener("psd-member-status-change", function(event){
-      const detail = event && event.detail ? event.detail : {};
-      if(detail.visitor_type !== "member") return;
-      const target = takeMemberFeatureTarget();
-      if(target) window.location.href = target;
-    });
 
     const current = currentFile();
     if(memberFeaturePages[current]){
@@ -631,39 +596,41 @@
     document.head.appendChild(style);
   }
 
+  let accountInfrastructurePromise = null;
+
   async function ensureAccountInfrastructure(){
-    if(!window.supabase || typeof window.supabase.createClient !== "function"){
-      await loadScript(
-        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
-        "psd-supabase-sdk"
-      );
-    }
+    if(window.psdSupabase) return window.psdSupabase;
+    if(accountInfrastructurePromise) return accountInfrastructurePromise;
 
-    if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=16-auth-stable", "psd-supabase-client");
-    }
-
-    return window.psdSupabase;
-  }
-
-  async function getStableActiveSession(client){
-    if(!client || !client.auth) return null;
-
-    for(let attempt = 0; attempt < 5; attempt += 1){
-      try{
-        const result = await client.auth.getSession();
-        const session = result && result.data ? result.data.session : null;
-        if(session) return session;
-      }catch(error){
-        if(attempt === 4) console.error(error);
+    accountInfrastructurePromise = (async function(){
+      if(!window.supabase || typeof window.supabase.createClient !== "function"){
+        await loadScript(
+          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+          "psd-supabase-sdk"
+        );
       }
 
-      if(attempt < 4){
-        await new Promise(function(resolve){ window.setTimeout(resolve, 100); });
+      if(!window.supabase || typeof window.supabase.createClient !== "function"){
+        throw new Error("Supabase library did not initialize.");
       }
-    }
 
-    return null;
+      if(!window.psdSupabase){
+        await loadScript("supabase-client.js?v=17-auth-flow", "psd-supabase-client");
+      }
+
+      if(!window.psdSupabase){
+        throw new Error("Account service did not initialize.");
+      }
+
+      return window.psdSupabase;
+    })();
+
+    try{
+      return await accountInfrastructurePromise;
+    }catch(error){
+      accountInfrastructurePromise = null;
+      throw error;
+    }
   }
 
   async function refreshAccountNavigation(){
@@ -675,7 +642,8 @@
       const client = await ensureAccountInfrastructure();
       if(!client) return;
 
-      const session = await getStableActiveSession(client);
+      const sessionResult = await client.auth.getSession();
+      const session = sessionResult.data && sessionResult.data.session;
 
       const ribbonWatchlistLink =
         document.getElementById("psd-ribbon-watchlist-link");
@@ -739,8 +707,7 @@
         return;
       }
 
-      event.preventDefault();
-      window.location.href = "auth.html";
+      openAuthPage(event);
     });
 
     if(signout){
