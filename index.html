@@ -1739,7 +1739,7 @@
     }
 
 
-    /* Simple welcome popup — three clear actions only */
+    /* Simple welcome popup — three clear actions only — Version 9 */
     .home-welcome-box{
       width:min(620px,calc(100vw - 32px));
       max-width:100%;
@@ -1756,13 +1756,39 @@
       0%,100%{border-color:rgba(255,215,128,.42);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.05),0 0 18px rgba(255,205,96,.05)}
       50%{border-color:rgba(255,222,145,.62);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.08),0 0 28px rgba(255,205,96,.13)}
     }
-    .home-welcome-member .home-welcome-action{animation:psdAccountLight 4.8s ease-in-out infinite}
-    @keyframes psdAccountLight{
-      0%,100%{box-shadow:0 10px 24px rgba(0,0,0,.22)}
-      50%{box-shadow:0 10px 24px rgba(0,0,0,.22),0 0 18px rgba(255,211,105,.16)}
+    /* Version 9: subtle motion is limited to the three action icons. */
+    .home-welcome-icon svg{
+      transform-origin:50% 50%;
+      will-change:transform,filter,opacity;
+    }
+    .home-welcome-member .home-welcome-icon svg{
+      animation:psdAccountIconPulse 3.8s ease-in-out infinite;
+    }
+    .home-welcome-tour .home-welcome-icon svg{
+      animation:psdVideoIconPulse 3.4s ease-in-out .45s infinite;
+    }
+    .home-welcome-donate .home-welcome-icon svg{
+      animation:psdHeartBeat 3.1s ease-in-out .9s infinite;
+    }
+    @keyframes psdAccountIconPulse{
+      0%,72%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(143,232,199,0));opacity:.96}
+      82%{transform:scale(1.08);filter:drop-shadow(0 0 5px rgba(143,232,199,.48));opacity:1}
+      90%{transform:scale(1.02);filter:drop-shadow(0 0 2px rgba(143,232,199,.20));opacity:1}
+    }
+    @keyframes psdVideoIconPulse{
+      0%,68%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(195,167,255,0));opacity:.96}
+      78%{transform:scale(1.09);filter:drop-shadow(0 0 5px rgba(195,167,255,.50));opacity:1}
+      88%{transform:scale(1.02);filter:drop-shadow(0 0 2px rgba(195,167,255,.22));opacity:1}
+    }
+    @keyframes psdHeartBeat{
+      0%,62%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,215,128,0));opacity:.96}
+      70%{transform:scale(1.13);filter:drop-shadow(0 0 6px rgba(255,215,128,.52));opacity:1}
+      76%{transform:scale(1);filter:drop-shadow(0 0 1px rgba(255,215,128,.14));opacity:1}
+      82%{transform:scale(1.09);filter:drop-shadow(0 0 5px rgba(255,215,128,.42));opacity:1}
+      90%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,215,128,0));opacity:.98}
     }
     @media (prefers-reduced-motion:reduce){
-      .home-welcome-box,.home-welcome-member .home-welcome-action{animation:none!important}
+      .home-welcome-box,.home-welcome-icon svg{animation:none!important}
     }
     .home-welcome-box > *{position:relative;z-index:1}
     .home-welcome-box > .home-welcome-close{
