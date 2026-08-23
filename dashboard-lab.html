@@ -401,6 +401,60 @@
       .hero-main .ai-intel-meta{margin-top:0}
     }
 
+
+
+    /* TEST9: consistent explanation links + page glossary icons. */
+    .mi-method summary,
+    .hero-main .ai-proof summary{
+      display:inline-flex!important;
+      align-items:center!important;
+      gap:5px!important;
+      width:max-content!important;
+      max-width:100%!important;
+      padding:0!important;
+      margin:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      color:var(--ei-accent-text)!important;
+      font:900 12px/1.25 Inter,"Segoe UI",Arial,sans-serif!important;
+      white-space:nowrap;
+      list-style:none;
+      cursor:pointer;
+      user-select:none;
+    }
+    .mi-method summary::-webkit-details-marker,
+    .hero-main .ai-proof summary::-webkit-details-marker{display:none}
+    .mi-method summary::before,
+    .hero-main .ai-proof summary::before{content:"▸";font-size:10px;line-height:1;color:var(--ei-accent-text)}
+    .mi-method[open] summary::before,
+    .hero-main .ai-proof[open] summary::before{content:"▾"}
+    body.dark-mode .mi-method summary,
+    body.dark-mode .hero-main .ai-proof summary{background:transparent!important;color:#ffd36a!important;border:0!important}
+
+    .mi-glossary-info{
+      display:inline-grid;place-items:center;width:16px;height:16px;min-width:16px;margin-left:3px;padding:0;
+      border:1px solid #64748b;border-radius:50%;background:#18202e;color:#ef4444;
+      font:800 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;vertical-align:1px;
+      transition:.15s ease;box-shadow:none!important
+    }
+    .mi-glossary-info:hover,.mi-glossary-info:focus-visible,.mi-glossary-info[aria-expanded="true"]{
+      border-color:#60a5fa;background:#1d4ed8;color:#fff;outline:none
+    }
+    .mi-glossary-popover{
+      position:fixed;z-index:100000;width:min(320px,calc(100vw - 24px));padding:12px 14px;
+      border:1px solid #334155;border-radius:10px;background:#111827;color:#cbd5e1;
+      box-shadow:0 14px 40px rgba(0,0,0,.45);font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif
+    }
+    .mi-glossary-popover[hidden]{display:none!important}
+    .mi-glossary-title{margin:0 22px 5px 0;color:#f8fafc;font-size:13px;font-weight:800}
+    .mi-glossary-text{margin:0}
+    .mi-glossary-close{position:absolute;right:8px;top:5px;border:0;background:transparent;color:#ef4444;font-size:18px;font-weight:900;line-height:1;cursor:pointer}
+    body:not(.dark-mode) .mi-glossary-popover{background:#fff;color:#10263b;border-color:#91a9bc;box-shadow:0 16px 38px rgba(28,58,83,.22)}
+    body:not(.dark-mode) .mi-glossary-title{color:#061522}
+    .queue-head strong .mi-glossary-info,.score-copy h2 .mi-glossary-info,.section-head h2 .mi-glossary-info,.mi-intro h1 .mi-glossary-info{vertical-align:2px}
+
   </style>
 </head>
 <body>
@@ -414,16 +468,16 @@
       <section class="mi-intro" aria-label="PSD AI Market Intelligence overview">
         <div class="mi-intro-main">
           <span class="mi-intro-label">AI-Powered Market Intelligence</span>
-          <h1>From Market Noise to Market Intelligence — Provided by AI</h1>
+          <h1>From Market Noise to Market Intelligence — Provided by AI <button type="button" class="mi-glossary-info" data-mi-glossary="market-intelligence" aria-label="Explain AI Market Intelligence" aria-expanded="false">i</button></h1>
           <p>PSD uses AI to connect source-ranked financial news with sentiment and market behavior — showing what matters, why it matters, and what to watch next.</p>
           <div class="mi-flow" aria-label="PSD intelligence process"><span>Source-Ranked News</span><i>→</i><span>PSD Market Data</span><i>→</i><span>AI Editorial Synthesis</span><i>→</i><span>Market Intelligence</span></div>
         </div>
-        <details class="mi-method"><summary>How PSD AI Works</summary><div class="mi-method-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p></div></details>
+        <details class="mi-method"><summary><span>How PSD AI Works</span><button type="button" class="mi-glossary-info" data-mi-glossary="ai-works" aria-label="Glossary explanation for How PSD AI Works" aria-expanded="false">i</button></summary><div class="mi-method-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p></div></details>
       </section>
 
       <section class="event-queue" aria-label="PSD event priority queue">
         <div class="queue-head">
-          <strong>Top 10 Market Event Priorities</strong>
+          <strong>Top 10 Market Event Priorities <button type="button" class="mi-glossary-info" data-mi-glossary="event-priority" aria-label="Explain Market Event Priorities" aria-expanded="false">i</button></strong>
           <span id="dataStatus">Loading current PSD market data…</span>
         </div>
         <div class="queue-grid" id="eventQueue"></div>
@@ -470,7 +524,7 @@
               <div class="score-content"><strong id="impactScore">--</strong><span>Impact Score</span></div>
             </div>
             <div class="score-copy">
-              <h2>PSD Market Impact</h2>
+              <h2>PSD Market Impact <button type="button" class="mi-glossary-info" data-mi-glossary="market-impact" aria-label="Explain PSD Market Impact" aria-expanded="false">i</button></h2>
               <p>Cross-asset pressure derived from current PSI shifts, 7-day persistence, price moves, and divergence signals across affected assets.</p>
               <span class="score-label" id="impactLabel">Calculating…</span>
               <div class="priority-detail" id="priorityDetail">Priority score loading…</div>
@@ -479,7 +533,7 @@
 
           <section class="evolution-compact" id="eventEvolutionSection">
             <div class="evolution-compact-head">
-              <div><span class="section-kicker">Event Evolution</span><strong>Since previous PSD snapshot</strong></div>
+              <div><span class="section-kicker">Event Evolution <button type="button" class="mi-glossary-info" data-mi-glossary="event-evolution" aria-label="Explain Event Evolution" aria-expanded="false">i</button></span><strong>Since previous PSD snapshot</strong></div>
               <span id="evolutionTrend" class="evolution-trend stable">Building history</span>
             </div>
             <div class="evolution-grid" id="evolutionGrid"></div>
@@ -506,7 +560,7 @@
 
       <section class="section-card" style="margin-bottom:12px">
         <div class="section-head">
-          <div><span class="section-kicker">Live PSD data</span><h2>Most Affected Assets</h2><p>Current PSI, 24H/7D sentiment shift, price move and divergence flags from <code>market_pulse.json</code>.</p></div>
+          <div><span class="section-kicker">Live PSD data</span><h2>Most Affected Assets <button type="button" class="mi-glossary-info" data-mi-glossary="affected-assets" aria-label="Explain Most Affected Assets" aria-expanded="false">i</button></h2><p>Current PSI, 24H/7D sentiment shift, price move and divergence flags from <code>market_pulse.json</code>.</p></div>
           <span class="event-chip" id="assetTimestamp">Live feed</span>
         </div>
         <div class="asset-grid" id="assetGrid"></div>
@@ -515,7 +569,7 @@
 
       <section class="section-card" style="margin-bottom:12px">
         <div class="section-head">
-          <div><span class="section-kicker">How the shock is traveling</span><h2>Transmission Channels</h2><p>Aggregates the affected assets into market mechanisms instead of treating every move in isolation.</p></div>
+          <div><span class="section-kicker">How the shock is traveling</span><h2>Transmission Channels <button type="button" class="mi-glossary-info" data-mi-glossary="transmission-channels" aria-label="Explain Transmission Channels" aria-expanded="false">i</button></h2><p>Aggregates the affected assets into market mechanisms instead of treating every move in isolation.</p></div>
         </div>
         <div class="channel-grid" id="channelGrid"></div>
       </section>
@@ -1066,7 +1120,7 @@
         ...rankingSources
       ].map(v=>String(v||"").trim()).filter(Boolean))];
       const meta=`<div class="ai-intel-meta"><span class="ai-intel-brand">PSD AI Editorial Intelligence</span><span>${evidenceCount} selected articles • ${sourceCount} independent outlets • PSD market data</span></div>`;
-      const proof=`<details class="ai-proof"><summary>How this intelligence was built</summary><div class="ai-proof-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p><p><b>This analysis:</b> ${evidenceCount} selected articles from ${sourceCount} independent outlets matched this event and were supplied to the AI. This is the event-specific evidence set, not PSD's full source pool.</p></div></details>`;
+      const proof=`<details class="ai-proof"><summary><span>How this intelligence was built</span><button type="button" class="mi-glossary-info" data-mi-glossary="intelligence-built" aria-label="Glossary explanation for how this intelligence was built" aria-expanded="false">i</button></summary><div class="ai-proof-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p><p><b>This analysis:</b> ${evidenceCount} selected articles from ${sourceCount} independent outlets matched this event and were supplied to the AI. This is the event-specific evidence set, not PSD's full source pool.</p></div></details>`;
       const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b class="article-source-name">${esc(p.source||"Source")}:</b> ${highlightSourceNames(p.emphasis||"",namedSources)}</span>`).join("")}</div>`:"";
       const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
       const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b class="article-source-name">${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
@@ -1173,6 +1227,10 @@
     let summarySpeechPaused=false;
     let summarySpeechToken=0;
     let summarySpeechRateValue=.89;
+    let summarySpeechChunks=[];
+    let summarySpeechNextIndex=0;
+    let summarySpeechCurrentIndex=-1;
+    let summarySpeechNeedsRestartOnResume=false;
 
     function preferredSummaryVoice(){
       if(!("speechSynthesis" in window))return null;
@@ -1297,8 +1355,66 @@
       summarySpeechToken+=1;
       summarySpeechActive=false;
       summarySpeechPaused=false;
+      summarySpeechChunks=[];
+      summarySpeechNextIndex=0;
+      summarySpeechCurrentIndex=-1;
+      summarySpeechNeedsRestartOnResume=false;
       if("speechSynthesis" in window)window.speechSynthesis.cancel();
       setSummarySpeechButton("idle");
+    }
+
+    function speakNextSummaryChunk(token){
+      if(!summarySpeechActive||summarySpeechPaused||token!==summarySpeechToken)return;
+      if(summarySpeechNextIndex>=summarySpeechChunks.length){
+        summarySpeechActive=false;
+        summarySpeechPaused=false;
+        summarySpeechCurrentIndex=-1;
+        summarySpeechNeedsRestartOnResume=false;
+        setSummarySpeechButton("idle");
+        return;
+      }
+
+      summarySpeechCurrentIndex=summarySpeechNextIndex;
+      const utterance=new SpeechSynthesisUtterance(summarySpeechChunks[summarySpeechNextIndex++]);
+      const voice=preferredSummaryVoice();
+      if(voice)utterance.voice=voice;
+      utterance.lang=voice?.lang||"en-US";
+      /* Keep the agreed natural voice; speed changes only affect rate. */
+      utterance.rate=summarySpeechRate();
+      utterance.pitch=1.0;
+      utterance.volume=.94;
+      const pauseMs=summarySpeechRate()<.85?175:summarySpeechRate()>1?105:140;
+      utterance.onend=()=>{
+        if(token!==summarySpeechToken||!summarySpeechActive)return;
+        window.setTimeout(()=>speakNextSummaryChunk(token),pauseMs);
+      };
+      utterance.onerror=()=>{
+        if(token!==summarySpeechToken)return;
+        summarySpeechActive=false;
+        summarySpeechPaused=false;
+        summarySpeechCurrentIndex=-1;
+        summarySpeechNeedsRestartOnResume=false;
+        setSummarySpeechButton("idle");
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function restartSummaryAtCurrentSegment(keepPaused){
+      if(!summarySpeechActive)return;
+      const restartIndex=summarySpeechCurrentIndex>=0?summarySpeechCurrentIndex:Math.max(0,summarySpeechNextIndex-1);
+      summarySpeechToken+=1;
+      if("speechSynthesis" in window)window.speechSynthesis.cancel();
+      summarySpeechNextIndex=restartIndex;
+      summarySpeechCurrentIndex=-1;
+      summarySpeechPaused=!!keepPaused;
+      summarySpeechNeedsRestartOnResume=!!keepPaused;
+      if(keepPaused){
+        setSummarySpeechButton("paused");
+        return;
+      }
+      setSummarySpeechButton("playing");
+      const token=summarySpeechToken;
+      window.setTimeout(()=>speakNextSummaryChunk(token),55);
     }
 
     function speakSummary(){
@@ -1306,9 +1422,15 @@
 
       if(summarySpeechActive){
         if(summarySpeechPaused){
-          window.speechSynthesis.resume();
           summarySpeechPaused=false;
           setSummarySpeechButton("playing");
+          if(summarySpeechNeedsRestartOnResume){
+            summarySpeechNeedsRestartOnResume=false;
+            const token=summarySpeechToken;
+            window.setTimeout(()=>speakNextSummaryChunk(token),30);
+          }else{
+            window.speechSynthesis.resume();
+          }
         }else{
           window.speechSynthesis.pause();
           summarySpeechPaused=true;
@@ -1317,41 +1439,18 @@
         return;
       }
 
-      const chunks=splitSpeechText(summarySpeechParagraphs());
-      if(!chunks.length)return;
-      stopSummarySpeech();
+      summarySpeechChunks=splitSpeechText(summarySpeechParagraphs());
+      if(!summarySpeechChunks.length)return;
+      summarySpeechToken+=1;
+      if("speechSynthesis" in window)window.speechSynthesis.cancel();
       summarySpeechActive=true;
       summarySpeechPaused=false;
+      summarySpeechNextIndex=0;
+      summarySpeechCurrentIndex=-1;
+      summarySpeechNeedsRestartOnResume=false;
       const token=summarySpeechToken;
       setSummarySpeechButton("playing");
-      let index=0;
-
-      const speakNext=()=>{
-        if(!summarySpeechActive||token!==summarySpeechToken)return;
-        if(index>=chunks.length){
-          summarySpeechActive=false;
-          summarySpeechPaused=false;
-          setSummarySpeechButton("idle");
-          return;
-        }
-        const utterance=new SpeechSynthesisUtterance(chunks[index++]);
-        const voice=preferredSummaryVoice();
-        if(voice)utterance.voice=voice;
-        utterance.lang=voice?.lang||"en-US";
-        /* Keep V3's softer delivery while allowing the visitor to choose speed. */
-        utterance.rate=summarySpeechRate();
-        utterance.pitch=1.0;
-        utterance.volume=.94;
-        const pauseMs=summarySpeechRate()<.85?175:summarySpeechRate()>1?105:140;
-        utterance.onend=()=>window.setTimeout(speakNext,pauseMs);
-        utterance.onerror=()=>{
-          summarySpeechActive=false;
-          summarySpeechPaused=false;
-          setSummarySpeechButton("idle");
-        };
-        window.speechSynthesis.speak(utterance);
-      };
-      speakNext();
+      speakNextSummaryChunk(token);
     }
 
     function initializeSummarySpeech(){
@@ -1383,8 +1482,7 @@
             item.setAttribute("aria-pressed",active?"true":"false");
           });
           if(summarySpeechActive){
-            stopSummarySpeech();
-            window.setTimeout(speakSummary,60);
+            restartSummaryAtCurrentSegment(summarySpeechPaused);
           }
         });
       });
@@ -1612,5 +1710,70 @@
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
   })();
   </script>
+
+  <script>
+  (function(){
+    "use strict";
+    const defs={
+      "market-intelligence":{title:"AI Market Intelligence",text:"PSD combines source-ranked news, Public Sentiment Dash market data, and AI editorial synthesis to explain what changed, why it matters, and what to watch next."},
+      "ai-works":{title:"How PSD AI Works",text:"PSD controls the source policy and evidence. AI receives the selected evidence plus PSD market data, synthesizes it, preserves material conflicts, and does not browse for outside facts."},
+      "event-priority":{title:"Market Event Priority",text:"Ranks tracked market events by current impact, evidence freshness, cross-market reach, source quality, and persistence. A higher score means the event currently deserves more attention; it is not a trading recommendation."},
+      "intelligence-built":{title:"How This Intelligence Was Built",text:"This opens the evidence method for the selected event. The displayed article and outlet counts are the event-specific evidence packet supplied to AI, not the size of PSD's full monitored source pool."},
+      "market-impact":{title:"PSD Market Impact",text:"A cross-market severity score built from current sentiment shifts, persistence, price response, and divergence signals across the assets affected by the selected event."},
+      "event-evolution":{title:"Event Evolution",text:"Compares the selected event with earlier PSD snapshots so you can see whether impact, priority, evidence breadth, source breadth, and lifecycle are rising, easing, or stable."},
+      "affected-assets":{title:"Most Affected Assets",text:"Shows the assets most connected to the selected event using current PSD sentiment, recent sentiment change, market-price context, and divergence or reversal signals."},
+      "transmission-channels":{title:"Transmission Channels",text:"Shows the market mechanisms through which the selected event may be affecting related assets, such as liquidity, rates, risk appetite, safe havens, energy, or policy channels."}
+    };
+    let active=null;
+    function popover(){
+      let pop=document.getElementById("miGlossaryPopover");
+      if(pop)return pop;
+      pop=document.createElement("div");
+      pop.id="miGlossaryPopover";
+      pop.className="mi-glossary-popover";
+      pop.hidden=true;
+      pop.setAttribute("role","dialog");
+      pop.setAttribute("aria-live","polite");
+      pop.innerHTML='<button class="mi-glossary-close" type="button" aria-label="Close glossary">×</button><div class="mi-glossary-title"></div><p class="mi-glossary-text"></p>';
+      document.body.appendChild(pop);
+      pop.querySelector(".mi-glossary-close").addEventListener("click",close);
+      return pop;
+    }
+    function close(){
+      const pop=document.getElementById("miGlossaryPopover");
+      if(pop)pop.hidden=true;
+      if(active)active.setAttribute("aria-expanded","false");
+      active=null;
+    }
+    function position(pop,button){
+      const r=button.getBoundingClientRect(),gap=8,w=pop.offsetWidth,h=pop.offsetHeight;
+      let left=Math.min(r.left,window.innerWidth-w-12);left=Math.max(12,left);
+      let top=r.bottom+gap;if(top+h>window.innerHeight-12)top=Math.max(12,r.top-h-gap);
+      pop.style.left=left+"px";pop.style.top=top+"px";
+    }
+    document.addEventListener("click",function(event){
+      const button=event.target.closest(".mi-glossary-info");
+      if(button){
+        event.preventDefault();event.stopPropagation();
+        const def=defs[button.dataset.miGlossary];
+        if(!def)return;
+        if(active===button){close();return;}
+        if(active)active.setAttribute("aria-expanded","false");
+        active=button;button.setAttribute("aria-expanded","true");
+        const pop=popover();
+        pop.querySelector(".mi-glossary-title").textContent=def.title;
+        pop.querySelector(".mi-glossary-text").textContent=def.text;
+        pop.hidden=false;position(pop,button);
+        return;
+      }
+      const pop=document.getElementById("miGlossaryPopover");
+      if(pop&&!pop.hidden&&!event.target.closest("#miGlossaryPopover"))close();
+    });
+    document.addEventListener("keydown",event=>{if(event.key==="Escape")close();});
+    window.addEventListener("resize",close);
+    window.addEventListener("scroll",close,true);
+  })();
+  </script>
+
 </body>
 </html>
