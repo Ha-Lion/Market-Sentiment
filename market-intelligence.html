@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSD AI Market Intelligence — Public Sentiment Dash</title>
+  <meta name="description" content="PSD AI Market Intelligence connects source-ranked financial news, public sentiment, market behavior and AI editorial synthesis into traceable cross-market intelligence.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://publicsentimentdash.com/market-intelligence.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css">
+
+  <style>
+    :root{
+      --ei-bg:#edf3f8;
+      --ei-panel:#ffffff;
+      --ei-panel-soft:#f7fafc;
+      --ei-ink:#111b26;
+      --ei-muted:#334b5e;
+      --ei-line:#a9bfd2;
+      --ei-gold:#b77700;
+      --ei-accent-text:#865800;
+      --ei-gold-soft:#fff7df;
+      --ei-navy:#0f2538;
+      --ei-green:#22a98b;
+      --ei-red:#ee7623;
+      --ei-blue:#5d98ef;
+      --ei-shadow:0 8px 24px rgba(27,57,82,.08);
+    }
+    body.dark-mode{
+      --ei-bg:#101820;
+      --ei-panel:#17232e;
+      --ei-panel-soft:#1d2c38;
+      --ei-ink:#f4f7fa;
+      --ei-muted:#d2dce5;
+      --ei-line:#526a7d;
+      --ei-gold-soft:#3a3019;
+      --ei-accent-text:#ffd36a;
+      --ei-navy:#0b1720;
+      --ei-shadow:0 8px 24px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    .event-page{max-width:1760px;margin:0 auto;padding:12px 18px 34px;color:var(--ei-ink);font-family:"Segoe UI",Arial,sans-serif}
+    .event-page button,.event-page select{font:inherit}
+    .event-shell{background:var(--ei-bg);border:1px solid var(--ei-line);border-radius:18px;padding:10px 14px 14px;min-height:760px}
+
+    .event-hero{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.65fr);gap:12px;margin-bottom:12px}
+    .hero-main,.hero-score,.section-card{background:var(--ei-panel);border:1px solid var(--ei-line);border-radius:16px;box-shadow:var(--ei-shadow)}
+    .hero-main{padding:20px 22px;position:relative;overflow:hidden}
+    .hero-main:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--ei-gold),#f0c35b)}
+    .eyebrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;color:var(--ei-muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+    .status-pill,.event-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ei-line);border-radius:999px;padding:5px 9px;background:var(--ei-panel-soft);font-size:11px;font-weight:800;text-transform:none;letter-spacing:0;color:var(--ei-ink)}
+    .status-pill.high{border-color:#ef9a62;background:#fff2e9;color:#963e0b}
+    body.dark-mode .status-pill.high{background:#4b2a18;color:#ffd5ba}
+    .hero-main h1{font-size:32px;line-height:1.07;margin:0 0 8px;font-weight:850;letter-spacing:-.02em}
+    .hero-main .summary{font-size:14px;line-height:1.5;margin:0;color:var(--ei-ink);max-width:1150px}
+    .hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .hero-meta .event-chip b{color:var(--ei-muted)}
+
+    .hero-score{padding:17px 18px;display:flex;gap:16px;align-items:center;justify-content:center}
+    .score-ring{--score:72;position:relative;width:118px;height:118px;border-radius:50%;background:conic-gradient(var(--ei-gold) calc(var(--score)*1%),#dfe7ee 0);display:grid;place-items:center;flex:0 0 auto}
+    .score-ring:after{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--ei-panel)}
+    .score-ring .score-content{position:relative;z-index:1;text-align:center}
+    .score-ring strong{display:block;font-size:30px;line-height:1;font-weight:900}
+    .score-ring span{font-size:10px;font-weight:800;color:var(--ei-muted);text-transform:uppercase}
+    .score-copy h2{font-size:17px;margin:0 0 5px}
+    .score-copy p{margin:0;font-size:12px;color:var(--ei-muted);line-height:1.42}
+    .score-label{display:inline-flex;margin-top:8px;padding:5px 9px;border-radius:999px;border:1px solid #ef9a62;background:#fff2e9;color:#963e0b;font-size:11px;font-weight:800}
+    body.dark-mode .score-label{background:#4b2a18;color:#ffd5ba}
+
+
+    .event-queue{margin:0 0 10px;padding:10px 12px 12px;background:var(--ei-panel);border:1px solid var(--ei-line);border-radius:13px;box-shadow:var(--ei-shadow)}
+    .queue-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+    .queue-head strong{font-size:13.5px;color:var(--ei-ink);font-weight:900}.queue-head span{font-size:10.5px;color:var(--ei-muted);text-align:right;font-weight:650}
+    .queue-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .queue-item{appearance:none;border:1px solid #8fa8bc;border-radius:11px;background:linear-gradient(180deg,#ffffff 0%,#f7fafc 48%,#e4ebf1 100%);padding:9px 10px 8px;min-width:0;cursor:pointer;text-align:left;color:var(--ei-ink);box-shadow:inset 0 2px 0 rgba(255,255,255,1),inset 0 -3px 0 rgba(91,116,139,.20),0 4px 0 #c3cfda,0 7px 12px rgba(29,51,72,.18);transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease,background .12s ease;position:relative}
+    .queue-item:hover,.queue-item:focus-visible{transform:translateY(-3px);border-color:var(--ei-gold);background:linear-gradient(180deg,#ffffff 0%,#fffaf0 52%,#e9eef3 100%);box-shadow:inset 0 2px 0 #fff,inset 0 -3px 0 rgba(126,91,17,.15),0 5px 0 #aebdca,0 11px 17px rgba(29,51,72,.24);outline:none}
+    .queue-item:active{transform:translateY(2px);box-shadow:inset 0 3px 6px rgba(29,51,72,.18),0 1px 0 #aebdca,0 3px 6px rgba(29,51,72,.18)}
+    .queue-item.is-selected{border:2px solid var(--ei-gold);padding:8px 9px 7px;background:linear-gradient(180deg,#fffdf8 0%,#f7fafc 60%,#e7edf2 100%);box-shadow:inset 0 2px 0 #fff,inset 0 -3px 0 rgba(183,119,0,.16),0 4px 0 #d1a23e,0 8px 14px rgba(29,51,72,.22)}
+    body.dark-mode .queue-item{background:linear-gradient(180deg,#30485d 0%,#223648 52%,#182938 100%);border-color:#71899d;box-shadow:inset 0 2px 0 rgba(255,255,255,.10),inset 0 -3px 0 rgba(0,0,0,.28),0 4px 0 #0c151d,0 8px 14px rgba(0,0,0,.34)}
+    body.dark-mode .queue-item:hover,body.dark-mode .queue-item:focus-visible{border-color:#f0bf4d;background:linear-gradient(180deg,#395369 0%,#293e50 55%,#1c2e3c 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 5px 0 #111c25,0 12px 18px rgba(0,0,0,.42)}
+    body.dark-mode .queue-item.is-selected{border-color:#f0bf4d;background:linear-gradient(180deg,#3b5062 0%,#293e50 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.11),0 4px 0 #8e6b1b,0 9px 16px rgba(0,0,0,.40)}
+    .queue-item-top{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:4px}
+    .queue-rank{font-size:9px;font-weight:900;color:var(--ei-muted);text-transform:uppercase}.queue-score{font-size:11.5px;font-weight:950;color:var(--ei-ink)}
+    .queue-title{display:block;font-size:11.5px;font-weight:850;color:var(--ei-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .queue-meta{display:flex;gap:5px;align-items:center;margin-top:5px;color:var(--ei-muted);font-size:9.5px;font-weight:650}
+    .queue-bottom{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px}
+    .queue-action{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-size:8.5px;font-weight:950;letter-spacing:.045em;text-transform:uppercase;color:#6f4a00;background:#fff5d7;border:1px solid #d6ad4b;border-radius:6px;padding:3px 6px;box-shadow:inset 0 1px 0 #fff}
+    .queue-item.is-selected .queue-action{background:#2b4052;color:#fff;border-color:#2b4052}
+    body.dark-mode .queue-action{background:#3b311a;color:#ffd36a;border-color:#9c7b2c}
+    body.dark-mode .queue-item.is-selected .queue-action{background:#f0bf4d;color:#17232e;border-color:#f0bf4d}
+    .life-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 6px;font-size:9px;font-weight:900;border:1px solid var(--ei-line);background:var(--ei-panel);color:var(--ei-ink)}
+    .life-pill.active{border-color:#2cb899;color:#066a58;background:#e5fbf5}.life-pill.emerging{border-color:#c79112;color:#744d00;background:#fff4cf}.life-pill.watch{border-color:#6f98c5;color:#244f7d;background:#eaf3ff}.life-pill.archived{color:var(--ei-muted)}
+    body.dark-mode .life-pill.active{background:#173e34;color:#9af0dc} body.dark-mode .life-pill.emerging{background:#453819;color:#ffdc7f} body.dark-mode .life-pill.watch{background:#22374f;color:#b4d7ff}
+    .priority-detail{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:10px;color:var(--ei-muted);font-weight:650}
+
+    .intelligence-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,.7fr);gap:12px;margin-bottom:12px}
+    .section-card{padding:16px}
+    .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+    .section-head h2{margin:0;font-size:18px;line-height:1.15}
+    .section-head p{margin:4px 0 0;color:var(--ei-muted);font-size:12px;line-height:1.35}
+    .section-kicker{font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.1em;color:var(--ei-gold)}
+
+    .profile-list{display:grid;gap:10px}
+    .profile-row{display:grid;grid-template-columns:142px 1fr 72px;gap:9px;align-items:center}
+    .profile-row label{font-size:12px;font-weight:750}
+    .meter{height:10px;border-radius:999px;background:linear-gradient(90deg,#50cfae 0 32%,#efc64c 52% 68%,#f08355 100%);position:relative;border:1px solid rgba(0,0,0,.08)}
+    .meter i{position:absolute;top:-4px;width:4px;height:18px;background:#111;border-radius:3px;transform:translateX(-50%)}
+    body.dark-mode .meter i{background:#fff}
+    .profile-value{text-align:right;font-size:11px;font-weight:850}
+
+    .driver-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+    .driver-card{border:1px solid var(--ei-line);border-radius:12px;background:var(--ei-panel-soft);padding:13px;min-height:126px}
+    .driver-card .driver-num{display:inline-grid;place-items:center;width:23px;height:23px;border-radius:50%;background:var(--ei-navy);color:#fff;font-size:11px;font-weight:900;margin-bottom:8px}
+    .driver-card h3{margin:0 0 6px;font-size:13px}
+    .driver-card p{margin:0;color:var(--ei-muted);font-size:11.5px;line-height:1.42}
+
+    .asset-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+    .asset-card{border:1px solid var(--ei-line);border-radius:12px;background:var(--ei-panel);padding:12px;min-width:0;position:relative}
+    .asset-top{display:flex;justify-content:space-between;gap:7px;align-items:flex-start}
+    .asset-card h3{margin:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .asset-role{margin-top:3px;font-size:10px;color:var(--ei-muted);min-height:24px}
+    .sentiment-pill{font-size:9px;font-weight:850;border:1px solid var(--ei-line);border-radius:999px;padding:4px 6px;white-space:nowrap}
+    .asset-psi{display:flex;align-items:end;gap:4px;margin-top:9px}
+    .asset-psi strong{font-size:28px;line-height:1;font-weight:900}
+    .asset-psi span{font-size:10px;color:var(--ei-muted);font-weight:800;padding-bottom:2px}
+    .asset-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:10px}
+    .mini-metric{background:var(--ei-panel-soft);border-radius:7px;padding:6px 5px;text-align:center;min-width:0}
+    .mini-metric b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini-metric span{display:block;font-size:8.5px;color:var(--ei-muted);margin-top:2px}
+    .divergence-flag{display:inline-flex;margin-top:8px;font-size:9px;font-weight:850;color:#9a4a13;background:#fff0df;border:1px solid #efb178;border-radius:999px;padding:3px 6px}
+    body.dark-mode .divergence-flag{background:#4a2a18;color:#ffd5ba}
+    .asset-link{display:block;margin-top:8px;font-size:10px;font-weight:800;color:inherit;text-decoration:none}
+    .asset-link:hover{text-decoration:underline}
+
+    .channel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+    .channel-card{border:1px solid var(--ei-line);border-radius:12px;padding:13px;background:var(--ei-panel-soft)}
+    .channel-card h3{margin:0 0 4px;font-size:13px}
+    .channel-score{display:flex;align-items:center;gap:7px;margin:7px 0}
+    .channel-score b{font-size:21px}
+    .channel-score span{font-size:10px;color:var(--ei-muted)}
+    .channel-card p{font-size:11.5px;line-height:1.4;margin:0;color:var(--ei-muted)}
+
+    .watch-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .watch-list,.source-list{display:grid;gap:8px}
+    .watch-item{display:grid;grid-template-columns:28px 1fr;gap:9px;align-items:flex-start;padding:9px;border:1px solid var(--ei-line);border-radius:10px;background:var(--ei-panel-soft)}
+    .watch-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--ei-gold-soft);border:1px solid #e3c36f;font-size:13px}
+    .watch-item b{display:block;font-size:12px;margin-bottom:2px}
+    .watch-item span{display:block;font-size:11px;line-height:1.35;color:var(--ei-muted)}
+
+    .source-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--ei-line);border-radius:10px;background:var(--ei-panel-soft)}
+    .source-item a{color:inherit;text-decoration:none;font-size:11.5px;font-weight:750;line-height:1.3}
+    .source-item a:hover{text-decoration:underline}
+    .source-meta{font-size:9px;color:var(--ei-muted);white-space:nowrap}
+    .empty-note{padding:14px;border:1px dashed var(--ei-line);border-radius:10px;color:var(--ei-muted);font-size:12px}
+
+    .methodology{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:10px 12px;border:1px solid var(--ei-line);border-radius:10px;background:var(--ei-panel-soft);font-size:10.5px;line-height:1.4;color:var(--ei-muted)}
+    .methodology b{color:var(--ei-ink)}
+
+    /* Event Intelligence contrast hardening: explicit colors prevent global site theme rules from washing out page content. */
+    .event-page h1,.event-page h2,.event-page h3,.event-page strong,.event-page b,.event-page label,.driver-card h3,.channel-card h3,.asset-card h3,.watch-item b,.source-item a,.mini-metric b,.channel-score b,.asset-psi strong,.profile-value{color:var(--ei-ink)}
+    .event-page p,.event-page span,.event-page div{border-color:inherit}
+    .section-kicker{color:var(--ei-accent-text);font-weight:950}
+    .driver-card p,.channel-card p,.watch-item span,.asset-role,.asset-psi span,.mini-metric span,.source-meta,.section-head p,.score-copy p,.methodology,.queue-head span,.queue-rank,.queue-meta,.priority-detail{color:var(--ei-muted)}
+    .driver-card,.channel-card,.watch-item,.source-item,.mini-metric{border-color:var(--ei-line)}
+    .driver-card h3,.channel-card h3,.watch-item b{font-weight:850}
+    .asset-card h3{font-weight:900}
+    .mini-metric{border:1px solid color-mix(in srgb,var(--ei-line) 78%,transparent)}
+    body:not(.dark-mode) .driver-card,body:not(.dark-mode) .channel-card,body:not(.dark-mode) .watch-item,body:not(.dark-mode) .source-item{background:#f1f6fa}
+    body:not(.dark-mode) .mini-metric{background:#eef4f8}
+    body.dark-mode .driver-card,body.dark-mode .channel-card,body.dark-mode .watch-item,body.dark-mode .source-item{background:#223341}
+    body.dark-mode .mini-metric{background:#243645}
+    body.dark-mode .score-ring{background:conic-gradient(var(--ei-gold) calc(var(--score)*1%),#405364 0)}
+
+
+    /* Compact forward-outlook layer; forecasting remains separate from this page. */
+    .event-forecast-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+    .forecast-lab-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #c99626;border-radius:9px;padding:8px 11px;background:linear-gradient(180deg,#fff9e7,#f4e4b6);color:#5f430f;font-size:11px;font-weight:900;box-shadow:inset 0 1px 0 #fff,0 3px 7px rgba(38,57,72,.13)}
+    body.dark-mode .forecast-lab-link{background:linear-gradient(180deg,#49391d,#2c2417);color:#ffe9aa;border-color:#c99626;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 8px rgba(0,0,0,.28)}
+    .event-forecast-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+    .event-forecast-card{border:1px solid var(--ei-line);border-radius:12px;padding:11px;background:linear-gradient(180deg,#fff 0%,#f4f8fb 68%,#e8eef4 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -2px 0 rgba(111,134,153,.12),0 4px 10px rgba(29,52,70,.11);min-width:0}
+    body.dark-mode .event-forecast-card{background:linear-gradient(180deg,#263746 0%,#1f303d 68%,#192733 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 -2px 0 rgba(0,0,0,.25),0 5px 11px rgba(0,0,0,.24)}
+    .event-forecast-top{display:flex;justify-content:space-between;gap:7px;align-items:flex-start}.event-forecast-top h3{font-size:12px;line-height:1.2;margin:0;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .event-forecast-dir{font-size:9px;font-weight:900;padding:4px 6px;border:1px solid var(--ei-line);border-radius:999px;white-space:nowrap;background:var(--ei-card)}
+    .event-forecast-dir.bullish{border-color:#31ad92;color:#08715d;background:#ecfbf7}.event-forecast-dir.bearish{border-color:#e78b5b;color:#903b0d;background:#fff1e8}.event-forecast-dir.neutral{border-color:#80aceb;color:#275dab;background:#eef5ff}
+    body.dark-mode .event-forecast-dir.bullish{background:#163a31;color:#a7f0dd}.body-dark-mode .event-forecast-dir.bearish{background:#46291c;color:#ffd0b8}
+    body.dark-mode .event-forecast-dir.bearish{background:#46291c;color:#ffd0b8}body.dark-mode .event-forecast-dir.neutral{background:#203a58;color:#d3e4ff}
+    .event-forecast-price{margin:9px 0 7px}.event-forecast-price strong{font-size:19px;font-weight:900}.event-forecast-price span{font-size:9px;color:var(--ei-muted);margin-left:4px}
+    .event-horizon-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}.event-horizon{border:1px solid var(--ei-line);border-radius:8px;padding:6px;background:color-mix(in srgb,var(--ei-card) 80%,var(--ei-bg))}.event-horizon b{display:block;font-size:10.5px}.event-horizon span{display:block;font-size:8.8px;color:var(--ei-muted);margin-top:2px}
+    .event-forecast-foot{margin-top:7px;display:flex;justify-content:space-between;gap:5px;font-size:9px;color:var(--ei-muted)}.event-forecast-foot b{color:var(--ei-text)}
+    .forecast-model-note{margin-top:8px;font-size:9.5px;color:var(--ei-muted)}
+    @media(max-width:1450px){.event-forecast-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:900px){.event-forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.event-forecast-grid{grid-template-columns:1fr}.event-forecast-head{align-items:flex-start;flex-direction:column}}
+
+    @media(max-width:1450px){.asset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.queue-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+    @media(max-width:1080px){.event-hero,.intelligence-grid,.watch-grid{grid-template-columns:1fr}.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.driver-grid,.channel-grid{grid-template-columns:1fr}.hero-score{justify-content:flex-start}.queue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:720px){.event-page{padding:8px}.event-shell{padding:8px}.hero-main h1{font-size:25px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-row{grid-template-columns:115px 1fr 58px}.queue-grid{grid-template-columns:1fr}.queue-head{align-items:flex-start;flex-direction:column}}
+
+    /* Iteration 5: event evolution / change memory */
+    .evolution-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+    .evolution-stat{border:1px solid var(--ei-line);border-radius:12px;padding:10px;background:var(--ei-soft);min-height:76px}
+    .evolution-stat b{display:block;font-size:20px;line-height:1.05;color:var(--ei-ink)}
+    .evolution-stat span{display:block;margin-top:5px;font-size:10px;color:var(--ei-muted);font-weight:700}
+    .evolution-stat small{display:block;margin-top:4px;font-size:9px;color:var(--ei-muted)}
+    .evolution-trend{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;border:1px solid var(--ei-line);font-size:10px;font-weight:900}
+    .evolution-trend.rising{background:#fff0e7;border-color:#ef9d70;color:#9a4214}
+    .evolution-trend.easing{background:#eafaf5;border-color:#49bfa3;color:#08725e}
+    .evolution-trend.stable{background:var(--ei-soft);color:var(--ei-ink)}
+    body.dark-mode .evolution-trend.rising{background:#47291b;color:#ffd1ba}
+    body.dark-mode .evolution-trend.easing{background:#15382f;color:#b7f4e3}
+    .evolution-timeline{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}
+    .evolution-point{border:1px solid var(--ei-line);border-radius:10px;padding:8px;background:var(--ei-panel);position:relative;overflow:hidden}
+    .evolution-point:before{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#52c8a5,#ecc84d,#ed8a56);opacity:.78}
+    .evolution-point strong{display:block;font-size:13px;color:var(--ei-ink)}
+    .evolution-point span{display:block;font-size:9px;color:var(--ei-muted);margin-top:3px}
+    .evolution-empty{padding:10px;border:1px dashed var(--ei-line);border-radius:10px;color:var(--ei-muted);font-size:10px}
+    @media(max-width:1080px){.evolution-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.evolution-timeline{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:620px){.evolution-grid,.evolution-timeline{grid-template-columns:1fr 1fr}}
+
+
+    /* Iteration 6: compact intelligence hero, source-referenced summary, and consistent semantic colors. */
+    .event-hero{grid-template-columns:minmax(0,2.2fr) minmax(360px,.64fr);align-items:stretch}
+    .hero-side{display:grid;grid-template-rows:auto 1fr;gap:10px;min-width:0}
+    .hero-title-row{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin-bottom:10px}
+    .hero-title-row h1{flex:1 1 590px;margin:0;font-size:31px;line-height:1.08}
+    .title-badges{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .title-brand{display:inline-flex;align-items:center;border:1px solid #b9c8d5;border-radius:999px;padding:4px 8px;background:#f7fafc;color:#10283b;font-size:9.5px;font-weight:950;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+    .title-badges .status-pill,.title-badges .life-pill,.title-badges .event-chip{padding:4px 7px;font-size:9.5px;line-height:1.1;white-space:nowrap}
+    .hero-main .summary{display:grid;gap:8px;max-width:none;font-size:13.5px;line-height:1.48}
+    .hero-main .summary p{margin:0;color:var(--ei-ink)}
+    .summary-news{padding:8px 10px;border-left:3px solid var(--ei-gold);border-radius:7px;background:var(--ei-panel-soft)}
+    .summary-examples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    .summary-example{display:block;padding:7px 8px;border:1px solid var(--ei-line);border-radius:8px;background:var(--ei-panel-soft);font-size:10.5px;line-height:1.35;color:var(--ei-muted)}
+    .summary-example b{color:var(--ei-ink)}
+
+    .hero-score{padding:13px 14px;display:grid;grid-template-columns:94px minmax(0,1fr);gap:13px;align-items:center;justify-content:stretch}
+    .score-ring{width:94px;height:94px}.score-ring:after{inset:9px}.score-ring strong{font-size:26px}.score-ring span{font-size:8.5px}
+    .score-copy h2{font-size:16px}.score-copy p{font-size:10.8px;line-height:1.36}.score-label{margin-top:6px;padding:4px 7px;font-size:9.5px}.priority-detail{margin-top:5px;font-size:9px}
+
+    .evolution-compact{background:var(--ei-panel);border:1px solid var(--ei-line);border-radius:16px;box-shadow:var(--ei-shadow);padding:11px 12px;min-width:0}
+    .evolution-compact-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
+    .evolution-compact-head strong{display:block;font-size:12px;margin-top:2px;color:var(--ei-ink)}
+    .evolution-compact .section-kicker{font-size:8.5px}
+    .evolution-compact .evolution-trend{padding:4px 7px;font-size:8.5px;white-space:nowrap}
+    .evolution-compact .evolution-grid{display:grid;grid-template-columns:1fr;gap:4px}
+    .evolution-compact .evolution-stat{min-height:0;padding:5px 7px;border-radius:8px;display:grid;grid-template-columns:84px 78px minmax(0,1fr);gap:6px;align-items:center;background:var(--ei-panel-soft)}
+    .evolution-compact .evolution-stat span{grid-column:1;grid-row:1;margin:0;font-size:8.5px;text-transform:uppercase;letter-spacing:.03em}
+    .evolution-compact .evolution-stat b{grid-column:2;grid-row:1;font-size:12px;line-height:1.1}
+    .evolution-compact .evolution-stat small{grid-column:3;grid-row:1;margin:0;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .evolution-compact .evolution-timeline{display:flex;gap:5px;overflow-x:auto;margin-top:7px;padding-bottom:2px}
+    .evolution-compact .evolution-point{flex:0 0 128px;padding:5px 6px;border-radius:7px;min-height:0}
+    .evolution-compact .evolution-point:before{height:2px}
+    .evolution-compact .evolution-point strong{font-size:9.5px;white-space:nowrap}
+    .evolution-compact .evolution-point span{font-size:7.5px;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* Preserve the same semantic colors in light and dark modes; only page surfaces invert. */
+    body.dark-mode .title-brand{background:#f7fafc;color:#10283b;border-color:#b9c8d5}
+    body.dark-mode .status-pill.high,body.dark-mode .score-label{background:#fff2e9;color:#963e0b;border-color:#ef9a62}
+    body.dark-mode .life-pill.active{background:#e5fbf5;color:#066a58;border-color:#2cb899}
+    body.dark-mode .life-pill.emerging{background:#fff4cf;color:#744d00;border-color:#c79112}
+    body.dark-mode .life-pill.watch{background:#eaf3ff;color:#244f7d;border-color:#6f98c5}
+    body.dark-mode .title-badges .event-chip{background:#f7fafc;color:#111b26;border-color:#a9bfd2}
+    body.dark-mode .evolution-trend.rising{background:#fff0e7;color:#9a4214;border-color:#ef9d70}
+    body.dark-mode .evolution-trend.easing{background:#eafaf5;color:#08725e;border-color:#49bfa3}
+    body.dark-mode .evolution-trend.stable{background:#f7fafc;color:#111b26;border-color:#a9bfd2}
+    body.dark-mode .divergence-flag{background:#fff0df;color:#9a4a13;border-color:#efb178}
+    body.dark-mode .event-forecast-dir.bullish{background:#ecfbf7;color:#08715d;border-color:#31ad92}
+    body.dark-mode .event-forecast-dir.bearish{background:#fff1e8;color:#903b0d;border-color:#e78b5b}
+    body.dark-mode .event-forecast-dir.neutral{background:#eef5ff;color:#275dab;border-color:#80aceb}
+    body.dark-mode .queue-action{background:#fff7df;color:#765108;border-color:#c99626}
+    body.dark-mode .queue-item.is-selected .queue-action{background:#f3c63c;color:#2d2305;border-color:#b68400}
+    body.dark-mode .summary-news,body.dark-mode .summary-example{background:#223341}
+
+
+    /* AI Gateway intelligence layer */
+    .ai-intel-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:2px 0 4px;color:var(--ei-muted);font-size:10.8px;font-weight:700}
+    .ai-intel-meta span{border:1px solid var(--ei-line);border-radius:999px;background:var(--ei-panel-soft);padding:4px 7px}
+    .summary-conflict{padding:9px 11px;border-radius:8px;background:var(--ei-panel-soft);border-left:3px solid #d9864b}
+    .summary-outlets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    .summary-outlet{padding:8px 9px;border:1px solid var(--ei-line);border-radius:8px;background:var(--ei-panel-soft);font-size:11.2px;line-height:1.4;color:var(--ei-muted)}
+    .summary-outlet b{color:var(--ei-ink)}
+    body.dark-mode .ai-intel-meta span,body.dark-mode .summary-conflict,body.dark-mode .summary-outlet{background:#223341}
+
+    @media(max-width:1150px){.event-hero{grid-template-columns:minmax(0,1.7fr) minmax(330px,.7fr)}.hero-title-row h1{flex-basis:100%;font-size:28px}.summary-examples{grid-template-columns:1fr}}
+    @media(max-width:900px){.event-hero{grid-template-columns:1fr}.hero-side{grid-template-columns:1fr 1fr;grid-template-rows:auto}.hero-title-row h1{font-size:27px}}
+    @media(max-width:650px){.hero-side{grid-template-columns:1fr}.evolution-compact .evolution-stat{grid-template-columns:76px 70px minmax(0,1fr)}.title-badges{width:100%}}
+
+
+    /* AI product positioning: compact value proposition + transparent evidence method. */
+    .mi-intro{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;margin:0 0 10px;padding:11px 14px;border:1px solid var(--ei-line);border-radius:13px;background:radial-gradient(circle at 88% 15%,rgba(183,119,0,.10),transparent 15rem),var(--ei-panel);box-shadow:var(--ei-shadow)}
+    .mi-intro-main{min-width:0}.mi-intro-label{display:inline-flex;align-items:center;gap:5px;margin-bottom:3px;color:var(--ei-gold);font-size:9.8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.mi-intro h1{margin:0;color:var(--ei-ink);font-size:20px;line-height:1.12;letter-spacing:-.015em}.mi-intro p{margin:4px 0 0;color:var(--ei-muted);font-size:11.6px;line-height:1.4}
+    .mi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:7px;color:var(--ei-muted);font-size:9.5px;font-weight:800}.mi-flow span{border:1px solid var(--ei-line);border-radius:999px;padding:3px 6px;background:var(--ei-panel-soft);color:var(--ei-ink)}.mi-flow i{font-style:normal;color:var(--ei-gold)}
+    .mi-method{position:relative;flex:0 0 auto}.mi-method summary{list-style:none;cursor:pointer;border:1px solid #c79524;border-radius:999px;padding:7px 10px;background:var(--ei-gold-soft);color:var(--ei-accent-text);font-size:10px;font-weight:900;white-space:nowrap;user-select:none}.mi-method summary::-webkit-details-marker{display:none}.mi-method[open] summary{border-radius:10px 10px 0 0}.mi-method-box{position:absolute;z-index:20;top:calc(100% - 1px);right:0;width:min(420px,80vw);padding:10px 11px;border:1px solid #c79524;border-radius:10px 0 10px 10px;background:var(--ei-panel);color:var(--ei-muted);box-shadow:0 16px 38px rgba(0,0,0,.24);font-size:10.5px;line-height:1.45}.mi-method-box b{color:var(--ei-ink)}.mi-method-box p{margin:0 0 6px;font-size:10.5px}.mi-method-box p:last-child{margin-bottom:0}
+    .ai-intel-meta .ai-intel-brand{border-color:#c79524;background:var(--ei-gold-soft);color:var(--ei-accent-text);font-weight:900}.ai-proof{margin:1px 0 2px;max-width:780px}.ai-proof summary{cursor:pointer;color:var(--ei-accent-text);font-size:10.5px;font-weight:850;width:max-content;max-width:100%}.ai-proof-box{margin-top:5px;padding:8px 10px;border:1px solid var(--ei-line);border-radius:8px;background:var(--ei-panel-soft);color:var(--ei-muted);font-size:10.7px;line-height:1.45}.ai-proof-box b{color:var(--ei-ink)}.ai-source-line,.ai-confidence{margin:0!important;padding:5px 0 0;color:var(--ei-muted);font-size:10.7px;line-height:1.4}.ai-source-line b,.ai-confidence b{color:var(--ei-ink)}
+    body.dark-mode .mi-intro{background:radial-gradient(circle at 88% 15%,rgba(240,191,77,.10),transparent 15rem),var(--ei-panel)}body.dark-mode .mi-method summary,body.dark-mode .ai-intel-meta .ai-intel-brand{background:#3a3019;color:#ffd36a;border-color:#9c7b2c}body.dark-mode .mi-method-box,body.dark-mode .ai-proof-box{background:#223341}
+    @media(max-width:800px){.mi-intro{grid-template-columns:1fr}.mi-method{justify-self:start}.mi-method-box{left:0;right:auto;border-radius:0 10px 10px 10px}}
+
+    /* Iteration 7: comprehensive Market Intelligence readability + context. */
+    .event-page{font-size:14px}
+    .queue-head strong{font-size:14.5px}.queue-head span{font-size:11.5px}
+    .queue-title{font-size:12.5px}.queue-meta{font-size:10.5px}.queue-action{font-size:9.5px}.life-pill{font-size:9.8px}
+    .title-brand{font-size:10.5px}.title-badges .status-pill,.title-badges .life-pill,.title-badges .event-chip{font-size:10.3px}
+    .hero-title-row h1{font-size:31px}
+    .hero-main .summary{font-size:14.5px;line-height:1.55;gap:9px}
+    .summary-news,.summary-context{padding:9px 11px;border-radius:8px;background:var(--ei-panel-soft)}
+    .summary-news{border-left:3px solid var(--ei-gold)}
+    .summary-context{border-left:3px solid var(--ei-line-strong)}
+    .summary-example{font-size:11.4px;line-height:1.42;padding:8px 9px}
+    .hero-meta .event-chip{font-size:11.2px}
+    .score-copy h2{font-size:17px}.score-copy p{font-size:11.7px;line-height:1.42}.score-label{font-size:10.2px}.priority-detail{font-size:9.8px}
+    .evolution-compact-head strong{font-size:12.8px}.evolution-compact .section-kicker{font-size:9.2px}.evolution-compact .evolution-trend{font-size:9.2px}
+    .evolution-compact .evolution-stat span{font-size:9px}.evolution-compact .evolution-stat b{font-size:12.6px}.evolution-compact .evolution-stat small{font-size:8.7px}
+    .section-head h2{font-size:19px}.section-head p{font-size:12.8px;line-height:1.42}.section-kicker{font-size:10.6px}
+    .driver-card h3,.channel-card h3,.asset-card h3{font-size:13.8px}
+    .driver-card p,.channel-card p{font-size:12.2px;line-height:1.47}
+    .asset-role{font-size:10.8px}.sentiment-pill{font-size:9.7px}.asset-psi span{font-size:10.8px}.mini-metric b{font-size:11.6px}.mini-metric span{font-size:9.2px}.asset-link{font-size:10.8px}
+    .watch-item b{font-size:12.8px}.watch-item span{font-size:11.8px;line-height:1.42}.source-item a{font-size:12.2px}.source-meta{font-size:9.8px}
+    .profile-row label{font-size:12.7px}.profile-value{font-size:11.7px}
+    body.dark-mode .summary-context{background:#223341;border-left-color:#71899d}
+
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=18" defer></script>
+  <script src="site-theme.js" defer></script>
+
+  <main class="event-page">
+    <div class="event-shell">
+
+      <section class="mi-intro" aria-label="PSD AI Market Intelligence overview">
+        <div class="mi-intro-main">
+          <span class="mi-intro-label">AI-Powered Market Intelligence</span>
+          <h1>From Market Noise to Market Intelligence</h1>
+          <p>PSD uses AI to connect source-ranked financial news with sentiment and market behavior — showing what matters, why it matters, and what to watch next.</p>
+          <div class="mi-flow" aria-label="PSD intelligence process"><span>Source-Ranked News</span><i>→</i><span>PSD Market Data</span><i>→</i><span>AI Editorial Synthesis</span><i>→</i><span>Market Intelligence</span></div>
+        </div>
+        <details class="mi-method"><summary>How PSD AI Works</summary><div class="mi-method-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p></div></details>
+      </section>
+
+      <section class="event-queue" aria-label="PSD event priority queue">
+        <div class="queue-head">
+          <strong>Top 10 Market Event Priorities</strong>
+          <span id="dataStatus">Loading current PSD market data…</span>
+        </div>
+        <div class="queue-grid" id="eventQueue"></div>
+      </section>
+
+      <section class="event-hero">
+        <article class="hero-main">
+          <div class="hero-title-row">
+            <div class="title-badges" aria-label="Event classification">
+              <span class="title-brand">PSD AI Market Intelligence</span>
+              <span id="eventStatus" class="status-pill high">High Impact</span>
+              <span id="eventLifecycle" class="life-pill active">Active</span>
+              <span id="eventHorizon" class="event-chip compact-chip">Short-Term</span>
+            </div>
+            <h1 id="eventTitle">Middle East Escalation — Cross-Market Impact</h1>
+          </div>
+          <div class="summary" id="eventSummary">Loading event assessment…</div>
+          <div class="hero-meta">
+            <span class="event-chip"><b>Primary channels:</b>&nbsp;<span id="primaryChannels">Energy • Safe Haven • Risk Appetite</span></span>
+            <span class="event-chip"><b>Regions:</b>&nbsp;<span id="regions">Global • U.S. • Europe • Middle East • Asia</span></span>
+            <span class="event-chip"><b>Coverage:</b>&nbsp;<span id="coverageText">--</span></span>
+          </div>
+        </article>
+
+        <aside class="hero-side">
+          <section class="hero-score">
+            <div class="score-ring" id="impactRing" style="--score:72">
+              <div class="score-content"><strong id="impactScore">--</strong><span>Impact Score</span></div>
+            </div>
+            <div class="score-copy">
+              <h2>PSD Market Impact</h2>
+              <p>Cross-asset pressure derived from current PSI shifts, 7-day persistence, price moves, and divergence signals across affected assets.</p>
+              <span class="score-label" id="impactLabel">Calculating…</span>
+              <div class="priority-detail" id="priorityDetail">Priority score loading…</div>
+            </div>
+          </section>
+
+          <section class="evolution-compact" id="eventEvolutionSection">
+            <div class="evolution-compact-head">
+              <div><span class="section-kicker">Event Evolution</span><strong>Since previous PSD snapshot</strong></div>
+              <span id="evolutionTrend" class="evolution-trend stable">Building history</span>
+            </div>
+            <div class="evolution-grid" id="evolutionGrid"></div>
+            <div class="evolution-timeline" id="evolutionTimeline"></div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="intelligence-grid">
+        <article class="section-card">
+          <div class="section-head">
+            <div><span class="section-kicker">What is driving the event</span><h2>Three Market Transmission Drivers</h2><p>Original PSD structure: event → transmission channel → affected assets → market response.</p></div>
+          </div>
+          <div class="driver-grid" id="driverGrid"></div>
+        </article>
+
+        <aside class="section-card">
+          <div class="section-head">
+            <div><span class="section-kicker">Cross-market severity</span><h2>PSD Impact Profile</h2><p>Designed to expand later with engine-generated event scores.</p></div>
+          </div>
+          <div class="profile-list" id="profileList"></div>
+        </aside>
+      </section>
+
+      <section class="section-card" style="margin-bottom:12px">
+        <div class="section-head">
+          <div><span class="section-kicker">Live PSD data</span><h2>Most Affected Assets</h2><p>Current PSI, 24H/7D sentiment shift, price move and divergence flags from <code>market_pulse.json</code>.</p></div>
+          <span class="event-chip" id="assetTimestamp">Live feed</span>
+        </div>
+        <div class="asset-grid" id="assetGrid"></div>
+      </section>
+
+
+      <section class="section-card" style="margin-bottom:12px">
+        <div class="section-head">
+          <div><span class="section-kicker">How the shock is traveling</span><h2>Transmission Channels</h2><p>Aggregates the affected assets into market mechanisms instead of treating every move in isolation.</p></div>
+        </div>
+        <div class="channel-grid" id="channelGrid"></div>
+      </section>
+
+      <section class="watch-grid">
+        <article class="section-card">
+          <div class="section-head">
+            <div><span class="section-kicker">Forward-looking monitor</span><h2>What Markets Are Watching Next</h2><p>Not a prediction — catalysts that could materially change the event assessment.</p></div>
+          </div>
+          <div class="watch-list" id="watchList"></div>
+        </article>
+
+        <article class="section-card">
+          <div class="section-head">
+            <div><span class="section-kicker">Traceability</span><h2>Supporting PSD News</h2><p>Top event-specific evidence, ranked by source priority and recency. Up to 10 are shown; the future engine layer can retain 20–40 per event.</p></div>
+          </div>
+          <div class="source-list" id="sourceList"></div>
+        </article>
+      </section>
+
+      <div class="methodology">
+        <span><b>Market Intelligence architecture:</b> the Top 10 priority tiles are the event navigation. This page explains what is happening, why it matters, how the event is transmitting across assets, and what evidence supports the assessment. Forecasting and prediction remain separate from this intelligence page.</span>
+        <span><b>Priority formula:</b> 35% market impact • 25% freshness • 20% cross-market reach • 10% source quality • 10% persistence. Experimental; not investment advice.</span>
+      </div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="site-footer.js" defer></script>
+  <script src="vote-widget.js" defer></script>
+
+  <script>
+  (()=>{
+    "use strict";
+
+    const EVENT_HISTORY_KEY = "psd_event_intelligence_history_v1";
+
+    const EVENT_POLICY = Object.freeze({
+      maxActive:10,
+      evidenceLookbackDays:14,
+      internalArticleTarget:[20,40],
+      displayArticles:10,
+      coolingHours:72,
+      historyDays:180,
+      weights:{marketImpact:.35,freshness:.25,crossMarketReach:.20,sourceQuality:.10,persistence:.10}
+    });
+
+    const EVENT_LIBRARY = [
+      {
+        id:"middle-east-escalation",
+        title:"Middle East Escalation — Cross-Market Impact",
+        horizon:"Short-Term",
+        regions:["Global","U.S.","Europe","Middle East","Asia"],
+        channels:["Energy Supply","Safe-Haven Flows","Risk Appetite"],
+        keywords:["iran","israel","middle east","hormuz","red sea","persian gulf","ceasefire","missile","conflict","war-risk","war risk"],
+        assets:[
+          {instrument:"Crude Oil", role:"Direct energy-risk transmission", weight:1.30},
+          {instrument:"Brent Oil", role:"Global energy benchmark", weight:1.20},
+          {instrument:"Natural Gas", role:"Energy substitution & supply risk", weight:.80},
+          {instrument:"Gold", role:"Safe-haven demand", weight:1.00},
+          {instrument:"US Dollar / DXY", role:"Liquidity & defensive currency flow", weight:.90},
+          {instrument:"S&P 500 / ES", role:"Broad equity risk appetite", weight:1.10},
+          {instrument:"VIX", role:"Market stress / volatility", weight:1.00}
+        ],
+        drivers:[
+          {title:"Energy supply uncertainty",text:"Oil and gas markets transmit geopolitical risk quickly through supply expectations, transportation constraints, and inflation sensitivity."},
+          {title:"Safe-haven rotation",text:"Gold and the U.S. dollar can absorb defensive flows when investors reassess geopolitical, inflation, and liquidity risk."},
+          {title:"Equity and volatility spillover",text:"Higher energy costs and uncertainty can pressure broad equities while volatility responds to changes in perceived tail risk."}
+        ],
+        catalysts:[
+          {icon:"⛽",title:"Energy flows",text:"Watch crude and gas supply, refinery availability, shipping flows, and whether energy risk premiums expand or normalize."},
+          {icon:"🕊️",title:"Diplomatic signals",text:"A durable de-escalation or renewed confrontation can rapidly change the persistence of the cross-market move."},
+          {icon:"🚢",title:"Shipping & logistics",text:"Changes in key maritime routes, insurance costs, and transit availability can reinforce or reduce the inflation channel."},
+          {icon:"🏦",title:"Rates & inflation response",text:"Watch whether higher energy prices begin influencing inflation expectations, bond yields, and central-bank expectations."}
+        ]
+      },
+      {
+        id:"rates-inflation-repricing",
+        title:"U.S. Rates & Inflation Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","Global"],
+        channels:["Rates","Dollar","Equities","Real Yields"],
+        keywords:["federal reserve","fed","powell","inflation","cpi","pce","interest rate","treasury yield","bond yield","yields"],
+        assets:[
+          {instrument:"US Dollar / DXY",role:"Dollar reaction",weight:1.10},
+          {instrument:"Gold",role:"Real-yield sensitivity",weight:1.00},
+          {instrument:"Inflation / Real Yields",role:"Inflation transmission",weight:1.25},
+          {instrument:"S&P 500 / ES",role:"Broad equity valuation",weight:1.00},
+          {instrument:"Nasdaq / NQ",role:"Duration-sensitive growth equities",weight:1.20},
+          {instrument:"VIX",role:"Risk repricing",weight:.80}
+        ],
+        drivers:[
+          {title:"Rate-path repricing",text:"Changes in expected policy rates alter bond yields, equity valuation and dollar demand across markets."},
+          {title:"Inflation persistence",text:"Inflation surprises can reinforce or challenge the expected pace of policy easing or tightening."},
+          {title:"Duration sensitivity",text:"Growth equities and precious metals can react sharply when real yields and long-term rates move."}
+        ],
+        catalysts:[
+          {icon:"🏦",title:"Federal Reserve communication",text:"Watch policy statements, speeches and changes in the expected rate path."},
+          {icon:"📊",title:"Inflation releases",text:"CPI, PCE and wage data can change the market's inflation and rate assumptions quickly."},
+          {icon:"📈",title:"Treasury yields",text:"Watch whether long-end yields confirm or reject the sentiment move."},
+          {icon:"💵",title:"Dollar confirmation",text:"Dollar direction can reveal whether repricing is becoming a broader global move."}
+        ]
+      },
+      {
+        id:"ai-megacap-repricing",
+        title:"AI & Mega-Cap Technology Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","Global Technology"],
+        channels:["AI Demand","Semiconductors","Mega-Cap Risk"],
+        keywords:["artificial intelligence","nvidia","semiconductor","chips","data center","microsoft","meta","alphabet","openai","ai spending"],
+        assets:[
+          {instrument:"NVIDIA / NVDA",role:"AI compute bellwether",weight:1.25},
+          {instrument:"AMD / AMD",role:"AI accelerator competition",weight:1.00},
+          {instrument:"Broadcom / AVGO",role:"AI networking/custom silicon",weight:1.00},
+          {instrument:"Microsoft / MSFT",role:"AI software and cloud",weight:1.00},
+          {instrument:"Alphabet / GOOGL",role:"AI platform/search",weight:.95},
+          {instrument:"Meta / META",role:"AI infrastructure demand",weight:.90},
+          {instrument:"Nasdaq / NQ",role:"Technology risk appetite",weight:1.10}
+        ],
+        drivers:[
+          {title:"AI capital spending",text:"Data-center and model investment expectations influence semiconductors, cloud platforms and infrastructure providers."},
+          {title:"Earnings & valuation",text:"High expectations make AI-linked assets sensitive to growth, margins, guidance and financing conditions."},
+          {title:"Cross-asset tech concentration",text:"Large AI-linked companies can transmit sentiment directly into major indices and broader risk appetite."}
+        ],
+        catalysts:[
+          {icon:"🧠",title:"AI demand signals",text:"Watch capex guidance, cloud demand and accelerator orders."},
+          {icon:"🧩",title:"Chip supply & export policy",text:"Export restrictions, supply constraints and new chip launches can reshape expectations."},
+          {icon:"💰",title:"Earnings revisions",text:"Changes to revenue, margin or capex guidance can move the entire AI complex."},
+          {icon:"📉",title:"Index spillover",text:"Watch Nasdaq breadth to see whether the move is isolated or becoming systemic."}
+        ]
+      },
+      {
+        id:"crypto-risk-regulation",
+        title:"Crypto Risk Appetite & Regulation",
+        horizon:"Near-Term",
+        regions:["Global","U.S."],
+        channels:["Bitcoin","Liquidity","Regulation","ETF Flows"],
+        keywords:["bitcoin","ethereum","crypto","stablecoin","crypto regulation","token","digital asset","bitcoin etf","ethereum etf"],
+        assets:[
+          {instrument:"Bitcoin / BTC",role:"Crypto market benchmark",weight:1.30},
+          {instrument:"Ethereum / ETH",role:"Smart-contract benchmark",weight:1.10},
+          {instrument:"Crypto ETFs / Flows",role:"Institutional flow channel",weight:1.00},
+          {instrument:"Crypto Regulation",role:"Policy transmission",weight:1.00},
+          {instrument:"Stablecoins / Depeg Risk",role:"Liquidity infrastructure",weight:.80}
+        ],
+        drivers:[
+          {title:"Liquidity & institutional flows",text:"ETF flows and global liquidity conditions can amplify crypto sentiment and price moves."},
+          {title:"Regulatory repricing",text:"Policy, enforcement and legislation can change perceived market access and risk quickly."},
+          {title:"Crypto breadth",text:"Bitcoin leadership versus broader-token participation helps show whether risk appetite is narrow or broad."}
+        ],
+        catalysts:[
+          {icon:"₿",title:"Bitcoin confirmation",text:"Watch whether Bitcoin price and PSI confirm each other or diverge."},
+          {icon:"🏛️",title:"Regulatory developments",text:"Policy decisions can change sentiment across exchanges, tokens and institutional products."},
+          {icon:"💧",title:"Liquidity conditions",text:"Watch stablecoins, ETF flows and risk appetite across related assets."},
+          {icon:"🔗",title:"Cross-crypto breadth",text:"A broader move across Ethereum and altcoins can confirm persistence."}
+        ]
+      },
+      {
+        id:"trade-tariff-shock",
+        title:"Global Trade & Tariff Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","China","Europe","Global"],
+        channels:["Trade Policy","FX","Industrials","Equities"],
+        keywords:["tariff","trade war","export control","import duty","trade deal","sanction","trade restrictions","china trade"],
+        assets:[
+          {instrument:"USD/CNH",role:"China/U.S. FX transmission",weight:1.15},
+          {instrument:"Copper",role:"Global growth sensitivity",weight:1.00},
+          {instrument:"Hang Seng",role:"China/Hong Kong equity response",weight:1.00},
+          {instrument:"S&P 500 / ES",role:"U.S. broad-market risk",weight:.90},
+          {instrument:"Nasdaq / NQ",role:"Technology/export exposure",weight:1.00},
+          {instrument:"US Dollar / DXY",role:"Global defensive currency response",weight:.90}
+        ],
+        drivers:[
+          {title:"Trade-policy uncertainty",text:"Tariffs and export restrictions change expected costs, margins and cross-border demand."},
+          {title:"Currency transmission",text:"Dollar and yuan moves can reveal how markets are repricing trade and growth risk."},
+          {title:"Growth & supply-chain sensitivity",text:"Copper and major equity indices help show whether policy risk is spreading into broader growth expectations."}
+        ],
+        catalysts:[
+          {icon:"🌐",title:"Policy announcements",text:"Watch new tariffs, exemptions, export controls and negotiation developments."},
+          {icon:"💱",title:"FX response",text:"USD/CNH and DXY can confirm whether trade risk is becoming globally significant."},
+          {icon:"🏭",title:"Corporate guidance",text:"Watch margin, sourcing and supply-chain commentary from exposed companies."},
+          {icon:"📦",title:"Trade-flow data",text:"Import/export and shipping data can show whether policy changes are becoming economically persistent."}
+        ]
+      }
+      ,{
+        id:"energy-supply-repricing",
+        title:"Global Energy Supply & Inflation Repricing",
+        horizon:"Near-Term",
+        regions:["Global","U.S.","Europe","Asia"],
+        channels:["Oil Supply","Natural Gas","Inflation","Risk Appetite"],
+        keywords:["opec","oil supply","crude oil","brent","refinery","natural gas","lng","energy prices","fuel prices","production cut","pipeline"],
+        assets:[
+          {instrument:"Crude Oil",role:"Direct oil-supply transmission",weight:1.25},
+          {instrument:"Brent Oil",role:"Global crude benchmark",weight:1.20},
+          {instrument:"Natural Gas",role:"Gas and LNG supply sensitivity",weight:1.00},
+          {instrument:"Gold",role:"Inflation / defensive response",weight:.75},
+          {instrument:"US Dollar / DXY",role:"Commodity-currency transmission",weight:.75},
+          {instrument:"S&P 500 / ES",role:"Broad cost-pressure response",weight:.90}
+        ],
+        drivers:[
+          {title:"Supply availability",text:"Production, refinery and shipping changes can quickly alter global energy risk premiums."},
+          {title:"Inflation transmission",text:"Persistent energy repricing can influence inflation expectations, yields and consumer-sensitive assets."},
+          {title:"Cross-asset confirmation",text:"Dollar, gold and equities help show whether an energy move is becoming a broader macro shock."}
+        ],
+        catalysts:[
+          {icon:"🛢️",title:"OPEC and production",text:"Watch production policy, outages and changes in spare capacity."},
+          {icon:"🏭",title:"Refinery availability",text:"Refinery disruptions can tighten products even when crude supply is adequate."},
+          {icon:"🚢",title:"Shipping and LNG",text:"Tanker, pipeline and LNG-flow changes can shift regional supply quickly."},
+          {icon:"📈",title:"Inflation confirmation",text:"Watch whether energy moves feed into inflation expectations and yields."}
+        ]
+      },
+      {
+        id:"safe-haven-repricing",
+        title:"Safe-Haven & Defensive Asset Repricing",
+        horizon:"Near-Term",
+        regions:["Global","U.S.","Europe","Asia"],
+        channels:["Gold","Dollar","Volatility","Risk Appetite"],
+        keywords:["safe haven","gold rally","gold prices","risk off","risk-off","flight to safety","market fear","uncertainty","volatility spike"],
+        assets:[
+          {instrument:"Gold",role:"Primary defensive asset",weight:1.30},
+          {instrument:"US Dollar / DXY",role:"Defensive currency demand",weight:1.05},
+          {instrument:"VIX",role:"Market stress confirmation",weight:1.15},
+          {instrument:"S&P 500 / ES",role:"Broad risk appetite",weight:1.00},
+          {instrument:"Nasdaq / NQ",role:"Growth-risk sensitivity",weight:.95}
+        ],
+        drivers:[
+          {title:"Defensive positioning",text:"Investors can rotate toward gold and the dollar when uncertainty rises."},
+          {title:"Volatility confirmation",text:"VIX and equity moves help distinguish broad risk aversion from an isolated asset move."},
+          {title:"Persistence",text:"Seven-day sentiment and price confirmation reveal whether the defensive shift is temporary or durable."}
+        ],
+        catalysts:[
+          {icon:"🥇",title:"Gold confirmation",text:"Watch whether gold sentiment and price continue to reinforce each other."},
+          {icon:"💵",title:"Dollar response",text:"Dollar strength can confirm broader defensive demand or liquidity stress."},
+          {icon:"📉",title:"Equity breadth",text:"Watch whether defensive flows spread across broad and growth equities."},
+          {icon:"⚡",title:"Volatility",text:"A sustained volatility rise can keep defensive positioning active."}
+        ]
+      },
+      {
+        id:"equity-volatility-shock",
+        title:"Global Equity Risk & Volatility Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","Global"],
+        channels:["Equities","Volatility","Liquidity","Safe Havens"],
+        keywords:["stock selloff","market selloff","equity selloff","market volatility","vix","risk appetite","risk-off","correction","market stress","stocks fall"],
+        assets:[
+          {instrument:"S&P 500 / ES",role:"Broad equity benchmark",weight:1.25},
+          {instrument:"Nasdaq / NQ",role:"Growth-equity sensitivity",weight:1.20},
+          {instrument:"VIX",role:"Volatility / stress gauge",weight:1.25},
+          {instrument:"Gold",role:"Defensive rotation",weight:.80},
+          {instrument:"US Dollar / DXY",role:"Liquidity response",weight:.80}
+        ],
+        drivers:[
+          {title:"Breadth of risk-off move",text:"Broad index weakness shows whether pressure is market-wide rather than company-specific."},
+          {title:"Volatility acceleration",text:"VIX and short-term price moves help identify whether uncertainty is becoming disorderly."},
+          {title:"Defensive rotation",text:"Gold and dollar behavior show where capital is moving as equity risk changes."}
+        ],
+        catalysts:[
+          {icon:"📉",title:"Index breadth",text:"Watch whether weakness or recovery broadens across major indices."},
+          {icon:"⚡",title:"VIX persistence",text:"A persistent volatility elevation can signal continued market stress."},
+          {icon:"💧",title:"Liquidity conditions",text:"Dollar and rates behavior can reveal whether the move includes liquidity pressure."},
+          {icon:"🛡️",title:"Defensive flows",text:"Gold and other defensive assets can confirm a sustained risk-off regime."}
+        ]
+      },
+      {
+        id:"dollar-fx-repricing",
+        title:"U.S. Dollar & Global FX Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","China","Europe","Global"],
+        channels:["Dollar","China FX","Rates","Global Growth"],
+        keywords:["dollar index","dxy","dollar strengthens","dollar weakens","yuan","renminbi","usd/cnh","currency markets","foreign exchange","fx markets"],
+        assets:[
+          {instrument:"US Dollar / DXY",role:"Primary dollar benchmark",weight:1.30},
+          {instrument:"USD/CNH",role:"China/U.S. currency transmission",weight:1.15},
+          {instrument:"Gold",role:"Dollar-sensitive defensive asset",weight:.90},
+          {instrument:"Copper",role:"Global-growth / China sensitivity",weight:.90},
+          {instrument:"Hang Seng",role:"China-linked equity confirmation",weight:.85}
+        ],
+        drivers:[
+          {title:"Rate differential repricing",text:"Changes in relative rates can alter dollar demand and global funding conditions."},
+          {title:"China transmission",text:"USD/CNH can reveal whether growth and trade pressures are affecting global FX."},
+          {title:"Commodity and equity confirmation",text:"Gold, copper and China-linked equities show whether currency moves are spreading into other markets."}
+        ],
+        catalysts:[
+          {icon:"💵",title:"DXY direction",text:"Watch whether dollar sentiment and price continue in the same direction."},
+          {icon:"🇨🇳",title:"USD/CNH",text:"Yuan moves can amplify or soften global trade and growth concerns."},
+          {icon:"🏦",title:"Rate expectations",text:"Central-bank repricing can quickly change FX leadership."},
+          {icon:"🪙",title:"Commodity response",text:"Gold and copper can confirm the macro meaning of a currency move."}
+        ]
+      },
+      {
+        id:"global-growth-demand-shock",
+        title:"Global Growth & Demand Repricing",
+        horizon:"Near-Term",
+        regions:["U.S.","China","Europe","Global"],
+        channels:["Growth","Industrials","Energy Demand","Equities"],
+        keywords:["growth slowdown","global growth","recession risk","manufacturing slowdown","pmi","industrial demand","consumer slowdown","economic slowdown","demand outlook"],
+        assets:[
+          {instrument:"Copper",role:"Industrial-growth bellwether",weight:1.25},
+          {instrument:"Hang Seng",role:"China growth sensitivity",weight:1.05},
+          {instrument:"S&P 500 / ES",role:"U.S. broad growth expectations",weight:1.00},
+          {instrument:"Nasdaq / NQ",role:"Growth-equity response",weight:.95},
+          {instrument:"Crude Oil",role:"Global demand sensitivity",weight:.95},
+          {instrument:"Brent Oil",role:"Global energy-demand benchmark",weight:.90}
+        ],
+        drivers:[
+          {title:"Industrial demand",text:"Copper and energy markets can reprice quickly when expectations for real-economy demand change."},
+          {title:"China growth transmission",text:"China-linked equities and currencies can reveal whether weakness is regionally concentrated or global."},
+          {title:"Equity confirmation",text:"Major U.S. indices show how much changing growth expectations are affecting broader risk assets."}
+        ],
+        catalysts:[
+          {icon:"🏭",title:"Manufacturing data",text:"PMIs and industrial indicators can confirm or challenge the growth narrative."},
+          {icon:"🇨🇳",title:"China activity",text:"China demand and policy signals matter heavily for industrial and commodity assets."},
+          {icon:"🛢️",title:"Energy demand",text:"Oil sentiment can reveal whether growth concerns are affecting expected consumption."},
+          {icon:"📊",title:"Equity breadth",text:"Broad equity participation helps distinguish a macro repricing from isolated sector weakness."}
+        ]
+      }
+
+    ];
+
+    const FALLBACK_ROWS = {
+      "Crude Oil":{instrument:"Crude Oil",display_name:"Crude Oil",category:"energy",related_page:"energy.html",psi:62,sentiment_label:"Bullish",change_1d:1,change_7d:19,price_change_1d_pct:1.25,is_divergence:false,is_extreme:false,latest_news:[]},
+      "Brent Oil":{instrument:"Brent Oil",display_name:"Brent Oil",category:"energy",related_page:"energy.html",psi:57,sentiment_label:"Bullish",change_1d:0,change_7d:3,price_change_1d_pct:2.38,is_divergence:false,is_extreme:false,latest_news:[]},
+      "Natural Gas":{instrument:"Natural Gas",display_name:"Natural Gas",category:"energy",related_page:"energy.html",psi:58,sentiment_label:"Bullish",change_1d:-3,change_7d:7,price_change_1d_pct:-1.85,is_divergence:false,is_extreme:false,latest_news:[]},
+      "Gold":{instrument:"Gold",display_name:"Gold",category:"precious_metals",related_page:"precious-metals.html",psi:64,sentiment_label:"Bullish",change_1d:-5,change_7d:13,price_change_1d_pct:1.95,is_divergence:true,is_extreme:false,latest_news:[]},
+      "US Dollar / DXY":{instrument:"US Dollar / DXY",display_name:"U.S. Dollar Index",category:"forex",related_page:"forex-sentiment-today.html",psi:67,sentiment_label:"Bullish",change_1d:9,change_7d:8,price_change_1d_pct:.07,is_divergence:false,is_extreme:false,latest_news:[]},
+      "S&P 500 / ES":{instrument:"S&P 500 / ES",display_name:"S&P 500",category:"indices",related_page:"indices.html",psi:50,sentiment_label:"Mixed/Neutral",change_1d:-11,change_7d:-14,price_change_1d_pct:-.73,is_divergence:false,is_extreme:false,latest_news:[]},
+      "VIX":{instrument:"VIX",display_name:"VIX",category:"indices",related_page:"indices.html",psi:39,sentiment_label:"Bearish",change_1d:-4,change_7d:-11,price_change_1d_pct:7.79,is_divergence:true,is_extreme:false,latest_news:[]}
+    };
+
+    let pulseData=null;
+    let aiIntelligenceData=null;
+    let eventRankings=[];
+    let activeEvent=EVENT_LIBRARY[0];
+
+    const $=id=>document.getElementById(id);
+    const num=v=>Number.isFinite(Number(v))?Number(v):null;
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+    const signed=(v,suffix="")=>{const n=num(v);return n===null?"—":`${n>0?"+":""}${n.toFixed(Math.abs(n)>=10?0:1)}${suffix}`};
+
+    function impactBand(score){
+      if(score>=75)return {label:"Very High",cls:"high"};
+      if(score>=60)return {label:"High",cls:"high"};
+      if(score>=42)return {label:"Medium",cls:"medium"};
+      return {label:"Low",cls:"low"};
+    }
+
+    function normalizeNewsTime(value){
+      if(!value)return null;
+      const cleaned=String(value).replace(/ UTC$/i,'Z').replace(' ','T');
+      const d=new Date(cleaned);return Number.isNaN(d.getTime())?null:d;
+    }
+
+    function referenceTime(){
+      const candidates=[pulseData?.data_updated_utc,pulseData?.generated_utc].map(normalizeNewsTime).filter(Boolean);
+      if(candidates.length)return new Date(Math.max(...candidates.map(d=>d.getTime())));
+      return new Date();
+    }
+
+    function keywordMatch(title,keyword){
+      const text=String(title||'').toLowerCase(),key=String(keyword||'').toLowerCase().trim();
+      if(!key)return false;
+      if(/[\s\-/]/.test(key))return text.includes(key);
+      const escaped=key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`,'i').test(text);
+    }
+
+    function allUniqueNews(){
+      const seen=new Set(),out=[];
+      (Array.isArray(pulseData?.universe)?pulseData.universe:[]).forEach(row=>{
+        (Array.isArray(row?.latest_news)?row.latest_news:[]).forEach(n=>{
+          const key=String(n?.link||n?.title||'').trim();if(!key||seen.has(key))return;seen.add(key);
+          out.push({...n,instrument:row.instrument,category:row.category});
+        });
+      });
+      return out;
+    }
+
+    function eventEvidence(event){
+      const now=referenceTime(),lookback=EVENT_POLICY.evidenceLookbackDays*86400000;
+      const matches=allUniqueNews().filter(n=>{
+        const dt=normalizeNewsTime(n.published_utc);if(dt && now-dt>lookback)return false;
+        return event.keywords.some(k=>keywordMatch(n.title,k));
+      });
+      const uniqueSources=new Set(matches.map(n=>String(n.source||'').trim()).filter(Boolean));
+      const categories=new Set(matches.map(n=>n.category).filter(Boolean));
+      const within24=matches.filter(n=>{const dt=normalizeNewsTime(n.published_utc);return dt && now-dt<=86400000}).length;
+      const within48=matches.filter(n=>{const dt=normalizeNewsTime(n.published_utc);return dt && now-dt<=172800000}).length;
+      const latestMs=Math.max(0,...matches.map(n=>normalizeNewsTime(n.published_utc)?.getTime()||0));
+      const hoursSinceLatest=latestMs?Math.max(0,(now.getTime()-latestMs)/3600000):999;
+      return {matches,sourceCount:uniqueSources.size,categoryCount:categories.size,within24,within48,hoursSinceLatest};
+    }
+
+    function eventPriority(event){
+      const rows=getUniverseRows(event),evidence=eventEvidence(event);
+      const impact=eventImpactScore(rows);
+      const freshness=clamp(Math.round(evidence.within24*10 + evidence.within48*5 + (evidence.hoursSinceLatest<=12?25:evidence.hoursSinceLatest<=24?15:evidence.hoursSinceLatest<=48?8:0)),0,100);
+      const availableRows=rows.filter(r=>num(r.psi)!==null).length;
+      const reach=clamp(Math.round(evidence.categoryCount*18 + availableRows/Math.max(1,event.assets.length)*40),0,100);
+      const qualityValues=evidence.matches.map(n=>{const p=Number(n.priority||3);return p<=1?100:p===2?82:p===3?65:50});
+      const sourceQuality=clamp(Math.round((qualityValues.length?qualityValues.reduce((a,b)=>a+b,0)/qualityValues.length:35)+Math.min(20,evidence.sourceCount*2)),0,100);
+      const persistence=profileMetrics(rows).find(x=>x[0]==='Persistence')?.[1]||0;
+      const w=EVENT_POLICY.weights;
+      const priority=Math.round(impact*w.marketImpact+freshness*w.freshness+reach*w.crossMarketReach+sourceQuality*w.sourceQuality+persistence*w.persistence);
+      let lifecycle='Archived';
+      if(priority>=55 && evidence.matches.length>=4 && evidence.sourceCount>=3 && evidence.hoursSinceLatest<=EVENT_POLICY.coolingHours) lifecycle='Active';
+      else if(priority>=45 && evidence.matches.length>=2 && evidence.hoursSinceLatest<=EVENT_POLICY.coolingHours*1.5) lifecycle='Emerging';
+      else if(priority>=35 || evidence.matches.length>=1) lifecycle='Watch';
+      return {event,rows,evidence,impact,freshness,reach,sourceQuality,persistence,priority,lifecycle};
+    }
+
+    function rankEvents(){
+      eventRankings=EVENT_LIBRARY.map(eventPriority);
+      const central=new Map((Array.isArray(aiIntelligenceData?.event_rankings)?aiIntelligenceData.event_rankings:[]).map(x=>[String(x?.event_id||""),x]));
+      eventRankings.forEach(r=>{
+        const c=central.get(String(r.event.id||""));
+        if(!c)return;
+        if(Number.isFinite(Number(c.priority)))r.priority=Number(c.priority);
+        if(Number.isFinite(Number(c.impact)))r.impact=Number(c.impact);
+        if(c.lifecycle)r.lifecycle=String(c.lifecycle);
+        if(Number.isFinite(Number(c.evidence_count)))r.centralEvidenceCount=Number(c.evidence_count);
+        if(Number.isFinite(Number(c.source_count)))r.centralSourceCount=Number(c.source_count);
+      });
+      eventRankings.sort((a,b)=>b.priority-a.priority);
+      // Guarantee the page remains usable even if the current feed is unusually sparse.
+      if(!eventRankings.some(r=>r.lifecycle==='Active') && eventRankings[0] && eventRankings[0].priority>=45) eventRankings[0].lifecycle='Active';
+      return eventRankings;
+    }
+
+    function activeRankings(){return eventRankings.filter(r=>r.lifecycle==='Active').slice(0,EVENT_POLICY.maxActive)}
+
+    function rankingFor(event){return eventRankings.find(r=>r.event.id===event.id)||null}
+    function rankingEvidenceCount(r){return Number.isFinite(Number(r?.centralEvidenceCount))?Number(r.centralEvidenceCount):Number(r?.evidence?.matches?.length||0)}
+    function rankingSourceCount(r){return Number.isFinite(Number(r?.centralSourceCount))?Number(r.centralSourceCount):Number(r?.evidence?.sourceCount||0)}
+
+    function getUniverseRows(event){
+      const universe=Array.isArray(pulseData?.universe)?pulseData.universe:[];
+      return event.assets.map(def=>{
+        const live=universe.find(r=>String(r?.instrument||"")===def.instrument);
+        return {...def,...(live||FALLBACK_ROWS[def.instrument]||{instrument:def.instrument})};
+      });
+    }
+
+    function assetPressure(row){
+      const psi=num(row.psi)??50,d1=Math.abs(num(row.change_1d)??0),d7=Math.abs(num(row.change_7d)??0),price=Math.abs(num(row.price_change_1d_pct)??0);
+      return clamp(40 + Math.min(22,Math.abs(psi-50)*.72) + Math.min(16,d1*1.05) + Math.min(13,d7*.45) + Math.min(9,price*1.8) + (row.is_divergence?6:0) + (row.is_extreme?5:0),0,100);
+    }
+
+    function eventImpactScore(rows){
+      let weighted=0,total=0;
+      rows.forEach(r=>{const w=num(r.weight)??1;weighted+=assetPressure(r)*w;total+=w});
+      return total?Math.round(weighted/total):50;
+    }
+
+    function profileMetrics(rows){
+      const available=rows.filter(r=>num(r.psi)!==null);
+      const avg=(fn)=>available.length?available.reduce((s,r)=>s+fn(r),0)/available.length:0;
+      const sentiment=clamp(Math.round(avg(r=>Math.abs((num(r.psi)??50)-50)*4.2)),0,100);
+      const price=clamp(Math.round(avg(r=>Math.min(100,Math.abs(num(r.price_change_1d_pct)??0)*18))),0,100);
+      const volatility=clamp(Math.round(Math.max(...available.map(r=>Math.min(100,Math.abs(num(r.price_change_1d_pct)??0)*13)),0)),0,100);
+      const categories=new Set(available.map(r=>r.category).filter(Boolean));
+      const reach=clamp(categories.size*22,0,100);
+      const persistence=clamp(Math.round(avg(r=>Math.min(100,Math.abs(num(r.change_7d)??0)*4.8))),0,100);
+      return [
+        ["Sentiment Impact",sentiment],
+        ["Price Sensitivity",price],
+        ["Volatility Risk",volatility],
+        ["Cross-Market Reach",reach],
+        ["Persistence",persistence]
+      ];
+    }
+
+    function aiEventFor(event){
+      if(!aiIntelligenceData||!Array.isArray(aiIntelligenceData.events)||!event)return null;
+      return aiIntelligenceData.events.find(item=>String(item?.event_id||"")===String(event.id||""))||null;
+    }
+
+    function renderAiSummary(aiEvent,rows,score){
+      const intel=aiEvent?.intelligence||{};
+      if(aiEvent?.quality?.status!=="validated"||!intel.assessment||!intel.news_synthesis)return "";
+      const evidenceCount=Number(aiEvent?.quality?.evidence_articles||aiEvent?.evidence?.length||0);
+      const sourceCount=Number(aiEvent?.quality?.unique_sources||new Set((aiEvent.evidence||[]).map(x=>x.source).filter(Boolean)).size||0);
+      const referenced=Array.isArray(intel.referenced_sources)?intel.referenced_sources.filter(Boolean).slice(0,8):[];
+      const confidence=String(intel.confidence_note||"").trim();
+      const meta=`<div class="ai-intel-meta"><span class="ai-intel-brand">PSD AI Editorial Intelligence</span><span>${evidenceCount} source-ranked articles • ${sourceCount} independent outlets • PSD market data</span></div>`;
+      const proof=`<details class="ai-proof"><summary>How this intelligence was built</summary><div class="ai-proof-box"><b>Evidence first:</b> PSD supplied ${evidenceCount} source-ranked articles from ${sourceCount} independent outlets plus current sentiment and market data. Source authority is controlled by PSD's centralized source policy; the AI synthesizes only the supplied evidence, compares reporting with market confirmation, and is instructed to preserve material conflicts rather than force a consensus.</div></details>`;
+      const perspectives=Array.isArray(intel.outlet_perspectives)?intel.outlet_perspectives.slice(0,6):[];
+      const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b>${esc(p.source||"Source")}:</b> ${esc(p.emphasis||"")}</span>`).join("")}</div>`:"";
+      const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
+      const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b>${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
+      const conflict=String(intel.conflicting_evidence||"").trim();
+      const sourcesHtml=referenced.length?`<p class="ai-source-line"><b>Referenced outlets:</b> ${referenced.map(esc).join(" • ")}</p>`:"";
+      const confidenceHtml=confidence?`<p class="ai-confidence"><b>Evidence note:</b> ${esc(confidence)}</p>`:"";
+      return `${meta}${proof}<p><b>PSD AI assessment:</b> ${esc(intel.assessment)}</p><p class="summary-news"><b>News synthesis:</b> ${esc(intel.news_synthesis)}</p><p class="summary-context"><b>Market confirmation:</b> ${esc(intel.market_confirmation||"")}</p>${conflict?`<p class="summary-conflict"><b>Conflicting / incomplete evidence:</b> ${esc(conflict)}</p>`:""}<p class="summary-context"><b>Why this matters now:</b> ${esc(intel.why_it_matters||"")}</p>${sourcesHtml}${confidenceHtml}${perspectiveHtml}${exampleHtml}`;
+    }
+
+    function summaryText(rows,score){
+      const aiEvent=aiEventFor(activeEvent);
+      const aiHtml=renderAiSummary(aiEvent,rows,score);
+      if(aiHtml)return aiHtml;
+      const ranking=rankingFor(activeEvent),band=impactBand(score).label.toLowerCase();
+      const available=rows.filter(r=>num(r.psi)!==null);
+      const strongest=[...available].sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5);
+      const strongestText=strongest.length?strongest.map(r=>`${r.display_name||r.instrument} (${Math.round(num(r.psi)??50)} PSI)`).join(', '):'the affected asset set';
+      const bullish=available.filter(r=>(num(r.psi)??50)>=56).length;
+      const bearish=available.filter(r=>(num(r.psi)??50)<=44).length;
+      const neutral=Math.max(0,available.length-bullish-bearish);
+      const balance=bullish>bearish?'bullish pressure is broader than bearish pressure':bearish>bullish?'bearish pressure is broader than bullish pressure':'bullish and bearish pressure remain relatively balanced';
+      const avg=(key)=>available.length?available.reduce((s,r)=>s+(num(r[key])??0),0)/available.length:0;
+      const avg24=avg('change_1d'),avg7=avg('change_7d'),avgPrice=avg('price_change_1d_pct');
+      const divergences=available.filter(r=>r.is_divergence).length;
+      const reversals=available.filter(r=>r.is_reversal).length;
+
+      const evidence=ranking?[...ranking.evidence.matches]:[];
+      const ordered=[...evidence].sort((a,b)=>{const pa=Number(a.priority||9),pb=Number(b.priority||9);if(pa!==pb)return pa-pb;return String(b.published_utc||'').localeCompare(String(a.published_utc||''));});
+      const outlets=[...new Set(ordered.map(n=>String(n.source||'').trim()).filter(Boolean))].slice(0,6);
+      const outletText=outlets.length?outlets.join(', '):'the current PSD source set';
+      const driverTitles=activeEvent.drivers.slice(0,3).map(d=>d.title).join(', ');
+      const evidenceText=ranking?`${rankingEvidenceCount(ranking)} matched headlines from ${rankingSourceCount(ranking)} sources`:'the current PSD evidence set';
+      const catalysts=(activeEvent.catalysts||[]).slice(0,2).map(c=>c.title).join(' and ');
+
+      const examples=ordered.filter(n=>n.title).slice(0,4);
+      const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b>${esc(n.source||'Source')}:</b> ${esc(String(n.title||'').slice(0,175))}</span>`).join('')}</div>`:'';
+
+      return `<p><b>PSD assessment:</b> This is currently a ${esc(band)}-impact event. The strongest cross-market pressure is concentrated in ${esc(strongestText)}. Across the ${available.length} affected assets, ${bullish} are bullish, ${bearish} bearish and ${neutral} mixed/neutral, so ${esc(balance)}.</p>
+      <p class="summary-context"><b>Market context:</b> The affected group is averaging ${avg24>=0?'+':''}${avg24.toFixed(1)} points of 24H PSI change, ${avg7>=0?'+':''}${avg7.toFixed(1)} points over 7 days and ${avgPrice>=0?'+':''}${avgPrice.toFixed(2)}% in the latest one-day price move. ${divergences} asset${divergences===1?' is':'s are'} showing sentiment/price divergence${reversals?`, while ${reversals} reversal flag${reversals===1?' is':'s are'} also active`:''}. That combination helps distinguish a broad, confirmed repricing from a headline-driven move that price has not fully confirmed.</p>
+      <p class="summary-news"><b>News synthesis:</b> ${esc(evidenceText)} are feeding the assessment. Current coverage includes ${esc(outletText)}. The reporting is clustering around ${esc(driverTitles)}. PSD weighs that source evidence together with PSI direction, 24H/7D persistence, price response and divergence rather than treating article volume by itself as conviction.</p>
+      <p class="summary-context"><b>Why this matters now:</b> The event remains important while the same themes continue appearing across independent outlets and while multiple affected assets confirm the move. The next meaningful reassessment points are ${esc(catalysts||'new market-moving catalysts')}—developments there could strengthen, weaken or reverse the current impact classification.</p>${exampleHtml}`;
+    }
+
+    function loadEventHistory(){
+      try{const v=JSON.parse(localStorage.getItem(EVENT_HISTORY_KEY)||"[]");return Array.isArray(v)?v:[]}catch(_){return []}
+    }
+
+    function saveEventHistory(rows){
+      try{localStorage.setItem(EVENT_HISTORY_KEY,JSON.stringify(rows))}catch(_){/* local history can fail without affecting page */}
+    }
+
+    function currentFeedStamp(){
+      return pulseData?.data_updated_utc||pulseData?.generated_utc||pulseData?.data_updated_ny||new Date().toISOString();
+    }
+
+    function recordEventSnapshots(){
+      const history=loadEventHistory(),stamp=String(currentFeedStamp());
+      eventRankings.forEach(r=>{
+        const id=`${r.event.id}|${stamp}`;
+        if(history.some(x=>x.id===id))return;
+        const strongest=[...r.rows].filter(x=>num(x.psi)!==null).sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5).map(x=>({instrument:x.instrument,psi:num(x.psi),d1:num(x.change_1d),price:num(x.price_change_1d_pct)}));
+        history.push({id,eventId:r.event.id,stamp,impact:r.impact,priority:r.priority,lifecycle:r.lifecycle,news:rankingEvidenceCount(r),sources:rankingSourceCount(r),strongest});
+      });
+      const cutoff=Date.now()-EVENT_POLICY.historyDays*86400000;
+      const trimmed=history.filter(x=>{const d=new Date(x.stamp);return Number.isNaN(d.getTime())||d.getTime()>=cutoff}).slice(-1500);
+      saveEventHistory(trimmed);
+    }
+
+    function eventSnapshots(eventId){
+      return loadEventHistory().filter(x=>x.eventId===eventId).sort((a,b)=>String(a.stamp).localeCompare(String(b.stamp)));
+    }
+
+    function signedDelta(v,suffix=''){
+      const n=Number(v||0);return `${n>0?'+':''}${n}${suffix}`;
+    }
+
+    function renderEvolution(){
+      const ranking=rankingFor(activeEvent),snaps=eventSnapshots(activeEvent.id);
+      const latest=snaps[snaps.length-1]||null,previous=snaps.length>1?snaps[snaps.length-2]:null;
+      if(!ranking){$('evolutionGrid').innerHTML='<div class="evolution-empty" style="grid-column:1/-1">Event ranking unavailable.</div>';return;}
+      const dImpact=previous?ranking.impact-Number(previous.impact||0):0;
+      const dPriority=previous?ranking.priority-Number(previous.priority||0):0;
+      const dNews=previous?rankingEvidenceCount(ranking)-Number(previous.news||0):0;
+      const dSources=previous?rankingSourceCount(ranking)-Number(previous.sources||0):0;
+      let trend='Stable',cls='stable';
+      if(dImpact>=3||dPriority>=4){trend='Intensifying',cls='rising'}
+      else if(dImpact<=-3||dPriority<=-4){trend='Easing',cls='easing'}
+      $('evolutionTrend').textContent=previous?`${trend} • Impact ${signedDelta(dImpact)}`:'Building history • first snapshot';
+      $('evolutionTrend').className=`evolution-trend ${cls}`;
+      const metrics=[
+        ['Impact Score',ranking.impact,previous?`Change ${signedDelta(dImpact)}`:'Baseline created'],
+        ['Priority',`${ranking.priority}/100`,previous?`Change ${signedDelta(dPriority)}`:'Baseline created'],
+        ['Evidence',`${rankingEvidenceCount(ranking)} news`,previous?`${signedDelta(dNews)} vs prior`:`${rankingSourceCount(ranking)} sources`],
+        ['Sources',rankingSourceCount(ranking),previous?`${signedDelta(dSources)} vs prior`:'Current breadth'],
+        ['Lifecycle',ranking.lifecycle,previous&&previous.lifecycle!==ranking.lifecycle?`Was ${previous.lifecycle}`:'No lifecycle change']
+      ];
+      $('evolutionGrid').innerHTML=metrics.map(([label,value,note])=>`<div class="evolution-stat"><b>${esc(value)}</b><span>${esc(label)}</span><small>${esc(note)}</small></div>`).join('');
+      const recent=snaps.slice(-6);
+      $('evolutionTimeline').innerHTML=recent.length?recent.map(s=>{const d=new Date(s.stamp);const when=Number.isNaN(d.getTime())?String(s.stamp):d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});return `<div class="evolution-point"><strong>Impact ${esc(s.impact)} • P${esc(s.priority)}</strong><span>${esc(s.lifecycle)} • ${esc(s.news)} news / ${esc(s.sources)} sources</span><span>${esc(when)}</span></div>`}).join(''):'<div class="evolution-empty" style="grid-column:1/-1">The timeline will build automatically as new PSD feed timestamps are loaded.</div>';
+    }
+
+    function renderHero(rows){
+      const score=eventImpactScore(rows),band=impactBand(score);
+      $("eventTitle").textContent=activeEvent.title;
+      $("eventHorizon").textContent=activeEvent.horizon;
+      $("primaryChannels").textContent=activeEvent.channels.join(" • ");
+      $("regions").textContent=activeEvent.regions.join(" • ");
+      $("coverageText").textContent=`${rows.filter(r=>num(r.psi)!==null).length}/${activeEvent.assets.length} affected assets`;
+      $("eventSummary").innerHTML=summaryText(rows,score);
+      $("impactScore").textContent=score;
+      $("impactRing").style.setProperty("--score",score);
+      $("impactLabel").textContent=`${band.label} Impact`;
+      $("eventStatus").textContent=`${band.label} Impact`;
+      const ranking=rankingFor(activeEvent);
+      if(ranking){
+        $("eventLifecycle").textContent=ranking.lifecycle;
+        $("eventLifecycle").className=`life-pill ${ranking.lifecycle.toLowerCase()}`;
+        $("priorityDetail").textContent=`Priority ${ranking.priority}/100 • ${rankingEvidenceCount(ranking)} related headlines • ${rankingSourceCount(ranking)} sources`;
+      }
+    }
+
+    function renderDrivers(){
+      $("driverGrid").innerHTML=activeEvent.drivers.map((d,i)=>`<article class="driver-card"><span class="driver-num">${i+1}</span><h3>${esc(d.title)}</h3><p>${esc(d.text)}</p></article>`).join("");
+    }
+
+    function renderProfile(rows){
+      $("profileList").innerHTML=profileMetrics(rows).map(([name,value])=>{
+        const band=impactBand(value);
+        return `<div class="profile-row"><label>${esc(name)}</label><div class="meter"><i style="left:${value}%"></i></div><div class="profile-value">${band.label}</div></div>`;
+      }).join("");
+    }
+
+    function renderAssets(rows){
+      $("assetGrid").innerHTML=rows.map(r=>{
+        const psi=num(r.psi),label=r.sentiment_label||"Unavailable";
+        return `<article class="asset-card">
+          <div class="asset-top"><div><h3 title="${esc(r.instrument)}">${esc(r.display_name||r.instrument)}</h3><div class="asset-role">${esc(r.role)}</div></div><span class="sentiment-pill">${esc(label)}</span></div>
+          <div class="asset-psi"><strong>${psi===null?"—":Math.round(psi)}</strong><span>PSI /100</span></div>
+          <div class="asset-metrics">
+            <div class="mini-metric"><b>${signed(r.change_1d)}</b><span>24H PSI</span></div>
+            <div class="mini-metric"><b>${signed(r.change_7d)}</b><span>7D PSI</span></div>
+            <div class="mini-metric"><b>${signed(r.price_change_1d_pct,"%")}</b><span>Price 1D</span></div>
+          </div>
+          ${r.is_divergence?'<span class="divergence-flag">Sentiment / price divergence</span>':''}
+          ${r.related_page?`<a class="asset-link" href="${esc(r.related_page)}">Open related PSD page →</a>`:""}
+        </article>`;
+      }).join("");
+    }
+
+    function channelStats(rows,names){
+      const subset=rows.filter(r=>names.includes(r.instrument));
+      if(!subset.length)return {psi:50,d1:0};
+      return {psi:Math.round(subset.reduce((s,r)=>s+(num(r.psi)??50),0)/subset.length),d1:subset.reduce((s,r)=>s+(num(r.change_1d)??0),0)/subset.length};
+    }
+
+
+    function forecastHistoryValues(row){
+      return (Array.isArray(row?.market_history)?row.market_history:[])
+        .map(x=>({date:String(x?.date||""),value:num(x?.value)}))
+        .filter(x=>x.date && x.value!==null)
+        .sort((a,b)=>a.date.localeCompare(b.date));
+    }
+
+    function forecastTrailingReturn(hist,periods){
+      if(hist.length<periods+1)return 0;
+      const last=hist[hist.length-1].value,prev=hist[hist.length-1-periods].value;
+      return prev?((last/prev)-1)*100:0;
+    }
+
+    function forecastDailyVol(hist,lookback=20){
+      if(hist.length<3)return 1;
+      const slice=hist.slice(-(lookback+1)),rets=[];
+      for(let i=1;i<slice.length;i++){
+        const a=slice[i-1].value,b=slice[i].value;
+        if(a>0&&b>0)rets.push((b/a-1)*100);
+      }
+      if(rets.length<2)return 1;
+      const mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+      const variance=rets.reduce((s,r)=>s+(r-mean)**2,0)/(rets.length-1);
+      return Math.sqrt(Math.max(variance,0));
+    }
+
+    function forecastFactor(v,scale){return clamp((num(v)??0)/scale,-1,1)}
+
+    function eventAssetForecast(row){
+      const hist=forecastHistoryValues(row);
+      if(hist.length<25)return null;
+      const psi=num(row.psi)??50;
+      const psiLevel=clamp((psi-50)/25,-1,1);
+      const psi1=forecastFactor(row.change_1d,20),psi7=forecastFactor(row.change_7d,30);
+      const mom5=forecastFactor(forecastTrailingReturn(hist,5),6),mom20=forecastFactor(forecastTrailingReturn(hist,20),12);
+      let score=35*psiLevel+20*psi1+20*psi7+12.5*mom5+12.5*mom20;
+      if(row.is_divergence)score*=.82;
+      score=clamp(score,-100,100);
+      const vol=forecastDailyVol(hist,20),headlines=Math.max(0,num(row.headline_count)??0);
+      let confidence=46+Math.abs(score)*.30+Math.min(8,Math.log2(headlines+1)*1.6);
+      if(row.is_divergence)confidence-=10;if(row.is_reversal)confidence-=5;if(vol>4)confidence-=Math.min(8,(vol-4)*1.5);
+      confidence=clamp(Math.round(confidence),42,82);
+      const dir=score>=12?'Bullish':score<=-12?'Bearish':'Neutral';
+      const price=num(row.price_close)??hist[hist.length-1]?.value??null;
+      const horizon=(calendarDays,tradingDays)=>{
+        const sigma=Math.max(.35,vol),strength=Math.abs(score)/100;
+        let center=(score/100)*sigma*Math.sqrt(tradingDays)*1.20;
+        const half=Math.max(.55,sigma*Math.sqrt(tradingDays)*(.58+.12*(1-strength)));
+        let low=center-half,high=center+half;
+        if(dir==='Bullish'&&score>=28)low=Math.max(-half*.25,low);
+        if(dir==='Bearish'&&score<=-28)high=Math.min(half*.25,high);
+        low=clamp(low,-35,35);high=clamp(high,-35,35);
+        return {low,high,confidence:clamp(Math.round(confidence-(calendarDays>7?4:0)),40,82)};
+      };
+      return {dir,score,price,short:horizon(7,5),long:horizon(30,20),historyCount:hist.length};
+    }
+
+    function forecastPct(v){const n=num(v);return n===null?'—':`${n>0?'+':''}${n.toFixed(Math.abs(n)>=10?1:2)}%`}
+    function forecastMoney(v){const n=num(v);if(n===null)return '—';return Math.abs(n)>=1000?n.toLocaleString(undefined,{maximumFractionDigits:2}):n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:3})}
+
+    function renderEventForecast(rows){
+      const candidates=[...rows].sort((a,b)=>assetPressure(b)-assetPressure(a)).map(r=>({row:r,forecast:eventAssetForecast(r)})).filter(x=>x.forecast).slice(0,5);
+      $('eventForecastGrid').innerHTML=candidates.length?candidates.map(({row:r,forecast:f})=>`<article class="event-forecast-card">
+        <div class="event-forecast-top"><h3>${esc(r.display_name||r.instrument)}</h3><span class="event-forecast-dir ${f.dir.toLowerCase()}">${f.dir}</span></div>
+        <div class="event-forecast-price"><strong>${forecastMoney(f.price)}</strong><span>current • PSI ${Math.round(num(r.psi)??50)}</span></div>
+        <div class="event-horizon-grid">
+          <div class="event-horizon"><b>${forecastPct(f.short.low)} to ${forecastPct(f.short.high)}</b><span>7-day expected move</span></div>
+          <div class="event-horizon"><b>${forecastPct(f.long.low)} to ${forecastPct(f.long.high)}</b><span>30-day expected move</span></div>
+        </div>
+        <div class="event-forecast-foot"><span>Confidence <b>${f.short.confidence}%</b></span><span>Model <b>v0.1</b></span></div>
+      </article>`).join(''):'<div class="empty-note" style="grid-column:1/-1">Current affected assets do not yet have enough market history for the forecast model.</div>';
+    }
+
+    function renderChannels(rows){
+      const defs=[
+        {name:"Energy Supply",assets:["Crude Oil","Brent Oil","Natural Gas"],text:"Measures how directly the event is transmitting through oil and gas sentiment."},
+        {name:"Safe-Haven & Dollar",assets:["Gold","US Dollar / DXY"],text:"Tracks defensive positioning through precious metals and dollar sentiment."},
+        {name:"Risk Appetite",assets:["S&P 500 / ES","VIX"],text:"Tracks whether the event is spilling into broad equities and market stress."}
+      ];
+      $("channelGrid").innerHTML=defs.map(d=>{const s=channelStats(rows,d.assets);return `<article class="channel-card"><h3>${esc(d.name)}</h3><div class="channel-score"><b>${s.psi}</b><span>average PSI • ${signed(s.d1)} avg 24H shift</span></div><p>${esc(d.text)}</p></article>`}).join("");
+    }
+
+    function renderWatch(){
+      const aiEvent=aiEventFor(activeEvent);
+      const aiWatch=aiEvent?.quality?.status==="validated"&&Array.isArray(aiEvent?.intelligence?.what_to_watch_next)?aiEvent.intelligence.what_to_watch_next:[];
+      if(aiWatch.length){
+        $("watchList").innerHTML=aiWatch.slice(0,5).map((c,i)=>`<div class="watch-item"><span class="watch-icon">${i+1}</span><div><b>${esc(c.title||"Next catalyst")}</b><span>${esc(c.context||"")}</span></div></div>`).join("");
+        return;
+      }
+      $("watchList").innerHTML=activeEvent.catalysts.map(c=>`<div class="watch-item"><span class="watch-icon">${c.icon}</span><div><b>${esc(c.title)}</b><span>${esc(c.text)}</span></div></div>`).join("");
+    }
+
+    function collectSources(rows){
+      const aiEvent=aiEventFor(activeEvent);
+      if(aiEvent?.quality?.status==="validated"&&Array.isArray(aiEvent.evidence)&&aiEvent.evidence.length){
+        return aiEvent.evidence.slice(0,EVENT_POLICY.displayArticles);
+      }
+      const ranking=rankingFor(activeEvent);
+      if(!ranking)return [];
+      return [...ranking.evidence.matches].sort((a,b)=>{
+        const pa=Number(a.priority||9),pb=Number(b.priority||9);if(pa!==pb)return pa-pb;
+        return String(b.published_utc||'').localeCompare(String(a.published_utc||''));
+      }).slice(0,EVENT_POLICY.displayArticles);
+    }
+
+    function renderSources(rows){
+      const sources=collectSources(rows);
+      $("sourceList").innerHTML=sources.length?sources.map(n=>`<div class="source-item"><a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="source-meta">${esc(n.source||"")}${n.source_priority?` • P${esc(n.source_priority)}`:""} • ${esc(n.instrument||"")}</span></div>`).join(""):'<div class="empty-note">No event-specific live headlines met the current evidence rules.</div>';
+    }
+
+    function renderQueue(){
+      const ranked=eventRankings.slice(0,EVENT_POLICY.maxActive);
+      $("eventQueue").innerHTML=ranked.map((r,i)=>{
+        const selected=r.event.id===activeEvent.id;
+        return `<button type="button" class="queue-item ${selected?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="View ${esc(r.event.title)} intelligence" aria-pressed="${selected?'true':'false'}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-bottom"><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${rankingEvidenceCount(r)} news • ${rankingSourceCount(r)} sources</span></span><span class="queue-action">${selected?'Viewing':'View →'}</span></span></button>`;
+      }).join('');
+      $("eventQueue").querySelectorAll('[data-event-id]').forEach(btn=>btn.addEventListener('click',()=>{
+        const found=EVENT_LIBRARY.find(e=>e.id===btn.dataset.eventId);if(!found)return;
+        const keepY=window.scrollY;
+        activeEvent=found;
+        renderEvent();
+        requestAnimationFrame(()=>window.scrollTo({top:keepY,left:0,behavior:'auto'}));
+      }));
+    }
+
+    function renderEvent(){
+      const rows=getUniverseRows(activeEvent);
+      renderHero(rows);renderEvolution();renderDrivers();renderProfile(rows);renderAssets(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
+      const ts=pulseData?.data_updated_ny||pulseData?.data_updated_utc||pulseData?.generated_utc||"fallback snapshot";
+      $("assetTimestamp").textContent=ts;
+    }
+
+    async function loadPulse(){
+      const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
+      try{
+        const results=await Promise.allSettled([
+          fetch("market_pulse.json",{cache:"no-cache",signal:ctrl.signal}).then(r=>{if(!r.ok)throw new Error(`market_pulse HTTP ${r.status}`);return r.json()}),
+          fetch("event_intelligence.json",{cache:"no-cache",signal:ctrl.signal}).then(r=>{if(!r.ok)throw new Error(`event_intelligence HTTP ${r.status}`);return r.json()})
+        ]);
+        const pulseResult=results[0],aiResult=results[1];
+        if(pulseResult.status!=="fulfilled")throw pulseResult.reason;
+        pulseData=pulseResult.value;
+        aiIntelligenceData=aiResult.status==="fulfilled"?aiResult.value:null;
+        $("dataStatus").textContent=`Updated • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}`;
+      }catch(err){
+        console.warn("Event Intelligence using fallback snapshot",err);
+        pulseData={universe:Object.values(FALLBACK_ROWS)};
+        aiIntelligenceData=null;
+        $("dataStatus").textContent="Fallback snapshot";
+      }finally{clearTimeout(timer)}
+      rankEvents();
+      recordEventSnapshots();
+      activeEvent=activeRankings()[0]?.event||eventRankings[0]?.event||EVENT_LIBRARY[0];
+      renderEvent();
+    }
+
+    function init(){
+      loadPulse();
+    }
+
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+  })();
+  </script>
+</body>
+</html>
