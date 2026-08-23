@@ -635,12 +635,8 @@
 
     const EVENT_POLICY = Object.freeze({
       maxActive:10,
-      evidenceLookbackDays:14,
-      internalArticleTarget:[20,40],
       displayArticles:10,
-      coolingHours:72,
-      historyDays:180,
-      weights:{marketImpact:.35,freshness:.25,crossMarketReach:.20,sourceQuality:.10,persistence:.10}
+      historyDays:180
     });
 
     const EVENT_LIBRARY = [
@@ -918,13 +914,21 @@
     let pulseData=null;
     let aiIntelligenceData=null;
     let eventRankings=[];
-    let activeEvent=EVENT_LIBRARY[0];
+    let activeEvent=null;
 
     const $=id=>document.getElementById(id);
     const num=v=>Number.isFinite(Number(v))?Number(v):null;
     const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
     const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
     const signed=(v,suffix="")=>{const n=num(v);return n===null?"—":`${n>0?"+":""}${n.toFixed(Math.abs(n)>=10?0:1)}${suffix}`};
+    const dataStamp=v=>String(v||"").trim();
+
+    function currentEventIntelligence(data=aiIntelligenceData){
+      if(!data||data.schema!=="PSD Event Intelligence v1"||!Array.isArray(data.event_rankings)||!Array.isArray(data.events))return false;
+      const pulseStamp=dataStamp(pulseData?.data_updated_utc||pulseData?.generated_utc);
+      const intelligenceStamp=dataStamp(data.data_updated_utc);
+      return Boolean(pulseStamp&&intelligenceStamp&&pulseStamp===intelligenceStamp);
+    }
 
     function impactBand(score){
       if(score>=75)return {label:"Very High",cls:"high"};
@@ -977,7 +981,7 @@
 
     function activeRankings(){return currentRankings().filter(r=>r.lifecycle==="Active")}
 
-    function rankingFor(event){return eventRankings.find(r=>r.event.id===event.id)||null}
+    function rankingFor(event){return event?eventRankings.find(r=>r.event.id===event.id)||null:null}
     function rankingEvidenceCount(r){return Number.isFinite(Number(r?.centralEvidenceCount))?Number(r.centralEvidenceCount):Number(r?.evidence?.matches?.length||0)}
     function rankingSourceCount(r){return Number.isFinite(Number(r?.centralSourceCount))?Number(r.centralSourceCount):Number(r?.evidence?.sourceCount||0)}
 
@@ -1020,7 +1024,7 @@
     }
 
     function aiEventFor(event){
-      if(!aiIntelligenceData||!Array.isArray(aiIntelligenceData.events)||!event)return null;
+      if(!currentEventIntelligence()||!event)return null;
       const ranking=rankingFor(event);
       if(!ranking||rankingEvidenceCount(ranking)<2||rankingSourceCount(ranking)<2)return null;
       const item=aiIntelligenceData.events.find(entry=>String(entry?.event_id||"")===String(event.id||""))||null;
@@ -1789,7 +1793,7 @@
     function renderQueue(){
       const ranked=currentRankings();
       $("eventQueue").innerHTML=ranked.length?ranked.map((r,i)=>{
-        const selected=r.event.id===activeEvent.id;
+        const selected=Boolean(activeEvent&&r.event.id===activeEvent.id);
         return `<button type="button" class="queue-item ${selected?'is-selected':''}" data-event-id="${esc(r.event.id)}" title="View ${esc(r.event.title)} intelligence" aria-pressed="${selected?'true':'false'}"><span class="queue-item-top"><span class="queue-rank">#${i+1} Priority</span><span class="queue-score">${r.priority}/100</span></span><span class="queue-title">${esc(r.event.title)}</span><span class="queue-bottom"><span class="queue-meta"><span class="life-pill ${r.lifecycle.toLowerCase()}">${r.lifecycle}</span><span>${rankingEvidenceCount(r)} evidence • ${rankingSourceCount(r)} sources</span></span><span class="queue-action">${selected?'Viewing':'View →'}</span></span></button>`;
       }).join(''):'<div class="empty-note">No current events meet PSD evidence and priority rules.</div>';
       $("eventQueue").querySelectorAll('[data-event-id]').forEach(btn=>btn.addEventListener('click',()=>{
@@ -1801,10 +1805,38 @@
       }));
     }
 
+    function renderNoCurrentEvent(){
+      if(typeof stopSummarySpeech==="function")stopSummarySpeech();
+      $("eventTitle").textContent="No current evidence-backed market event";
+      $("eventHorizon").textContent="Awaiting current engine intelligence";
+      $("primaryChannels").textContent="—";
+      $("regions").textContent="—";
+      $("coverageText").textContent="No current event ranking available";
+      $("eventLifecycle").textContent="Unavailable";
+      $("eventStatus").textContent="Awaiting Engine";
+      $("impactScore").textContent="—";
+      $("impactLabel").textContent="Unavailable";
+      $("eventSummary").innerHTML='<p><b>Current event intelligence is unavailable.</b> PSD will not substitute an old ranking or a predefined event while the latest engine output is missing or stale. The page will populate after a current event_intelligence.json is published.</p>';
+      $("driverGrid").innerHTML='<div class="empty-note">Awaiting current event intelligence.</div>';
+      $("profileList").innerHTML='<div class="empty-note">Awaiting current event intelligence.</div>';
+      $("assetGrid").innerHTML='<div class="empty-note">Awaiting current event intelligence.</div>';
+      $("channelGrid").innerHTML='<div class="empty-note">Awaiting current event intelligence.</div>';
+      $("watchList").innerHTML='<div class="empty-note">Awaiting current event intelligence.</div>';
+      $("sourceList").innerHTML='<div class="empty-note">No current event-specific evidence is available to display.</div>';
+      $("evolutionGrid").innerHTML='<div class="empty-note">Awaiting current event intelligence.</div>';
+      if($("evolutionTimeline"))$("evolutionTimeline").textContent="—";
+      if($("evolutionTrend"))$("evolutionTrend").textContent="Awaiting Engine";
+      const listen=$("summaryListenButton");if(listen){listen.disabled=true;listen.setAttribute("aria-disabled","true");}
+      $("assetTimestamp").textContent=pulseData?.data_updated_ny||pulseData?.data_updated_utc||"Current market timestamp unavailable";
+      renderQueue();
+    }
+
     function renderEvent(){
+      if(!activeEvent){renderNoCurrentEvent();return;}
+      const listen=$("summaryListenButton");if(listen){listen.disabled=false;listen.removeAttribute("aria-disabled");}
       const rows=getUniverseRows(activeEvent);
       renderHero(rows);renderEvolution();renderDrivers();renderProfile(rows);renderAssets(rows);renderChannels(rows);renderWatch();renderSources(rows);renderQueue();
-      const ts=pulseData?.data_updated_ny||pulseData?.data_updated_utc||pulseData?.generated_utc||"fallback snapshot";
+      const ts=pulseData?.data_updated_ny||pulseData?.data_updated_utc||pulseData?.generated_utc||"Current timestamp unavailable";
       $("assetTimestamp").textContent=ts;
     }
 
@@ -1818,17 +1850,24 @@
         const pulseResult=results[0],aiResult=results[1];
         if(pulseResult.status!=="fulfilled")throw pulseResult.reason;
         pulseData=pulseResult.value;
-        aiIntelligenceData=aiResult.status==="fulfilled"?aiResult.value:null;
-        $("dataStatus").textContent=`Updated • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}`;
+        const candidate=aiResult.status==="fulfilled"?aiResult.value:null;
+        aiIntelligenceData=candidate;
+        const updated=pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available";
+        if(!currentEventIntelligence(candidate)){
+          aiIntelligenceData=null;
+          $("dataStatus").textContent=`Market data updated • ${updated} • Event intelligence awaiting current engine update`;
+        }else{
+          $("dataStatus").textContent=`Updated • ${updated}`;
+        }
       }catch(err){
         console.warn("Event Intelligence data unavailable",err);
         pulseData={universe:[]};
         aiIntelligenceData=null;
-        $("dataStatus").textContent="Current engine intelligence unavailable";
+        $("dataStatus").textContent="Current market and event intelligence unavailable";
       }finally{clearTimeout(timer)}
       rankEvents();
       recordEventSnapshots();
-      activeEvent=currentRankings()[0]?.event||EVENT_LIBRARY[0];
+      activeEvent=currentRankings()[0]?.event||null;
       renderEvent();
     }
 
