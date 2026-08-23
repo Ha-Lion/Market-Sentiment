@@ -1739,7 +1739,7 @@
     }
 
 
-    /* Simple welcome popup — three clear actions only — Version 13 */
+    /* Simple welcome popup — three clear actions only — Version 14 (Version 8 base) */
     .home-welcome-box{
       width:min(620px,calc(100vw - 32px));
       max-width:100%;
@@ -1756,7 +1756,7 @@
       0%,100%{border-color:rgba(255,215,128,.42);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.05),0 0 18px rgba(255,205,96,.05)}
       50%{border-color:rgba(255,222,145,.62);box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 0 1px rgba(105,210,255,.08),0 0 28px rgba(255,205,96,.13)}
     }
-    /* Version 13: subtle motion is limited to the three action icons. */
+    /* Version 14: subtle motion is limited to the three action icons. */
     .home-welcome-icon svg{
       transform-origin:50% 50%;
       will-change:transform,filter,opacity;
@@ -1877,7 +1877,7 @@
   <script src="site-nav.js" defer></script>
   <script src="site-theme.js" defer></script>
 
-  <!-- PSD Homepage Welcome Popup v13 -->
+  <!-- PSD Homepage Welcome Popup v14 — Version 8 base + requested changes only -->
   <div class="home-welcome-backdrop" id="home-welcome-popup" aria-hidden="true">
     <section class="home-welcome-box" role="dialog" aria-modal="true" aria-labelledby="home-welcome-title" tabindex="-1">
       <button class="home-welcome-close" id="home-welcome-close" type="button" aria-label="Close welcome message">×</button>
@@ -1891,7 +1891,7 @@
         <div class="home-welcome-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="13.4" cy="11.3" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 25c.7-4.6 3.3-7.1 7.6-7.1 4.2 0 6.8 2.5 7.5 7.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M24.4 10.2v8.2M20.3 14.3h8.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="24.4" cy="14.3" r="6.2" stroke="currentColor" stroke-width="1.2" opacity=".6"/></svg></div>
         <div class="home-welcome-copy">
           <h3 id="home-welcome-member-title">Create a Free Account to Unlock More AI-Built Features</h3>
-          <p id="home-welcome-member-copy">Just email + password.<span class="home-welcome-privacy-note">No spam or marketing emails — only essential account messages.</span></p>
+          <p id="home-welcome-member-copy">Just email + password.<span class="home-welcome-privacy-note">No spam or marketing. Only essential account emails.</span></p>
         </div>
         <a class="home-welcome-action" id="home-welcome-join" href="auth.html">Sign Up / Log In →</a>
       </div>
@@ -2628,27 +2628,23 @@
       const tourButton = document.getElementById("home-welcome-tour");
       const donateButton = document.getElementById("home-welcome-donate");
 
-      /* PSD Homepage Welcome Popup v13
-         - First popup: 2 minutes after the page is opened.
-         - Second popup: guests only, one time, 5 minutes after the first popup is closed.
-         - If the tab is hidden or the website tour is open, the popup waits and tries again.
-         - Maximum two popup appearances per browser tab/session. */
-      if(!popup || !dialog || !closeButton) return;
+      if(!popup || !dialog || !closeButton || !joinButton || !tourButton || !donateButton) return;
 
-      const SESSION_START_KEY = "psd_home_welcome_v13_session_start";
-      const FIRST_SHOWN_KEY = "psd_home_welcome_v13_first_shown";
-      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v13_first_closed_at";
-      const REMINDER_SHOWN_KEY = "psd_home_welcome_v13_reminder_shown";
+      /* PSD Homepage Welcome Popup v14 — Version 8 base
+         - First popup: 2 minutes after page load, once per browser session.
+         - Second popup: guests only, one time, 5 minutes after first close.
+         - If the tab is hidden or the website tour is open, wait until the page is available.
+         - Never a third popup in the same session. */
+      const FIRST_SEEN_KEY = "psd_home_welcome_v14_first_seen";
+      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v14_first_closed_at";
+      const REMINDER_SEEN_KEY = "psd_home_welcome_v14_reminder_seen";
       const FIRST_DELAY_MS = 2 * 60 * 1000;
       const REMINDER_DELAY_MS = 5 * 60 * 1000;
-      const RETRY_DELAY_MS = 1000;
       const TOUR_FALLBACK_URL = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
 
       let lastFocused = null;
       let firstTimer = null;
       let reminderTimer = null;
-      let retryTimer = null;
-      let retryIsReminder = false;
       let authState = null;
 
       function storageGet(key){
@@ -2661,17 +2657,8 @@
         catch(error){}
       }
 
-      function firstShown(){ return storageGet(FIRST_SHOWN_KEY) === "1"; }
-      function reminderShown(){ return storageGet(REMINDER_SHOWN_KEY) === "1"; }
-
-      function ensureSessionStart(){
-        let startedAt = Number(storageGet(SESSION_START_KEY) || 0);
-        if(!startedAt || !Number.isFinite(startedAt)){
-          startedAt = Date.now();
-          storageSet(SESSION_START_KEY, String(startedAt));
-        }
-        return startedAt;
-      }
+      function firstSeen(){ return storageGet(FIRST_SEEN_KEY) === "1"; }
+      function reminderSeen(){ return storageGet(REMINDER_SEEN_KEY) === "1"; }
 
       function navAuthState(){
         const nav = document.getElementById("psd-account-nav-link");
@@ -2692,7 +2679,7 @@
           try{
             const result = await Promise.race([
               window.psdSupabase.auth.getSession(),
-              new Promise(resolve => window.setTimeout(() => resolve(null), 1500))
+              new Promise(resolve => window.setTimeout(() => resolve(null), 1200))
             ]);
             if(result && result.data){
               authState = Boolean(result.data.session);
@@ -2701,6 +2688,8 @@
           }catch(error){}
         }
 
+        /* Unknown is treated as guest only for the reminder check.
+           A later auth event can still cancel the reminder immediately. */
         authState = false;
         return false;
       }
@@ -2711,37 +2700,17 @@
         )).filter(el => el.getClientRects().length > 0 && !el.hasAttribute("hidden"));
       }
 
-      function clearTimer(name){
-        if(name === "first" && firstTimer){
-          window.clearTimeout(firstTimer);
-          firstTimer = null;
-        }else if(name === "reminder" && reminderTimer){
+      function clearReminder(){
+        if(reminderTimer){
           window.clearTimeout(reminderTimer);
           reminderTimer = null;
-        }else if(name === "retry" && retryTimer){
-          window.clearTimeout(retryTimer);
-          retryTimer = null;
         }
-      }
-
-      function pageCanShowPopup(){
-        if(document.visibilityState !== "visible") return false;
-        if(document.body.classList.contains("site-tour-open")) return false;
-        if(document.getElementById("site-tour-overlay")) return false;
-        return true;
       }
 
       function openPopup(isReminder = false){
+        if(document.getElementById("site-tour-overlay")) return false;
+        if(document.visibilityState !== "visible") return false;
         if(popup.classList.contains("is-open")) return true;
-        if(!pageCanShowPopup()) return false;
-
-        if(isReminder){
-          if(reminderShown()) return true;
-          storageSet(REMINDER_SHOWN_KEY, "1");
-        }else{
-          if(firstShown()) return true;
-          storageSet(FIRST_SHOWN_KEY, "1");
-        }
 
         popup.dataset.reminder = isReminder ? "true" : "false";
         lastFocused = document.activeElement;
@@ -2752,70 +2721,57 @@
         return true;
       }
 
-      async function tryOpenWhenAvailable(isReminder){
-        clearTimer("retry");
-        retryIsReminder = Boolean(isReminder);
+      function openWhenReady(isReminder = false){
+        const tryOpen = async () => {
+          if(isReminder){
+            if(reminderSeen()) return;
+            const signedIn = await resolveAuthState();
+            if(signedIn || reminderSeen()) return;
+          }else if(firstSeen()){
+            return;
+          }
 
-        const alreadyDone = isReminder ? reminderShown() : firstShown();
-        if(alreadyDone) return;
+          if(openPopup(isReminder)) return;
+          window.setTimeout(tryOpen, 1000);
+        };
 
-        if(isReminder){
-          const signedIn = await resolveAuthState();
-          if(signedIn) return;
-        }
-
-        if(openPopup(isReminder)) return;
-
-        retryTimer = window.setTimeout(() => {
-          tryOpenWhenAvailable(isReminder);
-        }, RETRY_DELAY_MS);
-      }
-
-      function scheduleFirstPopup(){
-        clearTimer("first");
-        if(firstShown()) return;
-
-        const startedAt = ensureSessionStart();
-        const wait = Math.max(0, FIRST_DELAY_MS - (Date.now() - startedAt));
-        firstTimer = window.setTimeout(() => {
-          firstTimer = null;
-          tryOpenWhenAvailable(false);
-        }, wait);
+        tryOpen();
       }
 
       async function scheduleGuestReminder(){
-        clearTimer("reminder");
-        if(reminderShown()) return;
+        clearReminder();
+        if(reminderSeen()) return;
 
         const closedAt = Number(storageGet(FIRST_CLOSED_AT_KEY) || 0);
-        if(!closedAt || !Number.isFinite(closedAt)) return;
-
-        const signedInNow = await resolveAuthState();
-        if(signedInNow) return;
+        if(!closedAt) return;
 
         const wait = Math.max(0, REMINDER_DELAY_MS - (Date.now() - closedAt));
-        reminderTimer = window.setTimeout(async () => {
-          reminderTimer = null;
-          const signedIn = await resolveAuthState();
-          if(signedIn || reminderShown()) return;
-          tryOpenWhenAvailable(true);
+        reminderTimer = window.setTimeout(() => {
+          openWhenReady(true);
         }, wait);
       }
 
       function closePopup(restoreFocus = true){
+        if(firstTimer){
+          window.clearTimeout(firstTimer);
+          firstTimer = null;
+        }
         if(!popup.classList.contains("is-open")) return;
 
         const isReminder = popup.dataset.reminder === "true";
+
+        if(isReminder){
+          storageSet(REMINDER_SEEN_KEY, "1");
+        }else{
+          storageSet(FIRST_SEEN_KEY, "1");
+          storageSet(FIRST_CLOSED_AT_KEY, String(Date.now()));
+          scheduleGuestReminder();
+        }
 
         popup.classList.remove("is-open");
         popup.setAttribute("aria-hidden", "true");
         document.body.classList.remove("home-welcome-open");
         popup.dataset.reminder = "false";
-
-        if(!isReminder && !storageGet(FIRST_CLOSED_AT_KEY)){
-          storageSet(FIRST_CLOSED_AT_KEY, String(Date.now()));
-          scheduleGuestReminder();
-        }
 
         if(restoreFocus && lastFocused && typeof lastFocused.focus === "function"){
           window.setTimeout(() => lastFocused.focus(), 120);
@@ -2823,26 +2779,18 @@
       }
 
       closeButton.addEventListener("click", () => closePopup());
+      joinButton.addEventListener("click", () => closePopup(false));
+      donateButton.addEventListener("click", () => closePopup(false));
 
-      if(joinButton){
-        joinButton.addEventListener("click", () => closePopup(false));
-      }
-
-      if(donateButton){
-        donateButton.addEventListener("click", () => closePopup(false));
-      }
-
-      if(tourButton){
-        tourButton.addEventListener("click", () => {
-          closePopup(false);
-          const sharedTourButton = document.getElementById("site-tour-button");
-          if(sharedTourButton){
-            window.setTimeout(() => sharedTourButton.click(), 140);
-          }else{
-            window.open(TOUR_FALLBACK_URL, "_blank", "noopener");
-          }
-        });
-      }
+      tourButton.addEventListener("click", () => {
+        closePopup(false);
+        const sharedTourButton = document.getElementById("site-tour-button");
+        if(sharedTourButton){
+          window.setTimeout(() => sharedTourButton.click(), 140);
+        }else{
+          window.open(TOUR_FALLBACK_URL, "_blank", "noopener");
+        }
+      });
 
       popup.addEventListener("click", event => {
         if(event.target === popup) closePopup();
@@ -2876,27 +2824,15 @@
         }
       });
 
-      document.addEventListener("visibilitychange", () => {
-        if(document.visibilityState !== "visible") return;
-
-        if(!firstShown()){
-          scheduleFirstPopup();
-          return;
-        }
-
-        if(!reminderShown() && storageGet(FIRST_CLOSED_AT_KEY)){
-          scheduleGuestReminder();
-        }
-      });
-
       window.addEventListener("psd-member-status-change", event => {
         const visitorType = event && event.detail ? event.detail.visitor_type : "";
         if(visitorType === "member"){
           authState = true;
-          clearTimer("reminder");
-          if(retryIsReminder) clearTimer("retry");
-
+          clearReminder();
+          /* Do not close the first popup if it is already open.
+             Membership only controls the second reminder. */
           if(popup.dataset.reminder === "true" && popup.classList.contains("is-open")){
+            storageSet(REMINDER_SEEN_KEY, "1");
             popup.classList.remove("is-open");
             popup.setAttribute("aria-hidden", "true");
             document.body.classList.remove("home-welcome-open");
@@ -2904,16 +2840,13 @@
           }
         }else if(visitorType === "guest"){
           authState = false;
-          if(firstShown() && storageGet(FIRST_CLOSED_AT_KEY) && !reminderShown()){
-            scheduleGuestReminder();
-          }
         }
       });
 
-      ensureSessionStart();
-      if(!firstShown()){
-        scheduleFirstPopup();
-      }else if(!reminderShown() && storageGet(FIRST_CLOSED_AT_KEY)){
+      /* Fresh v14 session keys keep this version isolated from older popup tests. */
+      if(!firstSeen()){
+        firstTimer = window.setTimeout(() => openWhenReady(false), FIRST_DELAY_MS);
+      }else if(!reminderSeen()){
         scheduleGuestReminder();
       }
     })();
