@@ -503,7 +503,7 @@
 
       <section class="event-queue" aria-label="PSD event priority queue">
         <div class="queue-head">
-          <strong>Top 10 Market Event Priorities <button type="button" class="mi-glossary-info" data-mi-glossary="event-priority" aria-label="Explain Market Event Priorities" aria-expanded="false">i</button></strong>
+          <strong>Current Market Event Priorities <button type="button" class="mi-glossary-info" data-mi-glossary="event-priority" aria-label="Explain Market Event Priorities" aria-expanded="false">i</button></strong>
           <span id="dataStatus">Loading current PSD market data…</span>
         </div>
         <div class="queue-grid" id="eventQueue"></div>
@@ -617,8 +617,8 @@
       </section>
 
       <div class="methodology">
-        <span><b>Market Intelligence architecture:</b> the Top 10 priority tiles are the event navigation. This page explains what is happening, why it matters, how the event is transmitting across assets, and what evidence supports the assessment. Forecasting and prediction remain separate from this intelligence page.</span>
-        <span><b>Priority formula:</b> 35% market impact • 25% freshness • 20% cross-market reach • 10% source quality • 10% persistence. Experimental; not investment advice.</span>
+        <span><b>Market Intelligence architecture:</b> current evidence-backed event tiles are the navigation. This page explains what is happening, why it matters, how the event is transmitting across assets, and what evidence supports the assessment. Forecasting and prediction remain separate from this intelligence page.</span>
+        <span><b>Engine authority:</b> Priority, Event Impact, lifecycle, evidence counts, and source counts come from <code>event_intelligence.json</code>. The browser displays those engine results; it does not independently re-rank events. Experimental; not investment advice.</span>
       </div>
     </div>
   </main>
@@ -915,16 +915,6 @@
 
     ];
 
-    const FALLBACK_ROWS = {
-      "Crude Oil":{instrument:"Crude Oil",display_name:"Crude Oil",category:"energy",related_page:"energy.html",psi:62,sentiment_label:"Bullish",change_1d:1,change_7d:19,price_change_1d_pct:1.25,is_divergence:false,is_extreme:false,latest_news:[]},
-      "Brent Oil":{instrument:"Brent Oil",display_name:"Brent Oil",category:"energy",related_page:"energy.html",psi:57,sentiment_label:"Bullish",change_1d:0,change_7d:3,price_change_1d_pct:2.38,is_divergence:false,is_extreme:false,latest_news:[]},
-      "Natural Gas":{instrument:"Natural Gas",display_name:"Natural Gas",category:"energy",related_page:"energy.html",psi:58,sentiment_label:"Bullish",change_1d:-3,change_7d:7,price_change_1d_pct:-1.85,is_divergence:false,is_extreme:false,latest_news:[]},
-      "Gold":{instrument:"Gold",display_name:"Gold",category:"precious_metals",related_page:"precious-metals.html",psi:64,sentiment_label:"Bullish",change_1d:-5,change_7d:13,price_change_1d_pct:1.95,is_divergence:true,is_extreme:false,latest_news:[]},
-      "US Dollar / DXY":{instrument:"US Dollar / DXY",display_name:"U.S. Dollar Index",category:"forex",related_page:"forex-sentiment-today.html",psi:67,sentiment_label:"Bullish",change_1d:9,change_7d:8,price_change_1d_pct:.07,is_divergence:false,is_extreme:false,latest_news:[]},
-      "S&P 500 / ES":{instrument:"S&P 500 / ES",display_name:"S&P 500",category:"indices",related_page:"indices.html",psi:50,sentiment_label:"Mixed/Neutral",change_1d:-11,change_7d:-14,price_change_1d_pct:-.73,is_divergence:false,is_extreme:false,latest_news:[]},
-      "VIX":{instrument:"VIX",display_name:"VIX",category:"indices",related_page:"indices.html",psi:39,sentiment_label:"Bearish",change_1d:-4,change_7d:-11,price_change_1d_pct:7.79,is_divergence:true,is_extreme:false,latest_news:[]}
-    };
-
     let pulseData=null;
     let aiIntelligenceData=null;
     let eventRankings=[];
@@ -941,70 +931,6 @@
       if(score>=60)return {label:"High",cls:"high"};
       if(score>=42)return {label:"Medium",cls:"medium"};
       return {label:"Low",cls:"low"};
-    }
-
-    function normalizeNewsTime(value){
-      if(!value)return null;
-      const cleaned=String(value).replace(/ UTC$/i,'Z').replace(' ','T');
-      const d=new Date(cleaned);return Number.isNaN(d.getTime())?null:d;
-    }
-
-    function referenceTime(){
-      const candidates=[pulseData?.data_updated_utc,pulseData?.generated_utc].map(normalizeNewsTime).filter(Boolean);
-      if(candidates.length)return new Date(Math.max(...candidates.map(d=>d.getTime())));
-      return new Date();
-    }
-
-    function keywordMatch(title,keyword){
-      const text=String(title||'').toLowerCase(),key=String(keyword||'').toLowerCase().trim();
-      if(!key)return false;
-      if(/[\s\-/]/.test(key))return text.includes(key);
-      const escaped=key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`,'i').test(text);
-    }
-
-    function allUniqueNews(){
-      const seen=new Set(),out=[];
-      (Array.isArray(pulseData?.universe)?pulseData.universe:[]).forEach(row=>{
-        (Array.isArray(row?.latest_news)?row.latest_news:[]).forEach(n=>{
-          const key=String(n?.link||n?.title||'').trim();if(!key||seen.has(key))return;seen.add(key);
-          out.push({...n,instrument:row.instrument,category:row.category});
-        });
-      });
-      return out;
-    }
-
-    function eventEvidence(event){
-      const now=referenceTime(),lookback=EVENT_POLICY.evidenceLookbackDays*86400000;
-      const matches=allUniqueNews().filter(n=>{
-        const dt=normalizeNewsTime(n.published_utc);if(dt && now-dt>lookback)return false;
-        return event.keywords.some(k=>keywordMatch(n.title,k));
-      });
-      const uniqueSources=new Set(matches.map(n=>String(n.source||'').trim()).filter(Boolean));
-      const categories=new Set(matches.map(n=>n.category).filter(Boolean));
-      const within24=matches.filter(n=>{const dt=normalizeNewsTime(n.published_utc);return dt && now-dt<=86400000}).length;
-      const within48=matches.filter(n=>{const dt=normalizeNewsTime(n.published_utc);return dt && now-dt<=172800000}).length;
-      const latestMs=Math.max(0,...matches.map(n=>normalizeNewsTime(n.published_utc)?.getTime()||0));
-      const hoursSinceLatest=latestMs?Math.max(0,(now.getTime()-latestMs)/3600000):999;
-      return {matches,sourceCount:uniqueSources.size,categoryCount:categories.size,within24,within48,hoursSinceLatest};
-    }
-
-    function eventPriority(event){
-      const rows=getUniverseRows(event),evidence=eventEvidence(event);
-      const impact=eventImpactScore(rows);
-      const freshness=clamp(Math.round(evidence.within24*10 + evidence.within48*5 + (evidence.hoursSinceLatest<=12?25:evidence.hoursSinceLatest<=24?15:evidence.hoursSinceLatest<=48?8:0)),0,100);
-      const availableRows=rows.filter(r=>num(r.psi)!==null).length;
-      const reach=clamp(Math.round(evidence.categoryCount*18 + availableRows/Math.max(1,event.assets.length)*40),0,100);
-      const qualityValues=evidence.matches.map(n=>{const p=Number(n.priority||3);return p<=1?100:p===2?82:p===3?65:50});
-      const sourceQuality=clamp(Math.round((qualityValues.length?qualityValues.reduce((a,b)=>a+b,0)/qualityValues.length:35)+Math.min(20,evidence.sourceCount*2)),0,100);
-      const persistence=profileMetrics(rows).find(x=>x[0]==='Persistence')?.[1]||0;
-      const w=EVENT_POLICY.weights;
-      const priority=Math.round(impact*w.marketImpact+freshness*w.freshness+reach*w.crossMarketReach+sourceQuality*w.sourceQuality+persistence*w.persistence);
-      let lifecycle='Archived';
-      if(priority>=55 && evidence.matches.length>=4 && evidence.sourceCount>=3 && evidence.hoursSinceLatest<=EVENT_POLICY.coolingHours) lifecycle='Active';
-      else if(priority>=45 && evidence.matches.length>=2 && evidence.hoursSinceLatest<=EVENT_POLICY.coolingHours*1.5) lifecycle='Emerging';
-      else if(priority>=35 || evidence.matches.length>=1) lifecycle='Watch';
-      return {event,rows,evidence,impact,freshness,reach,sourceQuality,persistence,priority,lifecycle};
     }
 
     function rankEvents(){
@@ -1059,7 +985,7 @@
       const universe=Array.isArray(pulseData?.universe)?pulseData.universe:[];
       return event.assets.map(def=>{
         const live=universe.find(r=>String(r?.instrument||"")===def.instrument);
-        return {...def,...(live||FALLBACK_ROWS[def.instrument]||{instrument:def.instrument})};
+        return {...def,...(live||{instrument:def.instrument})};
       });
     }
 
@@ -1895,10 +1821,10 @@
         aiIntelligenceData=aiResult.status==="fulfilled"?aiResult.value:null;
         $("dataStatus").textContent=`Updated • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}`;
       }catch(err){
-        console.warn("Event Intelligence using fallback snapshot",err);
-        pulseData={universe:Object.values(FALLBACK_ROWS)};
+        console.warn("Event Intelligence data unavailable",err);
+        pulseData={universe:[]};
         aiIntelligenceData=null;
-        $("dataStatus").textContent="Fallback snapshot";
+        $("dataStatus").textContent="Current engine intelligence unavailable";
       }finally{clearTimeout(timer)}
       rankEvents();
       recordEventSnapshots();
@@ -1920,7 +1846,7 @@
     "use strict";
     const defs={
       "market-intelligence":{title:"AI Market Intelligence",text:"PSD combines source-ranked news, Public Sentiment Dash market data, and AI editorial synthesis to explain what changed, why it matters, and what to watch next."},
-      "event-priority":{title:"Market Event Priority",text:"Ranks up to 10 current events only after fresh, source-ranked evidence is found. The score then combines market confirmation, evidence freshness, cross-market reach, source quality, and persistence. An event with no qualifying current evidence is not promoted as a current priority. This is not a trading recommendation."},
+      "event-priority":{title:"Market Event Priority",text:"Shows up to 10 current evidence-backed events ranked by the engine. Priority, lifecycle, evidence breadth, and source breadth come from event_intelligence.json; the webpage does not independently recalculate the ranking. Events with no qualifying current evidence are not promoted as current priorities. This is not a trading recommendation."},
       "market-impact":{title:"PSD Market Impact",text:"A cross-market severity score built from current sentiment shifts, persistence, price response, and divergence signals across the assets affected by the selected event."},
       "event-evolution":{title:"Event Evolution",text:"Compares the selected event with earlier PSD snapshots so you can see whether impact, priority, evidence breadth, source breadth, and lifecycle are rising, easing, or stable."},
       "affected-assets":{title:"Most Affected Assets",text:"Shows the assets most connected to the selected event using current PSD sentiment, recent sentiment change, market-price context, and divergence or reversal signals."},
