@@ -1183,10 +1183,16 @@
       const examples=ordered.filter(n=>n.title).slice(0,4);
       const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b>${esc(n.source||'Source')}:</b> ${esc(String(n.title||'').slice(0,175))}</span>`).join('')}</div>`:'';
 
-      return `<p><b>PSD assessment:</b> This is currently a ${esc(band)}-impact event. The strongest cross-market pressure is concentrated in ${esc(strongestText)}. Across the ${available.length} affected assets, ${bullish} are bullish, ${bearish} bearish and ${neutral} mixed/neutral, so ${esc(balance)}.</p>
-      <p class="summary-context"><b>Market context:</b> The affected group is averaging ${avg24>=0?'+':''}${avg24.toFixed(1)} sentiment points over 24 hours, ${avg7>=0?'+':''}${avg7.toFixed(1)} points over 7 days and ${avgPrice>=0?'+':''}${avgPrice.toFixed(2)}% in the latest one-day price move. ${divergences} asset${divergences===1?' is':'s are'} showing sentiment/price divergence${reversals?`, while ${reversals} reversal flag${reversals===1?' is':'s are'} also active`:''}. That combination helps distinguish a broad, confirmed repricing from a headline-driven move that price has not fully confirmed.</p>
-      <p class="summary-news"><b>News synthesis:</b> ${esc(evidenceText)} are feeding the assessment. Current coverage includes ${outlets.map(name=>`<span class="article-source-name">${esc(name)}</span>`).join(', ')||'the current PSD source set'}. The reporting is clustering around ${esc(driverTitles)}. PSD weighs that source evidence together with sentiment direction, 24H/7D persistence, price response and divergence rather than treating article volume by itself as conviction.</p>
-      <p class="summary-context"><b>Why this matters now:</b> The event remains important while the same themes continue appearing across independent outlets and while multiple affected assets confirm the move. The next meaningful reassessment points are ${esc(catalysts||'new market-moving catalysts')}—developments there could strengthen, weaken or reverse the current impact classification.</p><p class="summary-conclusion"><b>Conclusion:</b> Overall, this remains a ${esc(band)}-impact event. The current signal should be reassessed as ${esc(catalysts||'new market-moving catalysts')} develop.</p>${exampleHtml}`;
+      const evidenceCount=ranking?rankingEvidenceCount(ranking):0;
+      const sourceCount=ranking?rankingSourceCount(ranking):0;
+      const fallbackProof=`<details class="ai-proof"><summary><span class="mi-help-icon" aria-hidden="true">i</span><span>How this intelligence was built</span></summary><div class="ai-proof-box"><p><b>PSD controls the evidence.</b> News and market inputs come from PSD's existing monitored feeds and centralized source policy.</p><p><b>No validated AI editorial synthesis is being shown for this event.</b> The narrative below is a deterministic PSD market-data assessment built from the affected assets, sentiment direction, price behavior, event transmission rules and the current matched-news count.</p><p><b>This event:</b> ${evidenceCount} matched articles from ${sourceCount} sources are currently available in the event evidence window. This is event-specific evidence, not PSD's full monitored source pool.</p></div></details>`;
+      const evidenceStatus=evidenceCount>0
+        ? `${evidenceCount} matched article${evidenceCount===1?'':'s'} from ${sourceCount} source${sourceCount===1?'':'s'} are currently available for this event. Because a validated AI editorial synthesis is not available, the page does not treat those headlines as an AI-generated news consensus.`
+        : `No matched articles are currently available for this event in the active evidence window. This section is therefore not an AI news synthesis; the assessment is being derived from PSD market and sentiment data plus the event's predefined transmission rules.`;
+      return `${fallbackProof}<p><b>PSD market-data assessment:</b> This is currently a ${esc(band)}-impact event. The strongest cross-market pressure is concentrated in ${esc(strongestText)}. Across the ${available.length} affected assets, ${bullish} are bullish, ${bearish} bearish and ${neutral} mixed/neutral, so ${esc(balance)}.</p>
+      <p class="summary-context"><b>Market context:</b> The affected group is averaging ${avg24>=0?'+':''}${avg24.toFixed(1)} sentiment points over 24 hours, ${avg7>=0?'+':''}${avg7.toFixed(1)} points over 7 days and ${avgPrice>=0?'+':''}${avgPrice.toFixed(2)}% in the latest one-day price move. ${divergences} asset${divergences===1?' is':'s are'} showing sentiment/price divergence${reversals?`, while ${reversals} reversal flag${reversals===1?' is':'s are'} also active`:''}. These readings describe the current market response; they do not by themselves establish a news-driven cause.</p>
+      <p class="summary-news"><b>Evidence status:</b> ${evidenceStatus}</p>
+      <p class="summary-context"><b>Why this matters now:</b> The event remains relevant because its mapped transmission channels—${esc(driverTitles)}—can affect the tracked assets even when fresh article evidence is sparse. The next meaningful reassessment points are ${esc(catalysts||'new market-moving catalysts')}—developments there could strengthen, weaken or reverse the current impact classification.</p><p class="summary-conclusion"><b>Conclusion:</b> Overall, this remains a ${esc(band)}-impact event based on current PSD market and sentiment signals. The current signal should be reassessed as ${esc(catalysts||'new market-moving catalysts')} develop.</p>${exampleHtml}`;
     }
 
     function loadEventHistory(){
@@ -1306,11 +1312,11 @@
       if(!root)return [];
       const paragraphs=Array.from(root.querySelectorAll("p")).filter(p=>
         !p.classList.contains("ai-source-line") &&
-        !p.classList.contains("ai-confidence")
+        !p.classList.contains("ai-confidence") &&
+        !p.closest(".ai-proof-box")
       ).map(p=>String(p.innerText||p.textContent||"").replace(/\s+/g," ").trim()).filter(Boolean);
       if(paragraphs.length)return paragraphs;
-      const fallback=String(root.innerText||root.textContent||"").replace(/\s+/g," ").trim();
-      return fallback?[fallback]:[];
+      return [];
     }
 
     function speechFriendlyText(text){
@@ -1359,7 +1365,8 @@
       if(!root)return [];
       return Array.from(root.querySelectorAll("p")).filter(p=>
         !p.classList.contains("ai-source-line") &&
-        !p.classList.contains("ai-confidence")
+        !p.classList.contains("ai-confidence") &&
+        !p.closest(".ai-proof-box")
       );
     }
 
