@@ -354,7 +354,7 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=16-auth-stable", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
@@ -508,8 +508,7 @@
     try{
       const client = await ensureAccountInfrastructure();
       if(!client) return false;
-      const sessionResult = await client.auth.getSession();
-      return !!(sessionResult.data && sessionResult.data.session);
+      return !!(await getStableActiveSession(client));
     }catch(error){
       console.error(error);
       return false;
@@ -641,10 +640,30 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=16-auth-stable", "psd-supabase-client");
     }
 
     return window.psdSupabase;
+  }
+
+  async function getStableActiveSession(client){
+    if(!client || !client.auth) return null;
+
+    for(let attempt = 0; attempt < 5; attempt += 1){
+      try{
+        const result = await client.auth.getSession();
+        const session = result && result.data ? result.data.session : null;
+        if(session) return session;
+      }catch(error){
+        if(attempt === 4) console.error(error);
+      }
+
+      if(attempt < 4){
+        await new Promise(function(resolve){ window.setTimeout(resolve, 100); });
+      }
+    }
+
+    return null;
   }
 
   async function refreshAccountNavigation(){
@@ -656,8 +675,7 @@
       const client = await ensureAccountInfrastructure();
       if(!client) return;
 
-      const sessionResult = await client.auth.getSession();
-      const session = sessionResult.data && sessionResult.data.session;
+      const session = await getStableActiveSession(client);
 
       const ribbonWatchlistLink =
         document.getElementById("psd-ribbon-watchlist-link");
@@ -721,7 +739,8 @@
         return;
       }
 
-      await openAuthPopup(event);
+      event.preventDefault();
+      window.location.href = "auth.html";
     });
 
     if(signout){
