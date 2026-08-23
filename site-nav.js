@@ -635,6 +635,7 @@
       .psd-shared-header .psd-nav-link[href="market-pulse.html"],
       .psd-shared-header .psd-nav-link[href="market-intelligence.html"]{
         color:#f2cf72!important;
+        font-size:13px!important;
         font-weight:900!important;
         letter-spacing:.12px!important;
         background:transparent!important;
