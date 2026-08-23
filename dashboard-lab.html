@@ -418,7 +418,7 @@
       background:transparent!important;
       box-shadow:none!important;
       color:var(--ei-accent-text)!important;
-      font:900 12px/1.25 Inter,"Segoe UI",Arial,sans-serif!important;
+      font:900 13.5px/1.25 Inter,"Segoe UI",Arial,sans-serif!important;
       white-space:nowrap;
       list-style:none;
       cursor:pointer;
@@ -427,20 +427,27 @@
     .mi-method summary::-webkit-details-marker,
     .hero-main .ai-proof summary::-webkit-details-marker{display:none}
     .mi-method summary::before,
-    .hero-main .ai-proof summary::before{content:"▸";font-size:10px;line-height:1;color:var(--ei-accent-text)}
-    .mi-method[open] summary::before,
-    .hero-main .ai-proof[open] summary::before{content:"▾"}
+    .hero-main .ai-proof summary::before{content:none!important}
     body.dark-mode .mi-method summary,
     body.dark-mode .hero-main .ai-proof summary{background:transparent!important;color:#ffd36a!important;border:0!important}
 
-    .mi-glossary-info{
-      display:inline-grid;place-items:center;width:16px;height:16px;min-width:16px;margin-left:3px;padding:0;
-      border:1px solid #64748b;border-radius:50%;background:#18202e;color:#ef4444;
-      font:800 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;vertical-align:1px;
-      transition:.15s ease;box-shadow:none!important
+    .mi-glossary-info,
+    .mi-help-icon{
+      display:inline-grid;place-items:center;width:16px;height:16px;min-width:16px;padding:0;
+      border:1px solid #9aa9b7;border-radius:50%;background:#f7fafc;color:#d32f2f;
+      font:800 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;vertical-align:1px;box-shadow:none!important
     }
+    .mi-glossary-info{margin-left:4px;cursor:pointer;transition:.15s ease}
+    .mi-help-icon{margin:0 5px 0 0;cursor:inherit;pointer-events:none}
     .mi-glossary-info:hover,.mi-glossary-info:focus-visible,.mi-glossary-info[aria-expanded="true"]{
-      border-color:#60a5fa;background:#1d4ed8;color:#fff;outline:none
+      border-color:#60a5fa;background:#eaf3ff;color:#d32f2f;outline:none
+    }
+    body.dark-mode .mi-glossary-info,
+    body.dark-mode .mi-help-icon{background:#18202e;color:#ef4444;border-color:#64748b}
+    body.dark-mode .mi-glossary-info:hover,
+    body.dark-mode .mi-glossary-info:focus-visible,
+    body.dark-mode .mi-glossary-info[aria-expanded="true"]{
+      border-color:#60a5fa;background:#1d4ed8;color:#fff
     }
     .mi-glossary-popover{
       position:fixed;z-index:100000;width:min(320px,calc(100vw - 24px));padding:12px 14px;
@@ -472,7 +479,7 @@
           <p>PSD uses AI to connect source-ranked financial news with sentiment and market behavior — showing what matters, why it matters, and what to watch next.</p>
           <div class="mi-flow" aria-label="PSD intelligence process"><span>Source-Ranked News</span><i>→</i><span>PSD Market Data</span><i>→</i><span>AI Editorial Synthesis</span><i>→</i><span>Market Intelligence</span></div>
         </div>
-        <details class="mi-method"><summary><span>How PSD AI Works</span><button type="button" class="mi-glossary-info" data-mi-glossary="ai-works" aria-label="Glossary explanation for How PSD AI Works" aria-expanded="false">i</button></summary><div class="mi-method-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p></div></details>
+        <details class="mi-method"><summary><span class="mi-help-icon" aria-hidden="true">i</span><span>How PSD AI Works</span></summary><div class="mi-method-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p></div></details>
       </section>
 
       <section class="event-queue" aria-label="PSD event priority queue">
@@ -1120,7 +1127,7 @@
         ...rankingSources
       ].map(v=>String(v||"").trim()).filter(Boolean))];
       const meta=`<div class="ai-intel-meta"><span class="ai-intel-brand">PSD AI Editorial Intelligence</span><span>${evidenceCount} selected articles • ${sourceCount} independent outlets • PSD market data</span></div>`;
-      const proof=`<details class="ai-proof"><summary><span>How this intelligence was built</span><button type="button" class="mi-glossary-info" data-mi-glossary="intelligence-built" aria-label="Glossary explanation for how this intelligence was built" aria-expanded="false">i</button></summary><div class="ai-proof-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p><p><b>This analysis:</b> ${evidenceCount} selected articles from ${sourceCount} independent outlets matched this event and were supplied to the AI. This is the event-specific evidence set, not PSD's full source pool.</p></div></details>`;
+      const proof=`<details class="ai-proof"><summary><span class="mi-help-icon" aria-hidden="true">i</span><span>How this intelligence was built</span></summary><div class="ai-proof-box"><p><b>PSD controls the evidence.</b> News outlets are ranked by the same centralized source policy used across the site.</p><p><b>AI synthesizes — it does not choose the facts.</b> It receives selected source evidence plus PSD sentiment and market data, compares independent reporting, and preserves material conflicts.</p><p><b>Every analysis stays traceable.</b> Supporting outlets and evidence remain visible below the intelligence.</p><p><b>This analysis:</b> ${evidenceCount} selected articles from ${sourceCount} independent outlets matched this event and were supplied to the AI. This is the event-specific evidence set, not PSD's full source pool.</p></div></details>`;
       const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b class="article-source-name">${esc(p.source||"Source")}:</b> ${highlightSourceNames(p.emphasis||"",namedSources)}</span>`).join("")}</div>`:"";
       const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
       const exampleHtml=examples.length?`<div class="summary-examples">${examples.map(n=>`<span class="summary-example"><b class="article-source-name">${esc(n.source||"Source")}:</b> ${esc(String(n.title||"").slice(0,175))}</span>`).join("")}</div>`:"";
@@ -1716,9 +1723,7 @@
     "use strict";
     const defs={
       "market-intelligence":{title:"AI Market Intelligence",text:"PSD combines source-ranked news, Public Sentiment Dash market data, and AI editorial synthesis to explain what changed, why it matters, and what to watch next."},
-      "ai-works":{title:"How PSD AI Works",text:"PSD controls the source policy and evidence. AI receives the selected evidence plus PSD market data, synthesizes it, preserves material conflicts, and does not browse for outside facts."},
       "event-priority":{title:"Market Event Priority",text:"Ranks tracked market events by current impact, evidence freshness, cross-market reach, source quality, and persistence. A higher score means the event currently deserves more attention; it is not a trading recommendation."},
-      "intelligence-built":{title:"How This Intelligence Was Built",text:"This opens the evidence method for the selected event. The displayed article and outlet counts are the event-specific evidence packet supplied to AI, not the size of PSD's full monitored source pool."},
       "market-impact":{title:"PSD Market Impact",text:"A cross-market severity score built from current sentiment shifts, persistence, price response, and divergence signals across the assets affected by the selected event."},
       "event-evolution":{title:"Event Evolution",text:"Compares the selected event with earlier PSD snapshots so you can see whether impact, priority, evidence breadth, source breadth, and lifecycle are rising, easing, or stable."},
       "affected-assets":{title:"Most Affected Assets",text:"Shows the assets most connected to the selected event using current PSD sentiment, recent sentiment change, market-price context, and divergence or reversal signals."},
