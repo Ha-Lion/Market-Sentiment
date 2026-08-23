@@ -320,11 +320,23 @@
     .profile-row label{font-size:12.7px}.profile-value{font-size:11.7px}
     body.dark-mode .summary-context{background:#223341;border-left-color:#71899d}
 
+    /* Market Intelligence V4: cross-browser free read-aloud + compact speed control. */
+    .summary-audio-controls{display:flex;justify-content:flex-end;align-items:center;gap:7px;flex-wrap:wrap;margin:1px 0 6px}
+    .summary-listen-button{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid rgba(174,128,28,.58);border-radius:999px;background:transparent;color:var(--ei-accent-text);font:800 10.8px/1.1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;transition:transform .16s ease,color .16s ease,border-color .16s ease,background .16s ease}
+    .summary-listen-button:hover,.summary-listen-button:focus-visible{transform:translateY(-1px);border-color:#c79524;background:var(--ei-gold-soft);outline:none}
+    .summary-listen-button[aria-pressed="true"]{border-color:#c79524;background:var(--ei-gold-soft)}
+    .summary-listen-button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .summary-speed-wrap{display:inline-flex;align-items:center;gap:5px;color:var(--ei-muted);font:800 10.2px/1.1 Inter,"Segoe UI",Arial,sans-serif}
+    .summary-speed-select{min-height:27px;padding:3px 22px 3px 8px;border:1px solid rgba(174,128,28,.45);border-radius:999px;background:var(--ei-panel);color:var(--ei-ink);font:800 10.2px/1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer}
+    .summary-speed-select:hover,.summary-speed-select:focus-visible{border-color:#c79524;outline:none}
+    body.dark-mode .summary-listen-button{color:#ffd36a}
+    body.dark-mode .summary-speed-select{background:#182532;color:#f4f7fa;border-color:#806722}
+
   </style>
 </head>
 <body>
   <div id="site-header"></div>
-  <script src="site-nav.js?v=18" defer></script>
+  <script src="site-nav.js?v=19" defer></script>
   <script src="site-theme.js" defer></script>
 
   <main class="event-page">
@@ -333,7 +345,7 @@
       <section class="mi-intro" aria-label="PSD AI Market Intelligence overview">
         <div class="mi-intro-main">
           <span class="mi-intro-label">AI-Powered Market Intelligence</span>
-          <h1>From Market Noise to Market Intelligence</h1>
+          <h1>From Market Noise to Market Intelligence — Provided by AI</h1>
           <p>PSD uses AI to connect source-ranked financial news with sentiment and market behavior — showing what matters, why it matters, and what to watch next.</p>
           <div class="mi-flow" aria-label="PSD intelligence process"><span>Source-Ranked News</span><i>→</i><span>PSD Market Data</span><i>→</i><span>AI Editorial Synthesis</span><i>→</i><span>Market Intelligence</span></div>
         </div>
@@ -358,6 +370,19 @@
               <span id="eventHorizon" class="event-chip compact-chip">Short-Term</span>
             </div>
             <h1 id="eventTitle">Middle East Escalation — Cross-Market Impact</h1>
+          </div>
+          <div class="summary-audio-controls" aria-label="AI summary audio controls">
+            <button type="button" class="summary-listen-button" id="summaryListenButton" aria-pressed="false">
+              <span aria-hidden="true">🔊</span><span class="summary-listen-label">Listen to Summary</span>
+            </button>
+            <label class="summary-speed-wrap" for="summarySpeechSpeed">
+              <span>Speed</span>
+              <select class="summary-speed-select" id="summarySpeechSpeed" aria-label="Summary reading speed">
+                <option value="0.80">Slow</option>
+                <option value="0.89" selected>Normal</option>
+                <option value="1.05">Fast</option>
+              </select>
+            </label>
           </div>
           <div class="summary" id="eventSummary">Loading event assessment…</div>
           <div class="hero-meta">
@@ -1007,7 +1032,209 @@
       $('evolutionTimeline').innerHTML=recent.length?recent.map(s=>{const d=new Date(s.stamp);const when=Number.isNaN(d.getTime())?String(s.stamp):d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});return `<div class="evolution-point"><strong>Impact ${esc(s.impact)} • P${esc(s.priority)}</strong><span>${esc(s.lifecycle)} • ${esc(s.news)} news / ${esc(s.sources)} sources</span><span>${esc(when)}</span></div>`}).join(''):'<div class="evolution-empty" style="grid-column:1/-1">The timeline will build automatically as new PSD feed timestamps are loaded.</div>';
     }
 
+    let summarySpeechActive=false;
+    let summarySpeechToken=0;
+
+    function preferredSummaryVoice(){
+      if(!("speechSynthesis" in window))return null;
+      const allVoices=window.speechSynthesis.getVoices();
+      if(!allVoices.length)return null;
+
+      const englishVoices=allVoices.filter(v=>/^en(?:-|_)/i.test(v.lang||""));
+      const voices=englishVoices.length?englishVoices:allVoices;
+
+      const warmFemaleNames=[
+        "ava","aria","jenny","samantha","victoria","karen","moira","fiona",
+        "serena","tessa","zira","hazel","susan","allison","joanna","salli",
+        "amy","emma","olivia","sophie","libby","michelle","natasha","sonia",
+        "linda","lisa","veena","female"
+      ];
+      const likelyMaleNames=[
+        "david","mark","guy","daniel","george","james","richard","thomas",
+        "fred","alex","ralph","bruce","lee","aaron","ryan"
+      ];
+
+      return voices.map(voice=>{
+        const name=(String(voice.name||"")+" "+String(voice.voiceURI||"")).toLowerCase();
+        let score=0;
+
+        /* Prefer the highest-quality free voice exposed by this browser/device. */
+        if(name.includes("online")&&name.includes("natural"))score+=520;
+        else if(name.includes("natural"))score+=430;
+        if(name.includes("neural"))score+=410;
+        if(name.includes("enhanced"))score+=300;
+        if(name.includes("premium"))score+=280;
+        if(name.includes("high quality"))score+=240;
+
+        warmFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=220-index;});
+        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=260;});
+
+        /* Useful browser/platform fallbacks when gender is not exposed in the API. */
+        if(name.includes("microsoft"))score+=65;
+        if(name.includes("google us english"))score+=95;
+        else if(name.includes("google")&&/^en/i.test(voice.lang||""))score+=48;
+        if(name.includes("apple"))score+=35;
+        if(voice.default)score+=30;
+
+        if(/en[-_]us/i.test(voice.lang||""))score+=30;
+        else if(/en[-_]gb/i.test(voice.lang||""))score+=22;
+        else if(/^en/i.test(voice.lang||""))score+=14;
+
+        /* Penalize older synthetic engines when a smoother alternative exists. */
+        if(name.includes("desktop"))score-=120;
+        if(name.includes("espeak"))score-=260;
+        if(name.includes("festival"))score-=220;
+        if(name.includes("compact"))score-=35;
+
+        return {voice,score};
+      }).sort((a,b)=>b.score-a.score)[0].voice;
+    }
+
+    function summarySpeechRate(){
+      const select=$("summarySpeechSpeed");
+      const rate=Number(select?.value);
+      return Number.isFinite(rate)?Math.min(1.25,Math.max(.65,rate)):.89;
+    }
+
+    function summarySpeechParagraphs(){
+      const root=$("eventSummary");
+      if(!root)return [];
+      const paragraphs=Array.from(root.querySelectorAll("p")).filter(p=>
+        !p.classList.contains("ai-source-line") &&
+        !p.classList.contains("ai-confidence")
+      ).map(p=>String(p.innerText||p.textContent||"").replace(/\s+/g," ").trim()).filter(Boolean);
+      if(paragraphs.length)return paragraphs;
+      const fallback=String(root.innerText||root.textContent||"").replace(/\s+/g," ").trim();
+      return fallback?[fallback]:[];
+    }
+
+    function speechFriendlyText(text){
+      return String(text||"")
+        .replace(/\s*[—–]\s*/g,", ")
+        .replace(/\bPSD\b/g,"P S D")
+        .replace(/\bETFs\b/g,"E T F's")
+        .replace(/\bETF\b/g,"E T F")
+        .replace(/\bSEC\b/g,"S E C")
+        .replace(/\bCPI\b/g,"C P I")
+        .replace(/\bAI\b/g,"A I")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    function splitSpeechText(paragraphs,maxLength=520){
+      const chunks=[];
+      paragraphs.forEach(paragraph=>{
+        const clean=speechFriendlyText(paragraph);
+        const sentences=clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[clean];
+        let chunk="";
+        sentences.forEach(sentence=>{
+          const part=sentence.trim();
+          if(!part)return;
+          if((chunk+" "+part).trim().length<=maxLength){
+            chunk=(chunk+" "+part).trim();
+          }else{
+            if(chunk)chunks.push(chunk);
+            if(part.length<=maxLength){chunk=part;return;}
+            const words=part.split(/\s+/);
+            let smaller="";
+            words.forEach(word=>{
+              if((smaller+" "+word).trim().length<=maxLength)smaller=(smaller+" "+word).trim();
+              else{if(smaller)chunks.push(smaller);smaller=word;}
+            });
+            chunk=smaller;
+          }
+        });
+        if(chunk)chunks.push(chunk);
+      });
+      return chunks;
+    }
+
+    function setSummarySpeechButton(active){
+      const button=$("summaryListenButton");
+      if(!button)return;
+      button.setAttribute("aria-pressed",active?"true":"false");
+      const label=button.querySelector(".summary-listen-label");
+      if(label)label.textContent=active?"Stop Reading":"Listen to Summary";
+      const icon=button.querySelector("span[aria-hidden='true']");
+      if(icon)icon.textContent=active?"■":"🔊";
+    }
+
+    function stopSummarySpeech(){
+      summarySpeechToken+=1;
+      summarySpeechActive=false;
+      if("speechSynthesis" in window)window.speechSynthesis.cancel();
+      setSummarySpeechButton(false);
+    }
+
+    function speakSummary(){
+      if(!("speechSynthesis" in window))return;
+      if(summarySpeechActive){stopSummarySpeech();return;}
+      const chunks=splitSpeechText(summarySpeechParagraphs());
+      if(!chunks.length)return;
+      stopSummarySpeech();
+      summarySpeechActive=true;
+      const token=summarySpeechToken;
+      setSummarySpeechButton(true);
+      let index=0;
+
+      const speakNext=()=>{
+        if(!summarySpeechActive||token!==summarySpeechToken)return;
+        if(index>=chunks.length){
+          summarySpeechActive=false;
+          setSummarySpeechButton(false);
+          return;
+        }
+        const utterance=new SpeechSynthesisUtterance(chunks[index++]);
+        const voice=preferredSummaryVoice();
+        if(voice)utterance.voice=voice;
+        utterance.lang=voice?.lang||"en-US";
+        /* Keep V3's softer delivery while allowing the visitor to choose speed. */
+        utterance.rate=summarySpeechRate();
+        utterance.pitch=1.0;
+        utterance.volume=.94;
+        const pauseMs=summarySpeechRate()<.85?175:summarySpeechRate()>1?105:140;
+        utterance.onend=()=>window.setTimeout(speakNext,pauseMs);
+        utterance.onerror=()=>{
+          summarySpeechActive=false;
+          setSummarySpeechButton(false);
+        };
+        window.speechSynthesis.speak(utterance);
+      };
+      speakNext();
+    }
+
+    function initializeSummarySpeech(){
+      const button=$("summaryListenButton");
+      const speedSelect=$("summarySpeechSpeed");
+      if(!button)return;
+      if(!("speechSynthesis" in window)||typeof window.SpeechSynthesisUtterance!=="function"){
+        const controls=button.closest(".summary-audio-controls");
+        if(controls)controls.hidden=true;
+        else button.hidden=true;
+        return;
+      }
+
+      /* Prime the voice list; Chrome, Edge and Safari may populate voices asynchronously. */
+      window.speechSynthesis.getVoices();
+      if(typeof window.speechSynthesis.addEventListener==="function"){
+        window.speechSynthesis.addEventListener("voiceschanged",()=>window.speechSynthesis.getVoices(),{once:true});
+      }
+
+      button.addEventListener("click",speakSummary);
+
+      if(speedSelect){
+        speedSelect.addEventListener("change",()=>{
+          if(!summarySpeechActive)return;
+          stopSummarySpeech();
+          window.setTimeout(speakSummary,60);
+        });
+      }
+
+      window.addEventListener("beforeunload",stopSummarySpeech,{once:true});
+    }
+
     function renderHero(rows){
+      stopSummarySpeech();
       const score=eventImpactScore(rows),band=impactBand(score);
       $("eventTitle").textContent=activeEvent.title;
       $("eventHorizon").textContent=activeEvent.horizon;
@@ -1219,6 +1446,7 @@
     }
 
     function init(){
+      initializeSummarySpeech();
       loadPulse();
     }
 
