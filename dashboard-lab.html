@@ -1047,55 +1047,37 @@
 
     function preferredSummaryVoice(){
       if(!("speechSynthesis" in window))return null;
-      const allVoices=window.speechSynthesis.getVoices();
-      if(!allVoices.length)return null;
-
-      const englishVoices=allVoices.filter(v=>/^en(?:-|_)/i.test(v.lang||""));
-      const voices=englishVoices.length?englishVoices:allVoices;
+      const voices=window.speechSynthesis.getVoices().filter(v=>/^en(?:-|_)/i.test(v.lang||""));
+      if(!voices.length)return null;
 
       const warmFemaleNames=[
-        "ava","aria","jenny","samantha","victoria","karen","moira","fiona",
-        "serena","tessa","zira","hazel","susan","allison","joanna","salli",
-        "amy","emma","olivia","sophie","libby","michelle","natasha","sonia",
-        "linda","lisa","veena","female"
+        "aria","jenny","ava","sonia","emma","samantha","serena","susan",
+        "moira","karen","victoria","fiona","tessa","joanna","salli"
       ];
-      const likelyMaleNames=[
-        "david","mark","guy","daniel","george","james","richard","thomas",
-        "fred","alex","ralph","bruce","lee","aaron","ryan"
-      ];
+      const likelyMaleNames=["david","mark","guy","daniel","george","james","richard","thomas","fred"];
 
       return voices.map(voice=>{
-        const name=(String(voice.name||"")+" "+String(voice.voiceURI||"")).toLowerCase();
+        const name=String(voice.name||"").toLowerCase();
         let score=0;
 
-        /* Prefer the highest-quality free voice exposed by this browser/device. */
-        if(name.includes("online")&&name.includes("natural"))score+=520;
-        else if(name.includes("natural"))score+=430;
-        if(name.includes("neural"))score+=410;
-        if(name.includes("enhanced"))score+=300;
-        if(name.includes("premium"))score+=280;
-        if(name.includes("high quality"))score+=240;
+        /* Prefer the better free browser/OS voices when they exist. */
+        if(name.includes("online")&&name.includes("natural"))score+=420;
+        else if(name.includes("natural"))score+=340;
+        if(name.includes("neural"))score+=320;
+        if(name.includes("enhanced"))score+=220;
+        if(name.includes("premium"))score+=200;
+        if(voice.localService===false)score+=45;
 
-        warmFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=220-index;});
-        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=260;});
+        warmFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=155-index;});
+        if(name.includes("microsoft"))score+=45;
+        if(name.includes("google"))score+=28;
+        if(/en[-_]us/i.test(voice.lang||""))score+=20;
+        else if(/en[-_]gb/i.test(voice.lang||""))score+=14;
 
-        /* Useful browser/platform fallbacks when gender is not exposed in the API. */
-        if(name.includes("microsoft"))score+=65;
-        if(name.includes("google us english"))score+=95;
-        else if(name.includes("google")&&/^en/i.test(voice.lang||""))score+=48;
-        if(name.includes("apple"))score+=35;
-        if(voice.default)score+=30;
-
-        if(/en[-_]us/i.test(voice.lang||""))score+=30;
-        else if(/en[-_]gb/i.test(voice.lang||""))score+=22;
-        else if(/^en/i.test(voice.lang||""))score+=14;
-
-        /* Penalize older synthetic engines when a smoother alternative exists. */
+        /* Older desktop/eSpeak-style voices are usually noticeably more robotic. */
         if(name.includes("desktop"))score-=120;
-        if(name.includes("espeak"))score-=260;
-        if(name.includes("festival"))score-=220;
-        if(name.includes("compact"))score-=35;
-
+        if(name.includes("espeak"))score-=220;
+        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=180;});
         return {voice,score};
       }).sort((a,b)=>b.score-a.score)[0].voice;
     }
