@@ -1739,7 +1739,7 @@
     }
 
 
-    /* Simple welcome popup — three clear actions only — Version 9 */
+    /* Simple welcome popup — three clear actions only — Version 10 */
     .home-welcome-box{
       width:min(620px,calc(100vw - 32px));
       max-width:100%;
@@ -1839,6 +1839,7 @@
     .home-welcome-icon svg{width:25px;height:25px;display:block;color:inherit}
     .home-welcome-copy h3{margin:0 0 3px;font-size:16.5px;line-height:1.2;color:#fff}
     .home-welcome-copy p{margin:0;color:#fff!important;opacity:.92!important;font-size:11.8px;line-height:1.4}
+    .home-welcome-privacy-note{display:block;margin-top:7px;color:#b8c7d3;font-size:10.6px;line-height:1.35;font-weight:600}
     .home-welcome-action{min-width:140px;min-height:38px;padding:8px 13px;font-size:11px}
     .home-welcome-member .home-welcome-icon{
       color:#8fe8c7;
@@ -1890,7 +1891,7 @@
         <div class="home-welcome-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="13.4" cy="11.3" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 25c.7-4.6 3.3-7.1 7.6-7.1 4.2 0 6.8 2.5 7.5 7.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M24.4 10.2v8.2M20.3 14.3h8.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="24.4" cy="14.3" r="6.2" stroke="currentColor" stroke-width="1.2" opacity=".6"/></svg></div>
         <div class="home-welcome-copy">
           <h3 id="home-welcome-member-title">Create a Free Account to Unlock More AI-Built Features</h3>
-          <p id="home-welcome-member-copy">Just email + password.</p>
+          <p id="home-welcome-member-copy">Just email + password.<span class="home-welcome-privacy-note">No spam or marketing emails — only essential account messages.</span></p>
         </div>
         <a class="home-welcome-action" id="home-welcome-join" href="auth.html">Sign Up / Log In →</a>
       </div>
@@ -2629,14 +2630,16 @@
 
       if(!popup || !dialog || !closeButton || !joinButton || !tourButton || !donateButton) return;
 
-      /* PSD Homepage Welcome Popup v8
-         - First popup: everyone, once per browser session.
-         - Second popup: guests only, one time, 3 minutes after first close.
+      /* PSD Homepage Welcome Popup v10
+         - First popup: 2 minutes after page load, once per browser session.
+         - Second popup: guests only, one time, 5 minutes after first close.
+         - Reminder waits until the page is visible before opening.
          - Never a third popup in the same session. */
-      const FIRST_SEEN_KEY = "psd_home_welcome_v8_first_seen";
-      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v8_first_closed_at";
-      const REMINDER_SEEN_KEY = "psd_home_welcome_v8_reminder_seen";
-      const REMINDER_DELAY_MS = 3 * 60 * 1000;
+      const FIRST_SEEN_KEY = "psd_home_welcome_v10_first_seen";
+      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v10_first_closed_at";
+      const REMINDER_SEEN_KEY = "psd_home_welcome_v10_reminder_seen";
+      const FIRST_DELAY_MS = 2 * 60 * 1000;
+      const REMINDER_DELAY_MS = 5 * 60 * 1000;
       const TOUR_FALLBACK_URL = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
 
       let lastFocused = null;
@@ -2727,6 +2730,18 @@
         reminderTimer = window.setTimeout(async () => {
           const signedIn = await resolveAuthState();
           if(signedIn || reminderSeen()) return;
+
+          if(document.visibilityState !== "visible"){
+            const showWhenVisible = async () => {
+              if(document.visibilityState !== "visible") return;
+              document.removeEventListener("visibilitychange", showWhenVisible);
+              const nowSignedIn = await resolveAuthState();
+              if(!nowSignedIn && !reminderSeen()) openPopup(true);
+            };
+            document.addEventListener("visibilitychange", showWhenVisible);
+            return;
+          }
+
           openPopup(true);
         }, wait);
       }
@@ -2823,9 +2838,20 @@
         }
       });
 
-      /* New v8 session key guarantees the corrected popup is testable now. */
+      /* Version 10 uses fresh session keys so the timing change is immediately testable. */
       if(!firstSeen()){
-        firstTimer = window.setTimeout(() => openPopup(false), 1100);
+        firstTimer = window.setTimeout(() => {
+          if(document.visibilityState === "visible"){
+            openPopup(false);
+          }else{
+            const showFirstWhenVisible = () => {
+              if(document.visibilityState !== "visible") return;
+              document.removeEventListener("visibilitychange", showFirstWhenVisible);
+              if(!firstSeen()) openPopup(false);
+            };
+            document.addEventListener("visibilitychange", showFirstWhenVisible);
+          }
+        }, FIRST_DELAY_MS);
       }else if(!reminderSeen()){
         scheduleGuestReminder();
       }
