@@ -879,12 +879,9 @@
     function renderAiSummary(aiEvent,rows,score){
       const intel=aiEvent?.intelligence||{};
       if(aiEvent?.quality?.status!=="validated"||!intel.assessment||!intel.news_synthesis)return "";
-      const provider=String(aiEvent.provider||aiIntelligenceData?.ai?.active_provider||"AI");
-      const model=String(aiEvent.model||aiIntelligenceData?.ai?.active_model||"");
       const evidenceCount=Number(aiEvent?.quality?.evidence_articles||aiEvent?.evidence?.length||0);
       const sourceCount=Number(aiEvent?.quality?.unique_sources||new Set((aiEvent.evidence||[]).map(x=>x.source).filter(Boolean)).size||0);
-      const generated=String(aiEvent.generated_utc||aiIntelligenceData?.generated_utc||"");
-      const meta=`<div class="ai-intel-meta"><span>PSD AI synthesis</span><span>${esc(provider)}${model?` • ${esc(model)}`:""}</span><span>${evidenceCount} source-ranked articles • ${sourceCount} outlets</span>${generated?`<span>${esc(generated)}</span>`:""}</div>`;
+      const meta=`<div class="ai-intel-meta"><span>PSD AI synthesis</span><span>${evidenceCount} source-ranked articles • ${sourceCount} outlets</span></div>`;
       const perspectives=Array.isArray(intel.outlet_perspectives)?intel.outlet_perspectives.slice(0,6):[];
       const perspectiveHtml=perspectives.length?`<div class="summary-outlets">${perspectives.map(p=>`<span class="summary-outlet"><b>${esc(p.source||"Source")}:</b> ${esc(p.emphasis||"")}</span>`).join("")}</div>`:"";
       const examples=(aiEvent.evidence||[]).filter(n=>n?.title).slice(0,4);
@@ -1189,13 +1186,12 @@
         if(pulseResult.status!=="fulfilled")throw pulseResult.reason;
         pulseData=pulseResult.value;
         aiIntelligenceData=aiResult.status==="fulfilled"?aiResult.value:null;
-        const aiNote=aiIntelligenceData?.ai?.active_provider?` • AI ${aiIntelligenceData.ai.active_provider}`:" • AI synthesis pending";
-        $("dataStatus").textContent=`Live PSD feed loaded • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}${aiNote}`;
+        $("dataStatus").textContent=`Updated • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}`;
       }catch(err){
         console.warn("Event Intelligence lab using fallback snapshot",err);
         pulseData={universe:Object.values(FALLBACK_ROWS)};
         aiIntelligenceData=null;
-        $("dataStatus").textContent="Live feed unavailable — using embedded lab fallback snapshot";
+        $("dataStatus").textContent="Lab snapshot";
       }finally{clearTimeout(timer)}
       rankEvents();
       recordEventSnapshots();
