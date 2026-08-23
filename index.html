@@ -2630,14 +2630,14 @@
 
       if(!popup || !dialog || !closeButton || !joinButton || !tourButton || !donateButton) return;
 
-      /* PSD Homepage Welcome Popup v10
+      /* PSD Homepage Welcome Popup v12
          - First popup: 2 minutes after page load, once per browser session.
          - Second popup: guests only, one time, 5 minutes after first close.
          - Reminder waits until the page is visible before opening.
          - Never a third popup in the same session. */
-      const FIRST_SEEN_KEY = "psd_home_welcome_v10_first_seen";
-      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v10_first_closed_at";
-      const REMINDER_SEEN_KEY = "psd_home_welcome_v10_reminder_seen";
+      const FIRST_SEEN_KEY = "psd_home_welcome_v12_first_seen";
+      const FIRST_CLOSED_AT_KEY = "psd_home_welcome_v12_first_closed_at";
+      const REMINDER_SEEN_KEY = "psd_home_welcome_v12_reminder_seen";
       const FIRST_DELAY_MS = 2 * 60 * 1000;
       const REMINDER_DELAY_MS = 5 * 60 * 1000;
       const TOUR_FALLBACK_URL = "https://pub-1132861191d043c088b0fcf5ba3538fe.r2.dev/Public_Sentiment_Dash_2_Minute_Video.mp4";
@@ -2838,7 +2838,7 @@
         }
       });
 
-      /* Version 10 uses fresh session keys so the timing change is immediately testable. */
+      /* Version 12 uses fresh session keys so the popup is not suppressed by prior Version 10/11 session state. */
       if(!firstSeen()){
         firstTimer = window.setTimeout(() => {
           if(document.visibilityState === "visible"){
