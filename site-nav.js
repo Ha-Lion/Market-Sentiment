@@ -56,19 +56,6 @@
     return path || "index.html";
   }
 
-  function safeReturnPage(target){
-    const value = String(target || "").trim();
-    if(!value) return "";
-    if(!/^[a-z0-9][a-z0-9._-]*\.html(?:[?#].*)?$/i.test(value)) return "";
-    if(value.split(/[?#]/,1)[0].toLowerCase() === "auth.html") return "";
-    return value;
-  }
-
-  function authPageUrl(target){
-    const safeTarget = safeReturnPage(target);
-    return safeTarget ? "auth.html?next=" + encodeURIComponent(safeTarget) : "auth.html";
-  }
-
   function linkHtml(link, current){
     const isActive = link.href === current;
 
@@ -353,9 +340,42 @@
     });
   }
 
-  async function openAuthPopup(event, returnTarget){
+  async function openAuthPopup(event){
     if(event) event.preventDefault();
-    window.location.href = authPageUrl(returnTarget || currentFile());
+
+    try{
+      await loadStylesheet("account.css?v=20260802-ribbon-final2", "psd-account-styles");
+
+      if(!window.supabase || typeof window.supabase.createClient !== "function"){
+        await loadScript(
+          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+          "psd-supabase-sdk"
+        );
+      }
+
+      if(!window.psdSupabase){
+        await loadScript("supabase-client.js?v=20260802-ribbon-final2", "psd-supabase-client");
+      }
+
+      if(!window.PSDAuthModal){
+        await loadScript("auth-modal.js?v=20260802-ribbon-final2", "psd-auth-modal-script");
+      }
+
+      if(!window.psdSupabase || !window.PSDAuthModal){
+        throw new Error("Account popup did not initialize.");
+      }
+
+      const sessionResult = await window.psdSupabase.auth.getSession();
+      if(sessionResult.data && sessionResult.data.session){
+        window.location.href = "account.html";
+        return;
+      }
+
+      window.PSDAuthModal.open();
+    }catch(error){
+      console.error(error);
+      window.location.href = "auth.html";
+    }
   }
 
 
@@ -478,7 +498,7 @@
       event.preventDefault();
       rememberMemberFeatureTarget(target);
       closeMemberFeatureGate(false);
-      window.location.href = authPageUrl(target);
+      window.location.href = "auth.html";
     });
 
     window.setTimeout(function(){ signinButton.focus(); }, 0);
@@ -701,7 +721,7 @@
         return;
       }
 
-      await openAuthPopup(event, currentFile());
+      await openAuthPopup(event);
     });
 
     if(signout){
