@@ -135,12 +135,12 @@
 
     const engineFreshStamp=technical.updated_utc||(pulse&&pulse.data_updated_utc)||status.updated_utc||"";
     const engineDisplay=status.updated_ny||status.updated||status.updated_utc||technical.updated_utc||"";
-    healthValue("health-engine",engineDisplay?"Healthy • "+(String(engineDisplay).includes("NY Time")?engineDisplay:healthTimestamp(engineDisplay)):"Unavailable",engineFreshStamp?freshnessState(engineFreshStamp,8,18):"warn");
+    healthValue("health-engine",engineDisplay?"OK • "+(String(engineDisplay).includes("NY Time")?engineDisplay:healthTimestamp(engineDisplay)):"Unavailable",engineFreshStamp?freshnessState(engineFreshStamp,8,18):"warn");
 
     if(ai){
       const aiState=String(ai.status||"unknown").toLowerCase();
       const generated=Number(ai.events_generated||0),reused=Number(ai.events_reused||0),failed=Number(ai.events_failed||0);
-      const label=(aiState==="healthy"?"Healthy":aiState==="degraded"?"Degraded":aiState==="not_configured"?"Not configured":aiState==="disabled"?"Disabled":"Issue")+` • ${generated} new / ${reused} reused${failed?` / ${failed} failed`:""}`;
+      const label=(aiState==="healthy"?"OK":aiState==="degraded"?"Degraded":aiState==="not_configured"?"Not configured":aiState==="disabled"?"Disabled":"Issue")+` • ${generated} new / ${reused} reused${failed?` / ${failed} failed`:""}`;
       const state=aiState==="healthy"?"good":aiState==="degraded"||aiState==="not_configured"||aiState==="disabled"?"warn":"bad";
       healthValue("health-ai",label,state);
       const provider=ai.active_provider||"—",model=ai.active_model||((ai.providers||{}).gemini||{}).model||"—";
