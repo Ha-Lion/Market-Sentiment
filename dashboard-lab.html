@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PSD AI Market Intelligence Lab — Public Sentiment Dash</title>
-  <meta name="description" content="PublicSentimentDash AI Market Intelligence laboratory prototype: source-ranked news, PSD market data and AI editorial synthesis.">
+  <title>PSD AI Market Intelligence — Public Sentiment Dash</title>
+  <meta name="description" content="PSD AI Market Intelligence connects source-ranked financial news, public sentiment, market behavior and AI editorial synthesis into traceable cross-market intelligence.">
   <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://publicsentimentdash.com/dashboard-lab.html">
+  <link rel="canonical" href="https://publicsentimentdash.com/market-intelligence.html">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css">
@@ -158,7 +158,7 @@
     .methodology{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:10px 12px;border:1px solid var(--ei-line);border-radius:10px;background:var(--ei-panel-soft);font-size:10.5px;line-height:1.4;color:var(--ei-muted)}
     .methodology b{color:var(--ei-ink)}
 
-    /* Event Intelligence contrast hardening: explicit colors prevent global site theme rules from washing out lab content. */
+    /* Event Intelligence contrast hardening: explicit colors prevent global site theme rules from washing out page content. */
     .event-page h1,.event-page h2,.event-page h3,.event-page strong,.event-page b,.event-page label,.driver-card h3,.channel-card h3,.asset-card h3,.watch-item b,.source-item a,.mini-metric b,.channel-score b,.asset-psi strong,.profile-value{color:var(--ei-ink)}
     .event-page p,.event-page span,.event-page div{border-color:inherit}
     .section-kicker{color:var(--ei-accent-text);font-weight:950}
@@ -174,7 +174,7 @@
     body.dark-mode .score-ring{background:conic-gradient(var(--ei-gold) calc(var(--score)*1%),#405364 0)}
 
 
-    /* Iteration 5: compact forward-outlook layer, shared conceptually with Forecast Lab 2. */
+    /* Compact forward-outlook layer; forecasting remains separate from this page. */
     .event-forecast-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
     .forecast-lab-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #c99626;border-radius:9px;padding:8px 11px;background:linear-gradient(180deg,#fff9e7,#f4e4b6);color:#5f430f;font-size:11px;font-weight:900;box-shadow:inset 0 1px 0 #fff,0 3px 7px rgba(38,57,72,.13)}
     body.dark-mode .forecast-lab-link{background:linear-gradient(180deg,#49391d,#2c2417);color:#ffe9aa;border-color:#c99626;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 8px rgba(0,0,0,.28)}
@@ -320,11 +320,19 @@
     .profile-row label{font-size:12.7px}.profile-value{font-size:11.7px}
     body.dark-mode .summary-context{background:#223341;border-left-color:#71899d}
 
+    /* Market Intelligence V2: read-aloud control for the written AI summary only. */
+    .summary-audio-controls{display:flex;justify-content:flex-end;align-items:center;margin:1px 0 6px}
+    .summary-listen-button{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid rgba(174,128,28,.58);border-radius:999px;background:transparent;color:var(--ei-accent-text);font:800 10.8px/1.1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;transition:transform .16s ease,color .16s ease,border-color .16s ease,background .16s ease}
+    .summary-listen-button:hover,.summary-listen-button:focus-visible{transform:translateY(-1px);border-color:#c79524;background:var(--ei-gold-soft);outline:none}
+    .summary-listen-button[aria-pressed="true"]{border-color:#c79524;background:var(--ei-gold-soft)}
+    .summary-listen-button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    body.dark-mode .summary-listen-button{color:#ffd36a}
+
   </style>
 </head>
 <body>
   <div id="site-header"></div>
-  <script src="site-nav.js" defer></script>
+  <script src="site-nav.js?v=19" defer></script>
   <script src="site-theme.js" defer></script>
 
   <main class="event-page">
@@ -333,7 +341,7 @@
       <section class="mi-intro" aria-label="PSD AI Market Intelligence overview">
         <div class="mi-intro-main">
           <span class="mi-intro-label">AI-Powered Market Intelligence</span>
-          <h1>From Market Noise to Market Intelligence</h1>
+          <h1>From Market Noise to Market Intelligence — Provided by AI</h1>
           <p>PSD uses AI to connect source-ranked financial news with sentiment and market behavior — showing what matters, why it matters, and what to watch next.</p>
           <div class="mi-flow" aria-label="PSD intelligence process"><span>Source-Ranked News</span><i>→</i><span>PSD Market Data</span><i>→</i><span>AI Editorial Synthesis</span><i>→</i><span>Market Intelligence</span></div>
         </div>
@@ -358,6 +366,11 @@
               <span id="eventHorizon" class="event-chip compact-chip">Short-Term</span>
             </div>
             <h1 id="eventTitle">Middle East Escalation — Cross-Market Impact</h1>
+          </div>
+          <div class="summary-audio-controls" aria-label="AI summary audio controls">
+            <button type="button" class="summary-listen-button" id="summaryListenButton" aria-pressed="false">
+              <span aria-hidden="true">🔊</span><span class="summary-listen-label">Listen to Summary</span>
+            </button>
           </div>
           <div class="summary" id="eventSummary">Loading event assessment…</div>
           <div class="hero-meta">
@@ -440,7 +453,7 @@
       </section>
 
       <div class="methodology">
-        <span><b>Market Intelligence architecture:</b> the Top 10 priority tiles are the event navigation. This page explains what is happening, why it matters, how the event is transmitting across assets, and what evidence supports the assessment. Forecasting and prediction remain isolated in Forecast Lab 2.</span>
+        <span><b>Market Intelligence architecture:</b> the Top 10 priority tiles are the event navigation. This page explains what is happening, why it matters, how the event is transmitting across assets, and what evidence supports the assessment. Forecasting and prediction remain separate from this intelligence page.</span>
         <span><b>Priority formula:</b> 35% market impact • 25% freshness • 20% cross-market reach • 10% source quality • 10% persistence. Experimental; not investment advice.</span>
       </div>
     </div>
@@ -454,7 +467,7 @@
   (()=>{
     "use strict";
 
-    const EVENT_HISTORY_KEY = "psd_event_intelligence_lab_history_v1";
+    const EVENT_HISTORY_KEY = "psd_event_intelligence_history_v1";
 
     const EVENT_POLICY = Object.freeze({
       maxActive:10,
@@ -843,7 +856,7 @@
         if(Number.isFinite(Number(c.source_count)))r.centralSourceCount=Number(c.source_count);
       });
       eventRankings.sort((a,b)=>b.priority-a.priority);
-      // Guarantee the lab remains usable even if the current feed is unusually sparse.
+      // Guarantee the page remains usable even if the current feed is unusually sparse.
       if(!eventRankings.some(r=>r.lifecycle==='Active') && eventRankings[0] && eventRankings[0].priority>=45) eventRankings[0].lifecycle='Active';
       return eventRankings;
     }
@@ -954,7 +967,7 @@
     }
 
     function saveEventHistory(rows){
-      try{localStorage.setItem(EVENT_HISTORY_KEY,JSON.stringify(rows))}catch(_){/* lab memory can fail without affecting page */}
+      try{localStorage.setItem(EVENT_HISTORY_KEY,JSON.stringify(rows))}catch(_){/* local history can fail without affecting page */}
     }
 
     function currentFeedStamp(){
@@ -1004,10 +1017,136 @@
       ];
       $('evolutionGrid').innerHTML=metrics.map(([label,value,note])=>`<div class="evolution-stat"><b>${esc(value)}</b><span>${esc(label)}</span><small>${esc(note)}</small></div>`).join('');
       const recent=snaps.slice(-6);
-      $('evolutionTimeline').innerHTML=recent.length?recent.map(s=>{const d=new Date(s.stamp);const when=Number.isNaN(d.getTime())?String(s.stamp):d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});return `<div class="evolution-point"><strong>Impact ${esc(s.impact)} • P${esc(s.priority)}</strong><span>${esc(s.lifecycle)} • ${esc(s.news)} news / ${esc(s.sources)} sources</span><span>${esc(when)}</span></div>`}).join(''):'<div class="evolution-empty" style="grid-column:1/-1">The timeline will build automatically as new PSD feed timestamps are loaded in this lab.</div>';
+      $('evolutionTimeline').innerHTML=recent.length?recent.map(s=>{const d=new Date(s.stamp);const when=Number.isNaN(d.getTime())?String(s.stamp):d.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});return `<div class="evolution-point"><strong>Impact ${esc(s.impact)} • P${esc(s.priority)}</strong><span>${esc(s.lifecycle)} • ${esc(s.news)} news / ${esc(s.sources)} sources</span><span>${esc(when)}</span></div>`}).join(''):'<div class="evolution-empty" style="grid-column:1/-1">The timeline will build automatically as new PSD feed timestamps are loaded.</div>';
+    }
+
+    let summarySpeechActive=false;
+    let summarySpeechToken=0;
+
+    function preferredSummaryVoice(){
+      if(!("speechSynthesis" in window))return null;
+      const voices=window.speechSynthesis.getVoices().filter(v=>/^en(?:-|_)/i.test(v.lang||""));
+      if(!voices.length)return null;
+      const preferredFemaleNames=["aria","jenny","ava","samantha","zira","serena","susan","moira","karen","victoria","fiona","tessa","joanna","salli"];
+      const likelyMaleNames=["david","mark","guy","daniel","george","james","richard","thomas","fred"];
+      return voices.map(voice=>{
+        const name=String(voice.name||"").toLowerCase();
+        let score=0;
+        if(name.includes("natural")||name.includes("neural"))score+=120;
+        preferredFemaleNames.forEach((part,index)=>{if(name.includes(part))score+=100-index;});
+        if(name.includes("microsoft"))score+=24;
+        if(name.includes("google"))score+=18;
+        if(/en[-_]us/i.test(voice.lang||""))score+=12;
+        likelyMaleNames.forEach(part=>{if(name.includes(part))score-=120;});
+        return {voice,score};
+      }).sort((a,b)=>b.score-a.score)[0].voice;
+    }
+
+    function summarySpeechParagraphs(){
+      const root=$("eventSummary");
+      if(!root)return [];
+      const paragraphs=Array.from(root.querySelectorAll("p")).filter(p=>
+        !p.classList.contains("ai-source-line") &&
+        !p.classList.contains("ai-confidence")
+      ).map(p=>String(p.innerText||p.textContent||"").replace(/\s+/g," ").trim()).filter(Boolean);
+      if(paragraphs.length)return paragraphs;
+      const fallback=String(root.innerText||root.textContent||"").replace(/\s+/g," ").trim();
+      return fallback?[fallback]:[];
+    }
+
+    function splitSpeechText(paragraphs,maxLength=260){
+      const chunks=[];
+      paragraphs.forEach(paragraph=>{
+        const sentences=paragraph.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[paragraph];
+        let chunk="";
+        sentences.forEach(sentence=>{
+          const part=sentence.trim();
+          if(!part)return;
+          if((chunk+" "+part).trim().length<=maxLength){
+            chunk=(chunk+" "+part).trim();
+          }else{
+            if(chunk)chunks.push(chunk);
+            if(part.length<=maxLength){chunk=part;return;}
+            const words=part.split(/\s+/);
+            let smaller="";
+            words.forEach(word=>{
+              if((smaller+" "+word).trim().length<=maxLength)smaller=(smaller+" "+word).trim();
+              else{if(smaller)chunks.push(smaller);smaller=word;}
+            });
+            chunk=smaller;
+          }
+        });
+        if(chunk)chunks.push(chunk);
+      });
+      return chunks;
+    }
+
+    function setSummarySpeechButton(active){
+      const button=$("summaryListenButton");
+      if(!button)return;
+      button.setAttribute("aria-pressed",active?"true":"false");
+      const label=button.querySelector(".summary-listen-label");
+      if(label)label.textContent=active?"Stop Reading":"Listen to Summary";
+      const icon=button.querySelector("span[aria-hidden='true']");
+      if(icon)icon.textContent=active?"■":"🔊";
+    }
+
+    function stopSummarySpeech(){
+      summarySpeechToken+=1;
+      summarySpeechActive=false;
+      if("speechSynthesis" in window)window.speechSynthesis.cancel();
+      setSummarySpeechButton(false);
+    }
+
+    function speakSummary(){
+      if(!("speechSynthesis" in window))return;
+      if(summarySpeechActive){stopSummarySpeech();return;}
+      const chunks=splitSpeechText(summarySpeechParagraphs());
+      if(!chunks.length)return;
+      stopSummarySpeech();
+      summarySpeechActive=true;
+      const token=summarySpeechToken;
+      setSummarySpeechButton(true);
+      let index=0;
+
+      const speakNext=()=>{
+        if(!summarySpeechActive||token!==summarySpeechToken)return;
+        if(index>=chunks.length){
+          summarySpeechActive=false;
+          setSummarySpeechButton(false);
+          return;
+        }
+        const utterance=new SpeechSynthesisUtterance(chunks[index++]);
+        const voice=preferredSummaryVoice();
+        if(voice)utterance.voice=voice;
+        utterance.lang=voice?.lang||"en-US";
+        utterance.rate=.92;
+        utterance.pitch=1.04;
+        utterance.volume=.88;
+        utterance.onend=speakNext;
+        utterance.onerror=()=>{
+          summarySpeechActive=false;
+          setSummarySpeechButton(false);
+        };
+        window.speechSynthesis.speak(utterance);
+      };
+      speakNext();
+    }
+
+    function initializeSummarySpeech(){
+      const button=$("summaryListenButton");
+      if(!button)return;
+      if(!("speechSynthesis" in window)||typeof window.SpeechSynthesisUtterance!=="function"){
+        button.hidden=true;
+        return;
+      }
+      window.speechSynthesis.getVoices();
+      button.addEventListener("click",speakSummary);
+      window.addEventListener("beforeunload",stopSummarySpeech,{once:true});
     }
 
     function renderHero(rows){
+      stopSummarySpeech();
       const score=eventImpactScore(rows),band=impactBand(score);
       $("eventTitle").textContent=activeEvent.title;
       $("eventHorizon").textContent=activeEvent.horizon;
@@ -1207,10 +1346,10 @@
         aiIntelligenceData=aiResult.status==="fulfilled"?aiResult.value:null;
         $("dataStatus").textContent=`Updated • ${pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available"}`;
       }catch(err){
-        console.warn("Event Intelligence lab using fallback snapshot",err);
+        console.warn("Event Intelligence using fallback snapshot",err);
         pulseData={universe:Object.values(FALLBACK_ROWS)};
         aiIntelligenceData=null;
-        $("dataStatus").textContent="Lab snapshot";
+        $("dataStatus").textContent="Fallback snapshot";
       }finally{clearTimeout(timer)}
       rankEvents();
       recordEventSnapshots();
@@ -1219,6 +1358,7 @@
     }
 
     function init(){
+      initializeSummarySpeech();
       loadPulse();
     }
 
