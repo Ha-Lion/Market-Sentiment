@@ -1,6 +1,8 @@
 (function(){
   "use strict";
 
+  /* Ribbon Version 18 — Version 17 approved base + label/style cleanup + dedicated Market Intelligence page */
+
   const mainLinks = [
     { href: "dashboard.html", icon: "▦", label: "Interactive Dashboard" },
     { href: "sentiment-history.html", icon: "↗", label: "Historical Sentiment" },
@@ -15,7 +17,7 @@
 
   const assetLinks = [
     { href: "market-pulse.html", icon: "✦", label: "AI Market Pulse", memberOnly: true },
-    { href: "dashboard-lab.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
+    { href: "market-intelligence.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
     { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" },
     { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
     { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
@@ -47,7 +49,7 @@
   const homeUrl = "https://publicsentimentdash.com/";
   const memberFeaturePages = Object.freeze({
     "market-pulse.html": "AI Market Pulse",
-    "dashboard-lab.html": "AI Market Intelligence"
+    "market-intelligence.html": "AI Market Intelligence"
   });
 
   function currentFile(){
@@ -77,6 +79,46 @@
       : '';
 
     return '<a href="' + link.href + '" class="psd-nav-link' + (isActive ? ' active' : '') + '"' + memberAttrs + '>' + link.label + '</a>';
+  }
+
+  function enforceRibbonNamesAndAIStyle(){
+    const header = document.querySelector(".psd-shared-header") || document.querySelector("header.header");
+    if(!header) return;
+
+    const newsLink = header.querySelector('a[href="news-articles.html"]');
+    if(newsLink && newsLink.textContent.trim() !== "Search World News & Articles") {
+      newsLink.textContent = "Search World News & Articles";
+    }
+
+    const pulseLink = header.querySelector('a[href="market-pulse.html"]');
+    if(pulseLink){
+      if(pulseLink.textContent.trim() !== "AI Market Pulse") pulseLink.textContent = "AI Market Pulse";
+      pulseLink.classList.add("psd-ai-feature-link");
+      pulseLink.setAttribute("data-psd-member-feature", "true");
+      pulseLink.setAttribute("aria-label", "AI Market Pulse — free account required");
+    }
+
+    let intelligenceLink = header.querySelector('a[href="market-intelligence.html"]');
+    if(!intelligenceLink){
+      const legacyLabLink = header.querySelector('a[href="dashboard-lab.html"]');
+      if(legacyLabLink && /market intelligence/i.test(legacyLabLink.textContent || "")){
+        legacyLabLink.setAttribute("href", "market-intelligence.html");
+        intelligenceLink = legacyLabLink;
+      }
+    }
+    if(intelligenceLink){
+      if(intelligenceLink.textContent.trim() !== "AI Market Intelligence") intelligenceLink.textContent = "AI Market Intelligence";
+      intelligenceLink.classList.add("psd-ai-feature-link");
+      intelligenceLink.setAttribute("data-psd-member-feature", "true");
+      intelligenceLink.setAttribute("aria-label", "AI Market Intelligence — free account required");
+    }
+  }
+
+  let ribbonCopyObserver = null;
+  function installRibbonCopyGuard(){
+    if(ribbonCopyObserver || !window.MutationObserver) return;
+    ribbonCopyObserver = new MutationObserver(function(){ enforceRibbonNamesAndAIStyle(); });
+    ribbonCopyObserver.observe(document.documentElement, { childList:true, subtree:true });
   }
 
   function ensureTourStyles(){
@@ -587,7 +629,33 @@
         outline:none;
       }
       #psd-ribbon-watchlist-link[hidden]{display:none!important}
-      .psd-shared-header .psd-nav-link[href="dashboard-lab.html"]::before{
+
+      /* Member AI links: beveled gold text only — intentionally no box/background. */
+      .psd-shared-header .psd-ai-feature-link,
+      .psd-shared-header .psd-nav-link[href="market-pulse.html"],
+      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]{
+        color:#f2cf72!important;
+        font-weight:900!important;
+        letter-spacing:.12px!important;
+        background:transparent!important;
+        border-color:transparent!important;
+        box-shadow:none!important;
+        text-shadow:0 -1px 0 rgba(255,248,214,.30),0 1px 0 #6b4a0b,0 2px 3px rgba(96,62,4,.72),0 0 7px rgba(210,153,34,.34)!important;
+      }
+      .psd-shared-header .psd-ai-feature-link:hover,
+      .psd-shared-header .psd-ai-feature-link:focus-visible,
+      .psd-shared-header .psd-nav-link[href="market-pulse.html"]:hover,
+      .psd-shared-header .psd-nav-link[href="market-pulse.html"]:focus-visible,
+      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]:hover,
+      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]:focus-visible{
+        color:#ffe7a3!important;
+        background:transparent!important;
+        border-color:transparent!important;
+        box-shadow:none!important;
+        text-shadow:0 -1px 0 rgba(255,252,230,.42),0 1px 0 #77520c,0 2px 4px rgba(96,62,4,.78),0 0 10px rgba(225,167,39,.52)!important;
+      }
+
+      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]::before{
         content:"AI"!important;
         font-family:Inter,"Segoe UI",Arial,sans-serif!important;
         font-size:8px!important;
@@ -999,6 +1067,8 @@
   </header>`;
 
     ensureTourStyles();
+    enforceRibbonNamesAndAIStyle();
+    installRibbonCopyGuard();
     initializeRibbonThemeButton();
 
     /* Align after the header has had time to settle into its final grid geometry. */
