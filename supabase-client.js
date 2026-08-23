@@ -10,6 +10,12 @@
     return;
   }
 
+  /* One shared auth client per page. Prevent duplicate GoTrue clients from
+     racing against the same stored session when scripts load more than once. */
+  if (window.psdSupabase) {
+    return;
+  }
+
   function rememberEnabled() {
     return localStorage.getItem(REMEMBER_KEY) !== "false";
   }
@@ -102,10 +108,11 @@
     }));
   }
 
-  if (!window.PSD_DISABLE_ANALYTICS) {
-    loadScript("site-analytics.js?v=8", "psd-site-analytics-script");
-    loadScript("site-preferences.js?v=2", "psd-site-preferences-script");
-  }
+  loadScript("site-analytics.js?v=8", "psd-site-analytics-script");
+
+  /* Do not auto-load site-preferences.js here. The current file contains an
+     older ribbon implementation and was creating a second navigation/auth
+     controller on every page, causing session/UI races during navigation. */
 
   window.psdSupabase.auth.getSession().then(function (result) {
     publishMemberStatus(result.data && result.data.session ? result.data.session : null);
