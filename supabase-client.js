@@ -5,14 +5,12 @@
   const PSD_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1cGV4dW9udnpha29ndXVjZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDUzNTQsImV4cCI6MjA5MzQ4MTM1NH0.YZF4SBqvDTSOyHDOf_TVhpBXDm0FEma74u32Bdryfjg";
   const REMEMBER_KEY = "psd_remember_session";
 
-  if (!window.supabase || typeof window.supabase.createClient !== "function") {
-    console.error("Supabase library did not load.");
+  if (window.psdSupabase && window.__PSD_SUPABASE_CLIENT_READY__) {
     return;
   }
 
-  /* One shared auth client per page. Prevent duplicate GoTrue clients from
-     racing against the same stored session when scripts load more than once. */
-  if (window.psdSupabase) {
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    console.error("Supabase library did not load.");
     return;
   }
 
@@ -20,24 +18,17 @@
     return localStorage.getItem(REMEMBER_KEY) !== "false";
   }
 
-  const adaptiveStorage = {
-    getItem: function (key) {
-      return sessionStorage.getItem(key) || localStorage.getItem(key);
-    },
-    setItem: function (key, value) {
-      if (rememberEnabled()) {
-        localStorage.setItem(key, value);
-        sessionStorage.removeItem(key);
-      } else {
-        sessionStorage.setItem(key, value);
-        localStorage.removeItem(key);
-      }
-    },
-    removeItem: function (key) {
-      localStorage.removeItem(key);
-      sessionStorage.removeItem(key);
-    }
-  };
+  function selectedStorage() {
+    return rememberEnabled() ? localStorage : sessionStorage;
+  }
+
+  function otherStorage() {
+    return rememberEnabled() ? sessionStorage : localStorage;
+  }
+
+  function isAuthStorageKey(key) {
+    return Boolean(key && (key.includes("auth-token") || key.startsWith("sb-")));
+  }
 
   function migrateAuthStorage(target) {
     const from = target === sessionStorage ? localStorage : sessionStorage;
@@ -45,9 +36,7 @@
 
     for (let index = 0; index < from.length; index += 1) {
       const key = from.key(index);
-      if (key && (key.includes("auth-token") || key.startsWith("sb-"))) {
-        keys.push(key);
-      }
+      if (isAuthStorageKey(key)) keys.push(key);
     }
 
     keys.forEach(function (key) {
@@ -56,6 +45,23 @@
       from.removeItem(key);
     });
   }
+
+  /* Make the selected remember-me location authoritative before Supabase reads it. */
+  migrateAuthStorage(selectedStorage());
+
+  const adaptiveStorage = {
+    getItem: function (key) {
+      return selectedStorage().getItem(key);
+    },
+    setItem: function (key, value) {
+      selectedStorage().setItem(key, value);
+      otherStorage().removeItem(key);
+    },
+    removeItem: function (key) {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    }
+  };
 
   window.PSDSupabaseConfig = {
     url: PSD_SUPABASE_URL,
@@ -90,6 +96,7 @@
       }
     }
   );
+  window.__PSD_SUPABASE_CLIENT_READY__ = true;
 
   function loadScript(src, id) {
     if (document.getElementById(id)) return;
@@ -109,10 +116,6 @@
   }
 
   loadScript("site-analytics.js?v=8", "psd-site-analytics-script");
-
-  /* Do not auto-load site-preferences.js here. The current file contains an
-     older ribbon implementation and was creating a second navigation/auth
-     controller on every page, causing session/UI races during navigation. */
 
   window.psdSupabase.auth.getSession().then(function (result) {
     publishMemberStatus(result.data && result.data.session ? result.data.session : null);
