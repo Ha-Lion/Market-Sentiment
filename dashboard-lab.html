@@ -41,7 +41,7 @@
       --ei-shadow:0 8px 24px rgba(0,0,0,.28);
     }
     *{box-sizing:border-box}
-    .event-page{max-width:1760px;margin:0 auto;padding:12px 18px 34px;color:var(--ei-ink);font-family:"Segoe UI",Arial,sans-serif}
+    .event-page{width:100%;max-width:none;margin:0;padding:12px 12px 34px;box-sizing:border-box;color:var(--ei-ink);font-family:"Segoe UI",Arial,sans-serif}
     .event-page button,.event-page select{font:inherit}
     .event-shell{background:var(--ei-bg);border:1px solid var(--ei-line);border-radius:18px;padding:10px 14px 14px;min-height:760px}
 
@@ -347,6 +347,22 @@
       .summary-audio-controls{position:static;align-items:flex-start;margin:0 0 12px}
     }
 
+    /* TEST6: full-width page + title-first hero + all oval indicators directly below title. */
+    .hero-title-row{display:block;margin-bottom:10px;padding-right:300px}
+    .hero-title-row h1{display:block;margin:0 0 9px!important;max-width:100%;font-size:31px;line-height:1.08}
+    .hero-indicators{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}
+    .hero-indicators .title-badges{display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px}
+    .hero-indicators .hero-meta{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0}
+    .hero-indicators .hero-meta .event-chip{margin:0}
+    @media(min-width:2100px){
+      .event-page{padding-left:180px;padding-right:180px}
+    }
+    @media(max-width:900px){
+      .event-page{padding-left:8px;padding-right:8px}
+      .hero-title-row{padding-right:0}
+      .hero-indicators{align-items:flex-start}
+    }
+
   </style>
 </head>
 <body>
@@ -378,13 +394,20 @@
       <section class="event-hero">
         <article class="hero-main">
           <div class="hero-title-row">
-            <div class="title-badges" aria-label="Event classification">
-              <span class="title-brand">PSD AI Market Intelligence</span>
-              <span id="eventStatus" class="status-pill high">High Impact</span>
-              <span id="eventLifecycle" class="life-pill active">Active</span>
-              <span id="eventHorizon" class="event-chip compact-chip">Short-Term</span>
-            </div>
             <h1 id="eventTitle">Middle East Escalation — Cross-Market Impact</h1>
+            <div class="hero-indicators" aria-label="Event indicators">
+              <div class="title-badges" aria-label="Event classification">
+                <span class="title-brand">PSD AI Market Intelligence</span>
+                <span id="eventStatus" class="status-pill high">High Impact</span>
+                <span id="eventLifecycle" class="life-pill active">Active</span>
+                <span id="eventHorizon" class="event-chip compact-chip">Short-Term</span>
+              </div>
+              <div class="hero-meta">
+                <span class="event-chip"><b>Primary channels:</b>&nbsp;<span id="primaryChannels">Energy • Safe Haven • Risk Appetite</span></span>
+                <span class="event-chip"><b>Regions:</b>&nbsp;<span id="regions">Global • U.S. • Europe • Middle East • Asia</span></span>
+                <span class="event-chip"><b>Coverage:</b>&nbsp;<span id="coverageText">--</span></span>
+              </div>
+            </div>
           </div>
           <div class="summary-audio-controls" aria-label="AI summary audio controls">
             <button type="button" class="summary-listen-button" id="summaryListenButton" aria-pressed="false">
@@ -400,11 +423,7 @@
             </div>
           </div>
           <div class="summary" id="eventSummary">Loading event assessment…</div>
-          <div class="hero-meta">
-            <span class="event-chip"><b>Primary channels:</b>&nbsp;<span id="primaryChannels">Energy • Safe Haven • Risk Appetite</span></span>
-            <span class="event-chip"><b>Regions:</b>&nbsp;<span id="regions">Global • U.S. • Europe • Middle East • Asia</span></span>
-            <span class="event-chip"><b>Coverage:</b>&nbsp;<span id="coverageText">--</span></span>
-          </div>
+
         </article>
 
         <aside class="hero-side">
