@@ -478,6 +478,97 @@
       }
     }
 
+  
+    /* ===== V6: Combine tabs, section heading, filters and arrows into one compact row ===== */
+    .combined-controls{
+      position:sticky;
+      top:0;
+      z-index:20;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:8px 18px;
+      min-height:58px;
+    }
+    .combined-controls .tabs{
+      flex:0 0 auto;
+    }
+    .content-head-inline{
+      flex:1 1 260px;
+      min-width:210px;
+      margin:0!important;
+      display:block;
+    }
+    .content-head-inline h2{
+      margin:0!important;
+      font-size:18px!important;
+      line-height:1.08;
+      white-space:nowrap;
+    }
+    .content-head-inline p{
+      margin:3px 0 0!important;
+      font-size:9.5px!important;
+      line-height:1.15;
+      white-space:nowrap;
+    }
+    .combined-controls .filters{
+      flex:0 0 auto;
+      margin-left:0!important;
+    }
+    .pulse-grid-tools{
+      flex:0 0 auto;
+      margin-left:0!important;
+      gap:6px!important;
+    }
+    .pulse-grid-tools .count{
+      white-space:nowrap;
+      margin-right:2px;
+    }
+    .pulse-grid-tools .scroll-arrow{
+      width:36px;
+      height:36px;
+      font-size:24px;
+      border-radius:9px;
+    }
+
+    /* Remove the now-empty extra header spacing from the content section. */
+    .content{
+      padding-top:10px!important;
+    }
+
+    @media(max-width:1450px){
+      .combined-controls{
+        flex-wrap:wrap;
+      }
+      .content-head-inline{
+        order:3;
+        flex:1 1 100%;
+      }
+      .content-head-inline h2,
+      .content-head-inline p{
+        white-space:normal;
+      }
+    }
+
+    @media(max-width:650px){
+      .combined-controls{
+        gap:8px;
+        padding:8px 11px;
+      }
+      .content-head-inline{
+        order:2;
+        flex-basis:100%;
+      }
+      .combined-controls .filters{
+        order:3;
+        width:100%;
+      }
+      .pulse-grid-tools{
+        order:4;
+        margin-left:auto!important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -486,8 +577,13 @@
   <main class="pulse-page"><section class="pulse-shell">
     <div class="data-warning" id="dataWarning" role="status"></div>
     <section class="intelligence"><div class="intel-head"><div class="intel-heading"><h1><span id="intelHeading">Today’s Market Pulse Analysis</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="ai-analysis" aria-label="Explain Market Pulse analysis" aria-expanded="false">i</button></h1><p id="intelSubhead">Cross-outlet evidence, sentiment, and market context.</p></div><div class="intel-head-right"><div class="region-scores"><div class="region-score"><span>Global PSI <button class="psd-glossary-info" type="button" data-pulse-glossary="global-psi" aria-label="Explain Global PSI" aria-expanded="false">i</button></span><b id="globalScore">--</b><em id="globalChange">Loading</em></div><div class="region-score"><span>U.S. PSI <button class="psd-glossary-info" type="button" data-pulse-glossary="us-psi" aria-label="Explain U.S. PSI" aria-expanded="false">i</button></span><b id="usScore">--</b><em id="usLabel">Loading</em></div><div class="region-score"><span>Europe PSI <button class="psd-glossary-info" type="button" data-pulse-glossary="europe-psi" aria-label="Explain Europe PSI" aria-expanded="false">i</button></span><b id="europeScore">--</b><em id="europeLabel">Loading</em></div></div><div class="carousel-tools"><button class="scroll-arrow" data-scroll="intelGrid" data-direction="-1" aria-label="Previous analysis">‹</button><button class="scroll-arrow" data-scroll="intelGrid" data-direction="1" aria-label="Next analysis">›</button></div></div></div><div class="intel-overview" id="marketOverview" hidden></div><div class="intel-grid" id="intelGrid"><div class="empty">Analyzing the latest news and two-week market narrative…</div></div></section>
-    <nav class="controls"><div class="tabs" id="tabs"><button class="tab active" data-view="top_movers">Top Movers</button><button class="tab" data-view="reversals">Reversals</button><button class="tab" data-view="extremes">Extremes</button><button class="tab" data-view="divergences">Divergences</button><button class="tab" data-view="universe">Explore All</button></div><div class="filters"><select id="category"><option value="all">All markets</option></select><input id="search" type="search" placeholder="Search an asset…"><button class="surprise" id="surprise">Surprise me ✦</button></div></nav>
-    <section class="content"><div class="content-head"><div><h2><span id="sectionTitle">Today’s Strongest Shifts</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="strongest-shifts" aria-label="Explain strongest shifts" aria-expanded="false">i</button></h2><p id="sectionText">News, sentiment, and market context in one view.</p></div><div class="carousel-tools"><span class="count" id="count"></span><button class="scroll-arrow" data-scroll="grid" data-direction="-1" aria-label="Previous signals">‹</button><button class="scroll-arrow" data-scroll="grid" data-direction="1" aria-label="Next signals">›</button></div></div><div class="signal-grid" id="grid"><div class="empty">Loading…</div></div></section>
+    <nav class="controls combined-controls">
+      <div class="tabs" id="tabs"><button class="tab active" data-view="top_movers">Top Movers</button><button class="tab" data-view="reversals">Reversals</button><button class="tab" data-view="extremes">Extremes</button><button class="tab" data-view="divergences">Divergences</button><button class="tab" data-view="universe">Explore All</button></div>
+      <div class="content-head content-head-inline"><div><h2><span id="sectionTitle">Today’s Strongest Shifts</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="strongest-shifts" aria-label="Explain strongest shifts" aria-expanded="false">i</button></h2><p id="sectionText">News, sentiment, and market context in one view.</p></div></div>
+      <div class="filters"><select id="category"><option value="all">All markets</option></select><input id="search" type="search" placeholder="Search an asset…"><button class="surprise" id="surprise">Surprise me ✦</button></div>
+      <div class="carousel-tools pulse-grid-tools"><span class="count" id="count"></span><button class="scroll-arrow" data-scroll="grid" data-direction="-1" aria-label="Previous signals">‹</button><button class="scroll-arrow" data-scroll="grid" data-direction="1" aria-label="Next signals">›</button></div>
+    </nav>
+    <section class="content"><div class="signal-grid" id="grid"><div class="empty">Loading…</div></div></section>
   </section></main>
   <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle"><section class="viewer-card" id="viewerCard"><header class="viewer-head"><div class="viewer-title"><span id="viewerCategory"></span><h2><span id="viewerTitle">Signal Details</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="signal-details" aria-label="Explain signal details" aria-expanded="false">i</button></h2></div><div class="viewer-tools"><button id="closeViewer" title="Close">Close ×</button></div></header><div class="viewer-body"><span class="range-note" id="rangeNote"></span><div class="full-charts"><section class="full-chart" data-chart-panel="sentiment"><div class="chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain sentiment history" aria-expanded="false">i</button></h3><button class="chart-size" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="full-chart" data-chart-panel="market"><div class="chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain market price history" aria-expanded="false">i</button></h3><button class="chart-size" data-chart-size="market">Maximize</button></div><div class="interactive-chart" id="marketChart"></div></section></div><section class="viewer-news"><h3>Latest News <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-news" aria-label="Explain latest news" aria-expanded="false">i</button></h3><div class="viewer-news-list" id="viewerNews"></div></section></div></section></div>
   <div class="intel-dialog" id="intelDialog" role="dialog" aria-modal="true" aria-labelledby="intelTitle"><section class="intel-panel"><header><div><span id="intelLabel">Cross-outlet analysis</span><h2><span id="intelTitle">News Consensus</span> <button class="psd-glossary-info" type="button" data-pulse-glossary="news-consensus" aria-label="Explain news consensus" aria-expanded="false">i</button></h2></div><button class="intel-close" id="intelClose">Close ×</button></header><div class="intel-body"><p class="intel-summary" id="intelSummary"></p><div class="evidence-points" id="intelPoints"></div><div id="intelNews"></div></div></section></div>
