@@ -1002,39 +1002,7 @@
 
   function render(){
     const mount = document.getElementById("site-header");
-
-    /*
-     * LAB STATIC-RIBBON TEST:
-     * dashboard-lab.html already contains the complete ribbon markup.
-     * When no #site-header placeholder exists, initialize the existing ribbon
-     * without replacing or redrawing it.
-     */
-    if(!mount){
-      if(!document.querySelector(".psd-shared-header")) return;
-
-      ensureTourStyles();
-      enforceRibbonNamesAndAIStyle();
-      installRibbonCopyGuard();
-      initializeRibbonThemeButton();
-
-      alignRibbonGeometry();
-      window.setTimeout(alignRibbonGeometry, 80);
-      window.setTimeout(alignRibbonGeometry, 240);
-
-      const tourButton = document.getElementById("site-tour-button");
-      if(tourButton){
-        tourButton.onclick = function(event){
-          event.preventDefault();
-          event.stopPropagation();
-          openTour();
-        };
-      }
-
-      initializeAccountNavigation();
-      initializeMemberFeatureAccess();
-      loadSiteStatus();
-      return;
-    }
+    if(!mount) return;
     const current = currentFile();
     const primaryLinks = mainLinks
       .filter(link => link.href !== "auth.html")
@@ -1104,10 +1072,9 @@
     installRibbonCopyGuard();
     initializeRibbonThemeButton();
 
-    /* Align after the header has had time to settle into its final grid geometry. */
+    /* LAB STABILITY TEST: final ribbon CSS is already present before render.
+       Align once so the header does not visibly re-position itself at 80/240ms. */
     alignRibbonGeometry();
-    window.setTimeout(alignRibbonGeometry, 80);
-    window.setTimeout(alignRibbonGeometry, 240);
 
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton){
@@ -1132,16 +1099,11 @@
    */
   function scheduleRibbonGeometryAlignment(){
     window.requestAnimationFrame(alignRibbonGeometry);
-    window.setTimeout(alignRibbonGeometry, 60);
   }
 
+  /* Resize is the only geometry re-check in this lab test.
+     No load/font/vote-widget re-alignment passes after first paint. */
   window.addEventListener("resize", scheduleRibbonGeometryAlignment);
-  window.addEventListener("load", scheduleRibbonGeometryAlignment);
-  window.addEventListener("psd:ribbon-layout-changed", scheduleRibbonGeometryAlignment);
-
-  if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(scheduleRibbonGeometryAlignment).catch(function(){});
-  }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
   else render();
