@@ -1,0 +1,102 @@
+# PSD Ribbon Production Migration
+# ONE-TIME migration. Run from the repository root.
+#
+# Purpose:
+# - Every production page loads the exact same site-nav URL.
+# - site-nav loads IMMEDIATELY after #site-header (NO defer).
+# - Every page uses the same site-theme.css / site-theme.js cache version.
+# - Lab/test pages are skipped.
+#
+# After this migration, future ribbon design changes remain centralized
+# in the shared CSS/JS files. You should not need to edit every page again.
+
+$ErrorActionPreference = "Stop"
+$Version = "20"
+
+$files = Get-ChildItem -Path . -Filter "*.html" -File |
+    Where-Object {
+        $_.Name -notmatch '^(?i)xx[-_]' -and
+        $_.Name -notmatch '(?i)dashboard-lab'
+    }
+
+$changed = @()
+$skipped = @()
+
+foreach ($file in $files) {
+    $text = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8
+
+    if ($text -notmatch '<div\s+id=["'']site-header["'']\s*></div>') {
+        $skipped += $file.Name
+        continue
+    }
+
+    $original = $text
+
+    # 1) Remove every existing site-nav.js loader, regardless of old ?v= value or defer.
+    $text = [regex]::Replace(
+        $text,
+        '<script\b[^>]*\bsrc=["'']site-nav\.js(?:\?[^"'']*)?["''][^>]*>\s*</script>\s*',
+        '',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    # 2) Remove every existing site-theme.js loader so there is exactly one shared loader.
+    $text = [regex]::Replace(
+        $text,
+        '<script\b[^>]*\bsrc=["'']site-theme\.js(?:\?[^"'']*)?["''][^>]*>\s*</script>\s*',
+        '',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    # 3) Make the shared theme CSS URL identical across every page.
+    $text = [regex]::Replace(
+        $text,
+        'href=["'']site-theme\.css(?:\?[^"'']*)?["'']',
+        ('href="site-theme.css?v=' + $Version + '"'),
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    # 4) Load the ribbon IMMEDIATELY after its mount.
+    #    NO defer: this is the behavior that tested smooth in the xx lab.
+    $replacement = '<div id="site-header"></div>' + "`r`n" +
+                   '  <script src="site-nav.js?v=' + $Version + '"></script>' + "`r`n" +
+                   '  <script src="site-theme.js?v=' + $Version + '" defer></script>'
+
+    $text = [regex]::Replace(
+        $text,
+        '<div\s+id=["'']site-header["'']\s*></div>',
+        $replacement,
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    # 5) Safety checks: exactly one header, nav loader, and theme loader.
+    $headerCount = ([regex]::Matches($text, '<div\s+id=["'']site-header["'']\s*></div>', 'IgnoreCase')).Count
+    $navCount = ([regex]::Matches($text, '<script\b[^>]*\bsrc=["'']site-nav\.js\?v=20["''][^>]*>\s*</script>', 'IgnoreCase')).Count
+    $themeCount = ([regex]::Matches($text, '<script\b[^>]*\bsrc=["'']site-theme\.js\?v=20["''][^>]*>\s*</script>', 'IgnoreCase')).Count
+
+    if ($headerCount -ne 1 -or $navCount -ne 1 -or $themeCount -ne 1) {
+        throw "Safety validation failed for $($file.Name). No files after this point were processed."
+    }
+
+    # Ensure site-nav itself is NOT deferred.
+    if ($text -match '<script\b[^>]*\bsrc=["'']site-nav\.js\?v=20["''][^>]*\bdefer\b[^>]*>') {
+        throw "site-nav is still deferred in $($file.Name)."
+    }
+
+    if ($text -ne $original) {
+        Set-Content -LiteralPath $file.FullName -Value $text -Encoding UTF8 -NoNewline
+        $changed += $file.Name
+    }
+}
+
+Write-Host ""
+Write-Host "PSD ribbon migration complete." -ForegroundColor Green
+Write-Host ("Changed production pages: " + $changed.Count)
+$changed | ForEach-Object { Write-Host ("  " + $_) }
+Write-Host ""
+Write-Host "All production pages now use:"
+Write-Host "  site-theme.css?v=20"
+Write-Host "  site-nav.js?v=20  (immediate / no defer)"
+Write-Host "  site-theme.js?v=20"
+Write-Host ""
+Write-Host "Lab/test pages were intentionally left untouched."
