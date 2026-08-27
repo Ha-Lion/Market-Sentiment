@@ -1,7 +1,9 @@
 (function(){
   "use strict";
 
-  /* Ribbon Version 18 — Version 17 approved base + label/style cleanup + dedicated Market Intelligence page */
+  /* Production Ribbon — centralized architecture.
+     site-nav.js owns ribbon structure + behavior.
+     All ribbon appearance is owned by site-theme.css. */
 
   const mainLinks = [
     { href: "dashboard.html", icon: "▦", label: "Interactive Dashboard" },
@@ -29,6 +31,7 @@
 
   const supportUrl = "https://gofund.me/0d687f045";
   const MEMBER_UI_CACHE_KEY = "psd-ribbon-member-ui";
+  const MEMBER_LABEL_CACHE_KEY = "psd-ribbon-member-label";
 
   function cachedMemberUI(){
     try{
@@ -38,10 +41,23 @@
     }
   }
 
-  function cacheMemberUI(active){
+  function cachedMemberLabel(){
     try{
-      if(active) sessionStorage.setItem(MEMBER_UI_CACHE_KEY, "true");
-      else sessionStorage.removeItem(MEMBER_UI_CACHE_KEY);
+      return sessionStorage.getItem(MEMBER_LABEL_CACHE_KEY) || "";
+    }catch(error){
+      return "";
+    }
+  }
+
+  function cacheMemberUI(active, label){
+    try{
+      if(active){
+        sessionStorage.setItem(MEMBER_UI_CACHE_KEY, "true");
+        if(label) sessionStorage.setItem(MEMBER_LABEL_CACHE_KEY, String(label));
+      }else{
+        sessionStorage.removeItem(MEMBER_UI_CACHE_KEY);
+        sessionStorage.removeItem(MEMBER_LABEL_CACHE_KEY);
+      }
     }catch(error){}
   }
 
@@ -61,9 +77,13 @@
     const isActive = link.href === current;
 
     if(link.href === "auth.html"){
+      const cachedLabel = cachedMemberUI() ? (cachedMemberLabel() || "Member") : link.label;
+      const cachedClass = cachedMemberUI() ? "psd-member-link" : "";
+      const activeClass = isActive ? " active" : "";
+      const initialClass = (cachedClass + activeClass).trim();
       return `
         <span class="psd-account-nav-wrap">
-          <a href="auth.html" id="psd-account-nav-link"${isActive ? ' class="active"' : ''}>${link.label}</a>
+          <a href="auth.html" id="psd-account-nav-link"${initialClass ? ' class="' + initialClass + '"' : ''} data-signed-in="${cachedMemberUI() ? 'true' : 'false'}">${cachedLabel}</a>
           <div class="psd-account-menu" id="psd-account-menu" hidden>
             <a href="account.html#preferences">Preferences</a>
             <a href="account.html#profile">Update Information</a>
@@ -122,149 +142,7 @@
   }
 
   function ensureTourStyles(){
-    if(document.getElementById("site-tour-styles")) return;
-
-    const style = document.createElement("style");
-    style.id = "site-tour-styles";
-    style.textContent = `
-
-      @keyframes psdLabelDance{
-        0%,100%{transform:translateY(0) rotate(0deg)}
-        25%{transform:translateY(-2px) rotate(-.25deg)}
-        50%{transform:translateY(1px) rotate(0deg)}
-        75%{transform:translateY(-2px) rotate(.25deg)}
-      }
-      @keyframes psdLabelShine{
-        0%,100%{box-shadow:0 0 10px rgba(210,153,34,.18);filter:brightness(1)}
-        50%{box-shadow:0 0 25px rgba(240,183,47,.55),inset 0 0 12px rgba(255,215,128,.12);filter:brightness(1.12)}
-      }
-      .psd-shared-header .psd-dancing-label{
-        width:340px!important;
-        min-width:340px!important;
-        max-width:340px!important;
-        justify-content:center!important;
-        box-sizing:border-box!important;
-        translate:0 2px;
-        animation:psdLabelDance 3.2s ease-in-out infinite,psdLabelShine 2.1s ease-in-out infinite!important;
-        transform-origin:center!important;
-        will-change:transform,filter,box-shadow;
-      }
-      /* AI-Built copies the live rendered height of Constantly Learning in alignRibbonGeometry(). */
-      .psd-shared-header .brand-stamp.psd-dancing-label{
-        translate:0 6px;
-        justify-content:center!important;
-        text-align:center!important;
-        white-space:nowrap!important;
-        font-size:12px!important;
-        letter-spacing:.2px!important;
-        animation-delay:.35s,.35s!important;
-      }
-      .psd-shared-header .site-subtitle.psd-ai-subtitle{
-        position:relative;
-        top:38px;
-        margin-top:3px;
-        font-family:"OCR A Std","Eurostile","Bank Gothic","Courier New",monospace!important;
-        font-size:15.5px!important;
-        font-weight:700!important;
-        letter-spacing:.7px!important;
-      }
-      @media(prefers-reduced-motion:reduce){
-        .psd-shared-header .psd-dancing-label{animation:psdLabelShine 2.8s ease-in-out infinite!important}
-      }
-
-      /*
-       * Shared-ribbon stacking fix.
-       * The donation/tour row intentionally extends beyond the center grid cell.
-       * Keep that complete row above the navigation hit area on every page.
-       */
-      .psd-shared-header .header-center{
-        position:relative!important;
-        z-index:100!important;
-        overflow:visible!important;
-        pointer-events:none!important;
-      }
-      .psd-shared-header .header-center > a[target="_blank"],
-      .psd-shared-header #site-tour-button{
-        pointer-events:auto!important;
-      }
-      .psd-shared-header .nav{
-        position:relative!important;
-        z-index:1!important;
-      }
-      .site-tour-banner{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        gap:7px;
-        margin:7px 8px 0;
-        padding:7px 15px;
-        border:1px solid rgba(255,204,82,.72);
-        border-radius:999px;
-        background:linear-gradient(180deg,rgba(85,61,12,.96),rgba(28,24,18,.96));
-        color:#ffe08a;
-        font:inherit;
-        font-size:11px;
-        font-weight:900;
-        line-height:1;
-        white-space:nowrap;
-        cursor:pointer;
-        position:relative;
-        z-index:101;
-        pointer-events:auto;
-        isolation:isolate;
-        box-shadow:0 0 18px rgba(225,167,39,.22);
-        transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
-      }
-      .site-tour-banner:hover,.site-tour-banner:focus-visible{
-        transform:translateY(-1px);
-        background:linear-gradient(180deg,#d7a42f,#8c6314);
-        color:#07090d;
-        box-shadow:0 0 24px rgba(255,198,69,.42);
-        outline:none;
-      }
-      body.site-tour-open{overflow:hidden}
-      .site-tour-overlay{
-        position:fixed;
-        inset:0;
-        z-index:2147483647;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        background:#000;
-      }
-      .site-tour-overlay video{
-        display:block;
-        width:100vw;
-        height:100vh;
-        object-fit:contain;
-        background:#000;
-      }
-      .site-tour-close{
-        position:absolute;
-        top:max(16px,env(safe-area-inset-top));
-        right:max(16px,env(safe-area-inset-right));
-        z-index:2;
-        padding:11px 18px;
-        border:2px solid #fff2b3;
-        border-radius:999px;
-        background:#f5b82e;
-        color:#161006;
-        font:inherit;
-        font-size:14px;
-        font-weight:900;
-        cursor:pointer;
-        box-shadow:0 6px 22px rgba(0,0,0,.55),0 0 0 3px rgba(245,184,46,.22);
-      }
-      .site-tour-close:hover,.site-tour-close:focus-visible{
-        background:#ffd35c;
-        border-color:#fff8d6;
-        outline:none;
-      }
-      @media (max-width:900px){
-        .site-tour-banner{margin-top:8px;font-size:10px;padding:7px 12px}
-      }
-    `;
-    document.head.appendChild(style);
+    /* Ribbon/tour appearance is owned by site-theme.css. */
   }
 
   function exitFullscreen(){
@@ -553,116 +431,7 @@
   }
 
   function ensureAccountNavStyles(){
-    if(document.getElementById("psd-account-nav-styles")) return;
-
-    const style = document.createElement("style");
-    style.id = "psd-account-nav-styles";
-    style.textContent = `
-      .psd-account-nav-wrap{
-        position:relative;
-        display:inline-flex;
-        align-items:center;
-      }
-      .psd-account-menu{
-        position:absolute;
-        top:calc(100% + 9px);
-        right:0;
-        z-index:2147483000;
-        width:190px;
-        padding:8px;
-        border:1px solid rgba(210,153,34,.38);
-        border-radius:14px;
-        background:rgba(13,17,23,.99);
-        box-shadow:0 18px 48px rgba(0,0,0,.52);
-      }
-      .psd-account-menu[hidden]{display:none!important}
-      .psd-account-menu a,
-      .psd-account-menu button{
-        display:flex!important;
-        width:100%;
-        justify-content:flex-start;
-        box-sizing:border-box;
-        margin:0;
-        padding:10px 11px!important;
-        border:0;
-        border-radius:9px;
-        background:transparent;
-        color:#e6edf3;
-        font:600 12px Inter,Segoe UI,Arial,sans-serif;
-        text-align:left;
-        cursor:pointer;
-      }
-      .psd-account-menu a::before{display:none!important}
-      .psd-account-menu a:hover,
-      .psd-account-menu button:hover{
-        background:rgba(210,153,34,.16);
-        color:#ffd780;
-      }
-      #psd-account-nav-link.psd-member-link{
-        color:#ffd780;
-        border:1px solid rgba(210,153,34,.32);
-        background:rgba(210,153,34,.10);
-      }
-      #psd-account-nav-link.psd-member-link::after{
-        content:"▾";
-        display:inline-block;
-        margin-left:6px;
-        font-size:9px;
-        font-weight:900;
-        line-height:1;
-        color:currentColor;
-        vertical-align:middle;
-      }
-
-      /* Shared ribbon rows are rendered explicitly in render(); theme CSS owns row placement.
-         Do not suppress .nav a::before here: those pseudo-elements carry the ribbon page icons. */
-      .psd-ribbon-social-wrap{
-        display:inline-flex;
-        align-items:center;
-      }
-      .psd-ribbon-social-wrap .social-links{margin-left:0!important}
-      #psd-ribbon-watchlist-link:hover,
-      #psd-ribbon-watchlist-link:focus-visible{
-        color:#fff;
-        background:rgba(210,153,34,.20);
-        border-color:rgba(210,153,34,.52);
-        outline:none;
-      }
-      #psd-ribbon-watchlist-link[hidden]{display:none!important}
-
-      /* Member AI links: beveled gold text only — intentionally no box/background. */
-      .psd-shared-header .psd-ai-feature-link,
-      .psd-shared-header .psd-nav-link[href="market-pulse.html"],
-      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]{
-        color:#f2cf72!important;
-        font-size:13px!important;
-        font-weight:900!important;
-        letter-spacing:.12px!important;
-        background:transparent!important;
-        border-color:transparent!important;
-        box-shadow:none!important;
-        text-shadow:0 -1px 0 rgba(255,248,214,.30),0 1px 0 #6b4a0b,0 2px 3px rgba(96,62,4,.72),0 0 7px rgba(210,153,34,.34)!important;
-      }
-      .psd-shared-header .psd-ai-feature-link:hover,
-      .psd-shared-header .psd-ai-feature-link:focus-visible,
-      .psd-shared-header .psd-nav-link[href="market-pulse.html"]:hover,
-      .psd-shared-header .psd-nav-link[href="market-pulse.html"]:focus-visible,
-      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]:hover,
-      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]:focus-visible{
-        color:#ffe7a3!important;
-        background:transparent!important;
-        border-color:transparent!important;
-        box-shadow:none!important;
-        text-shadow:0 -1px 0 rgba(255,252,230,.42),0 1px 0 #77520c,0 2px 4px rgba(96,62,4,.78),0 0 10px rgba(225,167,39,.52)!important;
-      }
-
-      .psd-shared-header .psd-nav-link[href="market-intelligence.html"]::before{
-        content:"AI"!important;
-        font-family:Inter,"Segoe UI",Arial,sans-serif!important;
-        font-size:8px!important;
-      }
-    `;
-    document.head.appendChild(style);
+    /* Account/ribbon appearance is owned by site-theme.css. */
   }
 
   let accountInfrastructurePromise = null;
@@ -746,6 +515,7 @@
 
       const profile = profileResult.data || {};
       const name = profile.username || profile.display_name || "Member";
+      cacheMemberUI(true, name);
       const reportLink = document.getElementById("psd-activity-report-link");
       if(reportLink) reportLink.hidden = profile.is_admin !== true;
 
@@ -903,7 +673,6 @@
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
 
     if(aiBuilt && learning){
-      window.requestAnimationFrame(function(){
         const aiRect = aiBuilt.getBoundingClientRect();
         const learningRect = learning.getBoundingClientRect();
 
@@ -931,7 +700,6 @@
           aiBuilt.style.setProperty("min-height", learningHeight + "px", "important");
           aiBuilt.style.setProperty("max-height", learningHeight + "px", "important");
         }
-      });
     }
 
     /*
@@ -956,6 +724,30 @@
   }
 
 
+  function savedRibbonTheme(){
+    try{
+      return localStorage.getItem("psd-theme") === "dark" ? "dark" : "light";
+    }catch(error){
+      return "light";
+    }
+  }
+
+  function applyRibbonTheme(theme, save){
+    const dark = theme === "dark";
+    document.body.classList.toggle("dark-mode", dark);
+    document.body.classList.toggle("light-mode", !dark);
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+
+    if(save){
+      try{ localStorage.setItem("psd-theme", dark ? "dark" : "light"); }catch(error){}
+    }
+
+    window.dispatchEvent(new CustomEvent("psd-theme-change", {
+      detail:{ theme: dark ? "dark" : "light" }
+    }));
+  }
+
   function initializeRibbonThemeButton(){
     const button = document.getElementById("psd-ribbon-theme-toggle");
     if(!button) return;
@@ -966,37 +758,13 @@
       button.setAttribute("aria-pressed", dark ? "true" : "false");
     };
 
+    applyRibbonTheme(savedRibbonTheme(), false);
     syncLabel();
 
-    const bodyObserver = new MutationObserver(syncLabel);
-    bodyObserver.observe(document.body, { attributes:true, attributeFilter:["class"] });
-
     button.addEventListener("click", function(){
-      const before = document.body.classList.contains("dark-mode");
-
-      /*
-       * Give the existing site-theme.js handler the first chance to act.
-       * Only use this fallback if that handler did not change the mode.
-       */
-      window.setTimeout(function(){
-        const afterExistingHandler = document.body.classList.contains("dark-mode");
-        if(afterExistingHandler !== before){
-          syncLabel();
-          return;
-        }
-
-        const dark = !before;
-        document.body.classList.toggle("dark-mode", dark);
-        syncLabel();
-
-        try{
-          localStorage.setItem("psd-theme", dark ? "dark" : "light");
-        }catch(error){}
-
-        window.dispatchEvent(new CustomEvent("psd-theme-change", {
-          detail:{ theme: dark ? "dark" : "light" }
-        }));
-      }, 0);
+      const next = document.body.classList.contains("dark-mode") ? "light" : "dark";
+      applyRibbonTheme(next, true);
+      syncLabel();
     });
   }
 
@@ -1029,7 +797,7 @@
       <div class="psd-nav-row psd-nav-main">
         ${primaryLinks}
         ${accountLink}
-        <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">◐ Dark mode</button>
+        <button type="button" class="psd-theme-toggle" id="psd-ribbon-theme-toggle" aria-label="Switch between light and dark mode">${savedRibbonTheme() === "dark" ? "☀ Light mode" : "◐ Dark mode"}</button>
       </div>
       <div class="psd-nav-row psd-nav-assets">
         ${linksTwo}
@@ -1069,13 +837,10 @@
 
     ensureTourStyles();
     enforceRibbonNamesAndAIStyle();
-    installRibbonCopyGuard();
     initializeRibbonThemeButton();
 
-    /* Align after the header has had time to settle into its final grid geometry. */
+    /* One geometry pass only. CSS is already present before first paint. */
     alignRibbonGeometry();
-    window.setTimeout(alignRibbonGeometry, 80);
-    window.setTimeout(alignRibbonGeometry, 240);
 
     const tourButton = document.getElementById("site-tour-button");
     if(tourButton){
@@ -1093,24 +858,20 @@
 
   installTourClickFallback();
 
+  let ribbonResizeFrame = 0;
+  window.addEventListener("resize", function(){
+    if(ribbonResizeFrame) window.cancelAnimationFrame(ribbonResizeFrame);
+    ribbonResizeFrame = window.requestAnimationFrame(function(){
+      ribbonResizeFrame = 0;
+      alignRibbonGeometry();
+    });
+  });
+
   /*
-   * Keep the ribbon geometry stable when late-loading ribbon CSS or fonts
-   * change the header after the first render. vote-widget.js still owns the
-   * legacy compact-ribbon CSS, so it signals us after that CSS is installed.
+   * Render immediately whenever the shared mount already exists.
+   * This removes the avoidable DOMContentLoaded delay used by the old ribbon.
    */
-  function scheduleRibbonGeometryAlignment(){
-    window.requestAnimationFrame(alignRibbonGeometry);
-    window.setTimeout(alignRibbonGeometry, 60);
-  }
-
-  window.addEventListener("resize", scheduleRibbonGeometryAlignment);
-  window.addEventListener("load", scheduleRibbonGeometryAlignment);
-  window.addEventListener("psd:ribbon-layout-changed", scheduleRibbonGeometryAlignment);
-
-  if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(scheduleRibbonGeometryAlignment).catch(function(){});
-  }
-
-  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
+  if(document.getElementById("site-header")) render();
+  else if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render, {once:true});
   else render();
 })();
