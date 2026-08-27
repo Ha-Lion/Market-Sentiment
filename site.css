@@ -563,44 +563,100 @@ p,li{
 }
 
 
-/* Compact ribbon root fix v17 */
+/* Compact ribbon root fix v20 — match the final shared-ribbon geometry before JS runs. */
 .header{
   align-items:start;
-  min-height:164px;
-  padding:10px 26px 8px;
-  gap:18px;
+  min-height:148px;
+  padding:8px 22px 7px;
+  gap:14px;
+}
+
+.logo{
+  width:112px;
+  height:112px;
+  padding:6px;
 }
 
 .brand{
   align-items:center;
+  gap:11px;
+}
+
+.brand-stamp,
+.page-chip{
+  padding:7px 12px;
+  font-size:12px;
+}
+
+.header-pill{
+  min-width:340px;
+  padding:8px 30px;
+  font-size:12px;
+  justify-content:center;
+  text-align:center;
+  white-space:nowrap;
+}
+
+.site-subtitle{
+  font-size:12px;
 }
 
 .header-center{
   align-self:start;
   justify-content:center;
-  transform:translateY(-6px);
+  min-width:360px;
+  transform:translateY(-5px);
 }
 
 .nav{
   align-self:start;
   align-items:flex-start;
-  transform:translateY(-6px);
-  gap:8px 18px;
+  align-content:flex-start;
+  transform:translateY(-5px);
+  gap:6px 8px;
 }
 
 .nav a{
-  font-size:13px;
-  line-height:1.1;
+  font-size:11.5px;
+  line-height:1.02;
+  padding:5px 6px;
+  gap:4px;
+  white-space:nowrap;
+}
+
+.nav a::before{
+  width:12px;
+  min-width:12px;
+  font-size:10.5px;
 }
 
 .social-links{
-  margin-top:2px;
+  gap:6px;
+  margin-left:6px;
+  margin-top:0;
   font-size:12px;
 }
 
+.social-label{
+  font-size:11px;
+}
+
 .social-pill{
-  font-size:12px;
-  padding:8px 13px;
+  min-width:38px;
+  padding:6px 10px;
+  font-size:11px;
+}
+
+.social-pill.linkedin{
+  min-width:68px;
+}
+
+/* Reserve the final desktop ribbon height while site-nav.js mounts it. */
+@media(min-width:1181px){
+  #site-header{
+    display:block;
+    min-height:148px;
+  }
 }
 
 @media(max-width:1180px){
@@ -614,21 +670,39 @@ p,li{
   }
 }
 
+/* Smooth same-origin page changes in modern browsers; ignored safely elsewhere. */
+@view-transition{
+  navigation:auto;
+}
 
-/* Ribbon page icons v19 */
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:140ms;
+  animation-timing-function:ease-out;
+}
+
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),
+  ::view-transition-new(root){
+    animation-duration:0.01ms;
+  }
+}
+
+
+/* Ribbon page icons v20 — keep icon geometry identical before/after vote-widget.js. */
 .nav a{
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:4px;
 }
 
 .nav a::before{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:15px;
-  min-width:15px;
-  font-size:12px;
+  width:12px;
+  min-width:12px;
+  font-size:10.5px;
   line-height:1;
   opacity:.92;
   filter:drop-shadow(0 0 4px rgba(210,153,34,.18));
