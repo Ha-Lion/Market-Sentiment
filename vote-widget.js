@@ -152,181 +152,18 @@ function psdHeaders(){
 
 
 function psdApplyCompactRibbonLayout(){
-  if(document.getElementById("psdCompactRibbonCss")) return;
-
-  const style = document.createElement("style");
-  style.id = "psdCompactRibbonCss";
-  style.textContent = `
-    .header{
-      padding:8px 22px 7px !important;
-      gap:14px !important;
-      min-height:148px !important;
-    }
-
-    .logo{
-      width:112px !important;
-      height:112px !important;
-      padding:6px !important;
-    }
-
-    .brand{
-      gap:11px !important;
-    }
-
-    .brand-stamp,
-    .page-chip{
-      padding:7px 12px !important;
-      font-size:12px !important;
-    }
-
-    .header-pill{
-      min-width:340px !important;
-      padding:8px 30px !important;
-      font-size:12px !important;
-      justify-content:center !important;
-      text-align:center !important;
-      white-space:nowrap !important;
-    }
-
-    .site-subtitle{
-      font-size:12px !important;
-    }
-
-    .header-center{
-      min-width:360px !important;
-      transform:translateY(-5px) !important;
-    }
-
-    .nav{
-      gap:6px 8px !important;
-      transform:translateY(-5px) !important;
-      align-content:flex-start !important;
-    }
-
-    .nav a{
-      font-size:11.5px !important;
-      line-height:1.02 !important;
-      padding:5px 6px !important;
-      gap:4px !important;
-      white-space:nowrap !important;
-    }
-
-    .nav a::before{
-      width:12px !important;
-      min-width:12px !important;
-      font-size:10.5px !important;
-    }
-
-    .social-links{
-      gap:6px !important;
-      margin-left:6px !important;
-      margin-top:0 !important;
-    }
-
-    .social-label{
-      font-size:11px !important;
-    }
-
-    .social-pill{
-      min-width:38px !important;
-      padding:6px 10px !important;
-      font-size:11px !important;
-    }
-
-    .social-pill.linkedin{
-      min-width:68px !important;
-    }
-
-    @media(max-width:1180px){
-      .header{
-        min-height:auto !important;
-      }
-      .header-center,
-      .nav{
-        transform:none !important;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-
-  /* Tell site-nav.js that the compact ribbon geometry has just changed. */
-  window.dispatchEvent(new Event("psd:ribbon-layout-changed"));
+  /* Ribbon layout is owned exclusively by site-theme.css. */
 }
 
-function psdNormalizeTopNavIcons(){
-  const navLinkMap = {
-    "dashboard.html": { label:"Interactive Dashboard", icon:"📊" },
-    "charts.html": { label:"Market Charts", icon:"📈" },
-    "sentiment-history.html": { label:"Historical Sentiment", icon:"📈" },
-    "news-articles.html": { label:"News & Articles", icon:"📰" },
-    "market-sentiment.html": { label:"Guides", icon:"📘" },
-    "advertise.html": { label:"Business Opportunities", icon:"💼" },
-    "contact.html": { label:"Get in Touch", icon:"✉️" },
-    "about.html": { label:"About", icon:"ℹ️" },
-    "crypto.html": { label:"Crypto Sentiment", icon:"🪙" },
-    "energy.html": { label:"Energy Sentiment", icon:"⚡" },
-    "precious-metals.html": { label:"Precious Metals Sentiment", icon:"🥇" },
-    "indices.html": { label:"Indices Sentiment", icon:"📊" }
-  };
-
-  if(!document.getElementById("psdRibbonIconCss")){
-    const style = document.createElement("style");
-    style.id = "psdRibbonIconCss";
-    style.textContent = Object.entries(navLinkMap).map(([href, item]) =>
-      `.nav a[href="${href}"]::before{content:"${item.icon}"!important;}`
-    ).join("\n");
-    document.head.appendChild(style);
-  }
-
-  document.querySelectorAll(".nav a[href]").forEach(link => {
-    const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
-    const key = href.split("/").pop();
-    const item = navLinkMap[key];
-    if(!item) return;
-
-    link.href = key;
-    link.textContent = item.label;
-  });
+  function psdNormalizeTopNavIcons(){
+  /* Ribbon labels/icons are owned by site-nav.js + site-theme.css. */
 }
 
-function psdEnsureMarketChartsNavLink(){
-  const nav = document.querySelector(".nav");
-  if(!nav) return;
-
-  const currentPath = window.location.pathname.toLowerCase();
-  const isChartsPage = currentPath.endsWith("/charts.html") || currentPath.endsWith("charts.html");
-
-  let chartsLink = Array.from(nav.querySelectorAll("a[href]")).find(link => {
-    const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
-    return href === "charts.html" || href.endsWith("/charts.html");
-  });
-
-  if(!chartsLink){
-    chartsLink = document.createElement("a");
-    chartsLink.href = "charts.html";
-
-    const dashboardLink = Array.from(nav.querySelectorAll("a[href]")).find(link => {
-      const href = (link.getAttribute("href") || "").split("#")[0].split("?")[0].toLowerCase();
-      return href === "dashboard.html" || href.endsWith("/dashboard.html");
-    });
-
-    const rowBreak = nav.querySelector(".nav-row-break");
-
-    if(dashboardLink){
-      dashboardLink.insertAdjacentElement("afterend", chartsLink);
-    }else if(rowBreak){
-      nav.insertBefore(chartsLink, rowBreak);
-    }else{
-      nav.insertBefore(chartsLink, nav.firstChild);
-    }
-  }
-
-  chartsLink.href = "charts.html";
-  chartsLink.textContent = "Market Charts";
-  chartsLink.classList.toggle("active", isChartsPage);
+  function psdEnsureMarketChartsNavLink(){
+  /* Shared navigation structure is owned exclusively by site-nav.js. */
 }
 
-function psdEnhanceFooterLegalLinks(){
+  function psdEnhanceFooterLegalLinks(){
   document.querySelectorAll(".footer-links").forEach(footer => {
     const extraLinks = [
       ["advertise.html", "Business Opportunities"],
@@ -351,28 +188,10 @@ function psdEnhanceFooterLegalLinks(){
 }
 
 function psdEnhanceSocialLinks(){
-  document.querySelectorAll(".social-links").forEach(social => {
-    const xPill = Array.from(social.querySelectorAll(".social-pill")).find(el =>
-      el.textContent.trim().toLowerCase() === "x"
-    );
-
-    if(xPill && xPill.tagName.toLowerCase() !== "a"){
-      const a = document.createElement("a");
-      a.className = xPill.className;
-      a.textContent = "X";
-      a.href = PSD_X_PROFILE_URL;
-      a.target = "_blank";
-      a.rel = "noopener";
-      xPill.replaceWith(a);
-    }else if(xPill){
-      xPill.href = PSD_X_PROFILE_URL;
-      xPill.target = "_blank";
-      xPill.rel = "noopener";
-    }
-  });
+  /* Ribbon social controls are owned exclusively by site-nav.js. */
 }
 
-function psdFallbackFromElement(el){
+  function psdFallbackFromElement(el){
   const card = el.closest(".instrument-card");
   if(card){
     const dailyRow = Array.from(card.querySelectorAll(".info-row")).find(row =>
@@ -749,6 +568,31 @@ window.addEventListener("load", () => {
   psdSafe("enhance social links on load", psdEnhanceSocialLinks);
   psdSafe("apply user sentiment on load", psdApplyUserSentiment);
 });
+
+
+/* Production voting visibility guard.
+   Voting owns only voting; this never touches the shared ribbon. */
+function psdEnsureVoteWidgetVisible(){
+  try{
+    psdCreateVoteWidget();
+    const widget = document.getElementById("psdVoteWidget");
+    if(!widget) return;
+    widget.style.display = "block";
+    widget.style.visibility = "visible";
+    widget.style.opacity = "1";
+  }catch(error){
+    console.warn("PSD vote widget visibility guard failed:", error);
+  }
+}
+
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", psdEnsureVoteWidgetVisible, {once:true});
+}else{
+  psdEnsureVoteWidgetVisible();
+}
+window.addEventListener("load", psdEnsureVoteWidgetVisible, {once:true});
+setTimeout(psdEnsureVoteWidgetVisible, 250);
+setTimeout(psdEnsureVoteWidgetVisible, 1000);
 
 window.psdApplyUserSentiment = psdApplyUserSentiment;
 
