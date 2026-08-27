@@ -1002,7 +1002,39 @@
 
   function render(){
     const mount = document.getElementById("site-header");
-    if(!mount) return;
+
+    /*
+     * LAB STATIC-RIBBON TEST:
+     * dashboard-lab.html already contains the complete ribbon markup.
+     * When no #site-header placeholder exists, initialize the existing ribbon
+     * without replacing or redrawing it.
+     */
+    if(!mount){
+      if(!document.querySelector(".psd-shared-header")) return;
+
+      ensureTourStyles();
+      enforceRibbonNamesAndAIStyle();
+      installRibbonCopyGuard();
+      initializeRibbonThemeButton();
+
+      alignRibbonGeometry();
+      window.setTimeout(alignRibbonGeometry, 80);
+      window.setTimeout(alignRibbonGeometry, 240);
+
+      const tourButton = document.getElementById("site-tour-button");
+      if(tourButton){
+        tourButton.onclick = function(event){
+          event.preventDefault();
+          event.stopPropagation();
+          openTour();
+        };
+      }
+
+      initializeAccountNavigation();
+      initializeMemberFeatureAccess();
+      loadSiteStatus();
+      return;
+    }
     const current = currentFile();
     const primaryLinks = mainLinks
       .filter(link => link.href !== "auth.html")
@@ -1111,11 +1143,6 @@
     document.fonts.ready.then(scheduleRibbonGeometryAlignment).catch(function(){});
   }
 
-  if(document.getElementById("site-header")){
-    render();
-  }else if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", render, { once:true });
-  }else{
-    render();
-  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
+  else render();
 })();
