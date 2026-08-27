@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# PSD Ribbon Production Migration — Codespaces/Bash version
+# Run from repository root.
+# Lab/test pages are skipped.
+
+VERSION="20"
+changed=0
+
+for file in *.html; do
+  [ -f "$file" ] || continue
+
+  case "$file" in
+    xx-*|xx_*|*dashboard-lab*) continue ;;
+  esac
+
+  if ! grep -qiE '<div[[:space:]]+id=["'\'']site-header["'\''][[:space:]]*></div>' "$file"; then
+    continue
+  fi
+
+  cp "$file" "$file.__psd_tmp"
+
+  python3 - "$file" "$VERSION" <<'PY'
+import re, sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+version = sys.argv[2]
+text = path.read_text(encoding="utf-8")
+
+# Remove all existing shared nav/theme script loaders.
+text = re.sub(
+    r'<script\b[^>]*\bsrc=["\']site-nav\.js(?:\?[^"\']*)?["\'][^>]*>\s*</script>\s*',
+    '',
+    text,
+    flags=re.I
+)
+text = re.sub(
+    r'<script\b[^>]*\bsrc=["\']site-theme\.js(?:\?[^"\']*)?["\'][^>]*>\s*</script>\s*',
+    '',
+    text,
+    flags=re.I
+)
+
+# Standardize theme stylesheet cache version when present.
+text = re.sub(
+    r'href=["\']site-theme\.css(?:\?[^"\']*)?["\']',
+    f'href="site-theme.css?v={version}"',
+    text,
+    flags=re.I
+)
+
+replacement = (
+    '<div id="site-header"></div>\n'
+    f'  <script src="site-nav.js?v={version}"></script>\n'
+    f'  <script src="site-theme.js?v={version}" defer></script>'
+)
+
+text, count = re.subn(
+    r'<div\s+id=["\']site-header["\']\s*></div>',
+    replacement,
+    text,
+    count=1,
+    flags=re.I
+)
+
+if count != 1:
+    raise SystemExit(f"ERROR: site-header replacement failed in {path.name}")
+
+# Safety validation.
+if len(re.findall(fr'src=["\']site-nav\.js\?v={re.escape(version)}["\']', text, re.I)) != 1:
+    raise SystemExit(f"ERROR: site-nav validation failed in {path.name}")
+
+if re.search(fr'<script[^>]+src=["\']site-nav\.js\?v={re.escape(version)}["\'][^>]*\bdefer\b', text, re.I):
+    raise SystemExit(f"ERROR: site-nav is still deferred in {path.name}")
+
+if len(re.findall(fr'src=["\']site-theme\.js\?v={re.escape(version)}["\']', text, re.I)) != 1:
+    raise SystemExit(f"ERROR: site-theme validation failed in {path.name}")
+
+path.write_text(text, encoding="utf-8")
+PY
+
+  if cmp -s "$file" "$file.__psd_tmp"; then
+    rm "$file.__psd_tmp"
+  else
+    rm "$file.__psd_tmp"
+    echo "Updated: $file"
+    changed=$((changed + 1))
+  fi
+done
+
+echo
+echo "PSD ribbon migration complete."
+echo "Changed production pages: $changed"
+echo
+echo "All migrated pages now use:"
+echo "  site-theme.css?v=20"
+echo "  site-nav.js?v=20  (immediate / no defer)"
+echo "  site-theme.js?v=20"
+echo
+echo "Lab/test pages were left untouched."
