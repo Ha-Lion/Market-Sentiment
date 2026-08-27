@@ -482,6 +482,47 @@
     .queue-head strong .mi-glossary-info,.score-copy h2 .mi-glossary-info,.section-head h2 .mi-glossary-info,.mi-intro h1 .mi-glossary-info{vertical-align:2px}
 
   </style>
+
+  <style id="psd-ribbon-settle-test">
+    /*
+      LAB-ONLY ribbon stability test.
+      No site-nav.js, vote-widget.js, login, links, or page content changed.
+      Reserve the final desktop ribbon space immediately, then reveal the
+      completed ribbon after late CSS/font geometry has settled.
+    */
+    #site-header{
+      display:block;
+      min-height:148px;
+      background:rgba(6,9,15,.95);
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .psd-shared-header{
+      min-height:148px !important;
+      opacity:0;
+      animation:psdRibbonSettledReveal .16s ease-out .28s forwards;
+    }
+
+    @keyframes psdRibbonSettledReveal{
+      from{opacity:0}
+      to{opacity:1}
+    }
+
+    @media(max-width:1180px){
+      #site-header{min-height:0;background:transparent;border-bottom:0}
+      .psd-shared-header{
+        min-height:auto !important;
+        animation-delay:.18s;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .psd-shared-header{
+        animation-duration:.01ms;
+      }
+    }
+  </style>
+
 </head>
 <body>
   <div id="site-header"></div>
