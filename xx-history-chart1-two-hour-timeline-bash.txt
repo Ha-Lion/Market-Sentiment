@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Historical Chart 1 — 2-hour timeline, real scans only
+# Changes sentiment-history.html only.
+# Does NOT change scraper schedule, engine, formulas, retention, ribbon, or other charts.
+
+FILE="sentiment-history.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "ERROR: sentiment-history.html not found. Run this from the repository root."
+  exit 1
+fi
+
+python3 - "$FILE" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+old_title = '<span>Hourly sentiment pulse</span>'
+new_title = '<span>Global vs. U.S. PSI — 2-Hour Timeline</span>'
+
+anchor = '''      return slots;
+    }
+
+    function bias(v){'''
+
+insert = '''      return slots;
+    }
+
+    function aggregateTwoHourComparison(records){
+      const clean = records
+        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()) && (Number.isFinite(r.global) || Number.isFinite(r.us)))
+        .sort((a,b)=>a.ts-b.ts);
+
+      if(!clean.length) return [];
+
+      const twoHourParts = (d) => {
+        const parts = new Intl.DateTimeFormat("en-US",{
+          timeZone:"America/New_York",
+          year:"numeric",
+          month:"2-digit",
+          day:"2-digit",
+          hour:"2-digit",
+          hour12:false
+        }).formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
+
+        let hour = Number(parts.hour === "24" ? "00" : parts.hour);
+        hour = Math.floor(hour / 2) * 2;
+        const hh = String(hour).padStart(2,"0");
+
+        return {
+          key:parts.year+"-"+parts.month+"-"+parts.day+" "+hh+":00",
+          label:hh+":00"
+        };
+      };
+
+      const groups = new Map();
+      clean.forEach(r => {
+        const slot = twoHourParts(r.ts);
+        if(!groups.has(slot.key)){
+          groups.set(slot.key,{key:slot.key,label:slot.label,global:[],us:[],lastTs:r.ts});
+        }
+        const g = groups.get(slot.key);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+        if(r.ts > g.lastTs) g.lastTs = r.ts;
+      });
+
+      const latest = clean[clean.length-1].ts;
+      const now = new Date();
+      const recentEnoughMs = 48 * 3600000;
+      const endBase = (now.getTime() > latest.getTime() && now.getTime() - latest.getTime() <= recentEnoughMs) ? now : latest;
+
+      const end = new Date(endBase);
+      end.setMinutes(0,0,0);
+      end.setHours(Math.floor(end.getHours()/2)*2);
+
+      const slots = [];
+      for(let i=7;i>=0;i--){
+        const slotDate = new Date(end.getTime() - i * 2 * 3600000);
+        const slot = twoHourParts(slotDate);
+        const exact = groups.get(slot.key);
+
+        slots.push({
+          key:slot.key,
+          label:slot.label,
+          sort:slotDate.getTime(),
+          lastTs:exact?.lastTs || slotDate,
+          global:exact ? avg(exact.global) : null,
+          us:exact ? avg(exact.us) : null,
+          value:exact ? avg(exact.global) : null,
+          carried:false,
+          hasScan:!!exact
+        });
+      }
+
+      return slots;
+    }
+
+    function bias(v){'''
+
+old_source = '      let pts = aggregateHourlyComparison(state.hourly);'
+new_source = '      let pts = aggregateTwoHourComparison(state.hourly);'
+
+old_comment = '''      // Comparison card: always shows Global + U.S. together.
+      // Live intraday samples are sorted oldest to newest.
+      // New hourly readings enter from the right while older bars shift left.
+      pts = pts.slice(-8);'''
+
+new_comment = '''      // Comparison card: always shows Global + U.S. together.
+      // X-axis advances in 2-hour slots.
+      // Bars appear only where a real engine scan exists; missing slots stay empty.
+      pts = pts.slice(-8);'''
+
+old_bar = '''          ctx.fillStyle=grad;
+          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
+        });
+
+        ctx.fillStyle=COLORS.text;
+        ctx.textAlign="center";
+        ctx.fillText(String(p.label || ""), center, h-9);'''
+
+new_bar = '''          ctx.fillStyle=grad;
+          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
+
+          ctx.save();
+          ctx.fillStyle=item.color;
+          ctx.font="600 10px Inter, Arial";
+          ctx.textAlign="center";
+          ctx.textBaseline="bottom";
+          ctx.fillText(String(Math.round(item.value)), center + item.offset, Math.max(box.pad.t + 12, y - 4));
+          ctx.restore();
+        });
+
+        ctx.fillStyle=p.hasScan ? COLORS.text : "rgba(148,163,184,.72)";
+        ctx.font="9px Inter, Arial";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(String(p.label || ""), center, h-9);'''
+
+old_info = 'Shows recent hourly Global and U.S. sentiment observations. When a new hourly reading is unavailable, the most recent valid reading may be carried forward so the timeline remains continuous.'
+new_info = 'Compares Global and U.S. PSI on a 2-hour timeline. Bars appear only for real engine scans; empty 2-hour slots mean no scan was recorded.'
+
+replacements = [
+    ("title", old_title, new_title),
+    ("two-hour helper anchor", anchor, insert),
+    ("chart data source", old_source, new_source),
+    ("chart comments", old_comment, new_comment),
+    ("bar values", old_bar, new_bar),
+    ("info tooltip", old_info, new_info),
+]
+
+for name, old, new in replacements:
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"ERROR: Expected exactly one {name} match, found {count}. No change made.")
+
+for _, old, new in replacements:
+    text = text.replace(old, new, 1)
+
+required = [
+    "function aggregateTwoHourComparison(records)",
+    "let pts = aggregateTwoHourComparison(state.hourly);",
+    "Global vs. U.S. PSI — 2-Hour Timeline",
+    "Bars appear only for real engine scans",
+    "ctx.fillText(String(Math.round(item.value))",
+    "hasScan:!!exact"
+]
+for token in required:
+    if token not in text:
+        raise SystemExit(f"ERROR: Validation failed for {token}. No change made.")
+
+path.write_text(text, encoding="utf-8")
+
+print("CHART 1 UPDATE COMPLETE — Historical page only")
+print("Changed file: sentiment-history.html")
+print("")
+print("Chart now:")
+print("  - clearly compares Global vs. U.S. PSI")
+print("  - uses a 2-hour timeline")
+print("  - shows bars only for real scans")
+print("  - leaves missing 2-hour slots empty")
+print("  - displays PSI numbers above real bars")
+print("")
+print("Not changed:")
+print("  - scraper schedule")
+print("  - engine")
+print("  - PSI formulas")
+print("  - 180-day retention")
+print("  - other charts")
+print("  - ribbon/voting")
+PY
+
+echo
+echo "Run this next:"
+echo "  git diff -- sentiment-history.html"
+echo
+echo "Do NOT commit yet."
