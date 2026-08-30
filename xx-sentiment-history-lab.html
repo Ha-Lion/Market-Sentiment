@@ -1247,6 +1247,87 @@
     }
   </style>
 
+
+  <style id="xx-history-light-contrast-v2">
+    /* Detect-light class is applied by the lab JS below. */
+    html.xx-history-light #xx-clean-history-dashboard{
+      --xx-card-bg:#ffffff;
+      --xx-card-border:#aeb8c6;
+      --xx-text:#172033;
+      --xx-muted:#526176;
+    }
+
+    html.xx-history-light .xx-history-toolbar{
+      background:#fffdf8!important;
+      border-color:#b6c0cd!important;
+      box-shadow:0 2px 8px rgba(15,23,42,.08)!important;
+    }
+
+    html.xx-history-light .xx-toolbar-label,
+    html.xx-history-light .xx-toolbar-status{
+      color:#3f4c5f!important;
+    }
+
+    html.xx-history-light .xx-region-btn{
+      background:#ffffff!important;
+      color:#1e293b!important;
+      border-color:#9ca9ba!important;
+      box-shadow:none!important;
+    }
+
+    html.xx-history-light .xx-region-btn[data-region="us"].active{
+      color:#a80f4d!important;
+      border-color:#d81b60!important;
+      background:#fff0f6!important;
+    }
+
+    html.xx-history-light .xx-region-btn[data-region="global"].active,
+    html.xx-history-light .xx-region-btn[data-region="all"].active{
+      color:#6f4b00!important;
+      border-color:#b78000!important;
+      background:#fff7df!important;
+    }
+
+    html.xx-history-light .xx-region-btn[data-region="europe"].active{
+      color:#00677c!important;
+      border-color:#008ca8!important;
+      background:#ecfbff!important;
+    }
+
+    html.xx-history-light .xx-history-card{
+      background:#ffffff!important;
+      border-color:#aeb8c6!important;
+      box-shadow:0 3px 12px rgba(15,23,42,.10)!important;
+    }
+
+    html.xx-history-light .xx-history-card-head{
+      background:linear-gradient(180deg,#ffffff,#f8fafc)!important;
+      border-bottom:1px solid #d4dbe4!important;
+    }
+
+    html.xx-history-light .xx-history-card-title{
+      color:#172033!important;
+    }
+
+    html.xx-history-light .xx-history-card-sub,
+    html.xx-history-light .xx-chart-legend{
+      color:#526176!important;
+    }
+
+    html.xx-history-light .xx-chart-wrap{
+      background:#ffffff!important;
+    }
+
+    html.xx-history-light .xx-chart-empty{
+      color:#536176!important;
+    }
+
+    html.xx-history-light .xx-legend-item{
+      color:#344256!important;
+      font-weight:700;
+    }
+  </style>
+
 </head>
 
 <body>
@@ -2964,7 +3045,16 @@
     const finite = v => Number.isFinite(Number(v));
     const num = v => finite(v) ? Number(v) : null;
 
+    function isHistoryLight(){
+      return document.documentElement.classList.contains("xx-history-light");
+    }
+
     function regionColor(key){
+      if(isHistoryLight()){
+        if(key === "us") return "#d81b60";
+        if(key === "global") return "#9a6700";
+        if(key === "europe") return "#008ca8";
+      }
       const meta=REGION_META[key];
       const css=getComputedStyle(document.documentElement).getPropertyValue(meta.css).trim();
       return css || meta.fallback;
@@ -3111,9 +3201,12 @@
       const y=v=>pad.t+(100-v)/100*ih;
       const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
 
-      const textColor=getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8";
-      const gridColor="rgba(148,163,184,.15)";
-      const neutralColor="rgba(148,163,184,.34)";
+      const light=isHistoryLight();
+      const textColor=light
+        ? "#526176"
+        : (getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8");
+      const gridColor=light ? "rgba(71,85,105,.20)" : "rgba(148,163,184,.15)";
+      const neutralColor=light ? "rgba(51,65,85,.38)" : "rgba(148,163,184,.34)";
 
       ctx.font="9px Inter,Arial";
       ctx.lineWidth=1;
@@ -3165,12 +3258,19 @@
       });
 
       if(missing.length){
-        empty.textContent=missing.map(k=>REGION_META[k].label).join(" + ")+" selected, but historical data is not stored yet.";
-        empty.classList.add("show");
-        empty.style.alignItems="end";
-        empty.style.justifyItems="center";
-        empty.style.paddingBottom="30px";
+        empty.classList.remove("show");
+        empty.removeAttribute("style");
       }
+    }
+
+    function syncHistoryTheme(){
+      const bodyBg=getComputedStyle(document.body).backgroundColor;
+      const nums=(bodyBg.match(/[\d.]+/g) || []).slice(0,3).map(Number);
+      const luminance=nums.length===3 ? (nums[0]*0.299 + nums[1]*0.587 + nums[2]*0.114) : 0;
+      const light=luminance > 145;
+      const changed=document.documentElement.classList.contains("xx-history-light") !== light;
+      document.documentElement.classList.toggle("xx-history-light",light);
+      if(changed && historyData) requestAnimationFrame(render);
     }
 
     function updateButtons(){
@@ -3233,8 +3333,13 @@
         if(dashboardRes.ok) dashboardData=await dashboardRes.json();
 
         bindControls();
+        syncHistoryTheme();
         updateButtons();
         render();
+
+        const themeObserver=new MutationObserver(()=>setTimeout(syncHistoryTheme,20));
+        themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:["class","data-theme"]});
+        themeObserver.observe(document.body,{attributes:true,attributeFilter:["class","data-theme"]});
       }catch(err){
         console.error("Historical lab load failed:",err);
         const status=document.getElementById("xxHistoryStatus");
