@@ -1542,7 +1542,7 @@
       border-radius:50%!important;
       background:#ffffff!important;
       color:#d32f2f!important;
-      box-shadow:none!important;
+      box-shadow:none;
       outline:0!important;
       font:800 10px/14px system-ui,-apple-system,"Segoe UI",sans-serif!important;
       text-align:center!important;
@@ -1550,7 +1550,7 @@
       appearance:none!important;
       -webkit-appearance:none!important;
       overflow:hidden!important;
-      transform:none!important;
+      transform-origin:center!important;
       cursor:pointer!important;
       transition:.15s ease!important;
     }
@@ -1704,6 +1704,81 @@
     }
   </style>
 
+
+  <style id="xx-history-final-chart-readability-v2">
+    #xx-clean-history-dashboard .xx-history-card{
+      min-height:330px!important;
+    }
+
+    #xx-clean-history-dashboard .xx-chart-wrap{
+      height:286px!important;
+    }
+
+    #xx-clean-history-dashboard .xx-history-card-head{
+      min-height:34px!important;
+      padding:8px 10px 3px!important;
+      align-items:center!important;
+    }
+
+    /* Light mode: make formerly gray supporting text dark/black. */
+    html.xx-history-light #xx-clean-history-dashboard .xx-toolbar-label,
+    html.xx-history-light #xx-clean-history-dashboard .xx-toolbar-status,
+    html.xx-history-light #xx-clean-history-dashboard .xx-chart-legend,
+    html.xx-history-light #xx-clean-history-dashboard .xx-legend-item,
+    html.xx-history-light #xx-clean-history-dashboard .xx-chart-empty,
+    html.xx-history-light .history-lead,
+    html.xx-history-light .xx-exact-history summary small,
+    html.xx-history-light .xx-exact-help{
+      color:#111111!important;
+    }
+
+    /*
+      Exact specialty-page glossary dance:
+      brief 1.11 scale + red glow during a 5-second cycle.
+    */
+    @keyframes psdPulseGlossary{
+      0%,82%,100%{
+        transform:scale(1);
+        box-shadow:none;
+      }
+      87%{
+        transform:scale(1.11);
+        box-shadow:0 0 0 3px rgba(211,47,47,.10),0 0 10px rgba(211,47,47,.32);
+      }
+      92%{
+        transform:scale(1);
+        box-shadow:0 0 5px rgba(211,47,47,.18);
+      }
+    }
+
+    .xx-exact-history .hist-info-btn{
+      transform-origin:center!important;
+      animation:psdPulseGlossary 5s ease-in-out infinite!important;
+    }
+
+    .xx-exact-history .hist-info-btn:hover,
+    .xx-exact-history .hist-info-btn:focus-visible,
+    .xx-exact-history .hist-info-btn[aria-expanded="true"]{
+      animation:none!important;
+      transform:scale(1)!important;
+    }
+
+    @media(max-width:520px){
+      #xx-clean-history-dashboard .xx-history-card{
+        min-height:280px!important;
+      }
+      #xx-clean-history-dashboard .xx-chart-wrap{
+        height:236px!important;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .xx-exact-history .hist-info-btn{
+        animation:none!important;
+      }
+    }
+  </style>
+
 </head>
 
 <body>
@@ -1752,7 +1827,6 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Hourly PSI</h2>
-              <div class="xx-history-card-sub">Past 7 days • intraday engine scans • NY time</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="hourly"></div>
           </div>
@@ -1766,7 +1840,6 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Daily PSI</h2>
-              <div class="xx-history-card-sub">Past 3 weeks • daily readings</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="daily"></div>
           </div>
@@ -1780,7 +1853,6 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Weekly PSI</h2>
-              <div class="xx-history-card-sub">Past 3 months • weekly averages</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="weekly"></div>
           </div>
@@ -1794,7 +1866,6 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Monthly PSI</h2>
-              <div class="xx-history-card-sub">Past 6 months • monthly averages</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="monthly"></div>
           </div>
@@ -3676,9 +3747,9 @@
       const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
 
       const light=isHistoryLight();
-      const textColor=light
-        ? "#526176"
-        : (getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8");
+      const textColor=isHistoryLight()
+        ? "#111111"
+        : (getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#d7e0ea");
       const gridColor=light ? "rgba(71,85,105,.20)" : "rgba(148,163,184,.15)";
       const neutralColor=light ? "rgba(51,65,85,.38)" : "rgba(148,163,184,.34)";
 
