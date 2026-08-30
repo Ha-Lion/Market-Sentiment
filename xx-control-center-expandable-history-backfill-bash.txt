@@ -1,0 +1,485 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+python - <<'PY'
+import json
+import re
+import subprocess
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+ENGINE_REPO = "Ha-Lion/Market-Sentiment-Engine-V2"
+WORKFLOW = "v2-production-publish.yml"
+CUTOFF = datetime.now(timezone.utc) - timedelta(days=180)
+
+def sh(*args):
+    return subprocess.run(args, check=True, capture_output=True, text=True).stdout
+
+def runtime_messages(raw):
+    out = []
+    for line in raw.splitlines():
+        m = re.search(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\s+(.*)$', line)
+        msg = (m.group(1) if m else line).strip()
+        if not msg:
+            continue
+        prefixes = (
+            "echo ", "if ", "then", "else", "fi", "for ", "do", "done",
+            "python ", "python3 ", "aws ", "git ", "sleep ", "exit ",
+            "export ", "mkdir ", "cp ", "cd ", "TOKEN_CLEAN=", "cat ",
+            "with ", "try:", "except ", "payload =", "req = ",
+        )
+        if msg.startswith(prefixes) or msg in {"PY", "EOF"}:
+            continue
+        out.append(msg)
+    return out
+
+runs = json.loads(sh(
+    "gh", "run", "list",
+    "--repo", ENGINE_REPO,
+    "--workflow", WORKFLOW,
+    "--limit", "1500",
+    "--json", "databaseId,conclusion,createdAt,updatedAt,url"
+))
+
+recent = []
+for run in runs:
+    dt = datetime.fromisoformat(run["createdAt"].replace("Z", "+00:00"))
+    if dt >= CUTOFF:
+        recent.append(run)
+recent.sort(key=lambda r: r["createdAt"])
+
+if not recent:
+    raise SystemExit("STOP: no V2 production runs available in the last 180 days.")
+
+definitions = {
+    "psi_prior_fallback": {
+        "component": "PSI",
+        "severity": "degraded",
+        "label": "PSI used prior-fallback assets",
+    },
+    "fred_unavailable": {
+        "component": "Technical feeds",
+        "severity": "warning",
+        "label": "FRED indicators unavailable",
+    },
+    "gemini_unavailable": {
+        "component": "AI provider",
+        "severity": "degraded",
+        "label": "Gemini unavailable / transient error",
+    },
+    "market_pulse_ai_failed": {
+        "component": "AI",
+        "severity": "degraded",
+        "label": "Market Pulse AI synthesis failed",
+    },
+}
+
+occurrences = defaultdict(list)
+run_keys = {}
+
+print(f"Backfilling trusted issue history from {len(recent)} V2 production runs.")
+print("Excluded from top-level history to avoid clutter/double-counting:")
+print("  - generic optional-feed count (mostly duplicated the FRED outage)")
+print("  - Groq validation row (already captured inside Market Pulse AI failure reason)")
+print()
+
+for idx, run in enumerate(recent, 1):
+    run_id = str(run["databaseId"])
+    print(f"[{idx:02d}/{len(recent):02d}] {run['createdAt']} run {run_id}", flush=True)
+    proc = subprocess.run(
+        ["gh", "run", "view", "--repo", ENGINE_REPO, run_id, "--log"],
+        capture_output=True,
+        text=True,
+    )
+    msgs = runtime_messages((proc.stdout or "") + "\n" + (proc.stderr or ""))
+    text = "\n".join(msgs)
+    found = set()
+
+    prior = [int(x) for x in re.findall(r'(\d+) prior-fallback PSI', text, flags=re.I)]
+    if prior and max(prior) > 0:
+        count = max(prior)
+        key = "psi_prior_fallback"
+        found.add(key)
+        occurrences[key].append({
+            "seen_utc": run["createdAt"],
+            "run_id": run_id,
+            "run_url": run["url"],
+            "reason": f"{count} asset(s) used prior-fallback PSI",
+            "detail": {"count": count},
+        })
+
+    fred = [int(x) for x in re.findall(r'(\d+)/8 FRED indicators available', text, flags=re.I)]
+    if fred and min(fred) < 8:
+        available = min(fred)
+        key = "fred_unavailable"
+        found.add(key)
+        occurrences[key].append({
+            "seen_utc": run["createdAt"],
+            "run_id": run_id,
+            "run_url": run["url"],
+            "reason": f"{available}/8 FRED indicators available",
+            "detail": {"available": available, "expected": 8},
+        })
+
+    gemini_line = next((
+        m for m in msgs
+        if re.search(r'gemini transient error|gemini: HTTP 503: UNAVAILABLE|Gemini.*UNAVAILABLE', m, flags=re.I)
+    ), None)
+    if gemini_line:
+        key = "gemini_unavailable"
+        found.add(key)
+        occurrences[key].append({
+            "seen_utc": run["createdAt"],
+            "run_id": run_id,
+            "run_url": run["url"],
+            "reason": gemini_line,
+            "detail": {},
+        })
+
+    pulse_line = next((
+        m for m in msgs
+        if re.search(r'AI gateway: Market Pulse AI failed:', m, flags=re.I)
+    ), None)
+    if pulse_line:
+        key = "market_pulse_ai_failed"
+        found.add(key)
+        occurrences[key].append({
+            "seen_utc": run["createdAt"],
+            "run_id": run_id,
+            "run_url": run["url"],
+            "reason": pulse_line,
+            "detail": {},
+        })
+
+    run_keys[run_id] = found
+
+issues = []
+latest_run_id = str(recent[-1]["databaseId"])
+
+for key, definition in definitions.items():
+    occs = occurrences.get(key, [])
+    if not occs:
+        continue
+
+    streak = 0
+    max_streak = 0
+    for run in recent:
+        if key in run_keys.get(str(run["databaseId"]), set()):
+            streak += 1
+            max_streak = max(max_streak, streak)
+        else:
+            streak = 0
+
+    active = key in run_keys.get(latest_run_id, set())
+    current_streak = 0
+    if active:
+        for run in reversed(recent):
+            if key in run_keys.get(str(run["databaseId"]), set()):
+                current_streak += 1
+            else:
+                break
+
+    numeric_counts = [
+        o["detail"]["count"]
+        for o in occs
+        if isinstance(o.get("detail"), dict) and "count" in o["detail"]
+    ]
+
+    issue = {
+        "key": key,
+        "component": definition["component"],
+        "severity": definition["severity"],
+        "label": definition["label"],
+        "status": "active" if active else "recovered",
+        "total_occurrences": len(occs),
+        "max_consecutive_runs": max_streak,
+        "current_consecutive_runs": current_streak,
+        "first_seen_utc": occs[0]["seen_utc"],
+        "last_seen_utc": occs[-1]["seen_utc"],
+        "occurrences": occs,
+    }
+    if numeric_counts:
+        issue["max_affected"] = max(numeric_counts)
+    issues.append(issue)
+
+issues.sort(key=lambda x: (-x["total_occurrences"], -x["max_consecutive_runs"], x["label"]))
+
+payload = {
+    "schema": "PSD_ENGINE_ISSUE_HISTORY_V1",
+    "retention_days": 180,
+    "updated_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+    "runs_scanned": len(recent),
+    "oldest_run_utc": recent[0]["createdAt"],
+    "newest_run_utc": recent[-1]["createdAt"],
+    "issues": issues,
+}
+
+Path("engine_issue_history.json").write_text(
+    json.dumps(payload, indent=2) + "\n",
+    encoding="utf-8",
+)
+
+print("\nCreated engine_issue_history.json")
+for issue in issues:
+    print(
+        f'{issue["total_occurrences"]}x | '
+        f'{issue["label"]} | '
+        f'max consecutive {issue["max_consecutive_runs"]} | '
+        f'{issue["status"]}'
+    )
+PY
+
+python - <<'PY'
+from pathlib import Path
+import re
+
+js_path = Path("activity-report.js")
+css_path = Path("activity-report.css")
+html_path = Path("activity-report.html")
+
+js = js_path.read_text(encoding="utf-8")
+css = css_path.read_text(encoding="utf-8")
+html = html_path.read_text(encoding="utf-8")
+
+start = js.find("  function renderHealthHistory(log){")
+end = js.find("  async function loadLegacyHealth(){", start)
+if start == -1 or end == -1:
+    raise SystemExit("STOP: expected renderHealthHistory() block not found.")
+
+new_render = r'''  function renderHealthHistory(history){
+    const host=document.getElementById("health-history-list");
+    if(!host)return;
+    host.replaceChildren();
+
+    let issues=[];
+    if(Array.isArray(history&&history.issues)){
+      issues=history.issues.slice();
+    }else if(Array.isArray(history&&history.events)){
+      issues=history.events.map(function(event){
+        return {
+          key:event.key,
+          component:event.component,
+          severity:event.severity,
+          label:event.message||event.code||"Engine issue",
+          status:event.status||"recovered",
+          total_occurrences:1,
+          max_consecutive_runs:Number(event.consecutive_runs||1),
+          first_seen_utc:event.first_seen_utc,
+          last_seen_utc:event.last_seen_utc,
+          occurrences:[{
+            seen_utc:event.last_seen_utc||event.first_seen_utc,
+            run_id:event.last_run_id||event.first_run_id,
+            run_url:null,
+            reason:event.message||"Recorded engine issue.",
+            detail:{}
+          }]
+        };
+      });
+    }
+
+    issues.sort(function(a,b){
+      return Number(b.total_occurrences||0)-Number(a.total_occurrences||0) ||
+        String(b.last_seen_utc||"").localeCompare(String(a.last_seen_utc||""));
+    });
+
+    if(!issues.length){
+      const empty=document.createElement("div");
+      empty.className="health-history-empty";
+      empty.textContent="No recorded issues.";
+      host.appendChild(empty);
+      return;
+    }
+
+    issues.forEach(function(issue){
+      const details=document.createElement("details");
+      details.className="health-issue-group";
+
+      const summary=document.createElement("summary");
+      summary.className="health-issue-summary";
+
+      const qty=document.createElement("strong");
+      qty.className="health-issue-qty";
+      qty.textContent=`${Number(issue.total_occurrences||0)}×`;
+
+      const title=document.createElement("span");
+      title.className="health-issue-title";
+      title.textContent=issue.label||issue.message||issue.key||"Engine issue";
+
+      const status=document.createElement("span");
+      status.className="health-issue-status "+(issue.status==="active"?"active":"recovered");
+      status.textContent=issue.status==="active"?"Active":"Recovered";
+
+      summary.append(qty,title,status);
+
+      const meta=document.createElement("div");
+      meta.className="health-issue-meta";
+      const last=issue.last_seen_utc?healthTimestamp(issue.last_seen_utc):"Unknown";
+      const maxConsecutive=Number(issue.max_consecutive_runs||1);
+      meta.textContent=`Last seen ${last} • Max ${maxConsecutive} consecutive run${maxConsecutive===1?"":"s"}`;
+
+      const occurrenceWrap=document.createElement("div");
+      occurrenceWrap.className="health-occurrence-list";
+
+      const occs=Array.isArray(issue.occurrences)?issue.occurrences.slice().reverse():[];
+      occs.forEach(function(occ){
+        const row=document.createElement("div");
+        row.className="health-occurrence-row";
+
+        const top=document.createElement("div");
+        top.className="health-occurrence-top";
+
+        const when=document.createElement("span");
+        when.textContent=occ.seen_utc?healthTimestamp(occ.seen_utc):"Time unavailable";
+
+        let run;
+        if(occ.run_url){
+          run=document.createElement("a");
+          run.href=occ.run_url;
+          run.target="_blank";
+          run.rel="noopener";
+          run.textContent=occ.run_id?`Run ${occ.run_id}`:"Open run";
+        }else{
+          run=document.createElement("span");
+          run.textContent=occ.run_id?`Run ${occ.run_id}`:"";
+        }
+        top.append(when,run);
+
+        const reason=document.createElement("div");
+        reason.className="health-occurrence-reason";
+        reason.textContent=occ.reason||"Recorded engine issue.";
+
+        row.append(top,reason);
+        occurrenceWrap.appendChild(row);
+      });
+
+      details.append(summary,meta,occurrenceWrap);
+      host.appendChild(details);
+    });
+  }
+
+'''
+js = js[:start] + new_render + js[end:]
+
+old_fetch = '''    const results=await Promise.all([
+      healthJson("engine_health.json"),
+      healthJson("engine_failure_log.json")
+    ]);
+    const health=results[0],log=results[1];
+'''
+new_fetch = '''    const results=await Promise.all([
+      healthJson("engine_health.json"),
+      healthJson("engine_failure_log.json"),
+      healthJson("engine_issue_history.json")
+    ]);
+    const health=results[0],log=results[1],history=results[2];
+'''
+if old_fetch not in js:
+    raise SystemExit("STOP: expected health JSON fetch block not found.")
+js = js.replace(old_fetch, new_fetch, 1)
+
+old_render_call = "    renderHealthHistory(log);\n"
+if old_render_call not in js:
+    raise SystemExit("STOP: expected renderHealthHistory(log) call not found.")
+js = js.replace(old_render_call, "    renderHealthHistory(history||log);\n", 1)
+
+marker = "/* PSD EXPANDABLE ENGINE ISSUE HISTORY V1 */"
+if marker not in css:
+    css += r'''
+
+/* PSD EXPANDABLE ENGINE ISSUE HISTORY V1 */
+.health-issue-group{
+  border-top:1px solid var(--admin-line);
+  padding:0;
+}
+.health-issue-group:first-child{border-top:0}
+.health-issue-summary{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:7px;
+  padding:8px 2px;
+  cursor:pointer;
+  list-style-position:inside;
+}
+.health-issue-qty{
+  min-width:34px;
+  color:var(--admin-gold);
+  font-size:14px;
+  text-align:right;
+}
+.health-issue-title{
+  color:var(--admin-text);
+  font-size:11px;
+  font-weight:750;
+}
+.health-issue-status{
+  font-size:9.5px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.health-issue-status.active{color:var(--admin-gold)}
+.health-issue-status.recovered{color:var(--admin-green)}
+.health-issue-meta{
+  margin:-3px 2px 7px 43px;
+  color:var(--admin-muted);
+  font-size:9.5px;
+}
+.health-occurrence-list{
+  margin:0 2px 8px 43px;
+  border-left:1px solid var(--admin-line);
+  padding-left:8px;
+}
+.health-occurrence-row{
+  padding:6px 0;
+  border-top:1px solid var(--admin-line);
+}
+.health-occurrence-row:first-child{border-top:0}
+.health-occurrence-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:9.5px;
+  color:var(--admin-muted);
+}
+.health-occurrence-top a{font-size:9.5px}
+.health-occurrence-reason{
+  margin-top:3px;
+  color:var(--admin-soft);
+  font-size:10px;
+  line-height:1.35;
+}
+@media(max-width:520px){
+  .health-issue-summary{grid-template-columns:auto minmax(0,1fr)}
+  .health-issue-status{grid-column:2}
+  .health-issue-meta,.health-occurrence-list{margin-left:0}
+}
+'''
+
+html = re.sub(r'href="activity-report\.css\?v=\d+"', 'href="activity-report.css?v=14"', html)
+html = re.sub(r'src="activity-report\.js\?v=\d+"', 'src="activity-report.js?v=14"', html)
+
+js_path.write_text(js, encoding="utf-8")
+css_path.write_text(css, encoding="utf-8")
+html_path.write_text(html, encoding="utf-8")
+
+print("Updated expandable issue-history UI.")
+PY
+
+node --check activity-report.js
+python -m json.tool engine_issue_history.json >/dev/null
+git diff --check
+
+echo
+echo "Changed:"
+git status --short
+echo
+git diff --stat -- activity-report.html activity-report.js activity-report.css engine_issue_history.json
+echo
+echo "No commit or push was performed."
