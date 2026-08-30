@@ -1,0 +1,530 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+if 'id="xx-clean-history-dashboard"' in text:
+    raise SystemExit("STOP: clean Historical lab dashboard already exists.")
+
+old_lead = '<p class="history-lead">A market-desk style view of <span class="hist-label-with-info">Global PSI<button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Public Sentiment Index" aria-expanded="false">i</button></span> and U.S. sentiment history with animated trend, momentum, bias mix, range, volatility, and top-driver panels.</p>'
+new_lead = '<p class="history-lead">Historical PSI across Hourly, Daily, Weekly and Monthly views. Select U.S.A., Global, Europe, or any combination to compare the same sentiment measure across every timeline.</p>'
+if old_lead in text:
+    text = text.replace(old_lead, new_lead, 1)
+
+css = r'''
+  <style id="xx-history-clean-lab-css">
+    #xx-clean-history-dashboard{margin:0 0 8px;}
+    .xx-history-toolbar{
+      display:flex;align-items:center;flex-wrap:wrap;gap:5px;
+      padding:7px 9px;margin:0 0 6px;
+      border:1px solid var(--hist-line,rgba(148,163,184,.18));
+      border-radius:12px;background:rgba(15,23,42,.28);
+    }
+    body.light .xx-history-toolbar{background:rgba(255,255,255,.70);}
+    .xx-toolbar-label{
+      margin-right:3px;font-size:10px;font-weight:800;letter-spacing:.08em;
+      text-transform:uppercase;color:var(--hist-muted,#94a3b8);
+    }
+    .xx-region-btn{
+      appearance:none;border:1px solid rgba(148,163,184,.28);border-radius:999px;
+      background:rgba(148,163,184,.08);color:var(--hist-text,#e5edf8);
+      min-height:25px;padding:3px 9px;font:700 10.5px/1 Inter,Arial,sans-serif;
+      cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease;
+    }
+    .xx-region-btn:hover{transform:translateY(-1px);border-color:rgba(246,200,95,.52);}
+    .xx-region-btn.active{
+      border-color:rgba(246,200,95,.70);background:rgba(246,200,95,.14);
+      box-shadow:0 0 0 1px rgba(246,200,95,.06) inset;
+    }
+    .xx-region-btn[data-region="us"].active{
+      border-color:rgba(255,63,134,.65);background:rgba(255,63,134,.11);
+    }
+    .xx-region-btn[data-region="europe"].active{
+      border-color:rgba(74,222,255,.62);background:rgba(74,222,255,.10);
+    }
+    .xx-toolbar-status{
+      margin-left:auto;min-width:180px;text-align:right;color:var(--hist-muted,#94a3b8);
+      font-size:9.5px;line-height:1.25;
+    }
+    .xx-history-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:stretch;
+    }
+    .xx-history-card{
+      position:relative;min-width:0;min-height:262px;overflow:hidden;
+      border:1px solid var(--hist-line,rgba(148,163,184,.18));border-radius:14px;
+      background:linear-gradient(180deg,rgba(15,23,42,.52),rgba(15,23,42,.28));
+      box-shadow:0 10px 26px rgba(2,6,23,.12);
+    }
+    body.light .xx-history-card{
+      background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(248,250,252,.80));
+    }
+    .xx-history-card-head{
+      min-height:42px;padding:8px 10px 4px;display:flex;align-items:flex-start;
+      justify-content:space-between;gap:10px;
+    }
+    .xx-history-card-title{
+      margin:0;color:var(--hist-text,#e5edf8);font:800 13px/1.15 Inter,Arial,sans-serif;
+      letter-spacing:-.01em;
+    }
+    .xx-history-card-sub{
+      margin-top:3px;color:var(--hist-muted,#94a3b8);font-size:9.5px;line-height:1.2;
+    }
+    .xx-chart-legend{
+      display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 8px;max-width:54%;
+      color:var(--hist-muted,#94a3b8);font-size:9px;line-height:1.1;
+    }
+    .xx-legend-item{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+    .xx-legend-line{width:12px;height:3px;border-radius:999px;display:inline-block;}
+    .xx-chart-wrap{position:relative;height:214px;padding:0 5px 5px;}
+    .xx-history-canvas{width:100%;height:100%;display:block;}
+    .xx-chart-empty{
+      position:absolute;inset:0 8px 6px;display:none;place-items:center;text-align:center;
+      padding:16px;color:var(--hist-muted,#94a3b8);font-size:10px;line-height:1.35;
+      pointer-events:none;
+    }
+    .xx-chart-empty.show{display:grid;}
+
+    .dash-stage-shell{
+      position:absolute!important;left:-100000px!important;top:0!important;width:1200px!important;
+      visibility:hidden!important;pointer-events:none!important;
+    }
+
+    @media(max-width:840px){
+      .xx-history-grid{grid-template-columns:1fr;}
+      .xx-toolbar-status{flex-basis:100%;margin-left:0;text-align:left;}
+    }
+    @media(max-width:520px){
+      .xx-history-toolbar{padding:6px 7px;gap:4px;}
+      .xx-region-btn{min-height:24px;padding:3px 8px;font-size:10px;}
+      .xx-history-card{min-height:248px;}
+      .xx-chart-wrap{height:202px;}
+      .xx-history-card-head{padding:7px 8px 3px;}
+      .xx-chart-legend{max-width:48%;}
+    }
+  </style>
+'''
+
+if '</head>' not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace('</head>', css + '\n</head>', 1)
+
+markup = r'''
+    <section id="xx-clean-history-dashboard" aria-label="Historical PSI timeline comparison">
+      <div class="xx-history-toolbar" aria-label="Region selection">
+        <span class="xx-toolbar-label">Show</span>
+        <button type="button" class="xx-region-btn active" data-region="us" aria-pressed="true">U.S.A.</button>
+        <button type="button" class="xx-region-btn active" data-region="global" aria-pressed="true">Global</button>
+        <button type="button" class="xx-region-btn" data-region="europe" aria-pressed="false">Europe</button>
+        <button type="button" class="xx-region-btn" data-region="all" aria-pressed="false">All</button>
+        <div class="xx-toolbar-status" id="xxHistoryStatus">Loading historical PSI…</div>
+      </div>
+
+      <div class="xx-history-grid">
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Hourly PSI</h2>
+              <div class="xx-history-card-sub">Latest intraday engine scans • NY time</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="hourly"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartHourly"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyHourly"></div>
+          </div>
+        </article>
+
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Daily PSI</h2>
+              <div class="xx-history-card-sub">Latest 14 daily readings</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="daily"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartDaily"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyDaily"></div>
+          </div>
+        </article>
+
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Weekly PSI</h2>
+              <div class="xx-history-card-sub">2-month window • weekly averages</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="weekly"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartWeekly"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyWeekly"></div>
+          </div>
+        </article>
+
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Monthly PSI</h2>
+              <div class="xx-history-card-sub">Up to 6 months • monthly averages</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="monthly"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartMonthly"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyMonthly"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+'''
+
+anchor = '    <section class="dash-stage-shell" aria-label="Historical sentiment dashboard">'
+if anchor not in text:
+    raise SystemExit("STOP: old dashboard section anchor not found.")
+text = text.replace(anchor, markup + anchor, 1)
+
+js = r'''
+  <script id="xx-history-clean-lab-js">
+  (() => {
+    const REGION_META = {
+      us:{label:"U.S.A.", css:"--hist-pink", fallback:"#ff3f86"},
+      global:{label:"Global", css:"--hist-gold", fallback:"#f6c85f"},
+      europe:{label:"Europe", css:"--hist-cyan", fallback:"#4adeff"}
+    };
+
+    const selected = new Set(["us","global"]);
+    let historyData = null;
+    let dashboardData = null;
+    let resizeTimer = null;
+
+    const finite = v => Number.isFinite(Number(v));
+    const num = v => finite(v) ? Number(v) : null;
+
+    function regionColor(key){
+      const meta=REGION_META[key];
+      const css=getComputedStyle(document.documentElement).getPropertyValue(meta.css).trim();
+      return css || meta.fallback;
+    }
+
+    function avg(values){
+      const vals=values.filter(Number.isFinite);
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+    }
+
+    function dateLabel(d){
+      return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",timeZone:"America/New_York"}).format(d);
+    }
+
+    function timeLabel(d){
+      return new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",hour12:true,timeZone:"America/New_York"})
+        .format(d).replace(" ","");
+    }
+
+    function monthLabel(key){
+      const [y,m]=key.split("-").map(Number);
+      return new Intl.DateTimeFormat("en-US",{month:"short",year:"2-digit"}).format(new Date(y,m-1,1));
+    }
+
+    function isoWeekParts(date){
+      const d=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
+      const day=d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate()+4-day);
+      const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const week=Math.ceil((((d-yearStart)/86400000)+1)/7);
+      return {year:d.getUTCFullYear(),week};
+    }
+
+    function normalize(){
+      const daily=(historyData?.records || []).map(r => {
+        const ts=new Date(String(r.date)+"T12:00:00-04:00");
+        return {
+          ts,key:String(r.date),label:dateLabel(ts),
+          global:num(r.global_psi),us:num(r.us_psi),
+          europe:num(r.europe_psi ?? r.euro_psi)
+        };
+      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+
+      const hourly=(historyData?.intraday || []).map(r => {
+        const ts=new Date(r.ts || r.sample_key);
+        return {
+          ts,key:String(r.ts || r.sample_key || ""),label:timeLabel(ts),
+          global:num(r.global_psi),us:num(r.us_psi),
+          europe:num(r.europe_psi ?? r.euro_psi)
+        };
+      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts).slice(-12);
+
+      const weeklyMap=new Map();
+      daily.forEach(p=>{
+        const {year,week}=isoWeekParts(p.ts);
+        const key=`${year}-W${String(week).padStart(2,"0")}`;
+        if(!weeklyMap.has(key)){
+          weeklyMap.set(key,{key,label:`W${week}`,ts:p.ts,global:[],us:[],europe:[],count:0});
+        }
+        const g=weeklyMap.get(key);
+        ["global","us","europe"].forEach(k=>{ if(Number.isFinite(p[k])) g[k].push(p[k]); });
+        g.count++;
+        if(p.ts>g.ts) g.ts=p.ts;
+      });
+      const weekly=[...weeklyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts).slice(-8);
+
+      const monthlyMap=new Map();
+      daily.forEach(p=>{
+        const y=p.ts.getFullYear();
+        const m=String(p.ts.getMonth()+1).padStart(2,"0");
+        const key=`${y}-${m}`;
+        if(!monthlyMap.has(key)){
+          monthlyMap.set(key,{key,label:monthLabel(key),ts:p.ts,global:[],us:[],europe:[],count:0});
+        }
+        const g=monthlyMap.get(key);
+        ["global","us","europe"].forEach(k=>{ if(Number.isFinite(p[k])) g[k].push(p[k]); });
+        g.count++;
+        if(p.ts>g.ts) g.ts=p.ts;
+      });
+      const monthly=[...monthlyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts).slice(-6);
+
+      return {hourly,daily:daily.slice(-14),weekly,monthly};
+    }
+
+    function setupCanvas(canvas){
+      const rect=canvas.getBoundingClientRect();
+      const ratio=window.devicePixelRatio || 1;
+      canvas.width=Math.max(320,Math.floor(rect.width*ratio));
+      canvas.height=Math.max(180,Math.floor(rect.height*ratio));
+      const ctx=canvas.getContext("2d");
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+      return {ctx,w:rect.width,h:rect.height};
+    }
+
+    function renderLegend(period,data){
+      const el=document.querySelector(`[data-legend-for="${period}"]`);
+      if(!el) return;
+      el.innerHTML=[...selected].map(k=>{
+        const has=data.some(p=>Number.isFinite(p[k]));
+        return `<span class="xx-legend-item" title="${REGION_META[k].label}${has ? "" : " — awaiting history"}">
+          <i class="xx-legend-line" style="background:${regionColor(k)}"></i>${REGION_META[k].label}${has ? "" : " *"}
+        </span>`;
+      }).join("");
+    }
+
+    function drawChart(canvasId,emptyId,data,period){
+      const canvas=document.getElementById(canvasId);
+      const empty=document.getElementById(emptyId);
+      if(!canvas || !empty) return;
+
+      renderLegend(period,data);
+      const available=[...selected].filter(k=>data.some(p=>Number.isFinite(p[k])));
+      const missing=[...selected].filter(k=>!data.some(p=>Number.isFinite(p[k])));
+
+      if(!data.length || !available.length){
+        const {ctx,w,h}=setupCanvas(canvas);
+        ctx.clearRect(0,0,w,h);
+        empty.textContent = missing.includes("europe")
+          ? "Europe historical PSI is not stored yet. The Europe line will appear automatically after europe_psi is added to sentiment_history.json."
+          : "No historical PSI is available for the selected region.";
+        empty.classList.add("show");
+        return;
+      }
+
+      empty.classList.remove("show");
+      empty.removeAttribute("style");
+
+      const {ctx,w,h}=setupCanvas(canvas);
+      ctx.clearRect(0,0,w,h);
+
+      const pad={l:34,r:20,t:15,b:28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+      const y=v=>pad.t+(100-v)/100*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+
+      const textColor=getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8";
+      const gridColor="rgba(148,163,184,.15)";
+      const neutralColor="rgba(148,163,184,.34)";
+
+      ctx.font="9px Inter,Arial";
+      ctx.lineWidth=1;
+
+      [0,25,50,75,100].forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-5,yy);
+      });
+
+      const maxLabels=period==="daily" ? 7 : 8;
+      const labelCount=Math.min(maxLabels,data.length);
+      const indices=new Set();
+      if(labelCount===1) indices.add(0);
+      else{
+        for(let i=0;i<labelCount;i++) indices.add(Math.round(i*(data.length-1)/(labelCount-1)));
+      }
+
+      [...indices].forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+        ctx.fillText(data[i].label,x(i),h-7);
+      });
+
+      available.forEach(key=>{
+        const points=data.map((p,i)=>({i,value:p[key]})).filter(p=>Number.isFinite(p.value));
+        if(!points.length) return;
+
+        const color=regionColor(key);
+        ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.lineJoin="round";ctx.lineCap="round";
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();
+        });
+
+        const last=points[points.length-1];
+        ctx.fillStyle=color;ctx.font="700 9px Inter,Arial";ctx.textAlign="right";ctx.textBaseline="bottom";
+        ctx.fillText(`${REGION_META[key].label} ${Math.round(last.value)}`,w-pad.r,Math.max(11,y(last.value)-5));
+      });
+
+      if(missing.length){
+        empty.textContent=missing.map(k=>REGION_META[k].label).join(" + ")+" selected, but historical data is not stored yet.";
+        empty.classList.add("show");
+        empty.style.alignItems="end";
+        empty.style.justifyItems="center";
+        empty.style.paddingBottom="30px";
+      }
+    }
+
+    function updateButtons(){
+      document.querySelectorAll(".xx-region-btn[data-region]").forEach(btn=>{
+        const key=btn.dataset.region;
+        const active=key==="all"
+          ? ["us","global","europe"].every(k=>selected.has(k))
+          : selected.has(key);
+        btn.classList.toggle("active",active);
+        btn.setAttribute("aria-pressed",String(active));
+      });
+    }
+
+    function render(){
+      if(!historyData) return;
+      const sets=normalize();
+      drawChart("xxChartHourly","xxEmptyHourly",sets.hourly,"hourly");
+      drawChart("xxChartDaily","xxEmptyDaily",sets.daily,"daily");
+      drawChart("xxChartWeekly","xxEmptyWeekly",sets.weekly,"weekly");
+      drawChart("xxChartMonthly","xxEmptyMonthly",sets.monthly,"monthly");
+
+      const hasEurope=[...sets.hourly,...sets.daily].some(p=>Number.isFinite(p.europe));
+      const currentEurope=num(dashboardData?.regional_pulse?.europe?.score);
+      const status=document.getElementById("xxHistoryStatus");
+      if(status){
+        if(hasEurope) status.textContent="Global, U.S.A. and Europe historical PSI available.";
+        else if(Number.isFinite(currentEurope)) status.textContent=`Europe current PSI ${Math.round(currentEurope)} • historical Europe tracking not stored yet`;
+        else status.textContent="Europe historical tracking not stored yet.";
+      }
+    }
+
+    function bindControls(){
+      document.querySelectorAll(".xx-region-btn[data-region]").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const key=btn.dataset.region;
+          if(key==="all"){
+            selected.clear();
+            ["us","global","europe"].forEach(k=>selected.add(k));
+          }else if(selected.has(key)){
+            if(selected.size>1) selected.delete(key);
+          }else{
+            selected.add(key);
+          }
+          updateButtons();
+          render();
+        });
+      });
+    }
+
+    async function load(){
+      try{
+        const stamp=Date.now();
+        const [historyRes,dashboardRes]=await Promise.all([
+          fetch(`sentiment_history.json?v=${stamp}`,{cache:"no-store"}),
+          fetch(`dashboard_data.json?v=${stamp}`,{cache:"no-store"})
+        ]);
+
+        if(!historyRes.ok) throw new Error(`sentiment_history.json ${historyRes.status}`);
+        historyData=await historyRes.json();
+        if(dashboardRes.ok) dashboardData=await dashboardRes.json();
+
+        bindControls();
+        updateButtons();
+        render();
+      }catch(err){
+        console.error("Historical lab load failed:",err);
+        const status=document.getElementById("xxHistoryStatus");
+        if(status) status.textContent="Unable to load historical PSI data.";
+      }
+    }
+
+    window.addEventListener("resize",()=>{
+      clearTimeout(resizeTimer);
+      resizeTimer=setTimeout(render,120);
+    });
+
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",load,{once:true});
+    else load();
+  })();
+  </script>
+'''
+
+if '</body>' not in text:
+    raise SystemExit("STOP: </body> not found.")
+text = text.replace('</body>', js + '\n</body>', 1)
+
+p.write_text(text, encoding="utf-8")
+print("Major Historical Sentiment lab cleanup prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab file only:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+git diff --stat -- xx-sentiment-history-lab.html
+echo
+echo "New lab markers:"
+grep -n -E 'xx-clean-history-dashboard|Hourly PSI|Daily PSI|Weekly PSI|Monthly PSI|data-region="europe"|historical Europe tracking' xx-sentiment-history-lab.html | head -40
+echo
+echo "Production file remains untouched by this helper."
+echo "No commit or push was performed."
