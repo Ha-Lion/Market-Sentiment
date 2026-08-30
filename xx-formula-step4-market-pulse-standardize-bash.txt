@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="market-pulse.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("market-pulse.html")
+text = p.read_text(encoding="utf-8")
+
+if 'data-psd-formula-step4="market-pulse-core"' in text:
+    raise SystemExit("STOP: Market Pulse formula standardization already installed.")
+
+# ---------------------------------------------------------------
+# 1) Load the shared sentiment formula core.
+# ---------------------------------------------------------------
+script_tag = '  <script src="sentiment-core.js?v=3" data-psd-formula-step4="market-pulse-core"></script>\n'
+
+if 'sentiment-core.js' not in text:
+    if '</head>' not in text:
+        raise SystemExit("STOP: </head> not found.")
+    text = text.replace('</head>', script_tag + '</head>', 1)
+
+# ---------------------------------------------------------------
+# 2) Add one shared-label wrapper beside the existing display helpers.
+#    Backend label is fallback only if PSDCore is unavailable.
+# ---------------------------------------------------------------
+anchor = '''    const change=v=>`${Number(v)>=0?"+":""}${Number(v).toFixed(0)}`;
+'''
+if anchor not in text:
+    raise SystemExit("STOP: change helper anchor not found.")
+
+replacement = '''    const change=v=>`${Number(v)>=0?"+":""}${Number(v).toFixed(0)}`;
+    const pulseSentimentLabel=(score,fallback="Unavailable")=>{
+      const n=Number(score);
+      if(Number.isFinite(n) && window.PSDCore && typeof window.PSDCore.classifySentiment==="function"){
+        return window.PSDCore.classifySentiment(n);
+      }
+      return String(fallback || "Unavailable");
+    };
+'''
+text = text.replace(anchor, replacement, 1)
+
+# ---------------------------------------------------------------
+# 3) Replace only the two regional label displays.
+#    Scores/change values remain untouched.
+# ---------------------------------------------------------------
+old = '''document.getElementById("usLabel").textContent=us.sentiment_label||"Unavailable";document.getElementById("europeScore").textContent=Number.isFinite(Number(europe.psi))?`${Number(europe.psi).toFixed(0)}/100`:'—';document.getElementById("europeLabel").textContent=europe.sentiment_label||"Unavailable";'''
+new = '''document.getElementById("usLabel").textContent=pulseSentimentLabel(us.psi,us.sentiment_label);document.getElementById("europeScore").textContent=Number.isFinite(Number(europe.psi))?`${Number(europe.psi).toFixed(0)}/100`:'—';document.getElementById("europeLabel").textContent=pulseSentimentLabel(europe.psi,europe.sentiment_label);'''
+
+if old not in text:
+    raise SystemExit("STOP: regional sentiment label display block not found.")
+text = text.replace(old, new, 1)
+
+p.write_text(text, encoding="utf-8")
+print("AI Market Pulse formula standardization prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed file only:"
+git status --short -- market-pulse.html sentiment-core.js
+
+echo
+git diff --stat -- market-pulse.html
+
+echo
+echo "Verification markers:"
+grep -n -E \
+  'sentiment-core.js|pulseSentimentLabel|usLabel.*pulseSentimentLabel|europeLabel.*pulseSentimentLabel' \
+  market-pulse.html
+
+echo
+echo "Check for remaining direct regional label display:"
+grep -nE \
+  'usLabel.*sentiment_label|europeLabel.*sentiment_label' \
+  market-pulse.html || true
+
+echo
+echo "No design, ribbon, engine data, or shared core file was modified."
+echo "No commit or push was performed."
