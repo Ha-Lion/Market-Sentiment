@@ -143,10 +143,157 @@
     return mins?`${mins}m ${String(secs).padStart(2,"0")}s`:`${secs}s`;
   }
 
-  function renderHealthHistory(history){
+
+  function csvCell(value){
+    const text=String(value==null?"":value).replace(/\r?\n/g," ").trim();
+    return '"' + text.replace(/"/g,'""') + '"';
+  }
+
+  function issueHistoryTime(value){
+    if(!value)return "";
+    try{
+      return new Date(value).toLocaleString("en-US",{
+        timeZone:"America/New_York",
+        year:"numeric",
+        month:"2-digit",
+        day:"2-digit",
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit",
+        hour12:true,
+        timeZoneName:"short"
+      });
+    }catch(_){
+      return value;
+    }
+  }
+
+  function exportEngineIssueHistoryCsv(history){
+    const issues=Array.isArray(history&&history.issues)?history.issues:[];
+    if(!issues.length)return;
+
+    const rows=[[
+      "Issue Qty",
+      "Issue",
+      "Component",
+      "Severity",
+      "Status",
+      "Max Consecutive Runs",
+      "Occurrence Date/Time ET",
+      "Run ID",
+      "Run URL",
+      "Reason",
+      "Details"
+    ]];
+
+    issues.forEach(function(issue){
+      const occs=Array.isArray(issue.occurrences)?issue.occurrences:[];
+
+      if(!occs.length){
+        rows.push([
+          Number(issue.total_occurrences||0),
+          issue.label||issue.message||issue.key||"",
+          issue.component||"",
+          issue.severity||"",
+          issue.status||"",
+          Number(issue.max_consecutive_runs||0),
+          issueHistoryTime(issue.last_seen_utc),
+          "",
+          "",
+          "",
+          ""
+        ]);
+        return;
+      }
+
+      occs.forEach(function(occ){
+        let detail="";
+        try{
+          detail=occ.detail&&Object.keys(occ.detail).length
+            ? JSON.stringify(occ.detail)
+            : "";
+        }catch(_){
+          detail="";
+        }
+
+        rows.push([
+          Number(issue.total_occurrences||0),
+          issue.label||issue.message||issue.key||"",
+          issue.component||"",
+          issue.severity||"",
+          issue.status||"",
+          Number(issue.max_consecutive_runs||0),
+          issueHistoryTime(occ.seen_utc),
+          occ.run_id||"",
+          occ.run_url||"",
+          occ.reason||"",
+          detail
+        ]);
+      });
+    });
+
+    const csv="\uFEFF"+rows.map(function(row){
+      return row.map(csvCell).join(",");
+    }).join("\r\n");
+
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    const today=new Date().toISOString().slice(0,10);
+
+    a.href=url;
+    a.download="engine-v2-issue-history-"+today+".csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(function(){
+      URL.revokeObjectURL(url);
+    },1000);
+  }
+
+  function ensureHealthCsvButton(history){
+    const host=document.getElementById("health-history-list");
+    if(!host)return;
+
+    const details=host.closest("details");
+    if(!details)return;
+
+    const summary=details.querySelector("summary");
+    if(!summary)return;
+
+    let button=summary.querySelector("#health-export-csv");
+
+    if(!button){
+      button=document.createElement("button");
+      button.type="button";
+      button.id="health-export-csv";
+      button.className="health-export-csv";
+      button.textContent="Export CSV";
+      button.title="Export 180-day Engine V2 issue history";
+
+      button.addEventListener("click",function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        exportEngineIssueHistoryCsv(button._history);
+      });
+
+      summary.appendChild(button);
+    }
+
+    button._history=history;
+    button.disabled=!(
+      history &&
+      Array.isArray(history.issues) &&
+      history.issues.length
+    );
+  }
+
+function renderHealthHistory(history){
       const host=document.getElementById("health-history-list");
       if(!host)return;
       host.replaceChildren();
+    ensureHealthCsvButton(history);
 
       let issues=[];
       if(Array.isArray(history&&history.issues)){
