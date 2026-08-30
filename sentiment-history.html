@@ -1199,7 +1199,7 @@
           </article>
 
           <article class="dash-card card-b">
-            <div class="card-head"><div class="card-title hist-title-with-info"><span>Global vs U.S. flow</span><button class="hist-info-btn" type="button" data-hist-glossary="global-us-flow" aria-label="Explain Global versus U.S. flow" aria-expanded="false">i</button></div></div>
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Global vs. U.S. PSI — Last 4 Full Weeks</span><button class="hist-info-btn" type="button" data-hist-glossary="global-us-flow" aria-label="Explain Global versus U.S. flow" aria-expanded="false">i</button></div></div>
             <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
             <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
           </article>
@@ -1655,6 +1655,55 @@
       })).filter(p => Number.isFinite(p.value)).sort((a,b)=>String(a.sort).localeCompare(String(b.sort)) || a.lastTs-b.lastTs);
     }
 
+    function aggregateWeeklyComparison(records){
+      const groups = new Map();
+
+      records
+        .filter(r =>
+          r &&
+          r.ts instanceof Date &&
+          !Number.isNaN(r.ts.getTime()) &&
+          Number.isFinite(r.global) &&
+          Number.isFinite(r.us)
+        )
+        .forEach(r => {
+          const key = isoWeekKey(r.ts);
+          if(!groups.has(key)){
+            groups.set(key,{
+              key,
+              label:key.replace("-W"," W"),
+              global:[],
+              us:[],
+              dates:new Set(),
+              lastTs:r.ts
+            });
+          }
+
+          const g = groups.get(key);
+          g.global.push(r.global);
+          g.us.push(r.us);
+          g.dates.add(r.date);
+
+          if(r.ts > g.lastTs) g.lastTs = r.ts;
+        });
+
+      return [...groups.values()]
+        .filter(g => g.dates.size >= 7)
+        .map(g => ({
+          key:g.key,
+          label:g.label,
+          sort:g.key,
+          count:g.dates.size,
+          lastTs:g.lastTs,
+          global:avg(g.global),
+          us:avg(g.us)
+        }))
+        .sort((a,b) =>
+          String(a.sort).localeCompare(String(b.sort)) ||
+          a.lastTs-b.lastTs
+        );
+    }
+
     function periodLabel(period){
       if(period === "hourly") return "Hourly";
       if(period === "weekly") return "Weekly";
@@ -2026,12 +2075,13 @@
       const allSelected=movingAverage(aggregate(state.scope,state.period,false)).slice(-50).map(p=>({...p,value:p.smooth??p.value}));
 
       drawHourly();
-      const weeklyGlobal=aggregate("global","weekly",true).slice(-4);
-      const weeklyUs=aggregate("us","weekly",true).slice(-4);
+      const weeklyComparison=aggregateWeeklyComparison(filterByRange(state.raw)).slice(-4);
+      const weeklyGlobal=weeklyComparison.map(p=>({...p,value:p.global}));
+      const weeklyUs=weeklyComparison.map(p=>({...p,value:p.us}));
       drawLine(document.getElementById("chartFlow"),[
         {points:weeklyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
         {points:weeklyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
-      ],{dots:false,scan:true,pad:{l:34,r:10,t:30,b:20}});
+      ],{dots:false,scan:true,labelAll:true,pad:{l:34,r:10,t:30,b:20}});
       drawBars(document.getElementById("chartBars"), aggregate("global","daily",true));
       updateSkylineHeader();
       const skylineGlobal=movingAverage(skylinePoints("global")).map(p=>({...p,value:p.smooth??p.value}));
