@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+# Subtitles
+repls = {
+    'Latest intraday engine scans • NY time': 'Past 7 days • intraday engine scans • NY time',
+    'Latest 14 daily readings': 'Past 3 weeks • daily readings',
+    '2-month window • weekly averages': 'Past 3 months • weekly averages',
+    'Up to 6 months • monthly averages': 'Past 6 months • monthly averages',
+}
+for old,new in repls.items():
+    if old not in text:
+        raise SystemExit(f"STOP: expected subtitle not found: {old}")
+    text = text.replace(old,new,1)
+
+# Hourly labels: add date so a 7-day chart is readable.
+old_time = '''    function timeLabel(d){
+      return new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",hour12:true,timeZone:"America/New_York"})
+        .format(d).replace(" ","");
+    }
+'''
+new_time = '''    function timeLabel(d){
+      return new Intl.DateTimeFormat("en-US",{
+        month:"short",
+        day:"numeric",
+        hour:"numeric",
+        hour12:true,
+        timeZone:"America/New_York"
+      }).format(d).replace(",","");
+    }
+'''
+if old_time not in text:
+    raise SystemExit("STOP: timeLabel() block not found.")
+text = text.replace(old_time,new_time,1)
+
+# Daily base set: keep all parsed records first, then window by actual dates.
+old_daily_end = '''      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+
+      const hourly=(historyData?.intraday || []).map(r => {
+'''
+new_daily_end = '''      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+
+      const dailyWindow=daily.length
+        ? daily.filter(p => p.ts.getTime() >= daily[daily.length-1].ts.getTime() - 20*86400000)
+        : [];
+
+      const hourly=(historyData?.intraday || []).map(r => {
+'''
+if old_daily_end not in text:
+    raise SystemExit("STOP: daily/hourly boundary not found.")
+text = text.replace(old_daily_end,new_daily_end,1)
+
+# Hourly: remove fixed last-12 slice and use true last-7-day window.
+old_hourly_end = '''      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts).slice(-12);
+
+      const weeklyMap=new Map();
+'''
+new_hourly_end = '''      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+
+      const hourlyWindow=hourly.length
+        ? hourly.filter(p => p.ts.getTime() >= hourly[hourly.length-1].ts.getTime() - 7*86400000)
+        : [];
+
+      const weeklyMap=new Map();
+'''
+if old_hourly_end not in text:
+    raise SystemExit("STOP: hourly fixed slice not found.")
+text = text.replace(old_hourly_end,new_hourly_end,1)
+
+# Weekly: 13 weeks, Monthly: 6 months.
+old_weekly_slice = '.sort((a,b)=>a.ts-b.ts).slice(-8);'
+new_weekly_slice = '.sort((a,b)=>a.ts-b.ts).slice(-13);'
+if old_weekly_slice not in text:
+    raise SystemExit("STOP: weekly slice(-8) not found.")
+text = text.replace(old_weekly_slice,new_weekly_slice,1)
+
+# Keep monthly at 6; verify it exists.
+if '.sort((a,b)=>a.ts-b.ts).slice(-6);' not in text:
+    raise SystemExit("STOP: monthly slice(-6) not found.")
+
+old_return = '      return {hourly,daily:daily.slice(-14),weekly,monthly};\n'
+new_return = '      return {hourly:hourlyWindow,daily:dailyWindow,weekly,monthly};\n'
+if old_return not in text:
+    raise SystemExit("STOP: normalize() return block not found.")
+text = text.replace(old_return,new_return,1)
+
+# Hourly chart has many points; keep x labels restrained.
+old_max = '      const maxLabels=period==="daily" ? 7 : 8;\n'
+new_max = '''      const maxLabels =
+        period==="hourly" ? 7 :
+        period==="daily" ? 7 :
+        period==="weekly" ? 7 : 6;
+'''
+if old_max not in text:
+    raise SystemExit("STOP: maxLabels line not found.")
+text = text.replace(old_max,new_max,1)
+
+p.write_text(text, encoding="utf-8")
+print("Historical lab display windows expanded.")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab file only:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+git diff --stat -- xx-sentiment-history-lab.html
+echo
+echo "Window markers:"
+grep -n -E 'Past 7 days|Past 3 weeks|Past 3 months|Past 6 months|20\*86400000|7\*86400000|slice\(-13\)' xx-sentiment-history-lab.html
+echo
+echo "Production remains untouched."
+echo "No commit or push was performed."
