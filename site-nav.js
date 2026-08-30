@@ -673,26 +673,17 @@
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
 
     if(aiBuilt && learning){
-        const aiRect = aiBuilt.getBoundingClientRect();
-        const learningRect = learning.getBoundingClientRect();
-
         /*
-         * getBoundingClientRect() includes the translate already applied by
-         * the previous alignment pass. Subtract that existing X shift before
-         * calculating the new one, otherwise repeated calls alternate between
-         * aligned and unaligned positions.
+         * Keep "Constantly learning & improving" in its CSS-defined position.
+         * Do NOT measure or horizontally translate it in JavaScript.
+         *
+         * This removes the load-timing race that could push the pill left
+         * over the logo while preserving its existing CSS size and location.
          */
-        const currentInlineTranslate = String(learning.style.translate || "");
-        const currentShiftX = Number.parseFloat(currentInlineTranslate) || 0;
-        const unshiftedLearningLeft = learningRect.left - currentShiftX;
-        const horizontalShift = Math.round(aiRect.left - unshiftedLearningLeft);
-
-        learning.style.translate = horizontalShift + "px 2px";
 
         /*
-         * Copy the ACTUAL layout height of Constantly Learning to AI-Built.
-         * offsetHeight ignores the dancing transform/rotation, so both pills
-         * become exactly the same physical height without guessing pixels.
+         * Preserve the existing height matching only.
+         * No other ribbon element geometry is changed here.
          */
         const learningHeight = learning.offsetHeight;
         if(learningHeight > 0){
