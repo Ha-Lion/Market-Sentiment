@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+SRC="sentiment-history.html"
+LAB="xx-sentiment-history-lab.html"
+
+if [ ! -f "$SRC" ]; then
+  echo "STOP: $SRC not found."
+  exit 1
+fi
+
+if [ -f "$LAB" ]; then
+  echo "STOP: $LAB already exists. Nothing changed."
+  exit 1
+fi
+
+cp "$SRC" "$LAB"
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+# Make the lab unmistakable without changing production behavior.
+text = text.replace(
+    "<title>Historical Market Sentiment",
+    "<title>XX Lab — Historical Market Sentiment",
+    1
+)
+
+# Add a small lab marker immediately inside body if possible.
+marker = '''<div id="xx-history-lab-marker" style="
+  position:fixed;
+  right:12px;
+  bottom:12px;
+  z-index:99999;
+  padding:5px 9px;
+  border-radius:999px;
+  font:700 10px/1.1 Inter,Arial,sans-serif;
+  letter-spacing:.08em;
+  background:rgba(15,23,42,.92);
+  color:#f6c85f;
+  border:1px solid rgba(246,200,95,.45);
+  pointer-events:none;
+">HISTORY LAB</div>
+'''
+
+if "<body" in text and "xx-history-lab-marker" not in text:
+    pos = text.find(">", text.find("<body")) + 1
+    text = text[:pos] + "\n" + marker + text[pos:]
+
+p.write_text(text, encoding="utf-8")
+print("Created dedicated Historical Sentiment lab page.")
+PY
+
+git diff --check
+
+echo
+echo "Created:"
+git status --short -- "$LAB"
+echo
+echo "Production file status:"
+git status --short -- "$SRC"
+echo
+echo "No commit or push was performed."
