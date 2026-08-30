@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+if 'id="xx-history-glossary-parity-v1"' in text:
+    raise SystemExit("STOP: glossary parity patch already installed.")
+
+replacements = {
+'''Date <span class="xx-help-dot" title="The New York session date for the saved daily PSI record.">i</span>''':
+'''Date <button class="hist-info-btn" type="button" data-hist-glossary="history-date" aria-label="Explain historical date" aria-expanded="false">i</button>''',
+
+'''Global PSI <span class="xx-help-dot" title="Saved Global Public Sentiment Index for that day, on the 0–100 PSI scale.">i</span>''':
+'''Global PSI <button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Global PSI" aria-expanded="false">i</button>''',
+
+'''Global Δ <span class="xx-help-dot" title="Global PSI change from the previous saved day.">i</span>''':
+'''Global Δ <button class="hist-info-btn" type="button" data-hist-glossary="global-delta" aria-label="Explain Global daily change" aria-expanded="false">i</button>''',
+
+'''U.S.A. PSI <span class="xx-help-dot" title="Saved U.S.A. regional PSI for that day.">i</span>''':
+'''U.S.A. PSI <button class="hist-info-btn" type="button" data-hist-glossary="us-psi" aria-label="Explain U.S.A. PSI" aria-expanded="false">i</button>''',
+
+'''U.S.A. Δ <span class="xx-help-dot" title="U.S.A. PSI change from the previous saved day.">i</span>''':
+'''U.S.A. Δ <button class="hist-info-btn" type="button" data-hist-glossary="us-delta" aria-label="Explain U.S.A. daily change" aria-expanded="false">i</button>''',
+
+'''Europe PSI <span class="xx-help-dot" title="Saved Europe regional PSI. Older dates are blank because Europe history was not previously stored.">i</span>''':
+'''Europe PSI <button class="hist-info-btn" type="button" data-hist-glossary="europe-psi" aria-label="Explain Europe PSI" aria-expanded="false">i</button>''',
+
+'''Europe Δ <span class="xx-help-dot" title="Europe PSI change from the previous saved Europe reading.">i</span>''':
+'''Europe Δ <button class="hist-info-btn" type="button" data-hist-glossary="europe-delta" aria-label="Explain Europe daily change" aria-expanded="false">i</button>'''
+}
+
+for old, new in replacements.items():
+    if old not in text:
+        raise SystemExit("STOP: expected table glossary markup not found:\n" + old[:80])
+    text = text.replace(old, new, 1)
+
+old_title = '''<strong>Daily Historical PSI Data</strong>'''
+new_title = '''<strong>Daily Historical PSI Data <button class="hist-info-btn xx-title-info" type="button" data-hist-glossary="daily-history-data" aria-label="Explain Daily Historical PSI Data" aria-expanded="false">i</button></strong>'''
+if old_title not in text:
+    raise SystemExit("STOP: data-section title not found.")
+text = text.replace(old_title, new_title, 1)
+
+glossary_anchor = '''      const HIST_GLOSSARY = {
+'''
+if glossary_anchor not in text:
+    raise SystemExit("STOP: HIST_GLOSSARY map not found.")
+
+defs = '''      const HIST_GLOSSARY = {
+        "daily-history-data": {
+          title:"Daily Historical PSI Data",
+          text:"Shows the exact daily PSI values saved behind the charts. Use it to verify a specific date or compare Global, U.S.A., and Europe readings directly."
+        },
+        "history-date": {
+          title:"Date",
+          text:"The New York session date assigned to the saved daily sentiment record."
+        },
+        "global-delta": {
+          title:"Global Δ",
+          text:"The change in Global PSI from the previous saved day. Positive means Global sentiment rose; negative means it fell."
+        },
+        "us-delta": {
+          title:"U.S.A. Δ",
+          text:"The change in U.S.A. PSI from the previous saved day. Positive means U.S.A. sentiment rose; negative means it fell."
+        },
+        "europe-psi": {
+          title:"Europe PSI",
+          text:"The saved 0–100 Public Sentiment Index focused on Europe. Dates before Europe historical tracking began remain blank rather than being estimated."
+        },
+        "europe-delta": {
+          title:"Europe Δ",
+          text:"The change in Europe PSI from the previous saved Europe reading. It remains blank when a comparable prior Europe reading is unavailable."
+        },
+'''
+text = text.replace(glossary_anchor, defs, 1)
+
+css = r'''
+  <style id="xx-history-glossary-parity-v1">
+    .xx-exact-history summary strong{
+      color:#f8fafc!important;
+      font:900 13px/1.2 Inter,"Segoe UI",Arial,sans-serif!important;
+      letter-spacing:0!important;
+    }
+    .xx-exact-history summary small{
+      color:#a9b7c8!important;
+      font:600 10px/1.25 Inter,"Segoe UI",Arial,sans-serif!important;
+    }
+    body:not(.dark-mode) .xx-exact-history summary strong{
+      color:#061522!important;
+    }
+    body:not(.dark-mode) .xx-exact-history summary small{
+      color:#475569!important;
+    }
+
+    .xx-exact-history .hist-info-btn{
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      width:16px!important;
+      height:16px!important;
+      min-width:16px!important;
+      min-height:16px!important;
+      max-width:16px!important;
+      max-height:16px!important;
+      box-sizing:border-box!important;
+      margin:0 0 0 5px!important;
+      padding:0!important;
+      border:1px solid #9aa9b7!important;
+      border-radius:50%!important;
+      background:#ffffff!important;
+      color:#d32f2f!important;
+      box-shadow:none!important;
+      outline:0!important;
+      font:800 10px/14px system-ui,-apple-system,"Segoe UI",sans-serif!important;
+      text-align:center!important;
+      vertical-align:middle!important;
+      appearance:none!important;
+      -webkit-appearance:none!important;
+      overflow:hidden!important;
+      transform:none!important;
+      cursor:pointer!important;
+      transition:.15s ease!important;
+    }
+
+    .xx-exact-history .hist-info-btn:hover,
+    .xx-exact-history .hist-info-btn:focus-visible,
+    .xx-exact-history .hist-info-btn[aria-expanded="true"]{
+      border-color:#60a5fa!important;
+      background:#eaf3ff!important;
+      color:#d32f2f!important;
+      outline:none!important;
+    }
+
+    body.dark-mode .xx-exact-history .hist-info-btn{
+      background:#18202e!important;
+      color:#ef4444!important;
+      border-color:#64748b!important;
+    }
+
+    body.dark-mode .xx-exact-history .hist-info-btn:hover,
+    body.dark-mode .xx-exact-history .hist-info-btn:focus-visible,
+    body.dark-mode .xx-exact-history .hist-info-btn[aria-expanded="true"]{
+      border-color:#60a5fa!important;
+      background:#1d4ed8!important;
+      color:#fff!important;
+    }
+
+    .xx-title-info{
+      position:relative;
+      top:-1px;
+    }
+
+    .hist-glossary-popover{
+      border:1px solid #334155!important;
+      border-radius:10px!important;
+      background:#111827!important;
+      color:#cbd5e1!important;
+      box-shadow:0 14px 40px rgba(0,0,0,.45)!important;
+      font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+    }
+    .hist-glossary-title{
+      color:#f8fafc!important;
+      font-size:13px!important;
+      font-weight:800!important;
+    }
+    .hist-glossary-close{
+      color:#ef4444!important;
+      font-weight:900!important;
+    }
+
+    body:not(.dark-mode) .hist-glossary-popover{
+      background:#fff!important;
+      color:#10263b!important;
+      border-color:#91a9bc!important;
+      box-shadow:0 16px 38px rgba(28,58,83,.22)!important;
+    }
+    body:not(.dark-mode) .hist-glossary-title{
+      color:#061522!important;
+    }
+
+    .xx-exact-table .xx-help-dot{display:none!important;}
+  </style>
+'''
+
+if '</head>' not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace('</head>', css + '\n</head>', 1)
+
+p.write_text(text, encoding="utf-8")
+print("Historical Sentiment lab title + glossary parity prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab file only:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+git diff --stat -- xx-sentiment-history-lab.html
+echo
+echo "Glossary parity markers:"
+grep -n -E 'xx-history-glossary-parity-v1|daily-history-data|history-date|global-delta|us-delta|europe-psi|europe-delta' xx-sentiment-history-lab.html | head -80
+echo
+echo "Production remains untouched."
+echo "No commit or push was performed."
