@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# PublicSentimentDash Formula Centralization
+# STEP 2 — INTERACTIVE DASHBOARD ONLY
+#
+# Changes exactly one production page: dashboard.html
+# No engine, Home, History, Market Pulse, ribbon, CSS, or voting changes.
+
+FILE="dashboard.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "ERROR: dashboard.html not found. Run this from the repository root."
+  exit 1
+fi
+
+python3 - "$FILE" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+old_label = '''    function label(score){
+      if(window.PSDCore?.classifySentiment) return window.PSDCore.classifySentiment(score);
+      if(score == null) return "No PSI Match";
+      if(score >= 70) return "Strong Bullish";
+      if(score >= 56) return "Bullish";
+      if(score >= 45) return "Mixed/Neutral";
+      if(score >= 31) return "Bearish";
+      return "Strong Bearish";
+    }'''
+
+new_label = '''    function label(score){
+      if(window.PSDCore?.classifySentiment) return window.PSDCore.classifySentiment(score);
+      return "No PSI Match";
+    }'''
+
+old_badge = '''    function badgeClass(score){
+      if(score == null) return "badge-neutral";
+      if(score >= 70) return "badge-strongbullish";
+      if(score >= 56) return "badge-bullish";
+      if(score >= 45) return "badge-mixedneutral";
+      if(score >= 31) return "badge-bearish";
+      return "badge-strongbearish";
+    }'''
+
+new_badge = '''    function badgeClass(score){
+      const category = label(score);
+      if(category === "Strong Bullish") return "badge-strongbullish";
+      if(category === "Bullish") return "badge-bullish";
+      if(category === "Mixed/Neutral") return "badge-mixedneutral";
+      if(category === "Bearish") return "badge-bearish";
+      if(category === "Strong Bearish") return "badge-strongbearish";
+      return "badge-neutral";
+    }'''
+
+old_color = '''    function sentimentColor(score){
+      if(window.PSDCore?.sentimentColor) return window.PSDCore.sentimentColor(score);
+      if(score == null) return "#8b949e";
+      if(score >= 70) return "#22c55e";
+      if(score >= 56) return "#14b8a6";
+      if(score >= 45) return "#58a6ff";
+      if(score >= 31) return "#f97316";
+      return "#ef4444";
+    }'''
+
+new_color = '''    function sentimentColor(score){
+      if(window.PSDCore?.sentimentColor) return window.PSDCore.sentimentColor(score);
+      return "#8b949e";
+    }'''
+
+old_heat_color = '''    function heatColor(v){
+      if(v >= 70) return "#16a34a";
+      if(v >= 56) return "#2dd4bf";
+      if(v >= 45) return "#3b82f6";
+      if(v >= 31) return "#facc15";
+      return "#ef4444";
+    }'''
+
+new_heat_color = '''    function heatColor(v){
+      const category = label(v);
+      if(category === "Strong Bullish") return "#16a34a";
+      if(category === "Bullish") return "#2dd4bf";
+      if(category === "Mixed/Neutral") return "#3b82f6";
+      if(category === "Bearish") return "#facc15";
+      if(category === "Strong Bearish") return "#ef4444";
+      return "#8b949e";
+    }'''
+
+old_heat_style = '''    function heatStyle(v){
+      const goldFade = "radial-gradient(circle at 18% 12%,rgba(255,215,128,.20),transparent 46%),";
+      if(v >= 70) return `background:${goldFade}linear-gradient(180deg,rgba(22,163,74,.98),rgba(20,83,45,.82));border-color:rgba(22,163,74,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(22,163,74,.30);color:#f0fff4;`;
+      if(v >= 56) return `background:${goldFade}linear-gradient(180deg,rgba(45,212,191,.98),rgba(15,118,110,.82));border-color:rgba(45,212,191,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(45,212,191,.28);color:#ecfffb;`;
+      if(v >= 45) return `background:${goldFade}linear-gradient(180deg,rgba(59,130,246,.98),rgba(30,64,175,.82));border-color:rgba(59,130,246,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(59,130,246,.25);color:#f1f7ff;`;
+      if(v >= 31) return `background:${goldFade}linear-gradient(180deg,rgba(250,204,21,.98),rgba(161,98,7,.84));border-color:rgba(250,204,21,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.12),0 0 20px rgba(250,204,21,.24);color:#fffbea;`;
+      return `background:${goldFade}linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.84));border-color:rgba(239,68,68,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(239,68,68,.30);color:#fff1f1;`;
+    }'''
+
+new_heat_style = '''    function heatStyle(v){
+      const category = label(v);
+      const goldFade = "radial-gradient(circle at 18% 12%,rgba(255,215,128,.20),transparent 46%),";
+      if(category === "Strong Bullish") return `background:${goldFade}linear-gradient(180deg,rgba(22,163,74,.98),rgba(20,83,45,.82));border-color:rgba(22,163,74,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(22,163,74,.30);color:#f0fff4;`;
+      if(category === "Bullish") return `background:${goldFade}linear-gradient(180deg,rgba(45,212,191,.98),rgba(15,118,110,.82));border-color:rgba(45,212,191,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(45,212,191,.28);color:#ecfffb;`;
+      if(category === "Mixed/Neutral") return `background:${goldFade}linear-gradient(180deg,rgba(59,130,246,.98),rgba(30,64,175,.82));border-color:rgba(59,130,246,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(59,130,246,.25);color:#f1f7ff;`;
+      if(category === "Bearish") return `background:${goldFade}linear-gradient(180deg,rgba(250,204,21,.98),rgba(161,98,7,.84));border-color:rgba(250,204,21,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.12),0 0 20px rgba(250,204,21,.24);color:#fffbea;`;
+      if(category === "Strong Bearish") return `background:${goldFade}linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.84));border-color:rgba(239,68,68,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(239,68,68,.30);color:#fff1f1;`;
+      return `background:${goldFade}linear-gradient(180deg,rgba(139,148,158,.72),rgba(75,85,99,.62));border-color:rgba(139,148,158,.60);color:#f8fafc;`;
+    }'''
+
+pairs = [
+    ("label", old_label, new_label),
+    ("badgeClass", old_badge, new_badge),
+    ("sentimentColor", old_color, new_color),
+    ("heatColor", old_heat_color, new_heat_color),
+    ("heatStyle", old_heat_style, new_heat_style),
+]
+
+if 'sentiment-core.js' not in text:
+    raise SystemExit("ERROR: dashboard.html does not load sentiment-core.js. No change made.")
+
+for name, old, new in pairs:
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f"ERROR: Expected exactly one current {name} block, found {count}. No change made.")
+
+for name, old, new in pairs:
+    text = text.replace(old, new, 1)
+
+for name, old, new in pairs:
+    if old in text:
+        raise SystemExit(f"ERROR: Old {name} block still remains.")
+
+for token in [
+    'window.PSDCore?.classifySentiment',
+    'window.PSDCore?.sentimentColor',
+    'function badgeClass(score)',
+    'function heatColor(v)',
+    'function heatStyle(v)'
+]:
+    if token not in text:
+        raise SystemExit(f"ERROR: Validation failed for {token}")
+
+path.write_text(text, encoding="utf-8")
+
+print("STEP 2 COMPLETE — Interactive Dashboard only")
+print("Changed file: dashboard.html")
+print("")
+print("Centralized:")
+print("  - PSI label category decisions")
+print("  - badge category decisions")
+print("  - sentiment color category decisions")
+print("  - Heatwave color category decisions")
+print("  - Heatwave style category decisions")
+print("")
+print("Preserved:")
+print("  - exact dashboard layout")
+print("  - existing badge class names")
+print("  - existing Heatwave colors/styles")
+print("  - chart calculations")
+print("  - skyline/radar/stability/history logic")
+print("  - ribbon and voting")
+PY
+
+echo
+echo "Run this next:"
+echo "  git diff -- dashboard.html"
+echo
+echo "Do NOT commit yet."
