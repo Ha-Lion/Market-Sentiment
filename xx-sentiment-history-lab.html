@@ -1376,7 +1376,7 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Hourly PSI</h2>
-              <div class="xx-history-card-sub">Latest intraday engine scans • NY time</div>
+              <div class="xx-history-card-sub">Past 7 days • intraday engine scans • NY time</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="hourly"></div>
           </div>
@@ -1390,7 +1390,7 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Daily PSI</h2>
-              <div class="xx-history-card-sub">Latest 14 daily readings</div>
+              <div class="xx-history-card-sub">Past 3 weeks • daily readings</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="daily"></div>
           </div>
@@ -1404,7 +1404,7 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Weekly PSI</h2>
-              <div class="xx-history-card-sub">2-month window • weekly averages</div>
+              <div class="xx-history-card-sub">Past 3 months • weekly averages</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="weekly"></div>
           </div>
@@ -1418,7 +1418,7 @@
           <div class="xx-history-card-head">
             <div>
               <h2 class="xx-history-card-title">Monthly PSI</h2>
-              <div class="xx-history-card-sub">Up to 6 months • monthly averages</div>
+              <div class="xx-history-card-sub">Past 6 months • monthly averages</div>
             </div>
             <div class="xx-chart-legend" data-legend-for="monthly"></div>
           </div>
@@ -3070,8 +3070,13 @@
     }
 
     function timeLabel(d){
-      return new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",hour12:true,timeZone:"America/New_York"})
-        .format(d).replace(" ","");
+      return new Intl.DateTimeFormat("en-US",{
+        month:"short",
+        day:"numeric",
+        hour:"numeric",
+        hour12:true,
+        timeZone:"America/New_York"
+      }).format(d).replace(",","");
     }
 
     function monthLabel(key){
@@ -3098,6 +3103,10 @@
         };
       }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
 
+      const dailyWindow=daily.length
+        ? daily.filter(p => p.ts.getTime() >= daily[daily.length-1].ts.getTime() - 20*86400000)
+        : [];
+
       const hourly=(historyData?.intraday || []).map(r => {
         const ts=new Date(r.ts || r.sample_key);
         return {
@@ -3105,7 +3114,11 @@
           global:num(r.global_psi),us:num(r.us_psi),
           europe:num(r.europe_psi ?? r.euro_psi)
         };
-      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts).slice(-12);
+      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+
+      const hourlyWindow=hourly.length
+        ? hourly.filter(p => p.ts.getTime() >= hourly[hourly.length-1].ts.getTime() - 7*86400000)
+        : [];
 
       const weeklyMap=new Map();
       daily.forEach(p=>{
@@ -3124,7 +3137,7 @@
           key:g.key,label:g.label,ts:g.ts,count:g.count,
           global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
         }))
-        .sort((a,b)=>a.ts-b.ts).slice(-8);
+        .sort((a,b)=>a.ts-b.ts).slice(-13);
 
       const monthlyMap=new Map();
       daily.forEach(p=>{
@@ -3146,7 +3159,7 @@
         }))
         .sort((a,b)=>a.ts-b.ts).slice(-6);
 
-      return {hourly,daily:daily.slice(-14),weekly,monthly};
+      return {hourly:hourlyWindow,daily:dailyWindow,weekly,monthly};
     }
 
     function setupCanvas(canvas){
@@ -3219,7 +3232,10 @@
         ctx.fillText(String(v),pad.l-5,yy);
       });
 
-      const maxLabels=period==="daily" ? 7 : 8;
+      const maxLabels =
+        period==="hourly" ? 7 :
+        period==="daily" ? 7 :
+        period==="weekly" ? 7 : 6;
       const labelCount=Math.min(maxLabels,data.length);
       const indices=new Set();
       if(labelCount===1) indices.add(0);
