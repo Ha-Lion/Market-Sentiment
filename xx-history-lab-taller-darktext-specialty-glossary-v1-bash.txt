@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+if 'id="xx-history-final-chart-readability-v1"' in text:
+    raise SystemExit("STOP: final chart readability patch already installed.")
+
+# ---------------------------------------------------------------
+# 1) Remove timeframe/duration subtitle lines under the 4 chart titles.
+# ---------------------------------------------------------------
+subtitles = [
+    '<div class="xx-history-card-sub">Past 7 days • intraday engine scans • NY time</div>',
+    '<div class="xx-history-card-sub">Past 3 weeks • daily readings</div>',
+    '<div class="xx-history-card-sub">Past 3 months • weekly averages</div>',
+    '<div class="xx-history-card-sub">Past 6 months • monthly averages</div>',
+]
+
+for old in subtitles:
+    if old not in text:
+        raise SystemExit("STOP: expected chart duration subtitle not found:\n" + old)
+    text = text.replace(old, '', 1)
+
+# ---------------------------------------------------------------
+# 2) Fix the hidden blocker that prevented the specialty-page
+#    glossary pulse from actually animating.
+# ---------------------------------------------------------------
+start_marker = '<style id="xx-history-glossary-parity-v1">'
+start = text.find(start_marker)
+if start == -1:
+    raise SystemExit("STOP: glossary parity style block not found.")
+end = text.find('</style>', start)
+if end == -1:
+    raise SystemExit("STOP: glossary parity style closing tag not found.")
+
+block = text[start:end]
+
+if 'transform:none!important' not in block:
+    raise SystemExit("STOP: expected glossary transform blocker not found.")
+block = block.replace('transform:none!important', 'transform-origin:center!important')
+
+# The older !important box-shadow also blocks animated red glow.
+if 'box-shadow:none!important' not in block:
+    raise SystemExit("STOP: expected glossary box-shadow blocker not found.")
+block = block.replace('box-shadow:none!important', 'box-shadow:none')
+
+text = text[:start] + block + text[end:]
+
+# ---------------------------------------------------------------
+# 3) Dark black canvas axis labels in detected light mode.
+# ---------------------------------------------------------------
+old_text_color = '''      const textColor=getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8";'''
+new_text_color = '''      const textColor=isHistoryLight()
+        ? "#111111"
+        : (getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8");'''
+
+if old_text_color not in text:
+    raise SystemExit("STOP: canvas textColor line not found.")
+text = text.replace(old_text_color, new_text_color, 1)
+
+# ---------------------------------------------------------------
+# 4) Taller charts + darker light-mode supporting text.
+# ---------------------------------------------------------------
+css = r'''
+  <style id="xx-history-final-chart-readability-v1">
+    /* Give the four core PSI charts more vertical breathing room. */
+    #xx-clean-history-dashboard .xx-history-card{
+      min-height:330px!important;
+    }
+    #xx-clean-history-dashboard .xx-chart-wrap{
+      height:286px!important;
+    }
+
+    /* With subtitles removed, keep compact clean title headers. */
+    #xx-clean-history-dashboard .xx-history-card-head{
+      min-height:34px!important;
+      padding:8px 10px 3px!important;
+      align-items:center!important;
+    }
+
+    /* Light mode: replace low-contrast gray supporting copy with near-black. */
+    html.xx-history-light #xx-clean-history-dashboard .xx-toolbar-label,
+    html.xx-history-light #xx-clean-history-dashboard .xx-toolbar-status,
+    html.xx-history-light #xx-clean-history-dashboard .xx-chart-legend,
+    html.xx-history-light #xx-clean-history-dashboard .xx-legend-item,
+    html.xx-history-light #xx-clean-history-dashboard .xx-chart-empty{
+      color:#111111!important;
+    }
+
+    html.xx-history-light .xx-exact-history summary small,
+    html.xx-history-light .xx-exact-help{
+      color:#111827!important;
+    }
+
+    /*
+      Specialty-page glossary motion parity.
+      Earlier blocking transform/box-shadow !important declarations were removed
+      above so these keyframes can now visibly scale and glow.
+    */
+    .xx-exact-history .hist-info-btn{
+      transform-origin:center!important;
+      animation:psdPulseGlossary 5s ease-in-out infinite!important;
+    }
+
+    .xx-exact-history .hist-info-btn:hover,
+    .xx-exact-history .hist-info-btn:focus-visible,
+    .xx-exact-history .hist-info-btn[aria-expanded="true"]{
+      animation:none!important;
+      transform:scale(1)!important;
+    }
+
+    @media(max-width:520px){
+      #xx-clean-history-dashboard .xx-history-card{
+        min-height:280px!important;
+      }
+      #xx-clean-history-dashboard .xx-chart-wrap{
+        height:236px!important;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .xx-exact-history .hist-info-btn{
+        animation:none!important;
+      }
+    }
+  </style>
+'''
+
+if '</head>' not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace('</head>', css + '\n</head>', 1)
+
+p.write_text(text, encoding="utf-8")
+print("Historical Sentiment lab chart height/readability/glossary motion prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab file only:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+git diff --stat -- xx-sentiment-history-lab.html
+
+echo
+echo "Verification:"
+grep -n -E \
+  'xx-history-final-chart-readability-v1|min-height:330px|height:286px|textColor=isHistoryLight|psdPulseGlossary 5s' \
+  xx-sentiment-history-lab.html | head -60
+
+echo
+echo "Duration subtitle check (should print nothing):"
+grep -n -E \
+  'Past 7 days • intraday|Past 3 weeks • daily|Past 3 months • weekly|Past 6 months • monthly' \
+  xx-sentiment-history-lab.html || true
+
+echo
+echo "Glossary blockers inside parity block (should print nothing):"
+python - <<'PY'
+from pathlib import Path
+t=Path("xx-sentiment-history-lab.html").read_text(encoding="utf-8")
+s=t.find('<style id="xx-history-glossary-parity-v1">')
+e=t.find('</style>',s)
+b=t[s:e] if s!=-1 and e!=-1 else ""
+for needle in ("transform:none!important","box-shadow:none!important"):
+    if needle in b:
+        print("BLOCKER STILL PRESENT:",needle)
+PY
+
+echo
+echo "Production remains untouched."
+echo "No commit or push was performed."
