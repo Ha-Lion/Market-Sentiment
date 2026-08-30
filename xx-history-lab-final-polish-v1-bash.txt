@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+if 'id="xx-history-final-polish-v1"' in text:
+    raise SystemExit("STOP: final polish already installed.")
+
+css = r'''
+  <style id="xx-history-final-polish-v1">
+    html.xx-history-light .xx-exact-history summary{
+      color:#172033!important;
+      background:#ffffff!important;
+    }
+
+    html.xx-history-light .xx-exact-history summary strong{
+      color:#172033!important;
+    }
+
+    html.xx-history-light .xx-exact-history summary small{
+      color:#536275!important;
+    }
+
+    html.xx-history-light .xx-details-action{
+      color:#7a5600!important;
+      border-color:#c6982f!important;
+      background:#fffaf0!important;
+    }
+  </style>
+'''
+
+if '</head>' not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace('</head>', css + '\n</head>', 1)
+
+old = '''        <span class="xx-details-action">View data</span>'''
+new = '''        <span class="xx-details-action"><span class="xx-show-label">View data</span><span class="xx-hide-label">Hide data</span></span>'''
+if old not in text:
+    raise SystemExit("STOP: View data control not found.")
+text = text.replace(old, new, 1)
+
+extra = r'''
+  <style id="xx-history-final-polish-label-v1">
+    .xx-details-action .xx-hide-label{display:none;}
+    .xx-exact-history[open] .xx-details-action .xx-show-label{display:none;}
+    .xx-exact-history[open] .xx-details-action .xx-hide-label{display:inline;}
+    .xx-exact-history[open] .xx-details-action::before{content:none!important;}
+  </style>
+'''
+text = text.replace('</head>', extra + '\n</head>', 1)
+
+p.write_text(text, encoding="utf-8")
+print("Historical Sentiment lab final light-mode polish prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab file only:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+git diff --stat -- xx-sentiment-history-lab.html
+echo
+echo "Polish markers:"
+grep -n -E 'xx-history-final-polish-v1|xx-show-label|xx-hide-label' xx-sentiment-history-lab.html
+echo
+echo "Production remains untouched."
+echo "No commit or push was performed."
