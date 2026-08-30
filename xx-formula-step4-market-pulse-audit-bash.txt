@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+PAGE="market-pulse.html"
+CORE="sentiment-core.js"
+
+for f in "$PAGE" "$CORE"; do
+  if [ ! -f "$f" ]; then
+    echo "STOP: $f not found."
+    exit 1
+  fi
+done
+
+echo "=== AI MARKET PULSE FORMULA AUDIT — READ ONLY ==="
+echo
+
+echo "Repo:"
+pwd
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Shared sentiment-core.js references used by Market Pulse:"
+grep -nE \
+  'sentiment-core|PSDCore|classifySentiment|scoreLabel|headline_psi|regional_pulse|technical_data|market_pulse' \
+  "$PAGE" | head -160 || true
+echo
+
+echo "2) Possible local PSI / sentiment classifications or thresholds:"
+grep -nEi \
+  'strong bullish|bullish|mixed.?neutral|bearish|strong bearish|>= *[0-9]+|<= *[0-9]+|> *[0-9]+|< *[0-9]+' \
+  "$PAGE" | head -220 || true
+echo
+
+echo "3) Possible calculations inside Market Pulse:"
+grep -nEi \
+  'Math\.|average|avg\(|momentum|volatility|diverg|bias|change|delta|shift|score|psi|percent|weighted|confidence|clamp|normalize' \
+  "$PAGE" | head -320 || true
+echo
+
+echo "4) Inline JS functions likely involved in display/calculation:"
+grep -nE \
+  'function [A-Za-z0-9_]+\(|const [A-Za-z0-9_]+ *= *\(|=> *\{' \
+  "$PAGE" | head -260 || true
+echo
+
+echo "5) Shared core exported functions/constants:"
+grep -nE \
+  'function |const |window\.PSDCore|classify|label|sentiment|score|threshold|technical|user' \
+  "$CORE" | head -260 || true
+echo
+
+echo "6) Data files referenced by Market Pulse:"
+grep -oE \
+  '[A-Za-z0-9_-]+\.json' \
+  "$PAGE" | sort -u
+echo
+
+echo "7) Suspicious hard-coded PSI thresholds specifically:"
+grep -nE \
+  '(70|69|56|55|45|44|31|30)' \
+  "$PAGE" | head -180 || true
+echo
+
+echo "=== END AUDIT ==="
+echo "No files were modified."
