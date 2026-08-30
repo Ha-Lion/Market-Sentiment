@@ -1,0 +1,3256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>XX Lab — Historical Market Sentiment — Public Sentiment Dash</title>
+  <meta name="description" content="Track historical Global Public Sentiment Index and U.S. market sentiment with hourly, daily, weekly, and monthly dashboard charts.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://publicsentimentdash.com/sentiment-history.html">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css?v=20">
+
+  <style>
+    /* Historical Sentiment Dashboard v3: hourly charts forward-fill missing hours so graphs stay complete when scraper cadence changes. */
+    :root{
+      --hist-bg:#070b17;
+      --hist-card:rgba(19,16,39,.74);
+      --hist-card-2:rgba(28,18,50,.76);
+      --hist-line:rgba(255,215,128,.14);
+      --hist-soft:rgba(235,241,255,.76);
+      --hist-muted:rgba(202,211,229,.62);
+      --hist-gold:#ffd780;
+      --hist-gold-2:#d29922;
+      --hist-purple:#9b2cff;
+      --hist-pink:#ff3f86;
+      --hist-orange:#ff9f1c;
+      --hist-cyan:#2ee6d6;
+      --hist-green:#55f0a1;
+      --hist-red:#ff4b6e;
+    }
+
+    .history-dashboard-hero{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:18px;
+      align-items:end;
+      margin-bottom:18px;
+    }
+
+    .history-lead{font-size:16px;max-width:850px;margin-bottom:0;}
+
+    .dashboard-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .dash-btn{
+      border:1px solid rgba(255,215,128,.16);
+      color:var(--hist-soft);
+      background:rgba(17,24,39,.72);
+      border-radius:999px;
+      padding:8px 11px;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.02em;
+      cursor:pointer;
+      transition:transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+    }
+
+    .dash-btn:hover,.dash-btn.active{
+      transform:translateY(-1px);
+      color:#fff;
+      border-color:rgba(255,215,128,.48);
+      background:linear-gradient(135deg,rgba(210,153,34,.22),rgba(155,44,255,.18));
+    }
+
+    .dash-stage-shell{
+      position:relative;
+      padding:10px;
+      border-radius:26px;
+      background:linear-gradient(135deg,rgba(255,215,128,.24),rgba(210,153,34,.18),rgba(161,107,24,.13));
+      box-shadow:0 24px 70px rgba(0,0,0,.28);
+      margin-bottom:18px;
+    }
+
+    .dash-stage{
+      position:relative;
+      overflow:hidden;
+      min-height:640px;
+      aspect-ratio:16/9;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.09);
+      background:
+        radial-gradient(circle at 73% 17%, rgba(210,153,34,.30), transparent 26%),
+        radial-gradient(circle at 34% 38%, rgba(255,215,128,.18), transparent 30%),
+        radial-gradient(circle at 92% 78%, rgba(210,153,34,.18), transparent 28%),
+        linear-gradient(135deg,#070b17 0%,#101322 33%,#2a210f 69%,#17120a 100%);
+      isolation:isolate;
+    }
+
+    .dash-stage:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-2;
+      opacity:.42;
+      background-image:
+        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+      background-size:82px 82px;
+      animation:dashGridMove 18s linear infinite;
+    }
+
+    .dash-stage:after{
+      content:"";
+      position:absolute;
+      inset:-8% -4%;
+      z-index:-1;
+      opacity:.23;
+      background:
+        radial-gradient(ellipse at 22% 33%, transparent 0 8%, rgba(255,255,255,.18) 8.4% 10.8%, transparent 11.2%),
+        radial-gradient(ellipse at 49% 34%, transparent 0 9%, rgba(255,255,255,.18) 9.4% 13.4%, transparent 13.9%),
+        radial-gradient(ellipse at 70% 42%, transparent 0 8%, rgba(255,255,255,.18) 8.4% 12.5%, transparent 13%),
+        radial-gradient(ellipse at 38% 66%, transparent 0 7%, rgba(255,255,255,.14) 7.4% 11.5%, transparent 12%),
+        radial-gradient(ellipse at 83% 66%, transparent 0 7%, rgba(255,255,255,.14) 7.5% 11%, transparent 11.5%);
+      filter:blur(.3px);
+      transform:rotate(-2deg);
+    }
+
+    @keyframes dashGridMove{
+      from{background-position:0 0,0 0;}
+      to{background-position:82px 82px,82px 82px;}
+    }
+
+    .dash-layout{
+      position:absolute;
+      inset:28px;
+      display:grid;
+      grid-template-columns:150px repeat(24,minmax(0,1fr));
+      grid-template-rows:1fr 1fr 1fr;
+      gap:16px;
+    }
+
+    .dash-side{
+      grid-column:1/2;
+      grid-row:1/3;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+      padding-top:45px;
+    }
+
+    .side-pill{
+      height:38px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:7px;
+      background:rgba(255,255,255,.075);
+      border:1px solid rgba(255,255,255,.06);
+      color:rgba(255,255,255,.86);
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      cursor:pointer;
+      user-select:none;
+      transition:.18s ease;
+    }
+
+    .side-pill:hover,.side-pill.active{
+      background:linear-gradient(135deg,rgba(255,215,128,.2),rgba(155,44,255,.22));
+      border-color:rgba(255,215,128,.34);
+      color:#fff;
+      box-shadow:0 8px 24px rgba(155,44,255,.18);
+    }
+
+    .side-spacer{height:6px;}
+    .side-note{
+      color:rgba(255,255,255,.56);
+      font-size:10px;
+      line-height:1.35;
+      text-align:center;
+      padding:0 4px;
+      margin-top:-2px;
+    }
+
+    .dash-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:11px;
+      background:linear-gradient(180deg,rgba(24,13,39,.78),rgba(12,10,29,.82));
+      border:1px solid rgba(255,255,255,.075);
+      box-shadow:0 16px 34px rgba(0,0,0,.24);
+      backdrop-filter:blur(7px);
+      min-width:0;
+    }
+
+    .dash-card:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);
+      transform:translateX(-120%);
+      animation:cardSweep 6.8s ease-in-out infinite;
+    }
+
+    @keyframes cardSweep{
+      0%,45%{transform:translateX(-120%);}
+      72%,100%{transform:translateX(120%);}
+    }
+
+    .card-head{
+      position:absolute;
+      inset:0 0 auto 0;
+      height:36px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 14px;
+      background:rgba(6,7,18,.34);
+      border-bottom:1px solid rgba(255,255,255,.04);
+      z-index:2;
+    }
+
+    .card-title{
+      color:#fff;
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.02em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .card-icons{display:flex;gap:10px;color:rgba(255,255,255,.42);font-weight:800;}
+
+    .mini-tabs{
+      display:flex;
+      gap:5px;
+      color:rgba(255,255,255,.6);
+      font-size:9px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .mini-tabs span.active{color:var(--hist-gold);}
+
+    .card-body{
+      position:absolute;
+      inset:36px 12px 12px 12px;
+      z-index:1;
+    }
+
+    .dash-canvas{width:100%;height:100%;display:block;}
+
+    .chart-legend{
+      position:absolute;
+      left:12px;
+      top:46px;
+      display:grid;
+      gap:3px;
+      color:rgba(255,255,255,.75);
+      font-size:10px;
+      font-weight:700;
+      z-index:3;
+    }
+
+    .legend-row{display:flex;align-items:center;gap:6px;}
+    .legend-dot{width:14px;height:2px;border-radius:999px;background:var(--hist-gold);}
+    .legend-dot.us{background:var(--hist-pink);}
+    .legend-dot.mom{background:var(--hist-purple);}
+    .legend-dot.vol{background:var(--hist-cyan);}
+
+    .metric-big{
+      position:absolute;
+      left:16px;
+      top:46px;
+      font-size:36px;
+      line-height:1;
+      font-weight:900;
+      letter-spacing:.04em;
+      color:var(--hist-pink);
+      text-shadow:0 0 24px rgba(255,63,134,.25);
+      z-index:3;
+    }
+
+    .metric-caption{
+      position:absolute;
+      left:106px;
+      top:58px;
+      color:rgba(255,255,255,.7);
+      font-size:9px;
+      font-weight:800;
+      z-index:3;
+    }
+
+    .progress-stack{
+      position:absolute;
+      left:16px;
+      right:16px;
+      bottom:30px;
+      display:grid;
+      gap:10px;
+      z-index:3;
+    }
+
+    .progress-line{height:5px;border-radius:999px;background:rgba(0,0,0,.32);overflow:hidden;}
+    .progress-line span{display:block;height:100%;width:0;border-radius:999px;transition:width .8s ease;}
+    .progress-line:nth-child(1) span{background:var(--hist-pink);}
+    .progress-line:nth-child(2) span{background:var(--hist-purple);}
+    .progress-line:nth-child(3) span{background:var(--hist-gold);}
+
+    .small-note{
+      position:absolute;
+      left:16px;
+      bottom:10px;
+      color:rgba(255,255,255,.8);
+      font-size:11px;
+      font-weight:800;
+      z-index:3;
+    }
+
+    .driver-list{
+      position:absolute;
+      inset:44px 14px 12px 14px;
+      z-index:3;
+      display:grid;
+      gap:8px;
+      align-content:start;
+      overflow:hidden;
+    }
+
+    .driver-item{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:8px;
+      align-items:start;
+      color:rgba(255,255,255,.82);
+      font-size:10px;
+      line-height:1.25;
+      min-width:0;
+      padding-bottom:5px;
+      border-bottom:1px solid rgba(255,255,255,.055);
+    }
+
+    .driver-item:last-child{border-bottom:0;}
+
+    .driver-rank{
+      color:var(--hist-gold);
+      font-weight:900;
+    }
+
+    .driver-text{min-width:0;}
+    .driver-main{
+      display:block;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .driver-meta{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      margin-top:3px;
+      color:rgba(255,255,255,.48);
+      font-size:9px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .driver-badge{
+      display:inline-flex;
+      border-radius:999px;
+      padding:1px 6px;
+      font-size:8px;
+      font-weight:900;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.045);
+    }
+
+    .driver-item a{color:inherit;text-decoration:none;}
+    .driver-item a:hover{color:#fff;text-decoration:underline;}
+
+    .bias-legend{
+      position:absolute;
+      top:40px;
+      right:12px;
+      z-index:5;
+      display:grid;
+      gap:5px;
+      min-width:92px;
+      color:rgba(255,255,255,.86);
+      font-size:10px;
+      font-weight:800;
+      text-align:left;
+      pointer-events:none;
+    }
+
+    .bias-legend-row{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:6px;
+      white-space:nowrap;
+    }
+
+    .bias-legend-dot{
+      width:7px;
+      height:7px;
+      border-radius:2px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .bias-body{
+      inset:70px 14px 12px 14px;
+    }
+
+    .card-a{grid-column:2/10;grid-row:1/2;}
+    .card-b{grid-column:10/18;grid-row:1/2;}
+    .card-c{grid-column:18/26;grid-row:1/2;}
+    .card-d{grid-column:2/12;grid-row:2/3;}
+    .card-e{grid-column:12/26;grid-row:2/3;}
+    .card-f{grid-column:1/6;grid-row:3/4;}
+    .card-g{grid-column:6/18;grid-row:3/4;}
+    .card-i{grid-column:18/26;grid-row:3/4;}
+
+    .dash-empty{
+      position:absolute;
+      right:22px;
+      bottom:18px;
+      z-index:5;
+      max-width:420px;
+      display:none;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,215,128,.22);
+      background:rgba(4,7,14,.78);
+      color:rgba(255,255,255,.82);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .stats-strip{
+      display:grid;
+      grid-template-columns:repeat(6,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .stat-tile{
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255,215,128,.10), transparent 42%),
+        linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));
+      border:1px solid rgba(255,215,128,.12);
+      border-radius:14px;
+      padding:13px;
+      min-width:0;
+      transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+    }
+
+    .stat-tile::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.055),transparent);
+      transform:translateX(-120%);
+      animation:statSweep 7.2s ease-in-out infinite;
+    }
+
+    @keyframes statSweep{
+      0%,48%{transform:translateX(-120%);}
+      74%,100%{transform:translateX(120%);}
+    }
+
+    .stat-tile:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,215,128,.34);
+      box-shadow:0 12px 32px rgba(0,0,0,.28);
+    }
+
+    .stat-tile.stat-bull{border-color:rgba(85,240,161,.24);background:radial-gradient(circle at 18% 0%,rgba(85,240,161,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+    .stat-tile.stat-bear{border-color:rgba(255,75,110,.25);background:radial-gradient(circle at 18% 0%,rgba(255,75,110,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+    .stat-tile.stat-neutral{border-color:rgba(80,160,255,.22);background:radial-gradient(circle at 18% 0%,rgba(80,160,255,.11),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+    .stat-tile.stat-gold{border-color:rgba(255,215,128,.28);}
+    .stat-tile.stat-purple{border-color:rgba(155,44,255,.24);background:radial-gradient(circle at 18% 0%,rgba(155,44,255,.12),transparent 42%),linear-gradient(135deg,rgba(17,24,39,.92),rgba(10,13,25,.96));}
+
+    .stat-label{position:relative;z-index:1;color:var(--muted);font-size:11px;font-weight:700;margin-bottom:6px;}
+    .stat-value{
+      position:relative;
+      z-index:1;
+      color:#fff;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:.01em;
+      text-align:center;
+      display:block;
+    }
+    .stat-note{position:relative;z-index:1;color:var(--muted);font-size:10px;margin-top:5px;line-height:1.3;}
+
+    .history-info-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+
+    .history-table-wrap{
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(255,215,128,.16);
+      border-radius:16px;
+      margin-top:12px;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(255,215,128,.10), transparent 34%),
+        linear-gradient(135deg,rgba(17,24,39,.72),rgba(10,13,25,.94));
+      box-shadow:0 18px 48px rgba(0,0,0,.22);
+    }
+
+    .history-table-wrap::before{
+      content:"";
+      position:absolute;
+      top:0;
+      bottom:0;
+      left:-35%;
+      width:35%;
+      pointer-events:none;
+      background:linear-gradient(90deg,transparent,rgba(255,215,128,.09),transparent);
+      animation:tableSweep 12s ease-in-out infinite;
+      z-index:3;
+    }
+
+    .history-table-wrap::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(255,255,255,.018) 1px,transparent 1px);
+      background-size:64px 64px;
+      opacity:.45;
+      z-index:0;
+    }
+
+    @keyframes tableSweep{
+      0%,50%{left:-35%;}
+      78%,100%{left:100%;}
+    }
+
+    .history-table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:0;
+      table-layout:fixed;
+      font-size:13px;
+      position:relative;
+      z-index:2;
+    }
+
+    .history-table th,.history-table td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.075);
+      text-align:left;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .history-table tbody tr{
+      transition:background .28s ease, box-shadow .28s ease;
+      animation:tableRowPulse 9.5s ease-in-out infinite;
+    }
+
+    .history-table tbody tr:nth-child(2n){animation-delay:1.4s;}
+    .history-table tbody tr:nth-child(3n){animation-delay:2.8s;}
+
+    @keyframes tableRowPulse{
+      0%,100%{background:rgba(255,255,255,.006);}
+      50%{background:rgba(255,215,128,.045);}
+    }
+
+    .history-table tbody tr:hover{
+      background:rgba(255,215,128,.09);
+      box-shadow:inset 3px 0 rgba(255,215,128,.38);
+    }
+
+    .history-table th{
+      color:#fff;
+      background:linear-gradient(90deg,rgba(255,215,128,.09),rgba(255,255,255,.035));
+      font-size:12px;
+    }
+
+    .history-table td{color:var(--soft);}
+    .bias-pill{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);}
+
+    @media(max-width:1180px){
+      .dash-stage{aspect-ratio:auto;min-height:0;}
+      .dash-layout{position:relative;inset:auto;padding:18px;grid-template-columns:1fr 1fr;grid-template-rows:auto;}
+      .dash-side{grid-column:1/-1;grid-row:auto;display:grid;grid-template-columns:repeat(6,1fr);}
+      .card-a,.card-b,.card-c,.card-d,.card-e,.card-f,.card-g,.card-h,.card-i{grid-column:auto;grid-row:auto;min-height:190px;}
+      .card-d,.card-e{grid-column:span 2;}
+      .stats-strip{grid-template-columns:repeat(3,1fr);}
+    }
+
+    @media(max-width:760px){
+      .history-dashboard-hero{grid-template-columns:1fr;}
+      .dashboard-actions{justify-content:flex-start;}
+      .dash-layout{grid-template-columns:1fr;padding:14px;gap:12px;}
+      .dash-side{grid-template-columns:repeat(2,1fr);}
+      .card-a,.card-b,.card-c,.card-d,.card-e,.card-f,.card-g,.card-h,.card-i{grid-column:1/-1;min-height:190px;}
+      .stats-strip,.history-info-grid{grid-template-columns:1fr 1fr;}
+    }
+
+    @media(max-width:520px){.stats-strip,.history-info-grid{grid-template-columns:1fr;}}
+
+    /* Historical Sentiment page theme bridge.
+       Dark mode keeps the existing design unchanged.
+       Light mode uses the same shared palette as the rest of the website. */
+    body:not(.dark-mode){
+      --hist-bg:#e9eff5;
+      --hist-card:#ffffff;
+      --hist-card-2:#eef4f9;
+      --hist-line:#9eb4c6;
+      --hist-soft:#10263b;
+      --hist-muted:#344e64;
+      --hist-gold:#7b5400;
+      --hist-gold-2:#9a6900;
+      --hist-purple:#6d28d9;
+      --hist-pink:#b42368;
+      --hist-orange:#a44a00;
+      --hist-cyan:#007c72;
+      --hist-green:#087443;
+      --hist-red:#b42318;
+    }
+
+    body:not(.dark-mode) main.page{
+      color:var(--theme-text)!important;
+    }
+
+    body:not(.dark-mode) .history-dashboard-hero,
+    body:not(.dark-mode) main.page > .panel.section{
+      background:var(--theme-card)!important;
+      border-color:var(--theme-line)!important;
+      color:var(--theme-text)!important;
+    }
+
+    body:not(.dark-mode) .history-dashboard-hero h1,
+    body:not(.dark-mode) main.page > .panel.section h2{
+      color:var(--theme-text)!important;
+    }
+
+    body:not(.dark-mode) .history-lead,
+    body:not(.dark-mode) main.page > .panel.section .muted{
+      color:var(--theme-soft)!important;
+      opacity:1!important;
+    }
+
+    body:not(.dark-mode) .history-kicker{
+      background:#fff3cf!important;
+      border-color:#b68922!important;
+      color:#523700!important;
+    }
+
+    body:not(.dark-mode) .dash-stage-shell{
+      background:linear-gradient(135deg,#e2bd5f,#fff0bf,#c99a2f)!important;
+      box-shadow:0 18px 44px rgba(28,58,83,.18)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage{
+      border-color:#9eb4c6!important;
+      background:
+        radial-gradient(circle at 73% 17%,rgba(255,214,102,.28),transparent 26%),
+        radial-gradient(circle at 34% 38%,rgba(109,40,217,.08),transparent 30%),
+        radial-gradient(circle at 92% 78%,rgba(0,124,114,.08),transparent 28%),
+        linear-gradient(135deg,#f8fbfe 0%,#eef4f9 42%,#fff8df 74%,#f4f7fa 100%)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:before{
+      opacity:.55!important;
+      background-image:
+        linear-gradient(rgba(52,78,100,.10) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(52,78,100,.10) 1px,transparent 1px)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:after{
+      opacity:.10!important;
+    }
+
+    body:not(.dark-mode) .dash-card{
+      background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(238,244,249,.96))!important;
+      border-color:#a9bfd2!important;
+      box-shadow:0 12px 28px rgba(28,58,83,.14)!important;
+    }
+
+    body:not(.dark-mode) .dash-card:before{
+      background:linear-gradient(90deg,transparent,rgba(123,84,0,.055),transparent)!important;
+    }
+
+    body:not(.dark-mode) .card-head{
+      background:rgba(226,235,243,.88)!important;
+      border-bottom-color:#b7c9d8!important;
+    }
+
+    body:not(.dark-mode) .card-title,
+    body:not(.dark-mode) .mini-tabs,
+    body:not(.dark-mode) .chart-legend,
+    body:not(.dark-mode) .bias-legend,
+    body:not(.dark-mode) .driver-item,
+    body:not(.dark-mode) .small-note,
+    body:not(.dark-mode) .metric-caption{
+      color:#10263b!important;
+    }
+
+    body:not(.dark-mode) .card-icons{
+      color:#526f87!important;
+    }
+
+    body:not(.dark-mode) .side-pill{
+      background:#ffffff!important;
+      border-color:#a9bfd2!important;
+      color:#10263b!important;
+    }
+
+    body:not(.dark-mode) .side-pill:hover,
+    body:not(.dark-mode) .side-pill.active{
+      background:linear-gradient(135deg,#fff3cf,#efe7ff)!important;
+      border-color:#b68922!important;
+      color:#3f2b00!important;
+      box-shadow:0 7px 18px rgba(123,84,0,.13)!important;
+    }
+
+    body:not(.dark-mode) .side-note,
+    body:not(.dark-mode) .driver-meta{
+      color:#344e64!important;
+    }
+
+    body:not(.dark-mode) .driver-item{
+      border-bottom-color:#c7d5e1!important;
+    }
+
+    body:not(.dark-mode) .driver-item a:hover{
+      color:#004f91!important;
+    }
+
+    body:not(.dark-mode) .dash-empty{
+      background:rgba(255,255,255,.96)!important;
+      border-color:#b68922!important;
+      color:#10263b!important;
+    }
+
+    body:not(.dark-mode) .stat-tile{
+      background:
+        radial-gradient(circle at 18% 0%,rgba(123,84,0,.07),transparent 42%),
+        linear-gradient(135deg,#ffffff,#eef4f9)!important;
+      border-color:#a9bfd2!important;
+      box-shadow:0 8px 20px rgba(28,58,83,.10)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-bull{
+      border-color:#63a684!important;
+      background:radial-gradient(circle at 18% 0%,rgba(8,116,67,.09),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-bear{
+      border-color:#c77870!important;
+      background:radial-gradient(circle at 18% 0%,rgba(180,35,24,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-neutral{
+      border-color:#7da9cc!important;
+      background:radial-gradient(circle at 18% 0%,rgba(0,79,145,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-gold{
+      border-color:#b68922!important;
+    }
+
+    body:not(.dark-mode) .stat-tile.stat-purple{
+      border-color:#9a7fd0!important;
+      background:radial-gradient(circle at 18% 0%,rgba(109,40,217,.08),transparent 42%),linear-gradient(135deg,#ffffff,#eef4f9)!important;
+    }
+
+    body:not(.dark-mode) .stat-label,
+    body:not(.dark-mode) .stat-note{
+      color:#344e64!important;
+    }
+
+    body:not(.dark-mode) .stat-value{
+      color:#061522!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap{
+      border-color:#a9bfd2!important;
+      background:
+        radial-gradient(circle at 12% 0%,rgba(123,84,0,.07),transparent 34%),
+        linear-gradient(135deg,#ffffff,#eef4f9)!important;
+      box-shadow:0 12px 28px rgba(28,58,83,.12)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::before{
+      background:linear-gradient(90deg,transparent,rgba(123,84,0,.07),transparent)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::after{
+      background:
+        linear-gradient(90deg,rgba(52,78,100,.04) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(52,78,100,.04) 1px,transparent 1px)!important;
+    }
+
+    body:not(.dark-mode) .history-table th{
+      color:#061522!important;
+      background:linear-gradient(90deg,#fff3cf,#eef4f9)!important;
+      border-bottom-color:#b7c9d8!important;
+    }
+
+    body:not(.dark-mode) .history-table td{
+      color:#10263b!important;
+      border-bottom-color:#c7d5e1!important;
+    }
+
+    body:not(.dark-mode) .history-table tbody tr:hover{
+      background:rgba(123,84,0,.07)!important;
+      box-shadow:inset 3px 0 #9a6900!important;
+    }
+
+    body:not(.dark-mode) .progress-line{
+      background:#d8e2ea!important;
+    }
+
+
+    /* Historical Sentiment finishing touches — page-only, shared ribbon files untouched. */
+
+    /* Keep shared social labels fully readable in both themes. */
+    .psd-shared-header .social-label,
+    .psd-shared-header .social-pill,
+    .psd-shared-header .social-pill span{
+      opacity:1!important;
+      font-weight:900!important;
+      text-shadow:none!important;
+    }
+    body:not(.dark-mode) .psd-shared-header .social-label,
+    body:not(.dark-mode) .psd-shared-header .social-pill,
+    body:not(.dark-mode) .psd-shared-header .social-pill span{
+      color:#061522!important;
+    }
+    body:not(.dark-mode) .psd-shared-header .social-pill{
+      background:#fff!important;
+      border-color:#8da8bd!important;
+    }
+    body.dark-mode .psd-shared-header .social-label,
+    body.dark-mode .psd-shared-header .social-pill,
+    body.dark-mode .psd-shared-header .social-pill span{
+      color:#fff!important;
+    }
+
+    /* Match the compact title treatment used by the newer market pages. */
+    main.page{
+      padding-top:10px!important;
+    }
+    .history-dashboard-hero{
+      grid-template-columns:1fr!important;
+      align-items:start!important;
+      padding:15px 18px!important;
+      margin-bottom:10px!important;
+      border-radius:20px!important;
+    }
+    .history-dashboard-hero h1{
+      margin:0 0 6px!important;
+      font-size:clamp(30px,3vw,46px)!important;
+      line-height:1!important;
+      letter-spacing:-.035em!important;
+    }
+    .history-lead{
+      margin:0!important;
+      max-width:980px!important;
+      font-size:13.5px!important;
+      line-height:1.38!important;
+    }
+
+    /* Tighten vertical rhythm without changing dashboard geometry. */
+    .dash-stage-shell{
+      margin-bottom:10px!important;
+    }
+    .stats-strip{
+      gap:8px!important;
+      margin-top:9px!important;
+    }
+    .history-info-grid{
+      gap:8px!important;
+      margin-top:8px!important;
+    }
+    .history-table-wrap{
+      margin-top:8px!important;
+    }
+    main.page > .panel.section{
+      margin-top:10px!important;
+    }
+
+    /* Page-local glossary buttons. */
+    .hist-title-with-info,
+    .hist-label-with-info{
+      display:inline-flex!important;
+      align-items:center!important;
+      gap:5px!important;
+      min-width:0;
+    }
+    .card-title.hist-title-with-info{
+      max-width:calc(100% - 8px);
+    }
+    .hist-info-btn{
+      display:inline-grid;
+      place-items:center;
+      width:16px;
+      height:16px;
+      min-width:16px;
+      padding:0;
+      border:1px solid #64748b;
+      border-radius:50%;
+      background:#18202e;
+      color:#ef4444;
+      font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+      cursor:pointer;
+      vertical-align:1px;
+      transition:.15s ease;
+    }
+    .hist-info-btn:hover,
+    .hist-info-btn:focus-visible,
+    .hist-info-btn[aria-expanded="true"]{
+      border-color:#60a5fa;
+      background:#1d4ed8;
+      color:#fff;
+      outline:none;
+    }
+    .hist-glossary-popover{
+      position:fixed;
+      z-index:2147483000;
+      width:min(320px,calc(100vw - 24px));
+      padding:12px 14px;
+      border:1px solid #334155;
+      border-radius:10px;
+      background:#111827;
+      color:#cbd5e1;
+      box-shadow:0 14px 40px rgba(0,0,0,.45);
+      font:400 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    }
+    .hist-glossary-popover[hidden]{display:none}
+    .hist-glossary-title{
+      margin:0 22px 5px 0;
+      color:#f8fafc;
+      font-size:13px;
+      font-weight:800;
+    }
+    .hist-glossary-text{margin:0}
+    .hist-glossary-close{
+      position:absolute;
+      right:8px;
+      top:6px;
+      border:0;
+      background:transparent;
+      color:#94a3b8;
+      font-size:18px;
+      line-height:1;
+      cursor:pointer;
+    }
+    .hist-glossary-close:hover{color:#fff}
+
+    body:not(.dark-mode) .hist-info-btn{
+      border-color:#8299ad;
+      background:#fff;
+      color:#c62828;
+    }
+    body:not(.dark-mode) .hist-info-btn:hover,
+    body:not(.dark-mode) .hist-info-btn:focus-visible,
+    body:not(.dark-mode) .hist-info-btn[aria-expanded="true"]{
+      border-color:#004f91;
+      background:#e7f2fb;
+      color:#8a1c12;
+    }
+    body:not(.dark-mode) .hist-glossary-popover{
+      border-color:#9eb4c6;
+      background:#fff;
+      color:#10263b;
+      box-shadow:0 14px 40px rgba(31,54,73,.20);
+    }
+    body:not(.dark-mode) .hist-glossary-title{
+      color:#020b12;
+    }
+    body:not(.dark-mode) .hist-glossary-text{
+      color:#10263b;
+    }
+    body:not(.dark-mode) .hist-glossary-close{
+      color:#061522;
+    }
+
+
+    /* Historical Sentiment — final width + light-mode visual parity refinements.
+       Dark-mode styling is intentionally left unchanged. */
+
+    /* Match the 1480px content width used by the current market pages. */
+    main.page{
+      width:100%!important;
+      max-width:none!important;
+      margin:0!important;
+      padding:14px 26px 26px!important;
+      box-sizing:border-box!important;
+    }
+
+    /* Future advertising hooks. Empty slots remain completely invisible today. */
+    .historical-ad-slot:empty{
+      display:none!important;
+    }
+    .historical-ad-slot:not(:empty){
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      min-height:90px;
+      margin:10px 0;
+      padding:8px;
+      box-sizing:border-box;
+      border:1px dashed var(--theme-line);
+      border-radius:14px;
+      background:var(--theme-surface);
+      color:var(--theme-muted);
+      overflow:hidden;
+    }
+
+    /*
+      Light mode was visually flatter than dark mode because the original
+      dashboard effects use white highlights over a dark surface. Rebuild
+      those same effects with light-mode-appropriate gold/blue/purple tones.
+    */
+    body:not(.dark-mode) .dash-stage-shell{
+      background:
+        linear-gradient(135deg,#d9ae43 0%,#f8e7ae 31%,#d4a32b 65%,#ead48b 100%)!important;
+      box-shadow:
+        0 22px 54px rgba(28,58,83,.19),
+        0 0 0 1px rgba(154,105,0,.11)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage{
+      background:
+        radial-gradient(circle at 73% 17%,rgba(201,154,47,.25),transparent 27%),
+        radial-gradient(circle at 34% 38%,rgba(109,40,217,.12),transparent 31%),
+        radial-gradient(circle at 92% 78%,rgba(0,124,114,.12),transparent 29%),
+        radial-gradient(circle at 16% 76%,rgba(0,79,145,.08),transparent 26%),
+        linear-gradient(135deg,#f8fbfe 0%,#eef4f9 38%,#fff4cf 70%,#edf3f7 100%)!important;
+      border-color:#9eb4c6!important;
+      box-shadow:inset 0 0 38px rgba(123,84,0,.055)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:before{
+      opacity:.72!important;
+      background-image:
+        linear-gradient(rgba(52,78,100,.11) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(52,78,100,.11) 1px,transparent 1px)!important;
+    }
+
+    body:not(.dark-mode) .dash-stage:after{
+      opacity:.34!important;
+      background:
+        radial-gradient(ellipse at 22% 33%,transparent 0 8%,rgba(154,105,0,.23) 8.4% 10.8%,transparent 11.2%),
+        radial-gradient(ellipse at 49% 34%,transparent 0 9%,rgba(0,79,145,.16) 9.4% 13.4%,transparent 13.9%),
+        radial-gradient(ellipse at 70% 42%,transparent 0 8%,rgba(109,40,217,.14) 8.4% 12.5%,transparent 13%),
+        radial-gradient(ellipse at 38% 66%,transparent 0 7%,rgba(154,105,0,.18) 7.4% 11.5%,transparent 12%),
+        radial-gradient(ellipse at 83% 66%,transparent 0 7%,rgba(0,124,114,.15) 7.5% 11%,transparent 11.5%)!important;
+      filter:blur(.2px)!important;
+    }
+
+    body:not(.dark-mode) .dash-card{
+      background:
+        radial-gradient(circle at 92% 4%,rgba(123,84,0,.075),transparent 34%),
+        radial-gradient(circle at 8% 96%,rgba(0,79,145,.045),transparent 30%),
+        linear-gradient(180deg,rgba(255,255,255,.98),rgba(238,244,249,.97))!important;
+      box-shadow:
+        0 13px 29px rgba(28,58,83,.15),
+        inset 0 1px 0 rgba(255,255,255,.90)!important;
+    }
+
+    body:not(.dark-mode) .dash-card:before{
+      background:
+        linear-gradient(90deg,transparent,rgba(154,105,0,.12),rgba(255,255,255,.30),transparent)!important;
+    }
+
+    body:not(.dark-mode) .card-head{
+      background:
+        linear-gradient(90deg,rgba(224,234,243,.96),rgba(238,244,249,.90),rgba(255,243,207,.64))!important;
+      border-bottom-color:#b5c7d6!important;
+    }
+
+    body:not(.dark-mode) .stat-tile::before{
+      background:
+        linear-gradient(90deg,transparent,rgba(154,105,0,.10),rgba(255,255,255,.32),transparent)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::before{
+      background:
+        linear-gradient(90deg,transparent,rgba(154,105,0,.12),rgba(255,255,255,.32),transparent)!important;
+    }
+
+    body:not(.dark-mode) .history-table-wrap::after{
+      opacity:.66!important;
+      background:
+        linear-gradient(90deg,rgba(52,78,100,.055) 1px,transparent 1px),
+        linear-gradient(180deg,rgba(52,78,100,.055) 1px,transparent 1px)!important;
+    }
+
+    @media(max-width:760px){
+      main.page{
+        padding:10px 14px 20px!important;
+      }
+      .historical-ad-slot:not(:empty){
+        min-height:64px;
+      }
+    }
+
+
+    /* Cosmetic compacting: align Historical Sentiment title treatment with Interactive Dashboard. */
+    main.page{
+      padding:7px 12px 22px!important;
+    }
+    .history-dashboard-hero{
+      grid-template-columns:1fr!important;
+      align-items:start!important;
+      gap:8px!important;
+      padding:12px 22px 10px!important;
+      margin-bottom:8px!important;
+      border-radius:20px!important;
+    }
+    .history-dashboard-hero h1{
+      margin:0 0 5px!important;
+      font-size:clamp(25px,2.2vw,32px)!important;
+      line-height:1.05!important;
+      letter-spacing:-0.025em!important;
+      white-space:nowrap;
+    }
+    .history-lead{
+      margin:0!important;
+      max-width:1180px!important;
+      font-size:13px!important;
+      line-height:1.35!important;
+    }
+    .dash-stage-shell{
+      margin-top:0!important;
+      margin-bottom:8px!important;
+    }
+
+    @media(max-width:760px){
+      main.page{padding:7px 10px 20px!important;}
+      .history-dashboard-hero{padding:11px 14px 9px!important;}
+      .history-dashboard-hero h1{white-space:normal;}
+    }
+
+  </style>
+
+  <style id="xx-history-clean-lab-css">
+    #xx-clean-history-dashboard{margin:0 0 8px;}
+    .xx-history-toolbar{
+      display:flex;align-items:center;flex-wrap:wrap;gap:5px;
+      padding:7px 9px;margin:0 0 6px;
+      border:1px solid var(--hist-line,rgba(148,163,184,.18));
+      border-radius:12px;background:rgba(15,23,42,.28);
+    }
+    body.light .xx-history-toolbar{background:rgba(255,255,255,.70);}
+    .xx-toolbar-label{
+      margin-right:3px;font-size:10px;font-weight:800;letter-spacing:.08em;
+      text-transform:uppercase;color:var(--hist-muted,#94a3b8);
+    }
+    .xx-region-btn{
+      appearance:none;border:1px solid rgba(148,163,184,.28);border-radius:999px;
+      background:rgba(148,163,184,.08);color:var(--hist-text,#e5edf8);
+      min-height:25px;padding:3px 9px;font:700 10.5px/1 Inter,Arial,sans-serif;
+      cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease;
+    }
+    .xx-region-btn:hover{transform:translateY(-1px);border-color:rgba(246,200,95,.52);}
+    .xx-region-btn.active{
+      border-color:rgba(246,200,95,.70);background:rgba(246,200,95,.14);
+      box-shadow:0 0 0 1px rgba(246,200,95,.06) inset;
+    }
+    .xx-region-btn[data-region="us"].active{
+      border-color:rgba(255,63,134,.65);background:rgba(255,63,134,.11);
+    }
+    .xx-region-btn[data-region="europe"].active{
+      border-color:rgba(74,222,255,.62);background:rgba(74,222,255,.10);
+    }
+    .xx-toolbar-status{
+      margin-left:auto;min-width:180px;text-align:right;color:var(--hist-muted,#94a3b8);
+      font-size:9.5px;line-height:1.25;
+    }
+    .xx-history-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:stretch;
+    }
+    .xx-history-card{
+      position:relative;min-width:0;min-height:262px;overflow:hidden;
+      border:1px solid var(--hist-line,rgba(148,163,184,.18));border-radius:14px;
+      background:linear-gradient(180deg,rgba(15,23,42,.52),rgba(15,23,42,.28));
+      box-shadow:0 10px 26px rgba(2,6,23,.12);
+    }
+    body.light .xx-history-card{
+      background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(248,250,252,.80));
+    }
+    .xx-history-card-head{
+      min-height:42px;padding:8px 10px 4px;display:flex;align-items:flex-start;
+      justify-content:space-between;gap:10px;
+    }
+    .xx-history-card-title{
+      margin:0;color:var(--hist-text,#e5edf8);font:800 13px/1.15 Inter,Arial,sans-serif;
+      letter-spacing:-.01em;
+    }
+    .xx-history-card-sub{
+      margin-top:3px;color:var(--hist-muted,#94a3b8);font-size:9.5px;line-height:1.2;
+    }
+    .xx-chart-legend{
+      display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 8px;max-width:54%;
+      color:var(--hist-muted,#94a3b8);font-size:9px;line-height:1.1;
+    }
+    .xx-legend-item{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+    .xx-legend-line{width:12px;height:3px;border-radius:999px;display:inline-block;}
+    .xx-chart-wrap{position:relative;height:214px;padding:0 5px 5px;}
+    .xx-history-canvas{width:100%;height:100%;display:block;}
+    .xx-chart-empty{
+      position:absolute;inset:0 8px 6px;display:none;place-items:center;text-align:center;
+      padding:16px;color:var(--hist-muted,#94a3b8);font-size:10px;line-height:1.35;
+      pointer-events:none;
+    }
+    .xx-chart-empty.show{display:grid;}
+
+    .dash-stage-shell{
+      position:absolute!important;left:-100000px!important;top:0!important;width:1200px!important;
+      visibility:hidden!important;pointer-events:none!important;
+    }
+
+    @media(max-width:840px){
+      .xx-history-grid{grid-template-columns:1fr;}
+      .xx-toolbar-status{flex-basis:100%;margin-left:0;text-align:left;}
+    }
+    @media(max-width:520px){
+      .xx-history-toolbar{padding:6px 7px;gap:4px;}
+      .xx-region-btn{min-height:24px;padding:3px 8px;font-size:10px;}
+      .xx-history-card{min-height:248px;}
+      .xx-chart-wrap{height:202px;}
+      .xx-history-card-head{padding:7px 8px 3px;}
+      .xx-chart-legend{max-width:48%;}
+    }
+  </style>
+
+</head>
+
+<body>
+<div id="xx-history-lab-marker" style="
+  position:fixed;
+  right:12px;
+  bottom:12px;
+  z-index:99999;
+  padding:5px 9px;
+  border-radius:999px;
+  font:700 10px/1.1 Inter,Arial,sans-serif;
+  letter-spacing:.08em;
+  background:rgba(15,23,42,.92);
+  color:#f6c85f;
+  border:1px solid rgba(246,200,95,.45);
+  pointer-events:none;
+">HISTORY LAB</div>
+
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=20"></script>
+  <script src="site-theme.js?v=20" defer></script>
+  <main class="page">
+    <section class="panel history-dashboard-hero">
+      <div>
+        <h1>Historical Market Sentiment Dashboard</h1>
+        <p class="history-lead">Historical PSI across Hourly, Daily, Weekly and Monthly views. Select U.S.A., Global, Europe, or any combination to compare the same sentiment measure across every timeline.</p>
+      </div>
+
+    </section>
+
+    <div class="historical-ad-slot ad-slot" id="historical-ad-top" data-ad-position="historical-top" aria-label="Advertising space"></div>
+
+
+    <section id="xx-clean-history-dashboard" aria-label="Historical PSI timeline comparison">
+      <div class="xx-history-toolbar" aria-label="Region selection">
+        <span class="xx-toolbar-label">Show</span>
+        <button type="button" class="xx-region-btn active" data-region="us" aria-pressed="true">U.S.A.</button>
+        <button type="button" class="xx-region-btn active" data-region="global" aria-pressed="true">Global</button>
+        <button type="button" class="xx-region-btn" data-region="europe" aria-pressed="false">Europe</button>
+        <button type="button" class="xx-region-btn" data-region="all" aria-pressed="false">All</button>
+        <div class="xx-toolbar-status" id="xxHistoryStatus">Loading historical PSI…</div>
+      </div>
+
+      <div class="xx-history-grid">
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Hourly PSI</h2>
+              <div class="xx-history-card-sub">Latest intraday engine scans • NY time</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="hourly"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartHourly"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyHourly"></div>
+          </div>
+        </article>
+
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Daily PSI</h2>
+              <div class="xx-history-card-sub">Latest 14 daily readings</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="daily"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartDaily"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyDaily"></div>
+          </div>
+        </article>
+
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Weekly PSI</h2>
+              <div class="xx-history-card-sub">2-month window • weekly averages</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="weekly"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartWeekly"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyWeekly"></div>
+          </div>
+        </article>
+
+        <article class="xx-history-card">
+          <div class="xx-history-card-head">
+            <div>
+              <h2 class="xx-history-card-title">Monthly PSI</h2>
+              <div class="xx-history-card-sub">Up to 6 months • monthly averages</div>
+            </div>
+            <div class="xx-chart-legend" data-legend-for="monthly"></div>
+          </div>
+          <div class="xx-chart-wrap">
+            <canvas class="xx-history-canvas" id="xxChartMonthly"></canvas>
+            <div class="xx-chart-empty" id="xxEmptyMonthly"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="dash-stage-shell" aria-label="Historical sentiment dashboard">
+      <div class="dash-stage">
+        <div class="dash-layout">
+          <aside class="dash-side" aria-label="Dashboard controls">
+            <div class="side-pill active" data-side-scope="global">Global</div>
+            <div class="side-pill" data-side-scope="us">U.S.</div>
+            <div class="side-spacer"></div>
+            <div class="side-pill" data-period="hourly">Hourly</div>
+            <div class="side-pill active" data-period="daily">Daily</div>
+            <div class="side-pill" data-period="weekly">Weekly</div>
+            <div class="side-pill" data-period="monthly">Monthly</div>
+            <div class="side-spacer"></div>
+            <div class="side-pill" data-export="csv" title="Exports available Global/U.S. history plus detailed instrument history.">Export CSV</div>
+            <div class="side-note">CSV exports available market history plus instrument-level detail.</div>
+          </aside>
+
+          <article class="dash-card card-a">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Global vs. U.S. PSI — 2-Hour Timeline</span><button class="hist-info-btn" type="button" data-hist-glossary="hourly-pulse" aria-label="Explain Global vs. U.S. PSI 2-Hour Timeline" aria-expanded="false">i</button></div></div>
+            <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
+              <span class="active">NY Time</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
+            </div>
+            <div class="card-body"><canvas class="dash-canvas" id="chartHourly"></canvas></div>
+          </article>
+
+          <article class="dash-card card-b">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Global vs. U.S. PSI — Last 4 Full Weeks</span><button class="hist-info-btn" type="button" data-hist-glossary="global-us-flow" aria-label="Explain Global versus U.S. flow" aria-expanded="false">i</button></div></div>
+            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
+            <div class="card-body"><canvas class="dash-canvas" id="chartFlow"></canvas></div>
+          </article>
+
+          <article class="dash-card card-c">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span>Sentiment history</span><button class="hist-info-btn" type="button" data-hist-glossary="sentiment-history" aria-label="Explain Sentiment history" aria-expanded="false">i</button></div></div>
+            <div class="mini-tabs" style="position:absolute;right:14px;top:44px;z-index:3;gap:12px;align-items:center;">
+              <span class="active">Past 5D</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-gold);display:inline-block;"></i>Global</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-pink);display:inline-block;"></i>U.S.</span>
+              <span style="display:inline-flex;align-items:center;gap:4px;"><i style="width:13px;height:3px;border-radius:999px;background:var(--hist-purple);display:inline-block;"></i>Momentum</span>
+            </div>
+            <div class="card-body"><canvas class="dash-canvas" id="chartBars"></canvas></div>
+          </article>
+
+          <article class="dash-card card-d">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="skylineTitle">Daily Global vs U.S. skyline</span><button class="hist-info-btn" type="button" data-hist-glossary="skyline" aria-label="Explain Global versus U.S. skyline" aria-expanded="false">i</button></div></div>
+            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(2,auto);gap:12px;text-align:left;"><div class="legend-row"><span class="legend-dot"></span>Global</div><div class="legend-row"><span class="legend-dot us"></span>U.S.</div></div>
+            <div class="metric-caption" id="skylineYear">Daily</div>
+            <div class="card-body"><canvas class="dash-canvas" id="chartSkyline"></canvas></div>
+          </article>
+
+          <article class="dash-card card-e">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="momentumTitle">Daily Global momentum performance</span><button class="hist-info-btn" type="button" data-hist-glossary="momentum-chart" aria-label="Explain Sentiment momentum performance" aria-expanded="false">i</button></div></div>
+            <div class="chart-legend" style="left:auto;right:14px;top:46px;grid-template-columns:repeat(4,auto);gap:12px;">
+              <div class="legend-row"><span class="legend-dot"></span>Global</div>
+              <div class="legend-row"><span class="legend-dot us"></span>U.S.</div>
+              <div class="legend-row"><span class="legend-dot mom"></span>Momentum</div>
+              <div class="legend-row"><span class="legend-dot vol"></span>Volatility</div>
+            </div>
+            <div class="card-body"><canvas class="dash-canvas" id="chartMomentum"></canvas></div>
+          </article>
+
+          <article class="dash-card card-f">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="biasTitle">Daily Global bias mix</span><button class="hist-info-btn" type="button" data-hist-glossary="bias-mix" aria-label="Explain Sentiment bias mix" aria-expanded="false">i</button></div></div>
+            <div class="bias-legend" id="biasLegend"></div>
+            <div class="card-body bias-body"><canvas class="dash-canvas" id="chartBias"></canvas></div>
+          </article>
+
+          <article class="dash-card card-g">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="divergenceTitle">Daily Global vs U.S. divergence</span><button class="hist-info-btn" type="button" data-hist-glossary="divergence" aria-label="Explain Global versus U.S. divergence" aria-expanded="false">i</button></div></div>
+            <div class="metric-caption" style="left:14px;top:44px;color:var(--hist-gold);font-size:20px;" id="divergenceValue">--</div>
+            <div class="small-note" id="divergenceNote" style="position:absolute;right:14px;top:76px;text-align:right;max-width:56%;">Waiting for data</div>
+            <div class="card-body"><canvas class="dash-canvas" id="chartDivergence"></canvas></div>
+          </article>
+
+          <article class="dash-card card-i">
+            <div class="card-head"><div class="card-title hist-title-with-info"><span id="driversTitle">Daily Global sentiment drivers</span><button class="hist-info-btn" type="button" data-hist-glossary="drivers" aria-label="Explain Sentiment drivers" aria-expanded="false">i</button></div></div>
+            <div class="driver-list" id="driverList"></div>
+          </article>
+        </div>
+        <div class="dash-empty" id="dashEmpty">No usable sentiment history records were found. Check that <b>sentiment_history.json</b> contains numeric <b>global_psi</b> or <b>us_psi</b> values.</div>
+      </div>
+    </section>
+
+    <section class="stats-strip" aria-label="Historical sentiment summary stats">
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Current</span><button class="hist-info-btn" type="button" data-hist-glossary="current" aria-label="Explain Current sentiment reading" aria-expanded="false">i</button></div><div class="stat-value" id="statCurrent">--</div><div class="stat-note">Latest selected reading</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Change</span><button class="hist-info-btn" type="button" data-hist-glossary="change" aria-label="Explain Sentiment change" aria-expanded="false">i</button></div><div class="stat-value" id="statChange">--</div><div class="stat-note">First to latest in selected view</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Average</span><button class="hist-info-btn" type="button" data-hist-glossary="average" aria-label="Explain Average sentiment" aria-expanded="false">i</button></div><div class="stat-value" id="statAverage">--</div><div class="stat-note">Mean PSI across selected view</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Range</span><button class="hist-info-btn" type="button" data-hist-glossary="range" aria-label="Explain Sentiment range" aria-expanded="false">i</button></div><div class="stat-value" id="statRange">--</div><div class="stat-note">Lowest / highest reading</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Volatility</span><button class="hist-info-btn" type="button" data-hist-glossary="volatility" aria-label="Explain Sentiment volatility" aria-expanded="false">i</button></div><div class="stat-value" id="statVolatility">--</div><div class="stat-note">Average absolute move</div></div>
+      <div class="stat-tile"><div class="stat-label hist-label-with-info"><span>Bull / Bear</span><button class="hist-info-btn" type="button" data-hist-glossary="bull-bear" aria-label="Explain Bull versus Bear count" aria-expanded="false">i</button></div><div class="stat-value" id="statBullBear">--</div><div class="stat-note">Bullish vs bearish count</div></div>
+    </section>
+
+    <section class="panel section">
+      <h2>Filtered Historical Records</h2>
+      <p class="muted">Newest records first. Use the dashboard controls above to switch source, period, and range.</p>
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead><tr><th>Date / Period</th><th><span class="hist-label-with-info">Global PSI<button class="hist-info-btn" type="button" data-hist-glossary="psi" aria-label="Explain Global PSI" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">U.S. PSI<button class="hist-info-btn" type="button" data-hist-glossary="us-psi" aria-label="Explain U.S. PSI" aria-expanded="false">i</button></span></th><th>Selected</th><th><span class="hist-label-with-info">Move<button class="hist-info-btn" type="button" data-hist-glossary="move" aria-label="Explain Historical move" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">Bias<button class="hist-info-btn" type="button" data-hist-glossary="bias" aria-label="Explain Sentiment bias" aria-expanded="false">i</button></span></th><th><span class="hist-label-with-info">Records<button class="hist-info-btn" type="button" data-hist-glossary="records" aria-label="Explain Historical records" aria-expanded="false">i</button></span></th></tr></thead>
+          <tbody id="historyRows"><tr><td colspan="7">Waiting for sentiment history.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="historical-ad-slot ad-slot" id="historical-ad-bottom" data-ad-position="historical-bottom" aria-label="Advertising space"></div>
+
+    <footer class="footer psd-shared-footer">
+      <div class="footer-links">
+        <a href="dashboard.html">Interactive Dashboard</a>
+        <a href="public-sentiment-index.html">Public Sentiment Index</a>
+        <a href="sentiment-history.html" class="active">Historical Sentiment</a>
+        <a href="news-articles.html">News & Articles</a>
+        <a href="market-sentiment.html">Guides</a>
+        <a href="contact.html">Get in Touch</a>
+        <a href="how-it-works.html">How the Dashboard Works</a>
+        <a href="advertise.html">Business Opportunities</a>
+        <a href="about.html">About</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+
+      <div class="legal">
+        <b>Disclaimer:</b> Public Sentiment Dash is for informational and educational purposes only. It is not financial advice, investment advice, trading advice, or a recommendation to buy or sell any asset.
+      </div>
+
+      <p class="psd-copyright">© 2026 Public Sentiment Dash. All rights reserved.</p>
+    </footer>
+  </main>
+
+  <script src="sentiment-core.js?v=5"></script>
+  <script>
+    const state = {
+      raw:[],
+      hourly:[],
+      drivers:[],
+      scope:"global",
+      period:"daily",
+      range:"all",
+      anim:0,
+      reduced:window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    };
+
+    const COLORS = {
+      gold:"#ffd780", gold2:"#d29922", purple:"#9b2cff", pink:"#ff3f86",
+      orange:"#ff9f1c", cyan:"#2ee6d6", green:"#55f0a1", red:"#ff4b6e",
+      grid:"rgba(255,255,255,.13)", text:"rgba(255,255,255,.72)"
+    };
+
+    function syncHistoricalThemeColors(){
+      const dark=document.body.classList.contains("dark-mode");
+      if(dark){
+        Object.assign(COLORS,{
+          gold:"#ffd780",gold2:"#d29922",purple:"#9b2cff",pink:"#ff3f86",
+          orange:"#ff9f1c",cyan:"#2ee6d6",green:"#55f0a1",red:"#ff4b6e",
+          grid:"rgba(255,255,255,.13)",text:"rgba(255,255,255,.72)"
+        });
+      }else{
+        Object.assign(COLORS,{
+          gold:"#7b5400",gold2:"#9a6900",purple:"#6d28d9",pink:"#b42368",
+          orange:"#a44a00",cyan:"#007c72",green:"#087443",red:"#b42318",
+          grid:"rgba(25,54,78,.18)",text:"rgba(16,38,59,.78)"
+        });
+      }
+    }
+
+    function refreshHistoricalTheme(){
+      syncHistoricalThemeColors();
+      state.anim=1;
+      renderStats();
+      renderRows();
+      renderDrivers();
+      drawAll();
+    }
+
+    syncHistoricalThemeColors();
+
+    const historicalThemeObserver=new MutationObserver(mutations=>{
+      if(mutations.some(m=>m.type==="attributes" && m.attributeName==="class")){
+        refreshHistoricalTheme();
+      }
+    });
+    historicalThemeObserver.observe(document.body,{attributes:true,attributeFilter:["class"]});
+
+    function num(v){
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+    function avg(arr){const clean=arr.filter(v=>Number.isFinite(v));return clean.length?clean.reduce((a,b)=>a+b,0)/clean.length:null;}
+    function round(v){return Number.isFinite(v)?Math.round(v):null;}
+    function signed(v){if(!Number.isFinite(v))return "--"; const n=Math.round(v); return (n>0?"+":"") + n;}
+    function esc(value){return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
+
+    function dateFromRecord(r){
+      const raw = r.timestamp || r.ts || r.datetime || r.created_at || r.updated_at || r.time || r.sample_key || r.date || r.day;
+      if(!raw) return null;
+      if(typeof raw === "number") return new Date(raw > 9999999999 ? raw : raw * 1000);
+      const s = String(raw);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s + "T12:00:00");
+      const d = new Date(s);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function ymd(d){
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    }
+
+    function labelDate(d){return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});}
+    function labelMonth(key){const d=new Date(key+"-01T12:00:00");return d.toLocaleDateString(undefined,{month:"short",year:"2-digit"});}
+
+    function isoWeekKey(d){
+      const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const day = x.getUTCDay() || 7;
+      x.setUTCDate(x.getUTCDate() + 4 - day);
+      const yearStart = new Date(Date.UTC(x.getUTCFullYear(),0,1));
+      const week = Math.ceil((((x - yearStart) / 86400000) + 1) / 7);
+      return x.getUTCFullYear() + "-W" + String(week).padStart(2,"0");
+    }
+
+    function valueFrom(r, scope){
+      const global = num(r.global_psi ?? r.psi_global ?? r.globalPSI ?? r.global ?? r.psi ?? r.score);
+      const us = num(r.us_psi ?? r.us_market_psi ?? r.usa_psi ?? r.usPSI ?? r.us ?? r.us_score);
+      return scope === "us" ? us : global;
+    }
+
+    function normalizePayload(payload){
+      const pools = [];
+      if(Array.isArray(payload)) pools.push(payload);
+      if(payload && typeof payload === "object"){
+        ["records","history","daily","hourly","hourly_records","data","items","readings"].forEach(k => {
+          if(Array.isArray(payload[k])) pools.push(payload[k]);
+        });
+      }
+      const source = pools.find(a => a.length) || [];
+      return source.map((r,i) => {
+        const d = dateFromRecord(r);
+        if(!d) return null;
+        const global = valueFrom(r,"global");
+        const us = valueFrom(r,"us");
+        if(global === null && us === null) return null;
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, title:r.title || r.headline || "", url:r.url || r.link || "", source:r.source || r.publisher || "", index:i};
+      }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
+    }
+
+    function normalizeHourlyPayload(payload){
+      const pools = [];
+      if(Array.isArray(payload)) pools.push(payload);
+      if(payload && typeof payload === "object"){
+        ["intraday","hourly","hourly_records","readings"].forEach(k => {
+          if(Array.isArray(payload[k])) pools.push(payload[k]);
+        });
+      }
+      const source = pools.find(a => a.length) || [];
+      return source.map((r,i) => {
+        const d = dateFromRecord(r);
+        if(!d) return null;
+        const global = valueFrom(r,"global");
+        const us = valueFrom(r,"us");
+        if(global === null && us === null) return null;
+        return {date:ymd(d), ts:d, hour:d.getHours(), global, us, index:i};
+      }).filter(Boolean).sort((a,b)=>a.ts-b.ts || a.index-b.index);
+    }
+
+    function nyHourParts(d){
+      const parts = new Intl.DateTimeFormat("en-US",{
+        timeZone:"America/New_York",
+        year:"numeric",
+        month:"2-digit",
+        day:"2-digit",
+        hour:"2-digit",
+        hour12:false
+      }).formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
+      const hour = parts.hour === "24" ? "00" : parts.hour;
+      return {
+        key:parts.year+"-"+parts.month+"-"+parts.day+" "+hour+":00",
+        label:hour+":00"
+      };
+    }
+
+    function aggregateHourlyComparison(records){
+      const clean = records.filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()) && (Number.isFinite(r.global) || Number.isFinite(r.us))).sort((a,b)=>a.ts-b.ts);
+      if(!clean.length) return [];
+
+      const groups = new Map();
+      clean.forEach(r => {
+        const ny = nyHourParts(r.ts);
+        if(!groups.has(ny.key)){
+          groups.set(ny.key,{key:ny.key,label:ny.label,global:[],us:[],lastTs:r.ts});
+        }
+        const g = groups.get(ny.key);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+        if(r.ts > g.lastTs) g.lastTs = r.ts;
+      });
+
+      // Forward-fill hourly slots so charts stay complete even when scraper cadence changes.
+      // Example: if the scraper runs every 4 or 6 hours, missing hours reuse the most recent real scan.
+      // If the last scan is very old, the chart anchors to the last scan instead of pretending it is current.
+      const grouped = [...groups.values()].map(g => ({
+        key:g.key,
+        label:g.label,
+        sort:g.lastTs.getTime(),
+        lastTs:g.lastTs,
+        global:avg(g.global),
+        us:avg(g.us)
+      })).sort((a,b)=>a.sort-b.sort);
+
+      const latest = clean[clean.length-1].ts;
+      const now = new Date();
+      const recentEnoughMs = 48 * 3600000;
+      const endBase = (now.getTime() > latest.getTime() && now.getTime() - latest.getTime() <= recentEnoughMs) ? now : latest;
+      const endHour = new Date(endBase);
+      endHour.setMinutes(0,0,0);
+
+      const slots = [];
+      for(let i=7;i>=0;i--){
+        const slotDate = new Date(endHour.getTime() - i * 3600000);
+        const ny = nyHourParts(slotDate);
+        const exact = groups.get(ny.key);
+        let direct = exact ? {
+          key:ny.key,
+          label:ny.label,
+          sort:slotDate.getTime(),
+          lastTs:exact.lastTs,
+          global:avg(exact.global),
+          us:avg(exact.us),
+          carried:false
+        } : null;
+
+        let carry = null;
+        if(!direct){
+          for(let j=grouped.length-1;j>=0;j--){
+            if(grouped[j].sort <= slotDate.getTime()){ carry = grouped[j]; break; }
+          }
+          if(!carry){
+            carry = grouped.find(g => g.sort >= slotDate.getTime()) || grouped[0] || null;
+          }
+        }
+
+        const chosen = direct || carry;
+        slots.push({
+          key:ny.key,
+          label:ny.label,
+          sort:slotDate.getTime(),
+          lastTs:chosen?.lastTs || slotDate,
+          global:Number.isFinite(chosen?.global) ? chosen.global : null,
+          us:Number.isFinite(chosen?.us) ? chosen.us : null,
+          value:Number.isFinite(chosen?.global) ? chosen.global : null,
+          carried:!direct
+        });
+      }
+      return slots;
+    }
+
+    function aggregateTwoHourComparison(records){
+      const clean = records
+        .filter(r => r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()) && (Number.isFinite(r.global) || Number.isFinite(r.us)))
+        .sort((a,b)=>a.ts-b.ts);
+
+      if(!clean.length) return [];
+
+      const twoHourParts = (d) => {
+        const parts = new Intl.DateTimeFormat("en-US",{
+          timeZone:"America/New_York",
+          year:"numeric",
+          month:"2-digit",
+          day:"2-digit",
+          hour:"2-digit",
+          hour12:false
+        }).formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
+
+        let hour = Number(parts.hour === "24" ? "00" : parts.hour);
+        hour = Math.floor(hour / 2) * 2;
+        const hh = String(hour).padStart(2,"0");
+
+        return {
+          key:parts.year+"-"+parts.month+"-"+parts.day+" "+hh+":00",
+          label:hh+":00"
+        };
+      };
+
+      const groups = new Map();
+      clean.forEach(r => {
+        const slot = twoHourParts(r.ts);
+        if(!groups.has(slot.key)){
+          groups.set(slot.key,{key:slot.key,label:slot.label,global:[],us:[],lastTs:r.ts});
+        }
+        const g = groups.get(slot.key);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+        if(r.ts > g.lastTs) g.lastTs = r.ts;
+      });
+
+      const latest = clean[clean.length-1].ts;
+      const now = new Date();
+      const recentEnoughMs = 48 * 3600000;
+      const endBase = (now.getTime() > latest.getTime() && now.getTime() - latest.getTime() <= recentEnoughMs) ? now : latest;
+
+      const end = new Date(endBase);
+      end.setMinutes(0,0,0);
+      end.setHours(Math.floor(end.getHours()/2)*2);
+
+      const slots = [];
+      for(let i=7;i>=0;i--){
+        const slotDate = new Date(end.getTime() - i * 2 * 3600000);
+        const slot = twoHourParts(slotDate);
+        const exact = groups.get(slot.key);
+
+        slots.push({
+          key:slot.key,
+          label:slot.label,
+          sort:slotDate.getTime(),
+          lastTs:exact?.lastTs || slotDate,
+          global:exact ? avg(exact.global) : null,
+          us:exact ? avg(exact.us) : null,
+          value:exact ? avg(exact.global) : null,
+          carried:false,
+          hasScan:!!exact
+        });
+      }
+
+      return slots;
+    }
+
+    function bias(v){
+      if(!Number.isFinite(v)) return {text:"Unknown", color:COLORS.text, cls:""};
+      const label = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
+        ? window.PSDCore.classifySentiment(v)
+        : "Unknown";
+      if(label === "Strong Bullish") return {text:label, color:COLORS.green, cls:"bull"};
+      if(label === "Bullish") return {text:label, color:COLORS.cyan, cls:"bull"};
+      if(label === "Mixed/Neutral") return {text:label, color:COLORS.gold, cls:"neutral"};
+      if(label === "Bearish") return {text:label, color:COLORS.orange, cls:"bear"};
+      if(label === "Strong Bearish") return {text:label, color:COLORS.red, cls:"bear"};
+      return {text:label, color:COLORS.text, cls:""};
+    }
+
+    function filterByRange(records){
+      if(state.range === "all" || !records.length) return records;
+      const days = Number(state.range);
+      const maxTime = records[records.length-1].ts.getTime();
+      const minTime = maxTime - days * 86400000;
+      return records.filter(r => r.ts.getTime() >= minTime);
+    }
+
+    function aggregate(scope=state.scope, period=state.period, range=true){
+      const records = range ? filterByRange(state.raw) : state.raw;
+      const groups = new Map();
+      records.forEach(r => {
+        const val = scope === "us" ? r.us : r.global;
+        if(!Number.isFinite(val)) return;
+        let key, label, sort;
+        if(period === "hourly"){
+          key = r.date + " " + String(r.hour).padStart(2,"0") + ":00";
+          label = String(r.hour).padStart(2,"0") + ":00";
+          sort = r.ts.getTime();
+        }else if(period === "weekly"){
+          key = isoWeekKey(r.ts);
+          label = key.replace("-W"," W");
+          sort = key;
+        }else if(period === "monthly"){
+          key = r.date.slice(0,7);
+          label = labelMonth(key);
+          sort = key;
+        }else{
+          key = r.date;
+          label = labelDate(r.ts);
+          sort = r.date;
+        }
+        if(!groups.has(key)) groups.set(key,{key,label,sort,global:[],us:[],count:0,lastTs:r.ts});
+        const g = groups.get(key);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+        g.count++;
+        if(r.ts > g.lastTs) g.lastTs = r.ts;
+      });
+      return [...groups.values()].map(g => ({
+        key:g.key,label:g.label,sort:g.sort,count:g.count,lastTs:g.lastTs,
+        global:avg(g.global),us:avg(g.us),value:avg(scope === "us" ? g.us : g.global)
+      })).filter(p => Number.isFinite(p.value)).sort((a,b)=>String(a.sort).localeCompare(String(b.sort)) || a.lastTs-b.lastTs);
+    }
+
+    function aggregateWeeklyComparison(records){
+      const groups = new Map();
+
+      records
+        .filter(r =>
+          r &&
+          r.ts instanceof Date &&
+          !Number.isNaN(r.ts.getTime()) &&
+          Number.isFinite(r.global) &&
+          Number.isFinite(r.us)
+        )
+        .forEach(r => {
+          const key = isoWeekKey(r.ts);
+          if(!groups.has(key)){
+            groups.set(key,{
+              key,
+              label:key.replace("-W"," W"),
+              global:[],
+              us:[],
+              dates:new Set(),
+              lastTs:r.ts
+            });
+          }
+
+          const g = groups.get(key);
+          g.global.push(r.global);
+          g.us.push(r.us);
+          g.dates.add(r.date);
+
+          if(r.ts > g.lastTs) g.lastTs = r.ts;
+        });
+
+      return [...groups.values()]
+        .filter(g => g.dates.size >= 7)
+        .map(g => ({
+          key:g.key,
+          label:g.label,
+          sort:g.key,
+          count:g.dates.size,
+          lastTs:g.lastTs,
+          global:avg(g.global),
+          us:avg(g.us)
+        }))
+        .sort((a,b) =>
+          String(a.sort).localeCompare(String(b.sort)) ||
+          a.lastTs-b.lastTs
+        );
+    }
+
+    function periodLabel(period){
+      if(period === "hourly") return "Hourly";
+      if(period === "weekly") return "Weekly";
+      if(period === "monthly") return "Monthly";
+      return "Daily";
+    }
+
+    function skylineLimit(period){
+      if(period === "hourly") return 8;
+      if(period === "weekly") return 4;
+      if(period === "monthly") return 6;
+      return 7;
+    }
+
+    function skylinePoints(scope){
+      if(state.period === "hourly"){
+        return aggregateHourlyComparison(state.hourly)
+          .map(p => ({...p, value: scope === "us" ? p.us : p.global}))
+          .filter(p => Number.isFinite(p.value))
+          .slice(-skylineLimit(state.period));
+      }
+      return aggregate(scope,state.period,true).slice(-skylineLimit(state.period));
+    }
+
+    function skylineComparisonPoints(){
+      if(state.period === "hourly"){
+        return aggregateHourlyComparison(state.hourly)
+          .filter(p => Number.isFinite(p.global) && Number.isFinite(p.us))
+          .slice(-skylineLimit(state.period));
+      }
+
+      if(state.period === "weekly"){
+        return aggregateWeeklyComparison(filterByRange(state.raw))
+          .filter(p => Number.isFinite(p.global) && Number.isFinite(p.us))
+          .slice(-skylineLimit(state.period));
+      }
+
+      const records = filterByRange(state.raw);
+      const groups = new Map();
+
+      records
+        .filter(r =>
+          r &&
+          r.ts instanceof Date &&
+          !Number.isNaN(r.ts.getTime()) &&
+          Number.isFinite(r.global) &&
+          Number.isFinite(r.us)
+        )
+        .forEach(r => {
+          let key, label, sort;
+
+          if(state.period === "monthly"){
+            key = r.date.slice(0,7);
+            label = labelMonth(key);
+            sort = key;
+          }else{
+            key = r.date;
+            label = labelDate(r.ts);
+            sort = r.date;
+          }
+
+          if(!groups.has(key)){
+            groups.set(key,{
+              key,
+              label,
+              sort,
+              global:[],
+              us:[],
+              count:0,
+              lastTs:r.ts
+            });
+          }
+
+          const g = groups.get(key);
+          g.global.push(r.global);
+          g.us.push(r.us);
+          g.count++;
+          if(r.ts > g.lastTs) g.lastTs = r.ts;
+        });
+
+      return [...groups.values()]
+        .map(g => ({
+          key:g.key,
+          label:g.label,
+          sort:g.sort,
+          count:g.count,
+          lastTs:g.lastTs,
+          global:avg(g.global),
+          us:avg(g.us)
+        }))
+        .sort((a,b) =>
+          String(a.sort).localeCompare(String(b.sort)) ||
+          a.lastTs-b.lastTs
+        )
+        .slice(-skylineLimit(state.period));
+    }
+
+    function updateSkylineHeader(){
+      const label = periodLabel(state.period);
+      const title = document.getElementById("skylineTitle");
+      const mode = document.getElementById("skylineYear");
+      if(title) title.textContent = label + " Global vs. U.S. PSI";
+      if(mode) mode.textContent = label;
+    }
+
+    function updateMomentumHeader(){
+      const label = periodLabel(state.period);
+      const scopeLabel = state.scope === "us" ? "U.S." : "Global";
+      const title = document.getElementById("momentumTitle");
+      if(title) title.textContent = label + " " + scopeLabel + " momentum performance";
+    }
+
+    function updateBiasHeader(){
+      const label = periodLabel(state.period);
+      const scopeLabel = state.scope === "us" ? "U.S." : "Global";
+      const title = document.getElementById("biasTitle");
+      if(title) title.textContent = label + " " + scopeLabel + " bias mix";
+    }
+
+    function updateBiasLegend(items){
+      const box=document.getElementById("biasLegend");
+      if(!box) return;
+      box.innerHTML=items.map(item=>`<div class="bias-legend-row"><span class="bias-legend-dot" style="background:${item.color};"></span><span>${esc(item.label)} ${Math.round(item.value)}</span></div>`).join("");
+    }
+
+    function divergencePoints(){
+      if(state.period === "hourly"){
+        return aggregateHourlyComparison(state.hourly).slice(-8).map(p => {
+          const gap = (Number.isFinite(p.us) && Number.isFinite(p.global)) ? (p.us - p.global) : null;
+          return {
+            label:p.label,
+            global:p.global,
+            us:p.us,
+            gap,
+            value:Number.isFinite(gap) ? clamp(50 + gap * 2, 0, 100) : null
+          };
+        }).filter(p => Number.isFinite(p.value));
+      }
+      const globalPoints = aggregate("global", state.period, true);
+      const usMap = new Map(aggregate("us", state.period, true).map(p => [p.key, p]));
+      return globalPoints.map(g => {
+        const u = usMap.get(g.key);
+        const gap = (u && Number.isFinite(u.value) && Number.isFinite(g.value)) ? (u.value - g.value) : null;
+        return {
+          label:g.label,
+          global:g.value,
+          us:u ? u.value : null,
+          gap,
+          value:Number.isFinite(gap) ? clamp(50 + gap * 2, 0, 100) : null
+        };
+      }).filter(p => Number.isFinite(p.value));
+    }
+
+    function updateDivergenceHeader(){
+      const title = document.getElementById("divergenceTitle");
+      if(title) title.textContent = periodLabel(state.period) + " Global vs U.S. divergence";
+    }
+
+    function updateDivergenceSummary(){
+      const valueEl = document.getElementById("divergenceValue");
+      const noteEl = document.getElementById("divergenceNote");
+      if(!valueEl || !noteEl) return;
+
+      const pts = divergencePoints();
+      if(!pts.length){
+        valueEl.textContent = "--";
+        valueEl.style.color = "var(--hist-gold)";
+        noteEl.textContent = "Waiting for Global + U.S. data";
+        return;
+      }
+
+      const last = pts[pts.length-1];
+      const prev = pts.length > 1 ? pts[pts.length-2] : null;
+      const gap = Number.isFinite(last.gap) ? last.gap : 0;
+      const absGap = Math.abs(gap);
+
+      if(absGap < 1){
+        valueEl.textContent = "Aligned";
+        valueEl.style.color = "var(--hist-muted)";
+      }else if(gap > 0){
+        valueEl.textContent = "U.S. +" + round(absGap);
+        valueEl.style.color = "var(--hist-pink)";
+      }else{
+        valueEl.textContent = "Global +" + round(absGap);
+        valueEl.style.color = "var(--hist-gold)";
+      }
+
+      let trend = "stable";
+      if(prev && Number.isFinite(prev.gap)){
+        const prevAbs = Math.abs(prev.gap);
+        if(absGap > prevAbs + 0.5) trend = "widening";
+        else if(absGap < prevAbs - 0.5) trend = "narrowing";
+      }
+
+      if(absGap < 1){
+        noteEl.textContent = "Global and U.S. are nearly aligned";
+      }else{
+        noteEl.textContent = trend + " gap • Global " + round(last.global) + " vs U.S. " + round(last.us);
+      }
+    }
+
+    function movingAverage(points, key="value", window=3){
+      return points.map((p,i) => {
+        const slice = points.slice(Math.max(0,i-window+1), i+1).map(x=>x[key]).filter(Number.isFinite);
+        return {...p, smooth:avg(slice)};
+      });
+    }
+
+    function stats(points){
+      const values = points.map(p=>p.value).filter(Number.isFinite);
+      if(!values.length) return null;
+      const moves = values.slice(1).map((v,i)=>v-values[i]);
+      const bulls = values.filter(v=>v>=56).length;
+      const bears = values.filter(v=>v<45).length;
+      return {
+        current:values[values.length-1], change:values[values.length-1]-values[0], average:avg(values),
+        min:Math.min(...values), max:Math.max(...values), volatility:avg(moves.map(Math.abs)) || 0,
+        bulls,bears,total:values.length, last:points[points.length-1]
+      };
+    }
+
+    function setStatTileClass(id, cls){
+      const el=document.getElementById(id)?.closest(".stat-tile");
+      if(!el) return;
+      el.classList.remove("stat-bull","stat-bear","stat-neutral","stat-gold","stat-purple");
+      if(cls) el.classList.add(cls);
+    }
+
+    function updateStatTileColors(s){
+      setStatTileClass("statCurrent", s.current>=56 ? "stat-bull" : (s.current<45 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statChange", s.change>0 ? "stat-bull" : (s.change<0 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statAverage", s.average>=56 ? "stat-bull" : (s.average<45 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statRange", "stat-gold");
+      setStatTileClass("statVolatility", "stat-purple");
+      setStatTileClass("statBullBear", s.bulls>s.bears ? "stat-bull" : (s.bears>s.bulls ? "stat-bear" : "stat-neutral"));
+    }
+
+    function setupCanvas(canvas){
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(240, Math.floor(rect.width * ratio));
+      canvas.height = Math.max(150, Math.floor(rect.height * ratio));
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+      return {ctx,w:rect.width,h:rect.height};
+    }
+
+    function drawGrid(ctx,w,h,pad={l:26,r:12,t:12,b:20}){
+      ctx.clearRect(0,0,w,h);
+      ctx.lineWidth=1;
+      ctx.strokeStyle=COLORS.grid;
+      ctx.fillStyle=COLORS.text;
+      ctx.font="10px Inter, Arial";
+      [0,25,50,75,100].forEach(v=>{
+        const y = pad.t + (100-v)/100*(h-pad.t-pad.b);
+        ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+        if(w>220) ctx.fillText(v,3,y+3);
+      });
+      return {iw:w-pad.l-pad.r,ih:h-pad.t-pad.b,pad};
+    }
+
+    function xAt(i,n,box){return box.pad.l + (n<=1 ? box.iw/2 : i/(n-1)*box.iw);}
+    function yAt(v,box){return box.pad.t + (100-clamp(v,0,100))/100*box.ih;}
+
+    function drawLine(canvas, series, opts={}){
+      const {ctx,w,h}=setupCanvas(canvas); const box=drawGrid(ctx,w,h,opts.pad);
+      const n = Math.max(...series.map(s=>s.points.length),1);
+      const progress = state.anim;
+      series.forEach((s,si)=>{
+        const pts=s.points; if(!pts.length) return;
+        const drawN = Math.max(1,Math.ceil(pts.length*progress));
+        const shown=pts.slice(0,drawN);
+        ctx.lineWidth=s.width||2;
+        ctx.strokeStyle=s.color;
+        ctx.beginPath();
+        shown.forEach((p,i)=>{const x=xAt(i,pts.length,box), y=yAt(p.value,box); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);});
+        ctx.stroke();
+        if(s.fill && shown.length>1){
+          const grad=ctx.createLinearGradient(0,box.pad.t,0,h-box.pad.b);
+          grad.addColorStop(0,s.fill); grad.addColorStop(1,"rgba(0,0,0,0)");
+          ctx.lineTo(xAt(shown.length-1,pts.length,box),h-box.pad.b);
+          ctx.lineTo(xAt(0,pts.length,box),h-box.pad.b);
+          ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+        }
+        if(opts.dots){
+          shown.forEach((p,i)=>{const x=xAt(i,pts.length,box), y=yAt(p.value,box); ctx.fillStyle=s.color; ctx.beginPath();ctx.arc(x,y,2.4,0,Math.PI*2);ctx.fill();});
+        }
+      });
+      const labels=series[0]?.points||[];
+      if(labels.length){
+        ctx.fillStyle=COLORS.text; ctx.font="10px Inter, Arial";
+        const count=opts.labelAll ? labels.length : Math.min(5,labels.length);
+        for(let i=0;i<count;i++){
+          const idx=opts.labelAll ? i : (count===1?0:Math.round(i*(labels.length-1)/(count-1)));
+          const x=xAt(idx,labels.length,box);
+          ctx.textAlign=i===0?"left":i===count-1?"right":"center";
+          ctx.fillText(labels[idx].label,x,h-6);
+        }
+        ctx.textAlign="left";
+      }
+      if(opts.scan && progress >= .98){
+        const x = box.pad.l + ((Date.now()/35) % Math.max(1,box.iw));
+        ctx.strokeStyle="rgba(255,255,255,.18)"; ctx.beginPath(); ctx.moveTo(x,box.pad.t); ctx.lineTo(x,h-box.pad.b); ctx.stroke();
+      }
+    }
+
+    function sentimentMomentumIndex(current, previous){
+      if(!Number.isFinite(current) || !Number.isFinite(previous)) return 50;
+      return clamp(50 + (current - previous) * 3, 0, 100);
+    }
+
+    function drawBars(canvas, points, colors=[COLORS.gold,COLORS.pink,COLORS.purple]){
+      const {ctx,w,h}=setupCanvas(canvas);
+      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:26});
+      const withMomentum=points.map((p,i,a)=>({
+        ...p,
+        momentum:i
+          ? sentimentMomentumIndex(p.global,a[i-1].global)
+          : 50
+      }));
+      const pts=withMomentum.slice(-5);
+      if(!pts.length) return;
+
+      const groupW = box.iw / Math.max(pts.length,1);
+      const barW = Math.max(5, Math.min(13, groupW * .17));
+
+      ctx.font="10px Inter, Arial";
+      ctx.textBaseline="middle";
+
+      pts.forEach((p,i)=>{
+        const center = box.pad.l + (i + .5) * groupW;
+        const momentum = p.momentum;
+        const vals=[
+          {value:p.global, color:colors[0], offset:-barW*.95},
+          {value:p.us, color:colors[1], offset:0},
+          {value:momentum, color:colors[2], offset:barW*.95}
+        ];
+
+        vals.forEach(item=>{
+          if(!Number.isFinite(item.value)) return;
+          const y=yAt(item.value*state.anim,box);
+          const bh=h-box.pad.b-y;
+          const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
+          grad.addColorStop(0,item.color);
+          grad.addColorStop(1,"rgba(255,255,255,.06)");
+          ctx.fillStyle=grad;
+          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
+        });
+
+        ctx.fillStyle=COLORS.text;
+        ctx.textAlign="center";
+        ctx.fillText(p.label, center, h-8);
+      });
+
+      ctx.textAlign="left";
+      ctx.textBaseline="alphabetic";
+    }
+
+    function drawDonut(canvas, items){
+      const {ctx,w,h}=setupCanvas(canvas);
+      ctx.clearRect(0,0,w,h);
+
+      // Bias Mix only: draw the donut centered inside its own safe canvas area.
+      // Radius includes stroke margin so the ring never clips left/right/top/bottom.
+      const margin=18;
+      const maxR=Math.max(22, Math.min((w-margin*2)/2, (h-margin*2)/2));
+      const r=maxR;
+      const thick=Math.max(18, Math.min(24, r*.46));
+      const cx=w/2;
+      const cy=h/2;
+      const total=items.reduce((a,b)=>a+b.value,0) || 1;
+
+      ctx.strokeStyle="rgba(255,255,255,.08)";
+      ctx.lineWidth=thick;
+      ctx.lineCap="butt";
+      ctx.beginPath();
+      ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.stroke();
+
+      let start=-Math.PI/2;
+      items.forEach(item=>{
+        const a=(item.value/total)*Math.PI*2*state.anim;
+        ctx.strokeStyle=item.color;
+        ctx.lineWidth=thick;
+        ctx.lineCap="butt";
+        ctx.beginPath();
+        ctx.arc(cx,cy,r,start,start+a);
+        ctx.stroke();
+        start+=a;
+      });
+    }
+
+    function drawHourly(){
+      const canvas=document.getElementById("chartHourly");
+      let pts = aggregateTwoHourComparison(state.hourly);
+
+      // Comparison card: always shows Global + U.S. together.
+      // X-axis advances in 2-hour slots.
+      // Bars appear only where a real engine scan exists; missing slots stay empty.
+      pts = pts.slice(-8);
+
+      const {ctx,w,h}=setupCanvas(canvas);
+      const box=drawGrid(ctx,w,h,{l:42,r:14,t:34,b:30});
+      if(!pts.length) return;
+
+      const groupW = box.iw / Math.max(pts.length,1);
+      const barW=Math.max(6,Math.min(16,groupW*.22));
+
+      ctx.font="10px Inter, Arial";
+      ctx.textBaseline="middle";
+
+      pts.forEach((p,i)=>{
+        const center=box.pad.l + ((i + 0.5) / pts.length) * box.iw;
+        const values=[
+          {value:p.global, color:COLORS.gold, offset:-barW*.62},
+          {value:p.us, color:COLORS.pink, offset:barW*.62}
+        ];
+
+        values.forEach(item=>{
+          if(!Number.isFinite(item.value)) return;
+          const y=yAt(item.value*state.anim,box);
+          const bh=h-box.pad.b-y;
+          const grad=ctx.createLinearGradient(0,y,0,h-box.pad.b);
+          grad.addColorStop(0,item.color);
+          grad.addColorStop(1,"rgba(255,255,255,.06)");
+          ctx.fillStyle=grad;
+          ctx.fillRect(center + item.offset - barW/2, y, barW, bh);
+
+          ctx.save();
+          ctx.fillStyle=item.color;
+          ctx.font="600 10px Inter, Arial";
+          ctx.textAlign="center";
+          ctx.textBaseline="bottom";
+          ctx.fillText(String(Math.round(item.value)), center + item.offset, Math.max(box.pad.t + 12, y - 4));
+          ctx.restore();
+        });
+
+        ctx.fillStyle=p.hasScan ? COLORS.text : "rgba(148,163,184,.72)";
+        ctx.font="9px Inter, Arial";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(String(p.label || ""), center, h-9);
+      });
+
+      ctx.textAlign="left";
+      ctx.textBaseline="alphabetic";
+    }
+
+    function drawAll(){
+      const dailyGlobal=movingAverage(aggregate("global","daily",true)).slice(-40).map(p=>({...p,value:p.smooth??p.value}));
+      const dailyUs=movingAverage(aggregate("us","daily",true)).slice(-40).map(p=>({...p,value:p.smooth??p.value}));
+      const selected=movingAverage(aggregate(state.scope,state.period,true)).slice(-50).map(p=>({...p,value:p.smooth??p.value}));
+      const allSelected=movingAverage(aggregate(state.scope,state.period,false)).slice(-50).map(p=>({...p,value:p.smooth??p.value}));
+
+      drawHourly();
+      const weeklyComparison=aggregateWeeklyComparison(filterByRange(state.raw)).slice(-4);
+      const weeklyGlobal=weeklyComparison.map(p=>({...p,value:p.global}));
+      const weeklyUs=weeklyComparison.map(p=>({...p,value:p.us}));
+      drawLine(document.getElementById("chartFlow"),[
+        {points:weeklyGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.16)",width:2.2},
+        {points:weeklyUs,color:COLORS.pink,fill:"rgba(255,63,134,.11)",width:2.2}
+      ],{dots:false,scan:true,labelAll:true,pad:{l:34,r:10,t:30,b:20}});
+      drawBars(document.getElementById("chartBars"), aggregate("global","daily",true));
+      updateSkylineHeader();
+      const skylineComparison=skylineComparisonPoints();
+      const skylineGlobal=skylineComparison.map(p=>({...p,value:p.global}));
+      const skylineUs=skylineComparison.map(p=>({...p,value:p.us}));
+      drawLine(document.getElementById("chartSkyline"),[
+        {points:skylineGlobal,color:COLORS.gold,fill:"rgba(255,215,128,.22)",width:2},
+        {points:skylineUs,color:COLORS.pink,fill:"rgba(255,63,134,.16)",width:2}
+      ],{dots:true,scan:true,labelAll:true,pad:{l:28,r:10,t:28,b:22}});
+
+      updateMomentumHeader();
+      const momentumGlobal=skylinePoints("global");
+      const momentumUs=skylinePoints("us");
+      const momBase=skylinePoints(state.scope);
+      const mom=momBase.map((p,i,a)=>({label:p.label,value:i?sentimentMomentumIndex(p.value,a[i-1].value):50}));
+      const vol=momBase.map((p,i,a)=>({label:p.label,value:i?clamp(Math.abs(p.value-a[i-1].value)*6,0,100):0}));
+      drawLine(document.getElementById("chartMomentum"),[
+        {points:momentumGlobal,color:COLORS.gold,width:2},
+        {points:momentumUs,color:COLORS.pink,width:1.8},
+        {points:mom,color:COLORS.purple,width:1.7},
+        {points:vol,color:COLORS.cyan,width:1.5}
+      ],{dots:true,scan:false,labelAll:true,pad:{l:30,r:10,t:30,b:22}});
+
+      updateBiasHeader();
+      const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
+      const biasItems=[
+        {label:"Bullish",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
+        {label:"Mixed/Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
+        {label:"Bearish",value:vals.filter(v=>v<45).length,color:COLORS.pink}
+      ];
+      updateBiasLegend(biasItems);
+      drawDonut(document.getElementById("chartBias"),biasItems);
+      updateDivergenceHeader();
+      const divPts = divergencePoints();
+      const divColor = divPts.length && divPts[divPts.length-1].gap > 0 ? COLORS.pink : COLORS.gold;
+      drawLine(document.getElementById("chartDivergence"),[
+        {points:divPts,color:divColor,fill:"rgba(255,215,128,.12)",width:2.2}
+      ],{dots:true,scan:false,labelAll:false,pad:{l:24,r:10,t:40,b:20}});
+    }
+
+    function renderStats(){
+      const points=aggregate(state.scope,state.period,true);
+      const s=stats(points);
+      document.getElementById("dashEmpty").style.display = points.length ? "none" : "block";
+      if(!s){
+        ["statCurrent","statChange","statAverage","statRange","statVolatility","statBullBear","levelValue","divergenceValue"].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.textContent="--";
+        });
+        const levelNoteEl=document.getElementById("levelNote");
+        if(levelNoteEl) levelNoteEl.textContent="Waiting for data";
+        ["levelBar1","levelBar2","levelBar3"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.width="0%"; });
+        updateDivergenceHeader();
+        updateDivergenceSummary();
+        return;
+      }
+      const b=bias(s.current);
+      document.getElementById("statCurrent").textContent=round(s.current);
+      document.getElementById("statChange").textContent=signed(s.change);
+      document.getElementById("statAverage").textContent=round(s.average);
+      document.getElementById("statRange").textContent=round(s.min)+" / "+round(s.max);
+      document.getElementById("statVolatility").textContent=round(s.volatility);
+      document.getElementById("statBullBear").textContent=s.bulls+" / "+s.bears;
+      updateStatTileColors(s);
+      const levelValueEl=document.getElementById("levelValue");
+      if(levelValueEl){
+        levelValueEl.textContent=round(s.current);
+        levelValueEl.style.color=b.color;
+      }
+      const levelNoteEl=document.getElementById("levelNote");
+      if(levelNoteEl) levelNoteEl.textContent=b.text + " • " + s.total + " records";
+      updateDivergenceSummary();
+      const levelBar1El=document.getElementById("levelBar1");
+      const levelBar2El=document.getElementById("levelBar2");
+      const levelBar3El=document.getElementById("levelBar3");
+      if(levelBar1El) levelBar1El.style.width=clamp(s.current,0,100)+"%";
+      if(levelBar2El) levelBar2El.style.width=clamp(s.average,0,100)+"%";
+      if(levelBar3El) levelBar3El.style.width=clamp(50+s.change,0,100)+"%";
+      updateSkylineHeader();
+      updateDivergenceHeader();
+    }
+
+    function renderRows(){
+      const rows=aggregate(state.scope,state.period,true).slice().reverse().slice(0,18);
+      const body=document.getElementById("historyRows");
+      if(!rows.length){body.innerHTML='<tr><td colspan="7">Waiting for sentiment history.</td></tr>';return;}
+      body.innerHTML=rows.map((r,i,arr)=>{
+        const next=arr[i+1];
+        const move=next ? r.value-next.value : null;
+        const b=bias(r.value);
+        return `<tr><td>${esc(r.label)}</td><td>${r.global==null?"--":round(r.global)}</td><td>${r.us==null?"--":round(r.us)}</td><td>${round(r.value)}</td><td>${move==null?"--":signed(move)}</td><td><span class="bias-pill" style="color:${b.color};background:${b.color}18;">${b.text}</span></td><td>${r.count}</td></tr>`;
+      }).join("");
+    }
+
+    function updateDriversHeader(){
+      const title=document.getElementById("driversTitle");
+      if(title) title.textContent = periodLabel(state.period) + " " + (state.scope==="us"?"U.S.":"Global") + " sentiment drivers";
+    }
+
+    function driverBadge(d){
+      const s = Number.isFinite(d.score) ? d.score : 0;
+      if(s > .15 || s > 15) return {text:"Bullish", color:COLORS.green};
+      if(s < -.15 || s < -15) return {text:"Bearish", color:COLORS.red};
+      return {text:"Mixed/Neutral", color:COLORS.gold};
+    }
+
+    function driverSourceText(d){
+      const parts=[];
+      if(d.source) parts.push(d.source);
+      if(d.timeLabel) parts.push(d.timeLabel);
+      return parts.join(" • ") || "Latest headline";
+    }
+
+    function fallbackDrivers(){
+      const points=aggregate(state.scope,state.period,true);
+      const s=stats(points);
+      const div=divergencePoints();
+      const latestDiv=div.length ? div[div.length-1] : null;
+      if(!s) return [{title:"Waiting for sentiment history data", source:"No selected records yet", score:0}];
+
+      const b=bias(s.current);
+      const trend=s.change>1?"improving":(s.change<-1?"weakening":"stable");
+      const period=periodLabel(state.period).toLowerCase();
+      const scope=state.scope==="us"?"U.S.":"Global";
+      const out=[
+        {title:`${scope} PSI is ${round(s.current)} — ${b.text}`, source:`Current ${period} reading`, score:s.current-50},
+        {title:`Selected trend is ${trend} by ${signed(s.change)} points`, source:`First-to-latest move`, score:s.change},
+        {title:`Average volatility is ${round(s.volatility)} points`, source:`Movement pressure`, score:s.volatility}
+      ];
+      if(latestDiv && Number.isFinite(latestDiv.gap)){
+        const gap=Math.round(Math.abs(latestDiv.gap));
+        out.push({
+          title: latestDiv.gap>=0 ? `U.S. sentiment is ${gap} points stronger than Global` : `Global sentiment is ${gap} points stronger than U.S.`,
+          source:"Global vs U.S. divergence",
+          score:latestDiv.gap
+        });
+      }
+      return out;
+    }
+
+    function filteredDrivers(){
+      const raw=state.drivers || [];
+      if(!raw.length) return [];
+      if(state.scope!=="us") return raw.slice(0,4);
+
+      const usWords=/\b(u\.s\.|us|united states|america|american|fed|federal reserve|wall street|s&p|sp500|nasdaq|dow|treasury|white house|congress|nyse)\b/i;
+      const us=raw.filter(d=>usWords.test((d.title||"")+" "+(d.source||"")));
+      return (us.length>=2 ? us : raw).slice(0,4);
+    }
+
+    function renderDrivers(){
+      updateDriversHeader();
+      const box=document.getElementById("driverList");
+      const items=filteredDrivers();
+      const finalItems=items.length ? items : fallbackDrivers();
+
+      box.innerHTML=finalItems.slice(0,4).map((d,i)=>{
+        const badge=driverBadge(d);
+        const title=d.title || "Untitled driver";
+        const titleHtml=d.url?`<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(title)}</a>`:esc(title);
+        return `<div class="driver-item">
+          <span class="driver-rank">${String(i+1).padStart(2,"0")}</span>
+          <span class="driver-text">
+            <span class="driver-main">${titleHtml}</span>
+            <span class="driver-meta"><span class="driver-badge" style="color:${badge.color};border-color:${badge.color}55;background:${badge.color}14;">${badge.text}</span>${esc(driverSourceText(d))}</span>
+          </span>
+        </div>`;
+      }).join("");
+    }
+
+    function animate(){
+      const start=performance.now();
+      const dur=state.reduced?1:900;
+      function step(now){
+        state.anim=clamp((now-start)/dur,0,1);
+        drawAll();
+        if(state.anim<1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function render(){
+      renderStats(); renderRows(); renderDrivers(); animate();
+    }
+
+    function setScope(scope){
+      state.scope=scope;
+      document.querySelectorAll("[data-scope]").forEach(b=>b.classList.toggle("active",b.dataset.scope===scope));
+      document.querySelectorAll("[data-side-scope]").forEach(b=>b.classList.toggle("active",b.dataset.sideScope===scope));
+      render();
+    }
+
+    function bindControls(){
+      document.querySelectorAll("[data-scope]").forEach(btn=>btn.addEventListener("click",()=>setScope(btn.dataset.scope)));
+      document.querySelectorAll("[data-side-scope]").forEach(btn=>btn.addEventListener("click",()=>setScope(btn.dataset.sideScope)));
+      document.querySelectorAll("[data-period]").forEach(btn=>btn.addEventListener("click",()=>{
+        state.period=btn.dataset.period;
+        document.querySelectorAll("[data-period]").forEach(b=>b.classList.toggle("active",b===btn));
+        render();
+      }));
+      document.querySelectorAll("[data-range]").forEach(btn=>btn.addEventListener("click",()=>{
+        state.range=btn.dataset.range;
+        document.querySelectorAll("[data-range]").forEach(b=>b.classList.toggle("active",b===btn));
+        render();
+      }));
+      document.querySelector("[data-export='csv']")?.addEventListener("click",exportCSV);
+      window.addEventListener("resize",()=>{state.anim=1;drawAll();});
+    }
+
+    function csvCell(value){
+      return `"${String(value ?? "").replaceAll('"','""')}"`;
+    }
+
+    function sentimentLabelForCSV(value){
+      if(!Number.isFinite(value)) return "";
+      if(window.PSDCore && typeof window.PSDCore.classifySentiment === "function"){
+        return window.PSDCore.classifySentiment(value);
+      }
+      return bias(value).text;
+    }
+
+    function dailyMarketMap(){
+      const groups=new Map();
+      state.raw.forEach(r=>{
+        if(!r || !r.date) return;
+        if(!groups.has(r.date)) groups.set(r.date,{global:[],us:[]});
+        const g=groups.get(r.date);
+        if(Number.isFinite(r.global)) g.global.push(r.global);
+        if(Number.isFinite(r.us)) g.us.push(r.us);
+      });
+      return new Map([...groups.entries()].map(([date,g])=>[date,{global:avg(g.global),us:avg(g.us)}]));
+    }
+
+    async function exportCSV(){
+      const source=(state.hourly && state.hourly.length ? state.hourly : state.raw)
+        .filter(r=>r && r.ts instanceof Date && !Number.isNaN(r.ts.getTime()))
+        .sort((a,b)=>a.ts-b.ts);
+
+      if(!source.length){
+        alert("No historical sentiment data is available to export yet.");
+        return;
+      }
+
+      const button=document.querySelector("[data-export='csv']");
+      const originalText=button?.textContent || "Export CSV";
+      if(button){ button.textContent="Preparing..."; button.style.pointerEvents="none"; }
+
+      try{
+        let instrumentPayload=null;
+        try{
+          instrumentPayload=await fetchJSON("instrument_history_compact.json");
+        }catch(error){
+          console.warn("instrument_history_compact.json unavailable for detailed CSV export",error);
+        }
+
+        const header=[
+          "record_type","date_time_ny","date",
+          "global_psi","global_change","global_sentiment",
+          "us_psi","us_change","us_sentiment",
+          "instrument","instrument_psi","instrument_change","instrument_sentiment",
+          "headline_count","bullish_count","bearish_count","neutral_count","mixed_count",
+          "technical_daily_direction","technical_daily_score","close","rsi14",
+          "technical_weekly_direction","technical_monthly_direction",
+          "source_headlines","formula_version"
+        ];
+        const output=[header.map(csvCell).join(",")];
+
+        // 1) Hourly Global/U.S. history. No meaningless records=1 column.
+        const hourGroups=new Map();
+        source.forEach(r=>{
+          const ny=nyHourParts(r.ts);
+          if(!hourGroups.has(ny.key)) hourGroups.set(ny.key,{key:ny.key,global:[],us:[]});
+          const g=hourGroups.get(ny.key);
+          if(Number.isFinite(r.global)) g.global.push(r.global);
+          if(Number.isFinite(r.us)) g.us.push(r.us);
+        });
+
+        let prevHourlyGlobal=null, prevHourlyUs=null;
+        [...hourGroups.values()].sort((a,b)=>a.key.localeCompare(b.key)).forEach(g=>{
+          const global=avg(g.global), us=avg(g.us);
+          const globalChange=Number.isFinite(global) && Number.isFinite(prevHourlyGlobal) ? global-prevHourlyGlobal : null;
+          const usChange=Number.isFinite(us) && Number.isFinite(prevHourlyUs) ? us-prevHourlyUs : null;
+          const date=g.key.slice(0,10);
+          const row=[
+            "hourly_market",g.key,date,
+            round(global),Number.isFinite(globalChange)?round(globalChange):"",sentimentLabelForCSV(global),
+            round(us),Number.isFinite(usChange)?round(usChange):"",sentimentLabelForCSV(us),
+            "","","","","","","","","","","","","","","","",""
+          ];
+          output.push(row.map(csvCell).join(","));
+          if(Number.isFinite(global)) prevHourlyGlobal=global;
+          if(Number.isFinite(us)) prevHourlyUs=us;
+        });
+
+        // 2) Detailed daily instrument history, loaded only when Export CSV is clicked.
+        const records=Array.isArray(instrumentPayload?.records) ? instrumentPayload.records.slice() : [];
+        records.sort((a,b)=>String(a?.date||"").localeCompare(String(b?.date||"")));
+        const dailyMap=dailyMarketMap();
+        const prevInstrumentPsi=new Map();
+        let prevDailyGlobal=null, prevDailyUs=null;
+
+        records.forEach(record=>{
+          const date=String(record?.date||"");
+          if(!date) return;
+          const daily=dailyMap.get(date)||{};
+          const global=Number.isFinite(Number(record?.global_psi)) ? Number(record.global_psi) : daily.global;
+          const us=Number.isFinite(Number(record?.us_psi)) ? Number(record.us_psi) : daily.us;
+          const globalChange=Number.isFinite(global) && Number.isFinite(prevDailyGlobal) ? global-prevDailyGlobal : null;
+          const usChange=Number.isFinite(us) && Number.isFinite(prevDailyUs) ? us-prevDailyUs : null;
+          const instruments=record?.instruments && typeof record.instruments==="object" ? record.instruments : {};
+
+          Object.entries(instruments).forEach(([name,item])=>{
+            const psi=Number(item?.psi);
+            const prior=prevInstrumentPsi.get(name);
+            const psiChange=Number.isFinite(psi) && Number.isFinite(prior) ? psi-prior : null;
+            const td=item?.technical?.daily || {};
+            const tw=item?.technical?.weekly || {};
+            const tm=item?.technical?.monthly || {};
+            const row=[
+              "daily_instrument",date,date,
+              round(global),Number.isFinite(globalChange)?round(globalChange):"",record?.global_sentiment_label || sentimentLabelForCSV(global),
+              round(us),Number.isFinite(usChange)?round(usChange):"",sentimentLabelForCSV(us),
+              name,Number.isFinite(psi)?round(psi):"",Number.isFinite(psiChange)?round(psiChange):"",item?.sentiment_label || sentimentLabelForCSV(psi),
+              item?.headline_count ?? "",item?.bullish_count ?? "",item?.bearish_count ?? "",item?.neutral_count ?? "",item?.mixed_count ?? "",
+              td?.direction ?? "",td?.score ?? "",td?.close ?? "",td?.rsi14 ?? "",
+              tw?.direction ?? "",tm?.direction ?? "",
+              record?.source_headlines ?? "",record?.formula_version || instrumentPayload?.formula_version || ""
+            ];
+            output.push(row.map(csvCell).join(","));
+            if(Number.isFinite(psi)) prevInstrumentPsi.set(name,psi);
+          });
+
+          if(Number.isFinite(global)) prevDailyGlobal=global;
+          if(Number.isFinite(us)) prevDailyUs=us;
+        });
+
+        const dates=[
+          ...source.map(r=>ymd(r.ts)),
+          ...records.map(r=>String(r?.date||"")).filter(Boolean)
+        ].filter(Boolean).sort();
+        const firstDate=dates[0] || "history";
+        const lastDate=dates[dates.length-1] || "latest";
+        const csv="\uFEFF"+output.join("\n");
+        const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url;
+        a.download=`public-sentiment-detailed-${firstDate}-to-${lastDate}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }finally{
+        if(button){ button.textContent=originalText; button.style.pointerEvents=""; }
+      }
+    }
+
+    async function fetchJSON(path, timeoutMs=30000){
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = controller ? setTimeout(()=>controller.abort(), Math.max(1000, Number(timeoutMs) || 30000)) : null;
+      try{
+        const options={cache:"no-cache"};
+        if(controller) options.signal=controller.signal;
+        const res=await fetch(path,options);
+        if(!res.ok) throw new Error(path+" "+res.status);
+        return await res.json();
+      }finally{
+        if(timer) clearTimeout(timer);
+      }
+    }
+
+    function collectDriverCandidates(data){
+      const out=[];
+      const seen=new Set();
+      function walk(v,depth=0){
+        if(!v || out.length>=1200 || depth>5) return;
+        if(Array.isArray(v)){
+          for(const item of v){ walk(item,depth+1); if(out.length>=1200) break; }
+          return;
+        }
+        if(typeof v==="object"){
+          const title=v.title||v.headline||v.name||v.text;
+          if(title && typeof title==="string"){
+            const key=title.trim().toLowerCase();
+            if(key && !seen.has(key)){ seen.add(key); out.push(v); }
+            return;
+          }
+          ["articles","news","items","records","headlines","data","results","latest","stories","psi_headlines"].forEach(k=>walk(v[k],depth+1));
+        }
+      }
+      walk(data);
+      return out;
+    }
+
+    function timeLabelFrom(value){
+      if(!value) return "";
+      const d=new Date(value);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    }
+
+    function normalizeDriver(x,index){
+      const title=String(x.title||x.headline||x.name||x.text||"").trim();
+      const url=x.url||x.link||x.href||"";
+      const source=x.source||x.publisher||x.site||x.domain||"";
+      const rawScore=num(x.score??x.sentiment_score??x.signed_score??x.impact??x.weight??x.psi_score);
+      const score=Number.isFinite(rawScore) ? rawScore : 0;
+      const rawDate=x.published_at||x.published||x.date||x.time||x.created_at||x.updated_at||"";
+      const d=rawDate ? new Date(rawDate) : null;
+      const sortDate=d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+      return {title,url,source,score,timeLabel:timeLabelFrom(rawDate),sortDate,index};
+    }
+
+    async function loadDrivers(){
+      const paths=["news_latest.json","news_cache.json"];
+      for(const path of paths){
+        try{
+          const data=await fetchJSON(path);
+          const arr=collectDriverCandidates(data);
+          state.drivers=arr.map(normalizeDriver)
+            .filter(x=>x.title)
+            .sort((a,b)=>(b.sortDate-a.sortDate) || (Math.abs(b.score)-Math.abs(a.score)) || (a.index-b.index));
+          if(state.drivers.length) break;
+        }catch(e){}
+      }
+    }
+
+    async function loadHistory(){
+      try{
+        const payload=await fetchJSON("sentiment_history.json");
+        state.raw=normalizePayload(payload);
+        state.hourly=normalizeHourlyPayload(payload);
+      }catch(error){
+        console.warn("sentiment_history.json not available yet", error);
+        state.raw=[];
+        state.hourly=[];
+      }
+      await loadDrivers();
+      render();
+    }
+
+    bindControls();
+    loadHistory();
+  </script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const HIST_GLOSSARY = {
+        "psi": {
+          title:"Public Sentiment Index (PSI)",
+          text:"A 0–100 score showing public market sentiment. Higher readings are more bullish, lower readings are more bearish, and readings near the middle are mixed or neutral."
+        },
+        "us-psi": {
+          title:"U.S. PSI",
+          text:"A 0–100 Public Sentiment Index focused on major U.S. markets, rates, indexes, and U.S.-focused financial headlines."
+        },
+        "hourly-pulse": {
+          title:"Global vs. U.S. PSI — 2-Hour Timeline",
+          text:"Compares Global and U.S. PSI on a 2-hour timeline. Bars appear only for real engine scans; empty 2-hour slots mean no scan was recorded."
+        },
+        "global-us-flow": {
+          title:"Global vs. U.S. Flow",
+          text:"Compares the movement of Global PSI and U.S. PSI over the same periods so you can see whether the two sentiment views are moving together or separating."
+        },
+        "sentiment-history": {
+          title:"Sentiment History",
+          text:"Compares saved Global PSI, U.S. PSI, and relative momentum across recent periods. Taller values indicate stronger readings on the 0–100 sentiment scale."
+        },
+        "skyline": {
+          title:"Global vs. U.S. Skyline",
+          text:"Shows the recent paths of Global PSI and U.S. PSI together. It helps show whether sentiment is rising, falling, converging, or separating."
+        },
+        "momentum-chart": {
+          title:"Sentiment Momentum Performance",
+          text:"Shows the direction and size of recent sentiment changes alongside volatility. Momentum describes the recent pace of change; it is not a market-price forecast."
+        },
+        "bias-mix": {
+          title:"Sentiment Bias Mix",
+          text:"Summarizes how saved sentiment observations are distributed across bullish, mixed/neutral, and bearish readings for the selected scope and period."
+        },
+        "divergence": {
+          title:"Global vs. U.S. Divergence",
+          text:"Shows the difference between Global PSI and U.S. PSI. A larger gap means the two sentiment views are further apart."
+        },
+        "drivers": {
+          title:"Sentiment Drivers",
+          text:"Lists recent relevant headlines contributing to the displayed sentiment context. Ordering reflects recency and signal strength, not source quality."
+        },
+        "current": {
+          title:"Current",
+          text:"The latest available sentiment reading for the selected Global or U.S. view and selected period."
+        },
+        "change": {
+          title:"Change",
+          text:"The difference between the first and latest sentiment reading in the selected view. Positive means sentiment rose; negative means it fell."
+        },
+        "average": {
+          title:"Average",
+          text:"The arithmetic mean of the sentiment readings included in the selected view."
+        },
+        "range": {
+          title:"Range",
+          text:"The lowest and highest sentiment readings recorded within the selected view."
+        },
+        "volatility": {
+          title:"Volatility",
+          text:"The average absolute change between consecutive sentiment readings. Higher values mean the sentiment reading moved around more."
+        },
+        "bull-bear": {
+          title:"Bull / Bear",
+          text:"The count of bullish readings compared with bearish readings in the selected period. Mixed or neutral readings are not included in either side of this pair."
+        },
+        "move": {
+          title:"Move",
+          text:"The change in the selected sentiment reading from the prior comparable saved period."
+        },
+        "bias": {
+          title:"Bias",
+          text:"A simplified label describing whether the selected sentiment reading is bullish, bearish, or mixed/neutral."
+        },
+        "records": {
+          title:"Records",
+          text:"The number of saved sentiment observations combined into the displayed date or period."
+        }
+      };
+
+      let activeButton = null;
+
+      function getPopover(){
+        let popover=document.getElementById("histGlossaryPopover");
+        if(popover) return popover;
+
+        popover=document.createElement("div");
+        popover.id="histGlossaryPopover";
+        popover.className="hist-glossary-popover";
+        popover.setAttribute("role","dialog");
+        popover.setAttribute("aria-live","polite");
+        popover.hidden=true;
+        popover.innerHTML='<button class="hist-glossary-close" type="button" aria-label="Close explanation">×</button><div class="hist-glossary-title"></div><p class="hist-glossary-text"></p>';
+        document.body.appendChild(popover);
+        popover.querySelector(".hist-glossary-close").addEventListener("click",closePopover);
+        return popover;
+      }
+
+      function closePopover(){
+        const popover=document.getElementById("histGlossaryPopover");
+        if(popover) popover.hidden=true;
+        if(activeButton) activeButton.setAttribute("aria-expanded","false");
+        activeButton=null;
+      }
+
+      function positionPopover(popover,button){
+        const rect=button.getBoundingClientRect();
+        const width=popover.offsetWidth;
+        const height=popover.offsetHeight;
+        const gap=8;
+        let left=Math.min(rect.left,window.innerWidth-width-12);
+        left=Math.max(12,left);
+        let top=rect.bottom+gap;
+        if(top+height>window.innerHeight-12) top=Math.max(12,rect.top-height-gap);
+        popover.style.left=left+"px";
+        popover.style.top=top+"px";
+      }
+
+      function openPopover(button){
+        const def=HIST_GLOSSARY[button.dataset.histGlossary];
+        if(!def) return;
+
+        const popover=getPopover();
+        if(activeButton && activeButton!==button) activeButton.setAttribute("aria-expanded","false");
+        activeButton=button;
+        button.setAttribute("aria-expanded","true");
+        popover.querySelector(".hist-glossary-title").textContent=def.title;
+        popover.querySelector(".hist-glossary-text").textContent=def.text;
+        popover.hidden=false;
+        positionPopover(popover,button);
+      }
+
+      document.addEventListener("click",event=>{
+        const button=event.target.closest(".hist-info-btn");
+        if(button){
+          event.preventDefault();
+          event.stopPropagation();
+          if(activeButton===button) closePopover();
+          else openPopover(button);
+          return;
+        }
+
+        const popover=document.getElementById("histGlossaryPopover");
+        if(popover && !popover.hidden && !event.target.closest("#histGlossaryPopover")) closePopover();
+      });
+
+      document.addEventListener("keydown",event=>{
+        if(event.key==="Escape") closePopover();
+      });
+
+      window.addEventListener("resize",closePopover);
+      window.addEventListener("scroll",closePopover,true);
+    })();
+  </script>
+
+  <script src="vote-widget.js" defer></script>
+
+  <script id="xx-history-clean-lab-js">
+  (() => {
+    const REGION_META = {
+      us:{label:"U.S.A.", css:"--hist-pink", fallback:"#ff3f86"},
+      global:{label:"Global", css:"--hist-gold", fallback:"#f6c85f"},
+      europe:{label:"Europe", css:"--hist-cyan", fallback:"#4adeff"}
+    };
+
+    const selected = new Set(["us","global"]);
+    let historyData = null;
+    let dashboardData = null;
+    let resizeTimer = null;
+
+    const finite = v => Number.isFinite(Number(v));
+    const num = v => finite(v) ? Number(v) : null;
+
+    function regionColor(key){
+      const meta=REGION_META[key];
+      const css=getComputedStyle(document.documentElement).getPropertyValue(meta.css).trim();
+      return css || meta.fallback;
+    }
+
+    function avg(values){
+      const vals=values.filter(Number.isFinite);
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+    }
+
+    function dateLabel(d){
+      return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",timeZone:"America/New_York"}).format(d);
+    }
+
+    function timeLabel(d){
+      return new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit",hour12:true,timeZone:"America/New_York"})
+        .format(d).replace(" ","");
+    }
+
+    function monthLabel(key){
+      const [y,m]=key.split("-").map(Number);
+      return new Intl.DateTimeFormat("en-US",{month:"short",year:"2-digit"}).format(new Date(y,m-1,1));
+    }
+
+    function isoWeekParts(date){
+      const d=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
+      const day=d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate()+4-day);
+      const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const week=Math.ceil((((d-yearStart)/86400000)+1)/7);
+      return {year:d.getUTCFullYear(),week};
+    }
+
+    function normalize(){
+      const daily=(historyData?.records || []).map(r => {
+        const ts=new Date(String(r.date)+"T12:00:00-04:00");
+        return {
+          ts,key:String(r.date),label:dateLabel(ts),
+          global:num(r.global_psi),us:num(r.us_psi),
+          europe:num(r.europe_psi ?? r.euro_psi)
+        };
+      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts);
+
+      const hourly=(historyData?.intraday || []).map(r => {
+        const ts=new Date(r.ts || r.sample_key);
+        return {
+          ts,key:String(r.ts || r.sample_key || ""),label:timeLabel(ts),
+          global:num(r.global_psi),us:num(r.us_psi),
+          europe:num(r.europe_psi ?? r.euro_psi)
+        };
+      }).filter(p => !Number.isNaN(p.ts.getTime())).sort((a,b)=>a.ts-b.ts).slice(-12);
+
+      const weeklyMap=new Map();
+      daily.forEach(p=>{
+        const {year,week}=isoWeekParts(p.ts);
+        const key=`${year}-W${String(week).padStart(2,"0")}`;
+        if(!weeklyMap.has(key)){
+          weeklyMap.set(key,{key,label:`W${week}`,ts:p.ts,global:[],us:[],europe:[],count:0});
+        }
+        const g=weeklyMap.get(key);
+        ["global","us","europe"].forEach(k=>{ if(Number.isFinite(p[k])) g[k].push(p[k]); });
+        g.count++;
+        if(p.ts>g.ts) g.ts=p.ts;
+      });
+      const weekly=[...weeklyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts).slice(-8);
+
+      const monthlyMap=new Map();
+      daily.forEach(p=>{
+        const y=p.ts.getFullYear();
+        const m=String(p.ts.getMonth()+1).padStart(2,"0");
+        const key=`${y}-${m}`;
+        if(!monthlyMap.has(key)){
+          monthlyMap.set(key,{key,label:monthLabel(key),ts:p.ts,global:[],us:[],europe:[],count:0});
+        }
+        const g=monthlyMap.get(key);
+        ["global","us","europe"].forEach(k=>{ if(Number.isFinite(p[k])) g[k].push(p[k]); });
+        g.count++;
+        if(p.ts>g.ts) g.ts=p.ts;
+      });
+      const monthly=[...monthlyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts).slice(-6);
+
+      return {hourly,daily:daily.slice(-14),weekly,monthly};
+    }
+
+    function setupCanvas(canvas){
+      const rect=canvas.getBoundingClientRect();
+      const ratio=window.devicePixelRatio || 1;
+      canvas.width=Math.max(320,Math.floor(rect.width*ratio));
+      canvas.height=Math.max(180,Math.floor(rect.height*ratio));
+      const ctx=canvas.getContext("2d");
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+      return {ctx,w:rect.width,h:rect.height};
+    }
+
+    function renderLegend(period,data){
+      const el=document.querySelector(`[data-legend-for="${period}"]`);
+      if(!el) return;
+      el.innerHTML=[...selected].map(k=>{
+        const has=data.some(p=>Number.isFinite(p[k]));
+        return `<span class="xx-legend-item" title="${REGION_META[k].label}${has ? "" : " — awaiting history"}">
+          <i class="xx-legend-line" style="background:${regionColor(k)}"></i>${REGION_META[k].label}${has ? "" : " *"}
+        </span>`;
+      }).join("");
+    }
+
+    function drawChart(canvasId,emptyId,data,period){
+      const canvas=document.getElementById(canvasId);
+      const empty=document.getElementById(emptyId);
+      if(!canvas || !empty) return;
+
+      renderLegend(period,data);
+      const available=[...selected].filter(k=>data.some(p=>Number.isFinite(p[k])));
+      const missing=[...selected].filter(k=>!data.some(p=>Number.isFinite(p[k])));
+
+      if(!data.length || !available.length){
+        const {ctx,w,h}=setupCanvas(canvas);
+        ctx.clearRect(0,0,w,h);
+        empty.textContent = missing.includes("europe")
+          ? "Europe historical PSI is not stored yet. The Europe line will appear automatically after europe_psi is added to sentiment_history.json."
+          : "No historical PSI is available for the selected region.";
+        empty.classList.add("show");
+        return;
+      }
+
+      empty.classList.remove("show");
+      empty.removeAttribute("style");
+
+      const {ctx,w,h}=setupCanvas(canvas);
+      ctx.clearRect(0,0,w,h);
+
+      const pad={l:34,r:20,t:15,b:28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+      const y=v=>pad.t+(100-v)/100*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+
+      const textColor=getComputedStyle(document.documentElement).getPropertyValue("--hist-muted").trim() || "#94a3b8";
+      const gridColor="rgba(148,163,184,.15)";
+      const neutralColor="rgba(148,163,184,.34)";
+
+      ctx.font="9px Inter,Arial";
+      ctx.lineWidth=1;
+
+      [0,25,50,75,100].forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-5,yy);
+      });
+
+      const maxLabels=period==="daily" ? 7 : 8;
+      const labelCount=Math.min(maxLabels,data.length);
+      const indices=new Set();
+      if(labelCount===1) indices.add(0);
+      else{
+        for(let i=0;i<labelCount;i++) indices.add(Math.round(i*(data.length-1)/(labelCount-1)));
+      }
+
+      [...indices].forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+        ctx.fillText(data[i].label,x(i),h-7);
+      });
+
+      available.forEach(key=>{
+        const points=data.map((p,i)=>({i,value:p[key]})).filter(p=>Number.isFinite(p.value));
+        if(!points.length) return;
+
+        const color=regionColor(key);
+        ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.lineJoin="round";ctx.lineCap="round";
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();
+        });
+
+        const last=points[points.length-1];
+        ctx.fillStyle=color;ctx.font="700 9px Inter,Arial";ctx.textAlign="right";ctx.textBaseline="bottom";
+        ctx.fillText(`${REGION_META[key].label} ${Math.round(last.value)}`,w-pad.r,Math.max(11,y(last.value)-5));
+      });
+
+      if(missing.length){
+        empty.textContent=missing.map(k=>REGION_META[k].label).join(" + ")+" selected, but historical data is not stored yet.";
+        empty.classList.add("show");
+        empty.style.alignItems="end";
+        empty.style.justifyItems="center";
+        empty.style.paddingBottom="30px";
+      }
+    }
+
+    function updateButtons(){
+      document.querySelectorAll(".xx-region-btn[data-region]").forEach(btn=>{
+        const key=btn.dataset.region;
+        const active=key==="all"
+          ? ["us","global","europe"].every(k=>selected.has(k))
+          : selected.has(key);
+        btn.classList.toggle("active",active);
+        btn.setAttribute("aria-pressed",String(active));
+      });
+    }
+
+    function render(){
+      if(!historyData) return;
+      const sets=normalize();
+      drawChart("xxChartHourly","xxEmptyHourly",sets.hourly,"hourly");
+      drawChart("xxChartDaily","xxEmptyDaily",sets.daily,"daily");
+      drawChart("xxChartWeekly","xxEmptyWeekly",sets.weekly,"weekly");
+      drawChart("xxChartMonthly","xxEmptyMonthly",sets.monthly,"monthly");
+
+      const hasEurope=[...sets.hourly,...sets.daily].some(p=>Number.isFinite(p.europe));
+      const currentEurope=num(dashboardData?.regional_pulse?.europe?.score);
+      const status=document.getElementById("xxHistoryStatus");
+      if(status){
+        if(hasEurope) status.textContent="Global, U.S.A. and Europe historical PSI available.";
+        else if(Number.isFinite(currentEurope)) status.textContent=`Europe current PSI ${Math.round(currentEurope)} • historical Europe tracking not stored yet`;
+        else status.textContent="Europe historical tracking not stored yet.";
+      }
+    }
+
+    function bindControls(){
+      document.querySelectorAll(".xx-region-btn[data-region]").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const key=btn.dataset.region;
+          if(key==="all"){
+            selected.clear();
+            ["us","global","europe"].forEach(k=>selected.add(k));
+          }else if(selected.has(key)){
+            if(selected.size>1) selected.delete(key);
+          }else{
+            selected.add(key);
+          }
+          updateButtons();
+          render();
+        });
+      });
+    }
+
+    async function load(){
+      try{
+        const stamp=Date.now();
+        const [historyRes,dashboardRes]=await Promise.all([
+          fetch(`sentiment_history.json?v=${stamp}`,{cache:"no-store"}),
+          fetch(`dashboard_data.json?v=${stamp}`,{cache:"no-store"})
+        ]);
+
+        if(!historyRes.ok) throw new Error(`sentiment_history.json ${historyRes.status}`);
+        historyData=await historyRes.json();
+        if(dashboardRes.ok) dashboardData=await dashboardRes.json();
+
+        bindControls();
+        updateButtons();
+        render();
+      }catch(err){
+        console.error("Historical lab load failed:",err);
+        const status=document.getElementById("xxHistoryStatus");
+        if(status) status.textContent="Unable to load historical PSI data.";
+      }
+    }
+
+    window.addEventListener("resize",()=>{
+      clearTimeout(resizeTimer);
+      resizeTimer=setTimeout(render,120);
+    });
+
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",load,{once:true});
+    else load();
+  })();
+  </script>
+
+</body>
+</html>
