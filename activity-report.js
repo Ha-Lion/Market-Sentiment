@@ -143,52 +143,120 @@
     return mins?`${mins}m ${String(secs).padStart(2,"0")}s`:`${secs}s`;
   }
 
-  function renderHealthHistory(log){
-    const host=document.getElementById("health-history-list");
-    if(!host)return;
-    host.replaceChildren();
+  function renderHealthHistory(history){
+      const host=document.getElementById("health-history-list");
+      if(!host)return;
+      host.replaceChildren();
 
-    const events=Array.isArray(log&&log.events)?log.events.slice():[];
-    events.sort(function(a,b){
-      return String(b.last_seen_utc||b.first_seen_utc||"").localeCompare(String(a.last_seen_utc||a.first_seen_utc||""));
-    });
+      let issues=[];
+      if(Array.isArray(history&&history.issues)){
+        issues=history.issues.slice();
+      }else if(Array.isArray(history&&history.events)){
+        issues=history.events.map(function(event){
+          return {
+            key:event.key,
+            component:event.component,
+            severity:event.severity,
+            label:event.message||event.code||"Engine issue",
+            status:event.status||"recovered",
+            total_occurrences:1,
+            max_consecutive_runs:Number(event.consecutive_runs||1),
+            first_seen_utc:event.first_seen_utc,
+            last_seen_utc:event.last_seen_utc,
+            occurrences:[{
+              seen_utc:event.last_seen_utc||event.first_seen_utc,
+              run_id:event.last_run_id||event.first_run_id,
+              run_url:null,
+              reason:event.message||"Recorded engine issue.",
+              detail:{}
+            }]
+          };
+        });
+      }
 
-    if(!events.length){
-      const empty=document.createElement("div");
-      empty.className="health-history-empty";
-      empty.textContent="No recorded issues.";
-      host.appendChild(empty);
-      return;
+      issues.sort(function(a,b){
+        return Number(b.total_occurrences||0)-Number(a.total_occurrences||0) ||
+          String(b.last_seen_utc||"").localeCompare(String(a.last_seen_utc||""));
+      });
+
+      if(!issues.length){
+        const empty=document.createElement("div");
+        empty.className="health-history-empty";
+        empty.textContent="No recorded issues.";
+        host.appendChild(empty);
+        return;
+      }
+
+      issues.forEach(function(issue){
+        const details=document.createElement("details");
+        details.className="health-issue-group";
+
+        const summary=document.createElement("summary");
+        summary.className="health-issue-summary";
+
+        const qty=document.createElement("strong");
+        qty.className="health-issue-qty";
+        qty.textContent=String(Number(issue.total_occurrences||0))+"x";
+
+        const title=document.createElement("span");
+        title.className="health-issue-title";
+        title.textContent=issue.label||issue.message||issue.key||"Engine issue";
+
+        const status=document.createElement("span");
+        status.className="health-issue-status "+(issue.status==="active"?"active":"recovered");
+        status.textContent=issue.status==="active"?"Active":"Recovered";
+
+        summary.append(qty,title,status);
+
+        const meta=document.createElement("div");
+        meta.className="health-issue-meta";
+        const last=issue.last_seen_utc?healthTimestamp(issue.last_seen_utc):"Unknown";
+        const maxConsecutive=Number(issue.max_consecutive_runs||1);
+        let extra="Last seen "+last+" • Max "+maxConsecutive+" consecutive run"+(maxConsecutive===1?"":"s");
+        if(Number(issue.max_affected||0)>0){
+          extra+=" • Max affected "+Number(issue.max_affected);
+        }
+        meta.textContent=extra;
+
+        const occurrenceWrap=document.createElement("div");
+        occurrenceWrap.className="health-occurrence-list";
+
+        const occs=Array.isArray(issue.occurrences)?issue.occurrences.slice().reverse():[];
+        occs.forEach(function(occ){
+          const row=document.createElement("div");
+          row.className="health-occurrence-row";
+
+          const top=document.createElement("div");
+          top.className="health-occurrence-top";
+
+          const when=document.createElement("span");
+          when.textContent=occ.seen_utc?healthTimestamp(occ.seen_utc):"Time unavailable";
+
+          let run;
+          if(occ.run_url){
+            run=document.createElement("a");
+            run.href=occ.run_url;
+            run.target="_blank";
+            run.rel="noopener";
+            run.textContent=occ.run_id?"Run "+occ.run_id:"Open run";
+          }else{
+            run=document.createElement("span");
+            run.textContent=occ.run_id?"Run "+occ.run_id:"";
+          }
+          top.append(when,run);
+
+          const reason=document.createElement("div");
+          reason.className="health-occurrence-reason";
+          reason.textContent=occ.reason||"Recorded engine issue.";
+
+          row.append(top,reason);
+          occurrenceWrap.appendChild(row);
+        });
+
+        details.append(summary,meta,occurrenceWrap);
+        host.appendChild(details);
+      });
     }
-
-    events.slice(0,8).forEach(function(event){
-      const row=document.createElement("div");
-      row.className="health-history-row";
-
-      const top=document.createElement("div");
-      top.className="health-history-top";
-
-      const name=document.createElement("strong");
-      name.textContent=(event.component||"System")+" • "+(event.status==="recovered"?"Recovered":healthStatusLabel(event.severity));
-
-      const when=document.createElement("span");
-      const stamp=event.recovered_utc||event.last_seen_utc||event.first_seen_utc||"";
-      when.textContent=stamp?healthTimestamp(stamp):"";
-
-      top.append(name,when);
-
-      const message=document.createElement("div");
-      message.className="health-history-message";
-      message.textContent=event.message||"Recorded engine issue.";
-
-      const meta=document.createElement("small");
-      const runs=Number(event.consecutive_runs||1);
-      meta.textContent=runs>1?`${runs} consecutive runs`:"1 run";
-
-      row.append(top,message,meta);
-      host.appendChild(row);
-    });
-  }
 
   async function loadLegacyHealth(){
     const results=await Promise.all([
@@ -230,9 +298,10 @@
 
     const results=await Promise.all([
       healthJson("engine_health.json"),
-      healthJson("engine_failure_log.json")
+      healthJson("engine_failure_log.json"),
+      healthJson("engine_issue_history.json")
     ]);
-    const health=results[0],log=results[1];
+    const health=results[0],log=results[1],history=results[2];
 
     if(!health){
       await loadLegacyHealth();
@@ -280,7 +349,7 @@
       alertBox.hidden=false;
     }
 
-    renderHealthHistory(log);
+    renderHealthHistory(history||log);
   }
 
   async function saveBanner(){
