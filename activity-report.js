@@ -120,45 +120,167 @@
     catch(_){return null;}
   }
 
-  async function loadHealth(){
-    ["health-engine","health-ai","health-ai-provider","health-sources","health-derived","health-feeds"].forEach(function(id){healthValue(id,"Checking…","");});
+  function healthStateClass(value){
+    const state=String(value||"").toLowerCase();
+    if(state==="healthy"||state==="ok"||state==="success")return "good";
+    if(state==="critical"||state==="failed"||state==="failure"||state==="bad")return "bad";
+    return "warn";
+  }
+
+  function healthStatusLabel(value){
+    const state=String(value||"unknown").toLowerCase();
+    if(state==="healthy")return "Healthy";
+    if(state==="degraded")return "Degraded";
+    if(state==="warning")return "Warning";
+    if(state==="critical")return "Critical";
+    return state==="unknown"?"Unknown":state.charAt(0).toUpperCase()+state.slice(1);
+  }
+
+  function healthRuntime(seconds){
+    const total=Number(seconds);
+    if(!Number.isFinite(total)||total<0)return "runtime unavailable";
+    const mins=Math.floor(total/60),secs=Math.round(total%60);
+    return mins?`${mins}m ${String(secs).padStart(2,"0")}s`:`${secs}s`;
+  }
+
+  function renderHealthHistory(log){
+    const host=document.getElementById("health-history-list");
+    if(!host)return;
+    host.replaceChildren();
+
+    const events=Array.isArray(log&&log.events)?log.events.slice():[];
+    events.sort(function(a,b){
+      return String(b.last_seen_utc||b.first_seen_utc||"").localeCompare(String(a.last_seen_utc||a.first_seen_utc||""));
+    });
+
+    if(!events.length){
+      const empty=document.createElement("div");
+      empty.className="health-history-empty";
+      empty.textContent="No recorded issues.";
+      host.appendChild(empty);
+      return;
+    }
+
+    events.slice(0,8).forEach(function(event){
+      const row=document.createElement("div");
+      row.className="health-history-row";
+
+      const top=document.createElement("div");
+      top.className="health-history-top";
+
+      const name=document.createElement("strong");
+      name.textContent=(event.component||"System")+" • "+(event.status==="recovered"?"Recovered":healthStatusLabel(event.severity));
+
+      const when=document.createElement("span");
+      const stamp=event.recovered_utc||event.last_seen_utc||event.first_seen_utc||"";
+      when.textContent=stamp?healthTimestamp(stamp):"";
+
+      top.append(name,when);
+
+      const message=document.createElement("div");
+      message.className="health-history-message";
+      message.textContent=event.message||"Recorded engine issue.";
+
+      const meta=document.createElement("small");
+      const runs=Number(event.consecutive_runs||1);
+      meta.textContent=runs>1?`${runs} consecutive runs`:"1 run";
+
+      row.append(top,message,meta);
+      host.appendChild(row);
+    });
+  }
+
+  async function loadLegacyHealth(){
     const results=await Promise.all([
       healthJson("status.json"),
       healthJson("technical_data.json"),
-      healthJson("market_pulse.json"),
-      healthJson("news_consensus.json"),
-      healthJson("ai_status.json"),
-      healthJson("event_intelligence.json")
+      healthJson("ai_status.json")
     ]);
-    const status=results[0]||{},technical=results[1]||{},pulse=results[2],consensus=results[3],ai=results[4],intel=results[5];
+    const status=results[0]||{},technical=results[1]||{},ai=results[2]||{};
     const technicalHealth=technical.health||{};
 
-    const engineFreshStamp=technical.updated_utc||(pulse&&pulse.data_updated_utc)||status.updated_utc||"";
+    const engineFreshStamp=technical.updated_utc||status.updated_utc||"";
     const engineDisplay=status.updated_ny||status.updated||status.updated_utc||technical.updated_utc||"";
-    healthValue("health-engine",engineDisplay?"OK • "+(String(engineDisplay).includes("NY Time")?engineDisplay:healthTimestamp(engineDisplay)):"Unavailable",engineFreshStamp?freshnessState(engineFreshStamp,8,18):"warn");
+    const coreState=engineFreshStamp?freshnessState(engineFreshStamp,8,18):"warn";
 
-    if(ai){
-      const aiState=String(ai.status||"unknown").toLowerCase();
-      const generated=Number(ai.events_generated||0),reused=Number(ai.events_reused||0),failed=Number(ai.events_failed||0);
-      const label=(aiState==="healthy"?"OK":aiState==="degraded"?"Degraded":aiState==="not_configured"?"Not configured":aiState==="disabled"?"Disabled":"Issue")+` • ${generated} new / ${reused} reused${failed?` / ${failed} failed`:""}`;
-      const state=aiState==="healthy"?"good":aiState==="degraded"||aiState==="not_configured"||aiState==="disabled"?"warn":"bad";
-      healthValue("health-ai",label,state);
-      const provider=ai.active_provider||"—",model=ai.active_model||((ai.providers||{}).gemini||{}).model||"—";
-      healthValue("health-ai-provider",provider==="—"?`Waiting • ${model}`:`${provider} • ${model}${ai.fallback_used?" • fallback":""}`,provider==="—"?"warn":"good");
-      const sources=ai.source_registry||{};
-      healthValue("health-sources",sources.enabled_sources!=null?`${sources.enabled_sources} enabled • P1 ${sources.priority_1||0} / P2 ${sources.priority_2||0} / P3 ${sources.priority_3||0}`:"Unavailable",sources.enabled_sources?"good":"warn");
-    }else{
-      healthValue("health-ai","Not published yet","warn");
-      healthValue("health-ai-provider","Waiting for AI gateway","warn");
-      healthValue("health-sources","Waiting for AI gateway","warn");
+    healthValue("health-overall",coreState==="good"?"Healthy":"Monitoring data unavailable",coreState);
+    healthValue("health-run",engineDisplay?(String(engineDisplay).includes("NY Time")?engineDisplay:healthTimestamp(engineDisplay)):"Unavailable",coreState);
+
+    const fresh=Number(technicalHealth.fresh_instruments||0);
+    const failures=Number(technicalHealth.failed_without_fallback||0);
+    const stale=Number(technicalHealth.preserved_stale_instruments||0);
+    healthValue("health-data",`${fresh} fresh • ${failures} failed • ${stale} stale`,failures?"bad":stale||!fresh?"warn":"good");
+
+    const aiState=String(ai.status||"unknown").toLowerCase();
+    const provider=ai.active_provider||"—";
+    healthValue("health-ai",`${healthStatusLabel(aiState)}${provider!=="—"?` • ${provider}`:""}`,healthStateClass(aiState));
+
+    renderHealthHistory(null);
+  }
+
+  async function loadHealth(){
+    ["health-overall","health-run","health-data","health-ai"].forEach(function(id){
+      healthValue(id,"Checking…","");
+    });
+
+    const alertBox=document.getElementById("health-active-alert");
+    const alertText=document.getElementById("health-alert-text");
+    if(alertBox)alertBox.hidden=true;
+    if(alertText)alertText.textContent="";
+
+    const results=await Promise.all([
+      healthJson("engine_health.json"),
+      healthJson("engine_failure_log.json")
+    ]);
+    const health=results[0],log=results[1];
+
+    if(!health){
+      await loadLegacyHealth();
+      return;
     }
 
-    const pulseOk=!!pulse,consensusOk=!!consensus,intelEvents=Array.isArray(intel&&intel.events)?intel.events.length:0;
-    const derivedLabel=`Pulse ${pulseOk?"OK":"missing"} • Consensus ${consensusOk?"OK":"missing"}${intel?` • AI events ${intelEvents}`:""}`;
-    healthValue("health-derived",derivedLabel,pulseOk&&consensusOk?"good":pulseOk||consensusOk?"warn":"bad");
+    const overall=String(health.overall_status||"unknown").toLowerCase();
+    healthValue("health-overall",healthStatusLabel(overall),healthStateClass(overall));
 
-    const fresh=Number(technicalHealth.fresh_instruments||0),failures=Number(technicalHealth.failed_without_fallback||0),stale=Number(technicalHealth.preserved_stale_instruments||0);
-    healthValue("health-feeds",`${fresh} fresh • ${failures} failed • ${stale} stale`,failures?"bad":stale||!fresh?"warn":"good");
+    const workflow=health.workflow||{};
+    const completed=workflow.completed_at||health.updated_utc||"";
+    healthValue(
+      "health-run",
+      `${completed?healthTimestamp(completed):"Time unavailable"} • ${healthRuntime(workflow.runtime_seconds)}`,
+      healthStateClass(workflow.conclusion||overall)
+    );
+
+    const components=health.components||{};
+    const core=components.core_data||{};
+    const feeds=components.technical_feeds||{};
+    const fresh=Number(feeds.fresh_instruments||0);
+    const failed=Number(feeds.failed_without_fallback||0);
+    const stale=Number(feeds.preserved_stale_instruments||0);
+    healthValue(
+      "health-data",
+      `${healthStatusLabel(core.status||"unknown")} core • ${fresh} fresh / ${failed} failed / ${stale} stale`,
+      healthStateClass(failed>0?"critical":stale>0?"degraded":feeds.status||core.status||"unknown")
+    );
+
+    const ai=components.ai||{};
+    const aiStatus=String(ai.status||"unknown").toLowerCase();
+    const aiParts=[healthStatusLabel(aiStatus)];
+    if(ai.provider&&ai.provider!=="—")aiParts.push(ai.provider);
+    if(ai.market_pulse_ai_status==="failed")aiParts.push("Market Pulse fallback");
+    healthValue("health-ai",aiParts.join(" • "),healthStateClass(aiStatus));
+
+    const alerts=Array.isArray(health.active_alerts)?health.active_alerts:[];
+    if(alertBox&&alertText&&alerts.length){
+      const first=alerts[0]||{};
+      const repeat=Number(first.consecutive_runs||1);
+      alertText.textContent=(alerts.length>1?`${alerts.length} alerts • `:"")+
+        (first.message||"Engine issue detected.")+
+        (repeat>1?` • ${repeat} consecutive runs`:"");
+      alertBox.className="health-active-alert "+healthStateClass(first.severity);
+      alertBox.hidden=false;
+    }
+
+    renderHealthHistory(log);
   }
 
   async function saveBanner(){
