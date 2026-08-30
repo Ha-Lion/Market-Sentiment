@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FILE="sentiment-history.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "ERROR: sentiment-history.html not found. Run this from the repository root."
+  exit 1
+fi
+
+python3 - "$FILE" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+if "sentiment-core.js" not in text:
+    raise SystemExit("ERROR: sentiment-history.html does not load sentiment-core.js. No change made.")
+
+old = '''      const label = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
+        ? window.PSDCore.classifySentiment(v)
+        : (v >= 70 ? "Strong Bullish" : v >= 56 ? "Bullish" : v >= 45 ? "Mixed/Neutral" : v >= 31 ? "Bearish" : "Strong Bearish");'''
+
+new = '''      const label = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
+        ? window.PSDCore.classifySentiment(v)
+        : "Unknown";'''
+
+count = text.count(old)
+if count != 1:
+    raise SystemExit(f"ERROR: Expected exactly one duplicated bias threshold block, found {count}. No change made.")
+
+text = text.replace(old, new, 1)
+
+required = [
+    'function bias(v)',
+    'window.PSDCore.classifySentiment(v)',
+    'function sentimentLabelForCSV(value)',
+    'return bias(value).text;'
+]
+for token in required:
+    if token not in text:
+        raise SystemExit(f"ERROR: Validation failed for {token}. No change made.")
+
+path.write_text(text, encoding="utf-8")
+
+print("STEP 3 COMPLETE — Historical Market Sentiment only")
+print("Changed file: sentiment-history.html")
+print("")
+print("Centralized:")
+print("  - Historical PSI sentiment classification")
+print("")
+print("Preserved:")
+print("  - all historical data calculations")
+print("  - charts and ranges")
+print("  - CSV export")
+print("  - colors and classes")
+print("  - ribbon and voting")
+print("  - every other page")
+PY
+
+echo
+echo "Run this next:"
+echo "  git diff -- sentiment-history.html"
+echo
+echo "Do NOT commit yet."
