@@ -1,0 +1,690 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+required = {
+    "activity-report.js": ['function renderHealthHistory','healthJson("engine_health.json")','healthJson("engine_failure_log.json")'],
+    "activity-report.html": ['id="health-history-list"'],
+    "activity-report.css": [],
+}
+for name, needles in required.items():
+    p=Path(name)
+    if not p.exists():
+        raise SystemExit(f"STOP: {name} not found.")
+    text=p.read_text(encoding="utf-8")
+    for needle in needles:
+        if needle not in text:
+            raise SystemExit(f"STOP: expected marker not found in {name}: {needle}")
+print("Preflight passed.")
+PY
+
+cat > engine_issue_history.json <<'JSON'
+{
+  "schema": "PSD_ENGINE_ISSUE_HISTORY_V1",
+  "retention_days": 180,
+  "source_note": "Backfilled from 20 verified V2 Production Publish workflow logs available 2026-08-24 through 2026-08-30.",
+  "runs_scanned": 20,
+  "oldest_run_utc": "2026-08-24T21:16:43Z",
+  "newest_run_utc": "2026-08-30T15:14:40Z",
+  "issues": [
+    {
+      "key": "psi_prior_fallback",
+      "component": "PSI",
+      "severity": "degraded",
+      "label": "PSI used prior-fallback assets",
+      "status": "active",
+      "total_occurrences": 20,
+      "max_consecutive_runs": 20,
+      "current_consecutive_runs": 20,
+      "first_seen_utc": "2026-08-24T21:16:43Z",
+      "last_seen_utc": "2026-08-30T15:14:40Z",
+      "max_affected": 8,
+      "occurrences": [
+        {
+          "seen_utc": "2026-08-24T21:16:43Z",
+          "run_id": "32778624645",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32778624645",
+          "reason": "2 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 2
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T01:53:22Z",
+          "run_id": "32799266369",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32799266369",
+          "reason": "2 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 2
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T07:09:52Z",
+          "run_id": "32820259851",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32820259851",
+          "reason": "2 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 2
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T13:12:30Z",
+          "run_id": "32851954664",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32851954664",
+          "reason": "2 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 2
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T18:58:14Z",
+          "run_id": "32886872962",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32886872962",
+          "reason": "3 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 3
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T01:59:39Z",
+          "run_id": "32921040966",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32921040966",
+          "reason": "2 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 2
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T07:10:02Z",
+          "run_id": "32941442156",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32941442156",
+          "reason": "2 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 2
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T13:17:53Z",
+          "run_id": "32973362556",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32973362556",
+          "reason": "3 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 3
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T20:03:39Z",
+          "run_id": "33008446686",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33008446686",
+          "reason": "4 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 4
+          }
+        },
+        {
+          "seen_utc": "2026-08-27T09:51:31Z",
+          "run_id": "33060459399",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33060459399",
+          "reason": "5 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 5
+          }
+        },
+        {
+          "seen_utc": "2026-08-27T22:16:54Z",
+          "run_id": "33121858153",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33121858153",
+          "reason": "6 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 6
+          }
+        },
+        {
+          "seen_utc": "2026-08-28T11:25:25Z",
+          "run_id": "33167093340",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33167093340",
+          "reason": "6 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 6
+          }
+        },
+        {
+          "seen_utc": "2026-08-28T22:22:20Z",
+          "run_id": "33216523265",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33216523265",
+          "reason": "6 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 6
+          }
+        },
+        {
+          "seen_utc": "2026-08-29T07:06:35Z",
+          "run_id": "33240065025",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33240065025",
+          "reason": "7 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 7
+          }
+        },
+        {
+          "seen_utc": "2026-08-29T16:44:08Z",
+          "run_id": "33263768768",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33263768768",
+          "reason": "6 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 6
+          }
+        },
+        {
+          "seen_utc": "2026-08-29T20:56:19Z",
+          "run_id": "33274759727",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33274759727",
+          "reason": "6 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 6
+          }
+        },
+        {
+          "seen_utc": "2026-08-30T05:26:37Z",
+          "run_id": "33294701696",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33294701696",
+          "reason": "7 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 7
+          }
+        },
+        {
+          "seen_utc": "2026-08-30T11:56:34Z",
+          "run_id": "33310177786",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33310177786",
+          "reason": "8 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-30T14:00:48Z",
+          "run_id": "33315698998",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33315698998",
+          "reason": "8 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-30T15:14:40Z",
+          "run_id": "33319092018",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33319092018",
+          "reason": "8 asset(s) used prior-fallback PSI",
+          "detail": {
+            "count": 8
+          }
+        }
+      ]
+    },
+    {
+      "key": "fred_unavailable",
+      "component": "Technical feeds",
+      "severity": "warning",
+      "label": "FRED indicators unavailable",
+      "status": "recovered",
+      "total_occurrences": 18,
+      "max_consecutive_runs": 18,
+      "current_consecutive_runs": 0,
+      "first_seen_utc": "2026-08-24T21:16:43Z",
+      "last_seen_utc": "2026-08-30T11:56:34Z",
+      "occurrences": [
+        {
+          "seen_utc": "2026-08-24T21:16:43Z",
+          "run_id": "32778624645",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32778624645",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T01:53:22Z",
+          "run_id": "32799266369",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32799266369",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T07:09:52Z",
+          "run_id": "32820259851",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32820259851",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T13:12:30Z",
+          "run_id": "32851954664",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32851954664",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-25T18:58:14Z",
+          "run_id": "32886872962",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32886872962",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T01:59:39Z",
+          "run_id": "32921040966",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32921040966",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T07:10:02Z",
+          "run_id": "32941442156",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32941442156",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T13:17:53Z",
+          "run_id": "32973362556",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32973362556",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-26T20:03:39Z",
+          "run_id": "33008446686",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33008446686",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-27T09:51:31Z",
+          "run_id": "33060459399",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33060459399",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-27T22:16:54Z",
+          "run_id": "33121858153",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33121858153",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-28T11:25:25Z",
+          "run_id": "33167093340",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33167093340",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-28T22:22:20Z",
+          "run_id": "33216523265",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33216523265",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-29T07:06:35Z",
+          "run_id": "33240065025",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33240065025",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-29T16:44:08Z",
+          "run_id": "33263768768",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33263768768",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-29T20:56:19Z",
+          "run_id": "33274759727",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33274759727",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-30T05:26:37Z",
+          "run_id": "33294701696",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33294701696",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        },
+        {
+          "seen_utc": "2026-08-30T11:56:34Z",
+          "run_id": "33310177786",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33310177786",
+          "reason": "0/8 FRED indicators available",
+          "detail": {
+            "available": 0,
+            "expected": 8
+          }
+        }
+      ]
+    },
+    {
+      "key": "gemini_unavailable",
+      "component": "AI provider",
+      "severity": "degraded",
+      "label": "Gemini unavailable / transient error",
+      "status": "recovered",
+      "total_occurrences": 3,
+      "max_consecutive_runs": 1,
+      "current_consecutive_runs": 0,
+      "first_seen_utc": "2026-08-25T18:58:14Z",
+      "last_seen_utc": "2026-08-30T14:00:48Z",
+      "occurrences": [
+        {
+          "seen_utc": "2026-08-25T18:58:14Z",
+          "run_id": "32886872962",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32886872962",
+          "reason": "AI gateway: gemini transient error on attempt 1/2: HTTP 503: UNAVAILABLE This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later. | retrying in 6.2s",
+          "detail": {}
+        },
+        {
+          "seen_utc": "2026-08-26T13:17:53Z",
+          "run_id": "32973362556",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32973362556",
+          "reason": "AI gateway: gemini transient error on attempt 1/2: HTTP 503: UNAVAILABLE This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later. | retrying in 6.7s",
+          "detail": {}
+        },
+        {
+          "seen_utc": "2026-08-30T14:00:48Z",
+          "run_id": "33315698998",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33315698998",
+          "reason": "AI gateway: gemini transient error on attempt 1/2: HTTP 503: UNAVAILABLE This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later. | retrying in 6.7s",
+          "detail": {}
+        }
+      ]
+    },
+    {
+      "key": "market_pulse_ai_failed",
+      "component": "AI",
+      "severity": "degraded",
+      "label": "Market Pulse AI synthesis failed",
+      "status": "recovered",
+      "total_occurrences": 2,
+      "max_consecutive_runs": 1,
+      "current_consecutive_runs": 0,
+      "first_seen_utc": "2026-08-26T13:17:53Z",
+      "last_seen_utc": "2026-08-30T14:00:48Z",
+      "occurrences": [
+        {
+          "seen_utc": "2026-08-26T13:17:53Z",
+          "run_id": "32973362556",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/32973362556",
+          "reason": "AI gateway: Market Pulse AI failed: groq: AI response validation failed; gemini: HTTP 503: UNAVAILABLE This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+          "detail": {}
+        },
+        {
+          "seen_utc": "2026-08-30T14:00:48Z",
+          "run_id": "33315698998",
+          "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/33315698998",
+          "reason": "AI gateway: Market Pulse AI failed: groq: AI response validation failed; gemini: HTTP 503: UNAVAILABLE This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+          "detail": {}
+        }
+      ]
+    }
+  ]
+}
+JSON
+
+python - <<'PY'
+from pathlib import Path
+import re
+
+js_path=Path("activity-report.js")
+css_path=Path("activity-report.css")
+html_path=Path("activity-report.html")
+js=js_path.read_text(encoding="utf-8")
+css=css_path.read_text(encoding="utf-8")
+html=html_path.read_text(encoding="utf-8")
+
+start=js.find("function renderHealthHistory")
+if start == -1:
+    raise SystemExit("STOP: renderHealthHistory not found.")
+line_start=js.rfind("\n",0,start)+1
+end=js.find("async function loadLegacyHealth",start)
+if end == -1:
+    raise SystemExit("STOP: loadLegacyHealth not found.")
+end_line_start=js.rfind("\n",0,end)+1
+indent=js[line_start:start]
+
+new_render = '''function renderHealthHistory(history){
+    const host=document.getElementById("health-history-list");
+    if(!host)return;
+    host.replaceChildren();
+
+    let issues=[];
+    if(Array.isArray(history&&history.issues)){
+      issues=history.issues.slice();
+    }else if(Array.isArray(history&&history.events)){
+      issues=history.events.map(function(event){
+        return {
+          key:event.key,
+          component:event.component,
+          severity:event.severity,
+          label:event.message||event.code||"Engine issue",
+          status:event.status||"recovered",
+          total_occurrences:1,
+          max_consecutive_runs:Number(event.consecutive_runs||1),
+          first_seen_utc:event.first_seen_utc,
+          last_seen_utc:event.last_seen_utc,
+          occurrences:[{
+            seen_utc:event.last_seen_utc||event.first_seen_utc,
+            run_id:event.last_run_id||event.first_run_id,
+            run_url:null,
+            reason:event.message||"Recorded engine issue.",
+            detail:{}
+          }]
+        };
+      });
+    }
+
+    issues.sort(function(a,b){
+      return Number(b.total_occurrences||0)-Number(a.total_occurrences||0) ||
+        String(b.last_seen_utc||"").localeCompare(String(a.last_seen_utc||""));
+    });
+
+    if(!issues.length){
+      const empty=document.createElement("div");
+      empty.className="health-history-empty";
+      empty.textContent="No recorded issues.";
+      host.appendChild(empty);
+      return;
+    }
+
+    issues.forEach(function(issue){
+      const details=document.createElement("details");
+      details.className="health-issue-group";
+
+      const summary=document.createElement("summary");
+      summary.className="health-issue-summary";
+
+      const qty=document.createElement("strong");
+      qty.className="health-issue-qty";
+      qty.textContent=String(Number(issue.total_occurrences||0))+"x";
+
+      const title=document.createElement("span");
+      title.className="health-issue-title";
+      title.textContent=issue.label||issue.message||issue.key||"Engine issue";
+
+      const status=document.createElement("span");
+      status.className="health-issue-status "+(issue.status==="active"?"active":"recovered");
+      status.textContent=issue.status==="active"?"Active":"Recovered";
+
+      summary.append(qty,title,status);
+
+      const meta=document.createElement("div");
+      meta.className="health-issue-meta";
+      const last=issue.last_seen_utc?healthTimestamp(issue.last_seen_utc):"Unknown";
+      const maxConsecutive=Number(issue.max_consecutive_runs||1);
+      let extra="Last seen "+last+" • Max "+maxConsecutive+" consecutive run"+(maxConsecutive===1?"":"s");
+      if(Number(issue.max_affected||0)>0){
+        extra+=" • Max affected "+Number(issue.max_affected);
+      }
+      meta.textContent=extra;
+
+      const occurrenceWrap=document.createElement("div");
+      occurrenceWrap.className="health-occurrence-list";
+
+      const occs=Array.isArray(issue.occurrences)?issue.occurrences.slice().reverse():[];
+      occs.forEach(function(occ){
+        const row=document.createElement("div");
+        row.className="health-occurrence-row";
+
+        const top=document.createElement("div");
+        top.className="health-occurrence-top";
+
+        const when=document.createElement("span");
+        when.textContent=occ.seen_utc?healthTimestamp(occ.seen_utc):"Time unavailable";
+
+        let run;
+        if(occ.run_url){
+          run=document.createElement("a");
+          run.href=occ.run_url;
+          run.target="_blank";
+          run.rel="noopener";
+          run.textContent=occ.run_id?"Run "+occ.run_id:"Open run";
+        }else{
+          run=document.createElement("span");
+          run.textContent=occ.run_id?"Run "+occ.run_id:"";
+        }
+        top.append(when,run);
+
+        const reason=document.createElement("div");
+        reason.className="health-occurrence-reason";
+        reason.textContent=occ.reason||"Recorded engine issue.";
+
+        row.append(top,reason);
+        occurrenceWrap.appendChild(row);
+      });
+
+      details.append(summary,meta,occurrenceWrap);
+      host.appendChild(details);
+    });
+  }
+
+'''
+replacement="".join((indent+line if line.strip() else line) for line in new_render.splitlines(True))
+js=js[:line_start]+replacement+js[end_line_start:]
+
+old='''    const results=await Promise.all([
+      healthJson("engine_health.json"),
+      healthJson("engine_failure_log.json")
+    ]);
+    const health=results[0],log=results[1];'''
+new='''    const results=await Promise.all([
+      healthJson("engine_health.json"),
+      healthJson("engine_failure_log.json"),
+      healthJson("engine_issue_history.json")
+    ]);
+    const health=results[0],log=results[1],history=results[2];'''
+if old not in js:
+    raise SystemExit("STOP: expected engine health fetch block not found.")
+js=js.replace(old,new,1)
+
+if "renderHealthHistory(log);" not in js:
+    raise SystemExit("STOP: expected renderHealthHistory(log) call not found.")
+js=js.replace("renderHealthHistory(log);","renderHealthHistory(history||log);",1)
+
+marker="/* PSD EXPANDABLE ENGINE ISSUE HISTORY V1 */"
+if marker not in css:
+    css += '''
+/* PSD EXPANDABLE ENGINE ISSUE HISTORY V1 */
+.health-issue-group{border-top:1px solid rgba(127,127,127,.18);padding:0}
+.health-issue-group:first-child{border-top:0}
+.health-issue-summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px 2px;cursor:pointer}
+.health-issue-qty{min-width:34px;font-size:14px;text-align:right;font-weight:850}
+.health-issue-title{font-size:11px;font-weight:750}
+.health-issue-status{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.health-issue-meta{margin:-3px 2px 7px 43px;opacity:.72;font-size:9.5px}
+.health-occurrence-list{margin:0 2px 8px 43px;border-left:1px solid rgba(127,127,127,.22);padding-left:8px}
+.health-occurrence-row{padding:6px 0;border-top:1px solid rgba(127,127,127,.14)}
+.health-occurrence-row:first-child{border-top:0}
+.health-occurrence-top{display:flex;justify-content:space-between;gap:8px;font-size:9.5px;opacity:.72}
+.health-occurrence-top a{font-size:9.5px}
+.health-occurrence-reason{margin-top:3px;font-size:10px;line-height:1.35}
+@media(max-width:520px){.health-issue-summary{grid-template-columns:auto minmax(0,1fr)}.health-issue-status{grid-column:2}.health-issue-meta,.health-occurrence-list{margin-left:0}}
+'''
+
+html=re.sub(r'href="activity-report\.css\?v=\d+"','href="activity-report.css?v=14"',html)
+html=re.sub(r'src="activity-report\.js\?v=\d+"','src="activity-report.js?v=14"',html)
+
+js_path.write_text(js,encoding="utf-8")
+css_path.write_text(css,encoding="utf-8")
+html_path.write_text(html,encoding="utf-8")
+print("Expandable history UI prepared.")
+PY
+
+node --check activity-report.js
+python -m json.tool engine_issue_history.json >/dev/null
+git diff --check
+
+echo
+echo "Changed files:"
+git status --short
+echo
+git diff --stat -- activity-report.html activity-report.js activity-report.css engine_issue_history.json
+echo
+echo "No commit or push was performed."
