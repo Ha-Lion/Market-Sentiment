@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+if 'id="xx-history-preview-glossary-motion-v1"' in text:
+    raise SystemExit("STOP: preview + glossary motion patch already installed.")
+
+# ---------------------------------------------------------------
+# 1) Daily history remains visibly open at all times.
+# ---------------------------------------------------------------
+old = '<details class="xx-exact-history" id="xxExactHistory">'
+new = '<details class="xx-exact-history xx-data-preview" id="xxExactHistory" open>'
+if old not in text:
+    raise SystemExit("STOP: xxExactHistory details tag not found.")
+text = text.replace(old, new, 1)
+
+old = '''<span class="xx-details-action"><span class="xx-show-label">View data</span><span class="xx-hide-label">Hide data</span></span>'''
+new = '''<span class="xx-details-action"><span class="xx-show-label">View all data</span><span class="xx-hide-label">Show less</span></span>'''
+if old not in text:
+    raise SystemExit("STOP: data action labels not found.")
+text = text.replace(old, new, 1)
+
+# ---------------------------------------------------------------
+# 2) Exact specialty-page glossary pulse + preview behavior.
+# ---------------------------------------------------------------
+css = r'''
+  <style id="xx-history-preview-glossary-motion-v1">
+    /*
+      Exact PSD specialty-page glossary attention motion:
+      subtle 5s red pulse, disabled while hovered/focused/open.
+    */
+    @keyframes psdPulseGlossary{
+      0%,82%,100%{transform:scale(1);box-shadow:none}
+      87%{transform:scale(1.11);box-shadow:0 0 0 3px rgba(211,47,47,.10),0 0 10px rgba(211,47,47,.32)}
+      92%{transform:scale(1);box-shadow:0 0 5px rgba(211,47,47,.18)}
+    }
+
+    .xx-exact-history .hist-info-btn{
+      display:inline-grid!important;
+      place-items:center!important;
+      width:16px!important;
+      height:16px!important;
+      min-width:16px!important;
+      min-height:16px!important;
+      max-width:16px!important;
+      max-height:16px!important;
+      padding:0!important;
+      margin:0 0 0 4px!important;
+      border:1px solid #71849a!important;
+      border-radius:50%!important;
+      background:transparent!important;
+      color:#d32f2f!important;
+      font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+      vertical-align:middle!important;
+      cursor:pointer!important;
+      opacity:1!important;
+      box-shadow:none;
+      transform-origin:center;
+      animation:psdPulseGlossary 5s ease-in-out infinite!important;
+      appearance:none!important;
+      -webkit-appearance:none!important;
+      box-sizing:border-box!important;
+    }
+
+    .xx-exact-history .hist-info-btn:hover,
+    .xx-exact-history .hist-info-btn:focus-visible,
+    .xx-exact-history .hist-info-btn[aria-expanded="true"]{
+      color:#d32f2f!important;
+      border-color:#ef5350!important;
+      background:rgba(239,83,80,.08)!important;
+      animation:none!important;
+      transform:scale(1)!important;
+      outline:none!important;
+    }
+
+    /* Daily history never collapses to zero content. */
+    .xx-exact-history{
+      display:block!important;
+    }
+
+    .xx-exact-history:not(.xx-data-expanded) .xx-exact-table-wrap{
+      max-height:188px!important;
+      overflow:hidden!important;
+    }
+
+    .xx-exact-history.xx-data-expanded .xx-exact-table-wrap{
+      max-height:430px!important;
+      overflow:auto!important;
+    }
+
+    /* Override the former open/closed labels: now Preview / Full. */
+    .xx-exact-history .xx-details-action .xx-show-label{
+      display:inline!important;
+    }
+    .xx-exact-history .xx-details-action .xx-hide-label{
+      display:none!important;
+    }
+    .xx-exact-history.xx-data-expanded .xx-details-action .xx-show-label{
+      display:none!important;
+    }
+    .xx-exact-history.xx-data-expanded .xx-details-action .xx-hide-label{
+      display:inline!important;
+    }
+
+    .xx-exact-history:not(.xx-data-expanded) .xx-exact-table-wrap{
+      position:relative;
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .xx-exact-history .hist-info-btn{
+        animation:none!important;
+      }
+    }
+  </style>
+'''
+
+if '</head>' not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace('</head>', css + '\n</head>', 1)
+
+# ---------------------------------------------------------------
+# 3) Keep details permanently open; summary toggles preview/full.
+#    Glossary buttons continue using their existing popup handler.
+# ---------------------------------------------------------------
+js = r'''
+  <script id="xx-history-preview-controller-v1">
+    (() => {
+      const box=document.getElementById("xxExactHistory");
+      if(!box) return;
+
+      box.open=true;
+
+      const summary=box.querySelector("summary");
+      if(summary){
+        summary.addEventListener("click",event=>{
+          if(event.target.closest(".hist-info-btn")) return;
+
+          event.preventDefault();
+          box.open=true;
+          box.classList.toggle("xx-data-expanded");
+        });
+      }
+
+      box.addEventListener("toggle",()=>{
+        if(!box.open) box.open=true;
+      });
+    })();
+  </script>
+'''
+
+# Install after the exact history markup exists and before the hidden legacy dashboard.
+anchor = '''    <section class="dash-stage-shell" aria-label="Historical sentiment dashboard">'''
+if anchor not in text:
+    raise SystemExit("STOP: legacy dashboard anchor not found.")
+text = text.replace(anchor, js + '\n' + anchor, 1)
+
+p.write_text(text, encoding="utf-8")
+print("Historical Sentiment lab preview + exact glossary motion prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab file only:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+git diff --stat -- xx-sentiment-history-lab.html
+echo
+echo "Verification markers:"
+grep -n -E 'xx-history-preview-glossary-motion-v1|psdPulseGlossary|View all data|Show less|xx-data-expanded|xx-history-preview-controller-v1' xx-sentiment-history-lab.html | head -80
+echo
+echo "Production remains untouched."
+echo "No commit or push was performed."
