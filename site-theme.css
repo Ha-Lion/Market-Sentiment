@@ -1038,22 +1038,25 @@ body.dark-mode .psd-shared-header .psd-nav-link::before{
 }
 
 /* ========================================================================
-   RIBBON — CONSTANTLY LEARNING PILL POSITION LOCK
+   RIBBON — CONSTANTLY LEARNING PILL: FIXED ABOVE AI-BUILT
    ========================================================================
    Desktop only.
 
-   The pill's intended left edge is the same as the AI-built brand pill:
-     22px header left padding + 112px logo + 11px brand gap = 145px.
+   Important:
+   .header-center normally has transform:translateY(-5px). A transformed
+   ancestor becomes the containing block for absolutely positioned children.
+   That caused the previous left:145px value to be measured from the center
+   column instead of from the ribbon itself.
 
-   Keep .header-center as a real grid item so every other ribbon element
-   stays in exactly the same grid column. Only the pill itself is taken out
-   of the center cell and anchored to the header.
-
-   No JavaScript measurement or runtime translation is used.
+   The center grid track is NOT removed or resized. We only remove its visual
+   transform because it contains no other visible control except this pill.
+   Therefore navigation, logo, donation/tour, social links, spacing, and
+   ribbon dimensions remain unchanged.
    ======================================================================== */
 @media(min-width:1181px){
   .psd-shared-header .header-center{
     position:static!important;
+    transform:none!important;
   }
 
   .psd-shared-header .psd-learning-label{
@@ -1061,7 +1064,7 @@ body.dark-mode .psd-shared-header .psd-nav-link::before{
     left:145px!important;
     top:5px!important;
     translate:0 0!important;
-    z-index:100!important;
     margin:0!important;
+    z-index:100!important;
   }
 }
