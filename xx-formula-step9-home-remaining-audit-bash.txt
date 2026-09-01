@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="index.html"
+CORE="sentiment-core.js"
+
+if [ ! -f "$FILE" ] || [ ! -f "$CORE" ]; then
+  echo "STOP: required file missing."
+  exit 1
+fi
+
+echo "=== HOME REMAINING FORMULA AUDIT — READ ONLY ==="
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Home shared core load:"
+grep -nE 'sentiment-core.js|PSDCore' "$FILE" | head -120 || true
+echo
+
+echo "2) Local PSI label/color helper definitions:"
+grep -nE \
+  'function labelForScore|function colorForScore|score *>= *70|score *>= *56|score *>= *45|score *>= *31|s *>= *70|s *>= *56|s *>= *45|s *>= *31' \
+  "$FILE" | head -220 || true
+echo
+
+echo "3) Context around the local helpers:"
+sed -n '2240,2325p' "$FILE"
+echo
+
+echo "4) Every use of labelForScore / colorForScore:"
+grep -nE 'labelForScore|colorForScore' "$FILE" || true
+echo
+
+echo "5) Global PSI / regional PSI / backend label handling:"
+grep -nEi \
+  'headline_psi_score|regional|global.*psi|us.*psi|europe.*psi|sentiment_label|scoreLabel|classifySentiment' \
+  "$FILE" | head -340 || true
+echo
+
+echo "6) Any other official PSI boundaries in Home:"
+grep -nE \
+  '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' \
+  "$FILE" | head -260 || true
+echo
+
+echo "7) Shared core functions available:"
+grep -nE \
+  'const VERSION|function classifySentiment|function sentimentColor|function getGlobalSummary|const API' \
+  "$CORE" | head -140 || true
+echo
+
+echo "=== END HOME AUDIT ==="
+echo "No files were modified."
