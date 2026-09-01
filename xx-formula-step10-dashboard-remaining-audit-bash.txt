@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="dashboard.html"
+CORE="sentiment-core.js"
+
+if [ ! -f "$FILE" ] || [ ! -f "$CORE" ]; then
+  echo "STOP: required file missing."
+  exit 1
+fi
+
+echo "=== INTERACTIVE DASHBOARD REMAINING FORMULA AUDIT — READ ONLY ==="
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Shared core load / PSDCore usage:"
+grep -nE \
+  'sentiment-core.js|PSDCore|classifySentiment|badgeClass|sentimentColor' \
+  "$FILE" | head -260 || true
+echo
+
+echo "2) Remaining threshold hits found by site-wide sweep:"
+grep -nE \
+  'score *>= *56|score *<= *44|score *> *58|score *< *44|BULL|BEAR|BAL|Risk-On|Risk-Off|Balanced|return "Up"|return "Down"' \
+  "$FILE" | head -260 || true
+echo
+
+echo "3) Context around Up/Down logic:"
+sed -n '1925,1990p' "$FILE"
+echo
+
+echo "4) Context around BULL/BEAR/BAL and pressure/risk logic:"
+sed -n '2410,2545p' "$FILE"
+echo
+
+echo "5) Every local PSI classification/label helper:"
+grep -nEi \
+  'function .*label|function .*sentiment|function .*bias|function .*tone|function .*direction|classifySentiment|badgeClass|sentimentColor' \
+  "$FILE" | head -340 || true
+echo
+
+echo "6) Any official PSI boundary numbers elsewhere:"
+grep -nE \
+  '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' \
+  "$FILE" | head -320 || true
+echo
+
+echo "7) Context around heatmap legend / labels:"
+sed -n '1585,1640p' "$FILE"
+echo
+
+echo "8) Shared core authority:"
+grep -nE \
+  'const VERSION|function classifySentiment|function badgeClass|function sentimentColor|const API' \
+  "$CORE" | head -120 || true
+echo
+
+echo "=== END DASHBOARD AUDIT ==="
+echo "No files were modified."
