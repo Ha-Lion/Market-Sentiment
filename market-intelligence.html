@@ -840,6 +840,7 @@
     }
 
   </style>
+  <script src="sentiment-core.js?v=3" data-psd-formula-step5="market-intelligence-core"></script>
 </head>
 <body>
   <div id="site-header"></div>
@@ -1277,6 +1278,19 @@
     const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
     const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
     const signed=(v,suffix="")=>{const n=num(v);return n===null?"—":`${n>0?"+":""}${n.toFixed(Math.abs(n)>=10?0:1)}${suffix}`};
+    const miSentimentLabel=(score,fallback="Unavailable")=>{
+      const n=num(score);
+      if(n!==null && window.PSDCore && typeof window.PSDCore.classifySentiment==="function"){
+        return window.PSDCore.classifySentiment(n);
+      }
+      return String(fallback || "Unavailable");
+    };
+    const miSentimentGroup=(score)=>{
+      const label=miSentimentLabel(score,"");
+      if(label.includes("Bullish"))return "bullish";
+      if(label.includes("Bearish"))return "bearish";
+      return "neutral";
+    };
     const dataStamp=v=>String(v||"").trim();
 
     function currentEventIntelligence(data=aiIntelligenceData){
@@ -1480,9 +1494,9 @@
       const available=rows.filter(r=>num(r.psi)!==null);
       const strongest=[...available].sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5);
       const strongestText=strongest.length?strongest.map(r=>`${r.display_name||r.instrument} (${Math.round(num(r.psi)??50)} sentiment)`).join(', '):'the affected asset set';
-      const bullish=available.filter(r=>(num(r.psi)??50)>=56).length;
-      const bearish=available.filter(r=>(num(r.psi)??50)<=44).length;
-      const neutral=Math.max(0,available.length-bullish-bearish);
+      const bullish=available.filter(r=>miSentimentGroup(r.psi)==="bullish").length;
+      const bearish=available.filter(r=>miSentimentGroup(r.psi)==="bearish").length;
+      const neutral=available.filter(r=>miSentimentGroup(r.psi)==="neutral").length;
       const balance=bullish>bearish?'bullish pressure is broader than bearish pressure':bearish>bullish?'bearish pressure is broader than bullish pressure':'bullish and bearish pressure remain relatively balanced';
       const avg=(key)=>available.length?available.reduce((s,r)=>s+(num(r[key])??0),0)/available.length:0;
       const avg24=avg('change_1d'),avg7=avg('change_7d'),avgPrice=avg('price_change_1d_pct');
@@ -2014,7 +2028,7 @@
 
     function renderAssets(rows){
       $("assetGrid").innerHTML=rows.map(r=>{
-        const psi=num(r.psi),label=r.sentiment_label||"Unavailable";
+        const psi=num(r.psi),label=miSentimentLabel(psi,r.sentiment_label);
         return `<article class="asset-card">
           <div class="asset-top"><div><h3 title="${esc(r.instrument)}">${esc(r.display_name||r.instrument)}</h3><div class="asset-role">${esc(r.role)}</div></div><span class="sentiment-pill">${esc(label)}</span></div>
           <div class="asset-psi"><strong>${psi===null?"—":Math.round(psi)}</strong><span>PSI /100</span></div>
