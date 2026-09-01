@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+CORE="sentiment-core.js"
+
+# Find the likely Watchlist production page without guessing silently.
+PAGE=""
+for candidate in watchlist.html my-watchlist.html watch-list.html; do
+  if [ -f "$candidate" ]; then
+    PAGE="$candidate"
+    break
+  fi
+done
+
+if [ -z "$PAGE" ]; then
+  echo "STOP: Watchlist page not found under expected filenames."
+  echo "Possible files:"
+  find . -maxdepth 1 -type f -iname '*watch*list*.html' -printf '%f\n' | sort
+  exit 1
+fi
+
+if [ ! -f "$CORE" ]; then
+  echo "STOP: $CORE not found."
+  exit 1
+fi
+
+echo "=== MY WATCHLIST FORMULA AUDIT — READ ONLY ==="
+echo "Page: $PAGE"
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Shared sentiment-core.js / PSDCore usage:"
+grep -nE \
+  'sentiment-core|PSDCore|classifySentiment|badgeClass|sentimentColor|buildInstrument|periodScore|headline_psi' \
+  "$PAGE" | head -240 || true
+echo
+
+echo "2) PSI / sentiment labels and possible thresholds:"
+grep -nEi \
+  'strong bullish|bullish|mixed.?neutral|neutral|bearish|strong bearish|sentiment_label|psi.?label|>= *[0-9]+|<= *[0-9]+|> *[0-9]+|< *[0-9]+' \
+  "$PAGE" | head -320 || true
+echo
+
+echo "3) Possible formula / derived signal logic:"
+grep -nEi \
+  'Math\.|average|avg|mean|momentum|volatility|diverg|bias|delta|change|score|psi|weighted|confidence|trend|clamp|normalize|technical|vote' \
+  "$PAGE" | head -460 || true
+echo
+
+echo "4) Inline JS functions likely involved:"
+grep -nE \
+  'function [A-Za-z0-9_]+\(|const [A-Za-z0-9_]+ *= *\(|=> *\{' \
+  "$PAGE" | head -340 || true
+echo
+
+echo "5) Data files referenced:"
+grep -oE '[A-Za-z0-9_-]+\.json' "$PAGE" | sort -u
+echo
+
+echo "6) Official PSI boundary numbers appearing locally:"
+grep -nE \
+  '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' \
+  "$PAGE" | head -220 || true
+echo
+
+echo "7) Shared core version/functions:"
+grep -nE \
+  'const VERSION|function classifySentiment|function badgeClass|function sentimentColor|function buildInstrumentSeries|function buildInstrumentPeriodScore|const API' \
+  "$CORE" | head -160 || true
+echo
+
+echo "=== END AUDIT ==="
+echo "No files were modified."
