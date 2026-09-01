@@ -1958,18 +1958,6 @@
       if(!entry) return "N/A";
       return normalizeTechLabel(extractTechLabel(entry, "daily"));
     }
-    function techFromScore(score){
-      if(score == null) return "No PSI Match";
-      if(score >= 56) return "Up";
-      if(score <= 44) return "Down";
-      return "Neutral";
-    }
-    function userDefaultFromTech(tech){
-      const t = norm(tech);
-      if(t.includes("up") || t.includes("bull")) return "Bullish";
-      if(t.includes("down") || t.includes("bear")) return "Bearish";
-      return "Neutral";
-    }
     function periodLength(){return selectedPeriod === "weekly" ? 7 : selectedPeriod === "monthly" ? 12 : 24}
     function periodName(){return selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "monthly" ? "Monthly" : "Daily"}
     function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "Earlier" : "24H ago"}
@@ -2032,10 +2020,9 @@
           userVotes: window.PSD_USER_SENTIMENT || {}
         });
         const score = summary.score;
-        const liveTech = summary.tech || "N/A";
-        const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
+        const tech = summary.tech || "N/A";
         const actualUser = window.PSD_USER_SENTIMENT?.[summary.name || dataKey];
-        const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+        const user = actualUser && actualUser !== "N/A" ? actualUser : "N/A";
         return {
           name: ins.name,
           score,
