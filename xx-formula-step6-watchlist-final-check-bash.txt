@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="watchlist.js"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+echo "=== WATCHLIST FINAL PSI CHECK — READ ONLY ==="
+echo
+
+echo "1) Core card-rendering area:"
+sed -n '1000,1195p' "$FILE"
+echo
+
+echo "2) Any PSI fallbacks or locally-derived PSI values:"
+grep -nEi \
+  'psi *=|psi:|headline_psi|fallback.*psi|psi.*fallback|sentiment_label|classify|bullish|bearish|neutral' \
+  "$FILE" | head -260 || true
+echo
+
+echo "3) Any use of dashboard_live / history data:"
+grep -nEi \
+  'dashboard_live|instrument_history|historyData|assetMap|renderCards|current.*psi|entry\.psi' \
+  "$FILE" | head -260 || true
+echo
+
+echo "4) Any official PSI threshold numbers:"
+grep -nE \
+  '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' \
+  "$FILE" || true
+echo
+
+echo "=== END FINAL CHECK ==="
+echo "No files were modified."
