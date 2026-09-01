@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="dashboard.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("dashboard.html")
+text = p.read_text(encoding="utf-8")
+
+old_calc = '''        const score = summary.score;
+        const liveTech = summary.tech || "N/A";
+        const tech = liveTech !== "N/A" ? liveTech : techFromScore(score);
+        const actualUser = window.PSD_USER_SENTIMENT?.[summary.name || dataKey];
+        const user = actualUser && actualUser !== "N/A" ? actualUser : userDefaultFromTech(tech);
+'''
+
+new_calc = '''        const score = summary.score;
+        const tech = summary.tech || "N/A";
+        const actualUser = window.PSD_USER_SENTIMENT?.[summary.name || dataKey];
+        const user = actualUser && actualUser !== "N/A" ? actualUser : "N/A";
+'''
+
+if old_calc not in text:
+    raise SystemExit("STOP: expected calcInstrument fallback block not found. No file written.")
+
+text = text.replace(old_calc, new_calc, 1)
+
+old_tech = '''    function techFromScore(score){
+      if(score == null) return "No PSI Match";
+      if(score >= 56) return "Up";
+      if(score <= 44) return "Down";
+      return "Neutral";
+    }
+
+'''
+if old_tech not in text:
+    raise SystemExit("STOP: techFromScore helper not found. No file written.")
+text = text.replace(old_tech, "", 1)
+
+old_user = '''    function userDefaultFromTech(tech){
+      const t = norm(tech);
+      if(t.includes("up") || t.includes("bull")) return "Bullish";
+      if(t.includes("down") || t.includes("bear")) return "Bearish";
+      return "Neutral";
+    }
+
+'''
+if old_user not in text:
+    raise SystemExit("STOP: userDefaultFromTech helper not found. No file written.")
+text = text.replace(old_user, "", 1)
+
+p.write_text(text, encoding="utf-8")
+print("Dashboard signal-separation cleanup prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed file only:"
+git status --short -- dashboard.html sentiment-core.js
+
+echo
+echo "Diff summary:"
+git diff --stat -- dashboard.html
+
+echo
+echo "1) PSI-derived technical fallback should be gone:"
+grep -nE 'techFromScore|score *>= *56.*Up|score *<= *44.*Down' dashboard.html || true
+
+echo
+echo "2) Technical direction now remains technical-data sourced:"
+grep -nE \
+  'const tech = summary\.tech|PSDCore.*getTechnicalBias|getTechnicalForInstrument' \
+  dashboard.html | head -100 || true
+
+echo
+echo "3) User sentiment now remains vote-only / N/A:"
+grep -nE \
+  'const actualUser|const user = actualUser|userDefaultFromTech' \
+  dashboard.html | head -80 || true
+
+echo
+echo "4) Deep-analysis 58/44 indicators intentionally preserved:"
+grep -nE \
+  'score > 58|score < 44|Risk-On|Risk-Off|pressureLabel' \
+  dashboard.html | head -100 || true
+
+echo
+echo "5) Official PSI labels still use PSDCore:"
+grep -nE \
+  'function label\(score\)|PSDCore.*classifySentiment|function sentimentColor|PSDCore.*sentimentColor' \
+  dashboard.html | head -80 || true
+
+echo
+echo "No Deep Analysis thresholds, Heatwave, charts, PSI formulas, ribbon/header, CSS, engine data, or sentiment-core.js were modified."
+echo "No commit or push was performed."
