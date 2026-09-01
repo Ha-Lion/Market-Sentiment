@@ -2663,12 +2663,27 @@
       });
     }
 
+    function historySentimentGroup(value){
+      const label = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
+        ? window.PSDCore.classifySentiment(value)
+        : bias(value).text;
+      const text = String(label || "");
+      if(text.includes("Bullish")) return "bullish";
+      if(text.includes("Bearish")) return "bearish";
+      return "neutral";
+    }
+
+    function historyStatClass(value){
+      const group = historySentimentGroup(value);
+      return group === "bullish" ? "stat-bull" : (group === "bearish" ? "stat-bear" : "stat-neutral");
+    }
+
     function stats(points){
       const values = points.map(p=>p.value).filter(Number.isFinite);
       if(!values.length) return null;
       const moves = values.slice(1).map((v,i)=>v-values[i]);
-      const bulls = values.filter(v=>v>=56).length;
-      const bears = values.filter(v=>v<45).length;
+      const bulls = values.filter(v=>historySentimentGroup(v)==="bullish").length;
+      const bears = values.filter(v=>historySentimentGroup(v)==="bearish").length;
       return {
         current:values[values.length-1], change:values[values.length-1]-values[0], average:avg(values),
         min:Math.min(...values), max:Math.max(...values), volatility:avg(moves.map(Math.abs)) || 0,
@@ -2684,9 +2699,9 @@
     }
 
     function updateStatTileColors(s){
-      setStatTileClass("statCurrent", s.current>=56 ? "stat-bull" : (s.current<45 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statCurrent", historyStatClass(s.current));
       setStatTileClass("statChange", s.change>0 ? "stat-bull" : (s.change<0 ? "stat-bear" : "stat-neutral"));
-      setStatTileClass("statAverage", s.average>=56 ? "stat-bull" : (s.average<45 ? "stat-bear" : "stat-neutral"));
+      setStatTileClass("statAverage", historyStatClass(s.average));
       setStatTileClass("statRange", "stat-gold");
       setStatTileClass("statVolatility", "stat-purple");
       setStatTileClass("statBullBear", s.bulls>s.bears ? "stat-bull" : (s.bears>s.bulls ? "stat-bear" : "stat-neutral"));
@@ -2943,9 +2958,9 @@
       updateBiasHeader();
       const vals=aggregate(state.scope,state.period,true).map(p=>p.value);
       const biasItems=[
-        {label:"Bullish",value:vals.filter(v=>v>=56).length,color:COLORS.purple},
-        {label:"Mixed/Neutral",value:vals.filter(v=>v>=45&&v<56).length,color:COLORS.gold},
-        {label:"Bearish",value:vals.filter(v=>v<45).length,color:COLORS.pink}
+        {label:"Bullish",value:vals.filter(v=>historySentimentGroup(v)==="bullish").length,color:COLORS.purple},
+        {label:"Mixed/Neutral",value:vals.filter(v=>historySentimentGroup(v)==="neutral").length,color:COLORS.gold},
+        {label:"Bearish",value:vals.filter(v=>historySentimentGroup(v)==="bearish").length,color:COLORS.pink}
       ];
       updateBiasLegend(biasItems);
       drawDonut(document.getElementById("chartBias"),biasItems);
@@ -3130,12 +3145,13 @@
       return `"${String(value ?? "").replaceAll('"','""')}"`;
     }
 
-    function sentimentLabelForCSV(value){
-      if(!Number.isFinite(value)) return "";
+    function sentimentLabelForCSV(value,fallback=""){
+      if(!Number.isFinite(value)) return String(fallback || "");
       if(window.PSDCore && typeof window.PSDCore.classifySentiment === "function"){
         return window.PSDCore.classifySentiment(value);
       }
-      return bias(value).text;
+      const local = bias(value).text;
+      return local || String(fallback || "");
     }
 
     function dailyMarketMap(){
@@ -3237,9 +3253,9 @@
             const tm=item?.technical?.monthly || {};
             const row=[
               "daily_instrument",date,date,
-              round(global),Number.isFinite(globalChange)?round(globalChange):"",record?.global_sentiment_label || sentimentLabelForCSV(global),
+              round(global),Number.isFinite(globalChange)?round(globalChange):"",sentimentLabelForCSV(global, record?.global_sentiment_label || ""),
               round(us),Number.isFinite(usChange)?round(usChange):"",sentimentLabelForCSV(us),
-              name,Number.isFinite(psi)?round(psi):"",Number.isFinite(psiChange)?round(psiChange):"",item?.sentiment_label || sentimentLabelForCSV(psi),
+              name,Number.isFinite(psi)?round(psi):"",Number.isFinite(psiChange)?round(psiChange):"",sentimentLabelForCSV(psi, item?.sentiment_label || ""),
               item?.headline_count ?? "",item?.bullish_count ?? "",item?.bearish_count ?? "",item?.neutral_count ?? "",item?.mixed_count ?? "",
               td?.direction ?? "",td?.score ?? "",td?.close ?? "",td?.rsi14 ?? "",
               tw?.direction ?? "",tm?.direction ?? "",
