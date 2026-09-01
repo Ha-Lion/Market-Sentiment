@@ -37,7 +37,7 @@
         "name":"What is the Public Sentiment Index?",
         "acceptedAnswer":{
           "@type":"Answer",
-          "text":"The Public Sentiment Index is an AI-assisted market sentiment reading that organizes public financial headlines, market narratives, technical direction, and user voting into a simple sentiment score."
+          "text":"The Public Sentiment Index is an AI-assisted market sentiment reading derived from public financial headlines and market narratives. Technical direction and user sentiment are displayed separately and are not part of the PSI calculation."
         }
       },
       {
@@ -128,12 +128,8 @@
     <section class="panel">
       <h2>How to Read PSI</h2>
       <div class="seo-box">
-        <ul>
-          <li><b>0 to 30:</b> Bearish public sentiment.</li>
-          <li><b>31 to 44:</b> Mixed / bearish sentiment.</li>
-          <li><b>45 to 55:</b> Mixed or neutral sentiment.</li>
-          <li><b>56 to 69:</b> Mixed / bullish sentiment.</li>
-          <li><b>70 to 100:</b> Bullish public sentiment.</li>
+        <ul id="psiRangeList">
+          <li>Loading current PSI ranges…</li>
         </ul>
       </div>
       <p>PSI is not a trading signal. It is a quick public-sentiment context tool.</p>
@@ -215,5 +211,29 @@
   </main>
 
   <script src="vote-widget.js" defer></script>
+  <script src="sentiment-core.js?v=5"></script>
+  <script>
+    (function(){
+      const list=document.getElementById("psiRangeList");
+      if(!list) return;
+      if(!window.PSDCore || typeof window.PSDCore.classifySentiment!=="function"){
+        list.innerHTML="<li>Current PSI ranges are temporarily unavailable.</li>";
+        return;
+      }
+      const bands=[];
+      let start=0;
+      let current=window.PSDCore.classifySentiment(0);
+      for(let score=1;score<=100;score++){
+        const next=window.PSDCore.classifySentiment(score);
+        if(next!==current){
+          bands.push({min:start,max:score-1,label:current});
+          start=score;
+          current=next;
+        }
+      }
+      bands.push({min:start,max:100,label:current});
+      list.innerHTML=bands.map(b=>`<li><b>${b.min} to ${b.max}:</b> ${b.label} public sentiment.</li>`).join("");
+    })();
+  </script>
 </body>
 </html>

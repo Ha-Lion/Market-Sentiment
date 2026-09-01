@@ -1609,15 +1609,9 @@
             <div class="panel-kicker">Recent PSI-style pressure matrix. Daily uses recent readings, Weekly uses daily readings, and Monthly uses calendar-month grouped readings.</div>
           </div>
         </div>
-        <div class="heat-legend" aria-label="Heatwave color scale">
-          <span><i style="background:#ef4444;color:#ef4444"></i>0–30 Bearish</span>
-          <span><i style="background:#facc15;color:#facc15"></i>31–44 Mixed Bearish</span>
-          <span><i style="background:#3b82f6;color:#3b82f6"></i>45–55 Neutral</span>
-          <span><i style="background:#2dd4bf;color:#2dd4bf"></i>56–69 Mixed Bullish</span>
-          <span><i style="background:#16a34a;color:#16a34a"></i>70–100 Bullish</span>
-        </div>
+        <div class="heat-legend" id="heatLegend" aria-label="Heatwave color scale"></div>
         <div class="heatmap" id="heatmapGrid"></div>
-        <div class="preview-note">Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled historical points. Color scale: 0–30 Red/Bearish, 31–44 Yellow/Mixed Bearish, 45–55 Blue/Neutral, 56–69 Light Blue-Green/Mixed Bullish, 70–100 Strong Green/Bullish.</div>
+        <div class="preview-note" id="heatPreviewNote">Heatwave ranges follow the current shared PSI classification.</div>
       </div>
 
       <div class="panel lab-panel">
@@ -1884,6 +1878,52 @@
       if(category === "Strong Bearish") return `background:${goldFade}linear-gradient(180deg,rgba(239,68,68,.98),rgba(127,29,29,.84));border-color:rgba(239,68,68,.82);box-shadow:inset 0 0 18px rgba(255,215,128,.10),0 0 20px rgba(239,68,68,.30);color:#fff1f1;`;
       return `background:${goldFade}linear-gradient(180deg,rgba(139,148,158,.72),rgba(75,85,99,.62));border-color:rgba(139,148,158,.60);color:#f8fafc;`;
     }
+    function psiBandsFromCore(){
+      if(!window.PSDCore?.classifySentiment) return [];
+      const bands=[];
+      let start=0;
+      let current=label(0);
+      for(let score=1;score<=100;score++){
+        const next=label(score);
+        if(next!==current){
+          bands.push({min:start,max:score-1,label:current});
+          start=score;
+          current=next;
+        }
+      }
+      bands.push({min:start,max:100,label:current});
+      return bands;
+    }
+    function heatLegendLabel(category){
+      if(category==="Strong Bearish") return "Bearish";
+      if(category==="Bearish") return "Mixed Bearish";
+      if(category==="Mixed/Neutral") return "Neutral";
+      if(category==="Bullish") return "Mixed Bullish";
+      if(category==="Strong Bullish") return "Bullish";
+      return category;
+    }
+    function renderHeatLegend(){
+      const bands=psiBandsFromCore();
+      const legend=document.getElementById("heatLegend");
+      const note=document.getElementById("heatPreviewNote");
+      if(!bands.length){
+        if(legend) legend.textContent="PSI color scale unavailable";
+        return;
+      }
+      if(legend){
+        legend.innerHTML=bands.map(b=>{
+          const mid=Math.round((b.min+b.max)/2);
+          const color=heatColor(mid);
+          return `<span><i style="background:${color};color:${color}"></i>${b.min}–${b.max} ${heatLegendLabel(b.label)}</span>`;
+        }).join("");
+      }
+      if(note){
+        const scale=bands.map(b=>`${b.min}–${b.max} ${heatLegendLabel(b.label)}`).join(", ");
+        note.textContent=`Heatwave reads each market's recent PSI-style values. Daily shows recent hours, Weekly shows recent days, and Monthly shows sampled historical points. Color scale: ${scale}.`;
+      }
+    }
+    renderHeatLegend();
+
     function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
     function scoreFromText(text){
       const t = norm(text);

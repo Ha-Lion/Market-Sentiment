@@ -1,7 +1,7 @@
 /*
   Public Sentiment Dash - PDF Report Engine v15
   Method: live-section capture -> 3-page landscape PDF.
-  Uses live page values; dashboard/history/news pages should source shared PSI_CORE_V1 logic.
+  Uses live page values; PSI classification should follow the shared PSDCore authority.
   Keeps the PDF visually close to the actual page and reduces future maintenance.
 */
 (function(){
@@ -1567,7 +1567,10 @@
     const scoreText = safeText(qs("#scoreNumber")?.textContent || "50");
     const score = Math.max(0, Math.min(100, parseInt(scoreText, 10) || 50));
     const label = safeText(qs("#scoreWord")?.textContent || "Mixed/Neutral");
-    const color = score >= 70 ? "#3fb950" : score <= 30 ? "#f85149" : "#d29922";
+    const category = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
+      ? window.PSDCore.classifySentiment(score)
+      : label;
+    const color = category === "Strong Bullish" ? "#3fb950" : category === "Strong Bearish" ? "#f85149" : "#d29922";
     const radius = 112;
     const stroke = 24;
     const circumference = 2 * Math.PI * radius;

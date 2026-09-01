@@ -2267,24 +2267,18 @@
       if(window.PSDCore && window.PSDCore.classifySentiment){
         return window.PSDCore.classifySentiment(score);
       }
-
-      if(score >= 70) return "Strong Bullish";
-      if(score >= 56) return "Bullish";
-      if(score >= 45) return "Mixed/Neutral";
-      if(score >= 31) return "Bearish";
-
-      return "Strong Bearish";
+      return "No PSI Match";
     }
 
     function scoreColor(score){
       const s = Number(score);
       if(!Number.isFinite(s)) return "var(--gold)";
-      if(s >= 70) return "var(--green)";
-      if(s >= 56) return "var(--green)";
-      if(s >= 45) return "var(--gold)";
-      if(s >= 31) return "var(--orange)";
-
-      return "var(--red)";
+      const category = scoreLabel(s);
+      if(category === "Strong Bullish" || category === "Bullish") return "var(--green)";
+      if(category === "Mixed/Neutral") return "var(--gold)";
+      if(category === "Bearish") return "var(--orange)";
+      if(category === "Strong Bearish") return "var(--red)";
+      return "var(--gold)";
     }
 
     function calculateGlobalScore(data){
