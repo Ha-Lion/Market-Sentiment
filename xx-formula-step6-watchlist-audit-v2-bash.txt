@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+PAGE="watchlist.html"
+CORE="sentiment-core.js"
+
+if [ ! -f "$PAGE" ]; then
+  echo "STOP: $PAGE not found."
+  exit 1
+fi
+
+if [ ! -f "$CORE" ]; then
+  echo "STOP: $CORE not found."
+  exit 1
+fi
+
+echo "=== MY WATCHLIST FORMULA AUDIT V2 — READ ONLY ==="
+echo
+echo "Page: $PAGE"
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Local JS files loaded by Watchlist:"
+mapfile -t JSFILES < <(
+  grep -oE '<script[^>]+src="[^"]+"' "$PAGE" \
+  | sed -E 's/.*src="([^"]+)".*/\1/' \
+  | sed 's/[?#].*$//' \
+  | grep -vE '^(https?:)?//' \
+  | sort -u || true
+)
+
+if [ "${#JSFILES[@]}" -eq 0 ]; then
+  echo "(none found)"
+else
+  printf '%s\n' "${JSFILES[@]}"
+fi
+echo
+
+echo "2) Shared sentiment-core / PSDCore references in page:"
+grep -nE \
+  'sentiment-core|PSDCore|classifySentiment|badgeClass|sentimentColor|buildInstrument|headline_psi' \
+  "$PAGE" || true
+echo
+
+echo "3) Formula/sentiment references in Watchlist page:"
+grep -nEi \
+  'psi|sentiment|technical|vote|bias|momentum|change|score|bullish|bearish|neutral|diverg|trend|average|weighted' \
+  "$PAGE" | head -260 || true
+echo
+
+echo "4) Inspect local JS dependencies for formula logic:"
+for f in "${JSFILES[@]}"; do
+  [ -f "$f" ] || continue
+  echo
+  echo "----- $f -----"
+  grep -nEi \
+    'sentiment-core|PSDCore|classifySentiment|headline_psi|psi|sentiment_label|technical|vote|bias|momentum|change|score|bullish|bearish|neutral|diverg|average|weighted|Math\.' \
+    "$f" | head -320 || true
+done
+echo
+
+echo "5) JSON/data files referenced by page or its local JS:"
+{
+  grep -oE '[A-Za-z0-9_-]+\.json' "$PAGE" || true
+  for f in "${JSFILES[@]}"; do
+    [ -f "$f" ] || continue
+    grep -oE '[A-Za-z0-9_-]+\.json' "$f" || true
+  done
+} | sort -u
+echo
+
+echo "6) Official PSI boundary numbers appearing in page or local JS:"
+{
+  grep -nE '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' "$PAGE" || true
+  for f in "${JSFILES[@]}"; do
+    [ -f "$f" ] || continue
+    grep -nE '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' "$f" || true
+  done
+} | head -260
+echo
+
+echo "7) Shared core version/functions:"
+grep -nE \
+  'const VERSION|function classifySentiment|function badgeClass|function sentimentColor|function buildInstrumentSeries|function buildInstrumentPeriodScore|const API' \
+  "$CORE" | head -180 || true
+echo
+
+echo "=== END AUDIT V2 ==="
+echo "No files were modified."
