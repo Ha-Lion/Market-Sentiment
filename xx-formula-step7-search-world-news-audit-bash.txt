@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+CORE="sentiment-core.js"
+
+# Find the production page by likely filename first, then by its visible title.
+PAGE=""
+for candidate in news.html news-articles.html news-and-articles.html search-news.html search-world-news.html; do
+  if [ -f "$candidate" ]; then
+    PAGE="$candidate"
+    break
+  fi
+done
+
+if [ -z "$PAGE" ]; then
+  PAGE="$(grep -ilE 'Search World News|World News.*Article|News & Article' ./*.html 2>/dev/null | head -1 || true)"
+  PAGE="${PAGE#./}"
+fi
+
+if [ -z "$PAGE" ] || [ ! -f "$PAGE" ]; then
+  echo "STOP: Search World News & Article page not found."
+  echo "Possible news pages:"
+  find . -maxdepth 1 -type f -iname '*news*.html' -printf '%f\n' | sort
+  exit 1
+fi
+
+echo "=== SEARCH WORLD NEWS & ARTICLE FORMULA AUDIT — READ ONLY ==="
+echo "Page: $PAGE"
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Local JS files loaded by page:"
+mapfile -t JSFILES < <(
+  grep -oE '<script[^>]+src="[^"]+"' "$PAGE" \
+  | sed -E 's/.*src="([^"]+)".*/\1/' \
+  | sed 's/[?#].*$//' \
+  | grep -vE '^(https?:)?//' \
+  | sort -u || true
+)
+if [ "${#JSFILES[@]}" -eq 0 ]; then
+  echo "(none found)"
+else
+  printf '%s\n' "${JSFILES[@]}"
+fi
+echo
+
+echo "2) PSI/shared-core references in page:"
+grep -nEi \
+  'sentiment-core|PSDCore|classifySentiment|headline_psi|\bpsi\b|sentiment_label|bullish|bearish|neutral|technical|user sentiment' \
+  "$PAGE" | head -320 || true
+echo
+
+echo "3) Possible calculations in page:"
+grep -nEi \
+  'Math\.|average|avg|momentum|volatility|diverg|bias|delta|change|score|weighted|confidence|trend|clamp|normalize' \
+  "$PAGE" | head -360 || true
+echo
+
+echo "4) Formula/sentiment references in local JS:"
+for f in "${JSFILES[@]}"; do
+  [ -f "$f" ] || continue
+  echo
+  echo "----- $f -----"
+  grep -nEi \
+    'sentiment-core|PSDCore|classifySentiment|headline_psi|\bpsi\b|sentiment_label|bullish|bearish|neutral|technical|vote|Math\.|average|momentum|volatility|diverg|bias|change|score|weighted|confidence' \
+    "$f" | head -320 || true
+done
+echo
+
+echo "5) JSON/data files referenced:"
+{
+  grep -oE '[A-Za-z0-9_-]+\.json' "$PAGE" || true
+  for f in "${JSFILES[@]}"; do
+    [ -f "$f" ] || continue
+    grep -oE '[A-Za-z0-9_-]+\.json' "$f" || true
+  done
+} | sort -u
+echo
+
+echo "6) Official PSI thresholds appearing locally:"
+{
+  grep -nE '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' "$PAGE" || true
+  for f in "${JSFILES[@]}"; do
+    [ -f "$f" ] || continue
+    grep -nE '(^|[^0-9])(70|69|56|55|45|44|31|30)([^0-9]|$)' "$f" || true
+  done
+} | head -260
+echo
+
+if [ -f "$CORE" ]; then
+  echo "7) Shared core version:"
+  grep -nE 'const VERSION|function classifySentiment|const API' "$CORE" | head -80 || true
+  echo
+fi
+
+echo "=== END AUDIT ==="
+echo "No files were modified."
