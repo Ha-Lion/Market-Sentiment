@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="market-intelligence.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("market-intelligence.html")
+text = p.read_text(encoding="utf-8")
+
+if 'data-psd-formula-step5="market-intelligence-core"' in text:
+    raise SystemExit("STOP: Market Intelligence formula standardization already installed.")
+
+# 1) Load shared PSI formula core.
+script_tag = '  <script src="sentiment-core.js?v=3" data-psd-formula-step5="market-intelligence-core"></script>\n'
+if 'sentiment-core.js' not in text:
+    if '</head>' not in text:
+        raise SystemExit("STOP: </head> not found.")
+    text = text.replace('</head>', script_tag + '</head>', 1)
+
+# 2) Add shared-label/group helpers beside existing numeric display helpers.
+anchor = '''    const signed=(v,suffix="")=>{const n=num(v);return n===null?"—":`${n>0?"+":""}${n.toFixed(Math.abs(n)>=10?0:1)}${suffix}`};
+'''
+if anchor not in text:
+    raise SystemExit("STOP: signed helper anchor not found.")
+
+replacement = anchor + '''    const miSentimentLabel=(score,fallback="Unavailable")=>{
+      const n=num(score);
+      if(n!==null && window.PSDCore && typeof window.PSDCore.classifySentiment==="function"){
+        return window.PSDCore.classifySentiment(n);
+      }
+      return String(fallback || "Unavailable");
+    };
+    const miSentimentGroup=(score)=>{
+      const label=miSentimentLabel(score,"");
+      if(label.includes("Bullish"))return "bullish";
+      if(label.includes("Bearish"))return "bearish";
+      return "neutral";
+    };
+'''
+text = text.replace(anchor, replacement, 1)
+
+# 3) Replace duplicated 56/44 PSI grouping with central classification.
+old_counts = '''      const bullish=available.filter(r=>(num(r.psi)??50)>=56).length;
+      const bearish=available.filter(r=>(num(r.psi)??50)<=44).length;
+      const neutral=Math.max(0,available.length-bullish-bearish);
+'''
+new_counts = '''      const bullish=available.filter(r=>miSentimentGroup(r.psi)==="bullish").length;
+      const bearish=available.filter(r=>miSentimentGroup(r.psi)==="bearish").length;
+      const neutral=available.filter(r=>miSentimentGroup(r.psi)==="neutral").length;
+'''
+if old_counts not in text:
+    raise SystemExit("STOP: bullish/bearish PSI count block not found.")
+text = text.replace(old_counts, new_counts, 1)
+
+# 4) Standardize affected-asset displayed sentiment label.
+old_asset = '''        const psi=num(r.psi),label=r.sentiment_label||"Unavailable";
+'''
+new_asset = '''        const psi=num(r.psi),label=miSentimentLabel(psi,r.sentiment_label);
+'''
+if old_asset not in text:
+    raise SystemExit("STOP: affected-asset sentiment label line not found.")
+text = text.replace(old_asset, new_asset, 1)
+
+p.write_text(text, encoding="utf-8")
+print("AI Market Intelligence PSI formula standardization prepared.")
+PY
+
+git diff --check
+
+echo
+echo "Changed file only:"
+git status --short -- market-intelligence.html sentiment-core.js
+
+echo
+echo "Diff summary:"
+git diff --stat -- market-intelligence.html
+
+echo
+echo "Verification markers:"
+grep -n -E \
+  'sentiment-core.js|miSentimentLabel|miSentimentGroup|const bullish=available|const bearish=available|const neutral=available|label=miSentimentLabel' \
+  market-intelligence.html
+
+echo
+echo "Check duplicated PSI grouping thresholds are gone:"
+grep -nE \
+  'psi.*>=56|psi.*<=44|psi.*>= *56|psi.*<= *44' \
+  market-intelligence.html || true
+
+echo
+echo "Important page-specific formulas intentionally preserved:"
+grep -nE \
+  'function impactBand|function assetPressure|function eventImpactScore|function eventAssetForecast|score>=12|score<=-12' \
+  market-intelligence.html | head -80 || true
+
+echo
+echo "No design, ribbon, engine data, forecast formula, Impact Score formula, or shared core file was modified."
+echo "No commit or push was performed."
