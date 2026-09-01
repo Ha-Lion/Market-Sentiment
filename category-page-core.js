@@ -1,4 +1,4 @@
-/* PublicSentimentDash Category Page Core v5
+/* PublicSentimentDash Category Page Core v6
    Roadmap Iteration 1 — Category Intelligence.
    Keeps the reliability hardening from Website Optimization Iteration 4 and adds
    lazy, non-blocking category intelligence powered by existing published feeds. */
@@ -13,22 +13,22 @@ function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
 
 function normalizeText(v){ return String(v || "").toLowerCase(); }
 
-function labelForScore(score){
-      if(score == null) return "No PSI";
-      if(score >= 70) return "Strong Bullish";
-      if(score >= 56) return "Bullish";
-      if(score >= 45) return "Mixed/Neutral";
-      if(score >= 31) return "Bearish";
-      return "Strong Bearish";
+function labelForScore(score,fallback="No PSI"){
+      const n=Number(score);
+      if(!Number.isFinite(n)) return String(fallback || "No PSI");
+      if(global.PSDCore && typeof global.PSDCore.classifySentiment === "function"){
+        return global.PSDCore.classifySentiment(n);
+      }
+      return String(fallback || "No PSI");
     }
 
 function colorForScore(score){
-      if(score == null) return "#8b949e";
-      if(score >= 70) return "#22c55e";
-      if(score >= 56) return "#14b8a6";
-      if(score >= 45) return "#58a6ff";
-      if(score >= 31) return "#f97316";
-      return "#ef4444";
+      const n=Number(score);
+      if(!Number.isFinite(n)) return "#8b949e";
+      if(global.PSDCore && typeof global.PSDCore.sentimentColor === "function"){
+        return global.PSDCore.sentimentColor(n);
+      }
+      return "#8b949e";
     }
 
 function pillStyle(score){
@@ -536,10 +536,9 @@ function ciInstrumentName(row){
 }
 
 function ciBucket(score){
-  const n=ciNum(score);
-  if(n==null) return "neutral";
-  if(n>=56) return "bullish";
-  if(n<=44) return "bearish";
+  const label=labelForScore(score,"");
+  if(label.includes("Bullish")) return "bullish";
+  if(label.includes("Bearish")) return "bearish";
   return "neutral";
 }
 

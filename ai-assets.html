@@ -980,11 +980,11 @@
   </main>
 
   <script src="sentiment-core.js?v=5"></script>
-  <script src="category-page-core.js?v=5"></script>
+  <script src="category-page-core.js?v=6"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v5 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core.js v6 did not load.");
     }
     const {
       clamp,
@@ -1207,7 +1207,7 @@
           name:item.name,
           symbol:item.symbol,
           score:Number(row.psi),
-          label:row.sentiment_label || labelForScore(Number(row.psi)),
+          label:labelForScore(Number(row.psi), row.sentiment_label || "No PSI"),
           headlineCount:Number(row.headline_count || 0),
           bullish:Number(row.bullish_count || 0),
           bearish:Number(row.bearish_count || 0),
@@ -1455,7 +1455,7 @@
             label:r.date,
             value:Number(row.psi),
             count:Number(row.headline_count || 0),
-            sentiment:row.sentiment_label || labelForScore(Number(row.psi)),
+            sentiment:labelForScore(Number(row.psi), row.sentiment_label || "No PSI"),
             source:"official"
           };
         }
