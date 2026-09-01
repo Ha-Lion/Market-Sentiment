@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="dashboard.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+echo "=== DASHBOARD EXACT FALLBACK CONTEXT — READ ONLY ==="
+echo
+
+echo "Git status:"
+git status --short
+echo
+
+echo "1) Exact techFromScore occurrence:"
+grep -n -A12 -B4 'function techFromScore' "$FILE" || true
+echo
+
+echo "2) Exact calcInstrument fallback occurrence:"
+grep -n -A14 -B6 'const liveTech' "$FILE" || true
+echo
+
+echo "3) Exact userDefaultFromTech occurrence:"
+grep -n -A10 -B4 'function userDefaultFromTech' "$FILE" || true
+echo
+
+echo "4) All references to these fallback helpers:"
+grep -nE 'techFromScore|userDefaultFromTech|liveTech' "$FILE" || true
+echo
+
+echo "5) Show raw line endings/spacing around these blocks:"
+python - <<'PY'
+from pathlib import Path
+text = Path("dashboard.html").read_text(encoding="utf-8")
+for needle in ["function techFromScore", "const liveTech", "function userDefaultFromTech"]:
+    idx = text.find(needle)
+    print(f"--- {needle} ---")
+    if idx == -1:
+        print("NOT FOUND")
+        continue
+    start = max(0, text.rfind("\n", 0, idx-1))
+    end = text.find("\n\n", idx)
+    if end == -1:
+        end = min(len(text), idx+600)
+    print(repr(text[start:end+2]))
+    print()
+PY
+
+echo "=== END EXACT CONTEXT AUDIT ==="
+echo "No files were modified."
