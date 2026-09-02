@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+MARKER = "xx-history-48h-zoom-current-v1"
+if MARKER in text:
+    raise SystemExit("STOP: this visualization patch is already installed.")
+
+old = '''      const hourlyWindow=hourly.length
+        ? hourly.filter(p => p.ts.getTime() >= hourly[hourly.length-1].ts.getTime() - 7*86400000)
+        : [];
+'''
+new = '''      const hourlyWindow=hourly.length
+        ? hourly.filter(p => p.ts.getTime() >= hourly[hourly.length-1].ts.getTime() - 48*60*60*1000)
+        : [];
+'''
+if old not in text:
+    raise SystemExit("STOP: current hourlyWindow block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      const pad={l:34,r:82,t:15,b:28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+      const y=v=>pad.t+(100-v)/100*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+'''
+new = '''      const pad={l:38,r:82,t:15,b:period==="hourly" ? 40 : 28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+
+      const plottedValues=[];
+      available.forEach(key=>{
+        data.forEach(p=>{
+          if(Number.isFinite(p[key])) plottedValues.push(p[key]);
+        });
+      });
+
+      let yMin=0;
+      let yMax=100;
+
+      if(plottedValues.length){
+        const dataMin=Math.min(50,...plottedValues);
+        const dataMax=Math.max(50,...plottedValues);
+
+        yMin=Math.max(0,Math.floor((dataMin-3)/5)*5);
+        yMax=Math.min(100,Math.ceil((dataMax+3)/5)*5);
+
+        if(yMax-yMin<20){
+          const center=(yMin+yMax)/2;
+          yMin=Math.max(0,Math.floor((center-10)/5)*5);
+          yMax=Math.min(100,Math.ceil((center+10)/5)*5);
+
+          if(yMax-yMin<20){
+            if(yMin===0) yMax=20;
+            else if(yMax===100) yMin=80;
+          }
+        }
+      }
+
+      const y=v=>pad.t+(yMax-v)/(yMax-yMin)*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+'''
+if old not in text:
+    raise SystemExit("STOP: current chart scale block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      [0,25,50,75,100].forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-5,yy);
+      });
+'''
+new = '''      const scaleSpan=yMax-yMin;
+      const tickStep=scaleSpan<=20 ? 5 : (scaleSpan<=40 ? 10 : 25);
+      const yTicks=[];
+
+      for(let v=Math.ceil(yMin/tickStep)*tickStep;v<=yMax;v+=tickStep){
+        yTicks.push(v);
+      }
+      if(!yTicks.includes(yMin)) yTicks.unshift(yMin);
+      if(!yTicks.includes(yMax)) yTicks.push(yMax);
+      if(yMin<=50 && yMax>=50 && !yTicks.includes(50)) yTicks.push(50);
+
+      [...new Set(yTicks)].sort((a,b)=>a-b).forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.lineWidth=v===50 ? 1.35 : 1;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-6,yy);
+      });
+'''
+if old not in text:
+    raise SystemExit("STOP: current Y-axis tick block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      [...indices].forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+        ctx.fillText(data[i].label,x(i),h-7);
+      });
+'''
+new = '''      const shownIndices=[...indices].sort((a,b)=>a-b);
+      let previousShownDate="";
+
+      shownIndices.forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+
+        if(period==="hourly" && data[i]?.ts instanceof Date){
+          const d=data[i].ts;
+
+          const dateText=new Intl.DateTimeFormat("en-US",{
+            month:"short",
+            day:"numeric",
+            timeZone:"America/New_York"
+          }).format(d);
+
+          const timeText=new Intl.DateTimeFormat("en-US",{
+            hour:"numeric",
+            minute:"2-digit",
+            hour12:true,
+            timeZone:"America/New_York"
+          }).format(d).replace(":00","").replace(" ","");
+
+          if(i===shownIndices[0] || dateText!==previousShownDate){
+            ctx.font="700 8.5px Inter,Arial";
+            ctx.fillText(dateText,x(i),h-19);
+          }
+
+          ctx.font="9px Inter,Arial";
+          ctx.fillText(timeText,x(i),h-7);
+          previousShownDate=dateText;
+        }else{
+          ctx.font="9px Inter,Arial";
+          ctx.fillText(data[i].label,x(i),h-7);
+        }
+      });
+'''
+if old not in text:
+    raise SystemExit("STOP: current X-axis label block not found.")
+text = text.replace(old, new, 1)
+
+old = '''        const color=regionColor(key);
+        ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.lineJoin="round";ctx.lineCap="round";
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();
+        });
+'''
+new = '''        const color=regionColor(key);
+        ctx.strokeStyle=color;
+        ctx.lineWidth=key==="global" ? 2.7 : 2.4;
+        ctx.lineJoin="round";
+        ctx.lineCap="round";
+        ctx.setLineDash(
+          key==="us" ? [7,4] :
+          key==="europe" ? [2,4] :
+          []
+        );
+
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;
+
+          if(key==="us"){
+            ctx.fillRect(xx-2.7,yy-2.7,5.4,5.4);
+          }else if(key==="europe"){
+            ctx.beginPath();
+            ctx.moveTo(xx,yy-3.8);
+            ctx.lineTo(xx+3.8,yy);
+            ctx.lineTo(xx,yy+3.8);
+            ctx.lineTo(xx-3.8,yy);
+            ctx.closePath();
+            ctx.fill();
+          }else{
+            ctx.beginPath();
+            ctx.arc(xx,yy,3,0,Math.PI*2);
+            ctx.fill();
+          }
+        });
+'''
+if old not in text:
+    raise SystemExit("STOP: current line/marker drawing block not found.")
+text = text.replace(old, new, 1)
+
+if "</head>" not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace("</head>", f'  <!-- {MARKER} -->\n</head>', 1)
+
+p.write_text(text, encoding="utf-8")
+print("Historical Sentiment LAB visualization updated.")
+print("Hourly window: rolling 48 hours")
+print("Y-axis: auto-focused, neutral 50 retained")
+print("X-axis: clearer NY date/time")
+print("Lines: distinct patterns + markers")
+print("Production sentiment-history.html: UNTOUCHED")
+PY
+
+git diff --check
+
+echo
+echo "Changed files:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+echo "Verification:"
+grep -n -E '48\*60\*60\*1000|plottedValues|setLineDash|xx-history-48h-zoom-current-v1' xx-sentiment-history-lab.html | head -30
+echo
+echo "No commit or push was performed."
