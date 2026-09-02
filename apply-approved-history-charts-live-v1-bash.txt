@@ -1,0 +1,938 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="sentiment-history.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+
+p = Path("sentiment-history.html")
+text = p.read_text(encoding="utf-8")
+
+MARKER = "history-approved-interactive-live-v1"
+if MARKER in text:
+    raise SystemExit("STOP: approved live Historical Sentiment patch is already installed.")
+
+# ============================================================
+# A) DATA WINDOWS / FULL HISTORY
+# ============================================================
+
+old = '''      const hourlyWindow=hourly.length
+        ? hourly.filter(p => p.ts.getTime() >= hourly[hourly.length-1].ts.getTime() - 7*86400000)
+        : [];
+'''
+new = '''      const hourlyWindow=hourly.length
+        ? hourly.filter(p => p.ts.getTime() >= hourly[hourly.length-1].ts.getTime() - 48*60*60*1000)
+        : [];
+'''
+if old not in text:
+    raise SystemExit("STOP: live hourlyWindow block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      const weekly=[...weeklyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts).slice(-13);
+'''
+new = '''      const weeklyAll=[...weeklyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts);
+      const weekly=weeklyAll.slice(-13);
+'''
+if old not in text:
+    raise SystemExit("STOP: live weekly block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      const monthly=[...monthlyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts).slice(-6);
+
+      return {hourly:hourlyWindow,daily:dailyWindow,weekly,monthly};
+'''
+new = '''      const monthlyAll=[...monthlyMap.values()]
+        .map(g=>({
+          key:g.key,label:g.label,ts:g.ts,count:g.count,
+          global:avg(g.global),us:avg(g.us),europe:avg(g.europe)
+        }))
+        .sort((a,b)=>a.ts-b.ts);
+      const monthly=monthlyAll.slice(-6);
+
+      return {
+        hourly:hourlyWindow,
+        daily:dailyWindow,
+        weekly,
+        monthly,
+        full:{
+          hourly,
+          daily,
+          weekly:weeklyAll,
+          monthly:monthlyAll
+        }
+      };
+'''
+if old not in text:
+    raise SystemExit("STOP: live monthly/normalize return block not found.")
+text = text.replace(old, new, 1)
+
+# ============================================================
+# B) LIVE CHART SCALE + LABELS + LINE STYLES
+# ============================================================
+
+old = '''    function drawChart(canvasId,emptyId,data,period){
+'''
+new = '''    function drawChart(canvasId,emptyId,data,period,hover=null){
+'''
+if old not in text:
+    raise SystemExit("STOP: live drawChart signature not found.")
+text = text.replace(old, new, 1)
+
+old = '''      const pad={l:34,r:82,t:15,b:28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+      const y=v=>pad.t+(100-v)/100*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+'''
+new = '''      const pad={l:38,r:82,t:15,b:period==="hourly" ? 40 : 28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+
+      const plottedValues=[];
+      available.forEach(key=>{
+        data.forEach(p=>{
+          if(Number.isFinite(p[key])) plottedValues.push(p[key]);
+        });
+      });
+
+      let yMin=0;
+      let yMax=100;
+
+      if(plottedValues.length){
+        const dataMin=Math.min(50,...plottedValues);
+        const dataMax=Math.max(50,...plottedValues);
+
+        yMin=Math.max(0,Math.floor((dataMin-3)/5)*5);
+        yMax=Math.min(100,Math.ceil((dataMax+3)/5)*5);
+
+        if(yMax-yMin<20){
+          const center=(yMin+yMax)/2;
+          yMin=Math.max(0,Math.floor((center-10)/5)*5);
+          yMax=Math.min(100,Math.ceil((center+10)/5)*5);
+
+          if(yMax-yMin<20){
+            if(yMin===0) yMax=20;
+            else if(yMax===100) yMin=80;
+          }
+        }
+      }
+
+      const y=v=>pad.t+(yMax-v)/(yMax-yMin)*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+'''
+if old not in text:
+    raise SystemExit("STOP: live chart scale block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      [0,25,50,75,100].forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-5,yy);
+      });
+'''
+new = '''      const scaleSpan=yMax-yMin;
+      const tickStep=scaleSpan<=20 ? 5 : (scaleSpan<=40 ? 10 : 25);
+      const yTicks=[];
+
+      for(let v=Math.ceil(yMin/tickStep)*tickStep;v<=yMax;v+=tickStep){
+        yTicks.push(v);
+      }
+      if(!yTicks.includes(yMin)) yTicks.unshift(yMin);
+      if(!yTicks.includes(yMax)) yTicks.push(yMax);
+      if(yMin<=50 && yMax>=50 && !yTicks.includes(50)) yTicks.push(50);
+
+      [...new Set(yTicks)].sort((a,b)=>a-b).forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.lineWidth=v===50 ? 1.35 : 1;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-6,yy);
+      });
+'''
+if old not in text:
+    raise SystemExit("STOP: live Y-axis tick block not found.")
+text = text.replace(old, new, 1)
+
+old = '''      [...indices].forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+        ctx.fillText(data[i].label,x(i),h-7);
+      });
+'''
+new = '''      const shownIndices=[...indices].sort((a,b)=>a-b);
+      let previousShownDate="";
+
+      shownIndices.forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+
+        if(period==="hourly" && data[i]?.ts instanceof Date){
+          const d=data[i].ts;
+
+          const dateText=new Intl.DateTimeFormat("en-US",{
+            month:"short",
+            day:"numeric",
+            timeZone:"America/New_York"
+          }).format(d);
+
+          const timeText=new Intl.DateTimeFormat("en-US",{
+            hour:"numeric",
+            minute:"2-digit",
+            hour12:true,
+            timeZone:"America/New_York"
+          }).format(d).replace(":00","").replace(" ","");
+
+          if(i===shownIndices[0] || dateText!==previousShownDate){
+            ctx.font="700 8.5px Inter,Arial";
+            ctx.fillText(dateText,x(i),h-19);
+          }
+
+          ctx.font="9px Inter,Arial";
+          ctx.fillText(timeText,x(i),h-7);
+          previousShownDate=dateText;
+        }else{
+          ctx.font="9px Inter,Arial";
+          ctx.fillText(data[i].label,x(i),h-7);
+        }
+      });
+'''
+if old not in text:
+    raise SystemExit("STOP: live X-axis label block not found.")
+text = text.replace(old, new, 1)
+
+old = '''        const color=regionColor(key);
+        ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.lineJoin="round";ctx.lineCap="round";
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();
+        });
+'''
+new = '''        const color=regionColor(key);
+        ctx.strokeStyle=color;
+        ctx.lineWidth=key==="global" ? 2.7 : 2.4;
+        ctx.lineJoin="round";
+        ctx.lineCap="round";
+        ctx.setLineDash(
+          key==="us" ? [7,4] :
+          key==="europe" ? [2,4] :
+          []
+        );
+
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;
+
+          if(key==="us"){
+            ctx.fillRect(xx-2.7,yy-2.7,5.4,5.4);
+          }else if(key==="europe"){
+            ctx.beginPath();
+            ctx.moveTo(xx,yy-3.8);
+            ctx.lineTo(xx+3.8,yy);
+            ctx.lineTo(xx,yy+3.8);
+            ctx.lineTo(xx-3.8,yy);
+            ctx.closePath();
+            ctx.fill();
+          }else{
+            ctx.beginPath();
+            ctx.arc(xx,yy,3,0,Math.PI*2);
+            ctx.fill();
+          }
+        });
+'''
+if old not in text:
+    raise SystemExit("STOP: live line/marker block not found.")
+text = text.replace(old, new, 1)
+
+# ============================================================
+# C) INTERACTIVE HELPERS + MODAL
+# ============================================================
+
+anchor = '''    function drawChart(canvasId,emptyId,data,period,hover=null){
+'''
+
+helpers = r'''    const xxChartMeta=new Map();
+    let xxHistoryModalState=null;
+
+    function xxPointLabel(period,p){
+      if(!p) return "";
+
+      if(period==="hourly" && p.ts instanceof Date){
+        return new Intl.DateTimeFormat("en-US",{
+          month:"short",
+          day:"numeric",
+          year:"numeric",
+          hour:"numeric",
+          minute:"2-digit",
+          hour12:true,
+          timeZone:"America/New_York",
+          timeZoneName:"short"
+        }).format(p.ts);
+      }
+
+      if(p.ts instanceof Date){
+        if(period==="monthly"){
+          return new Intl.DateTimeFormat("en-US",{
+            month:"long",
+            year:"numeric",
+            timeZone:"America/New_York"
+          }).format(p.ts);
+        }
+
+        return new Intl.DateTimeFormat("en-US",{
+          month:"short",
+          day:"numeric",
+          year:"numeric",
+          timeZone:"America/New_York"
+        }).format(p.ts);
+      }
+
+      return String(p.label || p.key || "");
+    }
+
+    function xxDrawCrosshair(ctx,meta,hover){
+      if(!hover || !Number.isInteger(hover.index)) return;
+      const p=meta.data[hover.index];
+      if(!p) return;
+
+      const {w,h,pad,available,data}=meta;
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const x=data.length===1
+        ? pad.l+iw/2
+        : pad.l+(hover.index/(data.length-1))*iw;
+
+      const mouseY=Math.max(pad.t,Math.min(h-pad.b,Number(hover.mouseY)||pad.t));
+
+      ctx.save();
+      ctx.setLineDash([4,4]);
+      ctx.lineWidth=1;
+      ctx.strokeStyle=isHistoryLight() ? "rgba(15,23,42,.42)" : "rgba(226,232,240,.46)";
+
+      ctx.beginPath();
+      ctx.moveTo(x,pad.t);
+      ctx.lineTo(x,h-pad.b);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(pad.l,mouseY);
+      ctx.lineTo(w-pad.r,mouseY);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+
+      const rows=available
+        .filter(k=>Number.isFinite(p[k]))
+        .map(k=>({
+          key:k,
+          label:REGION_META[k].label,
+          value:Math.round(p[k]),
+          color:regionColor(k)
+        }));
+
+      const title=xxPointLabel(meta.period,p);
+      ctx.font="800 10px Inter,Arial";
+      let boxW=ctx.measureText(title).width+22;
+
+      rows.forEach(r=>{
+        boxW=Math.max(boxW,ctx.measureText(`${r.label}: ${r.value}`).width+34);
+      });
+
+      boxW=Math.max(130,Math.min(230,boxW));
+      const rowH=16;
+      const boxH=25+rows.length*rowH+6;
+
+      let boxX=x+12;
+      if(boxX+boxW>w-pad.r) boxX=x-boxW-12;
+      boxX=Math.max(pad.l+2,Math.min(w-pad.r-boxW-2,boxX));
+
+      let boxY=mouseY-boxH/2;
+      boxY=Math.max(pad.t+2,Math.min(h-pad.b-boxH-2,boxY));
+
+      ctx.fillStyle=isHistoryLight() ? "rgba(255,255,255,.97)" : "rgba(7,13,25,.96)";
+      ctx.strokeStyle=isHistoryLight() ? "rgba(51,65,85,.32)" : "rgba(148,163,184,.35)";
+      ctx.lineWidth=1;
+
+      ctx.beginPath();
+      const r=8;
+      ctx.moveTo(boxX+r,boxY);
+      ctx.lineTo(boxX+boxW-r,boxY);
+      ctx.quadraticCurveTo(boxX+boxW,boxY,boxX+boxW,boxY+r);
+      ctx.lineTo(boxX+boxW,boxY+boxH-r);
+      ctx.quadraticCurveTo(boxX+boxW,boxY+boxH,boxX+boxW-r,boxY+boxH);
+      ctx.lineTo(boxX+r,boxY+boxH);
+      ctx.quadraticCurveTo(boxX,boxY+boxH,boxX,boxY+boxH-r);
+      ctx.lineTo(boxX,boxY+r);
+      ctx.quadraticCurveTo(boxX,boxY,boxX+r,boxY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle=isHistoryLight() ? "#111827" : "#f8fafc";
+      ctx.font="900 10px Inter,Arial";
+      ctx.textAlign="left";
+      ctx.textBaseline="top";
+      ctx.fillText(title,boxX+10,boxY+8);
+
+      rows.forEach((row,i)=>{
+        const yy=boxY+27+i*rowH;
+        ctx.fillStyle=row.color;
+        ctx.beginPath();
+        ctx.arc(boxX+12,yy+4,3,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle=isHistoryLight() ? "#172033" : "#e5edf6";
+        ctx.font="800 10px Inter,Arial";
+        ctx.fillText(`${row.label}: ${row.value}`,boxX+21,yy-1);
+      });
+
+      ctx.restore();
+    }
+
+    function xxVisibleModalData(){
+      if(!xxHistoryModalState) return [];
+      return xxHistoryModalState.full.slice(
+        xxHistoryModalState.start,
+        xxHistoryModalState.end
+      );
+    }
+
+    function xxModalRangeLabel(data){
+      if(!data.length) return "No history";
+      const first=xxPointLabel(xxHistoryModalState.period,data[0]);
+      const last=xxPointLabel(xxHistoryModalState.period,data[data.length-1]);
+      if(data.length===1) return first;
+      return `${first}  →  ${last}  •  ${data.length} points`;
+    }
+
+    function xxEnsureHistoryModal(){
+      let modal=document.getElementById("xxHistoryChartModal");
+      if(modal) return modal;
+
+      modal=document.createElement("div");
+      modal.id="xxHistoryChartModal";
+      modal.className="xx-history-modal";
+      modal.setAttribute("aria-hidden","true");
+
+      modal.innerHTML=`
+        <div class="xx-history-modal-panel" role="dialog" aria-modal="true" aria-labelledby="xxHistoryModalTitle">
+          <div class="xx-history-modal-head">
+            <h2 class="xx-history-modal-title" id="xxHistoryModalTitle">Historical PSI</h2>
+            <button class="xx-history-modal-close" type="button" aria-label="Close enlarged chart">×</button>
+          </div>
+
+          <div class="xx-history-modal-toolbar">
+            <div class="xx-history-modal-regions" aria-label="Region selection">
+              <span class="xx-history-modal-show-label">Show</span>
+              <button type="button" class="xx-region-btn" data-region="us" data-xx-modal-region="us" aria-pressed="false">U.S.A.</button>
+              <button type="button" class="xx-region-btn" data-region="global" data-xx-modal-region="global" aria-pressed="false">Global</button>
+              <button type="button" class="xx-region-btn" data-region="europe" data-xx-modal-region="europe" aria-pressed="false">Europe</button>
+              <button type="button" class="xx-region-btn" data-region="all" data-xx-modal-region="all" aria-pressed="false">All</button>
+            </div>
+            <span class="xx-history-modal-range" id="xxHistoryModalRange"></span>
+          </div>
+
+          <div class="xx-history-modal-chart">
+            <canvas id="xxHistoryModalCanvas"></canvas>
+            <div class="xx-chart-empty" id="xxHistoryModalEmpty"></div>
+          </div>
+
+          <div class="xx-history-modal-hint">
+            Move the pointer for exact PSI values • Mouse wheel zooms • Shift + wheel or horizontal trackpad motion pans left/right
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      modal.querySelector(".xx-history-modal-close")?.addEventListener("click",xxCloseHistoryModal);
+
+      modal.addEventListener("click",e=>{
+        if(e.target===modal) xxCloseHistoryModal();
+      });
+
+      modal.querySelectorAll("[data-xx-modal-region]").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const key=btn.dataset.xxModalRegion;
+
+          if(key==="all"){
+            selected.clear();
+            ["us","global","europe"].forEach(k=>selected.add(k));
+          }else if(selected.has(key)){
+            if(selected.size>1) selected.delete(key);
+          }else{
+            selected.add(key);
+          }
+
+          updateButtons();
+          render();
+          xxRenderHistoryModal();
+        });
+      });
+
+      document.addEventListener("keydown",e=>{
+        if(e.key==="Escape" && xxHistoryModalState) xxCloseHistoryModal();
+      });
+
+      return modal;
+    }
+
+    function xxOpenHistoryModal(period){
+      const sets=normalize();
+      const full=(sets.full && Array.isArray(sets.full[period]))
+        ? sets.full[period]
+        : (sets[period] || []);
+
+      if(!full.length) return;
+
+      const current=sets[period] || [];
+      const currentCount=Math.max(1,current.length);
+
+      xxHistoryModalState={
+        period,
+        full,
+        start:Math.max(0,full.length-currentCount),
+        end:full.length
+      };
+
+      const modal=xxEnsureHistoryModal();
+      const title=document.getElementById("xxHistoryModalTitle");
+
+      if(title){
+        title.textContent=
+          period==="hourly" ? "Hourly PSI — Expanded" :
+          period==="daily" ? "Daily PSI — Expanded" :
+          period==="weekly" ? "Weekly PSI — Expanded" :
+          "Monthly PSI — Expanded";
+      }
+
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden","false");
+      document.body.classList.add("xx-history-modal-open");
+
+      requestAnimationFrame(()=>xxRenderHistoryModal());
+    }
+
+    function xxCloseHistoryModal(){
+      const modal=document.getElementById("xxHistoryChartModal");
+      if(modal){
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden","true");
+      }
+      document.body.classList.remove("xx-history-modal-open");
+      xxHistoryModalState=null;
+    }
+
+    function xxRenderHistoryModal(hover=null){
+      if(!xxHistoryModalState) return;
+
+      updateButtons();
+
+      const data=xxVisibleModalData();
+      const range=document.getElementById("xxHistoryModalRange");
+      if(range) range.textContent=xxModalRangeLabel(data);
+
+      drawChart(
+        "xxHistoryModalCanvas",
+        "xxHistoryModalEmpty",
+        data,
+        xxHistoryModalState.period,
+        hover
+      );
+    }
+
+    function xxAdjustModal(action){
+      if(!xxHistoryModalState) return;
+
+      const s=xxHistoryModalState;
+      const total=s.full.length;
+      let count=Math.max(1,s.end-s.start);
+
+      if(action==="zoom-in"){
+        const next=Math.max(3,Math.round(count*.70));
+        s.start=Math.max(0,s.end-next);
+      }
+
+      if(action==="zoom-out"){
+        const next=Math.min(total,Math.max(count+1,Math.round(count*1.45)));
+        const center=(s.start+s.end)/2;
+        s.start=Math.max(0,Math.round(center-next/2));
+        s.end=Math.min(total,s.start+next);
+        s.start=Math.max(0,s.end-next);
+      }
+
+      if(action==="earlier" || action==="later"){
+        count=Math.max(1,s.end-s.start);
+        const step=Math.max(1,Math.round(count*.30));
+        const dir=action==="earlier" ? -1 : 1;
+        let start=s.start+dir*step;
+        start=Math.max(0,Math.min(total-count,start));
+        s.start=start;
+        s.end=start+count;
+      }
+
+      s.start=Math.max(0,Math.min(s.start,total-1));
+      s.end=Math.max(s.start+1,Math.min(s.end,total));
+
+      xxRenderHistoryModal();
+    }
+
+    function xxBindChartInteraction(canvasId,emptyId,period){
+      const canvas=document.getElementById(canvasId);
+      if(!canvas || canvas.dataset.xxHistoryInteractive==="1") return;
+
+      canvas.dataset.xxHistoryInteractive="1";
+
+      canvas.addEventListener("mousemove",e=>{
+        const meta=xxChartMeta.get(canvasId);
+        if(!meta || !meta.data.length) return;
+
+        const rect=canvas.getBoundingClientRect();
+        const localX=e.clientX-rect.left;
+        const localY=e.clientY-rect.top;
+        const iw=Math.max(1,rect.width-meta.pad.l-meta.pad.r);
+        const ratio=(localX-meta.pad.l)/iw;
+
+        const index=Math.max(
+          0,
+          Math.min(
+            meta.data.length-1,
+            Math.round(ratio*(meta.data.length-1))
+          )
+        );
+
+        if(canvasId==="xxHistoryModalCanvas"){
+          xxRenderHistoryModal({index,mouseY:localY});
+        }else{
+          drawChart(canvasId,emptyId,meta.data,period,{index,mouseY:localY});
+        }
+      });
+
+      canvas.addEventListener("mouseleave",()=>{
+        const meta=xxChartMeta.get(canvasId);
+        if(!meta) return;
+
+        if(canvasId==="xxHistoryModalCanvas"){
+          if(xxHistoryModalState) xxRenderHistoryModal();
+        }else{
+          drawChart(canvasId,emptyId,meta.data,period);
+        }
+      });
+
+      canvas.addEventListener("click",()=>{
+        if(canvasId==="xxHistoryModalCanvas") return;
+        xxOpenHistoryModal(period);
+      });
+
+      if(canvasId==="xxHistoryModalCanvas"){
+        canvas.addEventListener("wheel",e=>{
+          if(!xxHistoryModalState) return;
+          e.preventDefault();
+
+          const horizontal=Math.abs(e.deltaX)>Math.abs(e.deltaY);
+
+          if(horizontal || e.shiftKey){
+            const delta=horizontal ? e.deltaX : e.deltaY;
+            xxAdjustModal(delta>0 ? "later" : "earlier");
+          }else{
+            xxAdjustModal(e.deltaY>0 ? "zoom-out" : "zoom-in");
+          }
+        },{passive:false});
+      }
+    }
+
+'''
+
+if anchor not in text:
+    raise SystemExit("STOP: live drawChart anchor missing after signature change.")
+text = text.replace(anchor, helpers + anchor, 1)
+
+# ============================================================
+# D) STORE META + DRAW CROSSHAIR + BIND INTERACTIONS
+# ============================================================
+
+old = '''      if(missing.length){
+        empty.classList.remove("show");
+        empty.removeAttribute("style");
+      }
+    }
+
+    function syncHistoryTheme(){
+'''
+new = '''      if(missing.length){
+        empty.classList.remove("show");
+        empty.removeAttribute("style");
+      }
+
+      xxChartMeta.set(canvasId,{
+        canvasId,
+        emptyId,
+        period,
+        data,
+        available,
+        pad,
+        w,
+        h,
+        yMin,
+        yMax
+      });
+
+      if(hover){
+        xxDrawCrosshair(ctx,xxChartMeta.get(canvasId),hover);
+      }
+
+      xxBindChartInteraction(canvasId,emptyId,period);
+    }
+
+    function syncHistoryTheme(){
+'''
+if old not in text:
+    raise SystemExit("STOP: live drawChart closing block not found.")
+text = text.replace(old, new, 1)
+
+# ============================================================
+# E) CSS FOR LIVE INTERACTION / MODAL
+# ============================================================
+
+css = r'''
+  <style id="history-approved-interactive-live-v1">
+    .xx-history-canvas{
+      cursor:crosshair;
+    }
+
+    .xx-history-modal{
+      position:fixed;
+      inset:0;
+      z-index:2147483000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:rgba(3,8,18,.72);
+      backdrop-filter:blur(4px);
+    }
+
+    .xx-history-modal.show{
+      display:flex;
+    }
+
+    .xx-history-modal-panel{
+      width:min(1500px,96vw);
+      height:min(860px,92vh);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid var(--hist-line,rgba(148,163,184,.28));
+      border-radius:16px;
+      background:#07111f;
+      box-shadow:0 24px 70px rgba(0,0,0,.52);
+    }
+
+    html.xx-history-light .xx-history-modal-panel{
+      background:#ffffff;
+      box-shadow:0 24px 70px rgba(15,23,42,.26);
+    }
+
+    .xx-history-modal-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:52px;
+      padding:8px 12px 8px 16px;
+      border-bottom:1px solid var(--hist-line,rgba(148,163,184,.24));
+    }
+
+    .xx-history-modal-title{
+      margin:0;
+      font:900 18px/1.2 Inter,"Segoe UI",Arial,sans-serif;
+      color:#f8fafc;
+    }
+
+    html.xx-history-light .xx-history-modal-title{
+      color:#07111f;
+    }
+
+    .xx-history-modal-close{
+      margin-left:auto;
+      width:36px;
+      height:36px;
+      border:1px solid rgba(148,163,184,.35);
+      border-radius:10px;
+      background:transparent;
+      color:#e5edf6;
+      font:900 22px/1 Inter,"Segoe UI",Arial,sans-serif;
+      cursor:pointer;
+    }
+
+    html.xx-history-light .xx-history-modal-close{
+      color:#111827;
+      background:#ffffff;
+    }
+
+    .xx-history-modal-close:hover{
+      transform:translateY(-1px);
+      border-color:#d29922;
+    }
+
+    .xx-history-modal-toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:7px;
+      padding:8px 12px;
+      border-bottom:1px solid var(--hist-line,rgba(148,163,184,.18));
+    }
+
+    .xx-history-modal-regions{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+
+    .xx-history-modal-show-label{
+      margin-right:2px;
+      color:var(--hist-muted,#94a3b8);
+      font:900 10px/1 Inter,"Segoe UI",Arial,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+    }
+
+    .xx-history-modal-regions .xx-region-btn{
+      min-height:29px;
+      padding:4px 10px;
+      cursor:pointer;
+    }
+
+    .xx-history-modal-range{
+      margin-left:auto;
+      color:var(--hist-muted,#94a3b8);
+      font:700 11px/1.25 Inter,"Segoe UI",Arial,sans-serif;
+      white-space:nowrap;
+    }
+
+    .xx-history-modal-chart{
+      position:relative;
+      flex:1;
+      min-height:0;
+      padding:8px 10px 0;
+    }
+
+    .xx-history-modal-chart canvas{
+      width:100%;
+      height:100%;
+      display:block;
+      cursor:crosshair;
+    }
+
+    .xx-history-modal-hint{
+      padding:7px 12px 9px;
+      color:var(--hist-muted,#94a3b8);
+      font:600 10px/1.35 Inter,"Segoe UI",Arial,sans-serif;
+      text-align:center;
+      border-top:1px solid var(--hist-line,rgba(148,163,184,.16));
+    }
+
+    body.xx-history-modal-open{
+      overflow:hidden!important;
+    }
+
+    @media(max-width:720px){
+      .xx-history-modal{
+        padding:6px;
+      }
+
+      .xx-history-modal-panel{
+        width:99vw;
+        height:94vh;
+      }
+
+      .xx-history-modal-range{
+        flex-basis:100%;
+        margin-left:0;
+      }
+    }
+  </style>
+'''
+
+if "</head>" not in text:
+    raise SystemExit("STOP: live </head> not found.")
+text = text.replace("</head>", css + f'\n  <!-- {MARKER} -->\n</head>', 1)
+
+p.write_text(text, encoding="utf-8")
+
+print("APPROVED Historical Sentiment features applied to LIVE page.")
+print("Live file changed: sentiment-history.html")
+print("Lab file untouched.")
+print("")
+print("Included:")
+print("  - 48-hour Hourly PSI view")
+print("  - Focused Y-axis with neutral 50 reference")
+print("  - Clear NY date/time labels")
+print("  - Distinct Global/U.S.A./Europe line styles")
+print("  - Crosshair + exact PSI tooltip")
+print("  - Click-to-enlarge")
+print("  - X / Escape / outside-click close")
+print("  - Mouse/trackpad zoom and left-right history navigation")
+print("  - Full stored history available in enlarged view")
+print("  - Enlarged U.S.A. / Global / Europe / All controls")
+PY
+
+git diff --check
+
+echo
+echo "Changed files:"
+git status --short -- sentiment-history.html xx-sentiment-history-lab.html
+
+echo
+echo "Live verification markers:"
+grep -n -E \
+  'history-approved-interactive-live-v1|48\*60\*60\*1000|weeklyAll|monthlyAll|xxDrawCrosshair|xxHistoryChartModal|data-xx-modal-region|setLineDash' \
+  sentiment-history.html | head -60
+
+echo
+echo "No commit or push was performed."
