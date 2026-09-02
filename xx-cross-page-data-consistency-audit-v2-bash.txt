@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+echo "=== CROSS-PAGE DATA CONSISTENCY AUDIT V2 — READ ONLY ==="
+echo
+
+echo "1) Exact label/fallback helpers"
+for spec in \
+  "index.html:userSentimentFor" \
+  "index.html:scoreLabel" \
+  "index.html:technicalDirectionFor" \
+  "market-pulse.html:pulseSentimentLabel" \
+  "market-intelligence.html:miSentimentLabel" \
+  "sentiment-history.html:sentimentLabelForCSV" \
+  "category-page-core.js:labelForScore"
+do
+  file="${spec%%:*}"
+  fn="${spec#*:}"
+  echo "--- $file :: $fn ---"
+  grep -n -A18 -B3 "function ${fn}" "$file" 2>/dev/null | head -40 || echo "NOT FOUND"
+  echo
+done
+
+echo "2) Timestamp helper / local-time usage"
+grep -nE -A8 -B3 \
+  'function cleanPulseTimestamp|toLocaleString\(\[\]|new Date\(\)\.toLocaleString|data_updated_ny|data_updated_utc' \
+  index.html market-intelligence.html pdf-report.js category-page-core.js 2>/dev/null | head -260 || true
+echo
+
+echo "3) Current JSON timestamps + regional PSI candidates + instrument PSI overlap"
+python - <<'PY'
+import json, os, re
+from collections import defaultdict
+
+FILES = [
+    "dashboard_live.json",
+    "market_pulse.json",
+    "sentiment_history.json",
+    "dashboard_data.json",
+    "status.json",
+    "technical_data.json",
+    "instrument_history_compact.json",
+]
+
+def load(name):
+    if not os.path.exists(name):
+        return None
+    try:
+        with open(name, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"{name}: ERROR loading: {e}")
+        return None
+
+docs = {name: load(name) for name in FILES}
+
+stamp_keys = {
+    "updated_ny","updated","updated_utc","data_updated_ny","data_updated_utc",
+    "generated_utc","generated_at","timestamp","ts","last_updated","last_scan"
+}
+
+print("=== timestamps ===")
+for name, data in docs.items():
+    if data is None:
+        print(f"{name}: MISSING")
+        continue
+    found = []
+    if isinstance(data, dict):
+        for k, v in data.items():
+            if k in stamp_keys and isinstance(v, (str,int,float)):
+                found.append((k,v))
+    print(f"{name}: " + (", ".join(f"{k}={v}" for k,v in found) if found else "no top-level timestamp key found"))
+
+def walk(obj, path="$"):
+    if isinstance(obj, dict):
+        yield path, obj
+        for k, v in obj.items():
+            yield from walk(v, f"{path}.{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from walk(v, f"{path}[{i}]")
+
+print("\n=== regional PSI candidates ===")
+for name, data in docs.items():
+    if data is None:
+        continue
+    hits = []
+    for path, d in walk(data):
+        for k, v in d.items():
+            lk = str(k).lower()
+            if lk in {"global_psi","us_psi","u_s_psi","europe_psi","euro_psi"}:
+                try:
+                    n = float(v)
+                except Exception:
+                    continue
+                hits.append((f"{path}.{k}", n))
+        # common nested regional pulse shape
+        if path.endswith(".global") and "psi" in d:
+            try: hits.append((f"{path}.psi", float(d["psi"])))
+            except Exception: pass
+        if re.search(r"\.(us|europe)$", path) and "psi" in d:
+            try: hits.append((f"{path}.psi", float(d["psi"])))
+            except Exception: pass
+    print(f"\n{name}:")
+    if not hits:
+        print("  none found")
+    else:
+        # de-dupe path/value and cap noise
+        seen=set()
+        shown=0
+        for p,v in hits:
+            key=(p,v)
+            if key in seen: continue
+            seen.add(key)
+            print(f"  {p} = {v:g}")
+            shown += 1
+            if shown >= 25:
+                print("  ... capped at 25 candidates")
+                break
+
+def norm(s):
+    s = str(s or "").lower()
+    s = s.replace("&","and")
+    s = re.sub(r"[^a-z0-9]+"," ",s)
+    return " ".join(s.split())
+
+def collect_instruments(data):
+    rows=[]
+    if data is None: return rows
+    for path,d in walk(data):
+        if not isinstance(d, dict): continue
+        psi = d.get("psi")
+        name = d.get("instrument") or d.get("display_name") or d.get("name")
+        if name is None or psi is None: continue
+        try:
+            n=float(psi)
+        except Exception:
+            continue
+        rows.append({
+            "path":path,
+            "name":str(name),
+            "key":norm(d.get("instrument") or name),
+            "psi":n,
+            "label":d.get("sentiment_label"),
+            "headline_count":d.get("headline_count"),
+        })
+    return rows
+
+source_rows = {
+    "dashboard_live.json": collect_instruments(docs.get("dashboard_live.json")),
+    "market_pulse.json": collect_instruments(docs.get("market_pulse.json")),
+}
+
+print("\n=== instrument PSI overlap: dashboard_live vs market_pulse ===")
+a = defaultdict(list)
+b = defaultdict(list)
+for r in source_rows["dashboard_live.json"]: a[r["key"]].append(r)
+for r in source_rows["market_pulse.json"]: b[r["key"]].append(r)
+
+common = sorted(set(a) & set(b))
+if not common:
+    print("No directly matching normalized instrument keys found.")
+else:
+    mismatches=0
+    matches=0
+    for key in common:
+        ar=a[key][0]; br=b[key][0]
+        diff=abs(ar["psi"]-br["psi"])
+        status="MATCH" if diff < 0.51 else "DIFF"
+        if status=="MATCH": matches += 1
+        else: mismatches += 1
+        print(f"{status:5} | {ar['name']} | dashboard={ar['psi']:g} | pulse={br['psi']:g} | Δ={diff:g}")
+    print(f"Summary: {matches} match, {mismatches} differ across {len(common)} common instruments.")
+
+print("\n=== latest sentiment_history regional record ===")
+hist = docs.get("sentiment_history.json")
+if isinstance(hist, dict):
+    intraday = hist.get("intraday") or []
+    records = hist.get("records") or []
+    if intraday:
+        r=intraday[-1]
+        print("intraday latest:", {k:r.get(k) for k in ("ts","sample_key","global_psi","us_psi","europe_psi","euro_psi") if k in r})
+    if records:
+        r=records[-1]
+        print("daily latest:", {k:r.get(k) for k in ("date","global_psi","us_psi","europe_psi","euro_psi") if k in r})
+
+print("\n=== headline-count field examples ===")
+for name in ("dashboard_live.json","market_pulse.json"):
+    rows=source_rows[name]
+    values=[r for r in rows if r["headline_count"] is not None][:12]
+    print(f"{name}:")
+    if not values:
+        print("  no instrument headline_count examples found")
+    for r in values:
+        print(f"  {r['name']}: psi={r['psi']:g}, headline_count={r['headline_count']}")
+
+PY
+
+echo
+echo "4) Missing technical-data behavior — explicit returns"
+grep -nE -A10 -B4 \
+  'if\(!technicalData\)|return "Neutral"|return "N/A"|getTechnicalBias' \
+  index.html dashboard.html news-articles.html 2>/dev/null | head -220 || true
+
+echo
+echo "5) Core/common alias authority vs page-local aliases"
+grep -nE 'INSTRUMENT|aliases|normalizeInstrumentName' sentiment-core.js | head -120 || true
+echo
+echo "--- dashboard local aliases ---"
+grep -nE 'aliases:\[' dashboard.html | head -80 || true
+echo
+echo "--- category page local aliases (sample) ---"
+grep -nE 'aliases:\[' indices.html forex-sentiment-today.html precious-metals.html energy.html crypto.html policy-assets.html ai-assets.html 2>/dev/null | head -120 || true
+
+echo
+echo "=== END CROSS-PAGE DATA CONSISTENCY AUDIT V2 ==="
+echo "No files were modified."
