@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="xx-sentiment-history-lab.html"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+import re
+
+p = Path("xx-sentiment-history-lab.html")
+text = p.read_text(encoding="utf-8")
+
+MARKER = "xx-history-48h-zoom-v1"
+if MARKER in text:
+    raise SystemExit("STOP: 48-hour zoom visualization patch is already installed.")
+
+original = text
+
+# 1) Hourly chart = true rolling 48-hour window.
+for old in [
+    "Past 7 days • intraday engine scans • NY time",
+    "Latest intraday engine scans • NY time",
+]:
+    if old in text:
+        text = text.replace(old, "Past 48 hours • engine scans • NY time", 1)
+        break
+else:
+    raise SystemExit("STOP: hourly subtitle anchor not found.")
+
+hourly_pattern = re.compile(
+    r'(hourly\.filter\(p\s*=>\s*p\.ts\.getTime\(\)\s*>=\s*'
+    r'hourly\[hourly\.length-1\]\.ts\.getTime\(\)\s*-\s*)'
+    r'7\s*\*\s*86400000'
+)
+text, n = hourly_pattern.subn(r'\g<1>48*60*60*1000', text, count=1)
+if n != 1:
+    raise SystemExit("STOP: current 7-day hourly window anchor not found.")
+
+# 2) Auto-focus Y scale around real selected PSI values.
+scale_pattern = re.compile(
+    r'''      const pad=\{l:34,r:(?:82|20),t:15,b:28\};\n'''
+    r'''      const iw=Math\.max\(1,w-pad\.l-pad\.r\);\n'''
+    r'''      const ih=Math\.max\(1,h-pad\.t-pad\.b\);\n'''
+    r'''      const y=v=>pad\.t\+\(100-v\)/100\*ih;\n'''
+    r'''      const x=i=>data\.length===1 \? pad\.l\+iw/2 : pad\.l\+\(i/\(data\.length-1\)\)\*iw;\n'''
+)
+
+scale_replacement = r'''      const pad={l:38,r:82,t:15,b:period==="hourly" ? 40 : 28};
+      const iw=Math.max(1,w-pad.l-pad.r);
+      const ih=Math.max(1,h-pad.t-pad.b);
+
+      const plottedValues=[];
+      available.forEach(key=>{
+        data.forEach(p=>{
+          if(Number.isFinite(p[key])) plottedValues.push(p[key]);
+        });
+      });
+
+      let yMin=0;
+      let yMax=100;
+
+      if(plottedValues.length){
+        const dataMin=Math.min(50,...plottedValues);
+        const dataMax=Math.max(50,...plottedValues);
+
+        yMin=Math.max(0,Math.floor((dataMin-3)/5)*5);
+        yMax=Math.min(100,Math.ceil((dataMax+3)/5)*5);
+
+        if(yMax-yMin<20){
+          const center=(yMin+yMax)/2;
+          yMin=Math.max(0,Math.floor((center-10)/5)*5);
+          yMax=Math.min(100,Math.ceil((center+10)/5)*5);
+
+          if(yMax-yMin<20){
+            if(yMin===0) yMax=Math.min(100,20);
+            else if(yMax===100) yMin=Math.max(0,80);
+          }
+        }
+      }
+
+      const y=v=>pad.t+(yMax-v)/(yMax-yMin)*ih;
+      const x=i=>data.length===1 ? pad.l+iw/2 : pad.l+(i/(data.length-1))*iw;
+'''
+
+text, n = scale_pattern.subn(scale_replacement, text, count=1)
+if n != 1:
+    raise SystemExit("STOP: chart scale/padding anchor not found.")
+
+old_ticks = '''      [0,25,50,75,100].forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-5,yy);
+      });
+'''
+new_ticks = '''      const scaleSpan=yMax-yMin;
+      const tickStep=scaleSpan<=20 ? 5 : (scaleSpan<=40 ? 10 : 25);
+      const yTicks=[];
+
+      for(let v=Math.ceil(yMin/tickStep)*tickStep;v<=yMax;v+=tickStep){
+        yTicks.push(v);
+      }
+      if(!yTicks.includes(yMin)) yTicks.unshift(yMin);
+      if(!yTicks.includes(yMax)) yTicks.push(yMax);
+      if(yMin<=50 && yMax>=50 && !yTicks.includes(50)) yTicks.push(50);
+
+      [...new Set(yTicks)].sort((a,b)=>a-b).forEach(v=>{
+        const yy=y(v);
+        ctx.strokeStyle=v===50 ? neutralColor : gridColor;
+        ctx.lineWidth=v===50 ? 1.35 : 1;
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+        ctx.fillStyle=textColor;ctx.textAlign="right";ctx.textBaseline="middle";
+        ctx.fillText(String(v),pad.l-6,yy);
+      });
+'''
+if old_ticks not in text:
+    raise SystemExit("STOP: Y-axis tick block not found.")
+text = text.replace(old_ticks, new_ticks, 1)
+
+# 3) Cleaner hourly x-axis labels.
+old_labels = '''      [...indices].forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+        ctx.fillText(data[i].label,x(i),h-7);
+      });
+'''
+new_labels = '''      const shownIndices=[...indices].sort((a,b)=>a-b);
+      let previousShownDate="";
+
+      shownIndices.forEach(i=>{
+        ctx.fillStyle=textColor;
+        ctx.textAlign=i===0 ? "left" : (i===data.length-1 ? "right" : "center");
+        ctx.textBaseline="alphabetic";
+
+        if(period==="hourly" && data[i]?.ts instanceof Date){
+          const d=data[i].ts;
+          const dateText=new Intl.DateTimeFormat("en-US",{
+            month:"short",
+            day:"numeric",
+            timeZone:"America/New_York"
+          }).format(d);
+
+          const timeText=new Intl.DateTimeFormat("en-US",{
+            hour:"numeric",
+            minute:"2-digit",
+            hour12:true,
+            timeZone:"America/New_York"
+          }).format(d).replace(":00","").replace(" ","");
+
+          const showDate=i===shownIndices[0] || dateText!==previousShownDate;
+          if(showDate){
+            ctx.font="700 8.5px Inter,Arial";
+            ctx.fillText(dateText,x(i),h-19);
+          }
+
+          ctx.font="9px Inter,Arial";
+          ctx.fillText(timeText,x(i),h-7);
+          previousShownDate=dateText;
+        }else{
+          ctx.font="9px Inter,Arial";
+          ctx.fillText(data[i].label,x(i),h-7);
+        }
+      });
+'''
+if old_labels not in text:
+    raise SystemExit("STOP: X-axis label block not found.")
+text = text.replace(old_labels, new_labels, 1)
+
+# 4) Distinguish overlapping region lines without changing data.
+old_style = '''        const color=regionColor(key);
+        ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.lineJoin="round";ctx.lineCap="round";
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,yy,3,0,Math.PI*2);ctx.fill();
+        });
+'''
+new_style = '''        const color=regionColor(key);
+        ctx.strokeStyle=color;
+        ctx.lineWidth=key==="global" ? 2.7 : 2.4;
+        ctx.lineJoin="round";
+        ctx.lineCap="round";
+        ctx.setLineDash(
+          key==="us" ? [7,4] :
+          key==="europe" ? [2,4] :
+          []
+        );
+
+        ctx.beginPath();
+        points.forEach((p,j)=>{
+          const xx=x(p.i),yy=y(p.value);
+          if(j===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        points.forEach(p=>{
+          const xx=x(p.i),yy=y(p.value);
+          ctx.fillStyle=color;
+          ctx.strokeStyle=color;
+          ctx.lineWidth=1.4;
+
+          if(key==="us"){
+            ctx.fillRect(xx-2.7,yy-2.7,5.4,5.4);
+          }else if(key==="europe"){
+            ctx.beginPath();
+            ctx.moveTo(xx,yy-3.8);
+            ctx.lineTo(xx+3.8,yy);
+            ctx.lineTo(xx,yy+3.8);
+            ctx.lineTo(xx-3.8,yy);
+            ctx.closePath();
+            ctx.fill();
+          }else{
+            ctx.beginPath();
+            ctx.arc(xx,yy,3,0,Math.PI*2);
+            ctx.fill();
+          }
+        });
+'''
+if old_style not in text:
+    raise SystemExit("STOP: region line/marker drawing block not found.")
+text = text.replace(old_style, new_style, 1)
+
+if "</head>" not in text:
+    raise SystemExit("STOP: </head> not found.")
+text = text.replace("</head>", f'  <!-- {MARKER} -->\n</head>', 1)
+
+if text == original:
+    raise SystemExit("STOP: no changes were made.")
+
+p.write_text(text, encoding="utf-8")
+print("Historical Sentiment LAB visualization updated:")
+print("  - Hourly window: past 48 hours")
+print("  - NY date/time labels clarified")
+print("  - Y-axis auto-focused around selected PSI values")
+print("  - Neutral 50 line preserved")
+print("  - Global/U.S.A./Europe line patterns + markers differentiated")
+print("  - Production sentiment-history.html untouched")
+PY
+
+git diff --check
+
+echo
+echo "Changed file:"
+git status --short -- xx-sentiment-history-lab.html sentiment-history.html
+echo
+echo "Visualization markers:"
+grep -n -E 'Past 48 hours|48\*60\*60\*1000|plottedValues|setLineDash|xx-history-48h-zoom-v1' xx-sentiment-history-lab.html | head -30
+echo
+echo "IMPORTANT: Review xx-sentiment-history-lab.html first."
+echo "No commit or push was performed."
