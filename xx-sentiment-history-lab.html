@@ -1873,6 +1873,34 @@
       border-bottom:1px solid var(--hist-line,rgba(148,163,184,.18));
     }
 
+    .xx-history-modal-regions{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      flex-wrap:wrap;
+    }
+
+    .xx-history-modal-show-label{
+      margin-right:2px;
+      color:var(--hist-muted,#94a3b8);
+      font:900 10px/1 Inter,"Segoe UI",Arial,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+    }
+
+    .xx-history-modal-separator{
+      width:1px;
+      height:26px;
+      margin:0 3px;
+      background:var(--hist-line,rgba(148,163,184,.24));
+    }
+
+    .xx-history-modal-regions .xx-region-btn{
+      min-height:29px;
+      padding:4px 9px;
+      cursor:pointer;
+    }
+
     .xx-history-modal-tool{
       min-height:31px;
       padding:5px 10px;
@@ -1943,6 +1971,8 @@
   </style>
 
   <!-- xx-history-interactive-charts-v1 -->
+  <!-- xx-history-modal-region-buttons-v1 -->
+  <!-- xx-history-modal-regions-only-v2 -->
 </head>
 
 <body>
@@ -4064,11 +4094,13 @@
           </div>
 
           <div class="xx-history-modal-toolbar">
-            <button class="xx-history-modal-tool" type="button" data-xx-action="zoom-out">− Zoom out</button>
-            <button class="xx-history-modal-tool" type="button" data-xx-action="zoom-in">+ Zoom in</button>
-            <button class="xx-history-modal-tool" type="button" data-xx-action="earlier">← Earlier</button>
-            <button class="xx-history-modal-tool" type="button" data-xx-action="later">Later →</button>
-            <button class="xx-history-modal-tool" type="button" data-xx-action="all">All history</button>
+            <div class="xx-history-modal-regions" aria-label="Region selection">
+              <span class="xx-history-modal-show-label">Show</span>
+              <button type="button" class="xx-region-btn" data-region="us" data-xx-modal-region="us" aria-pressed="false">U.S.A.</button>
+              <button type="button" class="xx-region-btn" data-region="global" data-xx-modal-region="global" aria-pressed="false">Global</button>
+              <button type="button" class="xx-region-btn" data-region="europe" data-xx-modal-region="europe" aria-pressed="false">Europe</button>
+              <button type="button" class="xx-region-btn" data-region="all" data-xx-modal-region="all" aria-pressed="false">All</button>
+            </div>
             <span class="xx-history-modal-range" id="xxHistoryModalRange"></span>
           </div>
 
@@ -4094,6 +4126,25 @@
       modal.querySelectorAll("[data-xx-action]").forEach(btn=>{
         btn.addEventListener("click",()=>{
           xxAdjustModal(btn.dataset.xxAction);
+        });
+      });
+
+      modal.querySelectorAll("[data-xx-modal-region]").forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          const key=btn.dataset.xxModalRegion;
+
+          if(key==="all"){
+            selected.clear();
+            ["us","global","europe"].forEach(k=>selected.add(k));
+          }else if(selected.has(key)){
+            if(selected.size>1) selected.delete(key);
+          }else{
+            selected.add(key);
+          }
+
+          updateButtons();
+          render();
+          xxRenderHistoryModal();
         });
       });
 
@@ -4151,6 +4202,8 @@
 
     function xxRenderHistoryModal(hover=null){
       if(!xxHistoryModalState) return;
+
+      updateButtons();
 
       const data=xxVisibleModalData();
       const range=document.getElementById("xxHistoryModalRange");
