@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+LAB="xx-forex-sentiment-lab.html"
+LIVE="forex-sentiment-today.html"
+
+if [ ! -f "$LAB" ]; then
+  echo "STOP: $LAB not found."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+import re
+
+p = Path("xx-forex-sentiment-lab.html")
+text = p.read_text(encoding="utf-8")
+
+if "xx-forex-universe-40-v1" in text:
+    raise SystemExit("STOP: Forex LAB V1 universe already installed. Nothing changed.")
+
+new_items = r'''    let ENERGY_ITEMS = [
+      // PAGE 1 — TOP ROW: currency indices
+      {name:"DXY(USD)", dataKey:"US Dollar / DXY", symbol:"DXY", kind:"index", aliases:["dxy","us dollar index","u.s. dollar index","usd index","dollar index"], historyKeys:["US Dollar / DXY","US Dollar Index / DXY","DXY","DXY(USD)"], official:true},
+      {name:"BXY(GBP)", dataKey:"BXY", symbol:"BXY", kind:"index", aliases:["bxy","british pound index","british pound currency index","gbp index"], historyKeys:["BXY","BXY(GBP)"], official:false},
+      {name:"EXY(EUR)", dataKey:"EXY", symbol:"EXY", kind:"index", aliases:["exy","euro index","euro currency index","eur index"], historyKeys:["EXY","EXY(EUR)"], official:false},
+      {name:"JXY(JPY)", dataKey:"JXY", symbol:"JXY", kind:"index", aliases:["jxy","japanese yen index","japanese yen currency index","jpy index"], historyKeys:["JXY","JXY(JPY)"], official:false},
+
+      // PAGE 1 — BOTTOM ROW: top FX pairs
+      {name:"EUR/USD", dataKey:"EUR / EURUSD", symbol:"EURUSD", kind:"pair", aliases:["eurusd","eur/usd","euro dollar","euro vs dollar"], historyKeys:["EUR / EURUSD","EURUSD","EUR/USD"], official:true},
+      {name:"USD/JPY", dataKey:"JPY / USDJPY", symbol:"USDJPY", kind:"pair", aliases:["usdjpy","usd/jpy","dollar yen"], historyKeys:["JPY / USDJPY","USDJPY","USD/JPY"], official:true},
+      {name:"GBP/USD", dataKey:"GBP / GBPUSD", symbol:"GBPUSD", kind:"pair", aliases:["gbpusd","gbp/usd","sterling dollar","pound dollar"], historyKeys:["GBP / GBPUSD","GBPUSD","GBP/USD"], official:true},
+      {name:"AUD/USD", dataKey:"AUD / AUDUSD", symbol:"AUDUSD", kind:"pair", aliases:["audusd","aud/usd","australian dollar","aussie dollar"], historyKeys:["AUD / AUDUSD","AUDUSD","AUD/USD"], official:true},
+
+      // PAGE 2 — TOP ROW: remaining currency indices
+      {name:"SXY(CHF)", dataKey:"SXY", symbol:"SXY", kind:"index", aliases:["sxy","swiss franc index","swiss franc currency index","chf index"], historyKeys:["SXY","SXY(CHF)"], official:false},
+      {name:"CXY(CAD)", dataKey:"CXY", symbol:"CXY", kind:"index", aliases:["cxy","canadian dollar index","canadian dollar currency index","cad index"], historyKeys:["CXY","CXY(CAD)"], official:false},
+      {name:"AXY(AUD)", dataKey:"AXY", symbol:"AXY", kind:"index", aliases:["axy","australian dollar index","australian dollar currency index","aud index"], historyKeys:["AXY","AXY(AUD)"], official:false},
+      {name:"ZXY(NZD)", dataKey:"ZXY", symbol:"ZXY", kind:"index", aliases:["zxy","new zealand dollar index","new zealand dollar currency index","nzd index"], historyKeys:["ZXY","ZXY(NZD)"], official:false},
+
+      // PAGE 2 — BOTTOM ROW: next major FX pairs
+      {name:"USD/CAD", dataKey:"CAD / USDCAD", symbol:"USDCAD", kind:"pair", aliases:["usdcad","usd/cad","dollar canadian dollar","canadian dollar"], historyKeys:["CAD / USDCAD","USDCAD","USD/CAD"], official:true},
+      {name:"USD/CHF", dataKey:"CHF / USDCHF", symbol:"USDCHF", kind:"pair", aliases:["usdchf","usd/chf","dollar swiss franc","swiss franc"], historyKeys:["CHF / USDCHF","USDCHF","USD/CHF"], official:true},
+      {name:"USD/CNH", dataKey:"USD/CNH", symbol:"USDCNH", kind:"pair", aliases:["usdcnh","usd/cnh","offshore yuan","offshore renminbi","chinese yuan","renminbi","yuan","cnh"], historyKeys:["USD/CNH","USDCNH"], official:true},
+      {name:"NZD/USD", dataKey:"NZD / NZDUSD", symbol:"NZDUSD", kind:"pair", aliases:["nzdusd","nzd/usd","new zealand dollar","kiwi dollar"], historyKeys:["NZD / NZDUSD","NZDUSD","NZD/USD"], official:true},
+
+      // PAGE 3 — pairs only
+      {name:"EUR/JPY", dataKey:"EURJPY", symbol:"EURJPY", kind:"pair", aliases:["eurjpy","eur/jpy","euro yen"], historyKeys:["EURJPY","EUR/JPY"], official:true},
+      {name:"GBP/JPY", dataKey:"GBPJPY", symbol:"GBPJPY", kind:"pair", aliases:["gbpjpy","gbp/jpy","sterling yen","pound yen"], historyKeys:["GBPJPY","GBP/JPY"], official:true},
+      {name:"EUR/GBP", dataKey:"EURGBP", symbol:"EURGBP", kind:"pair", aliases:["eurgbp","eur/gbp","euro sterling","euro pound"], historyKeys:["EURGBP","EUR/GBP"], official:true},
+      {name:"AUD/JPY", dataKey:"AUDJPY", symbol:"AUDJPY", kind:"pair", aliases:["audjpy","aud/jpy","australian dollar yen","aussie yen"], historyKeys:["AUDJPY","AUD/JPY"], official:true},
+      {name:"EUR/CHF", dataKey:"EURCHF", symbol:"EURCHF", kind:"pair", aliases:["eurchf","eur/chf","euro swiss franc"], historyKeys:["EURCHF","EUR/CHF"], official:true},
+      {name:"USD/MXN", dataKey:"USDMXN", symbol:"USDMXN", kind:"pair", aliases:["usdmxn","usd/mxn","mexican peso","peso"], historyKeys:["USDMXN","USD/MXN"], official:true},
+      {name:"EUR/AUD", dataKey:"EURAUD", symbol:"EURAUD", kind:"pair", aliases:["euraud","eur/aud","euro australian dollar"], historyKeys:["EURAUD","EUR/AUD"], official:true},
+      {name:"GBP/AUD", dataKey:"GBPAUD", symbol:"GBPAUD", kind:"pair", aliases:["gbpaud","gbp/aud","sterling australian dollar","pound aussie"], historyKeys:["GBPAUD","GBP/AUD"], official:true},
+
+      // PAGE 4 — pairs only
+      {name:"CAD/JPY", dataKey:"CADJPY", symbol:"CADJPY", kind:"pair", aliases:["cadjpy","cad/jpy","canadian dollar yen"], historyKeys:["CADJPY","CAD/JPY"], official:true},
+      {name:"EUR/CAD", dataKey:"EURCAD", symbol:"EURCAD", kind:"pair", aliases:["eurcad","eur/cad","euro canadian dollar"], historyKeys:["EURCAD","EUR/CAD"], official:true},
+      {name:"AUD/CAD", dataKey:"AUDCAD", symbol:"AUDCAD", kind:"pair", aliases:["audcad","aud/cad","australian dollar canadian dollar","aussie cad"], historyKeys:["AUDCAD","AUD/CAD"], official:true},
+      {name:"AUD/NZD", dataKey:"AUDNZD", symbol:"AUDNZD", kind:"pair", aliases:["audnzd","aud/nzd","australian dollar new zealand dollar","aussie kiwi"], historyKeys:["AUDNZD","AUD/NZD"], official:true},
+      {name:"GBP/CAD", dataKey:"GBPCAD", symbol:"GBPCAD", kind:"pair", aliases:["gbpcad","gbp/cad","sterling canadian dollar","pound cad"], historyKeys:["GBPCAD","GBP/CAD"], official:true},
+      {name:"GBP/CHF", dataKey:"GBPCHF", symbol:"GBPCHF", kind:"pair", aliases:["gbpchf","gbp/chf","sterling swiss franc","pound swiss franc"], historyKeys:["GBPCHF","GBP/CHF"], official:true},
+      {name:"GBP/NZD", dataKey:"GBPNZD", symbol:"GBPNZD", kind:"pair", aliases:["gbpnzd","gbp/nzd","sterling new zealand dollar","pound kiwi"], historyKeys:["GBPNZD","GBP/NZD"], official:true},
+      {name:"CHF/JPY", dataKey:"CHFJPY", symbol:"CHFJPY", kind:"pair", aliases:["chfjpy","chf/jpy","swiss franc yen"], historyKeys:["CHFJPY","CHF/JPY"], official:true},
+
+      // PAGE 5 — pairs only
+      {name:"NZD/JPY", dataKey:"NZDJPY", symbol:"NZDJPY", kind:"pair", aliases:["nzdjpy","nzd/jpy","new zealand dollar yen","kiwi yen"], historyKeys:["NZDJPY","NZD/JPY"], official:true},
+      {name:"EUR/NZD", dataKey:"EURNZD", symbol:"EURNZD", kind:"pair", aliases:["eurnzd","eur/nzd","euro new zealand dollar"], historyKeys:["EURNZD","EUR/NZD"], official:true},
+      {name:"NZD/CAD", dataKey:"NZDCAD", symbol:"NZDCAD", kind:"pair", aliases:["nzdcad","nzd/cad","new zealand dollar canadian dollar","kiwi cad"], historyKeys:["NZDCAD","NZD/CAD"], official:true},
+      {name:"AUD/CHF", dataKey:"AUDCHF", symbol:"AUDCHF", kind:"pair", aliases:["audchf","aud/chf","australian dollar swiss franc","aussie swiss"], historyKeys:["AUDCHF","AUD/CHF"], official:true},
+      {name:"USD/NOK", dataKey:"USDNOK", symbol:"USDNOK", kind:"pair", aliases:["usdnok","usd/nok","norwegian krone","nok"], historyKeys:["USDNOK","USD/NOK"], official:true},
+      {name:"USD/SEK", dataKey:"USDSEK", symbol:"USDSEK", kind:"pair", aliases:["usdsek","usd/sek","swedish krona","sek"], historyKeys:["USDSEK","USD/SEK"], official:true},
+      {name:"USD/SGD", dataKey:"USD/SGD", symbol:"USDSGD", kind:"pair", aliases:["usdsgd","usd/sgd","singapore dollar","sgd"], historyKeys:["USD/SGD","USDSGD"], official:true},
+      {name:"USD/ZAR", dataKey:"USDZAR", symbol:"USDZAR", kind:"pair", aliases:["usdzar","usd/zar","south african rand","zar","rand"], historyKeys:["USDZAR","USD/ZAR"], official:true}
+    ];'''
+
+# Replace the exact current ENERGY_ITEMS block.
+m = re.search(r'    let ENERGY_ITEMS\s*=\s*\[(?:.|\n)*?\n    \];', text, re.M)
+if not m:
+    raise SystemExit("STOP: ENERGY_ITEMS block not found. Nothing written.")
+text = text[:m.start()] + new_items + text[m.end():]
+
+# Keep 40 explicit lab items while allowing assets_config to enrich matching metadata.
+old_apply = '''    function applyAssetConfig(config){
+      ENERGY_ITEMS = assetsFromConfig(config, CATEGORY_KEY, ENERGY_ITEMS);
+      ENERGY_BACKEND_INSTRUMENTS = new Set(ENERGY_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.historyKeys || [])]).map(x => normalizeText(x)));
+      ENERGY_STRONG_TERMS = uniqueTerms([...ENERGY_STRONG_TERMS, ...ENERGY_ITEMS.flatMap(item => [item.name, item.symbol, ...(item.aliases || [])])]);
+      activeHistoryName = ENERGY_ITEMS[0]?.name || activeHistoryName || ENERGY_ITEMS[0].name;
+    }'''
+
+new_apply = '''    function applyAssetConfig(config){
+      const configured = assetsFromConfig(config, CATEGORY_KEY, []);
+      const byKey = new Map();
+
+      configured.forEach(item => {
+        [item.name,item.symbol,...(item.historyKeys||[])]
+          .filter(Boolean)
+          .forEach(key => byKey.set(normalizeText(key), item));
+      });
+
+      ENERGY_ITEMS = ENERGY_ITEMS.map(item => {
+        const cfg = [item.dataKey,item.name,item.symbol,...(item.historyKeys||[])]
+          .filter(Boolean)
+          .map(normalizeText)
+          .map(key => byKey.get(key))
+          .find(Boolean);
+
+        if(!cfg) return item;
+
+        return {
+          ...cfg,
+          ...item,
+          aliases:uniqueTerms([...(cfg.aliases||[]),...(item.aliases||[])]),
+          historyKeys:uniqueTerms([...(cfg.historyKeys||[]),...(item.historyKeys||[])])
+        };
+      });
+
+      ENERGY_BACKEND_INSTRUMENTS = new Set(
+        ENERGY_ITEMS.flatMap(item => [item.name,item.dataKey,item.symbol,...(item.historyKeys||[])])
+          .filter(Boolean)
+          .map(x => normalizeText(x))
+      );
+      ENERGY_STRONG_TERMS = uniqueTerms([
+        ...ENERGY_STRONG_TERMS,
+        ...ENERGY_ITEMS.flatMap(item => [item.name,item.dataKey,item.symbol,...(item.aliases||[])])
+      ]);
+      activeHistoryName = ENERGY_ITEMS[0]?.name || activeHistoryName || "DXY(USD)";
+    }'''
+
+if old_apply not in text:
+    raise SystemExit("STOP: applyAssetConfig block not found. Nothing written.")
+text = text.replace(old_apply, new_apply, 1)
+
+# Remove the old 15-card cap so all 40 instruments are available.
+old_build = '''      return ENERGY_ITEMS
+        .map(item => getOfficialCurrent(item) || getDerivedCurrent(item))
+        .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999))
+        .slice(0,15);'''
+new_build = '''      return ENERGY_ITEMS
+        .map(item => getOfficialCurrent(item) || getDerivedCurrent(item))
+        .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999));'''
+if old_build not in text:
+    raise SystemExit("STOP: buildRows 15-card cap block not found. Nothing written.")
+text = text.replace(old_build, new_build, 1)
+
+# Add a true technical-only daily direction.
+market_fn = '''    function marketDirection(name){
+      const item=ENERGY_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
+      if(direction&&direction!=="N/A")return direction;
+      const series=marketSeries(name);
+      if(series.length<2)return"Unavailable";
+      return series.at(-1).value>series.at(-2).value?"Bullish":series.at(-1).value<series.at(-2).value?"Bearish":"Neutral";
+    }'''
+
+technical_fn = market_fn + '''
+
+    function dailyTechnicalDirection(name){
+      const item=ENERGY_ITEMS.find(x=>x.name===name);
+      const technical=technicalForItem(item);
+      const direction=String(technical?.daily?.direction||"").trim();
+      return direction && direction!=="N/A" ? direction : "N/A";
+    }'''
+
+if market_fn not in text:
+    raise SystemExit("STOP: marketDirection block not found. Nothing written.")
+text = text.replace(market_fn, technical_fn, 1)
+
+# Add Daily Technical Direction under the existing Daily Market Insight.
+old_card = '''            <div class="market-insight"><span>Daily market insight <button class="psd-glossary-info" type="button" data-pulse-glossary="daily-market-insight" aria-label="Explain Daily Market Insight" aria-expanded="false">i</button></span><b>${esc(marketDirection(row.name))}</b></div>'''
+new_card = old_card + '''
+            <div class="market-insight"><span>Daily technical direction</span><b>${esc(dailyTechnicalDirection(row.name))}</b></div>'''
+if old_card not in text:
+    raise SystemExit("STOP: Daily market insight card block not found. Nothing written.")
+text = text.replace(old_card, new_card, 1)
+
+# Support TradingView charts for all 8 currency-index symbols.
+text = text.replace(
+    'if(symbol==="DXY") return "TVC:DXY";',
+    'if(["DXY","BXY","EXY","JXY","SXY","CXY","AXY","ZXY"].includes(symbol)) return `TVC:${symbol}`;',
+    1
+)
+text = text.replace(
+    'if(symbol === "DXY") return "TVC:DXY";',
+    'if(["DXY","BXY","EXY","JXY","SXY","CXY","AXY","ZXY"].includes(symbol)) return `TVC:${symbol}`;',
+    1
+)
+
+# Correct one template leftover if present.
+text = text.replace("No energy data loaded yet.", "No forex data loaded yet.")
+
+# Add lab version marker.
+if "xx-forex-universe-40-v1" not in text:
+    text = text.replace("</head>", '  <!-- xx-forex-universe-40-v1 -->\n</head>', 1)
+
+p.write_text(text, encoding="utf-8")
+print("Forex LAB V1 updated successfully.")
+PY
+
+git diff --check
+
+echo
+echo "Changed files:"
+git status --short -- "$LAB" "$LIVE"
+
+echo
+echo "Universe / page verification:"
+python - <<'PY'
+from pathlib import Path
+import re
+t=Path("xx-forex-sentiment-lab.html").read_text(encoding="utf-8")
+m=re.search(r'let ENERGY_ITEMS\s*=\s*\[(.*?)\n    \];',t,re.S)
+if not m:
+    raise SystemExit("ENERGY_ITEMS block not found")
+names=re.findall(r'\{name:"([^"]+)"',m.group(1))
+print("Total instruments:",len(names))
+for i in range(0,len(names),8):
+    print(f"Desktop page {i//8+1}: " + " | ".join(names[i:i+8]))
+print("Desktop full pages:", len(names)%8==0)
+print("Tablet full pages:", len(names)%4==0)
+print("Mobile full pages:", len(names)%2==0)
+PY
+
+echo
+echo "Technical direction verification:"
+grep -nE 'function dailyTechnicalDirection|Daily technical direction|function marketDirection' "$LAB" | head -20
+
+echo
+echo "Production Forex page status:"
+git status --short -- "$LIVE"
+
+echo
+echo "No commit or push was performed."
