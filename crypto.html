@@ -1296,30 +1296,47 @@
     }
 
     function getOfficialCurrent(item){
-      const latest = currentLatestRecord();
       const row = currentInstrumentRow(item);
 
-      if(row && row.psi != null){
+      if(!row){
         return {
           name:item.name,
           symbol:item.symbol,
-          score:Number(row.psi),
-          label:labelForScore(Number(row.psi), row.sentiment_label || "No PSI"),
-          headlineCount:Number(row.headline_count || 0),
-          bullish:Number(row.bullish_count || 0),
-          bearish:Number(row.bearish_count || 0),
-          neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
+          score:null,
+          label:"No PSI",
+          headlineCount:0,
+          bullish:0,
+          bearish:0,
+          neutral:0,
           source:"official",
-          topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
+          topHeadlines:[]
         };
       }
 
-      const backendTagged = getCategoryHeadlines().filter(h => exactInstrumentMatch(item, h));
-      if(backendTagged.length){
-        return scoreFromHeadlineSet(item.name, item.symbol, backendTagged, "backend");
-      }
+      const headlineCount = Number(row.headline_count || 0);
+      const numericScore = Number(row.psi);
 
-      return null;
+      const hasPsi =
+        headlineCount > 0 &&
+        row.psi !== null &&
+        row.psi !== undefined &&
+        row.psi !== "" &&
+        Number.isFinite(numericScore);
+
+      return {
+        name:item.name,
+        symbol:item.symbol,
+        score:hasPsi ? numericScore : null,
+        label:hasPsi
+          ? labelForScore(numericScore, row.sentiment_label || "No PSI")
+          : "No PSI",
+        headlineCount:headlineCount,
+        bullish:Number(row.bullish_count || 0),
+        bearish:Number(row.bearish_count || 0),
+        neutral:Number(row.neutral_count || 0) + Number(row.mixed_count || 0),
+        source:"official",
+        topHeadlines:Array.isArray(row.top_headlines) ? row.top_headlines : []
+      };
     }
 
     function getDerivedCurrent(item){
@@ -1361,7 +1378,7 @@
     function buildRows(){
       const importance = new Map(CRYPTO_ITEMS.map((item,index)=>[item.name,index]));
       return CRYPTO_ITEMS
-        .map(item => getOfficialCurrent(item) || getDerivedCurrent(item))
+        .map(item => getOfficialCurrent(item))
         .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999))
         ;
     }
@@ -1424,10 +1441,10 @@
       document.getElementById("aiCarouselCount").textContent=`${first + 1}–${Math.min(first + aiCardPageSize,currentRows.length)} of ${currentRows.length} crypto assets`;
       grid.innerHTML = visibleRows.map((row, idx) => {
         const score = row.score == null ? 0 : row.score;
-        const color = colorForScore(row.score);
-        const sourceText = row.source === "official" ? "Saved PSI" : (row.source === "backend" ? "Backend PSI" : (row.source === "proxy" ? "Proxy PSI" : "Headline PSI"));
+        const color = row.score == null ? "#8b949e" : colorForScore(row.score);
+        const sourceText = row.score == null ? "No PSI" : "Saved PSI";
         const item=CRYPTO_ITEMS.find(candidate=>candidate.name===row.name);
-        const news=priorityHeadlines(row.topHeadlines?.length?row.topHeadlines:getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),5);
+        const news=priorityHeadlines(Array.isArray(row.topHeadlines)?row.topHeadlines:[],5);
         return `
           <article class="ai-card">
             <div class="ai-card-top">
@@ -1532,7 +1549,7 @@
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
 
-        if(row && row.psi != null){
+        if(row && row.psi != null && Number(row.headline_count || 0) > 0){
           return {
             date:r.date,
             label:r.date,
@@ -1541,10 +1558,6 @@
             sentiment:labelForScore(Number(row.psi), row.sentiment_label || "No PSI"),
             source:"official"
           };
-        }
-
-        if(item){
-          return derivedHistoryRowForItem(r, item);
         }
 
         return null;
@@ -1556,7 +1569,7 @@
       if(!box) return;
 
       if(!series.length){
-        box.innerHTML = `<div class="empty-note">No saved or derived history exists yet for ${esc(name)}. This will fill in as matching headlines are saved over time.</div>`;
+        box.innerHTML = `<div class="empty-note">No Engine-supplied history exists yet for ${esc(name)}. This will fill in as official historical PSI becomes available.</div>`;
         return;
       }
 
