@@ -1442,30 +1442,11 @@
     }
     function dailyTechnicalDirection(name){
       const item=INDEX_ITEMS.find(x=>x.name===name);
-      if(!item)return "N/A";
-
-      const root=(technicalData && (technicalData.technical || technicalData)) || {};
-      const keys=[
-        item.dataKey,item.name,item.symbol,
-        ...(Array.isArray(item.historyKeys)?item.historyKeys:[])
-      ].filter(Boolean).map(x=>normalizeText(x));
-
-      const foundKey=Object.keys(root).find(key=>keys.includes(normalizeText(key)));
-      const entry=foundKey ? root[foundKey] : null;
-      const daily=entry && (entry.daily || entry.Daily);
-
-      let raw="";
-      if(typeof daily==="string") raw=daily;
-      else if(daily) raw=daily.direction || daily.signal || daily.label || daily.trend || daily.value || "";
-
-      raw=String(raw||"").trim();
-      if(!raw || raw.toUpperCase()==="N/A") return "N/A";
-
-      const n=normalizeText(raw);
-      if(n.includes("bull") || n.includes("buy") || n.includes("up")) return "Bullish";
-      if(n.includes("bear") || n.includes("sell") || n.includes("down")) return "Bearish";
-      if(n.includes("neutral") || n.includes("mixed") || n.includes("flat")) return "Neutral";
-      return raw;
+      const technical=item ? technicalForItem(item) : null;
+      const direction=String(technical?.daily?.direction || "").trim();
+      return direction && direction.toUpperCase()!=="N/A"
+        ? direction
+        : "N/A";
     }
 
     function dailyTechnicalTone(name){

@@ -1518,9 +1518,11 @@
 
     function dailyTechnicalDirection(name){
       const item=ENERGY_ITEMS.find(x=>x.name===name);
-      const technical=technicalForItem(item);
-      const direction=String(technical?.daily?.direction||"").trim();
-      return direction && direction!=="N/A" ? direction : "N/A";
+      const technical=item ? technicalForItem(item) : null;
+      const direction=String(technical?.daily?.direction || "").trim();
+      return direction && direction.toUpperCase()!=="N/A"
+        ? direction
+        : "N/A";
     }
 
     function dailyTechnicalTone(name){
