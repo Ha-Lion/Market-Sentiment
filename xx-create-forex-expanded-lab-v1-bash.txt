@@ -118,6 +118,51 @@ text=text.replace('if(symbol === "DXY") return "TVC:DXY";','if(["DXY","BXY","EXY
 text=text.replace('activeHistoryName || "US Dollar Index / DXY"','activeHistoryName || "DXY(USD)"',1)
 text=text.replace('across the U.S. Dollar Index and major currency pairs.','across major currency indices and FX pairs.',1)
 
+# Explicit DAILY technical direction on every card. This uses the stored technical
+# daily direction only. If technical data is unavailable, show N/A rather than
+# converting missing data into a market opinion.
+market_fn='''    function marketDirection(name){
+      const item=FOREX_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
+      if(direction&&direction!=="N/A")return direction;
+      const series=marketSeries(name);
+      if(series.length<2)return"Unavailable";
+      return series.at(-1).value>series.at(-2).value?"Bullish":series.at(-1).value<series.at(-2).value?"Bearish":"Neutral";
+    }
+'''
+if market_fn in text:
+    daily_fn='''    function marketDirection(name){
+      const item=FOREX_ITEMS.find(x=>x.name===name),technical=technicalForItem(item),direction=String(technical?.daily?.direction||"").trim();
+      if(direction&&direction!=="N/A")return direction;
+      const series=marketSeries(name);
+      if(series.length<2)return"Unavailable";
+      return series.at(-1).value>series.at(-2).value?"Bullish":series.at(-1).value<series.at(-2).value?"Bearish":"Neutral";
+    }
+
+    function dailyTechnicalDirection(name){
+      const item=FOREX_ITEMS.find(x=>x.name===name);
+      const technical=technicalForItem(item);
+      const direction=String(technical?.daily?.direction||"").trim();
+      return direction&&direction!=="N/A" ? direction : "N/A";
+    }
+'''
+    text=text.replace(market_fn,daily_fn,1)
+else:
+    raise SystemExit('STOP: marketDirection function anchor not found.')
+
+card_old='''            <div class="market-insight"><span>Daily market insight</span><b>${esc(marketDirection(row.name))}</b></div>'''
+card_new='''            <div class="market-insight"><span>Daily Technical Direction</span><b>${esc(dailyTechnicalDirection(row.name))}</b></div>'''
+if card_old not in text:
+    raise SystemExit('STOP: Daily market insight card anchor not found.')
+text=text.replace(card_old,card_new,1)
+
+# Glossary wording, when this definition is present on the source page.
+text=text.replace('title:"Daily Market Insight"','title:"Daily Technical Direction"',1)
+text=text.replace(
+    'text:"A simplified reading of the latest available market-price direction for the selected currency instrument. It is separate from the Public Sentiment Index."',
+    'text:"The latest available daily technical direction for the selected currency instrument. It is separate from the Public Sentiment Index; N/A means a daily technical reading is not available."',
+    1
+)
+
 if 'xx-forex-expanded-layout-v1' not in text:
     text=text.replace('</head>','  <!-- xx-forex-expanded-layout-v1 -->\n</head>',1)
 
