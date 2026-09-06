@@ -301,11 +301,10 @@
       }
     }
 
-    const calculated = calculatePSI(dashboardData && dashboardData.psi_headlines);
     return {
-      score: calculated.score,
-      sentiment: classifySentiment(calculated.score),
-      source: "calculated_from_dashboard_data.psi_headlines",
+      score: null,
+      sentiment: "No PSI Match",
+      source: "official_psi_unavailable",
       formulaVersion: VERSION
     };
   }
@@ -497,9 +496,9 @@
     const label = cleanText(item.label || fb.label || (score == null ? "Pending Backend Pulse" : classifySentiment(score)));
 
     return {
-      score: score == null ? 50 : score,
-      raw_score: rawScore == null ? (score == null ? 50 : score) : rawScore,
-      rawScore: rawScore == null ? (score == null ? 50 : score) : rawScore,
+      score: score,
+      raw_score: rawScore,
+      rawScore: rawScore,
       count,
       available_count: availableCount,
       availableCount,
@@ -540,8 +539,8 @@
     if(!root){
       return {
         global: pulseEntryFromOfficial(null, globalFallback),
-        us: pulseEntryFromOfficial(null, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
-        europe: pulseEntryFromOfficial(null, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
+        us: pulseEntryFromOfficial(null, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
+        europe: pulseEntryFromOfficial(null, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
         source: "missing_regional_pulse",
         formulaVersion: VERSION
       };
@@ -549,8 +548,8 @@
 
     return {
       global: pulseEntryFromOfficial(root.global, globalFallback),
-      us: pulseEntryFromOfficial(root.us, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
-      europe: pulseEntryFromOfficial(root.europe, {score:50, raw_score:50, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
+      us: pulseEntryFromOfficial(root.us, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
+      europe: pulseEntryFromOfficial(root.europe, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
       source: "backend_regional_pulse",
       formulaVersion: VERSION
     };

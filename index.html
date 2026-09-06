@@ -2302,13 +2302,7 @@
         if(Number.isFinite(n)) return Math.round(Math.max(0, Math.min(100, n)));
       }
 
-      return 50;
-    }
-
-    function clampScore(value){
-      const n = Number(value);
-      if(!Number.isFinite(n)) return 50;
-      return Math.round(Math.max(0, Math.min(100, n)));
+      return null;
     }
 
     function getUniversalRegionalPulse(data){
@@ -2321,8 +2315,8 @@
 
       return {
         global:{score:calculateGlobalScore(data), label:scoreLabel(calculateGlobalScore(data)), count:Number(data?.psi_headlines_used || statusData?.psi_headlines_used || 0), confidence:"Pending"},
-        us:{score:50, label:"Pending Backend Pulse", count:0, confidence:"Pending"},
-        europe:{score:50, label:"Pending Backend Pulse", count:0, confidence:"Pending"}
+        us:{score:null, label:"Pending Backend Pulse", count:0, confidence:"Pending"},
+        europe:{score:null, label:"Pending Backend Pulse", count:0, confidence:"Pending"}
       };
     }
 
@@ -2346,13 +2340,22 @@
 
       if(!gauge || !value || !labelEl || !meter || !count) return;
 
-      const safeScore = Math.max(0, Math.min(100, Number(score) || 50));
+      const hasScore =
+        score !== null &&
+        score !== undefined &&
+        score !== "" &&
+        Number.isFinite(Number(score));
+
+      const safeScore = hasScore
+        ? Math.max(0, Math.min(100, Number(score)))
+        : 0;
+
       const angle = 90 + (safeScore * 3.6);
 
       gauge.style.setProperty("--score", safeScore);
       gauge.style.setProperty("--needle", `${angle}deg`);
-      gauge.style.setProperty("--accent", scoreColor(safeScore));
-      value.textContent = Math.round(safeScore);
+      gauge.style.setProperty("--accent", hasScore ? scoreColor(safeScore) : "#8b949e");
+      value.textContent = hasScore ? Math.round(safeScore) : "--";
       labelEl.textContent = label;
       labelEl.className = normalizeClass(label);
       meter.style.width = `${safeScore}%`;
