@@ -1,0 +1,295 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+import re
+
+FILES = [
+    "xx-forex-sentiment-lab.html",
+    "xx-crypto-lab.html",
+    "xx-indices-lab.html",
+    "xx-energy-lab.html",
+    "xx-precious-metals-lab.html",
+    "xx-ai-assets-lab.html",
+    "xx-policy-assets-lab.html",
+]
+
+STYLE = '''
+  <style id="xx-signal-colors-v2">
+    /* Only PSI, Daily Market Insight, and Daily Technical Direction are emphasized. */
+
+    /* PSI text: dark in light mode, white in dark mode. */
+    .ai-score,
+    .ai-score-label{
+      color:#0b0f14 !important;
+    }
+
+    /* Both daily signal rows: strong readable text. */
+    .daily-market-row,
+    .daily-tech-row,
+    .daily-market-row span,
+    .daily-market-row b,
+    .daily-tech-row span,
+    .daily-tech-row b,
+    .daily-tech-value{
+      color:#0b0f14 !important;
+    }
+
+    /* Remove the old small technical pill treatment.
+       The whole Daily Technical Direction row now carries the signal color. */
+    .daily-tech-value{
+      display:inline !important;
+      min-width:0 !important;
+      padding:0 !important;
+      border:0 !important;
+      border-radius:0 !important;
+      background:transparent !important;
+      box-shadow:none !important;
+      font-weight:800 !important;
+    }
+
+    /* Daily Market Insight colors */
+    .daily-market-row.market-bullish{
+      background:rgba(34,197,94,.17) !important;
+      border-color:rgba(22,163,74,.65) !important;
+      box-shadow:inset 4px 0 0 #16a34a;
+    }
+    .daily-market-row.market-bearish{
+      background:rgba(239,68,68,.16) !important;
+      border-color:rgba(220,38,38,.65) !important;
+      box-shadow:inset 4px 0 0 #dc2626;
+    }
+    .daily-market-row.market-neutral{
+      background:rgba(245,158,11,.18) !important;
+      border-color:rgba(217,119,6,.68) !important;
+      box-shadow:inset 4px 0 0 #d97706;
+    }
+    .daily-market-row.market-na{
+      background:rgba(100,116,139,.12) !important;
+      border-color:rgba(100,116,139,.45) !important;
+      box-shadow:inset 4px 0 0 #64748b;
+    }
+
+    /* Daily Technical Direction colors */
+    .daily-tech-row.tech-bullish{
+      background:rgba(34,197,94,.17) !important;
+      border-color:rgba(22,163,74,.65) !important;
+      box-shadow:inset 4px 0 0 #16a34a;
+    }
+    .daily-tech-row.tech-bearish{
+      background:rgba(239,68,68,.16) !important;
+      border-color:rgba(220,38,38,.65) !important;
+      box-shadow:inset 4px 0 0 #dc2626;
+    }
+    .daily-tech-row.tech-neutral{
+      background:rgba(245,158,11,.18) !important;
+      border-color:rgba(217,119,6,.68) !important;
+      box-shadow:inset 4px 0 0 #d97706;
+    }
+    .daily-tech-row.tech-na{
+      background:rgba(100,116,139,.12) !important;
+      border-color:rgba(100,116,139,.45) !important;
+      box-shadow:inset 4px 0 0 #64748b;
+    }
+
+    /* Dark mode: white text, same directional colors. */
+    html[data-theme="dark"] .ai-score,
+    html[data-theme="dark"] .ai-score-label,
+    [data-theme="dark"] .ai-score,
+    [data-theme="dark"] .ai-score-label,
+    body.dark .ai-score,
+    body.dark .ai-score-label,
+    body.theme-dark .ai-score,
+    body.theme-dark .ai-score-label,
+    html[data-theme="dark"] .daily-market-row,
+    html[data-theme="dark"] .daily-tech-row,
+    html[data-theme="dark"] .daily-market-row span,
+    html[data-theme="dark"] .daily-market-row b,
+    html[data-theme="dark"] .daily-tech-row span,
+    html[data-theme="dark"] .daily-tech-row b,
+    [data-theme="dark"] .daily-market-row,
+    [data-theme="dark"] .daily-tech-row,
+    [data-theme="dark"] .daily-market-row span,
+    [data-theme="dark"] .daily-market-row b,
+    [data-theme="dark"] .daily-tech-row span,
+    [data-theme="dark"] .daily-tech-row b,
+    body.dark .daily-market-row,
+    body.dark .daily-tech-row,
+    body.dark .daily-market-row span,
+    body.dark .daily-market-row b,
+    body.dark .daily-tech-row span,
+    body.dark .daily-tech-row b,
+    body.theme-dark .daily-market-row,
+    body.theme-dark .daily-tech-row,
+    body.theme-dark .daily-market-row span,
+    body.theme-dark .daily-market-row b,
+    body.theme-dark .daily-tech-row span,
+    body.theme-dark .daily-tech-row b{
+      color:#ffffff !important;
+    }
+
+    html[data-theme="dark"] .daily-market-row.market-bullish,
+    html[data-theme="dark"] .daily-tech-row.tech-bullish,
+    [data-theme="dark"] .daily-market-row.market-bullish,
+    [data-theme="dark"] .daily-tech-row.tech-bullish,
+    body.dark .daily-market-row.market-bullish,
+    body.dark .daily-tech-row.tech-bullish,
+    body.theme-dark .daily-market-row.market-bullish,
+    body.theme-dark .daily-tech-row.tech-bullish{
+      background:rgba(34,197,94,.22) !important;
+    }
+
+    html[data-theme="dark"] .daily-market-row.market-bearish,
+    html[data-theme="dark"] .daily-tech-row.tech-bearish,
+    [data-theme="dark"] .daily-market-row.market-bearish,
+    [data-theme="dark"] .daily-tech-row.tech-bearish,
+    body.dark .daily-market-row.market-bearish,
+    body.dark .daily-tech-row.tech-bearish,
+    body.theme-dark .daily-market-row.market-bearish,
+    body.theme-dark .daily-tech-row.tech-bearish{
+      background:rgba(239,68,68,.22) !important;
+    }
+
+    html[data-theme="dark"] .daily-market-row.market-neutral,
+    html[data-theme="dark"] .daily-tech-row.tech-neutral,
+    [data-theme="dark"] .daily-market-row.market-neutral,
+    [data-theme="dark"] .daily-tech-row.tech-neutral,
+    body.dark .daily-market-row.market-neutral,
+    body.dark .daily-tech-row.tech-neutral,
+    body.theme-dark .daily-market-row.market-neutral,
+    body.theme-dark .daily-tech-row.tech-neutral{
+      background:rgba(245,158,11,.24) !important;
+    }
+
+    html[data-theme="dark"] .daily-market-row.market-na,
+    html[data-theme="dark"] .daily-tech-row.tech-na,
+    [data-theme="dark"] .daily-market-row.market-na,
+    [data-theme="dark"] .daily-tech-row.tech-na,
+    body.dark .daily-market-row.market-na,
+    body.dark .daily-tech-row.tech-na,
+    body.theme-dark .daily-market-row.market-na,
+    body.theme-dark .daily-tech-row.tech-na{
+      background:rgba(100,116,139,.20) !important;
+    }
+  </style>
+'''
+
+MARKET_TONE = '''
+    function dailyMarketTone(name){
+      const value=String(marketDirection(name)||"Unavailable").trim().toLowerCase();
+      if(value.includes("bull") || value.includes("buy") || value.includes("up")) return "market-bullish";
+      if(value.includes("bear") || value.includes("sell") || value.includes("down")) return "market-bearish";
+      if(value.includes("neutral") || value.includes("mixed") || value.includes("flat")) return "market-neutral";
+      return "market-na";
+    }
+
+'''
+
+# ---------- preflight ----------
+for filename in FILES:
+    p=Path(filename)
+    if not p.exists():
+        raise SystemExit(f"STOP: missing {filename}")
+
+    t=p.read_text(encoding="utf-8")
+    if "xx-signal-colors-v2" in t:
+        raise SystemExit(f"STOP: {filename} already has V2 signal colors. Nothing changed.")
+    if "function dailyTechnicalTone(" not in t:
+        raise SystemExit(f"STOP: {filename} missing dailyTechnicalTone(). Nothing changed.")
+    if "Daily market insight" not in t or "marketDirection(row.name)" not in t:
+        raise SystemExit(f"STOP: {filename} missing Daily Market Insight render row.")
+    if "Daily technical direction" not in t or "dailyTechnicalDirection(row.name)" not in t:
+        raise SystemExit(f"STOP: {filename} missing Daily Technical Direction render row.")
+    if "</head>" not in t:
+        raise SystemExit(f"STOP: {filename} missing </head>.")
+
+# ---------- apply ----------
+for filename in FILES:
+    p=Path(filename)
+    t=p.read_text(encoding="utf-8")
+
+    # Put final CSS after the earlier V1 color CSS so V2 wins.
+    t=t.replace("</head>", STYLE + "\n</head>", 1)
+
+    # Add Daily Market Insight tone function just before renderTopCards.
+    if "function dailyMarketTone(" not in t:
+        anchor=re.search(r'\n\s*function\s+renderTopCards\s*\(\)\s*\{',t)
+        if not anchor:
+            raise SystemExit(f"STOP: renderTopCards() anchor missing in {filename}")
+        t=t[:anchor.start()+1] + MARKET_TONE + t[anchor.start()+1:]
+
+    lines=t.splitlines()
+    out=[]
+    market_hits=0
+    tech_hits=0
+
+    for line in lines:
+        if 'class="market-insight"' in line and 'marketDirection(row.name)' in line:
+            line=line.replace(
+                '<div class="market-insight">',
+                '<div class="market-insight daily-market-row ${dailyMarketTone(row.name)}">',
+                1
+            )
+            market_hits += 1
+
+        if 'class="market-insight"' in line and 'dailyTechnicalDirection(row.name)' in line:
+            line=line.replace(
+                '<div class="market-insight">',
+                '<div class="market-insight daily-tech-row ${dailyTechnicalTone(row.name)}">',
+                1
+            )
+            line=line.replace(
+                '<b class="daily-tech-value ${dailyTechnicalTone(row.name)}">',
+                '<b class="daily-tech-value">',
+                1
+            )
+            tech_hits += 1
+
+        out.append(line)
+
+    if market_hits != 1:
+        raise SystemExit(f"STOP: {filename} expected 1 market insight row, found {market_hits}")
+    if tech_hits != 1:
+        raise SystemExit(f"STOP: {filename} expected 1 technical row, found {tech_hits}")
+
+    p.write_text("\n".join(out)+("\n" if t.endswith("\n") else ""),encoding="utf-8")
+
+print("Signal color refinement V2 applied successfully.")
+print()
+print("Only these three areas are visually emphasized:")
+print("  PSI")
+print("  Daily Market Insight")
+print("  Daily Technical Direction")
+print()
+print("Light mode text: dark black")
+print("Dark mode text: white")
+print()
+print("Daily direction colors:")
+print("  Bullish = green")
+print("  Bearish = red")
+print("  Neutral/Mixed = gold")
+print("  Unavailable / N/A = gray")
+print()
+print("Production pages: UNTOUCHED")
+print("assets_config.json: UNTOUCHED")
+print("Engine V2: UNTOUCHED")
+PY
+
+git diff --check
+
+echo
+echo "Changed lab files:"
+git status --short --   xx-forex-sentiment-lab.html   xx-crypto-lab.html   xx-indices-lab.html   xx-energy-lab.html   xx-precious-metals-lab.html   xx-ai-assets-lab.html   xx-policy-assets-lab.html
+
+echo
+echo "V2 verification:"
+grep -nH "xx-signal-colors-v2\|dailyMarketTone\|daily-market-row\|daily-tech-row"   xx-forex-sentiment-lab.html   xx-crypto-lab.html   xx-indices-lab.html   xx-energy-lab.html   xx-precious-metals-lab.html   xx-ai-assets-lab.html   xx-policy-assets-lab.html
+
+echo
+echo "No commit or push was performed."
