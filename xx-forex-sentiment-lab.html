@@ -967,7 +967,7 @@
 
 
   <style id="xx-signal-colors-v2">
-    /* Only PSI, Daily Market Insight, and Daily Technical Direction are emphasized. */
+    /* Only PSI and Daily Technical Direction are emphasized. */
 
     /* PSI text: dark in light mode, white in dark mode. */
     .ai-score,
@@ -999,7 +999,7 @@
       font-weight:800 !important;
     }
 
-    /* Daily Market Insight colors */
+    /* PSI sentiment row colors */
     .daily-market-row.market-bullish{
       background:rgba(34,197,94,.17) !important;
       border-color:rgba(22,163,74,.65) !important;
@@ -1541,6 +1541,15 @@
       return "market-na";
     }
 
+    function psiRowTone(label){
+      const value=String(label||"").toLowerCase();
+      if(value.includes("bullish")) return "market-bullish";
+      if(value.includes("bearish")) return "market-bearish";
+      if(value.includes("neutral") || value.includes("mixed")) return "market-neutral";
+      return "market-na";
+    }
+
+
 
 
     function renderTopCards(){
@@ -1571,7 +1580,6 @@
                 <div class="ai-name">${esc(row.name)}</div>
                 <div class="ai-symbol">${esc(row.symbol)} • ${sourceText}</div>
               </div>
-              <span class="sentiment-pill status-${esc(String(row.label).toLowerCase().replace(/[^a-z]+/g,"-"))}" style="${pillStyle(row.score)}">${esc(row.label)}</span>
             </div>
 
             <div class="ai-score-wrap">
@@ -1592,7 +1600,7 @@
               </div>
             </div>
 
-            <div class="market-insight daily-market-row ${dailyMarketTone(row.name)}"><span>Daily market insight <button class="psd-glossary-info" type="button" data-pulse-glossary="daily-market-insight" aria-label="Explain Daily Market Insight" aria-expanded="false">i</button></span><b>${esc(marketDirection(row.name))}</b></div>
+            <div class="market-insight daily-market-row ${psiRowTone(row.label)}"><span>PSI <button class="psd-glossary-info" type="button" data-pulse-glossary="psi" aria-label="Explain Public Sentiment Index" aria-expanded="false">i</button></span><b>${esc(row.label)}</b></div>
             <div class="market-insight daily-tech-row ${dailyTechnicalTone(row.name)}"><span>Daily technical direction</span><b class="daily-tech-value">${esc(dailyTechnicalDirection(row.name))}</b></div>
             <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
 
