@@ -1,0 +1,484 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+WEBSITE="$PWD"
+ENGINE="/workspaces/Market-Sentiment-Engine-V2"
+
+echo "=== FULL STANDARDIZATION + OPTIMIZATION AUDIT V1 ==="
+echo "READ ONLY — this script changes nothing."
+echo
+
+python - "$WEBSITE" "$ENGINE" <<'PY'
+from pathlib import Path
+import json, re, subprocess, sys, os
+
+WEB = Path(sys.argv[1])
+ENG = Path(sys.argv[2])
+
+PROD_PAGES = [
+    "index.html",
+    "dashboard.html",
+    "news-articles.html",
+    "sentiment-history.html",
+    "market-pulse.html",
+    "market-intelligence.html",
+    "crypto.html",
+    "indices.html",
+    "energy.html",
+    "precious-metals.html",
+    "ai-assets.html",
+    "policy-assets.html",
+    "forex-sentiment-today.html",
+]
+
+LAB_PAGES = [
+    "xx-forex-sentiment-lab.html",
+    "xx-crypto-lab.html",
+    "xx-indices-lab.html",
+    "xx-energy-lab.html",
+    "xx-precious-metals-lab.html",
+    "xx-ai-assets-lab.html",
+    "xx-policy-assets-lab.html",
+]
+
+CATEGORY_PROD = [
+    "crypto.html",
+    "indices.html",
+    "energy.html",
+    "precious-metals.html",
+    "ai-assets.html",
+    "policy-assets.html",
+    "forex-sentiment-today.html",
+]
+
+STANDARD_FUNCS = [
+    "classifySentiment",
+    "labelForScore",
+    "colorForScore",
+    "badgeClass",
+    "sentimentColor",
+    "countBullBearNeutral",
+    "getTechnicalBias",
+]
+
+LOCAL_TECH_FUNCS = [
+    "dailyTechnicalDirection",
+    "technicalForItem",
+    "marketDirection",
+]
+
+def read(path):
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+def git_head(repo):
+    try:
+        return subprocess.check_output(
+            ["git","-C",str(repo),"log","-1","--oneline"],
+            text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except Exception:
+        return "unavailable"
+
+def line_hits(text, pattern, regex=False):
+    out=[]
+    rx=re.compile(pattern, re.I if regex else 0) if regex else None
+    for i,line in enumerate(text.splitlines(),1):
+        ok = bool(rx.search(line)) if regex else pattern in line
+        if ok:
+            out.append((i,line.strip()))
+    return out
+
+def function_block(text, name):
+    # Small extraction, enough to compare local behavior.
+    m=re.search(r'function\s+'+re.escape(name)+r'\s*\([^)]*\)\s*\{', text)
+    if not m:
+        return None
+    start=m.start()
+    depth=0
+    end=None
+    in_str=None
+    esc=False
+    for i,ch in enumerate(text[m.end()-1:], m.end()-1):
+        if in_str:
+            if esc:
+                esc=False
+            elif ch=="\\":
+                esc=True
+            elif ch==in_str:
+                in_str=None
+            continue
+        if ch in ("'",'"','`'):
+            in_str=ch
+            continue
+        if ch=="{":
+            depth+=1
+        elif ch=="}":
+            depth-=1
+            if depth==0:
+                end=i+1
+                break
+    return text[start:end] if end else text[start:start+1400]
+
+def norm(v):
+    return re.sub(r"[^a-z0-9]+","",str(v or "").lower())
+
+def json_load(path):
+    try:
+        return json.loads(read(path))
+    except Exception:
+        return None
+
+print("=== REPOSITORY HEADS ===")
+print("Website:", git_head(WEB))
+print("Engine :", git_head(ENG) if ENG.exists() else "ENGINE REPO NOT FOUND")
+print()
+
+# ------------------------------------------------------------------
+# 1) SHARED CORE / FORMULA STANDARDIZATION
+# ------------------------------------------------------------------
+core_path=WEB/"sentiment-core.js"
+core=read(core_path)
+print("=== 1. SHARED CORE / FORMULA STANDARDIZATION ===")
+if not core:
+    print("CRITICAL: sentiment-core.js missing/unreadable")
+else:
+    version_hits=line_hits(core, "VERSION")
+    print("sentiment-core.js: FOUND")
+    if version_hits:
+        print("Core version marker:", version_hits[0][1][:180])
+    for fn in STANDARD_FUNCS:
+        present = bool(re.search(r'(?:function\s+'+re.escape(fn)+r'\s*\(|\b'+re.escape(fn)+r'\s*[:=])', core))
+        print(f"  {fn}: {'Y' if present else '-'}")
+print()
+
+print("Production pages loading sentiment-core.js:")
+for page in PROD_PAGES:
+    p=WEB/page
+    if not p.exists():
+        print(f"  MISSING {page}")
+        continue
+    t=read(p)
+    loads="sentiment-core.js" in t
+    print(f"  {'Y' if loads else '-'} {page}")
+print()
+
+# Flag page-local redefinitions of standardized sentiment helpers.
+print("Local redefinitions of standardized sentiment helpers in PRODUCTION:")
+found_any=False
+for page in PROD_PAGES:
+    p=WEB/page
+    if not p.exists(): continue
+    t=read(p)
+    local=[]
+    for fn in STANDARD_FUNCS:
+        if re.search(r'\bfunction\s+'+re.escape(fn)+r'\s*\(', t):
+            local.append(fn)
+    if local:
+        found_any=True
+        print(f"  REVIEW {page}: {', '.join(local)}")
+if not found_any:
+    print("  PASS: none found")
+print()
+
+# Search for obvious local PSI calculation formulas outside shared core.
+print("Potential local PSI/formula arithmetic outside sentiment-core.js:")
+suspect_patterns = [
+    r'\bpsi\b.*(?:\+|\-|\*|/).*(?:bull|bear|neutral)',
+    r'(?:bull|bear|neutral).*(?:\+|\-|\*|/).*\bpsi\b',
+    r'weighted.*(?:bull|bear|neutral)',
+]
+formula_hits=[]
+for page in PROD_PAGES:
+    p=WEB/page
+    if not p.exists(): continue
+    for i,line in enumerate(read(p).splitlines(),1):
+        low=line.lower()
+        if "psdcore" in low:
+            continue
+        if any(re.search(rx, low) for rx in suspect_patterns):
+            formula_hits.append((page,i,line.strip()))
+if formula_hits:
+    for page,i,line in formula_hits[:40]:
+        print(f"  REVIEW {page}:{i}: {line[:180]}")
+    if len(formula_hits)>40:
+        print(f"  ... {len(formula_hits)-40} more")
+else:
+    print("  PASS: no obvious local PSI arithmetic found")
+print()
+
+# ------------------------------------------------------------------
+# 2) TECHNICAL DIRECTION STANDARDIZATION
+# ------------------------------------------------------------------
+print("=== 2. TECHNICAL DIRECTION STANDARDIZATION ===")
+print("Production page-local technical functions:")
+prod_tech={}
+for page in CATEGORY_PROD:
+    p=WEB/page
+    if not p.exists():
+        print(f"  MISSING {page}")
+        continue
+    t=read(p)
+    funcs=[fn for fn in LOCAL_TECH_FUNCS if re.search(r'\bfunction\s+'+re.escape(fn)+r'\s*\(',t)]
+    prod_tech[page]=funcs
+    print(f"  {page}: {', '.join(funcs) if funcs else 'none'}")
+print()
+
+print("Lab page-local technical functions:")
+for page in LAB_PAGES:
+    p=WEB/page
+    if not p.exists():
+        print(f"  MISSING {page}")
+        continue
+    t=read(p)
+    funcs=[fn for fn in LOCAL_TECH_FUNCS if re.search(r'\bfunction\s+'+re.escape(fn)+r'\s*\(',t)]
+    marker="TEMP/LOCAL" if "dailyTechnicalDirection" in funcs else ""
+    print(f"  {page}: {', '.join(funcs) if funcs else 'none'} {marker}".rstrip())
+print()
+
+# Compare local marketDirection blocks across production categories.
+print("marketDirection() implementation fingerprints in PRODUCTION:")
+fingerprints={}
+for page in CATEGORY_PROD:
+    t=read(WEB/page)
+    block=function_block(t,"marketDirection")
+    if not block: continue
+    compact=re.sub(r'\s+',' ',block).strip()
+    fp=str(hash(compact))
+    fingerprints.setdefault(fp,[]).append(page)
+for fp,pages in fingerprints.items():
+    print(f"  group {fp}: {', '.join(pages)}")
+if len(fingerprints)>1:
+    print("  REVIEW: production pages do not all share identical marketDirection() logic.")
+elif len(fingerprints)==1:
+    print("  INFO: production marketDirection() logic is duplicated but identical.")
+else:
+    print("  INFO: no production marketDirection() functions found.")
+print()
+
+# Show shared technical API evidence from core.
+print("Shared-core technical API references:")
+for needle in ["getTechnicalBias","technical","daily"]:
+    hits=line_hits(core, needle)
+    print(f"  {needle}: {len(hits)} occurrence(s)")
+    for i,line in hits[:4]:
+        print(f"    {i}: {line[:170]}")
+print()
+
+# ------------------------------------------------------------------
+# 3) CONFIG-DRIVEN ASSET UNIVERSES
+# ------------------------------------------------------------------
+print("=== 3. CONFIG-DRIVEN ASSET UNIVERSES ===")
+cfg=json_load(WEB/"assets_config.json") or {}
+cats=(cfg.get("categories") or {}) if isinstance(cfg,dict) else {}
+assets=(cfg.get("assets") or []) if isinstance(cfg,dict) else []
+
+for page in CATEGORY_PROD:
+    p=WEB/page
+    if not p.exists():
+        continue
+    t=read(p)
+    item_decl=re.search(r'\b(?:let|const)\s+([A-Z][A-Z0-9_]*_ITEMS)\s*=\s*\[',t)
+    var=item_decl.group(1) if item_decl else "-"
+    apply="applyAssetConfig(assetConfig)" in t
+    fetch="assets_config.json" in t
+    print(f"  {page}: ITEMS={var} | fetch config={'Y' if fetch else '-'} | apply config={'Y' if apply else '-'}")
+print()
+
+print("Config category counts:")
+for cat in ["crypto","indices","energy","precious_metals","ai_assets","policy_geopolitical","forex"]:
+    rows=[]
+    for a in assets:
+        if a.get("enabled",True) is False: continue
+        for c in a.get("categories") or []:
+            if isinstance(c,dict) and c.get("category")==cat and c.get("enabled",True) is not False:
+                rows.append(a)
+                break
+    print(f"  {cat}: {len(rows)} | default_top_n={(cats.get(cat) or {}).get('default_top_n')}")
+print()
+
+# Lab-only universe overrides
+print("Lab-only universe override markers:")
+for page in LAB_PAGES:
+    p=WEB/page
+    if not p.exists(): continue
+    t=read(p)
+    overrides=re.findall(r'\bXX_[A-Z0-9_]+_LAB_ITEMS\b',t)
+    assigns=re.findall(r'\b([A-Z][A-Z0-9_]*_ITEMS)\s*=\s*XX_[A-Z0-9_]+_LAB_ITEMS',t)
+    print(f"  {page}: override markers={len(set(overrides))} | runtime override={'Y' if assigns else '-'}")
+print()
+
+# ------------------------------------------------------------------
+# 4) GENERATED DATA SHOULD BE CONSUMED, NOT HAND-EDITED
+# ------------------------------------------------------------------
+print("=== 4. GENERATED DATA / TECHNICAL OUTPUT ===")
+tech=json_load(WEB/"technical_data.json")
+if isinstance(tech,dict):
+    root=tech.get("technical") if isinstance(tech.get("technical"),dict) else tech
+    print("technical_data.json: FOUND")
+    print("  top-level keys:", ", ".join(list(tech.keys())[:12]))
+    print("  technical entry count:", len(root) if isinstance(root,dict) else "not-object")
+    sample_keys=["Bitcoin / BTC","Ethereum / ETH","S&P 500","Gold","WTI Oil","NVIDIA / NVDA","Tesla / TSLA","US Dollar / DXY"]
+    if isinstance(root,dict):
+        lookup={norm(k):k for k in root.keys()}
+        print("  representative keys:")
+        for key in sample_keys:
+            actual=lookup.get(norm(key))
+            if not actual:
+                # allow symbol/name aliases
+                alts={
+                    "Bitcoin / BTC":["BTC","Bitcoin"],
+                    "Ethereum / ETH":["ETH","Ethereum"],
+                    "S&P 500":["S&P 500 / ES","SPX","ES"],
+                    "Gold":["XAUUSD","XAU"],
+                    "WTI Oil":["WTI","Crude Oil","CL"],
+                    "NVIDIA / NVDA":["NVDA","NVIDIA"],
+                    "Tesla / TSLA":["TSLA","Tesla"],
+                    "US Dollar / DXY":["DXY","DXY(USD)"],
+                }.get(key,[])
+                for alt in alts:
+                    if norm(alt) in lookup:
+                        actual=lookup[norm(alt)]
+                        break
+            print(f"    {'Y' if actual else '-'} {key}" + (f" -> {actual}" if actual else ""))
+            if actual and isinstance(root.get(actual),dict):
+                entry=root[actual]
+                daily=entry.get("daily",entry.get("Daily"))
+                if isinstance(daily,dict):
+                    print("       daily keys:", ", ".join(daily.keys()))
+                    print("       direction:", daily.get("direction",daily.get("signal",daily.get("trend","<missing>"))))
+                else:
+                    print("       daily:", repr(daily)[:180])
+else:
+    print("technical_data.json: MISSING/INVALID")
+print()
+
+for generated in ["dashboard_live.json","instrument_history_compact.json","technical_data.json"]:
+    status=subprocess.run(
+        ["git","-C",str(WEB),"status","--short","--",generated],
+        text=True,capture_output=True
+    ).stdout.strip()
+    print(f"  git status {generated}: {status or 'clean'}")
+print()
+
+# ------------------------------------------------------------------
+# 5) ENGINE V2 STANDARDIZATION / TECHNICAL PIPELINE
+# ------------------------------------------------------------------
+print("=== 5. ENGINE V2 ===")
+if not ENG.exists():
+    print("ENGINE REPO NOT FOUND at /workspaces/Market-Sentiment-Engine-V2")
+else:
+    # Focus on source/config, not generated blobs.
+    source_files=[]
+    for p in ENG.rglob("*"):
+        if not p.is_file(): continue
+        if ".git" in p.parts or "__pycache__" in p.parts: continue
+        if p.suffix.lower() not in {".py",".json",".yml",".yaml"}: continue
+        if p.stat().st_size > 2_000_000: continue
+        low=p.name.lower()
+        if any(x in low for x in ["dashboard_live","instrument_history","technical_data","news_cache","history_compact"]):
+            continue
+        source_files.append(p)
+
+    def engine_hits(pattern):
+        hits=[]
+        rx=re.compile(pattern,re.I)
+        for p in source_files:
+            txt=read(p)
+            for i,line in enumerate(txt.splitlines(),1):
+                if rx.search(line):
+                    hits.append((p.relative_to(ENG),i,line.strip()))
+        return hits
+
+    for label,rx in [
+        ("assets_config references",r'assets_config'),
+        ("technical_data writes",r'technical_data\.json'),
+        ("daily direction",r'\bdaily\b.*\bdirection\b|\bdirection\b.*\bdaily\b'),
+        ("technical analysis",r'technical[_\s-]*analysis|getTechnical|technicalFor'),
+        ("PSI formula/classification",r'classifySentiment|labelForScore|public.?sentiment.?index|\bpsi\b'),
+    ]:
+        hits=engine_hits(rx)
+        print(f"{label}: {len(hits)} hit(s)")
+        for p,i,line in hits[:16]:
+            print(f"  {p}:{i}: {line[:180]}")
+        if len(hits)>16:
+            print(f"  ... {len(hits)-16} more")
+        print()
+
+    # Find likely technical producer files.
+    likely=[]
+    for p in source_files:
+        txt=read(p).lower()
+        score=sum(term in txt for term in [
+            "technical_data.json","daily_history","direction","moving average","rsi","macd"
+        ])
+        if score>=2:
+            likely.append((score,p.relative_to(ENG)))
+    likely.sort(reverse=True,key=lambda x:(x[0],str(x[1])))
+    print("Likely authoritative technical producer files:")
+    for score,p in likely[:20]:
+        print(f"  score={score} {p}")
+    if not likely:
+        print("  none detected")
+print()
+
+# ------------------------------------------------------------------
+# 6) CUSTOMIZATION / OPTIMIZATION FLAGS
+# ------------------------------------------------------------------
+print("=== 6. CUSTOMIZATION / OPTIMIZATION FLAGS ===")
+flags=[]
+
+# Local standardized sentiment funcs in prod
+for page in PROD_PAGES:
+    t=read(WEB/page)
+    for fn in STANDARD_FUNCS:
+        if re.search(r'\bfunction\s+'+re.escape(fn)+r'\s*\(', t):
+            flags.append(("HIGH",page,f"local {fn}() duplicates standardized logic"))
+
+# Local dailyTechnicalDirection in prod
+for page in CATEGORY_PROD:
+    t=read(WEB/page)
+    if re.search(r'\bfunction\s+dailyTechnicalDirection\s*\(',t):
+        flags.append(("HIGH",page,"local dailyTechnicalDirection() — should come from shared technical standard"))
+
+# Lab temporary local technical
+for page in LAB_PAGES:
+    t=read(WEB/page)
+    if re.search(r'\bfunction\s+dailyTechnicalDirection\s*\(',t):
+        flags.append(("LAB",page,"temporary local dailyTechnicalDirection() exists; DO NOT promote this logic"))
+
+# Config runtime override in labs
+for page in LAB_PAGES:
+    t=read(WEB/page)
+    if re.search(r'\b[A-Z][A-Z0-9_]*_ITEMS\s*=\s*XX_[A-Z0-9_]+_LAB_ITEMS',t):
+        flags.append(("LAB",page,"temporary hardcoded LAB universe override; DO NOT promote as production architecture"))
+
+# Production pages with config + static fallback list = not necessarily wrong.
+for page in CATEGORY_PROD:
+    t=read(WEB/page)
+    if "assets_config.json" in t and re.search(r'\b(?:let|const)\s+[A-Z][A-Z0-9_]*_ITEMS\s*=\s*\[',t):
+        flags.append(("INFO",page,"contains static ITEMS fallback plus config-driven loading; verify fallback is fallback-only"))
+
+if flags:
+    order={"HIGH":0,"LAB":1,"INFO":2}
+    for sev,page,msg in sorted(flags,key=lambda x:(order.get(x[0],9),x[1],x[2])):
+        print(f"  [{sev}] {page}: {msg}")
+else:
+    print("  PASS: no customization flags detected")
+print()
+
+print("=== 7. AUDIT CONCLUSION RULES ===")
+print("This audit intentionally DOES NOT change formulas, pages, mappings, generated data, or Engine V2.")
+print("Formula standardization is treated as CLOSED unless a concrete violation is found.")
+print("LAB-only display styling is allowed; LAB-only business/data logic must not be promoted.")
+print("The correct production path is: Engine V2 -> standardized generated data -> shared core/config -> thin display pages.")
+print()
+print("No files were modified.")
+PY
