@@ -1,0 +1,415 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+FILE="assets_config.json"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: $FILE not found."
+  exit 1
+fi
+
+if [ -n "$(git status --porcelain -- "$FILE")" ]; then
+  echo "STOP: $FILE already has uncommitted changes. Commit/stash first."
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+from datetime import datetime, timezone
+import copy, json, re
+
+PATH = Path("assets_config.json")
+cfg = json.loads(PATH.read_text(encoding="utf-8"))
+
+if not isinstance(cfg.get("assets"), list) or not isinstance(cfg.get("categories"), dict):
+    raise SystemExit("STOP: unexpected assets_config.json structure.")
+
+assets = cfg["assets"]
+
+CATEGORY_PAGE = {
+    "forex": "forex-sentiment-today.html",
+    "crypto": "crypto.html",
+    "indices": "indices.html",
+    "energy": "energy.html",
+    "precious_metals": "precious-metals.html",
+    "ai_assets": "ai-assets.html",
+    "policy_geopolitical": "policy-assets.html",
+}
+
+def norm(v):
+    return re.sub(r"[^a-z0-9]+", "", str(v or "").lower())
+
+def values(asset):
+    vals = [
+        asset.get("id"),
+        asset.get("name"),
+        asset.get("display_name"),
+        asset.get("data_key"),
+        asset.get("symbol"),
+    ]
+    vals += list(asset.get("aliases") or [])
+    md = asset.get("market_data") or {}
+    vals += [md.get("symbol"), md.get("label")]
+    return {norm(v) for v in vals if v not in (None, "")}
+
+def in_category(asset, category):
+    return any(
+        isinstance(c, dict)
+        and c.get("category") == category
+        and c.get("enabled", True) is not False
+        for c in (asset.get("categories") or [])
+    )
+
+def market(symbol, label, decimals=2):
+    return {
+        "source": "yahoo",
+        "symbol": symbol,
+        "label": label,
+        "price_decimals": decimals,
+        "data_kind": "market_price",
+        "frequency": "daily",
+        "retention_days": 180,
+        "required": False,
+    }
+
+def new_asset(asset_id, name, display, data_key, symbol, asset_type, aliases, market_data=None, notes=""):
+    row = {
+        "id": asset_id,
+        "name": name,
+        "display_name": display,
+        "data_key": data_key,
+        "symbol": symbol,
+        "type": asset_type,
+        "enabled": True,
+        "aliases": aliases,
+        "categories": [],
+        "notes": notes,
+    }
+    if market_data is not None:
+        row["market_data"] = market_data
+    return row
+
+NEW = {}
+
+def add(token, row):
+    NEW[norm(token)] = row
+
+# Forex currency indices: sentiment-only until a real supported feed is approved.
+for token, aid, display, aliases in [
+    ("BXY","forex_bxy","BXY(GBP)",["bxy","british pound index","sterling index","pound currency index"]),
+    ("EXY","forex_exy","EXY(EUR)",["exy","euro index","euro currency index"]),
+    ("JXY","forex_jxy","JXY(JPY)",["jxy","japanese yen index","yen index","yen currency index"]),
+    ("SXY","forex_sxy","SXY(CHF)",["sxy","swiss franc index","chf index","swiss currency index"]),
+    ("CXY","forex_cxy","CXY(CAD)",["cxy","canadian dollar index","cad index","canadian currency index"]),
+    ("AXY","forex_axy","AXY(AUD)",["axy","australian dollar index","aud index","australian currency index"]),
+    ("ZXY","forex_zxy","ZXY(NZD)",["zxy","new zealand dollar index","nzd index","new zealand currency index"]),
+]:
+    add(token, new_asset(
+        aid, token, display, token, token, "currency_index", aliases, None,
+        "Sentiment-only currency index. No FX-pair proxy is permitted for technical direction."
+    ))
+
+def add_fx(pair):
+    display = f"{pair[:3]}/{pair[3:]}"
+    decimals = 3 if pair.endswith("JPY") else 4
+    add(pair, new_asset(
+        f"forex_{pair.lower()}",
+        f"{pair[:3]} / {pair}",
+        display,
+        f"{pair[:3]} / {pair}",
+        pair,
+        "dashboard_extra",
+        [pair.lower(), display.lower()],
+        market(f"{pair}=X", display, decimals),
+        "First-class Forex pair. Engine V2 reads this market_data mapping from assets_config.json."
+    ))
+
+for pair in [
+    "EURAUD","GBPAUD","GBPCAD","GBPCHF","GBPNZD","CHFJPY",
+    "EURNZD","NZDCAD","AUDCHF","USDNOK","USDSEK"
+]:
+    add_fx(pair)
+
+# Crypto
+add("XMR", new_asset(
+    "crypto_xmr","Monero / XMR","Monero / XMR","Monero / XMR","XMR","crypto",
+    ["monero","xmr","privacy coin","privacy crypto"],
+    market("XMR-USD","Monero / XMR",2)
+))
+add("XLM", new_asset(
+    "crypto_xlm","Stellar / XLM","Stellar / XLM","Stellar / XLM","XLM","crypto",
+    ["stellar","xlm","stellar lumens"],
+    market("XLM-USD","Stellar / XLM",4)
+))
+
+# Indices
+for token,row in [
+    ("CAC 40", new_asset("index_cac40","CAC 40","CAC 40","CAC 40","CAC40","index",
+                         ["cac 40","cac40","france 40","french stocks"], market("^FCHI","CAC 40",2))),
+    ("CSI 300", new_asset("index_csi300","CSI 300","CSI 300","CSI 300","CSI300","index",
+                          ["csi 300","csi300","china a shares","mainland china stocks"], market("000300.SS","CSI 300",2))),
+    ("TSX Composite", new_asset("index_tsx","TSX Composite","TSX Composite","TSX Composite","TSX","index",
+                                ["tsx","tsx composite","s&p/tsx composite","canada stocks"], market("^GSPTSE","TSX Composite",2))),
+    ("ASX 200", new_asset("index_asx200","ASX 200","ASX 200","ASX 200","ASX200","index",
+                          ["asx 200","asx200","australia 200","australian stocks"], market("^AXJO","ASX 200",2))),
+    ("Nifty 50", new_asset("index_nifty50","Nifty 50","Nifty 50","Nifty 50","NIFTY50","index",
+                           ["nifty 50","nifty50","india nifty","indian stocks"], market("^NSEI","Nifty 50",2))),
+    ("KOSPI", new_asset("index_kospi","KOSPI","KOSPI","KOSPI","KOSPI","index",
+                        ["kospi","south korea stocks","korean stocks"], market("^KS11","KOSPI",2))),
+]:
+    add(token,row)
+
+# Energy
+for token,row in [
+    ("Energy ETF / XLE", new_asset("energy_xle","Energy ETF / XLE","Energy ETF / XLE","Energy ETF / XLE","XLE","etf",
+                                   ["xle","energy select sector spdr","energy etf"], market("XLE","Energy ETF / XLE",2))),
+    ("Oil & Gas E&P / XOP", new_asset("energy_xop","Oil & Gas E&P / XOP","Oil & Gas E&P / XOP","Oil & Gas E&P / XOP","XOP","etf",
+                                      ["xop","oil gas exploration etf","exploration production stocks","e&p stocks"], market("XOP","Oil & Gas E&P / XOP",2))),
+    ("Oil Services / OIH", new_asset("energy_oih","Oil Services / OIH","Oil Services / OIH","Oil Services / OIH","OIH","etf",
+                                     ["oih","oil services etf","oilfield services"], market("OIH","Oil Services / OIH",2))),
+    ("Cheniere Energy / LNG", new_asset("energy_lng","Cheniere Energy / LNG","Cheniere Energy / LNG","Cheniere Energy / LNG","LNG","equity",
+                                        ["cheniere energy","lng stock","cheniere lng"], market("LNG","Cheniere Energy / LNG",2))),
+    ("European Natural Gas / TTF", new_asset("energy_ttf","European Natural Gas / TTF","European Natural Gas / TTF","European Natural Gas / TTF","TTF","theme",
+                                             ["ttf","dutch ttf","european natural gas","europe gas prices"], None,
+                                             "Sentiment-only until a verified supported market feed is approved.")),
+    ("Refining / Crack Spread", new_asset("energy_crack_spread","Refining / Crack Spread","Refining / Crack Spread","Refining / Crack Spread","CRACK","theme",
+                                          ["crack spread","refining margin","refinery margins","gasoline crack","diesel crack"], None,
+                                          "Sentiment-only. No fabricated price proxy.")),
+]:
+    add(token,row)
+
+# Precious metals / miners
+for token,row in [
+    ("Gold ETF / GLD", new_asset("metals_gld","Gold ETF / GLD","Gold ETF / GLD","Gold ETF / GLD","GLD","etf",
+                                 ["gld","spdr gold shares","gold etf"], market("GLD","Gold ETF / GLD",2))),
+    ("Silver ETF / SLV", new_asset("metals_slv","Silver ETF / SLV","Silver ETF / SLV","Silver ETF / SLV","SLV","etf",
+                                   ["slv","ishares silver trust","silver etf"], market("SLV","Silver ETF / SLV",2))),
+    ("Gold Miners / GDX", new_asset("metals_gdx","Gold Miners / GDX","Gold Miners / GDX","Gold Miners / GDX","GDX","etf",
+                                    ["gdx","vaneck gold miners","gold miners etf"], market("GDX","Gold Miners / GDX",2))),
+    ("Junior Gold Miners / GDXJ", new_asset("metals_gdxj","Junior Gold Miners / GDXJ","Junior Gold Miners / GDXJ","Junior Gold Miners / GDXJ","GDXJ","etf",
+                                            ["gdxj","junior gold miners","junior miners etf"], market("GDXJ","Junior Gold Miners / GDXJ",2))),
+    ("Silver Miners / SIL", new_asset("metals_sil","Silver Miners / SIL","Silver Miners / SIL","Silver Miners / SIL","SIL","etf",
+                                      ["sil","silver miners etf","silver mining stocks"], market("SIL","Silver Miners / SIL",2))),
+    ("Copper Miners / COPX", new_asset("metals_copx","Copper Miners / COPX","Copper Miners / COPX","Copper Miners / COPX","COPX","etf",
+                                       ["copx","copper miners etf","copper mining stocks"], market("COPX","Copper Miners / COPX",2))),
+]:
+    add(token,row)
+
+# AI / Policy
+add("Arista Networks / ANET", new_asset(
+    "ai_anet","Arista Networks / ANET","Arista Networks / ANET","Arista Networks / ANET","ANET","equity",
+    ["arista networks","anet","ai networking","data center networking"],
+    market("ANET","Arista Networks / ANET",2)
+))
+add("Cybersecurity / CIBR", new_asset(
+    "policy_cibr","Cybersecurity / CIBR","Cybersecurity / CIBR","Cybersecurity / CIBR","CIBR","etf",
+    ["cibr","cybersecurity etf","cybersecurity stocks","cyber defense"],
+    market("CIBR","Cybersecurity / CIBR",2)
+))
+
+TARGETS = {
+    "forex": [
+        "DXY","BXY","EXY","JXY","EURUSD","USDJPY","GBPUSD","AUDUSD",
+        "SXY","CXY","AXY","ZXY","USDCAD","USDCHF","USDCNH","NZDUSD",
+        "EURJPY","GBPJPY","EURGBP","AUDJPY","EURCHF","USDMXN","EURAUD","GBPAUD",
+        "CADJPY","EURCAD","AUDCAD","AUDNZD","GBPCAD","GBPCHF","GBPNZD","CHFJPY",
+        "NZDJPY","EURNZD","NZDCAD","AUDCHF","USDNOK","USDSEK","USDSGD","USDZAR"
+    ],
+    "crypto": [
+        "BTC","ETH","BNB","XRP","SOL","TRX","HYPE","DOGE",
+        "ADA","LINK","LTC","AVAX","BCH","SUI","HBAR","UNI",
+        "SHIB","DOT","XMR","XLM","General Crypto","Crypto ETFs / Flows",
+        "Crypto Regulation","Stablecoins / Depeg Risk"
+    ],
+    "indices": [
+        "S&P 500","Nasdaq Composite","Dow Jones Industrial Average","Russell 2000",
+        "VIX","DAX","FTSE 100","Nikkei 225",
+        "Hang Seng","Euro Stoxx 50","CAC 40","CSI 300",
+        "TSX Composite","ASX 200","Nifty 50","KOSPI"
+    ],
+    "energy": [
+        "General Energy","Crude Oil","Natural Gas","OPEC / Supply",
+        "Oil Inventories / EIA","Brent Oil","WTI Oil","Gasoline",
+        "Heating Oil","Energy Stocks","Energy ETF / XLE","Oil & Gas E&P / XOP",
+        "Oil Services / OIH","Cheniere Energy / LNG","European Natural Gas / TTF",
+        "Refining / Crack Spread"
+    ],
+    "precious_metals": [
+        "General Precious Metals","Gold","Silver","Platinum","Palladium","Copper",
+        "Gold ETFs / Flows","Central Bank Gold","Mining Stocks","Inflation / Real Yields",
+        "Gold ETF / GLD","Silver ETF / SLV","Gold Miners / GDX",
+        "Junior Gold Miners / GDXJ","Silver Miners / SIL","Copper Miners / COPX"
+    ],
+    "ai_assets": [
+        "NVDA","AVGO","AMD","MU","TSM","ASML","MSFT","GOOGL",
+        "AMZN","META","PLTR","ORCL","ARM","SMH","AIQ","Arista Networks / ANET"
+    ],
+    "policy_geopolitical": [
+        "TRUMP","WLFI","Kalshi Politics","Polymarket Politics","DJT","COIN","MSTR","TSLA",
+        "ITA","LMT","REMX","SMH","FXI","URA","GEO","Cybersecurity / CIBR"
+    ],
+}
+
+EXPECTED = {
+    "forex":40,
+    "crypto":24,
+    "indices":16,
+    "energy":16,
+    "precious_metals":16,
+    "ai_assets":16,
+    "policy_geopolitical":16,
+}
+
+def resolve(category, token):
+    key = norm(token)
+
+    # Prefer exact match already in this category.
+    local = [a for a in assets if in_category(a, category) and key in values(a)]
+    if len(local) == 1:
+        return local[0]
+    if len(local) > 1:
+        raise SystemExit(f"STOP: ambiguous existing {category} match for {token}: {[a.get('id') for a in local]}")
+
+    # Then exact global match.
+    global_matches = [a for a in assets if key in values(a)]
+    if len(global_matches) == 1:
+        return global_matches[0]
+    if len(global_matches) > 1:
+        # For duplicate symbols, use the candidate whose display/name also equals the token.
+        stronger = [
+            a for a in global_matches
+            if key in {norm(a.get("display_name")), norm(a.get("name")), norm(a.get("data_key"))}
+        ]
+        if len(stronger) == 1:
+            return stronger[0]
+        raise SystemExit(f"STOP: ambiguous global match for {token}: {[a.get('id') for a in global_matches]}")
+
+    # Otherwise create only from an explicitly approved definition.
+    definition = NEW.get(key)
+    if definition is None:
+        raise SystemExit(f"STOP: no existing asset and no approved new definition for {category}: {token}")
+
+    # Prevent duplicate id.
+    existing_id = next((a for a in assets if a.get("id") == definition["id"]), None)
+    if existing_id:
+        return existing_id
+
+    row = copy.deepcopy(definition)
+    assets.append(row)
+    return row
+
+resolved = {}
+for category, tokens in TARGETS.items():
+    rows = [resolve(category, token) for token in tokens]
+
+    if len({id(r) for r in rows}) != len(rows):
+        raise SystemExit(f"STOP: duplicate canonical asset resolved inside {category} target universe.")
+
+    resolved[category] = rows
+
+# DXY display rename only. Preserve its canonical/history key.
+dxy = resolved["forex"][0]
+dxy["display_name"] = "DXY(USD)"
+
+# Replace only these category memberships; preserve every other membership.
+for category, rows in resolved.items():
+    wanted_ids = {id(r) for r in rows}
+
+    for asset in assets:
+        asset["categories"] = [
+            c for c in (asset.get("categories") or [])
+            if not (
+                isinstance(c, dict)
+                and c.get("category") == category
+                and id(asset) not in wanted_ids
+            )
+        ]
+
+    for priority, asset in enumerate(rows, start=1):
+        keep = [
+            c for c in (asset.get("categories") or [])
+            if not (isinstance(c, dict) and c.get("category") == category)
+        ]
+        keep.append({
+            "category": category,
+            "page": CATEGORY_PAGE[category],
+            "priority": priority,
+            "enabled": True,
+            "role": "primary",
+        })
+        asset["categories"] = keep
+        asset["enabled"] = True
+
+    if category not in cfg["categories"]:
+        raise SystemExit(f"STOP: category metadata missing: {category}")
+    cfg["categories"][category]["default_top_n"] = EXPECTED[category]
+
+# Final exact-count validation before write.
+for category, expected in EXPECTED.items():
+    rows = []
+    for asset in assets:
+        if asset.get("enabled", True) is False:
+            continue
+        for c in asset.get("categories") or []:
+            if isinstance(c, dict) and c.get("category") == category and c.get("enabled", True) is not False:
+                rows.append((int(c.get("priority", 9999)), asset))
+                break
+
+    rows.sort(key=lambda x: x[0])
+
+    if len(rows) != expected:
+        raise SystemExit(f"STOP: {category} final count={len(rows)} expected={expected}")
+
+    if [p for p,_ in rows] != list(range(1, expected + 1)):
+        raise SystemExit(f"STOP: {category} priorities are not exactly 1..{expected}")
+
+cfg["generated_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00","Z")
+
+PATH.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+print("assets_config.json approved-universe sync prepared successfully.")
+print()
+print("Only assets_config.json was changed.")
+print("No Engine Python, PSI formulas, shared core, HTML pages, or generated JSON were changed.")
+print()
+for category in ["forex","crypto","indices","energy","precious_metals","ai_assets","policy_geopolitical"]:
+    rows = []
+    for asset in cfg["assets"]:
+        for c in asset.get("categories") or []:
+            if isinstance(c, dict) and c.get("category") == category and c.get("enabled", True) is not False and asset.get("enabled", True) is not False:
+                rows.append((int(c.get("priority",9999)), asset))
+                break
+    rows.sort(key=lambda x:x[0])
+    print(f"{category}: {len(rows)}")
+    for start in range(0, len(rows), 8):
+        print("  " + " | ".join(
+            a.get("display_name") or a.get("name") or a.get("symbol") or "?"
+            for _,a in rows[start:start+8]
+        ))
+
+print()
+print("Technical-feed policy:")
+print("  Real Yahoo/FRED mappings added only where we have a direct tradable instrument.")
+print("  BXY/EXY/JXY/SXY/CXY/AXY/ZXY remain sentiment-only.")
+print("  European Natural Gas / TTF remains sentiment-only for now.")
+print("  Refining / Crack Spread remains sentiment-only.")
+PY
+
+python -m json.tool assets_config.json >/dev/null
+git diff --check
+
+echo
+echo "=== CHANGED FILE ==="
+git status --short -- assets_config.json
+
+echo
+echo "=== DIFF SUMMARY ==="
+git diff --stat -- assets_config.json
+
+echo
+echo "No commit or push was performed."
