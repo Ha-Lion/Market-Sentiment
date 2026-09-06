@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from the website repo /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+for f in assets_config.json technical_data.json status.json; do
+  if [ ! -f "$f" ]; then
+    echo "STOP: required file missing: $f"
+    exit 1
+  fi
+done
+
+echo "=== VERIFY ENGINE V2 CONSUMED APPROVED ASSET CONFIG — READ ONLY ==="
+echo
+
+echo "Git:"
+git status --short
+git log -1 --oneline
+echo
+
+python - <<'PY'
+from pathlib import Path
+import json, re
+
+def load(name):
+    return json.loads(Path(name).read_text(encoding="utf-8"))
+
+def norm(v):
+    return re.sub(r"[^a-z0-9]+", "", str(v or "").lower())
+
+cfg = load("assets_config.json")
+tech = load("technical_data.json")
+status = load("status.json")
+
+assets = cfg.get("assets") or []
+cats = cfg.get("categories") or {}
+tech_root = tech.get("technical") if isinstance(tech.get("technical"), dict) else tech
+
+target_categories = [
+    "forex",
+    "crypto",
+    "indices",
+    "energy",
+    "precious_metals",
+    "ai_assets",
+    "policy_geopolitical",
+]
+
+def category_rows(category):
+    rows = []
+    for a in assets:
+        if a.get("enabled", True) is False:
+            continue
+        for c in a.get("categories") or []:
+            if (
+                isinstance(c, dict)
+                and c.get("category") == category
+                and c.get("enabled", True) is not False
+            ):
+                rows.append((int(c.get("priority", 9999)), a))
+                break
+    rows.sort(key=lambda x: x[0])
+    return rows
+
+def has_real_direction(entry):
+    if not isinstance(entry, dict):
+        return False
+    daily = entry.get("daily")
+    if not isinstance(daily, dict):
+        return False
+    direction = str(
+        daily.get("direction")
+        or daily.get("signal")
+        or daily.get("label")
+        or daily.get("trend")
+        or ""
+    ).strip()
+    return bool(direction and direction.upper() != "N/A")
+
+def find_tech(asset):
+    keys = []
+    for v in (
+        asset.get("data_key"),
+        asset.get("name"),
+        asset.get("display_name"),
+        asset.get("symbol"),
+    ):
+        if v not in (None, ""):
+            keys.append(str(v))
+
+    # Exact first.
+    for k in keys:
+        if isinstance(tech_root, dict) and k in tech_root:
+            return k, tech_root[k]
+
+    # Safe normalized fallback only for reporting.
+    if isinstance(tech_root, dict):
+        lookup = {norm(k): k for k in tech_root.keys()}
+        for k in keys:
+            nk = norm(k)
+            if nk in lookup:
+                actual = lookup[nk]
+                return actual, tech_root[actual]
+
+    return None, None
+
+print("Published timestamps:")
+print("  technical_data.updated_utc =", tech.get("updated_utc"))
+print("  status.updated_utc         =", status.get("updated_utc"))
+print()
+
+print("Approved category counts:")
+for cat in target_categories:
+    rows = category_rows(cat)
+    print(f"  {cat}: {len(rows)} (default_top_n={((cats.get(cat) or {}).get('default_top_n'))})")
+print()
+
+configured_market = []
+sentiment_only = []
+
+for cat in target_categories:
+    for _, a in category_rows(cat):
+        if isinstance(a.get("market_data"), dict) and a.get("market_data"):
+            configured_market.append((cat, a))
+        else:
+            sentiment_only.append((cat, a))
+
+# De-duplicate canonical assets that appear in more than one category (e.g. SMH).
+seen = set()
+unique_market = []
+for cat, a in configured_market:
+    key = str(a.get("id") or a.get("data_key") or a.get("name"))
+    if key in seen:
+        continue
+    seen.add(key)
+    unique_market.append((cat, a))
+
+present = []
+missing = []
+na_direction = []
+
+for cat, a in unique_market:
+    key, entry = find_tech(a)
+    label = a.get("display_name") or a.get("name") or a.get("symbol") or "?"
+    if entry is None:
+        missing.append((cat, label, a.get("data_key"), (a.get("market_data") or {}).get("symbol")))
+    elif has_real_direction(entry):
+        present.append((cat, label, key, entry.get("daily", {}).get("direction")))
+    else:
+        na_direction.append((cat, label, key))
+
+print(f"Unique approved assets WITH market_data: {len(unique_market)}")
+print(f"  technical entry + real daily direction: {len(present)}")
+print(f"  technical entry but daily direction N/A: {len(na_direction)}")
+print(f"  no technical entry yet: {len(missing)}")
+print()
+
+print("Configured market assets still missing from technical_data.json:")
+if not missing:
+    print("  NONE")
+else:
+    for cat, label, data_key, symbol in missing:
+        print(f"  {cat}: {label} | data_key={data_key} | feed={symbol}")
+print()
+
+print("Configured market assets present but Daily Technical is still N/A:")
+if not na_direction:
+    print("  NONE")
+else:
+    for cat, label, key in na_direction:
+        print(f"  {cat}: {label} | technical_key={key}")
+print()
+
+print("Sentiment-only assets (N/A technical is intentional until a real feed is approved):")
+for cat, a in sentiment_only:
+    label = a.get("display_name") or a.get("name") or a.get("symbol") or "?"
+    # Focus on the intentionally non-price additions / themes.
+    if (
+        str(a.get("id","")).startswith("forex_")
+        or label in {"European Natural Gas / TTF","Refining / Crack Spread"}
+    ):
+        print(f"  {cat}: {label}")
+print()
+
+print("Representative technical directions now available:")
+for cat, label, key, direction in present[:30]:
+    print(f"  {cat}: {label} -> {direction} [{key}]")
+print()
+
+if missing:
+    print("RESULT: WAIT / RUN NOT YET CONSUMED COMPLETELY")
+    print("The master config is correct, but technical_data.json has not yet caught up for every configured market asset.")
+elif na_direction:
+    print("RESULT: PARTIAL")
+    print("All configured market assets have technical entries, but one or more still lacks a usable Daily direction.")
+else:
+    print("RESULT: PASS")
+    print("Engine V2 has consumed the approved market-data mappings and produced usable Daily Technical directions.")
+PY
+
+echo
+echo "Latest commits touching the key files:"
+git log -1 --format='assets_config.json      %h %ad %s' --date=iso -- assets_config.json
+git log -1 --format='technical_data.json     %h %ad %s' --date=iso -- technical_data.json
+git log -1 --format='status.json             %h %ad %s' --date=iso -- status.json
+
+echo
+echo "No files were modified."
