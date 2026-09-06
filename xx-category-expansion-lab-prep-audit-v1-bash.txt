@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+echo "=== CATEGORY EXPANSION + DAILY TECH LAB PREP AUDIT V1 ==="
+echo "READ ONLY — no files will be changed."
+echo
+
+python - <<'PY'
+from pathlib import Path
+import json, re, subprocess
+
+PAGES = [
+    ("crypto", "crypto.html"),
+    ("indices", "indices.html"),
+    ("energy", "energy.html"),
+    ("precious_metals", "precious-metals.html"),
+    ("ai_assets", "ai-assets.html"),
+    ("policy_geopolitical", "policy-assets.html"),
+]
+
+TARGET_ADDS = {
+    "crypto": [
+        ("TRON / TRX","TRX"),
+        ("Hyperliquid / HYPE","HYPE"),
+        ("Chainlink / LINK","LINK"),
+        ("Monero / XMR","XMR"),
+        ("Stellar / XLM","XLM"),
+        ("Avalanche / AVAX","AVAX"),
+    ],
+    "indices": [
+        ("CAC 40","CAC40"),
+        ("CSI 300","CSI300"),
+        ("TSX Composite","TSX"),
+        ("ASX 200","ASX200"),
+        ("Nifty 50","NIFTY50"),
+        ("KOSPI","KOSPI"),
+    ],
+    "energy": [
+        ("Energy ETF / XLE","XLE"),
+        ("Oil & Gas E&P / XOP","XOP"),
+        ("Oil Services / OIH","OIH"),
+        ("Global LNG","LNG"),
+        ("European Natural Gas / TTF","TTF"),
+        ("Refining / Crack Spread","CRACK"),
+    ],
+    "precious_metals": [
+        ("Gold ETF / GLD","GLD"),
+        ("Silver ETF / SLV","SLV"),
+        ("Gold Miners / GDX","GDX"),
+        ("Junior Gold Miners / GDXJ","GDXJ"),
+        ("Silver Miners / SIL","SIL"),
+        ("Copper Miners / COPX","COPX"),
+    ],
+    "ai_assets": [
+        ("Arista Networks / ANET","ANET"),
+    ],
+    "policy_geopolitical": [
+        ("Cybersecurity / CIBR","CIBR"),
+    ],
+}
+
+def norm(v):
+    return re.sub(r"[^a-z0-9]+","",str(v or "").lower())
+
+def page_text(path):
+    p=Path(path)
+    if not p.exists():
+        return ""
+    return p.read_text(encoding="utf-8",errors="ignore")
+
+def detect_items_var(text):
+    m=re.search(r'\b(?:let|const)\s+([A-Z][A-Z0-9_]*_ITEMS)\s*=\s*\[',text)
+    return m.group(1) if m else None
+
+def detect_slice_caps(text):
+    vals=re.findall(r'\.slice\(\s*0\s*,\s*(\d+)\s*\)',text)
+    return vals
+
+def count_local_items(text,varname):
+    if not varname:
+        return None
+    m=re.search(r'\b(?:let|const)\s+'+re.escape(varname)+r'\s*=\s*\[(.*?)\n\s*\];',text,re.S)
+    if not m:
+        return None
+    return len(re.findall(r'\{[^{}]*?name\s*:\s*["\']',m.group(1),re.S))
+
+def has_func(text,name):
+    return bool(re.search(r'\bfunction\s+'+re.escape(name)+r'\s*\(',text))
+
+def page_size(text):
+    m=re.search(r'aiCardPageSize\s*=\s*window\.innerWidth\s*<=\s*680\s*\?\s*(\d+)\s*:\s*\(window\.innerWidth\s*<=\s*1250\s*\?\s*(\d+)\s*:\s*(\d+)\)',text)
+    if m:
+        return tuple(map(int,m.groups()))
+    m=re.search(r'let\s+aiCardPageSize\s*=\s*(\d+)',text)
+    return (None,None,int(m.group(1))) if m else None
+
+print("Current git:")
+try:
+    print(subprocess.check_output(["git","log","-1","--oneline"], text=True).strip())
+except Exception:
+    print("unavailable")
+print()
+
+cfg_path=Path("assets_config.json")
+cfg={}
+if cfg_path.exists():
+    try:
+        cfg=json.loads(cfg_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print("WARNING: assets_config.json parse failed:",e)
+assets=cfg.get("assets") or []
+
+def category_assets(cat):
+    rows=[]
+    for a in assets:
+        for c in a.get("categories") or []:
+            if isinstance(c,dict) and c.get("category")==cat and c.get("enabled",True) is not False and a.get("enabled",True) is not False:
+                rows.append((int(c.get("priority",999)),a))
+                break
+    rows.sort(key=lambda x:x[0])
+    return [a for _,a in rows]
+
+def asset_values(a):
+    vals=[
+        a.get("id"),a.get("name"),a.get("display_name"),a.get("data_key"),a.get("symbol")
+    ]
+    vals += list(a.get("aliases") or [])
+    vals += list(a.get("history_keys") or [])
+    md=a.get("market_data") or {}
+    vals += [md.get("symbol"),md.get("label")]
+    return [norm(v) for v in vals if v]
+
+print("=== PAGE STRUCTURE ===")
+for cat,page in PAGES:
+    t=page_text(page)
+    print()
+    print(f"[{cat}] {page}")
+    if not t:
+        print("  MISSING PAGE")
+        continue
+    var=detect_items_var(t)
+    print("  items variable:",var or "NOT FOUND")
+    print("  local item count:",count_local_items(t,var))
+    print("  slice caps:",", ".join(detect_slice_caps(t)) or "none")
+    print("  page size mobile/tablet/desktop:",page_size(t) or "not detected")
+    print("  applyAssetConfig:", "Y" if "applyAssetConfig" in t else "-")
+    print("  technicalForItem:", "Y" if has_func(t,"technicalForItem") else "-")
+    print("  marketDirection:", "Y" if has_func(t,"marketDirection") else "-")
+    print("  dailyTechnicalDirection:", "Y" if has_func(t,"dailyTechnicalDirection") else "-")
+    print("  renderTopCards:", "Y" if has_func(t,"renderTopCards") else "-")
+    print("  existing 'Daily technical direction' label:", "Y" if "Daily technical direction" in t else "-")
+
+print()
+print("=== ASSETS_CONFIG CATEGORY COUNTS / CURRENT ORDER ===")
+for cat,page in PAGES:
+    rows=category_assets(cat)
+    default_top=(cfg.get("categories") or {}).get(cat,{}).get("default_top_n")
+    print()
+    print(f"[{cat}] count={len(rows)} default_top_n={default_top}")
+    for i,a in enumerate(rows,1):
+        display=a.get("display_name") or a.get("name")
+        print(f"  {i:02d}. {display} | symbol={a.get('symbol')} | id={a.get('id')}")
+
+print()
+print("=== AGREED ADDITIONS — ALREADY PRESENT? ===")
+for cat,_ in PAGES:
+    rows=category_assets(cat)
+    value_sets=[set(asset_values(a)) for a in rows]
+    print()
+    print(f"[{cat}]")
+    for display,symbol in TARGET_ADDS[cat]:
+        wanted={norm(display),norm(symbol)}
+        present=any(bool(vs & wanted) for vs in value_sets)
+        print(f"  {'Y' if present else '-'} {display} ({symbol})")
+
+print()
+print("=== FULL-PAGE TARGET ===")
+for cat,_ in PAGES:
+    current=len(category_assets(cat))
+    target=16
+    print(f"{cat}: current config count={current} | target={target} | delta={target-current:+d}")
+
+print()
+print("=== LAB FILE STATUS ===")
+labs = [
+    "xx-crypto-lab.html",
+    "xx-indices-lab.html",
+    "xx-energy-lab.html",
+    "xx-precious-metals-lab.html",
+    "xx-ai-assets-lab.html",
+    "xx-policy-assets-lab.html",
+]
+for lab in labs:
+    print(f"  {'EXISTS' if Path(lab).exists() else 'missing'} {lab}")
+
+print()
+print("=== IMPORTANT ===")
+print("No files were modified.")
+print("This output is used to build one safe consolidated lab patch.")
+PY
