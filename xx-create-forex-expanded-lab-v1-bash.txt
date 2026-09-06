@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+SRC="forex-sentiment-today.html"
+LAB="xx-forex-sentiment-lab.html"
+
+[ -f "$SRC" ] || { echo "STOP: $SRC not found."; exit 1; }
+[ ! -f "$LAB" ] || { echo "STOP: $LAB already exists. Nothing changed."; exit 1; }
+
+cp "$SRC" "$LAB"
+
+python - <<'PY'
+from pathlib import Path
+import re
+
+p=Path("xx-forex-sentiment-lab.html")
+text=p.read_text(encoding="utf-8")
+
+# Lab-only safety.
+if re.search(r'<meta\s+name=["\']robots["\']',text,re.I):
+    text=re.sub(r'<meta\s+name=["\']robots["\'][^>]*>','<meta name="robots" content="noindex, nofollow">',text,count=1,flags=re.I)
+else:
+    text=text.replace('<head>','<head>\n  <meta name="robots" content="noindex, nofollow">',1)
+text=re.sub(r'<link\s+rel=["\']canonical["\'][^>]*>','',text,count=1,flags=re.I)
+text=text.replace('<title>Forex Sentiment Today','<title>XX Lab — Forex Sentiment Today',1)
+
+marker="""<div id="xx-forex-lab-marker" style="position:fixed;right:12px;bottom:12px;z-index:99999;padding:5px 9px;border-radius:999px;font:700 10px/1.1 Inter,Arial,sans-serif;letter-spacing:.08em;background:rgba(15,23,42,.94);color:#f6c85f;border:1px solid rgba(246,200,95,.48);pointer-events:none;">FOREX LAB V1</div>"""
+if '<body' in text and 'xx-forex-lab-marker' not in text:
+    pos=text.find('>',text.find('<body'))+1
+    text=text[:pos]+'\n'+marker+text[pos:]
+
+items = '''    let FOREX_ITEMS = [
+      // PAGE 1 — TOP ROW: currency indices
+      {name:"DXY(USD)",dataKey:"US Dollar / DXY",symbol:"DXY",kind:"index",aliases:["dxy","us dollar index","u.s. dollar index","usd index","dollar index"],historyKeys:["US Dollar / DXY","US Dollar Index / DXY","DXY","DXY(USD)"],official:true},
+      {name:"BXY(GBP)",dataKey:"BXY",symbol:"BXY",kind:"index",aliases:["bxy","british pound index","british pound currency index","gbp index"],historyKeys:["BXY","BXY(GBP)"],official:false},
+      {name:"EXY(EUR)",dataKey:"EXY",symbol:"EXY",kind:"index",aliases:["exy","euro index","euro currency index","eur index"],historyKeys:["EXY","EXY(EUR)"],official:false},
+      {name:"JXY(JPY)",dataKey:"JXY",symbol:"JXY",kind:"index",aliases:["jxy","japanese yen index","japanese yen currency index","jpy index"],historyKeys:["JXY","JXY(JPY)"],official:false},
+
+      // PAGE 1 — BOTTOM ROW: top FX pairs
+      {name:"EUR/USD",dataKey:"EUR / EURUSD",symbol:"EURUSD",kind:"pair",aliases:["eurusd","eur/usd","euro dollar","euro vs dollar"],historyKeys:["EUR / EURUSD","EURUSD","EUR/USD"],official:true},
+      {name:"USD/JPY",dataKey:"JPY / USDJPY",symbol:"USDJPY",kind:"pair",aliases:["usdjpy","usd/jpy","dollar yen"],historyKeys:["JPY / USDJPY","USDJPY","USD/JPY"],official:true},
+      {name:"GBP/USD",dataKey:"GBP / GBPUSD",symbol:"GBPUSD",kind:"pair",aliases:["gbpusd","gbp/usd","sterling dollar","pound dollar"],historyKeys:["GBP / GBPUSD","GBPUSD","GBP/USD"],official:true},
+      {name:"AUD/USD",dataKey:"AUD / AUDUSD",symbol:"AUDUSD",kind:"pair",aliases:["audusd","aud/usd","australian dollar","aussie dollar"],historyKeys:["AUD / AUDUSD","AUDUSD","AUD/USD"],official:true},
+
+      // PAGE 2 — TOP ROW: remaining currency indices
+      {name:"SXY(CHF)",dataKey:"SXY",symbol:"SXY",kind:"index",aliases:["sxy","swiss franc index","swiss franc currency index","chf index"],historyKeys:["SXY","SXY(CHF)"],official:false},
+      {name:"CXY(CAD)",dataKey:"CXY",symbol:"CXY",kind:"index",aliases:["cxy","canadian dollar index","canadian dollar currency index","cad index"],historyKeys:["CXY","CXY(CAD)"],official:false},
+      {name:"AXY(AUD)",dataKey:"AXY",symbol:"AXY",kind:"index",aliases:["axy","australian dollar index","australian dollar currency index","aud index"],historyKeys:["AXY","AXY(AUD)"],official:false},
+      {name:"ZXY(NZD)",dataKey:"ZXY",symbol:"ZXY",kind:"index",aliases:["zxy","new zealand dollar index","new zealand dollar currency index","nzd index"],historyKeys:["ZXY","ZXY(NZD)"],official:false},
+
+      // PAGE 2 — BOTTOM ROW: next major FX pairs
+      {name:"USD/CAD",dataKey:"CAD / USDCAD",symbol:"USDCAD",kind:"pair",aliases:["usdcad","usd/cad","dollar canadian dollar","canadian dollar"],historyKeys:["CAD / USDCAD","USDCAD","USD/CAD"],official:true},
+      {name:"USD/CHF",dataKey:"CHF / USDCHF",symbol:"USDCHF",kind:"pair",aliases:["usdchf","usd/chf","dollar swiss franc","swiss franc"],historyKeys:["CHF / USDCHF","USDCHF","USD/CHF"],official:true},
+      {name:"USD/CNH",dataKey:"USD/CNH",symbol:"USDCNH",kind:"pair",aliases:["usdcnh","usd/cnh","offshore yuan","offshore renminbi","chinese yuan","renminbi","yuan","cnh"],historyKeys:["USD/CNH","USDCNH"],official:true},
+      {name:"NZD/USD",dataKey:"NZD / NZDUSD",symbol:"NZDUSD",kind:"pair",aliases:["nzdusd","nzd/usd","new zealand dollar","kiwi dollar"],historyKeys:["NZD / NZDUSD","NZDUSD","NZD/USD"],official:true},
+
+      // PAGE 3 — PAIRS ONLY
+      {name:"EUR/JPY",dataKey:"EURJPY",symbol:"EURJPY",kind:"pair",aliases:["eurjpy","eur/jpy","euro yen"],historyKeys:["EURJPY","EUR/JPY"],official:true},
+      {name:"GBP/JPY",dataKey:"GBPJPY",symbol:"GBPJPY",kind:"pair",aliases:["gbpjpy","gbp/jpy","sterling yen","pound yen"],historyKeys:["GBPJPY","GBP/JPY"],official:true},
+      {name:"EUR/GBP",dataKey:"EURGBP",symbol:"EURGBP",kind:"pair",aliases:["eurgbp","eur/gbp","euro sterling","euro pound"],historyKeys:["EURGBP","EUR/GBP"],official:true},
+      {name:"AUD/JPY",dataKey:"AUDJPY",symbol:"AUDJPY",kind:"pair",aliases:["audjpy","aud/jpy","australian dollar yen","aussie yen"],historyKeys:["AUDJPY","AUD/JPY"],official:true},
+      {name:"EUR/CHF",dataKey:"EURCHF",symbol:"EURCHF",kind:"pair",aliases:["eurchf","eur/chf","euro swiss franc"],historyKeys:["EURCHF","EUR/CHF"],official:true},
+      {name:"USD/MXN",dataKey:"USDMXN",symbol:"USDMXN",kind:"pair",aliases:["usdmxn","usd/mxn","mexican peso","peso"],historyKeys:["USDMXN","USD/MXN"],official:true},
+      {name:"EUR/AUD",dataKey:"EURAUD",symbol:"EURAUD",kind:"pair",aliases:["euraud","eur/aud","euro australian dollar"],historyKeys:["EURAUD","EUR/AUD"],official:true},
+      {name:"GBP/AUD",dataKey:"GBPAUD",symbol:"GBPAUD",kind:"pair",aliases:["gbpaud","gbp/aud","sterling australian dollar","pound aussie"],historyKeys:["GBPAUD","GBP/AUD"],official:true},
+
+      // PAGE 4 — PAIRS ONLY
+      {name:"CAD/JPY",dataKey:"CADJPY",symbol:"CADJPY",kind:"pair",aliases:["cadjpy","cad/jpy","canadian dollar yen"],historyKeys:["CADJPY","CAD/JPY"],official:true},
+      {name:"EUR/CAD",dataKey:"EURCAD",symbol:"EURCAD",kind:"pair",aliases:["eurcad","eur/cad","euro canadian dollar"],historyKeys:["EURCAD","EUR/CAD"],official:true},
+      {name:"AUD/CAD",dataKey:"AUDCAD",symbol:"AUDCAD",kind:"pair",aliases:["audcad","aud/cad","australian dollar canadian dollar","aussie cad"],historyKeys:["AUDCAD","AUD/CAD"],official:true},
+      {name:"AUD/NZD",dataKey:"AUDNZD",symbol:"AUDNZD",kind:"pair",aliases:["audnzd","aud/nzd","australian dollar new zealand dollar","aussie kiwi"],historyKeys:["AUDNZD","AUD/NZD"],official:true},
+      {name:"GBP/CAD",dataKey:"GBPCAD",symbol:"GBPCAD",kind:"pair",aliases:["gbpcad","gbp/cad","sterling canadian dollar","pound cad"],historyKeys:["GBPCAD","GBP/CAD"],official:true},
+      {name:"GBP/CHF",dataKey:"GBPCHF",symbol:"GBPCHF",kind:"pair",aliases:["gbpchf","gbp/chf","sterling swiss franc","pound swiss franc"],historyKeys:["GBPCHF","GBP/CHF"],official:true},
+      {name:"GBP/NZD",dataKey:"GBPNZD",symbol:"GBPNZD",kind:"pair",aliases:["gbpnzd","gbp/nzd","sterling new zealand dollar","pound kiwi"],historyKeys:["GBPNZD","GBP/NZD"],official:true},
+      {name:"CHF/JPY",dataKey:"CHFJPY",symbol:"CHFJPY",kind:"pair",aliases:["chfjpy","chf/jpy","swiss franc yen"],historyKeys:["CHFJPY","CHF/JPY"],official:true},
+
+      // PAGE 5 — PAIRS ONLY
+      {name:"NZD/JPY",dataKey:"NZDJPY",symbol:"NZDJPY",kind:"pair",aliases:["nzdjpy","nzd/jpy","new zealand dollar yen","kiwi yen"],historyKeys:["NZDJPY","NZD/JPY"],official:true},
+      {name:"EUR/NZD",dataKey:"EURNZD",symbol:"EURNZD",kind:"pair",aliases:["eurnzd","eur/nzd","euro new zealand dollar"],historyKeys:["EURNZD","EUR/NZD"],official:true},
+      {name:"NZD/CAD",dataKey:"NZDCAD",symbol:"NZDCAD",kind:"pair",aliases:["nzdcad","nzd/cad","new zealand dollar canadian dollar","kiwi cad"],historyKeys:["NZDCAD","NZD/CAD"],official:true},
+      {name:"AUD/CHF",dataKey:"AUDCHF",symbol:"AUDCHF",kind:"pair",aliases:["audchf","aud/chf","australian dollar swiss franc","aussie swiss"],historyKeys:["AUDCHF","AUD/CHF"],official:true},
+      {name:"USD/NOK",dataKey:"USDNOK",symbol:"USDNOK",kind:"pair",aliases:["usdnok","usd/nok","norwegian krone","nok"],historyKeys:["USDNOK","USD/NOK"],official:true},
+      {name:"USD/SEK",dataKey:"USDSEK",symbol:"USDSEK",kind:"pair",aliases:["usdsek","usd/sek","swedish krona","sek"],historyKeys:["USDSEK","USD/SEK"],official:true},
+      {name:"USD/SGD",dataKey:"USD/SGD",symbol:"USDSGD",kind:"pair",aliases:["usdsgd","usd/sgd","singapore dollar","sgd"],historyKeys:["USD/SGD","USDSGD"],official:true},
+      {name:"USD/ZAR",dataKey:"USDZAR",symbol:"USDZAR",kind:"pair",aliases:["usdzar","usd/zar","south african rand","zar","rand"],historyKeys:["USDZAR","USD/ZAR"],official:true}
+    ];'''
+
+m=re.search(r'    let FOREX_ITEMS\s*=\s*\[(?:.|\n)*?\n    \];',text,re.M)
+if not m:
+    raise SystemExit('STOP: FOREX_ITEMS block not found.')
+text=text[:m.start()]+items+text[m.end():]
+
+# Preserve the explicit 40-instrument lab order even if assets_config.json loads.
+anchor='      FOREX_ITEMS = assetsFromConfig(config, CATEGORY_KEY, FOREX_ITEMS);'
+if anchor in text:
+    merge='''      const configuredForexItems = assetsFromConfig(config, CATEGORY_KEY, []);
+      const configuredByKey = new Map();
+      configuredForexItems.forEach(item => {
+        [item.name,item.dataKey,item.symbol,...(item.historyKeys||[])].filter(Boolean).forEach(key => configuredByKey.set(normalizeText(key), item));
+      });
+      FOREX_ITEMS = FOREX_ITEMS.map(item => {
+        const keys=[item.dataKey,item.name,item.symbol,...(item.historyKeys||[])].filter(Boolean).map(normalizeText);
+        const cfg=keys.map(key=>configuredByKey.get(key)).find(Boolean);
+        if(!cfg) return item;
+        return {...cfg,...item,aliases:uniqueTerms([...(cfg.aliases||[]),...(item.aliases||[])]),historyKeys:uniqueTerms([...(cfg.historyKeys||[]),...(item.historyKeys||[])]),official:item.official===true||cfg.official===true};
+      });'''
+    text=text.replace(anchor,merge,1)
+
+text=text.replace('''        .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999))
+        .slice(0,15);''','''        .sort((a,b)=>(importance.get(a.name) ?? 999)-(importance.get(b.name) ?? 999));''',1)
+text=text.replace('if(symbol==="DXY") return "TVC:DXY";','if(["DXY","BXY","EXY","JXY","SXY","CXY","AXY","ZXY"].includes(symbol)) return `TVC:${symbol}`;',1)
+text=text.replace('if(symbol === "DXY") return "TVC:DXY";','if(["DXY","BXY","EXY","JXY","SXY","CXY","AXY","ZXY"].includes(symbol)) return `TVC:${symbol}`;',1)
+text=text.replace('activeHistoryName || "US Dollar Index / DXY"','activeHistoryName || "DXY(USD)"',1)
+text=text.replace('across the U.S. Dollar Index and major currency pairs.','across major currency indices and FX pairs.',1)
+
+if 'xx-forex-expanded-layout-v1' not in text:
+    text=text.replace('</head>','  <!-- xx-forex-expanded-layout-v1 -->\n</head>',1)
+
+p.write_text(text,encoding='utf-8')
+print('Forex expanded LAB V1 created.')
+print('CNY(CHN): REMOVED')
+print('Exactly 40 instruments = 8 indices + 32 FX pairs')
+print('Production forex-sentiment-today.html: UNTOUCHED')
+PY
+
+git diff --check
+
+echo
+echo "Created lab:"
+git status --short -- "$LAB" "$SRC"
+
+echo
+echo "Instrument count / desktop page order:"
+python - <<'PY'
+from pathlib import Path
+import re
+t=Path('xx-forex-sentiment-lab.html').read_text(encoding='utf-8')
+m=re.search(r'let FOREX_ITEMS\s*=\s*\[(.*?)\n    \];',t,re.S)
+if not m: raise SystemExit('FOREX_ITEMS block not found')
+names=re.findall(r'\{name:"([^"]+)"',m.group(1))
+print('Total:',len(names))
+for i in range(0,len(names),8):
+    print(f'Page {i//8+1}: '+' | '.join(names[i:i+8]))
+if len(names)!=40: raise SystemExit('STOP: expected exactly 40 instruments')
+if len(set(names))!=len(names): raise SystemExit('STOP: duplicate display names found')
+PY
+
+echo
+echo "Production status:"
+git status --short -- "$SRC"
+
+echo
+echo "No commit or push was performed."
