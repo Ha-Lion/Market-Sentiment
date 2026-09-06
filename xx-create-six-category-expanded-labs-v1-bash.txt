@@ -1,0 +1,443 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+python - <<'PY'
+from pathlib import Path
+import json, re, shutil
+
+CFG = Path("assets_config.json")
+if not CFG.exists():
+    raise SystemExit("STOP: assets_config.json not found.")
+
+try:
+    config = json.loads(CFG.read_text(encoding="utf-8"))
+except Exception as e:
+    raise SystemExit(f"STOP: could not parse assets_config.json: {e}")
+
+PAGES = {
+    "crypto": {
+        "src":"crypto.html",
+        "lab":"xx-crypto-lab.html",
+        "var":"CRYPTO_ITEMS",
+        "title":"XX Lab — Crypto Sentiment",
+        "target":24,
+        "existing_ids":[
+            "btc","eth","bnb","xrp","sol","trx","hype","doge",
+            "ada","link","ltc","avax","bch","sui","hbar","uni",
+            "shib","dot","crypto_general","crypto_etfs_flows",
+            "crypto_regulation","crypto_stablecoins",
+        ],
+        "new":[
+            {
+                "name":"Monero / XMR","dataKey":"XMR","symbol":"XMR","kind":"crypto",
+                "aliases":["monero","xmr","privacy coin","privacy crypto"],
+                "historyKeys":["XMR","Monero / XMR"],"official":True
+            },
+            {
+                "name":"Stellar / XLM","dataKey":"XLM","symbol":"XLM","kind":"crypto",
+                "aliases":["stellar","xlm","stellar lumens"],
+                "historyKeys":["XLM","Stellar / XLM"],"official":True
+            },
+        ],
+        "insert_before":"crypto_general",
+    },
+
+    "indices": {
+        "src":"indices.html",
+        "lab":"xx-indices-lab.html",
+        "var":"INDEX_ITEMS",
+        "title":"XX Lab — Indices Sentiment",
+        "target":16,
+        "existing_ids":[
+            "sp500_es","nasdaq_nq","dow_ym","russell_rty","vix",
+            "dax","ftse_100","nikkei_225","hang_seng","euro_stoxx_50",
+        ],
+        "new":[
+            {"name":"CAC 40","dataKey":"CAC 40","symbol":"CAC40","kind":"index",
+             "aliases":["cac 40","cac40","france 40","french stocks"],"historyKeys":["CAC 40","CAC40"],"official":True},
+            {"name":"CSI 300","dataKey":"CSI 300","symbol":"CSI300","kind":"index",
+             "aliases":["csi 300","csi300","china a shares","mainland china stocks"],"historyKeys":["CSI 300","CSI300"],"official":True},
+            {"name":"TSX Composite","dataKey":"TSX Composite","symbol":"TSX","kind":"index",
+             "aliases":["tsx","tsx composite","s&p/tsx composite","canada stocks","canadian stocks"],"historyKeys":["TSX Composite","TSX"],"official":True},
+            {"name":"ASX 200","dataKey":"ASX 200","symbol":"ASX200","kind":"index",
+             "aliases":["asx 200","asx200","australia 200","australian stocks"],"historyKeys":["ASX 200","ASX200"],"official":True},
+            {"name":"Nifty 50","dataKey":"Nifty 50","symbol":"NIFTY50","kind":"index",
+             "aliases":["nifty 50","nifty50","india nifty","indian stocks"],"historyKeys":["Nifty 50","NIFTY50"],"official":True},
+            {"name":"KOSPI","dataKey":"KOSPI","symbol":"KOSPI","kind":"index",
+             "aliases":["kospi","south korea stocks","korean stocks"],"historyKeys":["KOSPI"],"official":True},
+        ],
+    },
+
+    "energy": {
+        "src":"energy.html",
+        "lab":"xx-energy-lab.html",
+        "var":"ENERGY_ITEMS",
+        "title":"XX Lab — Energy Sentiment",
+        "target":16,
+        "existing_ids":[
+            "energy_general","crude_oil","natural_gas","opec_supply",
+            "oil_inventories_eia","brent_oil","wti_oil","gasoline",
+            "heating_oil","energy_stocks",
+        ],
+        "new":[
+            {"name":"Energy ETF / XLE","dataKey":"XLE","symbol":"XLE","kind":"etf",
+             "aliases":["xle","energy select sector spdr","energy etf","energy stocks etf"],"historyKeys":["XLE","Energy ETF / XLE"],"official":True},
+            {"name":"Oil & Gas E&P / XOP","dataKey":"XOP","symbol":"XOP","kind":"etf",
+             "aliases":["xop","oil gas exploration etf","exploration production stocks","e&p stocks"],"historyKeys":["XOP","Oil & Gas E&P / XOP"],"official":True},
+            {"name":"Oil Services / OIH","dataKey":"OIH","symbol":"OIH","kind":"etf",
+             "aliases":["oih","oil services etf","oilfield services","oil service stocks"],"historyKeys":["OIH","Oil Services / OIH"],"official":True},
+            {"name":"Cheniere Energy / LNG","dataKey":"LNG","symbol":"LNG","kind":"equity",
+             "aliases":["cheniere energy","lng stock","liquefied natural gas","lng exports"],"historyKeys":["LNG","Cheniere Energy / LNG"],"official":True},
+            {"name":"European Natural Gas / TTF","dataKey":"TTF","symbol":"TTF","kind":"commodity",
+             "aliases":["ttf","dutch ttf","european natural gas","europe gas prices","dutch gas"],"historyKeys":["TTF","European Natural Gas / TTF"],"official":True},
+            {"name":"Refining / Crack Spread","dataKey":"Refining / Crack Spread","symbol":"CRACK","kind":"theme",
+             "aliases":["crack spread","refining margin","refinery margins","gasoline crack","diesel crack"],"historyKeys":["Refining / Crack Spread"],"official":False},
+        ],
+    },
+
+    "precious_metals": {
+        "src":"precious-metals.html",
+        "lab":"xx-precious-metals-lab.html",
+        "var":"METAL_ITEMS",
+        "title":"XX Lab — Precious Metals Sentiment",
+        "target":16,
+        "existing_ids":[
+            "precious_metals_general","gold","silver","platinum","palladium",
+            "copper","gold_etfs_flows","central_bank_gold","mining_stocks",
+            "inflation_real_yields",
+        ],
+        "new":[
+            {"name":"Gold ETF / GLD","dataKey":"GLD","symbol":"GLD","kind":"etf",
+             "aliases":["gld","spdr gold shares","gold etf"],"historyKeys":["GLD","Gold ETF / GLD"],"official":True},
+            {"name":"Silver ETF / SLV","dataKey":"SLV","symbol":"SLV","kind":"etf",
+             "aliases":["slv","ishares silver trust","silver etf"],"historyKeys":["SLV","Silver ETF / SLV"],"official":True},
+            {"name":"Gold Miners / GDX","dataKey":"GDX","symbol":"GDX","kind":"etf",
+             "aliases":["gdx","vaneck gold miners","gold miners etf"],"historyKeys":["GDX","Gold Miners / GDX"],"official":True},
+            {"name":"Junior Gold Miners / GDXJ","dataKey":"GDXJ","symbol":"GDXJ","kind":"etf",
+             "aliases":["gdxj","junior gold miners","junior miners etf"],"historyKeys":["GDXJ","Junior Gold Miners / GDXJ"],"official":True},
+            {"name":"Silver Miners / SIL","dataKey":"SIL","symbol":"SIL","kind":"etf",
+             "aliases":["sil","silver miners etf","silver mining stocks"],"historyKeys":["SIL","Silver Miners / SIL"],"official":True},
+            {"name":"Copper Miners / COPX","dataKey":"COPX","symbol":"COPX","kind":"etf",
+             "aliases":["copx","copper miners etf","copper mining stocks"],"historyKeys":["COPX","Copper Miners / COPX"],"official":True},
+        ],
+    },
+
+    "ai_assets": {
+        "src":"ai-assets.html",
+        "lab":"xx-ai-assets-lab.html",
+        "var":"AI_ITEMS",
+        "title":"XX Lab — AI Assets Sentiment",
+        "target":16,
+        "existing_ids":[
+            "nvda","avgo","amd","mu","tsm","asml","msft","googl",
+            "amzn","meta","pltr","orcl","arm","smh","aiq",
+        ],
+        "new":[
+            {"name":"Arista Networks / ANET","dataKey":"ANET","symbol":"ANET","kind":"equity",
+             "aliases":["arista networks","anet","ai networking","data center networking"],"historyKeys":["ANET","Arista Networks / ANET"],"official":True},
+        ],
+    },
+
+    "policy_geopolitical": {
+        "src":"policy-assets.html",
+        "lab":"xx-policy-assets-lab.html",
+        "var":"POLICY_ITEMS",
+        "title":"XX Lab — Policy & Geopolitical Assets Sentiment",
+        "target":16,
+        "existing_ids":[
+            "trump_token","wlfi","kalshi_politics","polymarket_politics","djt",
+            "coin","mstr","tsla","ita","lmt","remx","smh","fxi","ura","geo",
+        ],
+        "new":[
+            {"name":"Cybersecurity / CIBR","dataKey":"CIBR","symbol":"CIBR","kind":"etf",
+             "aliases":["cibr","cybersecurity etf","cybersecurity stocks","cyber attack","cyber defense"],"historyKeys":["CIBR","Cybersecurity / CIBR"],"official":True},
+        ],
+    },
+}
+
+assets = config.get("assets") or []
+by_id = {str(a.get("id")): a for a in assets if a.get("id") is not None}
+
+def unique(vals):
+    out=[]
+    seen=set()
+    for v in vals or []:
+        s=str(v).strip()
+        if not s:
+            continue
+        k=s.lower()
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(s)
+    return out
+
+def from_config(asset):
+    name = asset.get("display_name") or asset.get("name") or asset.get("symbol")
+    data_key = asset.get("data_key") or asset.get("name") or name
+    symbol = asset.get("symbol") or name
+    aliases = unique([
+        *(asset.get("aliases") or []),
+        name, data_key, asset.get("name"), symbol
+    ])
+    history = unique([
+        data_key, name, asset.get("name"), symbol,
+        *(asset.get("history_keys") or [])
+    ])
+    return {
+        "name":name,
+        "dataKey":data_key,
+        "symbol":symbol,
+        "kind":asset.get("type") or "asset",
+        "aliases":aliases,
+        "historyKeys":history,
+        "official":True,
+    }
+
+def js_str(s):
+    return json.dumps(str(s), ensure_ascii=False)
+
+def js_item(item):
+    return (
+        "{name:"+js_str(item["name"])+
+        ", dataKey:"+js_str(item.get("dataKey") or item["name"])+
+        ", symbol:"+js_str(item.get("symbol") or item["name"])+
+        ", kind:"+js_str(item.get("kind") or "asset")+
+        ", aliases:"+json.dumps(item.get("aliases") or [], ensure_ascii=False)+
+        ", historyKeys:"+json.dumps(item.get("historyKeys") or [], ensure_ascii=False)+
+        ", official:"+("true" if item.get("official") is True else "false")+"}"
+    )
+
+def make_lab_items(cat, plan):
+    existing=[]
+    for asset_id in plan["existing_ids"]:
+        asset=by_id.get(asset_id)
+        if not asset:
+            raise SystemExit(f"STOP: assets_config missing expected id {asset_id} for {cat}")
+        existing.append(from_config(asset))
+
+    if cat=="crypto":
+        idx=plan["existing_ids"].index(plan["insert_before"])
+        items=existing[:idx] + plan["new"] + existing[idx:]
+    else:
+        items=existing + plan["new"]
+
+    if len(items) != plan["target"]:
+        raise SystemExit(f"STOP: {cat} target mismatch: built {len(items)}, expected {plan['target']}")
+    return items
+
+def set_noindex(text):
+    if re.search(r'<meta\s+name=["\']robots["\']', text, re.I):
+        text=re.sub(
+            r'<meta\s+name=["\']robots["\'][^>]*>',
+            '<meta name="robots" content="noindex, nofollow">',
+            text, count=1, flags=re.I
+        )
+    else:
+        text=text.replace("<head>",'<head>\n  <meta name="robots" content="noindex, nofollow">',1)
+    text=re.sub(r'<link\s+rel=["\']canonical["\'][^>]*>','',text,count=1,flags=re.I)
+    return text
+
+def set_title(text,title):
+    return re.sub(r'<title>.*?</title>',f'<title>{title}</title>',text,count=1,flags=re.I|re.S)
+
+def add_lab_marker(text,label):
+    if "xx-category-lab-marker" in text:
+        return text
+    marker=(
+        '<div id="xx-category-lab-marker" style="'
+        'position:fixed;right:12px;bottom:12px;z-index:99999;padding:5px 9px;'
+        'border-radius:999px;font:700 10px/1.1 Inter,Arial,sans-serif;letter-spacing:.08em;'
+        'background:rgba(15,23,42,.94);color:#f6c85f;border:1px solid rgba(246,200,95,.48);'
+        'pointer-events:none;">'+label+'</div>'
+    )
+    b=text.find("<body")
+    if b<0:
+        raise SystemExit("STOP: <body> not found in lab source")
+    pos=text.find(">",b)+1
+    return text[:pos]+"\n"+marker+text[pos:]
+
+def make_items_mutable(text,varname):
+    pat=r'\bconst\s+'+re.escape(varname)+r'\s*='
+    if re.search(pat,text):
+        text=re.sub(pat,'let '+varname+' =',text,count=1)
+    return text
+
+def remove_buildrows_cap(text):
+    m=re.search(r'function\s+buildRows\s*\(\)\s*\{',text)
+    if not m:
+        raise SystemExit("STOP: function buildRows() not found")
+    next_fun=re.search(r'\n\s*function\s+\w+\s*\(',text[m.end():])
+    if not next_fun:
+        raise SystemExit("STOP: could not find function after buildRows()")
+    end=m.end()+next_fun.start()
+    block=text[m.start():end]
+    new_block=re.sub(r'\.slice\(\s*0\s*,\s*\d+\s*\)\s*;',';',block,count=1)
+    return text[:m.start()]+new_block+text[end:] if new_block!=block else text
+
+def inject_lab_universe(text,varname,items):
+    marker=f"XX_{varname}_LAB_ITEMS"
+    js="    const "+marker+" = [\n      "+",\n      ".join(js_item(x) for x in items)+"\n    ];\n\n"
+    anchor=re.search(r'\n\s*async\s+function\s+init\s*\(\)\s*\{',text)
+    if not anchor:
+        raise SystemExit("STOP: async function init() anchor not found")
+    text=text[:anchor.start()+1]+js+text[anchor.start()+1:]
+
+    needle="        applyAssetConfig(assetConfig);"
+    if needle not in text:
+        raise SystemExit("STOP: applyAssetConfig(assetConfig) init anchor not found")
+    text=text.replace(
+        needle,
+        needle+f"\n        {varname} = {marker}.map(item => ({{...item}}));",
+        1
+    )
+    return text
+
+def inject_daily_technical(text,varname):
+    if "function dailyTechnicalDirection(" in text:
+        return text
+
+    fn=f'''    function dailyTechnicalDirection(name){{
+      const item={varname}.find(x=>x.name===name);
+      if(!item)return "N/A";
+
+      const root=(technicalData && (technicalData.technical || technicalData)) || {{}};
+      const keys=[
+        item.dataKey,item.name,item.symbol,
+        ...(Array.isArray(item.historyKeys)?item.historyKeys:[])
+      ].filter(Boolean).map(x=>normalizeText(x));
+
+      const foundKey=Object.keys(root).find(key=>keys.includes(normalizeText(key)));
+      const entry=foundKey ? root[foundKey] : null;
+      const daily=entry && (entry.daily || entry.Daily);
+
+      let raw="";
+      if(typeof daily==="string") raw=daily;
+      else if(daily) raw=daily.direction || daily.signal || daily.label || daily.trend || daily.value || "";
+
+      raw=String(raw||"").trim();
+      if(!raw || raw.toUpperCase()==="N/A") return "N/A";
+
+      const n=normalizeText(raw);
+      if(n.includes("bull") || n.includes("buy") || n.includes("up")) return "Bullish";
+      if(n.includes("bear") || n.includes("sell") || n.includes("down")) return "Bearish";
+      if(n.includes("neutral") || n.includes("mixed") || n.includes("flat")) return "Neutral";
+      return raw;
+    }}
+
+'''
+    anchor=re.search(r'\n\s*function\s+renderTopCards\s*\(\)\s*\{',text)
+    if not anchor:
+        raise SystemExit("STOP: renderTopCards() anchor not found")
+    text=text[:anchor.start()+1]+fn+text[anchor.start()+1:]
+
+    lines=text.splitlines()
+    out=[]
+    inserted=0
+    for line in lines:
+        out.append(line)
+        if (
+            'class="market-insight"' in line
+            and 'marketDirection(row.name)' in line
+            and 'Daily technical direction' not in line
+        ):
+            indent=line[:len(line)-len(line.lstrip())]
+            out.append(indent+'<div class="market-insight"><span>Daily technical direction</span><b>${esc(dailyTechnicalDirection(row.name))}</b></div>')
+            inserted+=1
+    if inserted != 1:
+        raise SystemExit(f"STOP: expected 1 Daily Market Insight card anchor, found {inserted}")
+    return "\n".join(out)+("\n" if text.endswith("\n") else "")
+
+def verify_lab(path,varname,target):
+    text=path.read_text(encoding="utf-8")
+    marker=f"XX_{varname}_LAB_ITEMS"
+    m=re.search(r'const\s+'+re.escape(marker)+r'\s*=\s*\[(.*?)\n\s*\];',text,re.S)
+    if not m:
+        raise SystemExit(f"STOP: could not verify {marker}")
+    count=len(re.findall(r'\{name:',m.group(1)))
+    if count!=target:
+        raise SystemExit(f"STOP: {path.name} has {count} lab items, expected {target}")
+    if "Daily technical direction" not in text:
+        raise SystemExit(f"STOP: {path.name} missing Daily technical direction")
+    if 'noindex, nofollow' not in text:
+        raise SystemExit(f"STOP: {path.name} missing noindex")
+    return count
+
+# Preflight: do not partially create labs.
+for cat,plan in PAGES.items():
+    src=Path(plan["src"])
+    lab=Path(plan["lab"])
+    if not src.exists():
+        raise SystemExit(f"STOP: source page missing: {src}")
+    if lab.exists():
+        raise SystemExit(f"STOP: lab already exists: {lab}. Nothing changed.")
+
+created=[]
+for cat,plan in PAGES.items():
+    src=Path(plan["src"])
+    lab=Path(plan["lab"])
+    shutil.copy2(src,lab)
+
+    items=make_lab_items(cat,plan)
+    text=lab.read_text(encoding="utf-8",errors="strict")
+    text=set_noindex(text)
+    text=set_title(text,plan["title"])
+    text=add_lab_marker(text,cat.replace("_"," ").upper()+" LAB V1")
+    text=make_items_mutable(text,plan["var"])
+    text=remove_buildrows_cap(text)
+    text=inject_lab_universe(text,plan["var"],items)
+    text=inject_daily_technical(text,plan["var"])
+    text=text.replace("</head>",f'  <!-- xx-{cat}-expanded-lab-v1 -->\n</head>',1)
+    lab.write_text(text,encoding="utf-8")
+    verify_lab(lab,plan["var"],plan["target"])
+    created.append((cat,lab,items))
+
+print("Six category labs created successfully.")
+print()
+for cat,lab,items in created:
+    pages=len(items)//8
+    print(f"{lab.name}: {len(items)} assets = {pages} full desktop page(s)")
+    for i in range(0,len(items),8):
+        print(f"  Page {i//8+1}: "+" | ".join(x['name'] for x in items[i:i+8]))
+    print("  Daily Technical Direction: YES")
+    print()
+
+print("Production category pages: UNTOUCHED")
+print("assets_config.json: UNTOUCHED")
+print("Engine V2: UNTOUCHED")
+PY
+
+git diff --check
+
+echo
+echo "Changed files:"
+git status --short -- \
+  xx-crypto-lab.html \
+  xx-indices-lab.html \
+  xx-energy-lab.html \
+  xx-precious-metals-lab.html \
+  xx-ai-assets-lab.html \
+  xx-policy-assets-lab.html
+
+echo
+echo "Production page status:"
+git status --short -- \
+  crypto.html indices.html energy.html precious-metals.html ai-assets.html policy-assets.html assets_config.json
+
+echo
+echo "Technical direction verification:"
+grep -nH "Daily technical direction" \
+  xx-crypto-lab.html \
+  xx-indices-lab.html \
+  xx-energy-lab.html \
+  xx-precious-metals-lab.html \
+  xx-ai-assets-lab.html \
+  xx-policy-assets-lab.html
+
+echo
+echo "No commit or push was performed."
