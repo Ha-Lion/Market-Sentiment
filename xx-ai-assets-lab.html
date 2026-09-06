@@ -922,6 +922,49 @@
 
   </style>
   <!-- xx-ai_assets-expanded-lab-v1 -->
+
+  <style id="xx-daily-tech-colors-v1">
+    .daily-tech-value{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:74px;
+      padding:2px 7px;
+      border-radius:999px;
+      font-weight:800;
+      line-height:1.2;
+      border:1px solid transparent;
+    }
+    .daily-tech-value.tech-bullish{
+      color:#16a34a;
+      background:rgba(34,197,94,.11);
+      border-color:rgba(34,197,94,.28);
+    }
+    .daily-tech-value.tech-bearish{
+      color:#dc2626;
+      background:rgba(239,68,68,.11);
+      border-color:rgba(239,68,68,.28);
+    }
+    .daily-tech-value.tech-neutral{
+      color:#b7791f;
+      background:rgba(245,158,11,.11);
+      border-color:rgba(245,158,11,.28);
+    }
+    .daily-tech-value.tech-na{
+      color:#64748b;
+      background:rgba(100,116,139,.10);
+      border-color:rgba(100,116,139,.22);
+    }
+    [data-theme="dark"] .daily-tech-value.tech-bullish,
+    .dark .daily-tech-value.tech-bullish{ color:#4ade80; }
+    [data-theme="dark"] .daily-tech-value.tech-bearish,
+    .dark .daily-tech-value.tech-bearish{ color:#f87171; }
+    [data-theme="dark"] .daily-tech-value.tech-neutral,
+    .dark .daily-tech-value.tech-neutral{ color:#fbbf24; }
+    [data-theme="dark"] .daily-tech-value.tech-na,
+    .dark .daily-tech-value.tech-na{ color:#94a3b8; }
+  </style>
+
 </head>
 
 <body>
@@ -1317,6 +1360,15 @@
       return raw;
     }
 
+    function dailyTechnicalTone(name){
+      const value=String(dailyTechnicalDirection(name)||"N/A").trim().toLowerCase();
+      if(value.includes("bull") || value.includes("buy") || value.includes("up")) return "tech-bullish";
+      if(value.includes("bear") || value.includes("sell") || value.includes("down")) return "tech-bearish";
+      if(value.includes("neutral") || value.includes("mixed") || value.includes("flat")) return "tech-neutral";
+      return "tech-na";
+    }
+
+
 
     function renderTopCards(){
       const grid = document.getElementById("aiTopGrid");
@@ -1368,7 +1420,7 @@
             </div>
 
             <div class="market-insight"><span>Daily market insight <button class="psd-glossary-info" type="button" data-pulse-glossary="daily-market-insight" aria-label="Explain Daily Market Insight" aria-expanded="false">i</button></span><b>${esc(marketDirection(row.name))}</b></div>
-            <div class="market-insight"><span>Daily technical direction</span><b>${esc(dailyTechnicalDirection(row.name))}</b></div>
+            <div class="market-insight"><span>Daily technical direction</span><b class="daily-tech-value ${dailyTechnicalTone(row.name)}">${esc(dailyTechnicalDirection(row.name))}</b></div>
             <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
