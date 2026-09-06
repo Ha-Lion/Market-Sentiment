@@ -1,0 +1,442 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "=== WEBSITE ONLY: final remaining approved asset expansion ==="
+
+cd /workspaces/Market-Sentiment || {
+  echo "STOP: This must be run in the WEBSITE Codespace."
+  exit 1
+}
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: Wrong repository: $PWD"
+  exit 1
+fi
+
+FILE="assets_config.json"
+
+if [ ! -f "$FILE" ]; then
+  echo "STOP: assets_config.json not found."
+  exit 1
+fi
+
+if [ -n "$(git status --porcelain -- "$FILE")" ]; then
+  echo "STOP: assets_config.json already has uncommitted changes."
+  exit 1
+fi
+
+python - <<'PY'
+import copy
+import json
+import re
+from pathlib import Path
+
+path = Path("assets_config.json")
+cfg = json.loads(path.read_text(encoding="utf-8"))
+assets = cfg.get("assets")
+categories = cfg.get("categories")
+
+if not isinstance(assets, list) or not isinstance(categories, dict):
+    raise SystemExit("STOP: unexpected assets_config.json structure.")
+
+def norm(v):
+    return re.sub(r"[^a-z0-9]+", "", str(v or "").lower())
+
+def cat_entry(asset, category):
+    for c in asset.get("categories", []):
+        if isinstance(c, dict) and c.get("category") == category and c.get("enabled", True) is not False:
+            return c
+    return None
+
+def cat_rows(category):
+    rows = []
+    for a in assets:
+        c = cat_entry(a, category)
+        if c and a.get("enabled", True) is not False:
+            rows.append((int(c.get("priority", 9999)), a, c))
+    rows.sort(key=lambda x: x[0])
+    return rows
+
+# Known-good starting point after the already-proven metals batch and added crypto batch.
+expected_start = {
+    "forex": 15,
+    "crypto": 24,
+    "indices": 10,
+    "energy": 10,
+    "precious_metals": 16,
+    "ai_assets": 15,
+    "policy_geopolitical": 15,
+}
+for cat, expected in expected_start.items():
+    actual = len(cat_rows(cat))
+    if actual != expected:
+        raise SystemExit(f"STOP: {cat} start count={actual}; expected={expected}")
+
+templates = {cat: copy.deepcopy(cat_rows(cat)[0][2]) for cat in expected_start}
+
+by_id = {a.get("id"): a for a in assets}
+
+def add_category(asset, category, priority):
+    # preserve all other memberships
+    asset["categories"] = [
+        c for c in (asset.get("categories") or [])
+        if not (isinstance(c, dict) and c.get("category") == category)
+    ]
+    c = copy.deepcopy(templates[category])
+    c["category"] = category
+    c["priority"] = priority
+    c["enabled"] = True
+    if "role" in c:
+        c["role"] = "primary"
+    asset["categories"].append(c)
+    asset["enabled"] = True
+
+def yahoo(symbol, label, decimals=2, required=False):
+    return {
+        "source": "yahoo",
+        "symbol": symbol,
+        "label": label,
+        "price_decimals": decimals,
+        "data_kind": "market_price",
+        "frequency": "daily",
+        "retention_days": 180,
+        "required": required,
+    }
+
+def create_asset(*, aid, name, display, data_key, symbol, atype, aliases,
+                 category, priority, market_data=None, notes=""):
+    if aid in by_id:
+        raise SystemExit(f"STOP: duplicate new id: {aid}")
+    row = {
+        "id": aid,
+        "name": name,
+        "display_name": display,
+        "data_key": data_key,
+        "symbol": symbol,
+        "type": atype,
+        "enabled": True,
+        "aliases": aliases,
+        "categories": [],
+        "notes": notes,
+    }
+    if market_data is not None:
+        row["market_data"] = market_data
+    assets.append(row)
+    by_id[aid] = row
+    add_category(row, category, priority)
+    return row
+
+# -------------------------
+# CRYPTO: keep 24, correct approved order only.
+# -------------------------
+crypto_order = [
+    "btc", "eth", "bnb", "xrp", "sol", "trx", "hype", "doge",
+    "ada", "link", "ltc", "avax", "bch", "sui", "hbar", "uni",
+    "shib", "dot", "crypto_xmr", "crypto_xlm",
+    "crypto_general", "crypto_etf_flows", "crypto_regulation", "stablecoin_depeg",
+]
+
+# Resolve first 18 + four theme ids by their current priority if exact ids differ.
+current_crypto = cat_rows("crypto")
+if len(current_crypto) != 24:
+    raise SystemExit("STOP: crypto count changed unexpectedly.")
+
+# We know XMR/XLM exact ids. Preserve the first 18 and existing four theme assets by current relative order.
+first18 = [a for _, a, _ in current_crypto[:18]]
+xmr = by_id.get("crypto_xmr")
+xlm = by_id.get("crypto_xlm")
+if not xmr or not xlm:
+    raise SystemExit("STOP: XMR/XLM assets not found.")
+themes = [a for _, a, _ in current_crypto if a not in first18 and a not in (xmr, xlm)]
+if len(themes) != 4:
+    raise SystemExit(f"STOP: expected 4 existing crypto theme assets, found {len(themes)}")
+
+approved_crypto_assets = first18 + [xmr, xlm] + themes
+for priority, a in enumerate(approved_crypto_assets, start=1):
+    add_category(a, "crypto", priority)
+categories["crypto"]["default_top_n"] = 24
+
+# -------------------------
+# FOREX: exact approved 40.
+# -------------------------
+existing_forex_ids = {
+    "DXY": "dashboard_us_dollar_dxy",
+    "EURUSD": "dashboard_eur_eurusd",
+    "USDJPY": "dashboard_jpy_usdjpy",
+    "GBPUSD": "dashboard_gbp_gbpusd",
+    "AUDUSD": "dashboard_aud_audusd",
+    "USDCAD": "dashboard_cad_usdcad",
+    "USDCHF": "dashboard_chf_usdchf",
+    "USDCNH": "forex_usdcnh",
+    "NZDUSD": "dashboard_nzd_nzdusd",
+    "EURJPY": "dashboard_eurjpy",
+    "GBPJPY": "dashboard_gbpjpy",
+    "EURGBP": "dashboard_eurgbp",
+    "AUDJPY": "dashboard_audjpy",
+    "EURCHF": "dashboard_eurchf",
+    "USDMXN": "dashboard_usdmxn",
+    "CADJPY": "dashboard_cadjpy",
+    "EURCAD": "dashboard_eurcad",
+    "AUDCAD": "dashboard_audcad",
+    "AUDNZD": "dashboard_audnzd",
+    "NZDJPY": "dashboard_nzdjpy",
+    "USDSGD": "forex_usdsgd",
+    "USDZAR": "dashboard_usdzar",
+}
+
+for token, aid in existing_forex_ids.items():
+    if aid not in by_id:
+        raise SystemExit(f"STOP: expected existing Forex asset missing: {token} / {aid}")
+
+# Sentiment-only currency indices: no pair proxies, no market feed.
+currency_indices = [
+    ("BXY", "BXY(GBP)", "forex_bxy", ["bxy", "british pound index", "sterling index", "pound currency index"]),
+    ("EXY", "EXY(EUR)", "forex_exy", ["exy", "euro index", "euro currency index"]),
+    ("JXY", "JXY(JPY)", "forex_jxy", ["jxy", "japanese yen index", "yen index", "yen currency index"]),
+    ("SXY", "SXY(CHF)", "forex_sxy", ["sxy", "swiss franc index", "chf index", "swiss currency index"]),
+    ("CXY", "CXY(CAD)", "forex_cxy", ["cxy", "canadian dollar index", "cad index", "canadian currency index"]),
+    ("AXY", "AXY(AUD)", "forex_axy", ["axy", "australian dollar index", "aud index", "australian currency index"]),
+    ("ZXY", "ZXY(NZD)", "forex_zxy", ["zxy", "new zealand dollar index", "nzd index", "new zealand currency index"]),
+]
+for token, display, aid, aliases in currency_indices:
+    if aid not in by_id:
+        create_asset(
+            aid=aid, name=token, display=display, data_key=token, symbol=token,
+            atype="theme", aliases=aliases, category="forex", priority=999,
+            market_data=None,
+            notes="Sentiment-only currency index. No FX-pair proxy is permitted for Daily Technical."
+        )
+
+# New direct FX feeds. USD/NOK and USD/SEK use Yahoo's NOK=X and SEK=X conventions.
+new_fx = {
+    "EURAUD": ("forex_euraud", "EUR/AUD", "EURAUD=X"),
+    "GBPAUD": ("forex_gbpaud", "GBP/AUD", "GBPAUD=X"),
+    "GBPCAD": ("forex_gbpcad", "GBP/CAD", "GBPCAD=X"),
+    "GBPCHF": ("forex_gbpchf", "GBP/CHF", "GBPCHF=X"),
+    "GBPNZD": ("forex_gbpnzd", "GBP/NZD", "GBPNZD=X"),
+    "CHFJPY": ("forex_chfjpy", "CHF/JPY", "CHFJPY=X"),
+    "EURNZD": ("forex_eurnzd", "EUR/NZD", "EURNZD=X"),
+    "NZDCAD": ("forex_nzdcad", "NZD/CAD", "NZDCAD=X"),
+    "AUDCHF": ("forex_audchf", "AUD/CHF", "AUDCHF=X"),
+    "USDNOK": ("forex_usdnok", "USD/NOK", "NOK=X"),
+    "USDSEK": ("forex_usdsek", "USD/SEK", "SEK=X"),
+}
+for token, (aid, display, feed) in new_fx.items():
+    if aid not in by_id:
+        create_asset(
+            aid=aid, name=display, display=display, data_key=display, symbol=token,
+            atype="dashboard_extra",
+            aliases=[token.lower(), display.lower()],
+            category="forex", priority=999,
+            market_data=yahoo(feed, display, 3 if display.endswith("/JPY") else 4, required=False),
+            notes="Direct Yahoo FX market mapping; no proxy."
+        )
+
+forex_order = [
+    "DXY","BXY","EXY","JXY","EURUSD","USDJPY","GBPUSD","AUDUSD",
+    "SXY","CXY","AXY","ZXY","USDCAD","USDCHF","USDCNH","NZDUSD",
+    "EURJPY","GBPJPY","EURGBP","AUDJPY","EURCHF","USDMXN","EURAUD","GBPAUD",
+    "CADJPY","EURCAD","AUDCAD","AUDNZD","GBPCAD","GBPCHF","GBPNZD","CHFJPY",
+    "NZDJPY","EURNZD","NZDCAD","AUDCHF","USDNOK","USDSEK","USDSGD","USDZAR"
+]
+forex_resolve = dict(existing_forex_ids)
+forex_resolve.update({t: aid for t, _, aid, _ in currency_indices})
+forex_resolve.update({t: v[0] for t, v in new_fx.items()})
+
+for priority, token in enumerate(forex_order, start=1):
+    aid = forex_resolve[token]
+    add_category(by_id[aid], "forex", priority)
+
+# DXY display-only rename. Preserve its existing id/data_key/history identity.
+by_id["dashboard_us_dollar_dxy"]["display_name"] = "DXY(USD)"
+categories["forex"]["default_top_n"] = 40
+
+# -------------------------
+# INDICES: 16.
+# CAC 40 reuses existing mapped asset.
+# CSI 300 stays sentiment-only because its prior feed failed staleness validation.
+# -------------------------
+cac = by_id.get("dashboard_cac_40")
+if not cac:
+    raise SystemExit("STOP: existing CAC 40 asset missing.")
+
+indices_existing = [a for _, a, _ in cat_rows("indices")]
+if len(indices_existing) != 10:
+    raise SystemExit("STOP: expected 10 baseline indices.")
+
+new_indices = [
+    ("index_csi300", "CSI 300", "CSI300", "theme", None,
+     ["csi 300", "csi300", "china a shares", "mainland china stocks"],
+     "Sentiment-only until its market feed passes Engine freshness validation."),
+    ("index_tsx", "TSX Composite", "TSX", "index", yahoo("^GSPTSE", "TSX Composite", 2, False),
+     ["tsx", "tsx composite", "s&p/tsx composite", "canada stocks"],
+     "Direct Yahoo index mapping."),
+    ("index_asx200", "ASX 200", "ASX200", "index", yahoo("^AXJO", "ASX 200", 2, False),
+     ["asx 200", "asx200", "australia 200", "australian stocks"],
+     "Direct Yahoo index mapping."),
+    ("index_nifty50", "Nifty 50", "NIFTY50", "index", yahoo("^NSEI", "Nifty 50", 2, False),
+     ["nifty 50", "nifty50", "india nifty", "indian stocks"],
+     "Direct Yahoo index mapping."),
+    ("index_kospi", "KOSPI", "KOSPI", "index", yahoo("^KS11", "KOSPI", 2, False),
+     ["kospi", "south korea stocks", "korean stocks"],
+     "Direct Yahoo index mapping."),
+]
+for aid, display, symbol, atype, md, aliases, notes in new_indices:
+    if aid not in by_id:
+        create_asset(
+            aid=aid, name=display, display=display, data_key=display, symbol=symbol,
+            atype=atype, aliases=aliases, category="indices", priority=999,
+            market_data=md, notes=notes
+        )
+
+index_order_assets = indices_existing + [
+    cac,
+    by_id["index_csi300"],
+    by_id["index_tsx"],
+    by_id["index_asx200"],
+    by_id["index_nifty50"],
+    by_id["index_kospi"],
+]
+if len(index_order_assets) != 16:
+    raise SystemExit("STOP: index target list is not 16.")
+for priority, a in enumerate(index_order_assets, start=1):
+    add_category(a, "indices", priority)
+categories["indices"]["default_top_n"] = 16
+
+# -------------------------
+# ENERGY: 16.
+# TTF and Crack Spread stay sentiment-only for this one-run rollout.
+# -------------------------
+energy_existing = [a for _, a, _ in cat_rows("energy")]
+if len(energy_existing) != 10:
+    raise SystemExit("STOP: expected 10 baseline energy assets.")
+
+energy_new = [
+    ("energy_xle", "Energy ETF / XLE", "XLE", "etf", yahoo("XLE", "Energy ETF / XLE", 2, False),
+     ["xle", "energy select sector spdr", "energy etf"], "Direct Yahoo ETF mapping."),
+    ("energy_xop", "Oil & Gas E&P / XOP", "XOP", "etf", yahoo("XOP", "Oil & Gas E&P / XOP", 2, False),
+     ["xop", "oil gas exploration etf", "exploration production stocks", "e&p stocks"], "Direct Yahoo ETF mapping."),
+    ("energy_oih", "Oil Services / OIH", "OIH", "etf", yahoo("OIH", "Oil Services / OIH", 2, False),
+     ["oih", "oil services etf", "oilfield services"], "Direct Yahoo ETF mapping."),
+    ("energy_lng", "Cheniere Energy / LNG", "LNG", "equity", yahoo("LNG", "Cheniere Energy / LNG", 2, False),
+     ["cheniere energy", "lng stock", "cheniere lng"], "Direct Yahoo equity mapping."),
+    ("energy_ttf", "European Natural Gas / TTF", "TTF", "theme", None,
+     ["ttf", "dutch ttf", "european natural gas", "europe gas prices"],
+     "Sentiment-only for this rollout; no unverified market feed."),
+    ("energy_crack_spread", "Refining / Crack Spread", "CRACK", "theme", None,
+     ["crack spread", "refining margin", "refinery margins", "gasoline crack", "diesel crack"],
+     "Sentiment-only; no fabricated price proxy."),
+]
+for aid, display, symbol, atype, md, aliases, notes in energy_new:
+    if aid not in by_id:
+        create_asset(
+            aid=aid, name=display, display=display, data_key=display, symbol=symbol,
+            atype=atype, aliases=aliases, category="energy", priority=999,
+            market_data=md, notes=notes
+        )
+
+energy_target = energy_existing + [by_id[x[0]] for x in energy_new]
+for priority, a in enumerate(energy_target, start=1):
+    add_category(a, "energy", priority)
+categories["energy"]["default_top_n"] = 16
+
+# -------------------------
+# AI: ANET at 16.
+# -------------------------
+ai_existing = [a for _, a, _ in cat_rows("ai_assets")]
+if len(ai_existing) != 15:
+    raise SystemExit("STOP: expected 15 baseline AI assets.")
+if "ai_anet" not in by_id:
+    create_asset(
+        aid="ai_anet", name="Arista Networks / ANET", display="Arista Networks / ANET",
+        data_key="Arista Networks / ANET", symbol="ANET", atype="equity",
+        aliases=["arista networks", "anet", "ai networking", "data center networking"],
+        category="ai_assets", priority=16,
+        market_data=yahoo("ANET", "Arista Networks / ANET", 2, False),
+        notes="Direct Yahoo equity mapping."
+    )
+ai_target = ai_existing + [by_id["ai_anet"]]
+for priority, a in enumerate(ai_target, start=1):
+    add_category(a, "ai_assets", priority)
+categories["ai_assets"]["default_top_n"] = 16
+
+# -------------------------
+# POLICY: CIBR at 16.
+# -------------------------
+policy_existing = [a for _, a, _ in cat_rows("policy_geopolitical")]
+if len(policy_existing) != 15:
+    raise SystemExit("STOP: expected 15 baseline Policy assets.")
+if "policy_cibr" not in by_id:
+    create_asset(
+        aid="policy_cibr", name="Cybersecurity / CIBR", display="Cybersecurity / CIBR",
+        data_key="Cybersecurity / CIBR", symbol="CIBR", atype="etf",
+        aliases=["cibr", "cybersecurity etf", "cybersecurity stocks", "cyber defense"],
+        category="policy_geopolitical", priority=16,
+        market_data=yahoo("CIBR", "Cybersecurity / CIBR", 2, False),
+        notes="Direct Yahoo ETF mapping."
+    )
+policy_target = policy_existing + [by_id["policy_cibr"]]
+for priority, a in enumerate(policy_target, start=1):
+    add_category(a, "policy_geopolitical", priority)
+categories["policy_geopolitical"]["default_top_n"] = 16
+
+# -------------------------
+# FINAL VALIDATION
+# -------------------------
+expected_final = {
+    "forex": 40,
+    "crypto": 24,
+    "indices": 16,
+    "energy": 16,
+    "precious_metals": 16,
+    "ai_assets": 16,
+    "policy_geopolitical": 16,
+}
+
+for cat, expected in expected_final.items():
+    rows = cat_rows(cat)
+    if len(rows) != expected:
+        raise SystemExit(f"STOP: {cat} final count={len(rows)} expected={expected}")
+    priorities = [p for p, _, _ in rows]
+    if priorities != list(range(1, expected + 1)):
+        raise SystemExit(f"STOP: {cat} priorities are not exactly 1..{expected}: {priorities}")
+    if categories.get(cat, {}).get("default_top_n") != expected:
+        raise SystemExit(f"STOP: {cat} default_top_n mismatch.")
+
+path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+print("FINAL REMAINING EXPANSION PREPARED.")
+print()
+for cat in ["forex","crypto","indices","energy","precious_metals","ai_assets","policy_geopolitical"]:
+    rows = cat_rows(cat)
+    print(f"{cat}: {len(rows)}")
+    for start in range(0, len(rows), 8):
+        print("  " + " | ".join(
+            a.get("display_name") or a.get("name") or "?"
+            for _, a, _ in rows[start:start+8]
+        ))
+print()
+print("INTENTIONALLY SENTIMENT-ONLY / TECHNICAL N/A:")
+for aid in [
+    "forex_bxy","forex_exy","forex_jxy","forex_sxy","forex_cxy","forex_axy","forex_zxy",
+    "index_csi300","energy_ttf","energy_crack_spread"
+]:
+    a = by_id[aid]
+    print(f"  {a.get('display_name')} | type={a.get('type')} | market_data={'YES' if a.get('market_data') else 'NO'}")
+print()
+print("No Engine code, formulas, validator, scraper, HTML, or generated JSON changed.")
+PY
+
+python -m json.tool assets_config.json >/dev/null
+git diff --check
+
+echo
+echo "=== STATUS ==="
+git status --short -- assets_config.json
+
+echo
+echo "=== DIFF SUMMARY ==="
+git diff --stat -- assets_config.json
+
+echo
+echo "STOP HERE. No commit or push was performed."
