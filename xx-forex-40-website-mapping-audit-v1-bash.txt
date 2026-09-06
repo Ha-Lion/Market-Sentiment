@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(basename "$PWD")" != "Market-Sentiment" ]; then
+  echo "STOP: run this from /workspaces/Market-Sentiment"
+  exit 1
+fi
+
+echo "=== FOREX 40 WEBSITE MAPPING AUDIT V1 — READ ONLY ==="
+echo
+
+python - <<'PY'
+from pathlib import Path
+import json, re
+
+UNIVERSE = [
+    ("DXY(USD)", "DXY"),
+    ("BXY(GBP)", "BXY"),
+    ("EXY(EUR)", "EXY"),
+    ("JXY(JPY)", "JXY"),
+    ("EUR/USD", "EURUSD"),
+    ("USD/JPY", "USDJPY"),
+    ("GBP/USD", "GBPUSD"),
+    ("AUD/USD", "AUDUSD"),
+
+    ("SXY(CHF)", "SXY"),
+    ("CXY(CAD)", "CXY"),
+    ("AXY(AUD)", "AXY"),
+    ("ZXY(NZD)", "ZXY"),
+    ("USD/CAD", "USDCAD"),
+    ("USD/CHF", "USDCHF"),
+    ("USD/CNH", "USDCNH"),
+    ("NZD/USD", "NZDUSD"),
+
+    ("EUR/JPY", "EURJPY"),
+    ("GBP/JPY", "GBPJPY"),
+    ("EUR/GBP", "EURGBP"),
+    ("AUD/JPY", "AUDJPY"),
+    ("EUR/CHF", "EURCHF"),
+    ("USD/MXN", "USDMXN"),
+    ("EUR/AUD", "EURAUD"),
+    ("GBP/AUD", "GBPAUD"),
+
+    ("CAD/JPY", "CADJPY"),
+    ("EUR/CAD", "EURCAD"),
+    ("AUD/CAD", "AUDCAD"),
+    ("AUD/NZD", "AUDNZD"),
+    ("GBP/CAD", "GBPCAD"),
+    ("GBP/CHF", "GBPCHF"),
+    ("GBP/NZD", "GBPNZD"),
+    ("CHF/JPY", "CHFJPY"),
+
+    ("NZD/JPY", "NZDJPY"),
+    ("EUR/NZD", "EURNZD"),
+    ("NZD/CAD", "NZDCAD"),
+    ("AUD/CHF", "AUDCHF"),
+    ("USD/NOK", "USDNOK"),
+    ("USD/SEK", "USDSEK"),
+    ("USD/SGD", "USDSGD"),
+    ("USD/ZAR", "USDZAR"),
+]
+
+TARGET_FILES = [
+    "assets_config.json",
+    "sentiment-core.js",
+    "dashboard.html",
+    "forex-sentiment-today.html",
+    "xx-forex-sentiment-lab.html",
+    "technical_data.json",
+    "instrument_history_compact.json",
+    "dashboard_live.json",
+]
+
+def norm(v):
+    return re.sub(r"[^a-z0-9]+", "", str(v or "").lower())
+
+def safe_text(path):
+    p=Path(path)
+    if not p.exists():
+        return ""
+    try:
+        return p.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+def load_json(path):
+    p=Path(path)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+texts = {f: safe_text(f) for f in TARGET_FILES}
+jsons = {f: load_json(f) for f in TARGET_FILES if f.endswith(".json")}
+
+# Build a searchable normalized token set from arbitrary JSON.
+def collect_json_tokens(obj, out):
+    if isinstance(obj, dict):
+        for k,v in obj.items():
+            out.add(norm(k))
+            if isinstance(v, (str,int,float)):
+                out.add(norm(v))
+            collect_json_tokens(v,out)
+    elif isinstance(obj, list):
+        for v in obj:
+            collect_json_tokens(v,out)
+    elif isinstance(obj, (str,int,float)):
+        out.add(norm(obj))
+
+json_tokens={}
+for f,obj in jsons.items():
+    s=set()
+    if obj is not None:
+        collect_json_tokens(obj,s)
+    json_tokens[f]=s
+
+# assets_config forex-specific extraction
+assets = jsons.get("assets_config.json") or {}
+forex_assets=[]
+for a in (assets.get("assets") or []):
+    cats = a.get("categories") or []
+    is_forex = any(
+        isinstance(c,dict) and c.get("category")=="forex" and c.get("enabled",True) is not False
+        for c in cats
+    )
+    if is_forex:
+        forex_assets.append(a)
+
+def asset_matches(display,symbol):
+    wanted={norm(display), norm(symbol)}
+    if symbol=="DXY":
+        wanted |= {norm("US Dollar / DXY"), norm("US Dollar Index / DXY")}
+    for a in forex_assets:
+        vals=[
+            a.get("name"), a.get("display_name"), a.get("data_key"), a.get("symbol"),
+            *list(a.get("aliases") or []), *list(a.get("history_keys") or [])
+        ]
+        market=a.get("market_data") or {}
+        vals += [market.get("symbol"), market.get("label")]
+        if any(norm(v) in wanted for v in vals if v is not None):
+            return True
+        # also accept exact 6-letter symbol appearing inside a normalized value
+        if any(norm(symbol)==norm(v) for v in vals if v is not None):
+            return True
+    return False
+
+def text_matches(path,display,symbol):
+    t=norm(texts.get(path,""))
+    candidates=[norm(display), norm(symbol)]
+    if symbol=="DXY":
+        candidates += [norm("US Dollar / DXY"), norm("US Dollar Index / DXY")]
+    return any(c and c in t for c in candidates)
+
+def json_matches(path,display,symbol):
+    toks=json_tokens.get(path,set())
+    candidates={norm(display),norm(symbol)}
+    if symbol=="DXY":
+        candidates |= {norm("US Dollar / DXY"), norm("US Dollar Index / DXY")}
+    return any(c in toks for c in candidates)
+
+sources = [
+    ("assets", "assets_config.json"),
+    ("core", "sentiment-core.js"),
+    ("dashboard", "dashboard.html"),
+    ("live forex", "forex-sentiment-today.html"),
+    ("lab", "xx-forex-sentiment-lab.html"),
+    ("technical", "technical_data.json"),
+    ("history", "instrument_history_compact.json"),
+    ("live data", "dashboard_live.json"),
+]
+
+results=[]
+for display,symbol in UNIVERSE:
+    row={"display":display,"symbol":symbol}
+    row["assets"]=asset_matches(display,symbol)
+    row["core"]=text_matches("sentiment-core.js",display,symbol)
+    row["dashboard"]=text_matches("dashboard.html",display,symbol)
+    row["live forex"]=text_matches("forex-sentiment-today.html",display,symbol)
+    row["lab"]=text_matches("xx-forex-sentiment-lab.html",display,symbol)
+    row["technical"]=json_matches("technical_data.json",display,symbol)
+    row["history"]=json_matches("instrument_history_compact.json",display,symbol)
+    row["live data"]=json_matches("dashboard_live.json",display,symbol)
+    results.append(row)
+
+print("Current git:")
+import subprocess
+try:
+    print(subprocess.check_output(["git","log","-1","--oneline"], text=True).strip())
+except Exception:
+    pass
+print()
+
+print("Legend: Y = mapped/present, - = missing/not found")
+print()
+hdr=f"{'Instrument':<13} {'assets':>6} {'core':>5} {'dash':>5} {'liveFX':>6} {'lab':>4} {'tech':>5} {'hist':>5} {'data':>5}"
+print(hdr)
+print("-"*len(hdr))
+for r in results:
+    yn=lambda k:"Y" if r[k] else "-"
+    print(f"{r['display']:<13} {yn('assets'):>6} {yn('core'):>5} {yn('dashboard'):>5} {yn('live forex'):>6} {yn('lab'):>4} {yn('technical'):>5} {yn('history'):>5} {yn('live data'):>5}")
+
+print()
+print("=== MISSING BY WEBSITE LAYER ===")
+for key,label in [
+    ("assets","assets_config.json"),
+    ("core","sentiment-core.js"),
+    ("dashboard","dashboard.html"),
+    ("technical","technical_data.json"),
+    ("history","instrument_history_compact.json"),
+    ("live data","dashboard_live.json"),
+]:
+    missing=[r["display"] for r in results if not r[key]]
+    print(f"{label}: {len(missing)} missing")
+    if missing:
+        print("  " + ", ".join(missing))
+
+print()
+lab_missing=[r["display"] for r in results if not r["lab"]]
+print(f"LAB universe check: {'PASS' if not lab_missing else 'FAIL'}")
+if lab_missing:
+    print("  Missing from lab: " + ", ".join(lab_missing))
+
+print()
+print("=== DUPLICATE / NAMING CHECKS ===")
+lab_text=texts.get("xx-forex-sentiment-lab.html","")
+for display,symbol in UNIVERSE:
+    count=len(re.findall(r'\{name:"'+re.escape(display)+r'"', lab_text))
+    if count != 1:
+        print(f"LAB {display}: definition count={count}")
+print("Check complete.")
+
+print()
+print("=== IMPORTANT ===")
+print("This audit does not modify any file.")
+print("Engine V2 is intentionally NOT included yet.")
+PY
+
+echo
+echo "No files were modified."
