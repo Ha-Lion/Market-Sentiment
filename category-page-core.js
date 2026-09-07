@@ -138,6 +138,55 @@ function currentLatestRecord(){
       return records[records.length - 1] || null;
     }
 
+function isGenuinePsiRow(row){
+      if(!row || row.psi === null || row.psi === undefined || row.psi === "") return false;
+
+      const numeric = Number(row.psi);
+      if(!Number.isFinite(numeric)) return false;
+
+      const headlineCount = Number(row.headline_count || 0);
+      const status = String(row.psi_status || "");
+
+      if(status === "fresh_headlines" ||
+         status === "fresh_discovery_fallback" ||
+         status === "fresh_cache_fallback"){
+        return headlineCount > 0;
+      }
+
+      // Preserve legitimate older history records created before psi_status existed.
+      return !status && headlineCount > 0;
+    }
+
+function hasEarlierGenuinePsi(item, fallbackName, recordIndex){
+      const records = Array.isArray(historyData?.records) ? historyData.records : [];
+      const end = Number.isInteger(recordIndex)
+        ? Math.min(recordIndex, records.length)
+        : Math.max(0, records.length - 1);
+
+      for(let i = end - 1; i >= 0; i--){
+        const prior = historyInstrumentRow(records[i], item, fallbackName);
+        if(isGenuinePsiRow(prior)) return true;
+      }
+
+      return false;
+    }
+
+function psiDisplayState(row, item, fallbackName, recordIndex){
+      if(!row || row.psi === null || row.psi === undefined || row.psi === "") return "none";
+
+      const numeric = Number(row.psi);
+      if(!Number.isFinite(numeric)) return "none";
+
+      if(isGenuinePsiRow(row)) return "current";
+
+      if(String(row.psi_status || "") === "prior_fallback" &&
+         hasEarlierGenuinePsi(item, fallbackName, recordIndex)){
+        return "saved";
+      }
+
+      return "none";
+    }
+
 function priorityValue(headline){
       const value=Number(headline?.source_priority ?? headline?.priority ?? 3);
       return Number.isFinite(value)?Math.max(1,Math.min(3,value)):3;
@@ -711,6 +760,7 @@ function scheduleCategoryIntelligence(options={}){
     hasTerm,
     scoreFromHeadlineSet,
     currentLatestRecord,
+    psiDisplayState,
     priorityValue,
     priorityHeadlines,
     technicalForItem,
