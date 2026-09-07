@@ -1,16 +1,16 @@
 {
   "schema": "PSD_ENGINE_HEALTH_V1",
-  "updated_utc": "2026-09-07T12:46:19Z",
+  "updated_utc": "2026-09-07T15:49:43Z",
   "overall_status": "degraded",
   "workflow": {
     "name": "V2 Production Publish",
     "conclusion": "success",
-    "run_id": "34123059254",
-    "run_number": "64",
-    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/34123059254",
-    "started_at": "2026-09-07T12:39:31Z",
-    "completed_at": "2026-09-07T12:46:03Z",
-    "runtime_seconds": 392
+    "run_id": "34139702019",
+    "run_number": "65",
+    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/34139702019",
+    "started_at": "2026-09-07T15:42:50Z",
+    "completed_at": "2026-09-07T15:49:32Z",
+    "runtime_seconds": 402
   },
   "components": {
     "workflow": {
@@ -18,12 +18,17 @@
       "summary": "Production workflow completed"
     },
     "core_data": {
-      "status": "healthy",
-      "summary": "Updated 2026-09-07 08:39:51 AM NY Time",
+      "status": "degraded",
+      "summary": "Updated 2026-09-07 11:43:17 AM NY Time",
       "age_hours": 0.11,
-      "fresh_headlines_for_psi": 813,
-      "headline_psi_score": 55,
-      "psi_headlines_used": 500
+      "fresh_headlines_for_psi": 244,
+      "headline_psi_score": 54,
+      "psi_headlines_used": 244,
+      "assets_with_prior_fallback_psi": 67,
+      "prior_fallback_reason_counts": {
+        "outside_48h_window": 64,
+        "no_classified_headlines": 3
+      }
     },
     "technical_feeds": {
       "status": "healthy",
@@ -56,8 +61,18 @@
       "ai_event_count": 4
     }
   },
-  "active_alerts": [],
-  "active_alert_count": 0,
+  "active_alerts": [
+    {
+      "component": "ai",
+      "code": "ai_degraded",
+      "severity": "degraded",
+      "message": "AI gateway reported degraded status.",
+      "consecutive_runs": 2,
+      "first_seen_utc": "2026-09-07T12:46:19Z",
+      "last_seen_utc": "2026-09-07T15:49:43Z"
+    }
+  ],
+  "active_alert_count": 1,
   "recent_issues": [
     {
       "key": "ai:ai_degraded",
@@ -67,12 +82,27 @@
       "message": "AI gateway reported degraded status.",
       "status": "active",
       "first_seen_utc": "2026-09-07T12:46:19Z",
-      "last_seen_utc": "2026-09-07T12:46:19Z",
+      "last_seen_utc": "2026-09-07T15:49:43Z",
       "recovered_utc": null,
-      "consecutive_runs": 1,
+      "consecutive_runs": 2,
       "notify_after": 2,
       "first_run_id": "34123059254",
-      "last_run_id": "34123059254"
+      "last_run_id": "34139702019"
+    },
+    {
+      "key": "core_data:psi_prior_fallback",
+      "component": "core_data",
+      "code": "psi_prior_fallback",
+      "severity": "degraded",
+      "message": "67 asset(s) used prior-fallback PSI: 64 outside 48h • 3 no classified headlines.",
+      "status": "active",
+      "first_seen_utc": "2026-09-07T15:49:43Z",
+      "last_seen_utc": "2026-09-07T15:49:43Z",
+      "recovered_utc": null,
+      "consecutive_runs": 1,
+      "notify_after": 6,
+      "first_run_id": "34139702019",
+      "last_run_id": "34139702019"
     },
     {
       "key": "workflow:production_workflow_failed",
