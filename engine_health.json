@@ -1,41 +1,42 @@
 {
   "schema": "PSD_ENGINE_HEALTH_V1",
-  "updated_utc": "2026-09-09T03:51:35Z",
-  "overall_status": "critical",
+  "updated_utc": "2026-09-09T04:15:22Z",
+  "overall_status": "degraded",
   "workflow": {
     "name": "V2 Production Publish",
-    "conclusion": "failure",
-    "run_id": "34308128793",
-    "run_number": "77",
-    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/34308128793",
-    "started_at": "2026-09-09T03:42:05Z",
-    "completed_at": "2026-09-09T03:51:22Z",
-    "runtime_seconds": 557,
+    "conclusion": "success",
+    "run_id": "34309457075",
+    "run_number": "78",
+    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/34309457075",
+    "started_at": "2026-09-09T04:03:06Z",
+    "completed_at": "2026-09-09T04:15:10Z",
+    "runtime_seconds": 724,
     "monitor_trigger": "workflow_run"
   },
   "components": {
     "workflow": {
-      "status": "critical",
-      "summary": "Production workflow failure"
+      "status": "healthy",
+      "summary": "Production workflow completed"
     },
     "core_data": {
-      "status": "critical",
-      "summary": "Updated 2026-09-07 06:51:47 PM NY Time",
-      "age_hours": 29.0,
-      "fresh_headlines_for_psi": 283,
-      "headline_psi_score": 53,
-      "psi_headlines_used": 283,
-      "assets_with_prior_fallback_psi": 59,
+      "status": "degraded",
+      "summary": "Updated 2026-09-09 12:03:37 AM NY Time",
+      "age_hours": 0.2,
+      "fresh_headlines_for_psi": 435,
+      "headline_psi_score": 52,
+      "psi_headlines_used": 435,
+      "assets_with_prior_fallback_psi": 25,
       "prior_fallback_reason_counts": {
-        "outside_48h_window": 59
+        "no_classified_headlines": 1,
+        "outside_48h_window": 24
       },
-      "prior_fallback_expected_count": 59,
-      "prior_fallback_actionable_count": 0
+      "prior_fallback_expected_count": 24,
+      "prior_fallback_actionable_count": 1
     },
     "technical_feeds": {
       "status": "healthy",
-      "summary": "130 fresh • 0 failed • 0 stale",
-      "fresh_instruments": 130,
+      "summary": "96 fresh • 0 failed • 0 stale",
+      "fresh_instruments": 96,
       "failed_without_fallback": 0,
       "preserved_stale_instruments": 0,
       "required_failed_instruments": [],
@@ -46,11 +47,11 @@
       "fred_circuit_open": false
     },
     "ai": {
-      "status": "degraded",
-      "summary": "degraded • groq • openai/gpt-oss-120b",
+      "status": "healthy",
+      "summary": "healthy • groq • openai/gpt-oss-120b",
       "provider": "groq",
       "model": "openai/gpt-oss-120b",
-      "fallback_used": true,
+      "fallback_used": false,
       "events_generated": 5,
       "events_reused": 0,
       "events_failed": 0,
@@ -65,47 +66,34 @@
       "ai_event_count": 5
     }
   },
-  "active_alerts": [
-    {
-      "component": "ai",
-      "code": "ai_degraded",
-      "severity": "degraded",
-      "message": "AI gateway reported degraded status.",
-      "consecutive_runs": 8,
-      "first_seen_utc": "2026-09-07T22:58:02Z",
-      "last_seen_utc": "2026-09-09T03:51:35Z"
-    },
-    {
-      "component": "workflow",
-      "code": "production_workflow_failed",
-      "severity": "critical",
-      "message": "V2 Production Publish concluded with failure.",
-      "consecutive_runs": 7,
-      "first_seen_utc": "2026-09-08T04:42:38Z",
-      "last_seen_utc": "2026-09-09T03:51:35Z"
-    },
-    {
-      "component": "core_data",
-      "code": "data_very_stale",
-      "severity": "critical",
-      "message": "Core data is 29.0 hours old.",
-      "consecutive_runs": 4,
-      "first_seen_utc": "2026-09-08T21:13:01Z",
-      "last_seen_utc": "2026-09-09T03:51:35Z"
-    }
-  ],
-  "active_alert_count": 3,
+  "active_alerts": [],
+  "active_alert_count": 0,
   "recent_issues": [
+    {
+      "key": "core_data:psi_prior_fallback",
+      "component": "core_data",
+      "code": "psi_prior_fallback",
+      "severity": "degraded",
+      "message": "1 asset(s) have PSI coverage/data-quality issues: 1 no classified headlines. 24 additional prior-fallback asset(s) are expected under current PSI eligibility rules.",
+      "status": "active",
+      "first_seen_utc": "2026-09-09T04:15:22Z",
+      "last_seen_utc": "2026-09-09T04:15:22Z",
+      "recovered_utc": null,
+      "consecutive_runs": 1,
+      "notify_after": 6,
+      "first_run_id": "34309457075",
+      "last_run_id": "34309457075"
+    },
     {
       "key": "ai:ai_degraded",
       "component": "ai",
       "code": "ai_degraded",
       "severity": "degraded",
       "message": "AI gateway reported degraded status.",
-      "status": "active",
+      "status": "recovered",
       "first_seen_utc": "2026-09-07T22:58:02Z",
       "last_seen_utc": "2026-09-09T03:51:35Z",
-      "recovered_utc": null,
+      "recovered_utc": "2026-09-09T04:15:22Z",
       "consecutive_runs": 8,
       "notify_after": 2,
       "first_run_id": "34168082385",
@@ -117,10 +105,10 @@
       "code": "production_workflow_failed",
       "severity": "critical",
       "message": "V2 Production Publish concluded with failure.",
-      "status": "active",
+      "status": "recovered",
       "first_seen_utc": "2026-09-08T04:42:38Z",
       "last_seen_utc": "2026-09-09T03:51:35Z",
-      "recovered_utc": null,
+      "recovered_utc": "2026-09-09T04:15:22Z",
       "consecutive_runs": 7,
       "notify_after": 1,
       "first_run_id": "34187924458",
@@ -132,10 +120,10 @@
       "code": "data_very_stale",
       "severity": "critical",
       "message": "Core data is 29.0 hours old.",
-      "status": "active",
+      "status": "recovered",
       "first_seen_utc": "2026-09-08T21:13:01Z",
       "last_seen_utc": "2026-09-09T03:51:35Z",
-      "recovered_utc": null,
+      "recovered_utc": "2026-09-09T04:15:22Z",
       "consecutive_runs": 4,
       "notify_after": 1,
       "first_run_id": "34279274008",
@@ -230,21 +218,6 @@
       "notify_after": 2,
       "first_run_id": "34012230358",
       "last_run_id": "34012230358"
-    },
-    {
-      "key": "ai:ai_degraded",
-      "component": "ai",
-      "code": "ai_degraded",
-      "severity": "degraded",
-      "message": "AI gateway reported degraded status.",
-      "status": "recovered",
-      "first_seen_utc": "2026-09-05T15:23:49Z",
-      "last_seen_utc": "2026-09-05T15:23:49Z",
-      "recovered_utc": "2026-09-05T18:27:07Z",
-      "consecutive_runs": 1,
-      "notify_after": 2,
-      "first_run_id": "33974334383",
-      "last_run_id": "33974334383"
     }
   ]
 }
