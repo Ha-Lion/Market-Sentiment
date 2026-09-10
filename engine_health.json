@@ -1,16 +1,16 @@
 {
   "schema": "PSD_ENGINE_HEALTH_V1",
-  "updated_utc": "2026-09-10T01:16:19Z",
+  "updated_utc": "2026-09-10T02:51:27Z",
   "overall_status": "degraded",
   "workflow": {
     "name": "V2 Production Publish",
     "conclusion": "success",
-    "run_id": "34424275845",
-    "run_number": "90",
-    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/34424275845",
-    "started_at": "2026-09-10T01:08:46Z",
-    "completed_at": "2026-09-10T01:16:08Z",
-    "runtime_seconds": 442,
+    "run_id": "34430229618",
+    "run_number": "91",
+    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/34430229618",
+    "started_at": "2026-09-10T02:38:20Z",
+    "completed_at": "2026-09-10T02:51:15Z",
+    "runtime_seconds": 775,
     "monitor_trigger": "workflow_run"
   },
   "components": {
@@ -19,28 +19,28 @@
       "summary": "Production workflow completed"
     },
     "core_data": {
-      "status": "degraded",
-      "summary": "Updated 2026-09-09 09:09:11 PM NY Time",
-      "age_hours": 0.12,
-      "fresh_headlines_for_psi": 76,
-      "headline_psi_score": 52,
-      "psi_headlines_used": 76,
-      "assets_with_prior_fallback_psi": 28,
+      "status": "healthy",
+      "summary": "Updated 2026-09-09 10:38:46 PM NY Time",
+      "age_hours": 0.21,
+      "fresh_headlines_for_psi": 447,
+      "headline_psi_score": 51,
+      "psi_headlines_used": 447,
+      "assets_with_prior_fallback_psi": 26,
       "prior_fallback_reason_counts": {
-        "no_classified_headlines": 22,
-        "unknown_publication_date": 6
+        "outside_48h_window": 25,
+        "no_classified_headlines": 1
       },
-      "prior_fallback_expected_count": 22,
-      "prior_fallback_actionable_count": 6,
+      "prior_fallback_expected_count": 26,
+      "prior_fallback_actionable_count": 0,
       "collection_health": {
-        "source_entries_working": 42,
+        "source_entries_working": 61,
         "source_entries_empty": 0,
-        "source_entries_failed": 19,
-        "global_queries_ok": 0,
+        "source_entries_failed": 0,
+        "global_queries_ok": 150,
         "global_queries_empty": 0,
         "global_queries_failed": 0,
-        "global_queries_skipped_by_circuit": 150,
-        "google_news_circuit_open": true
+        "global_queries_skipped_by_circuit": 0,
+        "google_news_circuit_open": false
       }
     },
     "technical_feeds": {
@@ -57,11 +57,11 @@
       "fred_circuit_open": false
     },
     "ai": {
-      "status": "healthy",
-      "summary": "healthy • groq • openai/gpt-oss-120b",
+      "status": "degraded",
+      "summary": "degraded • groq • openai/gpt-oss-120b",
       "provider": "groq",
       "model": "openai/gpt-oss-120b",
-      "fallback_used": false,
+      "fallback_used": true,
       "events_generated": 5,
       "events_reused": 0,
       "events_failed": 0,
@@ -76,29 +76,34 @@
       "ai_event_count": 5
     }
   },
-  "active_alerts": [
-    {
-      "component": "core_data",
-      "code": "psi_prior_fallback",
-      "severity": "degraded",
-      "message": "6 asset(s) have PSI coverage/data-quality issues: 6 unknown date. 22 additional prior-fallback asset(s) are expected under current PSI eligibility rules.",
-      "consecutive_runs": 15,
-      "first_seen_utc": "2026-09-09T04:15:22Z",
-      "last_seen_utc": "2026-09-10T01:16:19Z"
-    }
-  ],
-  "active_alert_count": 1,
+  "active_alerts": [],
+  "active_alert_count": 0,
   "recent_issues": [
+    {
+      "key": "ai:ai_degraded",
+      "component": "ai",
+      "code": "ai_degraded",
+      "severity": "degraded",
+      "message": "AI gateway reported degraded status.",
+      "status": "active",
+      "first_seen_utc": "2026-09-10T02:51:27Z",
+      "last_seen_utc": "2026-09-10T02:51:27Z",
+      "recovered_utc": null,
+      "consecutive_runs": 1,
+      "notify_after": 2,
+      "first_run_id": "34430229618",
+      "last_run_id": "34430229618"
+    },
     {
       "key": "core_data:psi_prior_fallback",
       "component": "core_data",
       "code": "psi_prior_fallback",
       "severity": "degraded",
       "message": "6 asset(s) have PSI coverage/data-quality issues: 6 unknown date. 22 additional prior-fallback asset(s) are expected under current PSI eligibility rules.",
-      "status": "active",
+      "status": "recovered",
       "first_seen_utc": "2026-09-09T04:15:22Z",
       "last_seen_utc": "2026-09-10T01:16:19Z",
-      "recovered_utc": null,
+      "recovered_utc": "2026-09-10T02:51:27Z",
       "consecutive_runs": 15,
       "notify_after": 6,
       "first_run_id": "34309457075",
@@ -110,10 +115,10 @@
       "code": "collection_degraded",
       "severity": "degraded",
       "message": "News collection degraded: 19 configured source failure(s) • 150 global query circuit skip(s) • Google News circuit breaker open.",
-      "status": "active",
+      "status": "recovered",
       "first_seen_utc": "2026-09-10T01:16:19Z",
       "last_seen_utc": "2026-09-10T01:16:19Z",
-      "recovered_utc": null,
+      "recovered_utc": "2026-09-10T02:51:27Z",
       "consecutive_runs": 1,
       "notify_after": 2,
       "first_run_id": "34424275845",
@@ -222,21 +227,6 @@
       "consecutive_runs": 7,
       "notify_after": 1,
       "first_run_id": "34187924458",
-      "last_run_id": "34308128793"
-    },
-    {
-      "key": "core_data:data_very_stale",
-      "component": "core_data",
-      "code": "data_very_stale",
-      "severity": "critical",
-      "message": "Core data is 29.0 hours old.",
-      "status": "recovered",
-      "first_seen_utc": "2026-09-08T21:13:01Z",
-      "last_seen_utc": "2026-09-09T03:51:35Z",
-      "recovered_utc": "2026-09-09T04:15:22Z",
-      "consecutive_runs": 4,
-      "notify_after": 1,
-      "first_run_id": "34279274008",
       "last_run_id": "34308128793"
     }
   ]
