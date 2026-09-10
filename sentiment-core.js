@@ -157,6 +157,7 @@
   }
 
   function roundScore(value){
+    if(value === null || value === undefined || value === "") return null;
     const n = clamp(value, 0, 100);
     return n == null ? null : Math.round(n);
   }
@@ -229,58 +230,7 @@
     return voteToSignedScore(item.vote || item.sentiment || item.label || item.direction);
   }
 
-  function directPsiFromItem(item){
-    if(!item || typeof item !== "object") return null;
-    const fields = ["psi", "psi_score", "sentiment_score", "public_sentiment_index", "headline_psi_score"];
-    for(const field of fields){
-      const n = Number(item[field]);
-      if(Number.isFinite(n) && n >= 0 && n <= 100) return n;
-    }
-    return null;
-  }
 
-  function calculatePSI(items){
-    const list = Array.isArray(items) ? items : [];
-    const direct = [];
-    const signed = [];
-
-    list.forEach(item => {
-      const psi = directPsiFromItem(item);
-      if(psi != null) direct.push(psi);
-      else{
-        const s = signedScoreFromItem(item);
-        if(s != null) signed.push(s);
-      }
-    });
-
-    if(direct.length){
-      const avg = direct.reduce((a,b) => a + b, 0) / direct.length;
-      return {
-        score: roundScore(avg),
-        itemCount: direct.length,
-        method: "average_direct_psi_fields",
-        formulaVersion: VERSION
-      };
-    }
-
-    if(signed.length){
-      const avgSigned = signed.reduce((a,b) => a + b, 0) / signed.length;
-      return {
-        score: roundScore(50 + avgSigned * 10),
-        itemCount: signed.length,
-        signedAverage: Number(avgSigned.toFixed(4)),
-        method: "50_plus_average_signed_score_times_10",
-        formulaVersion: VERSION
-      };
-    }
-
-    return {
-      score: null,
-      itemCount: 0,
-      method: "no_matched_headline_scores",
-      formulaVersion: VERSION
-    };
-  }
 
   function getOfficialGlobalPSI(dashboardData, statusData){
     const candidates = [
@@ -427,40 +377,43 @@
     const newsCacheData = opts.newsCacheData || null;
     const userVotes = opts.userVotes || (typeof window !== "undefined" ? window.PSD_USER_SENTIMENT : null) || {};
     const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
+
     const officialHistorySummary = buildInstrumentSummaryFromHistory(opts);
     if(officialHistorySummary) return officialHistorySummary;
-    const buckets = headlineBuckets(dashboardData, newsCacheData);
 
-    const psiMatches = filterInstrumentItems(buckets.psiHeadlines, instrument);
-    const relevantMatches = filterInstrumentItems(buckets.relevantHeadlines, instrument);
-    const archiveMatches = filterInstrumentItems(buckets.newsArchive, instrument);
-    const basisItems = psiMatches.length >= MIN_INSTRUMENT_PSI_HEADLINES ? psiMatches : relevantMatches;
-    const basis = psiMatches.length >= MIN_INSTRUMENT_PSI_HEADLINES ? "psi_headlines" : "top_headlines_fallback";
-    const psi = calculatePSI(basisItems);
-    const technical = getTechnicalBias(technicalData, instrument, opts.period || "daily");
-    const counts = countBullBearNeutral(basisItems);
+    const technical = getTechnicalBias(
+      technicalData,
+      instrument,
+      opts.period || "daily"
+    );
 
     return {
       name: instrument,
-      score: psi.score,
-      sentiment: classifySentiment(psi.score),
-      label: classifySentiment(psi.score),
-      badgeClass: badgeClass(psi.score),
-      color: sentimentColor(psi.score),
+      score: null,
+      sentiment: "No PSI Match",
+      label: "No PSI Match",
+      badgeClass: "",
+      color: null,
       user: userVotes && userVotes[instrument] ? userVotes[instrument] : "N/A",
       tech: technical.direction,
       technical,
-      headlines: relevantMatches.length,
-      headlineCount: relevantMatches.length,
-      psiHeadlineCount: psiMatches.length,
-      archiveArticleCount: archiveMatches.length,
-      bullishCount: counts.bullish,
-      bearishCount: counts.bearish,
-      neutralCount: counts.neutral,
-      countBasis: basis,
-      psiMethod: psi.method,
-      signedAverage: psi.signedAverage,
-      lastUpdated: getLastUpdated(dashboardData, statusData, technicalData, newsCacheData),
+      headlines: 0,
+      headlineCount: 0,
+      psiHeadlineCount: 0,
+      archiveArticleCount: 0,
+      bullishCount: 0,
+      bearishCount: 0,
+      neutralCount: 0,
+      mixedCount: 0,
+      countBasis: "latest_engine_snapshot",
+      psiMethod: "no_current_engine_psi",
+      signedAverage: null,
+      lastUpdated: getLastUpdated(
+        dashboardData,
+        statusData,
+        technicalData,
+        newsCacheData
+      ),
       formulaVersion: VERSION
     };
   }
@@ -572,13 +525,21 @@
   }
 
   function latestInstrumentHistoryEntry(instrumentHistoryData, instrumentName){
-    const records = historyRecords(instrumentHistoryData).reverse();
-    for(const record of records){
-      const entry = instrumentEntryFromRecord(record, instrumentName);
-      const score = roundScore(entry && (entry.psi != null ? entry.psi : (entry.score != null ? entry.score : entry.headline_psi_score)));
-      if(entry && score != null) return {record, entry, score};
-    }
-    return null;
+    const records = historyRecords(instrumentHistoryData);
+    if(!records.length) return null;
+
+    const record = records[records.length - 1];
+    const entry = instrumentEntryFromRecord(record, instrumentName);
+    const score = roundScore(
+      entry && (
+        entry.psi != null
+          ? entry.psi
+          : (entry.score != null ? entry.score : entry.headline_psi_score)
+      )
+    );
+
+    if(!entry || score == null) return null;
+    return {record, entry, score};
   }
 
   function technicalDirectionFromHistory(entry, fallbackTechnical){
@@ -672,14 +633,6 @@
     return nums.length ? Math.round(nums.reduce((a,b) => a + b, 0) / nums.length) : null;
   }
 
-  function leftFillSeries(values, targetLength, fallbackScore){
-    let out = Array.isArray(values) ? values.slice() : [];
-    const fill = out.length ? out[0] : (fallbackScore == null ? 50 : fallbackScore);
-    while(out.length < targetLength) out.unshift(fill);
-    if(out.length < 2) out = [fill, fill];
-    return out;
-  }
-
   function monthlyCalendarSeries(points, opts){
     const buckets = new Map();
     points.forEach(point => {
@@ -702,35 +655,46 @@
     const instrumentHistoryData = opts.instrumentHistoryData || opts.instrument_history || null;
     const instrument = normalizeInstrumentName(opts.instrumentName || opts.instrument || "");
     const period = periodKey(opts.period || "daily");
-    const fallbackScore = roundScore(opts.fallbackScore != null ? opts.fallbackScore : opts.score);
     const points = instrumentHistoryPoints(instrumentHistoryData, instrument);
 
     if(period === "monthly"){
       const monthly = monthlyCalendarSeries(points, opts);
       const values = monthly.map(row => row.score);
-      const filled = leftFillSeries(values, Math.min(Math.max(2, values.length || 2), Math.max(2, Number(opts.maxMonths || opts.monthlyPoints || opts.targetLength || 24) || 24)), fallbackScore);
+
       return {
         period,
-        values: filled,
-        labels: monthly.length ? monthly.map(row => row.label) : filled.map((_, i) => `Period ${filled.length - i}`),
+        values,
+        labels: monthly.map(row => row.label),
         calendarMonths: monthly.map(row => row.key),
         sampleCounts: monthly.map(row => row.sampleCount),
-        basis: monthly.length ? "calendar_month_averages_from_instrument_history" : "fallback_score",
+        basis: values.length
+          ? "calendar_month_averages_from_instrument_history"
+          : "no_engine_history",
         formulaVersion: VERSION
       };
     }
 
     const targetLength = period === "weekly" ? 7 : 12;
-    const rawValues = points.map(point => point.score);
+    const values = points
+      .map(point => point.score)
+      .filter(score => score != null && Number.isFinite(Number(score)))
+      .slice(-targetLength);
+
     return {
       period,
-      values: leftFillSeries(rawValues.slice(-targetLength), targetLength, fallbackScore),
-      labels: Array.from({length:targetLength}, (_, i) => period === "weekly" ? `Day ${targetLength - i}` : `Step ${targetLength - i}`),
-      basis: rawValues.length ? "daily_records_from_instrument_history" : "fallback_score",
+      values,
+      labels: Array.from(
+        {length:values.length},
+        (_, i) => period === "weekly"
+          ? `Day ${values.length - i}`
+          : `Step ${values.length - i}`
+      ),
+      basis: values.length
+        ? "daily_records_from_instrument_history"
+        : "no_engine_history",
       formulaVersion: VERSION
     };
   }
-
   function buildInstrumentSeries(options){
     return buildInstrumentSeriesWithMeta(options).values;
   }
@@ -780,7 +744,6 @@
     sentimentColor,
     voteToSignedScore,
     signedScoreFromItem,
-    calculatePSI,
     getOfficialGlobalPSI,
     matchesInstrument,
     filterInstrumentItems,
