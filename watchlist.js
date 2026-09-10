@@ -1073,7 +1073,6 @@
 
       const metrics = document.createElement("div");
       metrics.className = "watchlist-metrics";
-      metrics.appendChild(makeMetric("User Sentiment",userSentiment));
       metrics.appendChild(makeMetric("Technical Daily",daily.direction || "N/A"));
       metrics.appendChild(makeMetric("Headline Mix",headlineLabel));
 
