@@ -233,22 +233,32 @@
 
 
   function getOfficialGlobalPSI(dashboardData, statusData){
-    const candidates = [
-      dashboardData && dashboardData.headline_psi_score,
-      dashboardData && dashboardData.trust_layer && dashboardData.trust_layer.headline_psi_score,
-      statusData && statusData.headline_psi_score
-    ];
+    const score = roundScore(
+      dashboardData && dashboardData.headline_psi_score
+    );
 
-    for(const value of candidates){
-      const score = roundScore(value);
-      if(score != null){
-        return {
-          score,
-          sentiment: classifySentiment(score),
-          source: value === (statusData && statusData.headline_psi_score) ? "status.json" : "dashboard_live.json",
-          formulaVersion: VERSION
-        };
-      }
+    const label = cleanText(
+      (dashboardData && (
+        dashboardData.headline_psi_label ||
+        dashboardData.global_sentiment_label ||
+        dashboardData.sentiment_label
+      )) ||
+      (dashboardData &&
+       dashboardData.trust_layer && (
+        dashboardData.trust_layer.headline_psi_label ||
+        dashboardData.trust_layer.global_sentiment_label ||
+        dashboardData.trust_layer.sentiment_label
+      )) ||
+      ""
+    );
+
+    if(score != null){
+      return {
+        score,
+        sentiment: label || "Unavailable",
+        source: "dashboard_live.json",
+        formulaVersion: VERSION
+      };
     }
 
     return {
@@ -438,71 +448,115 @@
 
 
 
-  function pulseEntryFromOfficial(entry, fallback){
+  function pulseEntryFromOfficial(entry){
     const item = entry && typeof entry === "object" ? entry : {};
-    const fb = fallback || {};
-    const score = roundScore(item.score != null ? item.score : fb.score);
-    const rawScore = roundScore(item.raw_score != null ? item.raw_score : (item.rawScore != null ? item.rawScore : (fb.raw_score != null ? fb.raw_score : score)));
-    const count = Number.isFinite(Number(item.count)) ? Number(item.count) : (Number.isFinite(Number(fb.count)) ? Number(fb.count) : 0);
-    const availableCount = Number.isFinite(Number(item.available_count)) ? Number(item.available_count) : (Number.isFinite(Number(item.availableCount)) ? Number(item.availableCount) : count);
-    const confidence = cleanText(item.confidence || fb.confidence || (count >= 100 ? "High" : count >= 50 ? "Medium" : count >= 25 ? "Low-Medium" : count > 0 ? "Low" : "Pending"));
-    const label = cleanText(item.label || fb.label || (score == null ? "Pending Backend Pulse" : classifySentiment(score)));
+
+    const score = roundScore(
+      item.psi != null ? item.psi : item.score
+    );
+
+    const rawScore = roundScore(
+      item.raw_score != null
+        ? item.raw_score
+        : item.rawScore
+    );
+
+    const count = Number.isFinite(Number(item.count))
+      ? Number(item.count)
+      : 0;
+
+    const availableCount =
+      Number.isFinite(Number(item.available_count))
+        ? Number(item.available_count)
+        : (
+            Number.isFinite(Number(item.availableCount))
+              ? Number(item.availableCount)
+              : count
+          );
+
+    const label = cleanText(
+      item.sentiment_label ||
+      item.sentiment ||
+      item.label ||
+      ""
+    );
 
     return {
-      score: score,
+      score,
       raw_score: rawScore,
-      rawScore: rawScore,
+      rawScore,
       count,
       available_count: availableCount,
       availableCount,
-      confidence,
-      confidence_factor: Number.isFinite(Number(item.confidence_factor)) ? Number(item.confidence_factor) : null,
-      confidenceFactor: Number.isFinite(Number(item.confidence_factor)) ? Number(item.confidence_factor) : null,
-      label,
-      weighted_headline_total: Number.isFinite(Number(item.weighted_headline_total)) ? Number(item.weighted_headline_total) : null,
-      headline_limit: Number.isFinite(Number(item.headline_limit)) ? Number(item.headline_limit) : null,
-      source: item.source || fb.source || "backend_regional_pulse",
+      confidence: cleanText(item.confidence || "Pending"),
+      confidence_factor:
+        Number.isFinite(Number(item.confidence_factor))
+          ? Number(item.confidence_factor)
+          : null,
+      confidenceFactor:
+        Number.isFinite(Number(item.confidence_factor))
+          ? Number(item.confidence_factor)
+          : null,
+      label:
+        label ||
+        (score == null ? "Pending Backend Pulse" : "Unavailable"),
+      weighted_headline_total:
+        Number.isFinite(Number(item.weighted_headline_total))
+          ? Number(item.weighted_headline_total)
+          : null,
+      headline_limit:
+        Number.isFinite(Number(item.headline_limit))
+          ? Number(item.headline_limit)
+          : null,
+      source: item.source || "backend_regional_pulse",
       formulaVersion: VERSION
     };
   }
 
   function getOfficialRegionalPulseRoot(dashboardData, statusData){
-    if(dashboardData && dashboardData.regional_pulse && typeof dashboardData.regional_pulse === "object") return dashboardData.regional_pulse;
-    if(dashboardData && dashboardData.trust_layer && dashboardData.trust_layer.regional_pulse && typeof dashboardData.trust_layer.regional_pulse === "object") return dashboardData.trust_layer.regional_pulse;
-    if(statusData && statusData.regional_pulse && typeof statusData.regional_pulse === "object") return statusData.regional_pulse;
+    if(
+      dashboardData &&
+      dashboardData.regional_pulse &&
+      typeof dashboardData.regional_pulse === "object"
+    ){
+      return dashboardData.regional_pulse;
+    }
+
+    if(
+      dashboardData &&
+      dashboardData.trust_layer &&
+      dashboardData.trust_layer.regional_pulse &&
+      typeof dashboardData.trust_layer.regional_pulse === "object"
+    ){
+      return dashboardData.trust_layer.regional_pulse;
+    }
+
     return null;
   }
 
   function buildRegionalPulse(options){
     const opts = options || {};
     const dashboardData = opts.dashboardData || null;
-    const statusData = opts.statusData || null;
-    const newsCacheData = opts.newsCacheData || null;
-    const root = getOfficialRegionalPulseRoot(dashboardData, statusData);
-    const globalSummary = buildGlobalSummary({dashboardData, statusData, newsCacheData});
-    const globalFallback = {
-      score: globalSummary.score,
-      raw_score: globalSummary.score,
-      count: globalSummary.psiHeadlines,
-      confidence: globalSummary.psiHeadlines >= 100 ? "High" : globalSummary.psiHeadlines > 0 ? "Low" : "Pending",
-      label: globalSummary.sentiment,
-      source: globalSummary.source
-    };
+
+    const root = getOfficialRegionalPulseRoot(
+      dashboardData,
+      null
+    );
 
     if(!root){
       return {
-        global: pulseEntryFromOfficial(null, globalFallback),
-        us: pulseEntryFromOfficial(null, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
-        europe: pulseEntryFromOfficial(null, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"missing_regional_pulse"}),
+        global: pulseEntryFromOfficial(null),
+        us: pulseEntryFromOfficial(null),
+        europe: pulseEntryFromOfficial(null),
         source: "missing_regional_pulse",
         formulaVersion: VERSION
       };
     }
 
     return {
-      global: pulseEntryFromOfficial(root.global, globalFallback),
-      us: pulseEntryFromOfficial(root.us, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
-      europe: pulseEntryFromOfficial(root.europe, {score:null, raw_score:null, count:0, confidence:"Pending", label:"Pending Backend Pulse", source:"backend_regional_pulse"}),
+      global: pulseEntryFromOfficial(root.global),
+      us: pulseEntryFromOfficial(root.us),
+      europe: pulseEntryFromOfficial(root.europe),
       source: "backend_regional_pulse",
       formulaVersion: VERSION
     };
@@ -530,13 +584,7 @@
 
     const record = records[records.length - 1];
     const entry = instrumentEntryFromRecord(record, instrumentName);
-    const score = roundScore(
-      entry && (
-        entry.psi != null
-          ? entry.psi
-          : (entry.score != null ? entry.score : entry.headline_psi_score)
-      )
-    );
+    const score = roundScore(entry && entry.psi);
 
     if(!entry || score == null) return null;
     return {record, entry, score};
@@ -565,7 +613,12 @@
     const score = found.score;
     const technical = getTechnicalBias(opts.technicalData || null, instrument, opts.period || "daily");
     const techDirection = technicalDirectionFromHistory(entry, technical);
-    const label = cleanText(entry.sentiment_label || entry.sentiment || entry.label || classifySentiment(score));
+    const label = cleanText(
+      entry.sentiment_label ||
+      entry.sentiment ||
+      entry.label ||
+      "No PSI"
+    );
     const userVotes = opts.userVotes || (typeof window !== "undefined" ? window.PSD_USER_SENTIMENT : null) || {};
 
     return {
@@ -615,7 +668,7 @@
   }
 
   function historyScoreFromEntry(entry){
-    return roundScore(entry && (entry.psi != null ? entry.psi : (entry.score != null ? entry.score : entry.headline_psi_score)));
+    return roundScore(entry && entry.psi);
   }
 
   function instrumentHistoryPoints(instrumentHistoryData, instrumentName){

@@ -2288,21 +2288,16 @@
           statusData:statusData
         });
 
-        if(Number.isFinite(Number(summary.score))) return Number(summary.score);
+        if(Number.isFinite(Number(summary.score))){
+          return Number(summary.score);
+        }
       }
 
-      const candidates = [
-        data?.headline_psi_score,
-        data?.trust_layer?.headline_psi_score,
-        statusData?.headline_psi_score
-      ];
+      const score = Number(data?.headline_psi_score);
 
-      for(const value of candidates){
-        const n = Number(value);
-        if(Number.isFinite(n)) return Math.round(Math.max(0, Math.min(100, n)));
-      }
-
-      return null;
+      return Number.isFinite(score)
+        ? Math.round(Math.max(0,Math.min(100,score)))
+        : null;
     }
 
     function getUniversalRegionalPulse(data){
@@ -2314,7 +2309,7 @@
       }
 
       return {
-        global:{score:calculateGlobalScore(data), label:scoreLabel(calculateGlobalScore(data)), count:Number(data?.psi_headlines_used || statusData?.psi_headlines_used || 0), confidence:"Pending"},
+        global:{score:null, label:"Unavailable", count:0, confidence:"Pending"},
         us:{score:null, label:"Pending Backend Pulse", count:0, confidence:"Pending"},
         europe:{score:null, label:"Pending Backend Pulse", count:0, confidence:"Pending"}
       };

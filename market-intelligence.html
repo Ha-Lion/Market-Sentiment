@@ -1378,7 +1378,10 @@
     function profileMetrics(rows){
       const available=rows.filter(r=>num(r.psi)!==null);
       const avg=(fn)=>available.length?available.reduce((s,r)=>s+fn(r),0)/available.length:0;
-      const sentiment=clamp(Math.round(avg(r=>Math.abs((num(r.psi)??50)-50)*4.2)),0,100);
+      const psiRows=rows.filter(r=>num(r.psi)!==null);
+      const sentiment=psiRows.length
+        ? clamp(Math.round(psiRows.reduce((s,r)=>s+Math.abs(num(r.psi)-50)*4.2,0)/psiRows.length),0,100)
+        : null;
       const price=clamp(Math.round(avg(r=>Math.min(100,Math.abs(num(r.price_change_1d_pct)??0)*18))),0,100);
       const volatility=clamp(Math.round(Math.max(...available.map(r=>Math.min(100,Math.abs(num(r.price_change_1d_pct)??0)*13)),0)),0,100);
       const categories=new Set(available.map(r=>r.category).filter(Boolean));
@@ -1493,7 +1496,12 @@
       const ranking=rankingFor(activeEvent),band=impactBand(score).label.toLowerCase();
       const available=rows.filter(r=>num(r.psi)!==null);
       const strongest=[...available].sort((a,b)=>assetPressure(b)-assetPressure(a)).slice(0,5);
-      const strongestText=strongest.length?strongest.map(r=>`${r.display_name||r.instrument} (${Math.round(num(r.psi)??50)} sentiment)`).join(', '):'the affected asset set';
+      const strongestText=strongest.length
+        ? strongest.map(r=>{
+            const psi=num(r.psi);
+            return `${r.display_name||r.instrument} (${psi===null?"N/A":Math.round(psi)} sentiment)`;
+          }).join(', ')
+        :'the affected asset set';
       const bullish=available.filter(r=>miSentimentGroup(r.psi)==="bullish").length;
       const bearish=available.filter(r=>miSentimentGroup(r.psi)==="bearish").length;
       const neutral=available.filter(r=>miSentimentGroup(r.psi)==="neutral").length;
@@ -2028,7 +2036,7 @@
 
     function renderAssets(rows){
       $("assetGrid").innerHTML=rows.map(r=>{
-        const psi=num(r.psi),label=miSentimentLabel(psi,r.sentiment_label);
+        const psi=num(r.psi),label=String(r.sentiment_label || "Unavailable");
         return `<article class="asset-card">
           <div class="asset-top"><div><h3 title="${esc(r.instrument)}">${esc(r.display_name||r.instrument)}</h3><div class="asset-role">${esc(r.role)}</div></div><span class="sentiment-pill">${esc(label)}</span></div>
           <div class="asset-psi"><strong>${psi===null?"—":Math.round(psi)}</strong><span>PSI /100</span></div>
@@ -2045,8 +2053,18 @@
 
     function channelStats(rows,names){
       const subset=rows.filter(r=>names.includes(r.instrument));
-      if(!subset.length)return {psi:50,d1:0};
-      return {psi:Math.round(subset.reduce((s,r)=>s+(num(r.psi)??50),0)/subset.length),d1:subset.reduce((s,r)=>s+(num(r.change_1d)??0),0)/subset.length};
+      if(!subset.length)return {psi:null,d1:0};
+
+      const psiValues=subset
+        .map(r=>num(r.psi))
+        .filter(v=>v!==null);
+
+      return {
+        psi:psiValues.length
+          ? Math.round(psiValues.reduce((s,v)=>s+v,0)/psiValues.length)
+          : null,
+        d1:subset.reduce((s,r)=>s+(num(r.change_1d)??0),0)/subset.length
+      };
     }
 
 
@@ -2081,7 +2099,8 @@
     function eventAssetForecast(row){
       const hist=forecastHistoryValues(row);
       if(hist.length<25)return null;
-      const psi=num(row.psi)??50;
+      const psi=num(row.psi);
+      if(psi===null)return null;
       const psiLevel=clamp((psi-50)/25,-1,1);
       const psi1=forecastFactor(row.change_1d,20),psi7=forecastFactor(row.change_7d,30);
       const mom5=forecastFactor(forecastTrailingReturn(hist,5),6),mom20=forecastFactor(forecastTrailingReturn(hist,20),12);
@@ -2114,7 +2133,7 @@
       const candidates=[...rows].sort((a,b)=>assetPressure(b)-assetPressure(a)).map(r=>({row:r,forecast:eventAssetForecast(r)})).filter(x=>x.forecast).slice(0,5);
       $('eventForecastGrid').innerHTML=candidates.length?candidates.map(({row:r,forecast:f})=>`<article class="event-forecast-card">
         <div class="event-forecast-top"><h3>${esc(r.display_name||r.instrument)}</h3><span class="event-forecast-dir ${f.dir.toLowerCase()}">${f.dir}</span></div>
-        <div class="event-forecast-price"><strong>${forecastMoney(f.price)}</strong><span>current • PSI ${Math.round(num(r.psi)??50)}</span></div>
+        <div class="event-forecast-price"><strong>${forecastMoney(f.price)}</strong><span>current • PSI ${num(r.psi)===null?"N/A":Math.round(num(r.psi))}</span></div>
         <div class="event-horizon-grid">
           <div class="event-horizon"><b>${forecastPct(f.short.low)} to ${forecastPct(f.short.high)}</b><span>7-day expected move</span></div>
           <div class="event-horizon"><b>${forecastPct(f.long.low)} to ${forecastPct(f.long.high)}</b><span>30-day expected move</span></div>

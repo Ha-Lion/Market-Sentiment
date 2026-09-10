@@ -1846,8 +1846,8 @@
       if(window.PSDCore?.classifySentiment) return window.PSDCore.classifySentiment(score);
       return "No PSI Match";
     }
-    function badgeClass(score){
-      const category = label(score);
+    function badgeClass(score, authoritativeLabel){
+      const category = authoritativeLabel || label(score);
       if(category === "Strong Bullish") return "badge-strongbullish";
       if(category === "Bullish") return "badge-bullish";
       if(category === "Mixed/Neutral") return "badge-mixedneutral";
@@ -2722,7 +2722,7 @@
               <button class="chart-open-btn" type="button" onclick="openChartModal(${idx})">Chart</button>
             </div>
           </div>
-          <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div>
+          <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score,d.sentiment)}">${esc(d.sentiment)}</div></div>
           <div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div>
           <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${spark}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparkArea}" fill="${lineColor(idx)}" opacity=".10"/></svg>
         </article>`;

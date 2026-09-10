@@ -1564,12 +1564,16 @@
   function enhanceHomeHeroClone(heroClone){
     if(!heroClone) return heroClone;
 
-    const scoreText = safeText(qs("#scoreNumber")?.textContent || "50");
-    const score = Math.max(0, Math.min(100, parseInt(scoreText, 10) || 50));
-    const label = safeText(qs("#scoreWord")?.textContent || "Mixed/Neutral");
-    const category = window.PSDCore && typeof window.PSDCore.classifySentiment === "function"
-      ? window.PSDCore.classifySentiment(score)
-      : label;
+    const scoreText = safeText(qs("#scoreNumber")?.textContent || "");
+    const parsedScore = parseInt(scoreText, 10);
+
+    if(!Number.isFinite(parsedScore)){
+      return heroClone;
+    }
+
+    const score = Math.max(0, Math.min(100, parsedScore));
+    const label = safeText(qs("#scoreWord")?.textContent || "Unavailable");
+    const category = label;
     const color = category === "Strong Bullish" ? "#3fb950" : category === "Strong Bearish" ? "#f85149" : "#d29922";
     const radius = 112;
     const stroke = 24;

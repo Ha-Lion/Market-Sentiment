@@ -86,50 +86,31 @@ function hasTerm(text, terms){
     }
 
 function scoreFromHeadlineSet(name, symbol, headlines, source){
-      if(!headlines.length){
-        return {
-          name,
-          symbol,
-          score:null,
-          label:"No PSI",
-          headlineCount:0,
-          bullish:0,
-          bearish:0,
-          neutral:0,
-          source,
-          topHeadlines:[]
-        };
-      }
+      const list = Array.isArray(headlines) ? headlines : [];
 
-      let total = 0;
       let bullish = 0;
       let bearish = 0;
       let neutral = 0;
 
-      headlines.forEach(h => {
-        const s = Number(h.weighted_score ?? h.score ?? 0);
-        total += Number.isFinite(s) ? s : 0;
-
+      list.forEach(h => {
         const vote = normalizeText(h.vote);
+
         if(vote.includes("bull")) bullish++;
         else if(vote.includes("bear")) bearish++;
         else neutral++;
       });
 
-      const avg = total / headlines.length;
-      const score = Math.round(clamp(50 + avg * 6, 0, 100));
-
       return {
         name,
         symbol,
-        score,
-        label:labelForScore(score),
-        headlineCount:headlines.length,
+        score:null,
+        label:"No PSI",
+        headlineCount:list.length,
         bullish,
         bearish,
         neutral,
-        source,
-        topHeadlines:headlines.slice(0,5)
+        source:"browser_psi_disabled",
+        topHeadlines:list.slice(0,5)
       };
     }
 
@@ -172,15 +153,32 @@ function hasEarlierGenuinePsi(item, fallbackName, recordIndex){
     }
 
 function psiDisplayState(row, item, fallbackName, recordIndex){
-      if(!row || row.psi === null || row.psi === undefined || row.psi === "") return "none";
+      if(
+        !row ||
+        row.psi === null ||
+        row.psi === undefined ||
+        row.psi === ""
+      ){
+        return "none";
+      }
 
-      const numeric = Number(row.psi);
-      if(!Number.isFinite(numeric)) return "none";
+      if(!Number.isFinite(Number(row.psi))) return "none";
 
-      if(isGenuinePsiRow(row)) return "current";
+      const status = String(row.psi_status || "");
+      const headlineCount = Number(row.headline_count || 0);
 
-      if(String(row.psi_status || "") === "prior_fallback" &&
-         hasEarlierGenuinePsi(item, fallbackName, recordIndex)){
+      if(
+        (
+          status === "fresh_headlines" ||
+          status === "fresh_discovery_fallback" ||
+          status === "fresh_cache_fallback"
+        ) &&
+        headlineCount > 0
+      ){
+        return "current";
+      }
+
+      if(status === "prior_fallback"){
         return "saved";
       }
 
@@ -280,16 +278,14 @@ function sourceLogoUrl(h){
     }
 
 function renderHero(){
-      const overall = currentRows.length
-        ? Math.round(currentRows.filter(r => r.score != null).reduce((a,r) => a + r.score, 0) / Math.max(1,currentRows.filter(r => r.score != null).length))
-        : null;
+      const overall = null;
 
       const overallEl = document.getElementById("overallScore");
       const updatedEl = document.getElementById("updatedText");
 
       if(overallEl) overallEl.textContent = overall == null ? "--" : `${overall}/100`;
       if(updatedEl){
-        updatedEl.textContent = `${labelForScore(overall)} • Updated: ${dashboardData?.updated_ny || historyData?.updated_ny || "latest scan"}`;
+        updatedEl.textContent = `Engine PSI shown per asset • Updated: ${dashboardData?.updated_ny || historyData?.updated_ny || "latest scan"}`;
       }
     }
 
@@ -309,38 +305,7 @@ function savedHeadlinesForRecord(record){
     }
 
 function derivedHistoryRowForItem(record, item){
-      const matches = savedHeadlinesForRecord(record).filter(h => itemMatchesHeadline(item, h));
-      if(!matches.length) return proxyHistoryRowForAI(record, item);
-
-      let total = 0;
-      let bullish = 0;
-      let bearish = 0;
-      let neutral = 0;
-
-      matches.forEach(h => {
-        const s = Number(h.weighted_score ?? h.score ?? 0);
-        total += Number.isFinite(s) ? s : 0;
-
-        const vote = normalizeText(h.vote);
-        if(vote.includes("bull")) bullish++;
-        else if(vote.includes("bear")) bearish++;
-        else neutral++;
-      });
-
-      const avg = total / matches.length;
-      const value = Math.round(clamp(50 + avg * 6, 0, 100));
-
-      return {
-        date:record.date,
-        label:record.date,
-        value:value,
-        count:matches.length,
-        bullish:bullish,
-        bearish:bearish,
-        neutral:neutral,
-        sentiment:labelForScore(value),
-        source:"derived"
-      };
+      return null;
     }
 
 function weekKey(dateText){
@@ -587,8 +552,14 @@ function ciInstrumentName(row){
   return String(row?.display_name || row?.instrument || row?.symbol || "Asset");
 }
 
-function ciBucket(score){
-  const label=labelForScore(score,"");
+function ciBucket(row){
+  const label=String(
+    row?.sentiment_label ||
+    row?.sentiment ||
+    row?.label ||
+    ""
+  );
+
   if(label.includes("Bullish")) return "bullish";
   if(label.includes("Bearish")) return "bearish";
   return "neutral";
@@ -657,14 +628,38 @@ function ciConsensusHtml(consensusPayload, cfg){
   }).join("");
 }
 
-function ciBuildStory(rows, average, strongest24, divergence, counts){
-  const tone=ciBucket(average);
-  const breadth=counts.bullish>counts.bearish?"bullish breadth leads":counts.bearish>counts.bullish?"bearish breadth leads":"breadth is balanced";
-  const parts=[`Category PSI averages ${Math.round(average)}/100 (${labelForScore(average)}), and ${breadth}.`];
-  if(strongest24) parts.push(`${ciInstrumentName(strongest24)} has the largest qualified 24H sentiment move at ${ciSigned(strongest24.change_1d,0," PSI")}.`);
-  if(divergence) parts.push(`${ciInstrumentName(divergence)} is the clearest flagged sentiment/price divergence to watch.`);
-  else if(rows.some(r=>r?.is_reversal)) parts.push(`${rows.filter(r=>r?.is_reversal).length} reversal signal${rows.filter(r=>r?.is_reversal).length===1?" is":"s are"} currently flagged.`);
-  return {text:parts.join(" "),tone};
+function ciBuildStory(rows, strongest24, divergence, counts){
+  const breadth =
+    counts.bullish > counts.bearish
+      ? "bullish breadth leads"
+      : counts.bearish > counts.bullish
+        ? "bearish breadth leads"
+        : "breadth is balanced";
+
+  const parts=[
+    `Engine PSI is shown per asset; ${breadth}.`
+  ];
+
+  if(strongest24){
+    parts.push(
+      `${ciInstrumentName(strongest24)} has the largest qualified 24H sentiment move at ${ciSigned(strongest24.change_1d,0," PSI")}.`
+    );
+  }
+
+  if(divergence){
+    parts.push(
+      `${ciInstrumentName(divergence)} is the clearest flagged sentiment/price divergence to watch.`
+    );
+  }else if(rows.some(r=>r?.is_reversal)){
+    parts.push(
+      `${rows.filter(r=>r?.is_reversal).length} reversal signal${rows.filter(r=>r?.is_reversal).length===1?" is":"s are"} currently flagged.`
+    );
+  }
+
+  return {
+    text:parts.join(" "),
+    tone:"neutral"
+  };
 }
 
 async function loadCategoryIntelligence(options={}){
@@ -688,15 +683,17 @@ async function loadCategoryIntelligence(options={}){
   }
 
   const minimumHeadlines=Math.max(1,Number(pulse?.selection_rules?.minimum_headlines||5));
-  const average=rows.reduce((sum,row)=>sum+Number(row.psi),0)/rows.length;
-  const counts=rows.reduce((acc,row)=>{acc[ciBucket(row.psi)]++;return acc;},{bullish:0,neutral:0,bearish:0});
+  const counts=rows.reduce((acc,row)=>{
+    acc[ciBucket(row)]++;
+    return acc;
+  },{bullish:0,neutral:0,bearish:0});
   const strongest24=ciBestChange(rows,"change_1d",minimumHeadlines);
   const strongest7=ciBestChange(rows,"change_7d",minimumHeadlines);
   const divergences=rows.filter(row=>row?.is_divergence).sort((a,b)=>Math.abs(Number(b.change_1d||0))-Math.abs(Number(a.change_1d||0)));
   const divergence=divergences[0]||null;
   const reversals=rows.filter(row=>row?.is_reversal).length;
   const extremes=rows.filter(row=>row?.is_extreme).length;
-  const story=ciBuildStory(rows,average,strongest24,divergence,counts);
+  const story=ciBuildStory(rows,strongest24,divergence,counts);
   const div=ciDivergenceText(divergence);
   const updated=String(pulse?.data_updated_ny||pulse?.data_updated_utc||"").trim();
 
@@ -707,9 +704,9 @@ async function loadCategoryIntelligence(options={}){
         <div class="ci-updated">${updated?`Updated ${ciEsc(updated)}`:"Latest published data"}</div>
       </div>
       <div class="ci-grid">
-        <article class="ci-card"><span class="ci-kicker">Category PSI</span><b class="ci-value" data-tone="${ciEsc(story.tone)}">${Math.round(average)}/100</b><span class="ci-note">${counts.bullish} bullish • ${counts.neutral} neutral • ${counts.bearish} bearish</span></article>
-        <article class="ci-card"><span class="ci-kicker">Strongest 24H shift</span><b class="ci-value" data-tone="${ciBucket(strongest24?.psi)}">${strongest24?ciEsc(ciInstrumentName(strongest24)):"No qualified move"}</b><span class="ci-note">${strongest24?`${ciEsc(ciSigned(strongest24.change_1d,0," PSI"))} • PSI ${Math.round(Number(strongest24.psi))}/100`:`Requires at least ${minimumHeadlines} headlines.`}</span></article>
-        <article class="ci-card"><span class="ci-kicker">Strongest 7D shift</span><b class="ci-value" data-tone="${ciBucket(strongest7?.psi)}">${strongest7?ciEsc(ciInstrumentName(strongest7)):"Building history"}</b><span class="ci-note">${strongest7?`${ciEsc(ciSigned(strongest7.change_7d,0," PSI"))} • PSI ${Math.round(Number(strongest7.psi))}/100`:"Not enough qualified 7-day history yet."}</span></article>
+        <article class="ci-card"><span class="ci-kicker">Engine PSI breadth</span><b class="ci-value" data-tone="${ciEsc(story.tone)}">${counts.bullish} / ${counts.neutral} / ${counts.bearish}</b><span class="ci-note">Bullish / neutral / bearish asset counts from Engine labels.</span></article>
+        <article class="ci-card"><span class="ci-kicker">Strongest 24H shift</span><b class="ci-value" data-tone="${ciBucket(strongest24)}">${strongest24?ciEsc(ciInstrumentName(strongest24)):"No qualified move"}</b><span class="ci-note">${strongest24?`${ciEsc(ciSigned(strongest24.change_1d,0," PSI"))} • PSI ${Math.round(Number(strongest24.psi))}/100`:`Requires at least ${minimumHeadlines} headlines.`}</span></article>
+        <article class="ci-card"><span class="ci-kicker">Strongest 7D shift</span><b class="ci-value" data-tone="${ciBucket(strongest7)}">${strongest7?ciEsc(ciInstrumentName(strongest7)):"Building history"}</b><span class="ci-note">${strongest7?`${ciEsc(ciSigned(strongest7.change_7d,0," PSI"))} • PSI ${Math.round(Number(strongest7.psi))}/100`:"Not enough qualified 7-day history yet."}</span></article>
         <article class="ci-card"><span class="ci-kicker">Divergence watch</span><b class="ci-value" data-tone="${ciEsc(div.tone)}">${ciEsc(div.value)}</b><span class="ci-note">${ciEsc(div.note)}</span></article>
       </div>
       <div class="ci-bottom">
