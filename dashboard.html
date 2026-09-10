@@ -1591,7 +1591,7 @@
         <div class="panel-top">
           <div>
             <h2>Radar Comparison</h2>
-            <div class="panel-kicker">Each colored shape is one selected market. Axes compare PSI, user bias, headline strength, technical direction, and stability.</div>
+            <div class="panel-kicker">Composite market scores are shown only when supplied by Engine V2. Browser-generated radar scores are disabled.</div>
           </div>
         </div>
         <div class="radar-wrap">
@@ -1925,24 +1925,11 @@
     renderHeatLegend();
 
     function lineColor(idx){return LINE_COLORS[idx % LINE_COLORS.length]}
-    function scoreFromText(text){
-      const t = norm(text);
-      if(t.includes("mixed bullish")) return 60;
-      if(t.includes("mixed bearish")) return 40;
-      if(t.includes("bullish") && !t.includes("bearish")) return 80;
-      if(t.includes("bearish") && !t.includes("bullish")) return 20;
-      if(t.includes("mixed")) return 55;
-      if(t.includes("neutral")) return 50;
-      return null;
-    }
+
     function textFromItem(item){
       return Object.values(item||{}).map(v => Array.isArray(v) ? v.join(" ") : (typeof v === "object" ? JSON.stringify(v||{}) : String(v||""))).join(" ").toLowerCase();
     }
-    function matchesInstrument(item, ins){
-      if(window.PSDCore?.matchesInstrument) return window.PSDCore.matchesInstrument(item, ins.dataKey || ins.name);
-      const text = textFromItem(item);
-      return ins.aliases.some(a => text.includes(a.toLowerCase()));
-    }
+
     function getHeadlines(){
       if(!dashboardData) return [];
       return [
@@ -1951,14 +1938,7 @@
         ...(Array.isArray(dashboardData.headlines) ? dashboardData.headlines : [])
       ];
     }
-    function validDirectScore(h){
-      const candidates = [h.psi, h.psi_score, h.sentiment_score, h.public_sentiment_index];
-      for(const raw of candidates){
-        const n = Number(raw);
-        if(Number.isFinite(n) && n >= 0 && n <= 100) return n;
-      }
-      return null;
-    }
+
     function extractTechLabel(entry, period){
       const raw = entry?.[period] ?? entry?.[period?.toUpperCase()] ?? entry?.[period?.charAt(0).toUpperCase()+period.slice(1)];
       if(raw === null || raw === undefined) return "N/A";
@@ -2003,7 +1983,7 @@
     function periodStartLabel(){return selectedPeriod === "weekly" ? "7D ago" : selectedPeriod === "monthly" ? "Earlier" : "24H ago"}
     function periodMetricLabel(){return selectedPeriod === "weekly" ? "7D Avg" : selectedPeriod === "monthly" ? "Monthly Avg" : "Now"}
     function average(values){return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : null}
-    function seriesForPeriod(d){return Array.isArray(d.series) && d.series.length ? d.series.slice() : makeSkylineSeries(d.name, d.score)}
+    function seriesForPeriod(d){return Array.isArray(d.series) ? d.series.slice() : []}
     function periodScoreFor(d){
       const values = seriesForPeriod(d);
       if(!values.length) return d.score ?? null;
@@ -2012,42 +1992,10 @@
       return average(values);
     }
     function scoreLabelShort(score){return label(score).replace("Mixed ","M/")}
-    function userScore(value){
-      const t = norm(value);
-      if(t.includes("bull")) return 82;
-      if(t.includes("bear")) return 22;
-      if(t.includes("neutral")) return 52;
-      return 50;
-    }
-    function techScore(value){
-      const t = norm(value);
-      if(t.includes("up") || t.includes("bull")) return 82;
-      if(t.includes("down") || t.includes("bear")) return 22;
-      if(t.includes("neutral") || t.includes("mixed")) return 52;
-      return 50;
-    }
-    function stabilityScore(d){
-      const vals = seriesForPeriod(d);
-      if(vals.length < 2) return 60;
-      let totalMove = 0;
-      for(let i=1;i<vals.length;i++) totalMove += Math.abs(vals[i]-vals[i-1]);
-      const avgMove = totalMove/(vals.length-1);
-      return clamp(Math.round(100 - avgMove*7), 25, 95);
-    }
-    function makeSkylineSeries(name, score){
-      if(window.PSDCore?.buildInstrumentSeries){
-        return window.PSDCore.buildInstrumentSeries({
-          instrumentName:name,
-          instrumentHistoryData,
-          period:selectedPeriod,
-          fallbackScore:score
-        });
-      }
 
-      const len = periodLength();
-      const value = score == null ? 50 : score;
-      return Array.from({length:Math.max(2,len)}, () => value);
-    }
+
+
+
     function calcInstrument(ins){
       const dataKey = ins.dataKey || ins.name;
       if(window.PSDCore?.buildInstrumentSummary){
@@ -2102,18 +2050,16 @@
     }
     function makeSeries(name, score, periodOverride){
       const periodToUse = periodOverride || selectedPeriod;
+
       if(window.PSDCore?.buildInstrumentSeries){
         return window.PSDCore.buildInstrumentSeries({
           instrumentName:name,
           instrumentHistoryData,
-          period:periodToUse,
-          fallbackScore:score
+          period:periodToUse
         });
       }
 
-      const len = periodToUse === "weekly" ? 7 : periodToUse === "monthly" ? 180 : 24;
-      const value = score == null ? 50 : score;
-      return Array.from({length:Math.max(2,len)}, () => value);
+      return [];
     }
     function selectedData(){return selected.map(name => calcInstrument(INSTRUMENTS.find(i=>(i.dataKey || i.name)===name) || INSTRUMENTS[0]))}
     function bindPeriodButtons(){
@@ -2187,444 +2133,153 @@
       return `<div class="deep-stat"><div class="deep-stat-label"${key ? ` data-glossary="${key}"` : ""}>${esc(labelText)}</div><div class="deep-stat-value">${esc(value)}</div></div>`;
     }
 
-    function deepSeriesStats(values){
-      const clean = (values || []).filter(v => Number.isFinite(v));
-      if(!clean.length) return {avg:"--", change:"--", high:"--", low:"--", vol:"--"};
-      const first = clean[0], last = clean[clean.length - 1];
-      const moves = clean.slice(1).map((v,i)=>Math.abs(v-clean[i]));
-      return {
-        avg: average(clean) ?? "--",
-        change: signed(last-first),
-        high: Math.max(...clean),
-        low: Math.min(...clean),
-        vol: moves.length ? Math.round(moves.reduce((a,b)=>a+b,0)/moves.length) : 0
-      };
-    }
 
     function deepLineSvg(values, color, labelText){
-      const clean = (values && values.length ? values : [50,50,50,50,50,50,50,50]).map(v=>clamp(Number(v)||50,0,100));
-      const w = 420, h = 132, pad = 12, innerW = w - pad*2, innerH = h - pad*2;
-      const toPts = arr => arr.map((v,i)=>{
-        const x = pad + (i/(arr.length-1 || 1))*innerW;
-        const y = pad + (100-v)/100*innerH;
-        return [x,y];
-      });
-      const pathFromPts = pts => pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-      const areaFromPts = pts => `${pathFromPts(pts)} L${w-pad},${h-pad} L${pad},${h-pad} Z`;
+      const clean=(Array.isArray(values)?values:[])
+        .filter(v=>Number.isFinite(v))
+        .map(v=>clamp(v,0,100));
 
-      const lineSeries = clean.map((v,i,arr)=>{
-        const prev = arr[i-1] ?? v;
-        const next = arr[i+1] ?? v;
-        return clamp(Math.round((prev + v*2 + next)/4),0,100);
-      });
-      const mountainSeries = clean.map((v,i)=>clamp(Math.round(18 + Math.abs(v-48)*0.45 + 8*Math.sin(i*0.7) + (i%3)*2),8,46));
-      const heatSeries = clean.map((v,i)=>clamp(Math.round(16 + Math.abs(v-45)*0.72 + 12*Math.cos(i*0.5) + 8),10,70));
-      const hazeSeries = clean.map((v,i)=>clamp(Math.round(10 + Math.abs(v-50)*0.55 + 6*Math.sin(i*0.4+1.2)),8,42));
+      const w=420,h=132,pad=18;
 
-      const linePts = toPts(lineSeries);
-      const mountainPts = mountainSeries.map((v,i)=>{
-        const x = pad + (i/(mountainSeries.length-1 || 1))*innerW;
-        const y = h - pad - (v/100)*(innerH*0.92);
-        return [x,y];
-      });
-      const heatPts = heatSeries.map((v,i)=>{
-        const x = pad + (i/(heatSeries.length-1 || 1))*innerW;
-        const y = h - pad - (v/100)*(innerH*0.80);
-        return [x,y];
-      });
-      const hazePts = hazeSeries.map((v,i)=>{
-        const x = pad + (i/(hazeSeries.length-1 || 1))*innerW;
-        const y = h - pad - (v/100)*(innerH*0.70);
-        return [x,y];
-      });
+      if(!clean.length){
+        return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" aria-label="${esc(labelText)} unavailable">
+          <text x="${w/2}" y="62" fill="#8b949e" font-size="14" font-weight="900" text-anchor="middle">No Engine PSI history</text>
+          <text x="${w/2}" y="82" fill="#8b949e" font-size="9" font-weight="700" text-anchor="middle">No fabricated history is displayed</text>
+        </svg>`;
+      }
 
-      const last = lineSeries[lineSeries.length-1];
-      const change = signed(last - lineSeries[0]);
-      const hi = Math.max(...lineSeries), lo = Math.min(...lineSeries);
-      const gradBg = `cloudBg${Math.round(Math.random()*100000)}`;
-      const gradMountain = `cloudMountain${Math.round(Math.random()*100000)}`;
-      const gradHeat = `cloudHeat${Math.round(Math.random()*100000)}`;
-      const gradHaze = `cloudHaze${Math.round(Math.random()*100000)}`;
-      const gradLine = `cloudLine${Math.round(Math.random()*100000)}`;
-      const glow = `cloudGlow${Math.round(Math.random()*100000)}`;
-      const blur = `cloudBlur${Math.round(Math.random()*100000)}`;
-      const scan = `cloudScan${Math.round(Math.random()*100000)}`;
-      const horizonY = h - pad - innerH*0.46;
+      if(clean.length===1){
+        const y=pad+(100-clean[0])/100*(h-pad*2);
+        return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" aria-label="${esc(labelText)}">
+          <line x1="${pad}" x2="${w-pad}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.08)"/>
+          <circle cx="${w/2}" cy="${y}" r="5" fill="${color}"/>
+          <text x="${w/2}" y="${Math.max(16,y-12)}" fill="#fff" font-size="13" font-weight="900" text-anchor="middle">${clean[0]}</text>
+          <text x="${w/2}" y="${h-10}" fill="#8b949e" font-size="9" font-weight="700" text-anchor="middle">1 Engine PSI reading</text>
+        </svg>`;
+      }
+
+      const innerW=w-pad*2;
+      const innerH=h-pad*2;
+
+      const points=clean.map((v,i)=>[
+        pad+(i/(clean.length-1))*innerW,
+        pad+(100-v)/100*innerH
+      ]);
+
+      const path=points.map((p,i)=>
+        `${i?"L":"M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`
+      ).join(" ");
 
       return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
-        <defs>
-          <linearGradient id="${gradBg}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(12,17,26,.98)"/>
-            <stop offset="0.58" stop-color="rgba(11,15,22,.94)"/>
-            <stop offset="1" stop-color="rgba(7,10,15,.98)"/>
-          </linearGradient>
-          <linearGradient id="${gradMountain}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(167,178,196,.52)"/>
-            <stop offset="0.45" stop-color="rgba(105,116,132,.28)"/>
-            <stop offset="1" stop-color="rgba(30,36,46,.02)"/>
-          </linearGradient>
-          <linearGradient id="${gradHeat}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,109,109,.78)"/>
-            <stop offset="0.45" stop-color="rgba(255,71,87,.42)"/>
-            <stop offset="1" stop-color="rgba(255,71,87,0)"/>
-          </linearGradient>
-          <linearGradient id="${gradHaze}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(232,239,247,.18)"/>
-            <stop offset="1" stop-color="rgba(232,239,247,0)"/>
-          </linearGradient>
-          <linearGradient id="${gradLine}" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stop-color="rgba(255,199,199,.80)"/>
-            <stop offset="0.55" stop-color="rgba(255,93,93,.95)"/>
-            <stop offset="1" stop-color="rgba(255,146,146,.82)"/>
-          </linearGradient>
-          <filter id="${glow}" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="5.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <filter id="${blur}" x="-20%" y="-20%" width="140%" height="180%"><feGaussianBlur stdDeviation="10"/></filter>
-        </defs>
-        <rect class="deep-svg-surface" x="0" y="0" width="${w}" height="${h}" rx="14" fill="url(#${gradBg})"/>
-        <text x="${pad}" y="16" class="deep-chart-label">24H CLOUD</text>
-        <text x="${w-116}" y="16" class="deep-chart-label">Range ${lo}-${hi}</text>
-        ${[0.24,0.48,0.72].map(t=>`<line class="deep-grid-line" x1="${pad}" x2="${w-pad}" y1="${(pad+innerH*t).toFixed(1)}" y2="${(pad+innerH*t).toFixed(1)}"/>`).join('')}
-        <line x1="${pad}" x2="${w-pad}" y1="${horizonY.toFixed(1)}" y2="${horizonY.toFixed(1)}" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 6"/>
-        <path d="${areaFromPts(hazePts)}" fill="url(#${gradHaze})" opacity=".85" filter="url(#${blur})" class="deep-chart-fill"/>
-        <path d="${areaFromPts(heatPts)}" fill="url(#${gradHeat})" opacity=".92" filter="url(#${glow})" class="deep-chart-fill"/>
-        <path d="${areaFromPts(mountainPts)}" fill="url(#${gradMountain})" opacity=".95" class="deep-chart-fill"/>
-        <path d="${pathFromPts(mountainPts)}" fill="none" stroke="rgba(232,239,247,.34)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-        <path d="${pathFromPts(heatPts)}" fill="none" stroke="rgba(255,87,87,.58)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#${glow})"/>
-        <path d="${pathFromPts(linePts)}" fill="none" stroke="url(#${gradLine})" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#${glow})" style="animation-duration:1.8s,5s"/>
-        <rect x="${pad}" y="${h-28}" width="${innerW}" height="12" rx="6" fill="rgba(255,255,255,.03)"/>
-        <rect x="${pad}" y="${h-28}" width="${(innerW*0.58).toFixed(1)}" height="12" rx="6" fill="rgba(255,82,82,.14)">
-          <animate attributeName="width" values="${(innerW*0.42).toFixed(1)};${(innerW*0.64).toFixed(1)};${(innerW*0.58).toFixed(1)}" dur="5.5s" repeatCount="indefinite"/>
-        </rect>
-        ${linePts.slice(-4).map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===3?4.4:2.4}" fill="${i===3?'#ffffff':'rgba(255,190,190,.55)'}" class="deep-chart-dot"><animate attributeName="opacity" values=".35;1;.35" dur="${2.3 + i*0.2}s" repeatCount="indefinite"/></circle>`).join('')}
-        <g transform="translate(${w-96} 22)">
-          <rect class="deep-svg-readout" x="0" y="0" width="76" height="44" rx="10" fill="rgba(9,14,22,.72)" stroke="rgba(255,255,255,.08)"/>
-          <text x="38" y="18" fill="#8ba0bc" font-size="9" font-weight="800" text-anchor="middle">LIVE SIGNAL</text>
-          <text x="38" y="33" fill="#fff" font-size="18" font-weight="900" text-anchor="middle">${last}</text>
-          <text x="38" y="42" fill="#ff8f8f" font-size="9" font-weight="800" text-anchor="middle">Δ ${change}</text>
-        </g>
+        ${[25,50,75].map(v=>{
+          const y=pad+(100-v)/100*innerH;
+          return `<line x1="${pad}" x2="${w-pad}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.07)"/>`;
+        }).join("")}
+        <path d="${path}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${points.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===points.length-1?4:2.4}" fill="${color}"/>`).join("")}
+        <text x="${pad}" y="14" fill="#8ba0bc" font-size="9" font-weight="800">ENGINE PSI HISTORY</text>
+        <text x="${w-pad}" y="14" fill="#fff" font-size="12" font-weight="900" text-anchor="end">${clean[clean.length-1]}</text>
       </svg>`;
     }
-
     function deepBarsSvg(values, color, labelText){
-      const clean = (values && values.length ? values : [50,50,50,50]).slice(-24).map(v=>clamp(Number(v)||50,0,100));
-      const w=420,h=132;
-      const cx=116, cy=66, r=50;
-      const avg = Math.round(clean.reduce((a,b)=>a+b,0)/clean.length);
-      const change = signed(clean[clean.length-1] - clean[0]);
-      const vol = Math.round(clean.reduce((a,b)=>a + Math.abs(b-avg), 0) / clean.length);
-      const maxv = Math.max(...clean, 1);
-      const barBaseX = 76, barBaseY = 100, barAreaW = 80;
-      const step = barAreaW / clean.length;
-      const ring1 = `lensRing${Math.round(Math.random()*100000)}`;
-      const ring2 = `lensRingB${Math.round(Math.random()*100000)}`;
-      const globe = `lensGlobe${Math.round(Math.random()*100000)}`;
-      const lines = [-24,-12,0,12,24].map(y=>`<ellipse cx="${cx}" cy="${cy+y*0.22}" rx="${(r - Math.abs(y)*0.4).toFixed(1)}" ry="${(12 - Math.abs(y)*0.08).toFixed(1)}" fill="none" stroke="rgba(255,255,255,.08)"/>`).join('');
-      const longs = [-36,-18,0,18,36].map(x=>`<ellipse cx="${cx+x*0.18}" cy="${cy}" rx="${(8 + Math.abs(x)*0.22).toFixed(1)}" ry="${r.toFixed(1)}" fill="none" stroke="rgba(255,255,255,.06)"/>`).join('');
-      const bars = clean.map((v,i)=>{
-        const bh = 12 + (v/maxv)*42;
-        const x = barBaseX + i*step + 1;
-        const y = barBaseY - bh;
-        const fill = i > clean.length-4 ? 'url(#histHot)' : 'url(#histCool)';
-        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(4, step-3).toFixed(1)}" height="${bh.toFixed(1)}" rx="3.5" fill="${fill}" opacity=".96" class="deep-chart-bar" style="animation-delay:${(i*0.05).toFixed(2)}s"/>`;
-      }).join('');
-      const orbitDots = [0,72,144,216,288].map((deg,i)=>{
-        const rad = deg * Math.PI/180;
-        const rr = 58 + (i%2)*8;
-        const x = cx + Math.cos(rad) * rr;
-        const y = cy + Math.sin(rad) * rr;
-        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i===0?3.8:2.8}" fill="${i%2===0?'#ffd25a':'#67e8f9'}" opacity=".85"><animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="${12 + i*2}s" repeatCount="indefinite"/></circle>`;
-      }).join('');
+      const clean=(Array.isArray(values)?values:[])
+        .filter(v=>Number.isFinite(v))
+        .map(v=>clamp(v,0,100));
+
+      const w=420,h=132,pad=20;
+
+      if(!clean.length){
+        return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" aria-label="${esc(labelText)} unavailable">
+          <text x="${w/2}" y="62" fill="#8b949e" font-size="14" font-weight="900" text-anchor="middle">No Engine PSI history</text>
+          <text x="${w/2}" y="82" fill="#8b949e" font-size="9" font-weight="700" text-anchor="middle">No fabricated monthly values are displayed</text>
+        </svg>`;
+      }
+
+      const innerW=w-pad*2;
+      const innerH=h-42;
+      const step=innerW/clean.length;
+      const barW=Math.max(5,step*.62);
+
+      const bars=clean.map((v,i)=>{
+        const height=(v/100)*innerH;
+        const x=pad+i*step+(step-barW)/2;
+        const y=h-18-height;
+
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${height.toFixed(1)}" rx="3" fill="${color}" opacity=".82"/>`;
+      }).join("");
+
       return `<svg class="deep-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="${esc(labelText)}">
-        <defs>
-          <radialGradient id="${globe}" cx="50%" cy="50%" r="58%">
-            <stop offset="0" stop-color="rgba(111,190,255,.30)"/>
-            <stop offset="0.55" stop-color="rgba(35,64,115,.18)"/>
-            <stop offset="1" stop-color="rgba(6,10,16,.02)"/>
-          </radialGradient>
-          <linearGradient id="${ring1}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="rgba(88,166,255,.96)"/><stop offset="1" stop-color="rgba(255,94,202,.84)"/></linearGradient>
-          <linearGradient id="${ring2}" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stop-color="rgba(255,208,92,.95)"/><stop offset="1" stop-color="rgba(255,116,88,.84)"/></linearGradient>
-          <linearGradient id="histCool" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(103,232,249,.96)"/><stop offset="1" stop-color="rgba(88,166,255,.68)"/></linearGradient>
-          <linearGradient id="histHot" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(255,210,90,.98)"/><stop offset="1" stop-color="rgba(255,94,202,.70)"/></linearGradient>
-        </defs>
-        <rect class="deep-svg-surface" x="0" y="0" width="${w}" height="${h}" rx="14" fill="rgba(5,8,14,.20)"/>
-        <text x="14" y="16" class="deep-chart-label">Sentiment Lens</text>
-        <text x="${w-120}" y="16" class="deep-chart-label">Monthly Orbit</text>
-        <g>
-          <circle cx="${cx}" cy="${cy}" r="${r+14}" fill="none" stroke="url(#${ring2})" stroke-width="1.5" opacity=".48"/>
-          <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2"/>
-          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${globe})" stroke="url(#${ring1})" stroke-width="2.6"/>
-          <circle cx="${cx}" cy="${cy}" r="${r-14}" fill="none" stroke="rgba(255,255,255,.08)"/>
-          ${lines}
-          ${longs}
-          <g clip-path="url(#lensClip)"></g>
-          <clipPath id="lensClip"><circle cx="${cx}" cy="${cy}" r="${r-6}"/></clipPath>
-          <g clip-path="url(#lensClip)">
-            <rect x="${cx-r+6}" y="${cy-r+6}" width="${(r-6)*2}" height="${(r-6)*2}" fill="rgba(5,10,16,.10)"/>
-            ${bars}
-            <path d="M${barBaseX},${barBaseY-22} ${clean.map((v,i)=>`L${(barBaseX + i*step + step/2).toFixed(1)},${(104 - (v/maxv)*34).toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(255,255,255,.78)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" style="animation-duration:1.7s,4.5s"/>
-          </g>
-          ${orbitDots}
-          <circle class="deep-svg-core" cx="${cx}" cy="${cy}" r="11" fill="rgba(5,8,14,.92)" stroke="rgba(255,255,255,.12)"/>
-          <text x="${cx}" y="${cy+4}" fill="#fff" font-size="12" font-weight="900" text-anchor="middle">${avg}</text>
-        </g>
-        <g transform="translate(228 26)">
-          <rect class="deep-svg-readout" x="0" y="0" width="168" height="82" rx="14" fill="rgba(8,13,21,.58)" stroke="rgba(255,255,255,.06)"/>
-          <text x="14" y="18" class="deep-chart-label">Lens Readout</text>
-          <text x="14" y="39" fill="#fff" font-size="26" font-weight="900">${clean[clean.length-1]}</text>
-          <text x="72" y="39" fill="#8ba0bc" font-size="10" font-weight="800">CURRENT PSI</text>
-          <text x="14" y="58" fill="#ffd25a" font-size="14" font-weight="900">${change}</text>
-          <text x="54" y="58" fill="#8ba0bc" font-size="10" font-weight="800">MONTHLY CHANGE</text>
-          <text x="14" y="74" fill="#67e8f9" font-size="14" font-weight="900">VOL ${vol}</text>
-          <text x="84" y="74" fill="#8ba0bc" font-size="10" font-weight="800">STABILITY ${Math.max(0,100-vol)}</text>
-        </g>
+        ${[25,50,75].map(v=>{
+          const y=h-18-(v/100)*innerH;
+          return `<line x1="${pad}" x2="${w-pad}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.07)"/>`;
+        }).join("")}
+        ${bars}
+        <text x="${pad}" y="14" fill="#8ba0bc" font-size="9" font-weight="800">ENGINE MONTHLY PSI</text>
+        <text x="${w-pad}" y="14" fill="#fff" font-size="12" font-weight="900" text-anchor="end">${clean[clean.length-1]}</text>
       </svg>`;
     }
 
-    function deepInstrumentThemes(name){
-      const n = String(name || '').toLowerCase();
-      if(/gold|silver|oil|gas|crude|copper|aluminum/.test(n)) return ['Macro','Supply','Inflation','Flows'];
-      if(/bitcoin|ethereum|crypto/.test(n)) return ['Momentum','Risk','Flows','Narrative'];
-      if(/yield|bond|treasury|dxy|usd|eur|jpy|gbp|forex/.test(n)) return ['Rates','Macro','Policy','Flows'];
-      if(/vix|vol/.test(n)) return ['Risk','Vol','Macro','Hedge'];
-      return ['Earnings','Macro','Flows','Breadth'];
-    }
 
-    function deepNewsFusionSvg(data, instrumentName, stats){
-      const score = Number(data.score) || 50;
-      const headlines = Number(data.headlines || 0);
-      const bull = clamp(Math.round(score), 0, 100);
-      const bear = clamp(100 - bull, 0, 100);
-      const neutral = clamp(100 - Math.abs(score - 50) * 2, 0, 100);
-      const intensity = stats.intensity;
-      const uid = Math.round(Math.random()*100000);
-      const pulse = Array.from({length: 13}, (_, i) => clamp(Math.round(28 + Math.sin(i*0.58 + score/17) * 14 + Math.cos(i*0.35) * 9 + score*0.22), 14, 90));
-      const barSeries = Array.from({length: 9}, (_, i) => clamp(Math.round(20 + Math.abs(Math.cos(i*0.62 + score/19))*44 + (i%3)*5), 14, 92));
-      const linePts = pulse.map((v,i)=>[210 + i * 15, 104 - (v/100) * 58]);
-      const linePath = linePts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-      const areaPath = `${linePath} L${linePts[linePts.length-1][0]},134 L210,134 Z`;
-      const bars = barSeries.map((v,i)=>{
-        const x = 216 + i*19;
-        const h = (v/100)*32;
-        const y = 146 - h;
-        return `<rect x="${x}" y="${y.toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="4" fill="url(#orbBar${uid})" opacity="${(0.66 + i*0.03).toFixed(2)}"/>`;
-      }).join('');
-      const themes = deepInstrumentThemes(instrumentName);
-      const dots = themes.map((t,i)=>`<g transform="translate(${34 + i*42} 146)"><circle r="6.5" fill="rgba(6,10,16,.88)" stroke="rgba(255,255,255,.14)"/><circle r="3" fill="${['#67e8f9','#f472b6','#facc15','#60a5fa'][i%4]}" filter="url(#orbGlow${uid})"/><text x="0" y="18" fill="#aab7cb" font-size="7.5" font-weight="800" text-anchor="middle">${esc(t.slice(0,4).toUpperCase())}</text></g>`).join('');
-      return `<svg viewBox="0 0 420 166" preserveAspectRatio="none" aria-label="News and article fusion chart">
-        <defs>
-          <radialGradient id="orbCore${uid}" cx="50%" cy="45%" r="62%">
-            <stop offset="0" stop-color="rgba(255,116,92,.95)"/>
-            <stop offset="0.34" stop-color="rgba(255,151,83,.78)"/>
-            <stop offset="0.62" stop-color="rgba(66,205,255,.28)"/>
-            <stop offset="1" stop-color="rgba(8,12,18,0)"/>
-          </radialGradient>
-          <linearGradient id="orbLine${uid}" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stop-color="rgba(255,118,118,.60)"/>
-            <stop offset="0.55" stop-color="rgba(255,74,74,.98)"/>
-            <stop offset="1" stop-color="rgba(255,184,184,.72)"/>
-          </linearGradient>
-          <linearGradient id="orbArea${uid}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,84,84,.34)"/>
-            <stop offset="1" stop-color="rgba(255,84,84,0)"/>
-          </linearGradient>
-          <linearGradient id="orbBar${uid}" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="rgba(255,210,90,.96)"/>
-            <stop offset="1" stop-color="rgba(255,88,106,.68)"/>
-          </linearGradient>
-          <filter id="orbGlow${uid}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <clipPath id="orbClip${uid}"><circle cx="91" cy="80" r="43"/></clipPath>
-        </defs>
-        <rect class="deep-svg-surface" x="0" y="0" width="420" height="166" rx="18" fill="rgba(6,10,16,.98)"/>
-        <text x="16" y="17" fill="#8ea1bc" font-size="9.5" font-weight="900" letter-spacing=".08em">NARRATIVE ORB</text>
-        <text x="208" y="17" fill="#8ea1bc" font-size="9.5" font-weight="900" letter-spacing=".08em">ARTICLE FLOW</text>
-
-        <g>
-          <circle cx="91" cy="80" r="67" fill="none" stroke="rgba(86,168,255,.14)" stroke-width="2"/>
-          <circle cx="91" cy="80" r="56" fill="none" stroke="rgba(255,86,86,.14)" stroke-width="2"/>
-          <circle cx="91" cy="80" r="47" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1.2" stroke-dasharray="4 6"/>
-          <circle cx="91" cy="80" r="43" fill="url(#orbCore${uid})" stroke="rgba(255,255,255,.13)" stroke-width="1.4"/>
-          <g clip-path="url(#orbClip${uid})">
-            ${Array.from({length:7},(_,i)=>{ const h = 16 + (i%4)*7 + Math.round(score/12); const x = 60 + i*9; const y = 111 - h; return `<rect x="${x}" y="${y}" width="6" height="${h}" rx="2" fill="url(#orbBar${uid})" opacity="${(0.58+i*0.05).toFixed(2)}"/>`; }).join('')}
-            <path d="M49,99 C66,88 80,78 91,80 C105,82 117,76 135,59" fill="none" stroke="rgba(255,255,255,.68)" stroke-width="2" stroke-linecap="round" filter="url(#orbGlow${uid})"/>
-          </g>
-          <text x="91" y="76" fill="#ffffff" font-size="18" font-weight="900" text-anchor="middle">${pressureLabel(score)}</text>
-          <text x="91" y="92" fill="#d6deeb" font-size="9.5" font-weight="800" text-anchor="middle">${headlines.toLocaleString()} ARTICLES</text>
-          <text x="91" y="106" fill="#ffd76b" font-size="9" font-weight="900" text-anchor="middle">INTENSITY ${intensity}</text>
-          ${dots}
-        </g>
-
-        <g>
-          ${[0,1,2,3].map(i=>`<line x1="208" x2="402" y1="${36 + i*25}" y2="${36 + i*25}" stroke="rgba(255,255,255,.065)"/>`).join('')}
-          <path d="${areaPath}" fill="url(#orbArea${uid})"/>
-          <path d="${linePath}" fill="none" stroke="url(#orbLine${uid})" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" class="deep-chart-line" filter="url(#orbGlow${uid})" style="animation-duration:1.7s,4.6s"/>
-          ${linePts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===linePts.length-1?3.8:2}" fill="${i===linePts.length-1?'#fff':'rgba(255,170,170,.60)'}" class="deep-chart-dot"/>`).join('')}
-          ${bars}
-          <rect x="208" y="27" width="194" height="126" rx="14" fill="none" stroke="rgba(255,255,255,.07)"/>
-          <g transform="translate(300 24)">
-            <rect class="deep-svg-readout" x="0" y="0" width="86" height="30" rx="12" fill="rgba(8,13,21,.76)" stroke="rgba(255,255,255,.08)"/>
-            <text x="43" y="12" fill="#8ea1bc" font-size="7.5" font-weight="900" text-anchor="middle">VELOCITY</text>
-            <text x="43" y="23" fill="#fff" font-size="13" font-weight="900" text-anchor="middle">${intensity}/100</text>
-          </g>
-          <text x="212" y="160" fill="#7f93af" font-size="8" font-weight="800">source pulse + theme pressure + article flow</text>
-        </g>
-      </svg>`;
-    }
-
-    function pressureLabel(score){
-      return score > 58 ? 'BULL' : score < 44 ? 'BEAR' : 'BAL';
-    }
 
     function deepNewsBars(data, instrumentName, slot){
-      const score = Number(data.score) || 50;
+      const hasScore =
+        data.score !== null &&
+        data.score !== undefined &&
+        data.score !== "" &&
+        Number.isFinite(Number(data.score));
+
+      const psi = hasScore ? Number(data.score) : null;
       const headlines = Number(data.headlines || 0);
-      const bullish = clamp(Math.round(score),0,100);
-      const bearish = clamp(100-bullish,0,100);
-      const neutral = clamp(100-Math.abs(score-50)*2,0,100);
-      const intensity = clamp(Math.round(Math.min(100, 28 + Math.log10(headlines + 10) * 18)), 18, 100);
-      const pressure = score > 58 ? 'Bullish' : score < 44 ? 'Bearish' : 'Balanced';
-      const themes = deepInstrumentThemes(instrumentName).map((label, idx)=>({
-        label,
-        value: clamp(Math.round((score + idx*11 + (headlines % 19)) % 100),24,96),
-        mood: ['Narrative flow','Theme expansion','Source clustering','Momentum cross-check'][idx % 4]
-      }));
+
       return `<div class="deep-news-fusion">
-        <div class="deep-news-holo">${deepNewsFusionSvg(data, instrumentName, { intensity })}</div>
         <div class="deep-news-meta">
-          <div class="deep-news-kpi"><span data-glossary="pressure">Pressure</span><b>${pressure}</b><small>${bullish}% bull / ${bearish}% bear</small></div>
-          <div class="deep-news-kpi"><span>Article Load</span><b>${headlines.toLocaleString()}</b><small>Intensity ${intensity}/100</small></div>
-          <div class="deep-news-kpi"><span data-glossary="source-bias">Source Bias</span><b>${esc(data.user || 'Mixed')}</b><small>${esc(data.sentiment || 'Neutral')} narrative</small></div>
-          <div class="deep-news-kpi"><span data-glossary="neutrality">Neutrality</span><b>${neutral}%</b><small>Balance between bullish and bearish pressure</small></div>
-        </div>
-        <div class="deep-news-themes">
-          ${themes.map(t=>`<div class="deep-news-theme-pill"><span data-glossary="theme-score">${esc(t.label)}</span><b>${t.value}%</b><small>${esc(t.mood)}</small></div>`).join('')}
+          <div class="deep-news-kpi"><span>PSI</span><b>${psi ?? "N/A"}</b><small>Engine V2 current PSI</small></div>
+          <div class="deep-news-kpi"><span>Sentiment</span><b>${esc(data.sentiment || "N/A")}</b><small>Engine PSI classification</small></div>
+          <div class="deep-news-kpi"><span>Article Load</span><b>${headlines.toLocaleString()}</b><small>Engine-supplied headline count</small></div>
+          <div class="deep-news-kpi"><span>Technical</span><b>${esc(data.tech || "N/A")}</b><small>Engine technical direction</small></div>
+          <div class="deep-news-kpi"><span>User</span><b>${esc(data.user || "N/A")}</b><small>User sentiment</small></div>
         </div>
         <button class="deep-open-news-button" type="button" onclick="openArticleLoadPageFromSlot(${slot})">Open Prioritized News &amp; Articles <span>View matched coverage →</span></button>
       </div>`;
     }
-
     function deepTechCompass(data, series, instrumentName){
-      const score = Number(data.score) || 50;
-      const st = deepSeriesStats(series);
-      const headlines = Number(data.headlines || 0);
-      const trend = clamp(Math.round((Number(st.avg) || score) + Math.sign(parseInt(st.change,10)||0)*8), 0, 100);
-      const momentum = clamp(Math.round(50 + (parseInt(st.change,10)||0)*5), 0, 100);
-      const participation = clamp(Math.round(Math.min(100, 35 + Math.log10(headlines + 10) * 16)), 0, 100);
-      const techBias = norm(data.tech);
-      const userBias = norm(data.user);
-      const isAligned = ((techBias.includes('up') || techBias.includes('bull')) && userBias.includes('bull')) || ((techBias.includes('down') || techBias.includes('bear')) && userBias.includes('bear'));
-      const alignment = clamp(isAligned ? 84 : data.sentiment === 'Mixed/Neutral' || data.sentiment === 'Neutral' ? 58 : 68, 0, 100);
-      const volatility = clamp(Math.round(Math.max(10, 100 - ((Number(st.vol)||0) * 8))),0,100);
-      const factors = [
-        ['Trend', trend],
-        ['Momentum', momentum],
-        ['Narrative', participation],
-        ['Alignment', alignment],
-        ['Stability', volatility]
-      ];
-      const factorNotes = {
-        Trend: 'Directional strength',
-        Momentum: 'Rate of change',
-        Narrative: 'Headline intensity',
-        Alignment: 'User vs tech agreement',
-        Stability: 'Lower noise = higher score'
-      };
-      const factorGlossary = {Trend:'trend', Momentum:'momentum', Narrative:'narrative', Alignment:'alignment', Stability:'stability'};
-      const cx=130, cy=130, outer=108, levels=[28,48,68,88,108];
-      const pointsFor = r => factors.map((_,i)=>{
-        const ang = (-90 + i*(360/factors.length)) * Math.PI/180;
-        return [cx + Math.cos(ang)*r, cy + Math.sin(ang)*r];
-      });
-      const gridPolys = levels.map((r,idx)=>`<polygon points="${pointsFor(r).map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${idx === levels.length-1 ? 'rgba(110,170,255,.28)' : 'rgba(255,255,255,.06)'}" stroke-width="${idx === levels.length-1 ? '1.2' : '1'}"/>`).join('');
-      const rings = [32,56,80,104].map(r=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(110,170,255,.08)" stroke-dasharray="${r%2===0?'3 7':'2 6'}"/>`).join('');
-      const axes = pointsFor(outer).map((p,i)=>`<g><line x1="${cx}" y1="${cy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" stroke="rgba(255,255,255,.07)"/><text x="${(p[0] + (p[0]>cx?16:-16)).toFixed(1)}" y="${(p[1] + (p[1]>cy?15:-7)).toFixed(1)}" fill="#eaf3ff" font-size="10.2" font-weight="950" text-anchor="middle">${esc(factors[i][0].slice(0,4).toUpperCase())}</text></g>`).join('');
-      const shapePts = factors.map(([,v],i)=>{
-        const ang = (-90 + i*(360/factors.length)) * Math.PI/180;
-        const r = (v/100)*outer;
-        return [cx + Math.cos(ang)*r, cy + Math.sin(ang)*r];
-      });
-      const polygon = shapePts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ');
-      const theme = { dominant: (deepInstrumentThemes(instrumentName)[0] || 'Mixed') };
-      const badge = score > 58 ? 'Risk-On' : score < 44 ? 'Risk-Off' : 'Balanced';
-      const nextBias = parseInt(st.change,10) > 0 ? 'Continuation' : parseInt(st.change,10) < 0 ? 'Cooling' : 'Stable';
-      const aiSync = clamp(Math.round((alignment + volatility) / 2), 0, 100);
-      const neuralRead = clamp(Math.round((momentum + participation) / 2), 0, 100);
+      const hasScore =
+        data.score !== null &&
+        data.score !== undefined &&
+        data.score !== "" &&
+        Number.isFinite(Number(data.score));
+
       return `<div class="deep-radar-wrap">
         <div class="deep-radar-card">
-          <svg class="deep-radar-svg" viewBox="0 0 260 260" aria-label="Signal Confluence Radar for ${esc(instrumentName)}">
-            <defs>
-              <radialGradient id="radBg${score}" cx="50%" cy="48%" r="60%">
-                <stop offset="0%" stop-color="rgba(34,61,110,.42)"/>
-                <stop offset="60%" stop-color="rgba(10,16,26,.18)"/>
-                <stop offset="100%" stop-color="rgba(5,8,14,0)"/>
-              </radialGradient>
-              <linearGradient id="radFill${score}" x1="0" x2="1" y1="0" y2="1">
-                <stop offset="0%" stop-color="rgba(94,231,255,.42)"/>
-                <stop offset="48%" stop-color="rgba(93,167,255,.26)"/>
-                <stop offset="100%" stop-color="rgba(255,94,202,.20)"/>
-              </linearGradient>
-              <linearGradient id="radStroke${score}" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0%" stop-color="#61f0ff"/>
-                <stop offset="55%" stop-color="#5da7ff"/>
-                <stop offset="100%" stop-color="#ff74d4"/>
-              </linearGradient>
-              <linearGradient id="sweep${score}" x1="0" x2="1" y1="0" y2="1">
-                <stop offset="0%" stop-color="rgba(97,240,255,0)"/>
-                <stop offset="60%" stop-color="rgba(97,240,255,.15)"/>
-                <stop offset="100%" stop-color="rgba(97,240,255,.34)"/>
-              </linearGradient>
-            </defs>
-            <circle cx="${cx}" cy="${cy}" r="118" fill="url(#radBg${score})"/>
-            ${rings}
-            ${gridPolys}
-            <g opacity=".94">${axes}</g>
-            <g>
-              <path d="M ${cx} ${cy} L ${cx} ${cy-104} A 104 104 0 0 1 ${cx+52} ${cy-90} Z" fill="url(#sweep${score})">
-                <animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="9.8s" repeatCount="indefinite"/>
-              </path>
-            </g>
-            <polygon points="${polygon}" fill="url(#radFill${score})" stroke="url(#radStroke${score})" stroke-width="2.8"/>
-            ${shapePts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.6" fill="${i%2===0?'#61f0ff':'#ff74d4'}" stroke="rgba(255,255,255,.26)" stroke-width="1"><animate attributeName="r" values="4.6;6.2;4.6" dur="2.8s" repeatCount="indefinite" begin="${i*0.2}s"/></circle>`).join('')}
-            <circle class="deep-svg-core" cx="${cx}" cy="${cy}" r="38" fill="rgba(6,10,16,.98)" stroke="rgba(114,175,255,.24)" stroke-width="1.5"/>
-            <circle cx="${cx}" cy="${cy}" r="25" fill="none" stroke="rgba(255,255,255,.08)" stroke-dasharray="3 6"><animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="13s" repeatCount="indefinite"/></circle>
-            <text x="${cx}" y="${cy-2}" fill="#ffffff" font-size="26" font-weight="950" text-anchor="middle">${score}</text>
-            <text x="${cx}" y="${cy+15}" fill="#b4f8ff" font-size="10.2" font-weight="950" text-anchor="middle">AI CORE</text>
-            <g opacity=".94">
-              <circle cx="42" cy="216" r="5" fill="#61f0ff"/>
-              <circle cx="220" cy="40" r="4.2" fill="#ff74d4"/>
-              <circle cx="207" cy="212" r="3.8" fill="#ffd780"/>
-              <circle cx="55" cy="46" r="3.4" fill="#5da7ff"/>
-            </g>
+          <svg class="deep-radar-svg" viewBox="0 0 260 260" aria-label="Signal Confluence">
+            <circle cx="130" cy="130" r="104" fill="none" stroke="rgba(110,170,255,.16)" stroke-width="1.5"/>
+            <circle cx="130" cy="130" r="72" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+            <text x="130" y="116" fill="#8b949e" font-size="13" font-weight="900" text-anchor="middle">COMPOSITE N/A</text>
+            <text x="130" y="138" fill="#d6deeb" font-size="9" font-weight="800" text-anchor="middle">Not calculated in browser</text>
+            <text x="130" y="157" fill="#8b949e" font-size="8.5" font-weight="700" text-anchor="middle">Waiting for Engine V2 metric</text>
           </svg>
         </div>
-        <div class="deep-radar-legend">
-          <div class="deep-radar-head"><div><span>AI Confluence Engine</span><b>${badge}</b></div><em data-glossary="signal-sync">Sync ${aiSync}%</em></div>
-          <div class="deep-radar-metrics">
-            ${factors.map(([label,val])=>`<div class="deep-radar-metric"><span data-glossary="${factorGlossary[label] || 'correlation'}">${esc(label)}</span><b>${val}</b><small>${esc(factorNotes[label] || 'Signal factor')}</small><div class="deep-radar-metric-line"><i style="width:${val}%"></i></div></div>`).join('')}
-          </div>
-        </div>
         <div class="deep-radar-signal">
-          <div><span data-glossary="next-read">Next Read</span><b>${nextBias}</b></div>
-          <div><span data-glossary="neural-read">Neural Read</span><b>${neuralRead}</b></div>
-          <div><span>Theme</span><b>${esc(theme.dominant || '--')}</b></div>
-          <div><span>Tech</span><b>${esc(data.tech || '--')}</b></div>
-          <div><span>User</span><b>${esc(data.user || '--')}</b></div>
-          <div><span data-glossary="stability">Stability</span><b>${volatility}</b></div>
+          <div><span>PSI</span><b>${hasScore ? Number(data.score) : "N/A"}</b></div>
+          <div><span>Sentiment</span><b>${esc(data.sentiment || "N/A")}</b></div>
+          <div><span>Tech</span><b>${esc(data.tech || "N/A")}</b></div>
+          <div><span>User</span><b>${esc(data.user || "N/A")}</b></div>
+          <div><span>Headlines</span><b>${Number(data.headlines || 0).toLocaleString()}</b></div>
         </div>
       </div>`;
     }
-
     function renderDeepWindowContent(win, id, slot){
       const instrumentName = selected[slot];
       const ins = INSTRUMENTS.find(i => (i.dataKey || i.name) === instrumentName) || INSTRUMENTS[0];
       const displayName = ins.name || instrumentName;
       const data = calcInstrument(ins);
       const color = sentimentColor(data.score);
-      const path24 = makeSeries(instrumentName, data.score || 50, "daily");
-      const path30 = makeSeries(instrumentName, data.score || 50, "monthly");
-      const stats24 = deepSeriesStats(path24);
-      const stats30 = deepSeriesStats(path30);
+      const path24 = makeSeries(instrumentName, data.score, "daily");
+      const path30 = makeSeries(instrumentName, data.score, "monthly");
+
       win.setAttribute("data-deep-slot", String(slot));
       win.setAttribute("aria-label", `${displayName} Deep Analysis`);
+
       win.innerHTML = `
         <div class="deep-window-header">
           <div>
@@ -2633,6 +2288,7 @@
           </div>
           <button class="deep-window-close" type="button" aria-label="Close Deep Analysis" onclick="closeDeepAnalysis('${id}')">×</button>
         </div>
+
         <div class="deep-window-body">
           <div class="deep-stat-grid">
             ${deepMetricCard("PSI", data.score ?? "--")}
@@ -2640,44 +2296,48 @@
             ${deepMetricCard("User", data.user || "--")}
             ${deepMetricCard("Tech", data.tech || "--")}
             ${deepMetricCard("Headlines", Number(data.headlines || 0).toLocaleString())}
-            ${deepMetricCard("Formula", data.formulaVersion || window.PSD_SENTIMENT_CORE_VERSION || "Legacy")}
+            ${deepMetricCard("Formula", data.formulaVersion || window.PSD_SENTIMENT_CORE_VERSION || "N/A")}
           </div>
+
           <div class="deep-section-grid">
             <div class="deep-section">
               <h3>24H Sentiment Cloud</h3>
-              <p>Layered cloud-style intraday flow with glowing pressure zones and carried-forward motion between scraper runs.</p>
+              <p>Engine-supplied PSI history only. Missing readings are not filled or carried forward.</p>
               ${deepLineSvg(path24, color, "24H Sentiment Cloud")}
               <div class="deep-mini-row">
-                <div class="deep-mini-metric"><span>Now</span><b>${data.score ?? "--"}</b></div>
-                <div class="deep-mini-metric"><span data-glossary="sentiment-change">Change</span><b>${stats24.change}</b></div>
-                <div class="deep-mini-metric"><span data-glossary="sentiment-range">Range</span><b>${stats24.low}/${stats24.high}</b></div>
+                <div class="deep-mini-metric"><span>Current PSI</span><b>${data.score ?? "--"}</b></div>
+                <div class="deep-mini-metric"><span>Engine Points</span><b>${path24.length}</b></div>
+                <div class="deep-mini-metric"><span>Source</span><b>Engine V2</b></div>
               </div>
             </div>
+
             <div class="deep-section">
               <h3>Sentiment Lens & Histogram</h3>
-              <p>Lens-style calendar monthly view combining orbital rings, globe depth, and embedded histogram movement.</p>
+              <p>Calendar-month display built only from stored Engine PSI history.</p>
               ${deepBarsSvg(path30, color, "Sentiment Lens & Histogram")}
               <div class="deep-mini-row">
-                <div class="deep-mini-metric"><span data-glossary="sentiment-average">Avg</span><b>${stats30.avg}</b></div>
-                <div class="deep-mini-metric"><span data-glossary="sentiment-change">Change</span><b>${stats30.change}</b></div>
-                <div class="deep-mini-metric"><span data-glossary="sentiment-volatility">Vol</span><b>${stats30.vol}</b></div>
+                <div class="deep-mini-metric"><span>Current PSI</span><b>${data.score ?? "--"}</b></div>
+                <div class="deep-mini-metric"><span>Months Shown</span><b>${path30.length}</b></div>
+                <div class="deep-mini-metric"><span>Source</span><b>Engine V2</b></div>
               </div>
             </div>
+
             <div class="deep-section">
               <h3>News & Article Summary</h3>
-              <p>Pressure spectrum, article velocity, and theme balance for the selected instrument.</p>
+              <p>Engine PSI, sentiment, headline count, technical direction, and user sentiment without browser-generated pressure scores.</p>
               ${deepNewsBars(data, instrumentName, slot)}
             </div>
+
             <div class="deep-section">
               <h3>Signal Confluence Radar</h3>
-              <p>Advanced factor view showing trend, momentum, narrative intensity, and alignment strength.</p>
+              <p>Composite confluence scores are not generated in the browser. Raw Engine and user signals remain visible.</p>
               ${deepTechCompass(data, path30, instrumentName)}
             </div>
           </div>
         </div>`;
+
       makeDeepWindowDraggable(win);
     }
-
     function deepArticlePriority(article){
       if(article?.is_major_outlet === true) return 1;
       if(Number(article?.relevance_score || 0) >= 7 || norm(article?.impact) === "high") return 2;
@@ -3036,10 +2696,24 @@
         return `<optgroup label="${esc(group)}">${options}</optgroup>`;
       }).join("");
     }
-    function sparklinePath(series,w=180,h=54){return series.map((v,i)=>{const x=(i/(series.length-1))*w; const y=h-(v/100)*h; return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join(" ")}
+    function sparklinePath(series,w=180,h=54){
+      const clean=(Array.isArray(series)?series:[])
+        .filter(v=>Number.isFinite(v));
+
+      if(clean.length<2) return "";
+
+      return clean.map((v,i)=>{
+        const x=(i/(clean.length-1))*w;
+        const y=h-(v/100)*h;
+        return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+    }
     function renderCards(data){
       document.getElementById("snapshotCards").innerHTML = data.map((d, idx) => {
         const c = sentimentColor(d.score);
+        const spark = sparklinePath(d.series);
+        const sparkArea = spark ? `${spark} L180,54 L0,54 Z` : "";
+
         return `<article class="sentiment-card">
           <div class="card-control-strip">
             <select class="lab-select" data-slot="${idx}" onchange="handleInstrumentChange(${idx}, this.value)">${instrumentOptions(selected[idx])}</select>
@@ -3050,55 +2724,99 @@
           </div>
           <div class="card-head"><div class="market-name">${esc(d.name)}</div><div class="sentiment-badge ${badgeClass(d.score)}">${esc(d.sentiment)}</div></div>
           <div class="gauge-row"><div class="mini-gauge" style="--score:${d.score??0};--accent:${c}"><div class="mini-gauge-inner"><div><div class="psi-big">${d.score??"--"}</div><div class="psi-small">PSI / 100</div></div></div></div><div class="card-metrics"><div class="metric-line"><span>User</span><span>${esc(d.user)}</span></div><div class="metric-line"><span>Technical</span><span>${esc(d.tech)}</span></div><div class="metric-line"><span>Headlines</span><span>${Number(d.headlines).toLocaleString()}</span></div></div></div>
-          <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${sparklinePath(d.series)}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparklinePath(d.series)} L180,54 L0,54 Z" fill="${lineColor(idx)}" opacity=".10"/></svg>
+          <svg class="sparkline" viewBox="0 0 180 54" preserveAspectRatio="none"><path class="spark-path" d="${spark}" fill="none" stroke="${lineColor(idx)}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${sparkArea}" fill="${lineColor(idx)}" opacity=".10"/></svg>
         </article>`;
       }).join("");
     }
     function smoothPath(points){if(points.length<2)return"";let d=`M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;for(let i=1;i<points.length;i++){const prev=points[i-1],cur=points[i];const midX=(prev[0]+cur[0])/2,midY=(prev[1]+cur[1])/2;d+=` Q${prev[0].toFixed(1)},${prev[1].toFixed(1)} ${midX.toFixed(1)},${midY.toFixed(1)}`;}const last=points[points.length-1];d+=` T${last[0].toFixed(1)},${last[1].toFixed(1)}`;return d;}
     function renderSkyline(data){
-      const svg=document.getElementById("skylineChart"); const w=1000,h=420,pad={l:56,r:270,t:30,b:40}; const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
-      const dark=document.body.classList.contains("dark-mode"),grid=dark?"rgba(255,255,255,.13)":"rgba(26,57,88,.17)",axis=dark?"#a9b4c1":"#263b53",labelBg=dark?"rgba(9,14,22,.88)":"rgba(255,255,255,.96)",labelText=dark?"#fff":"#071426",areaOpacity=dark?".065":".14";
+      const svg=document.getElementById("skylineChart");
+      const w=1000,h=420,pad={l:56,r:270,t:30,b:40};
+      const innerW=w-pad.l-pad.r,innerH=h-pad.t-pad.b;
+
+      const dark=document.body.classList.contains("dark-mode");
+      const grid=dark?"rgba(255,255,255,.13)":"rgba(26,57,88,.17)";
+      const axis=dark?"#a9b4c1":"#263b53";
+      const labelBg=dark?"rgba(9,14,22,.88)":"rgba(255,255,255,.96)";
+      const labelText=dark?"#fff":"#071426";
+      const areaOpacity=dark?".065":".14";
+
       let out=`<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-      [0,25,50,75,100].forEach(v=>{const y=pad.t+innerH-(v/100)*innerH;out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="${grid}" stroke-width="1"/><text x="18" y="${y+4}" fill="${axis}" font-size="14" font-weight="800">${v}</text>`;});
+
+      [0,25,50,75,100].forEach(v=>{
+        const y=pad.t+innerH-(v/100)*innerH;
+        out+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${y}" y2="${y}" stroke="${grid}" stroke-width="1"/><text x="18" y="${y+4}" fill="${axis}" font-size="14" font-weight="800">${v}</text>`;
+      });
+
       const labelRows=data.map((d,idx)=>{
-        const skylineSeries=seriesForPeriod(d);
+        const skylineSeries=seriesForPeriod(d)
+          .filter(v=>Number.isFinite(v));
+
+        if(skylineSeries.length<2) return null;
+
         const pScore=periodScoreFor(d);
-        if(pScore != null) skylineSeries[skylineSeries.length-1]=pScore;
-        const points=skylineSeries.map((v,i)=>[pad.l+(i/(skylineSeries.length-1))*innerW,pad.t+innerH-(v/100)*innerH]);
+
+        const points=skylineSeries.map((v,i)=>[
+          pad.l+(i/(skylineSeries.length-1))*innerW,
+          pad.t+innerH-(v/100)*innerH
+        ]);
+
         const last=points[points.length-1];
-        return{d,idx,points,last,y:last[1],pScore};
-      }).sort((a,b)=>a.y-b.y);
-      for(let i=1;i<labelRows.length;i++){if(labelRows[i].y-labelRows[i-1].y<36)labelRows[i].y=labelRows[i-1].y+36;}
+
+        return {d,idx,points,last,y:last[1],pScore};
+      }).filter(Boolean).sort((a,b)=>a.y-b.y);
+
+      for(let i=1;i<labelRows.length;i++){
+        if(labelRows[i].y-labelRows[i-1].y<36){
+          labelRows[i].y=labelRows[i-1].y+36;
+        }
+      }
+
       labelRows.forEach(row=>{
         const {d,idx,points,last,pScore}=row;
         const c=lineColor(idx);
-        const pSentiment=label(pScore);
         const path=smoothPath(points);
         const fill=path+` L${pad.l+innerW},${pad.t+innerH} L${pad.l},${pad.t+innerH} Z`;
-        const lx=pad.l+innerW+18,ly=clamp(row.y,42,h-56);
+        const lx=pad.l+innerW+18;
+        const ly=clamp(row.y,42,h-56);
+
         out+=`<path d="${fill}" fill="${c}" opacity="${areaOpacity}"/><path class="skyline-line" d="${path}" fill="none" stroke="${c}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/><line x1="${last[0]}" y1="${last[1]}" x2="${lx-7}" y2="${ly}" stroke="${c}" stroke-opacity=".55" stroke-width="1.5"/><circle cx="${last[0]}" cy="${last[1]}" r="5" fill="${c}" stroke="${dark?'#fff':'#071426'}" stroke-opacity=".70"/><g class="skyline-label-box"><rect x="${lx}" y="${ly-17}" width="240" height="28" rx="14" fill="${labelBg}" stroke="${c}" stroke-opacity=".70"/><text x="${lx+10}" y="${ly+1.5}" fill="${labelText}" font-size="9.6" font-weight="900">${esc(d.name.split(" / ")[0])} • ${periodMetricLabel()} ${pScore??"--"} • ${esc(scoreLabelShort(pScore))}</text></g>`;
       });
-      out+=`<text x="${pad.l}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodMetricLabel()}</text>`; svg.innerHTML=out;
-    }
-    function radarPoint(cx,cy,r,angle,value){const rad=(angle-90)*Math.PI/180,rr=r*(value/100);return[cx+Math.cos(rad)*rr,cy+Math.sin(rad)*rr]}
-    function renderRadar(data){
-      const svg=document.getElementById("radarChart"),legend=document.getElementById("radarLegend"),axes=["PSI","User","Headlines","Technical","Stability"],cx=250,cy=250,r=162; let out=`<defs><filter id="radarGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-      const dark=document.body.classList.contains("dark-mode"),grid=dark?"rgba(255,255,255,.18)":"rgba(26,57,88,.20)",axis=dark?"#e6edf3":"#071426";
-      const maxHeadlines=Math.max(...data.map(d=>Number(d.headlines)||0),1);
-      [20,40,60,80,100].forEach(level=>{const pts=axes.map((_,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,level).join(",")).join(" ");out+=`<polygon points="${pts}" fill="none" stroke="${grid}" stroke-width="1.25"/>`;});
-      axes.forEach((a,i)=>{const p=radarPoint(cx,cy,r+43,(360/axes.length)*i,100),end=radarPoint(cx,cy,r,(360/axes.length)*i,100);out+=`<line x1="${cx}" y1="${cy}" x2="${end[0]}" y2="${end[1]}" stroke="${grid}" stroke-width="1.25"/><text x="${p[0]}" y="${p[1]}" text-anchor="middle" fill="${axis}" font-size="15" font-weight="900">${a}</text>`;});
-      data.slice(0,5).forEach((d,idx)=>{
-        const c=lineColor(idx);
-        const pScore=periodScoreFor(d) ?? d.score ?? 50;
-        const headlineStrength=clamp(Math.round(((Number(d.headlines)||0)/maxHeadlines)*100),8,100);
-        const vals=[pScore,userScore(d.user),headlineStrength,techScore(d.tech),stabilityScore(d)];
-        const pts=vals.map((v,i)=>radarPoint(cx,cy,r,(360/axes.length)*i,v).join(",")).join(" ");
-        out+=`<polygon class="radar-poly" points="${pts}" fill="${c}" opacity=".16" stroke="${c}" stroke-width="3.25" filter="url(#radarGlow)"/>`;
-        vals.forEach((v,i)=>{const dot=radarPoint(cx,cy,r,(360/axes.length)*i,v);out+=`<circle cx="${dot[0]}" cy="${dot[1]}" r="3.3" fill="${c}" stroke="#fff" stroke-opacity=".45"/>`;});
-      });
+
+      if(!labelRows.length){
+        out+=`<text x="${pad.l+innerW/2}" y="${pad.t+innerH/2}" fill="${axis}" font-size="16" font-weight="800" text-anchor="middle">No Engine PSI history available</text>`;
+      }
+
+      out+=`<text x="${pad.l}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodStartLabel()}</text><text x="${pad.l+innerW-28}" y="${h-12}" fill="${axis}" font-size="12" font-weight="800">${periodMetricLabel()}</text>`;
+
       svg.innerHTML=out;
+    }
+
+    function renderRadar(data){
+      const svg=document.getElementById("radarChart");
+      const legend=document.getElementById("radarLegend");
+
+      if(!svg) return;
+
+      const dark=document.body.classList.contains("dark-mode");
+      const text=dark?"#e6edf3":"#263b53";
+      const muted=dark?"#8b949e":"#667085";
+
+      svg.innerHTML=`
+        <circle cx="250" cy="250" r="162" fill="none" stroke="rgba(110,170,255,.16)" stroke-width="2"/>
+        <circle cx="250" cy="250" r="115" fill="none" stroke="rgba(110,170,255,.09)" stroke-width="1.5"/>
+        <circle cx="250" cy="250" r="68" fill="none" stroke="rgba(110,170,255,.07)" stroke-width="1"/>
+        <text x="250" y="226" fill="${text}" font-size="20" font-weight="900" text-anchor="middle">COMPOSITE RADAR N/A</text>
+        <text x="250" y="258" fill="${muted}" font-size="13" font-weight="800" text-anchor="middle">Browser-generated market scores are disabled</text>
+        <text x="250" y="282" fill="${muted}" font-size="11" font-weight="700" text-anchor="middle">Waiting for an Engine V2 composite metric</text>
+      `;
+
       if(legend){
-        legend.innerHTML=data.slice(0,5).map((d,idx)=>{const p=periodScoreFor(d);return `<span title="Radar basis: ${periodMetricLabel()} PSI, user bias, relative headlines, technical direction, and stability"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`}).join("");
+        legend.innerHTML=data.slice(0,5).map((d,idx)=>{
+          const p=periodScoreFor(d);
+
+          return `<span title="Engine PSI only"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`;
+        }).join("");
       }
     }
     function heatLabels(){
@@ -3111,27 +2829,46 @@
       return Array.from({length:n}, (_, i) => i === 0 ? "Older" : i === n-1 ? "Current" : "");
     }
     function alignHeatValues(values, length){
-      const vals = Array.isArray(values) && values.length ? values.slice() : [50,50];
-      const fill = vals.length ? vals[0] : 50;
-      while(vals.length < length) vals.unshift(fill);
-      return vals.slice(-length);
+      const vals=Array.isArray(values)
+        ? values.filter(v=>Number.isFinite(v)).slice(-length)
+        : [];
+
+      const missing=Math.max(0,length-vals.length);
+
+      return Array(missing).fill(null).concat(vals);
     }
     function heatValues(d){
-      const vals = seriesForPeriod(d);
-      if(selectedPeriod === "monthly") return vals.length ? vals : [d.score ?? 50, d.score ?? 50];
-      const labels = heatLabels();
-      return alignHeatValues(vals, labels.length);
+      const vals=seriesForPeriod(d)
+        .filter(v=>Number.isFinite(v));
+
+      if(selectedPeriod==="monthly") return vals;
+
+      return alignHeatValues(vals,heatLabels().length);
     }
     function renderHeatmap(data){
       const box=document.getElementById("heatmapGrid");
       const rowValues=data.map(d=>heatValues(d));
-      const labels=selectedPeriod === "monthly" ? monthlyHeatLabels(Math.max(2, ...rowValues.map(v=>v.length))) : heatLabels();
+
+      const labels=selectedPeriod==="monthly"
+        ? monthlyHeatLabels(Math.max(2,...rowValues.map(v=>v.length)))
+        : heatLabels();
+
       const gridStyle=`grid-template-columns:180px repeat(${labels.length},minmax(0,1fr))`;
+
       const heads=`<div class="heat-row" style="${gridStyle}"><div></div>${labels.map(x=>`<div class="heat-head">${x}</div>`).join("")}</div>`;
+
       box.innerHTML=heads+data.map((d,rowIdx)=>{
-        const vals=alignHeatValues(rowValues[rowIdx], labels.length);
-        const cells=vals.map((v,i)=>`<div class="heat-cell" title="${periodName()} heatwave • ${labels[i] || 'Period'} • ${label(v)} • PSI-style reading: ${v}" style="${heatStyle(v)}">${v}</div>`).join("");
-        return`<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
+        const vals=alignHeatValues(rowValues[rowIdx],labels.length);
+
+        const cells=vals.map((v,i)=>{
+          if(v==null){
+            return `<div class="heat-cell" title="${periodName()} • ${labels[i]||"Period"} • No Engine PSI" style="${heatStyle(null)}">N/A</div>`;
+          }
+
+          return `<div class="heat-cell" title="${periodName()} • ${labels[i]||"Period"} • ${label(v)} • PSI ${v}" style="${heatStyle(v)}">${v}</div>`;
+        }).join("");
+
+        return `<div class="heat-row" style="${gridStyle}"><div class="heat-name">${esc(d.name)}</div>${cells}</div>`;
       }).join("");
     }
     function renderRanking(data){const ranked=[...data].map(d=>({...d,periodScore:periodScoreFor(d)})).sort((a,b)=>(b.periodScore??-1)-(a.periodScore??-1));document.getElementById("rankingList").innerHTML=ranked.map((d,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div><div class="rank-title">${esc(d.name)}</div><div class="rank-meta">${esc(label(d.periodScore))} • ${Number(d.headlines).toLocaleString()} headlines • User ${esc(d.user)} • Tech ${esc(d.tech)}</div></div><div class="rank-score" style="color:${sentimentColor(d.periodScore)}">${d.periodScore??"--"}</div></div>`).join("")}
@@ -3912,7 +3649,7 @@
         },
         "radar-comparison": {
           title: "Radar Comparison",
-          text: "Compares selected markets across PSI, user sentiment, headline strength, technical direction, and stability. A larger shape means stronger readings across more factors."
+          text: "Composite radar scoring is not generated in the browser. Current period PSI remains visible while the page waits for an Engine V2 composite metric."
         },
         "sentiment-heatwave": {
           title: "Sentiment Heatwave",
@@ -3936,7 +3673,7 @@
         },
         "confluence-radar": {
           title: "Signal Confluence Radar",
-          text: "Combines Trend, Momentum, Narrative, Alignment, and Stability into one comparison view. It shows how the signals relate; it is not a price forecast."
+          text: "Composite Trend, Momentum, Narrative, Alignment, and Stability scores are not generated in the browser. Raw Engine and user signals remain visible."
         },
         "formula-version": {
           title: "Formula",
@@ -4052,7 +3789,7 @@
         },
         "ai-confluence": {
           title: "Signal Confluence",
-          text: "A combined view of Trend, Momentum, Narrative, Alignment, and Stability. It summarizes agreement between signals; it is not an AI price prediction."
+          text: "Composite signal scoring is not generated in the browser. This view waits for Engine V2 to supply an official composite metric."
         },
         "signal-sync": {
           title: "Signal Sync",
