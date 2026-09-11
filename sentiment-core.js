@@ -1,6 +1,6 @@
 /*
   Public Sentiment Dash — sentiment-core.js
-  Version: PSI_CORE_V3_UNIVERSAL_PERIODS
+  Version: PSI_CORE_V4_CENTRAL_DISPLAY
 
   OFFICIAL DEFINITIONS V1
   ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@
 (function(){
   "use strict";
 
-  const VERSION = "PSI_CORE_V3_UNIVERSAL_PERIODS";
+  const VERSION = "PSI_CORE_V4_CENTRAL_DISPLAY";
   const MIN_INSTRUMENT_PSI_HEADLINES = 3;
 
   const INSTRUMENTS = [
@@ -195,14 +195,43 @@
       .replace("no-psi-match", "neutral");
   }
 
-  function sentimentColor(score){
+  function sentimentTone(score){
     const s = roundScore(score);
-    if(s == null) return "#8b949e";
-    if(s >= 70) return "#22c55e";
-    if(s >= 56) return "#14b8a6";
-    if(s >= 45) return "#58a6ff";
-    if(s >= 31) return "#f97316";
-    return "#ef4444";
+    if(s == null) return "na";
+    if(s >= 56) return "bullish";
+    if(s >= 45) return "neutral";
+    return "bearish";
+  }
+
+  function signalTone(value){
+    const text = normalizeKey(value);
+    if(text.includes("bullish")) return "bullish";
+    if(text.includes("bearish")) return "bearish";
+    if(text.includes("neutral") || text.includes("mixed")) return "neutral";
+    return "na";
+  }
+
+  function sentimentColor(score){
+    const tone = sentimentTone(score);
+    if(tone === "bullish") return "#16a34a";
+    if(tone === "bearish") return "#dc2626";
+    if(tone === "neutral") return "#d97706";
+    return "#64748b";
+  }
+
+  function signalColor(value){
+    const tone = signalTone(value);
+    if(tone === "bullish") return "#16a34a";
+    if(tone === "bearish") return "#dc2626";
+    if(tone === "neutral") return "#d97706";
+    return "#64748b";
+  }
+
+  function psiGaugeStyle(score){
+    const s = roundScore(score);
+    if(s == null) return "--score:100;--accent:#64748b;";
+    const strength = Math.round(Math.min(100, Math.abs(s - 50) * 2));
+    return `--score:${strength};--accent:${sentimentColor(s)};`;
   }
 
   function voteToSignedScore(vote){
@@ -794,7 +823,11 @@
     getInstrumentAliases,
     classifySentiment,
     badgeClass,
+    sentimentTone,
+    signalTone,
     sentimentColor,
+    signalColor,
+    psiGaugeStyle,
     voteToSignedScore,
     signedScoreFromItem,
     getOfficialGlobalPSI,
