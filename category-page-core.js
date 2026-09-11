@@ -1,4 +1,4 @@
-/* PublicSentimentDash Category Page Core v6
+/* PublicSentimentDash Category Page Core v7
    Roadmap Iteration 1 — Category Intelligence.
    Keeps the reliability hardening from Website Optimization Iteration 4 and adds
    lazy, non-blocking category intelligence powered by existing published feeds. */
@@ -35,6 +35,60 @@ function pillStyle(score){
       const c = colorForScore(score);
       return `--status-color:${c};`;
     }
+
+function psiToneClass(score){
+      const tone = global.PSDCore && typeof global.PSDCore.sentimentTone === "function"
+        ? global.PSDCore.sentimentTone(score)
+        : (!Number.isFinite(Number(score)) ? "na" : (Number(score) >= 56 ? "bullish" : (Number(score) >= 45 ? "neutral" : "bearish")));
+      return `market-${tone}`;
+    }
+
+function technicalToneClass(value){
+      const tone = global.PSDCore && typeof global.PSDCore.signalTone === "function"
+        ? global.PSDCore.signalTone(value)
+        : (() => {
+            const text = normalizeText(value);
+            if(text.includes("bullish")) return "bullish";
+            if(text.includes("bearish")) return "bearish";
+            if(text.includes("neutral") || text.includes("mixed")) return "neutral";
+            return "na";
+          })();
+      return `tech-${tone}`;
+    }
+
+function psiGaugeStyle(score){
+      if(global.PSDCore && typeof global.PSDCore.psiGaugeStyle === "function") return global.PSDCore.psiGaugeStyle(score);
+      const n = Number(score);
+      if(!Number.isFinite(n)) return "--score:100;--accent:#64748b;";
+      const strength = Math.round(Math.min(100, Math.abs(n - 50) * 2));
+      return `--score:${strength};--accent:${colorForScore(n)};`;
+    }
+
+function injectSignalStyles(){
+      if(document.getElementById("psd-central-signal-colors-v2")) return;
+      const style = document.createElement("style");
+      style.id = "psd-central-signal-colors-v2";
+      style.textContent = `
+        .ai-gauge{
+          background:conic-gradient(var(--accent) calc(var(--score)*1%),color-mix(in srgb,var(--accent) 26%,#26313f) 0)!important;
+        }
+        .ai-score,.ai-score-label{color:#0b0f14!important}
+        .daily-market-row,.daily-tech-row,.daily-market-row span,.daily-market-row b,.daily-tech-row span,.daily-tech-row b,.daily-tech-value{color:#0b0f14!important}
+        .daily-tech-value{display:inline!important;min-width:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-weight:800!important}
+        .daily-market-row.market-bullish,.daily-tech-row.tech-bullish{background:rgba(34,197,94,.17)!important;border-color:rgba(22,163,74,.65)!important;box-shadow:inset 4px 0 0 #16a34a}
+        .daily-market-row.market-bearish,.daily-tech-row.tech-bearish{background:rgba(239,68,68,.16)!important;border-color:rgba(220,38,38,.65)!important;box-shadow:inset 4px 0 0 #dc2626}
+        .daily-market-row.market-neutral,.daily-tech-row.tech-neutral{background:rgba(245,158,11,.18)!important;border-color:rgba(217,119,6,.68)!important;box-shadow:inset 4px 0 0 #d97706}
+        .daily-market-row.market-na,.daily-tech-row.tech-na{background:rgba(100,116,139,.12)!important;border-color:rgba(100,116,139,.45)!important;box-shadow:inset 4px 0 0 #64748b}
+        html[data-theme="dark"] .ai-score,html[data-theme="dark"] .ai-score-label,[data-theme="dark"] .ai-score,[data-theme="dark"] .ai-score-label,body.dark .ai-score,body.dark .ai-score-label,body.theme-dark .ai-score,body.theme-dark .ai-score-label,html[data-theme="dark"] .daily-market-row,html[data-theme="dark"] .daily-tech-row,[data-theme="dark"] .daily-market-row,[data-theme="dark"] .daily-tech-row,body.dark .daily-market-row,body.dark .daily-tech-row,body.theme-dark .daily-market-row,body.theme-dark .daily-tech-row{color:#fff!important}
+        html[data-theme="dark"] .daily-market-row.market-bullish,html[data-theme="dark"] .daily-tech-row.tech-bullish,[data-theme="dark"] .daily-market-row.market-bullish,[data-theme="dark"] .daily-tech-row.tech-bullish,body.dark .daily-market-row.market-bullish,body.dark .daily-tech-row.tech-bullish,body.theme-dark .daily-market-row.market-bullish,body.theme-dark .daily-tech-row.tech-bullish{background:rgba(34,197,94,.22)!important}
+        html[data-theme="dark"] .daily-market-row.market-bearish,html[data-theme="dark"] .daily-tech-row.tech-bearish,[data-theme="dark"] .daily-market-row.market-bearish,[data-theme="dark"] .daily-tech-row.tech-bearish,body.dark .daily-market-row.market-bearish,body.dark .daily-tech-row.tech-bearish,body.theme-dark .daily-market-row.market-bearish,body.theme-dark .daily-tech-row.tech-bearish{background:rgba(239,68,68,.22)!important}
+        html[data-theme="dark"] .daily-market-row.market-neutral,html[data-theme="dark"] .daily-tech-row.tech-neutral,[data-theme="dark"] .daily-market-row.market-neutral,[data-theme="dark"] .daily-tech-row.tech-neutral,body.dark .daily-market-row.market-neutral,body.dark .daily-tech-row.tech-neutral,body.theme-dark .daily-market-row.market-neutral,body.theme-dark .daily-tech-row.tech-neutral{background:rgba(245,158,11,.24)!important}
+        html[data-theme="dark"] .daily-market-row.market-na,html[data-theme="dark"] .daily-tech-row.tech-na,[data-theme="dark"] .daily-market-row.market-na,[data-theme="dark"] .daily-tech-row.tech-na,body.dark .daily-market-row.market-na,body.dark .daily-tech-row.tech-na,body.theme-dark .daily-market-row.market-na,body.theme-dark .daily-tech-row.tech-na{background:rgba(100,116,139,.20)!important}
+      `;
+      document.head.appendChild(style);
+    }
+
+injectSignalStyles();
 
 function headlineText(h){
       return normalizeText([
@@ -746,6 +800,9 @@ function scheduleCategoryIntelligence(options={}){
     labelForScore,
     colorForScore,
     pillStyle,
+    psiToneClass,
+    technicalToneClass,
+    psiGaugeStyle,
     headlineText,
     uniqueTerms,
     categoryEntry,
@@ -791,5 +848,5 @@ function scheduleCategoryIntelligence(options={}){
     closeHistory,
     setHistoryPeriod
   });
-  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V5";
+  global.PSDCategoryCoreVersion = "CATEGORY_CORE_V7";
 })(window);
