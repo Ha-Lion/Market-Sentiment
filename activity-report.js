@@ -405,6 +405,260 @@ function renderHealthHistory(history){
       });
     }
 
+  function operationalNumber(value){
+    const number=Number(value);
+    return Number.isFinite(number)?number:null;
+  }
+
+  function operationalAverage(values){
+    const usable=values.filter(function(value){return Number.isFinite(value);});
+    if(!usable.length)return null;
+    return usable.reduce(function(total,value){return total+value;},0)/usable.length;
+  }
+
+  function operationalFormat(value,kind){
+    if(!Number.isFinite(value))return "—";
+    if(kind==="seconds")return value.toFixed(value>=100?0:1)+"s";
+    if(kind==="percent")return value.toFixed(1)+"%";
+    if(kind==="count")return Math.round(value).toLocaleString();
+    return value.toFixed(1);
+  }
+
+  function operationalTrend(current,average,higherIsBetter){
+    if(!Number.isFinite(current)||!Number.isFinite(average)){
+      return {label:"No baseline",className:""};
+    }
+
+    if(average===0){
+      if(current===0){
+        return {label:"Stable",className:"good"};
+      }
+
+      return {
+        label:"\u2191 from 0 vs 7d",
+        className:higherIsBetter?"good":"warn"
+      };
+    }
+
+    const delta=((current-average)/Math.abs(average))*100;
+
+    if(Math.abs(delta)<5){
+      return {label:"Stable",className:"good"};
+    }
+
+    const improving=higherIsBetter ? delta>0 : delta<0;
+
+    return {
+      label:(delta>0?"↑ ":"↓ ")+Math.abs(delta).toFixed(0)+"% vs 7d",
+      className:improving?"good":"warn"
+    };
+  }
+
+  function operationalTimestamp(value){
+    const raw=String(value||"").trim();
+    if(!raw)return null;
+
+    let normalized=raw;
+
+    if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC$/.test(raw)){
+      normalized=raw.replace(" ","T").replace(" UTC","Z");
+    }
+
+    const stamp=Date.parse(normalized);
+    return Number.isFinite(stamp)?stamp:null;
+  }
+
+  function operationalWindow(records,days){
+    if(!records.length)return [];
+
+    const latest=operationalTimestamp(records[records.length-1].updated_utc);
+    if(latest===null)return records;
+
+    const cutoff=latest-(days*24*60*60*1000);
+
+    return records.filter(function(record){
+      const stamp=operationalTimestamp(record.updated_utc);
+      return stamp!==null&&stamp>=cutoff&&stamp<=latest;
+    });
+  }
+
+  function operationalSparkline(values){
+    const usable=values.map(function(value){
+      return Number.isFinite(value)?value:null;
+    });
+
+    const finite=usable.filter(function(value){return value!==null;});
+    if(finite.length<2){
+      return '<div class="operational-spark-empty">Not enough history yet</div>';
+    }
+
+    const width=220,height=48,pad=3;
+    const min=Math.min.apply(null,finite);
+    const max=Math.max.apply(null,finite);
+    const span=max-min||1;
+    const step=(width-(pad*2))/Math.max(1,usable.length-1);
+
+    const points=[];
+    usable.forEach(function(value,index){
+      if(value===null)return;
+      const x=pad+(index*step);
+      const y=height-pad-((value-min)/span)*(height-(pad*2));
+      points.push(x.toFixed(1)+","+y.toFixed(1));
+    });
+
+    return '<svg class="operational-spark" viewBox="0 0 '+width+' '+height+
+      '" preserveAspectRatio="none" aria-hidden="true">'+
+      '<polyline points="'+points.join(" ")+'" fill="none" '+
+      'stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
+      '</svg>';
+  }
+
+  function operationalMetricCard(config,records){
+    const values=records.map(function(record){
+      try{return operationalNumber(config.value(record));}
+      catch(error){return null;}
+    });
+
+    const current=values.length?values[values.length-1]:null;
+
+    const records7=operationalWindow(records,7);
+    const values7=records7.map(function(record){
+      try{return operationalNumber(config.value(record));}
+      catch(error){return null;}
+    });
+
+    const average7=operationalAverage(values7);
+    const average30=operationalAverage(values);
+    const trend=operationalTrend(current,average7,config.higherIsBetter);
+
+    return ''+
+      '<article class="operational-metric">'+
+        '<div class="operational-metric-title">'+config.label+'</div>'+
+        '<div class="operational-metric-current">'+
+          operationalFormat(current,config.kind)+
+        '</div>'+
+        '<div class="operational-metric-stats">'+
+          '<span>7d avg <strong>'+operationalFormat(average7,config.kind)+'</strong></span>'+
+          '<span>30d avg <strong>'+operationalFormat(average30,config.kind)+'</strong></span>'+
+        '</div>'+
+        '<div class="operational-trend '+trend.className+'">'+trend.label+'</div>'+
+        operationalSparkline(values)+
+      '</article>';
+  }
+
+  function renderOperationalHistory(payload){
+    const host=document.getElementById("operational-history-grid");
+    const meta=document.getElementById("operational-history-meta");
+    const diagnostics=document.getElementById("operational-diagnostics-body");
+
+    if(!host||!meta||!diagnostics)return;
+
+    const records=payload&&Array.isArray(payload.records)?payload.records:[];
+
+    if(!records.length){
+      host.innerHTML='<div class="operational-empty">Operational history will appear after the next Engine production run.</div>';
+      diagnostics.textContent="No operational history is available yet.";
+      meta.textContent="Waiting for production history";
+      return;
+    }
+
+    const metrics=[
+      {
+        label:"Engine runtime",
+        kind:"seconds",
+        higherIsBetter:false,
+        value:function(record){return record.runtime&&record.runtime.engine_seconds;}
+      },
+      {
+        label:"Source collection",
+        kind:"seconds",
+        higherIsBetter:false,
+        value:function(record){return record.runtime&&record.runtime.source_collection_seconds;}
+      },
+      {
+        label:"Fresh PSI coverage",
+        kind:"percent",
+        higherIsBetter:true,
+        value:function(record){
+          const coverage=record.psi_coverage||{};
+          const total=operationalNumber(coverage.assets_total);
+          const fresh=operationalNumber(coverage.fresh_total);
+          return total&&fresh!==null?(fresh/total)*100:null;
+        }
+      },
+      {
+        label:"Working sources",
+        kind:"count",
+        higherIsBetter:true,
+        value:function(record){return record.sources&&record.sources.working;}
+      },
+      {
+        label:"Date recovery",
+        kind:"percent",
+        higherIsBetter:true,
+        value:function(record){
+          const rate=record.evidence_quality&&record.evidence_quality.article_date_recovery_rate;
+          const value=operationalNumber(rate);
+          return value===null?null:value*100;
+        }
+      },
+      {
+        label:"Feed failures",
+        kind:"count",
+        higherIsBetter:false,
+        value:function(record){
+          return record.technical_feeds&&record.technical_feeds.failed_without_fallback;
+        }
+      }
+    ];
+
+    host.innerHTML=metrics.map(function(metric){
+      return operationalMetricCard(metric,records);
+    }).join("");
+
+    const latest=records[records.length-1]||{};
+    const coverage=latest.psi_coverage||{};
+    const fallback=latest.fallback_diagnostics||{};
+    const workload=latest.workload||{};
+    const sources=latest.sources||{};
+
+    diagnostics.innerHTML=
+      '<div><span>Latest run</span><strong>'+
+        (latest.updated_utc?healthTimestamp(latest.updated_utc):"Unknown")+
+      '</strong></div>'+
+      '<div><span>Fresh PSI assets</span><strong>'+
+        operationalFormat(operationalNumber(coverage.fresh_total),"count")+
+        ' / '+operationalFormat(operationalNumber(coverage.assets_total),"count")+
+      '</strong></div>'+
+      '<div><span>Prior fallback</span><strong>'+
+        operationalFormat(operationalNumber(coverage.prior_fallback),"count")+
+      '</strong></div>'+
+      '<div><span>Outside 48h</span><strong>'+
+        operationalFormat(operationalNumber(fallback.outside_48h_window),"count")+
+      '</strong></div>'+
+      '<div><span>Unknown dates</span><strong>'+
+        operationalFormat(operationalNumber(fallback.unknown_publication_date),"count")+
+      '</strong></div>'+
+      '<div><span>Planned requests</span><strong>'+
+        operationalFormat(operationalNumber(workload.planned_request_opportunities),"count")+
+      '</strong></div>'+
+      '<div><span>Failed sources</span><strong>'+
+        operationalFormat(operationalNumber(sources.failed),"count")+
+      '</strong></div>'+
+      '<div><span>History retained</span><strong>'+
+        records.length+' run'+(records.length===1?"":"s")+
+      '</strong></div>';
+
+    meta.textContent=
+      records.length+" retained run"+(records.length===1?"":"s")+
+      " • 30-day rolling history";
+  }
+
+  async function loadOperationalHistory(){
+    const payload=await healthJson("engine_operational_history.json");
+    renderOperationalHistory(payload);
+  }
+
   async function loadLegacyHealth(){
     const results=await Promise.all([
       healthJson("status.json"),
@@ -517,7 +771,7 @@ function renderHealthHistory(history){
 
   async function initialize(){
     try{
-      const session=await requireOwner();if(!session)return;reveal();chooseRange(30);await Promise.all([loadReport(),loadHealth()]);
+      const session=await requireOwner();if(!session)return;reveal();chooseRange(30);await Promise.all([loadReport(),loadHealth(),loadOperationalHistory()]);
     }catch(error){deny(error);}
   }
 
@@ -526,6 +780,7 @@ function renderHealthHistory(history){
   document.getElementById("activity-refresh").addEventListener("click",function(){loadReport().catch(function(error){setStatus(error.message||"Report failed.","error");});});
   document.getElementById("activity-summary-download").addEventListener("click",downloadCsv);
   document.getElementById("health-refresh").addEventListener("click",loadHealth);
+  document.getElementById("operational-history-refresh").addEventListener("click",loadOperationalHistory);
   document.getElementById("banner-save").addEventListener("click",function(){saveBanner().catch(function(error){setStatus(error.message||"Banner could not be saved.","error");});});
   document.getElementById("admin-signout").addEventListener("click",async function(){await client.auth.signOut({scope:"local"});window.location.replace("index.html");});
 
