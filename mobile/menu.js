@@ -1,56 +1,91 @@
-﻿/* PSD_MOBILE_DESKTOP_GUARD */
+/* PSD_MOBILE_DESKTOP_GUARD */
 if (window.matchMedia("(max-width: 768px)").matches) {
+
 (function () {
   "use strict";
 
-  function installFinalMenu() {
+  function buildCleanMobileHeader() {
 
-    const header =
+    if (document.querySelector(".psd-mobile-clean-header")) {
+      return;
+    }
+
+    const desktopHeader =
       document.querySelector(".psd-shared-header");
 
-    if (!header) {
-      setTimeout(installFinalMenu, 100);
+    if (!desktopHeader) {
+      setTimeout(buildCleanMobileHeader, 100);
       return;
     }
-
-    const originalButton =
-      header.querySelector(".psd-mobile-menu-button");
 
     const desktopNav =
-      header.querySelector(".nav");
+      desktopHeader.querySelector(".nav");
 
-    if (!originalButton || !desktopNav) {
-      setTimeout(installFinalMenu, 100);
+    if (!desktopNav) {
+      setTimeout(buildCleanMobileHeader, 100);
       return;
     }
 
-    if (header.querySelector(".psd-final-mobile-menu")) {
-      return;
-    }
 
-    /* Never allow old ribbon-open state */
-    header.classList.remove("psd-mobile-menu-open");
+    /* =====================================================
+       NEW MOBILE HEADER
+       ===================================================== */
 
-    /*
-      Replace the old button so none of the previous
-      mobile-lab click handlers remain attached.
-    */
-    const button =
-      originalButton.cloneNode(true);
+    const header =
+      document.createElement("header");
 
-    originalButton.replaceWith(button);
+    header.className =
+      "psd-mobile-clean-header";
 
-    button.textContent = "☰ Menu";
-    button.setAttribute("aria-expanded", "false");
-    button.setAttribute("aria-label", "Open navigation menu");
+    header.innerHTML = `
+      <a
+        class="psd-mobile-clean-logo-wrap"
+        href="index.html"
+        aria-label="Home"
+      >
+        <img
+          class="psd-mobile-clean-logo"
+          src="logo.png"
+          alt="Public Sentiment Dash"
+        >
+        <span class="psd-mobile-clean-home">
+          Home
+        </span>
+      </a>
+
+      <div class="psd-mobile-clean-ai-banner">
+        AI-built public market sentiment website
+      </div>
+
+      <button
+        class="psd-mobile-clean-menu-button"
+        type="button"
+        aria-expanded="false"
+        aria-label="Open navigation menu"
+      >
+        ☰ Menu
+      </button>
+
+      <div class="psd-mobile-clean-global-line">
+        Global market public sentiment dashboard
+      </div>
+    `;
 
 
-    /* Build independent mobile menu */
+    /* =====================================================
+       CLEAN MOBILE MENU
+       ===================================================== */
+
     const menu =
-      document.createElement("div");
+      document.createElement("nav");
 
-    menu.className = "psd-final-mobile-menu";
-    menu.setAttribute("aria-label", "Mobile navigation");
+    menu.className =
+      "psd-mobile-clean-menu";
+
+    menu.setAttribute(
+      "aria-label",
+      "Mobile navigation"
+    );
 
     const seen = new Set();
 
@@ -71,12 +106,16 @@ if (window.matchMedia("(max-width: 768px)").matches) {
         const text =
           link.textContent.trim();
 
-        if (!href || !text) return;
+        if (!href || !text) {
+          return;
+        }
 
         const key =
           href + "|" + text;
 
-        if (seen.has(key)) return;
+        if (seen.has(key)) {
+          return;
+        }
 
         seen.add(key);
 
@@ -98,7 +137,10 @@ if (window.matchMedia("(max-width: 768px)").matches) {
       });
 
 
-    /* Reuse production dark-mode behavior */
+    /* =====================================================
+       DARK MODE — USE EXISTING PRODUCTION FUNCTION
+       ===================================================== */
+
     const desktopTheme =
       desktopNav.querySelector(
         "#psd-ribbon-theme-toggle"
@@ -110,6 +152,7 @@ if (window.matchMedia("(max-width: 768px)").matches) {
         document.createElement("button");
 
       themeButton.type = "button";
+
       themeButton.textContent =
         desktopTheme.textContent.trim();
 
@@ -123,8 +166,10 @@ if (window.matchMedia("(max-width: 768px)").matches) {
           desktopTheme.click();
 
           setTimeout(function () {
+
             themeButton.textContent =
               desktopTheme.textContent.trim();
+
           }, 60);
         }
       );
@@ -132,46 +177,43 @@ if (window.matchMedia("(max-width: 768px)").matches) {
       menu.appendChild(themeButton);
     }
 
+
     header.appendChild(menu);
 
+    document.body.insertBefore(
+      header,
+      document.body.firstChild
+    );
 
-    /*
-      CRITICAL FIX:
-      The inherited Menu button sits inside the Home anchor.
-      Prevent that parent link from navigating.
-    */
-    button.addEventListener(
+
+    /* =====================================================
+       MENU OPEN / CLOSE
+       ===================================================== */
+
+    const menuButton =
+      header.querySelector(
+        ".psd-mobile-clean-menu-button"
+      );
+
+    menuButton.addEventListener(
       "click",
       function (event) {
 
         event.preventDefault();
         event.stopPropagation();
 
-        header.classList.remove(
-          "psd-mobile-menu-open"
-        );
-
         const open =
           menu.classList.toggle("open");
 
-        button.setAttribute(
+        menuButton.setAttribute(
           "aria-expanded",
           open ? "true" : "false"
         );
 
-        button.textContent =
-          open ? "✕ Close" : "☰ Menu";
-      }
-    );
-
-
-    /*
-      Extra protection against the parent Home anchor.
-    */
-    button.addEventListener(
-      "pointerdown",
-      function (event) {
-        event.stopPropagation();
+        menuButton.textContent =
+          open
+            ? "✕ Close"
+            : "☰ Menu";
       }
     );
   }
@@ -181,18 +223,133 @@ if (window.matchMedia("(max-width: 768px)").matches) {
 
     document.addEventListener(
       "DOMContentLoaded",
-      installFinalMenu
+      buildCleanMobileHeader
     );
 
   } else {
 
-    installFinalMenu();
+    buildCleanMobileHeader();
   }
 
-  setTimeout(installFinalMenu, 300);
-  setTimeout(installFinalMenu, 800);
-  setTimeout(installFinalMenu, 1400);
+
+  /* site-nav.js is generated dynamically */
+  setTimeout(buildCleanMobileHeader, 250);
+  setTimeout(buildCleanMobileHeader, 700);
+  setTimeout(buildCleanMobileHeader, 1200);
 
 })();
 
 }
+
+/* Remove floating PDF control on mobile only */
+if (window.matchMedia("(max-width:768px)").matches) {
+
+  function psdRemoveMobilePdf() {
+
+    const nodes =
+      Array.from(
+        document.querySelectorAll(
+          "button, a, div, span"
+        )
+      );
+
+    nodes.forEach(function(el) {
+
+      const text =
+        (el.innerText || el.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      if (
+        text !== "save pdf" &&
+        text !== "pdf save pdf" &&
+        text !== "pdf"
+      ) {
+        return;
+      }
+
+      let target =
+        el.closest("button, a");
+
+      if (!target) {
+
+        target = el;
+
+        while (
+          target &&
+          target !== document.body
+        ) {
+
+          const style =
+            window.getComputedStyle(target);
+
+          if (
+            style.position === "fixed" ||
+            style.position === "absolute"
+          ) {
+            break;
+          }
+
+          target =
+            target.parentElement;
+        }
+      }
+
+      if (
+        target &&
+        target !== document.body
+      ) {
+        target.style.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      psdRemoveMobilePdf
+    );
+  } else {
+    psdRemoveMobilePdf();
+  }
+
+  setTimeout(psdRemoveMobilePdf, 300);
+  setTimeout(psdRemoveMobilePdf, 800);
+  setTimeout(psdRemoveMobilePdf, 1500);
+  setTimeout(psdRemoveMobilePdf, 3000);
+}
+
+/* Completely remove obsolete learning banner on mobile */
+function psdRemoveMobileLearningBanner(){
+
+  if (!window.matchMedia("(max-width:768px)").matches) {
+    return;
+  }
+
+  document
+    .querySelectorAll(".psd-learning-label")
+    .forEach(function(el){
+      el.remove();
+    });
+}
+
+if (document.readyState === "loading") {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    psdRemoveMobileLearningBanner
+  );
+
+} else {
+
+  psdRemoveMobileLearningBanner();
+}
+
+setTimeout(psdRemoveMobileLearningBanner, 250);
+setTimeout(psdRemoveMobileLearningBanner, 750);
+setTimeout(psdRemoveMobileLearningBanner, 1500);
