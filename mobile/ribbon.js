@@ -270,3 +270,40 @@ if (document.readyState === "loading") {
 setTimeout(psdRemoveMobileLearningBanner, 250);
 setTimeout(psdRemoveMobileLearningBanner, 750);
 setTimeout(psdRemoveMobileLearningBanner, 1500);
+/* PSD MOBILE HIDDEN PAGES START
+   Temporarily omitted from the mobile website navigation.
+   Pages remain available on desktop and by direct URL.
+*/
+(() => {
+  const hiddenMobilePages = new Set([
+    "market-pulse.html",
+    "market-intelligence.html",
+    "dashboard.html",
+    "sentiment-history.html"
+  ]);
+
+  function pageNameFromHref(href){
+    try{
+      const url = new URL(href, window.location.href);
+      return (url.pathname.split("/").pop() || "").toLowerCase();
+    }catch(_){
+      return "";
+    }
+  }
+
+  function removeHiddenMobileLinks(){
+    document
+      .querySelectorAll('[class*="psd-mobile-clean"] a[href]')
+      .forEach(link => {
+        const page = pageNameFromHref(link.getAttribute("href"));
+        if(hiddenMobilePages.has(page)){
+          link.remove();
+        }
+      });
+  }
+
+  removeHiddenMobileLinks();
+  requestAnimationFrame(removeHiddenMobileLinks);
+  setTimeout(removeHiddenMobileLinks, 0);
+})();
+/* PSD MOBILE HIDDEN PAGES END */
