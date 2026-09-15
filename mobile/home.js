@@ -1,4 +1,4 @@
-﻿/* PSD_MOBILE_DESKTOP_GUARD */
+/* PSD_MOBILE_DESKTOP_GUARD */
 if (window.matchMedia("(max-width: 768px)").matches) {
 (function () {
   "use strict";
@@ -233,4 +233,87 @@ if (window.matchMedia("(max-width: 768px)").matches) {
 
 })();
 
+}
+
+/* Remove floating PDF control on mobile only */
+if (window.matchMedia("(max-width:768px)").matches) {
+
+  function psdRemoveMobilePdf() {
+
+    const nodes =
+      Array.from(
+        document.querySelectorAll(
+          "button, a, div, span"
+        )
+      );
+
+    nodes.forEach(function(el) {
+
+      const text =
+        (el.innerText || el.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      if (
+        text !== "save pdf" &&
+        text !== "pdf save pdf" &&
+        text !== "pdf"
+      ) {
+        return;
+      }
+
+      let target =
+        el.closest("button, a");
+
+      if (!target) {
+
+        target = el;
+
+        while (
+          target &&
+          target !== document.body
+        ) {
+
+          const style =
+            window.getComputedStyle(target);
+
+          if (
+            style.position === "fixed" ||
+            style.position === "absolute"
+          ) {
+            break;
+          }
+
+          target =
+            target.parentElement;
+        }
+      }
+
+      if (
+        target &&
+        target !== document.body
+      ) {
+        target.style.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      psdRemoveMobilePdf
+    );
+  } else {
+    psdRemoveMobilePdf();
+  }
+
+  setTimeout(psdRemoveMobilePdf, 300);
+  setTimeout(psdRemoveMobilePdf, 800);
+  setTimeout(psdRemoveMobilePdf, 1500);
+  setTimeout(psdRemoveMobilePdf, 3000);
 }
