@@ -499,6 +499,117 @@ function makeInteractiveChart(id,data,color,isPsi,comparisonKey=""){
       const series=chart.addSeries(LightweightCharts.AreaSeries,{lineColor:color,topColor:color+"55",bottomColor:color+"08",lineWidth:2,priceFormat:isPsi?{type:"price",precision:0,minMove:1}:{type:"price",precision:3,minMove:.001},autoscaleInfoProvider:isPsi?()=>({priceRange:{minValue:0,maxValue:100},margins:{above:0,below:0}}):undefined});
       const chartData=data.map(point=>({time:point.date,value:Number(point.value)}));series.setData(chartData);chart.timeScale().fitContent();
       const observer=new ResizeObserver(entries=>entries.forEach(entry=>chart.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(210,entry.contentRect.height)})));observer.observe(box);chartCleanup.push(()=>{observer.disconnect();chart.remove()});
+      /* V2 MOBILE Y SCALE START */
+      const yScaleHandle=document.createElement("div");
+      yScaleHandle.className="psd-y-scale-handle";
+      yScaleHandle.setAttribute("aria-label","Drag vertically to scale Y axis");
+      box.appendChild(yScaleHandle);
+
+      const priceScale=chart.priceScale("right");
+      let yScaleDrag=null;
+
+      const yScaleStart=event=>{
+        const expanded=box.closest(".pulse-chart-panel.expanded");
+
+        if(
+          !expanded ||
+          !window.matchMedia("(max-width:768px)").matches
+        ) return;
+
+        const range=priceScale.getVisibleRange();
+        if(!range)return;
+
+        yScaleDrag={
+          pointerId:event.pointerId,
+          startY:event.clientY,
+          from:Number(range.from),
+          to:Number(range.to)
+        };
+
+        try{
+          yScaleHandle.setPointerCapture(event.pointerId);
+        }catch(_error){}
+
+        event.preventDefault();
+        event.stopPropagation();
+      };
+
+      const yScaleMove=event=>{
+        if(
+          !yScaleDrag ||
+          event.pointerId!==yScaleDrag.pointerId
+        ) return;
+
+        const originalSpan=yScaleDrag.to-yScaleDrag.from;
+        if(!Number.isFinite(originalSpan)||originalSpan<=0)return;
+
+        const middle=(yScaleDrag.from+yScaleDrag.to)/2;
+        const movement=event.clientY-yScaleDrag.startY;
+
+        /*
+          Down = larger visible range = chart compresses vertically.
+          Up   = smaller visible range = chart expands vertically.
+        */
+        const factor=Math.exp(movement/180);
+        const newSpan=Math.max(
+          originalSpan*0.08,
+          Math.min(originalSpan*12,factor*originalSpan)
+        );
+
+        try{
+          priceScale.setAutoScale(false);
+          priceScale.setVisibleRange({
+            from:middle-newSpan/2,
+            to:middle+newSpan/2
+          });
+        }catch(_error){}
+
+        event.preventDefault();
+        event.stopPropagation();
+      };
+
+      const yScaleEnd=event=>{
+        if(
+          !yScaleDrag ||
+          event.pointerId!==yScaleDrag.pointerId
+        ) return;
+
+        try{
+          yScaleHandle.releasePointerCapture(event.pointerId);
+        }catch(_error){}
+
+        yScaleDrag=null;
+
+        event.preventDefault();
+        event.stopPropagation();
+      };
+
+      const yScaleReset=event=>{
+        const expanded=box.closest(".pulse-chart-panel.expanded");
+        if(!expanded)return;
+
+        try{
+          priceScale.setAutoScale(true);
+        }catch(_error){}
+
+        event.preventDefault();
+        event.stopPropagation();
+      };
+
+      yScaleHandle.addEventListener("pointerdown",yScaleStart);
+      yScaleHandle.addEventListener("pointermove",yScaleMove);
+      yScaleHandle.addEventListener("pointerup",yScaleEnd);
+      yScaleHandle.addEventListener("pointercancel",yScaleEnd);
+      yScaleHandle.addEventListener("dblclick",yScaleReset);
+
+      chartCleanup.push(()=>{
+        yScaleHandle.removeEventListener("pointerdown",yScaleStart);
+        yScaleHandle.removeEventListener("pointermove",yScaleMove);
+        yScaleHandle.removeEventListener("pointerup",yScaleEnd);
+        yScaleHandle.removeEventListener("pointercancel",yScaleEnd);
+        yScaleHandle.removeEventListener("dblclick",yScaleReset);
+      });
+      /* V2 MOBILE Y SCALE END */
       if(comparisonKey)comparisonCharts.set(comparisonKey,{chart,series,data:chartData});
       return{chart,series,data:chartData};
     }
@@ -552,7 +663,45 @@ function activateComparisonSync(mode){
 
 function newsHtml(news){return news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").slice(0,1).toUpperCase()),logoHtml=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener">${logoHtml}<span>${esc(h.title||"Untitled headline")}<small>${esc(h.source||"Source")} • ${esc(h.vote||"Neutral")}</small></span></a>`}).join("")||'<div class="empty-note">No recent news available.</div>'}
 
-function toggleChart(name){const panel=document.querySelector(`[data-chart-panel="${name}"]`),expand=!panel.classList.contains("expanded");document.querySelectorAll(".pulse-chart-panel").forEach(item=>item.classList.remove("expanded"));document.querySelectorAll("[data-chart-size]").forEach(button=>button.textContent="Maximize");if(expand){panel.classList.add("expanded");panel.querySelector("[data-chart-size]").textContent="Minimize"}}
+function toggleChart(name){
+  const panel=document.querySelector(`[data-chart-panel="${name}"]`);
+  if(!panel)return;
+
+  const mobile=window.matchMedia("(max-width:768px)").matches;
+  const expand=!panel.classList.contains("expanded");
+
+  document.querySelectorAll(".pulse-chart-panel").forEach(item=>{
+    item.classList.remove("expanded");
+  });
+
+  document.querySelectorAll("[data-chart-size]").forEach(button=>{
+    button.textContent="Maximize";
+    button.setAttribute("aria-label","Maximize chart");
+    button.setAttribute("title","Maximize chart");
+  });
+
+  document.body.classList.remove("psd-chart-fullscreen-open");
+
+  if(!expand)return;
+
+  panel.classList.add("expanded");
+
+  const button=panel.querySelector("[data-chart-size]");
+
+  if(!button)return;
+
+  if(mobile){
+    document.body.classList.add("psd-chart-fullscreen-open");
+
+    button.textContent="×";
+    button.setAttribute("aria-label","Exit full screen chart");
+    button.setAttribute("title","Exit chart");
+  }else{
+    button.textContent="Minimize";
+    button.setAttribute("aria-label","Minimize chart");
+    button.setAttribute("title","Minimize chart");
+  }
+}
 
 function openHistory(name){activeCompareNames=[];activeHistoryName=name;document.getElementById("historyLayer").classList.add("open");document.body.style.overflow="hidden";renderHistory()}
 
