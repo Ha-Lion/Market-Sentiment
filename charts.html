@@ -326,7 +326,77 @@
       color:#fff;
     }
 
-  </style>
+  
+  /* PSD MOBILE DIRECT MARKET CHART START */
+
+  .market-chart-close{
+    display:none;
+  }
+
+  @media(max-width:700px){
+
+    /*
+      The category/history page already sends the selected
+      asset through charts.html?symbol=...
+
+      Therefore the large asset-selection list is hidden
+      on mobile.
+    */
+    .charts-panel{
+      display:none !important;
+    }
+
+    .charts-layout{
+      display:block !important;
+      grid-template-columns:1fr !important;
+    }
+
+    .chart-card{
+      width:100% !important;
+      max-width:100% !important;
+    }
+
+    /*
+      X belongs to the Market Charts card itself.
+    */
+    .charts-hero{
+      position:relative !important;
+      padding-right:52px !important;
+    }
+
+    .market-chart-close{
+      display:grid !important;
+      place-items:center !important;
+
+      position:absolute !important;
+      top:10px !important;
+      right:10px !important;
+
+      width:34px !important;
+      height:34px !important;
+
+      margin:0 !important;
+      padding:0 0 2px !important;
+
+      border:1px solid #8fa9bd !important;
+      border-radius:10px !important;
+
+      background:var(--card2) !important;
+      color:var(--text) !important;
+
+      font-size:23px !important;
+      line-height:1 !important;
+      font-weight:700 !important;
+
+      cursor:pointer !important;
+
+      z-index:50 !important;
+    }
+
+  }
+
+  /* PSD MOBILE DIRECT MARKET CHART END */
+</style>
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
 </head>
 
@@ -337,6 +407,13 @@
   <script src="site-theme.js?v=20" defer></script>
   <main class="charts-wrap">
     <section class="charts-hero">
+      <button
+        id="marketChartClose"
+        class="market-chart-close"
+        type="button"
+        aria-label="Go back to previous page"
+        title="Go back"
+      >×</button>
       <div>
         <h1>Market Charts</h1>
         <p>Embedded market charts for quick technical context beside Public Sentiment Dash research.</p>
@@ -553,5 +630,25 @@
   <script src="site-footer.js?v=1" defer></script>
   <script src="vote-widget.js?v=19" defer></script>
   <script src="mobile/ribbon.js?v=2"></script>
+<script>
+(() => {
+  "use strict";
+
+  const closeButton =
+    document.getElementById("marketChartClose");
+
+  if(!closeButton) return;
+
+  closeButton.addEventListener("click", () => {
+
+    if(window.history.length > 1){
+      window.history.back();
+      return;
+    }
+
+    window.location.href = "index.html";
+  });
+})();
+</script>
 </body>
 </html>
