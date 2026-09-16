@@ -471,6 +471,72 @@
     }
   }
 
+  /* PSD SIGNED-OUT MOBILE ACCOUNT FILTER START */
+
+  function removeSignedOutMobileAccountLinks(){
+
+    if(
+      !window.matchMedia("(max-width:768px)").matches
+    ){
+      return;
+    }
+
+    const blockedAccountLinks = new Set([
+      "account.html#preferences",
+      "account.html#profile",
+      "watchlist.html",
+      "activity-report.html"
+    ]);
+
+    const cleanMenu = function(){
+
+      document
+        .querySelectorAll(
+          ".psd-mobile-clean-menu a[href]"
+        )
+        .forEach(function(link){
+
+          const rawHref =
+            link.getAttribute("href") || "";
+
+          let normalized = rawHref;
+
+          try{
+            const url =
+              new URL(
+                rawHref,
+                window.location.href
+              );
+
+            normalized =
+              (url.pathname.split("/").pop() || "") +
+              url.hash;
+
+          }catch(error){}
+
+          if(
+            blockedAccountLinks.has(normalized)
+          ){
+            link.remove();
+          }
+        });
+    };
+
+    /*
+      Mobile ribbon creation is asynchronous.
+      Clean immediately and again after its delayed builds.
+    */
+    cleanMenu();
+
+    setTimeout(cleanMenu, 100);
+    setTimeout(cleanMenu, 350);
+    setTimeout(cleanMenu, 800);
+    setTimeout(cleanMenu, 1300);
+    setTimeout(cleanMenu, 1800);
+  }
+
+  /* PSD SIGNED-OUT MOBILE ACCOUNT FILTER END */
+
   async function refreshAccountNavigation(){
     const accountLink = document.getElementById("psd-account-nav-link");
     const menu = document.getElementById("psd-account-menu");
@@ -487,6 +553,12 @@
         document.getElementById("psd-ribbon-watchlist-link");
 
       if(!session){
+
+        /*
+          Session is now confirmed signed out.
+          Remove private account options from mobile navigation.
+        */
+        removeSignedOutMobileAccountLinks();
         cacheMemberUI(false);
         if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = true;
         accountLink.textContent = "Sign In";
