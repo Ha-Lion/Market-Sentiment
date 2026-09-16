@@ -499,6 +499,13 @@
       }
     }
 
+    /* NEWS PAGE MOBILE FIX V1 */
+    @media(max-width:768px){
+      #psdPdfWidget,
+      .psd-pdf-widget{
+        display:none !important;
+      }
+    }
   </style>
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
 </head>
@@ -919,5 +926,51 @@
   <script src="vote-widget.js?v=16" defer></script>
   <script src="glossary.js?v=3" defer></script>
   <script src="mobile/ribbon.js?v=2"></script>
+  <script id="newsMobileMenuFix">
+  (() => {
+    if (!window.matchMedia("(max-width:768px)").matches) return;
+
+    const hiddenPages = new Set([
+      "dashboard.html",
+      "sentiment-history.html",
+      "market-pulse.html",
+      "market-intelligence.html"
+    ]);
+
+    function cleanMenu(){
+      document
+        .querySelectorAll(".psd-mobile-clean-menu a[href]")
+        .forEach(link => {
+          try{
+            const url = new URL(
+              link.getAttribute("href"),
+              window.location.href
+            );
+
+            const page =
+              (url.pathname.split("/").pop() || "")
+              .toLowerCase();
+
+            if(hiddenPages.has(page)){
+              link.remove();
+            }
+          }catch(e){}
+        });
+    }
+
+    const observer = new MutationObserver(cleanMenu);
+
+    observer.observe(document.documentElement,{
+      childList:true,
+      subtree:true
+    });
+
+    cleanMenu();
+    setTimeout(cleanMenu,100);
+    setTimeout(cleanMenu,300);
+    setTimeout(cleanMenu,700);
+    setTimeout(cleanMenu,1200);
+  })();
+  </script>
 </body>
 </html>
