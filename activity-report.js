@@ -87,6 +87,497 @@
     preview.textContent=enabled?"🛠️ "+message+(expected?" "+expected:""):"";
   }
 
+
+  function xRefreshStatus(message,type){
+    const node=document.getElementById("x-refresh-status");
+    if(!node)return;
+
+    node.textContent=message||"";
+    node.className=
+      "admin-status"+(type?" "+type:"");
+  }
+
+  function xScopePrefix(scope){
+    return scope==="website"
+      ? "x-website"
+      : "x-private";
+  }
+
+  function xMode(scope){
+    const prefix=xScopePrefix(scope);
+
+    const selected=document.querySelector(
+      'input[name="'+prefix+'-mode"]:checked'
+    );
+
+    return selected
+      ? selected.value
+      : "fixed_times";
+  }
+
+  function updateXModeVisibility(scope){
+    const prefix=xScopePrefix(scope);
+    const mode=xMode(scope);
+
+    const fixed=document.getElementById(
+      prefix+"-fixed-wrap"
+    );
+
+    const every=document.getElementById(
+      prefix+"-every-wrap"
+    );
+
+    if(fixed){
+      fixed.hidden=
+        mode!=="fixed_times";
+    }
+
+    if(every){
+      every.hidden=
+        mode!=="every";
+    }
+  }
+
+  function addXTimeRow(scope,value){
+    const prefix=xScopePrefix(scope);
+    const host=document.getElementById(
+      prefix+"-times"
+    );
+
+    if(!host)return;
+
+    const row=document.createElement("div");
+    row.className="x-time-row";
+
+    const label=document.createElement("label");
+
+    const caption=document.createElement("span");
+    caption.textContent="Update time";
+
+    const input=document.createElement("input");
+    input.type="time";
+    input.className="x-fixed-time";
+    input.value=value||"08:00";
+
+    label.append(
+      caption,
+      input
+    );
+
+    const remove=document.createElement("button");
+    remove.type="button";
+    remove.className="x-remove-time";
+    remove.textContent="?";
+    remove.title="Remove this update time";
+    remove.setAttribute(
+      "aria-label",
+      "Remove update time"
+    );
+
+    remove.addEventListener(
+      "click",
+      function(){
+
+        const rows=host.querySelectorAll(
+          ".x-time-row"
+        );
+
+        if(rows.length<=1){
+          xRefreshStatus(
+            "A fixed schedule needs at least one time.",
+            "error"
+          );
+          return;
+        }
+
+        row.remove();
+      }
+    );
+
+    row.append(
+      label,
+      remove
+    );
+
+    host.appendChild(row);
+  }
+
+  function renderXTimes(scope,times){
+    const prefix=xScopePrefix(scope);
+
+    const host=document.getElementById(
+      prefix+"-times"
+    );
+
+    if(!host)return;
+
+    host.replaceChildren();
+
+    const values=
+      Array.isArray(times)&&times.length
+        ? times
+        : ["08:00","16:00"];
+
+    values.forEach(
+      function(value){
+        addXTimeRow(
+          scope,
+          value
+        );
+      }
+    );
+  }
+
+  function collectXTimes(scope){
+    const prefix=xScopePrefix(scope);
+
+    return Array.from(
+      document.querySelectorAll(
+        "#"+prefix+"-times .x-fixed-time"
+      )
+    )
+    .map(
+      function(input){
+        return input.value;
+      }
+    )
+    .filter(Boolean);
+  }
+
+  function renderXScheduleGroup(
+    scope,
+    state
+  ){
+    state=state||{};
+
+    const prefix=xScopePrefix(scope);
+
+    const enabled=document.getElementById(
+      prefix+"-enabled"
+    );
+
+    enabled.checked=
+      state.enabled!==false;
+
+    const mode=
+      state.mode==="every"
+        ? "every"
+        : "fixed_times";
+
+    const modeInput=document.querySelector(
+      'input[name="'+prefix+'-mode"][value="'+mode+'"]'
+    );
+
+    if(modeInput){
+      modeInput.checked=true;
+    }
+
+    renderXTimes(
+      scope,
+      state.schedule_times
+    );
+
+    const every=
+      state.every||{};
+
+    const everyValue=document.getElementById(
+      prefix+"-every-value"
+    );
+
+    const everyUnit=document.getElementById(
+      prefix+"-every-unit"
+    );
+
+    everyValue.value=
+      Number(every.value)>=1
+        ? Number(every.value)
+        : 1;
+
+    everyUnit.value=
+      ["minutes","hours","days"].includes(
+        every.unit
+      )
+        ? every.unit
+        : "days";
+
+    updateXModeVisibility(scope);
+  }
+
+  function renderXRefreshSettings(state){
+    state=state||{};
+
+    renderXScheduleGroup(
+      "website",
+      state.website||{}
+    );
+
+    renderXScheduleGroup(
+      "private",
+      state.private_account||{}
+    );
+
+    document.getElementById(
+      "x-refresh-timezone"
+    ).textContent=
+      state.timezone||
+      "America/New_York";
+
+    const websiteEnabled=
+      state.website &&
+      state.website.enabled!==false;
+
+    const privateEnabled=
+      state.private_account &&
+      state.private_account.enabled!==false;
+
+    const enabled=
+      websiteEnabled ||
+      privateEnabled;
+
+    const pill=document.getElementById(
+      "x-refresh-state"
+    );
+
+    pill.textContent=
+      enabled
+        ? "X Updates ON"
+        : "X Updates OFF";
+
+    pill.className=
+      "state-pill "+
+      (enabled?"on":"off");
+
+    const saved=document.getElementById(
+      "x-refresh-saved"
+    );
+
+    saved.textContent=
+      state.updated_at
+        ? "Last saved "+
+          new Date(
+            state.updated_at
+          ).toLocaleString()
+        : "";
+  }
+
+  async function loadXRefreshSettings(){
+    xRefreshStatus(
+      "Loading X schedule?"
+    );
+
+    const result=await client.rpc(
+      "ms_get_x_refresh_settings"
+    );
+
+    if(result.error){
+      throw result.error;
+    }
+
+    renderXRefreshSettings(
+      result.data||{}
+    );
+
+    xRefreshStatus(
+      "X schedule ready",
+      "success"
+    );
+  }
+
+  function collectXScheduleGroup(scope){
+    const prefix=xScopePrefix(scope);
+
+    const mode=xMode(scope);
+
+    const times=collectXTimes(scope);
+
+    const everyValue=
+      Number(
+        document.getElementById(
+          prefix+"-every-value"
+        ).value
+      );
+
+    const everyUnit=
+      document.getElementById(
+        prefix+"-every-unit"
+      ).value;
+
+    if(
+      mode==="fixed_times" &&
+      !times.length
+    ){
+      throw new Error(
+        "Fixed schedule needs at least one time."
+      );
+    }
+
+    if(
+      mode==="every" &&
+      (
+        !Number.isInteger(everyValue) ||
+        everyValue<1
+      )
+    ){
+      throw new Error(
+        "Every schedule must be 1 or greater."
+      );
+    }
+
+    return {
+      enabled:
+        document.getElementById(
+          prefix+"-enabled"
+        ).checked,
+
+      mode:mode,
+
+      schedule_times:times,
+
+      every_value:
+        Number.isInteger(everyValue) &&
+        everyValue>=1
+          ? everyValue
+          : 1,
+
+      every_unit:everyUnit
+    };
+  }
+
+  async function saveXRefreshSettings(){
+    const button=document.getElementById(
+      "x-refresh-save"
+    );
+
+    let website;
+    let privateAccount;
+
+    try{
+      website=
+        collectXScheduleGroup(
+          "website"
+        );
+
+      privateAccount=
+        collectXScheduleGroup(
+          "private"
+        );
+    }catch(error){
+      xRefreshStatus(
+        error.message,
+        "error"
+      );
+      return;
+    }
+
+    button.disabled=true;
+    button.textContent="Saving?";
+
+    xRefreshStatus(
+      "Saving X schedule?"
+    );
+
+    try{
+      const result=await client.rpc(
+        "ms_update_x_refresh_settings_v2",
+        {
+          p_website_enabled:
+            website.enabled,
+
+          p_website_mode:
+            website.mode,
+
+          p_website_schedule_times:
+            website.schedule_times,
+
+          p_website_every_value:
+            website.every_value,
+
+          p_website_every_unit:
+            website.every_unit,
+
+          p_private_enabled:
+            privateAccount.enabled,
+
+          p_private_mode:
+            privateAccount.mode,
+
+          p_private_schedule_times:
+            privateAccount.schedule_times,
+
+          p_private_every_value:
+            privateAccount.every_value,
+
+          p_private_every_unit:
+            privateAccount.every_unit,
+
+          p_timezone:
+            "America/New_York"
+        }
+      );
+
+      if(result.error){
+        throw result.error;
+      }
+
+      renderXRefreshSettings(
+        result.data||{}
+      );
+
+      xRefreshStatus(
+        "X schedule saved.",
+        "success"
+      );
+
+    }finally{
+      button.disabled=false;
+      button.textContent=
+        "Save X schedule";
+    }
+  }
+
+  function wireXScheduleControls(){
+    ["website","private"].forEach(
+      function(scope){
+
+        const prefix=xScopePrefix(scope);
+
+        document.querySelectorAll(
+          'input[name="'+prefix+'-mode"]'
+        ).forEach(
+          function(input){
+
+            input.addEventListener(
+              "change",
+              function(){
+                updateXModeVisibility(
+                  scope
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+
+    document.querySelectorAll(
+      "[data-x-add-time]"
+    ).forEach(
+      function(button){
+
+        button.addEventListener(
+          "click",
+          function(){
+
+            addXTimeRow(
+              button.dataset.xAddTime,
+              "08:00"
+            );
+          }
+        );
+      }
+    );
+  }
+
   async function loadReport(){
     setStatus("Loading…");
     const results=await Promise.all([
@@ -771,7 +1262,7 @@ function renderHealthHistory(history){
 
   async function initialize(){
     try{
-      const session=await requireOwner();if(!session)return;reveal();chooseRange(30);await Promise.all([loadReport(),loadHealth(),loadOperationalHistory()]);
+      const session=await requireOwner();if(!session)return;reveal();chooseRange(30);await Promise.all([loadReport(),loadHealth(),loadOperationalHistory(),loadXRefreshSettings()]);
     }catch(error){deny(error);}
   }
 
@@ -782,7 +1273,18 @@ function renderHealthHistory(history){
   document.getElementById("health-refresh").addEventListener("click",loadHealth);
   document.getElementById("operational-history-refresh").addEventListener("click",loadOperationalHistory);
   document.getElementById("banner-save").addEventListener("click",function(){saveBanner().catch(function(error){setStatus(error.message||"Banner could not be saved.","error");});});
+  document.getElementById("x-refresh-save").addEventListener("click",function(){
+    saveXRefreshSettings().catch(function(error){
+      xRefreshStatus(
+        error.message||"X schedule could not be saved.",
+        "error"
+      );
+    });
+  });
+
   document.getElementById("admin-signout").addEventListener("click",async function(){await client.auth.signOut({scope:"local"});window.location.replace("index.html");});
+
+  wireXScheduleControls();
 
   initialize();
 })();
