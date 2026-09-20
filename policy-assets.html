@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- V2 FULL-INVENTORY SAFETY: canonical specialty inventory is embedded; stale local config cannot shrink it. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -991,11 +992,14 @@
   </main>
 
   <script src="sentiment-core.js?v=6"></script>
-  <script src="category-page-core.js?v=7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="category-page-core-v2.js?v=1"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v7 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core-v2.js did not load.");
     }
     const {
       clamp,
@@ -1055,21 +1059,22 @@
 
   <script>
     let POLICY_ITEMS = [
-      {name:"Official Trump / TRUMP", symbol:"TRUMP", aliases:["official trump","trump token","trump coin","$trump","trump crypto","politifi trump","donald trump token"], official:false},
-      {name:"World Liberty Financial / WLFI", symbol:"WLFI", aliases:["world liberty financial","wlfi","world liberty","trump defi","world liberty token"], official:false},
-      {name:"Kalshi Politics", symbol:"Kalshi", aliases:["kalshi","election contracts","political contracts","prediction market","event contracts","midterms forecast","election forecast"], official:false},
-      {name:"Polymarket Politics", symbol:"Polymarket", aliases:["polymarket","prediction market","election betting","political odds","politics market","election market"], official:false},
-      {name:"Trump Media / DJT", symbol:"DJT", aliases:["trump media","truth social","djt stock","trump media stock","tmtg"], official:false},
-      {name:"Coinbase / COIN", symbol:"COIN", aliases:["coinbase","coin stock","coinbase stock","crypto exchange stocks","crypto regulation coinbase"], official:false},
-      {name:"MicroStrategy / MSTR", symbol:"MSTR", aliases:["microstrategy","strategy stock","mstr","bitcoin treasury","bitcoin proxy"], official:false},
-      {name:"Tesla / TSLA", symbol:"TSLA", aliases:["tesla","tsla","ev policy","electric vehicle policy","elon musk","tesla stock","tariffs tesla"], official:false},
-      {name:"Aerospace & Defense / ITA", symbol:"ITA", aliases:["ita etf","aerospace defense etf","defense stocks","defense spending","military spending","aerospace and defense"], official:false},
-      {name:"Lockheed Martin / LMT", symbol:"LMT", aliases:["lockheed martin","lmt","lmt stock","defense contractor","missile defense","f-35","military contracts"], official:false},
-      {name:"Rare Earths / REMX", symbol:"REMX", aliases:["remx","rare earth etf","rare earths","rare earth metals","strategic minerals","critical minerals","china export controls"], official:false},
-      {name:"Semiconductors / SMH", symbol:"SMH", aliases:["smh","semiconductor etf","semiconductors","chip stocks","ai chips","export controls","taiwan semiconductor risk"], official:false},
-      {name:"China ETF / FXI", symbol:"FXI", aliases:["fxi","china etf","china stocks","chinese equities","u.s. china tensions","china tariffs","taiwan risk"], official:false},
-      {name:"Uranium / URA", symbol:"URA", aliases:["ura","uranium etf","uranium stocks","nuclear energy policy","uranium supply","nuclear power","energy security"], official:false},
-      {name:"GEO Group / GEO", symbol:"GEO", aliases:["geo group","geo stock","private prison","detention centers","immigration enforcement","corrections stocks"], official:false}
+      {name:"Official Trump / TRUMP", symbol:"TRUMP", aliases:["official trump", "trump token", "trump coin", "$trump", "trump crypto", "politifi trump", "donald trump token", "Official Trump / TRUMP", "TRUMP"], official:false, priority:1, historyKeys:["Official Trump / TRUMP", "TRUMP"]},
+      {name:"World Liberty Financial / WLFI", symbol:"WLFI", aliases:["world liberty financial", "wlfi", "world liberty", "trump defi", "world liberty token", "World Liberty Financial / WLFI", "WLFI"], official:false, priority:2, historyKeys:["World Liberty Financial / WLFI", "WLFI"]},
+      {name:"Kalshi Politics", symbol:"Kalshi", aliases:["kalshi", "election contracts", "political contracts", "prediction market", "event contracts", "midterms forecast", "election forecast", "Kalshi Politics", "Kalshi"], official:false, priority:3, historyKeys:["Kalshi Politics", "Kalshi"]},
+      {name:"Polymarket Politics", symbol:"Polymarket", aliases:["polymarket", "prediction market", "election betting", "political odds", "politics market", "election market", "Polymarket Politics", "Polymarket"], official:false, priority:4, historyKeys:["Polymarket Politics", "Polymarket"]},
+      {name:"Trump Media / DJT", symbol:"DJT", aliases:["trump media", "truth social", "djt stock", "trump media stock", "tmtg", "Trump Media / DJT", "DJT"], official:true, priority:5, historyKeys:["Trump Media / DJT", "DJT"]},
+      {name:"Coinbase / COIN", symbol:"COIN", aliases:["coinbase", "coin stock", "coinbase stock", "crypto exchange stocks", "crypto regulation coinbase", "Coinbase / COIN", "COIN"], official:true, priority:6, historyKeys:["Coinbase / COIN", "COIN"]},
+      {name:"MicroStrategy / MSTR", symbol:"MSTR", aliases:["microstrategy", "strategy stock", "mstr", "bitcoin treasury", "bitcoin proxy", "MicroStrategy / MSTR", "MSTR"], official:true, priority:7, historyKeys:["MicroStrategy / MSTR", "MSTR"]},
+      {name:"Tesla / TSLA", symbol:"TSLA", aliases:["tesla", "tsla", "ev policy", "electric vehicle policy", "elon musk", "tesla stock", "tariffs tesla", "Tesla / TSLA", "TSLA"], official:true, priority:8, historyKeys:["Tesla / TSLA", "TSLA"]},
+      {name:"Aerospace & Defense / ITA", symbol:"ITA", aliases:["ita etf", "aerospace defense etf", "defense stocks", "defense spending", "military spending", "aerospace and defense", "Aerospace & Defense / ITA", "ITA"], official:true, priority:9, historyKeys:["Aerospace & Defense / ITA", "ITA"]},
+      {name:"Lockheed Martin / LMT", symbol:"LMT", aliases:["lockheed martin", "lmt", "lmt stock", "defense contractor", "missile defense", "f-35", "military contracts", "Lockheed Martin / LMT", "LMT"], official:true, priority:10, historyKeys:["Lockheed Martin / LMT", "LMT"]},
+      {name:"Rare Earths / REMX", symbol:"REMX", aliases:["remx", "rare earth etf", "rare earths", "rare earth metals", "strategic minerals", "critical minerals", "china export controls", "Rare Earths / REMX", "REMX"], official:true, priority:11, historyKeys:["Rare Earths / REMX", "REMX"]},
+      {name:"Semiconductors / SMH", symbol:"SMH", aliases:["smh", "semiconductor etf", "semiconductors", "chip stocks", "ai chip stocks", "semiconductor sector", "Semiconductors / SMH", "SMH"], official:true, priority:12, historyKeys:["Semiconductors / SMH", "SMH"]},
+      {name:"China ETF / FXI", symbol:"FXI", aliases:["fxi", "china etf", "china stocks", "chinese equities", "u.s. china tensions", "china tariffs", "taiwan risk", "China ETF / FXI", "FXI"], official:true, priority:13, historyKeys:["China ETF / FXI", "FXI"]},
+      {name:"Uranium / URA", symbol:"URA", aliases:["ura", "uranium etf", "uranium stocks", "nuclear energy policy", "uranium supply", "nuclear power", "energy security", "Uranium / URA", "URA"], official:true, priority:14, historyKeys:["Uranium / URA", "URA"]},
+      {name:"GEO Group / GEO", symbol:"GEO", aliases:["geo group", "geo stock", "private prison", "detention centers", "immigration enforcement", "corrections stocks", "GEO Group / GEO", "GEO"], official:true, priority:15, historyKeys:["GEO Group / GEO", "GEO"]},
+      {name:"Cybersecurity / CIBR", symbol:"CIBR", aliases:["cibr", "cybersecurity etf", "cybersecurity stocks", "cyber defense", "Cybersecurity / CIBR", "CIBR"], official:false, priority:16, historyKeys:["Cybersecurity / CIBR", "CIBR"]}
     ];
 
     let dashboardData = null;
@@ -1088,6 +1093,44 @@
     let comparisonSyncMode = "pair";
     let comparisonSyncCleanup = [];
 
+    // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
+    const canonicalHistoryByName = new Map();
+    const canonicalHistoryFailures = new Set();
+
+    async function waitForPsdSupabase(timeoutMs = 8000){
+      const started = Date.now();
+      while(Date.now() - started < timeoutMs){
+        if(window.psdSupabase?.functions?.invoke) return window.psdSupabase;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return null;
+    }
+
+    async function loadCanonicalInstrumentHistory(name){
+      if(canonicalHistoryByName.has(name)) return canonicalHistoryByName.get(name);
+      if(canonicalHistoryFailures.has(name)) return null;
+      try{
+        const client = await waitForPsdSupabase();
+        if(!client) throw new Error("Supabase client unavailable");
+        const { data, error } = await client.functions.invoke("market-archive-search-v2", {
+          body: { action: "instrument_history", asset: name, limit: 1000 }
+        });
+        if(error) throw error;
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        if(!rows.length) throw new Error(`No canonical history found for ${name}`);
+        canonicalHistoryByName.set(name, rows);
+        return rows;
+      }catch(error){
+        console.warn("Canonical instrument history unavailable; compact JSON fallback retained.", name, error);
+        canonicalHistoryFailures.add(name);
+        return null;
+      }
+    }
+
+    function canonicalHistoryRows(name){
+      return canonicalHistoryByName.get(name) || null;
+    }
+
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
     }
@@ -1098,11 +1141,11 @@
     const POLICY_EXCLUDE_TERMS=[];
 
     const CATEGORY_KEY = "policy_geopolitical";
-    const DEFAULT_TOP_N = 15;
+    const DEFAULT_TOP_N = 16;
 
     function assetsFromConfig(config, categoryKey, fallbackItems){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
-      const rows = assets
+      const configured = assets
         .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
         .map(asset => {
           const cat = categoryEntry(asset, categoryKey);
@@ -1114,10 +1157,25 @@
             priority: Number(cat?.priority || 999),
             historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
-        })
-        .sort((a,b) => a.priority - b.priority)
-        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
-      return rows.length ? rows : fallbackItems;
+        });
+
+      // V2 safety rule: a stale/local config must never shrink the approved specialty inventory.
+      // Merge configured rows over the embedded canonical inventory and keep any config-only additions.
+      const keyOf = item => normalizeText(item?.name || item?.symbol || "");
+      const configuredMap = new Map(configured.map(item => [keyOf(item), item]));
+      const merged = fallbackItems.map((item,index) => {
+        const configuredItem = configuredMap.get(keyOf(item));
+        if(configuredItem){
+          configuredMap.delete(keyOf(item));
+          return {...item, ...configuredItem, aliases:uniqueTerms([...(item.aliases||[]), ...(configuredItem.aliases||[])]), historyKeys:uniqueTerms([...(item.historyKeys||[]), ...(configuredItem.historyKeys||[])])};
+        }
+        return {...item, priority:Number(item.priority || (index+1))};
+      });
+      configuredMap.forEach(item => merged.push(item));
+      merged.sort((a,b) => Number(a.priority||999) - Number(b.priority||999));
+      const configuredTopN = Number(config?.categories?.[categoryKey]?.default_top_n || 0);
+      const safeTopN = Math.max(fallbackItems.length, configuredTopN || 0);
+      return merged.slice(0, safeTopN || fallbackItems.length);
     }
 
     function applyAssetConfig(config){
@@ -1257,8 +1315,19 @@
     }
 
     function marketSeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        const rows = canonical.map(row => {
+          const close = Number(row?.payload?.technical?.daily?.close);
+          const date = String(row?.event_date || "").slice(0,10);
+          return date && Number.isFinite(close) ? {date, value:close, source:"supabase_canonical"} : null;
+        }).filter(Boolean);
+        if(rows.length) return rows;
+      }
       const item=POLICY_ITEMS.find(x=>x.name===name);
-      return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
+      return (technicalForItem(item)?.daily_history||[])
+        .map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close),source:"compact_json_fallback"}))
+        .filter(point=>point.date&&Number.isFinite(point.value));
     }
 
     function marketDirection(name){
@@ -1422,12 +1491,28 @@
     function proxyHistoryRowForAI(record,item){ return null; }
 
     function dailySeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        return canonical.map(row => {
+          const payload = row?.payload || {};
+          const value = Number(payload?.psi);
+          const count = Number(payload?.headline_count || payload?.classified_headline_count || 0);
+          if(!row?.event_date || !Number.isFinite(value) || count <= 0) return null;
+          return {
+            date:String(row.event_date).slice(0,10),
+            label:String(row.event_date).slice(0,10),
+            value,
+            count,
+            sentiment:String(payload?.sentiment_label || row?.global_sentiment_label || "No PSI"),
+            source:"supabase_canonical"
+          };
+        }).filter(Boolean);
+      }
+
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
       const item = POLICY_ITEMS.find(x => x.name === name);
-
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
-
         if(row && row.psi != null && Number(row.headline_count || 0) > 0){
           return {
             date:r.date,
@@ -1435,10 +1520,9 @@
             value:Number(row.psi),
             count:Number(row.headline_count || 0),
             sentiment:String(row.sentiment_label || "No PSI"),
-            source:"official"
+            source:"compact_json_fallback"
           };
         }
-
         return null;
       }).filter(Boolean);
     }
@@ -1487,7 +1571,7 @@
       card?.classList.remove("compare-view");
       syncMount.innerHTML="";
       grid.className="history-grid";
-      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
+      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;const canonicalActive=Boolean(canonicalHistoryRows(activeHistoryName)?.length);subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings • ${canonicalActive ? "Canonical Supabase history" : "Compact JSON fallback"}`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
       grid.innerHTML=`<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain Sentiment History" aria-expanded="false">i</button></h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain Market Price History" aria-expanded="false">i</button></h3><div class="market-chart-actions">${fullMarketChartLink(activeHistoryName)}<button class="chart-size" type="button" data-chart-size="market">Maximize</button></div></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-news" aria-label="Explain Latest News" aria-expanded="false">i</button></h3><div class="history-news-list" id="historyNews"></div></section>`;
       document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
       try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
@@ -1495,6 +1579,21 @@
 
     document.addEventListener("keydown", e => {if(e.key!=="Escape")return;const expanded=document.querySelector(".pulse-chart-panel.expanded");if(expanded){expanded.classList.remove("expanded");const button=expanded.querySelector("[data-chart-size]");if(button)button.textContent="Maximize"}else closeHistory()});
     window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
+
+    const openHistoryLegacyV2 = openHistory;
+    const openCompareHistoryLegacyV2 = openCompareHistory;
+
+    async function openHistoryCanonicalV2(name){
+      await loadCanonicalInstrumentHistory(name);
+      openHistoryLegacyV2(name);
+    }
+
+    async function openCompareHistoryCanonicalV2(){
+      if(selectedCompareNames.length === 2){
+        await Promise.all(selectedCompareNames.map(name => loadCanonicalInstrumentHistory(name)));
+      }
+      openCompareHistoryLegacyV2();
+    }
 
     async function init(){
       try{
@@ -1536,11 +1635,11 @@
       }
     }
 
-    window.openHistory = openHistory;
+    window.openHistory = openHistoryCanonicalV2;
     window.closeHistory = closeHistory;
     window.setHistoryPeriod = setHistoryPeriod;
     window.toggleCompare = toggleCompare;
-    window.openCompareHistory = openCompareHistory;
+    window.openCompareHistory = openCompareHistoryCanonicalV2;
 
     let aiResizeTimer = 0;
     window.addEventListener("resize",()=>{
