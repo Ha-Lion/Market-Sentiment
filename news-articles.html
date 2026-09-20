@@ -519,7 +519,7 @@
       <div class="news-search-head">
         <h1>News & Articles</h1>
         <div class="news-search-meta">
-          <p><span data-glossary="news-summary">Search the rolling news memory</span> by keyword, market, instrument, and source. Trusted market outlets are shown first.</p>
+          <p><span data-glossary="news-summary">Search the canonical News & Articles archive</span> by keyword, market, instrument, and source. Trusted market outlets are shown first.</p>
           <div class="count-note" id="resultsCount">Loading published articles...</div>
         </div>
       </div>
@@ -544,8 +544,8 @@
 
         <div class="source-filter-stack">
           <div class="news-search-actions">
-            <button class="btn" type="button" onclick="renderHeadlines()">Search</button>
-            <button class="btn secondary" type="button" onclick="clearSearch()">Clear</button>
+            <button class="btn" type="button" >Search</button>
+            <button class="btn secondary" type="button" >Clear</button>
           </div>
 
           <select id="sourceFilter">
@@ -591,33 +591,30 @@
   <button class="page-up" id="pageUpBtn" type="button" aria-label="Go back to top">↑</button>
 
   <script src="sentiment-core.js?v=5"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js?v=17"></script>
 
   <script>
     let dashboardData = null;
     let technicalData = null;
-    let newsCacheData = null;
+    let archiveMeta = null;
     let allArticles = [];
+    let currentOffset = 0;
+    let currentTotal = 0;
+    const PAGE_SIZE = 100;
 
     const marketLabels = {
-      indexes:"Indexes / Futures",
-      bonds:"Bonds / Rates",
-      forex:"Forex / Currencies",
-      crypto:"Crypto",
-      commodities:"Commodities",
-      macro:"Macro / Fed / Inflation",
-      stocks:"Stocks / Company News",
-      general:"General Market"
+      indexes:"Indexes / Futures", bonds:"Bonds / Rates", forex:"Forex / Currencies",
+      crypto:"Crypto", commodities:"Commodities", macro:"Macro / Fed / Inflation",
+      stocks:"Stocks / Company News", general:"General Market"
     };
 
-    const instrumentGroups = {
-      indexes:["S&P 500 / ES","Nasdaq / NQ","Dow / YM","Russell / RTY","VIX","DAX","FTSE 100","Nikkei 225","Hang Seng","Euro Stoxx 50","CAC 40"],
-      bonds:["US 10Y Treasury","US 2Y Treasury","Treasury Yields"],
-      forex:["US Dollar / DXY","EUR / EURUSD","GBP / GBPUSD","JPY / USDJPY","CHF / USDCHF","CAD / USDCAD","AUD / AUDUSD","NZD / NZDUSD","EURJPY","EURGBP","GBPJPY","AUDJPY","CADJPY","EURCHF","EURCAD","AUDCAD","AUDNZD","NZDJPY","USDTRY","USDMXN","USDZAR"],
-      crypto:["Bitcoin / BTC","Ethereum / ETH","Solana / SOL","XRP","BNB","Cardano / ADA","Dogecoin / DOGE","General Crypto"],
-      commodities:["Gold","Silver","Copper","Crude Oil","Natural Gas"],
-      macro:["Fed / FOMC","CPI / Inflation","PPI","Jobs / NFP","US GDP / Growth","Geopolitical / Tariffs"],
-      stocks:["Stocks / Company News","Airlines","Banks","Technology Stocks","Energy Stocks","Retail Stocks","Market Movers"]
-    };
+    function escapeHTML(value){
+      return String(value ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
 
     function normalizeInstrumentName(value){
       if(window.PSDCore && typeof window.PSDCore.normalizeInstrumentName === "function"){
@@ -626,58 +623,17 @@
       return String(value || "").replace(/\s+/g, " ").trim();
     }
 
-    function allInstruments(){
-      const coreInstruments = window.PSDCore && Array.isArray(window.PSDCore.INSTRUMENTS)
-        ? window.PSDCore.INSTRUMENTS.map(item => item.name)
-        : [];
-
-      return [...new Set([...coreInstruments, ...Object.values(instrumentGroups).flat()].map(normalizeInstrumentName).filter(Boolean))];
-    }
-
     function itemInstrumentNames(item){
       return (Array.isArray(item?.instruments) ? item.instruments : [])
-        .map(normalizeInstrumentName)
-        .filter(Boolean);
-    }
-
-    function escapeHTML(value){
-      return String(value ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+        .map(normalizeInstrumentName).filter(Boolean);
     }
 
     function normalizeClass(value){
       return String(value || "Neutral").replace(/[^a-zA-Z]/g, "") || "Neutral";
     }
 
-    const preferredSources = [
-      "Reuters","Bloomberg","CNBC","Financial Times","The Wall Street Journal","WSJ",
-      "Associated Press","AP News","MarketWatch","Fox Business","Barron's","Investors Business Daily"
-    ];
-
-    function sourceRank(item){
-      if(item?.is_major_outlet === true) return 1;
-      const source = String(item?.source || "").toLowerCase();
-      if(preferredSources.some(name => source.includes(name.toLowerCase()))) return 1;
-      if(Number(item?.relevance_score || 0) >= 7 || String(item?.impact || "").toLowerCase() === "high") return 2;
-      return 3;
-    }
-
-    function publishedTime(item){
-      const value = item?.published_at || item?.published || item?.date || "";
-      const stamp = Date.parse(value);
-      return Number.isFinite(stamp) ? stamp : 0;
-    }
-
     function domainFromURL(url){
-      try{
-        return new URL(url).hostname.replace(/^www\./, "");
-      }catch(e){
-        return "";
-      }
+      try{ return new URL(url).hostname.replace(/^www\./, ""); }catch(e){ return ""; }
     }
 
     function faviconForURL(url){
@@ -692,115 +648,108 @@
 
     function headlineTech(item){
       const instruments = itemInstrumentNames(item);
-
       for(const name of instruments){
         if(window.PSDCore && typeof window.PSDCore.getTechnicalBias === "function"){
           const tech = window.PSDCore.getTechnicalBias(technicalData, name, "daily");
           if(tech && tech.direction && tech.direction !== "N/A") return `Tech Daily: ${tech.direction}`;
         }
-
-        const root = technicalData && (technicalData.technical || technicalData);
-        const entry = root && root[name];
-        const daily = entry && (entry.daily || entry.Daily);
-        const label = typeof daily === "string" ? daily : (daily && (daily.direction || daily.signal || daily.label || daily.trend || daily.value));
-        if(label) return `Tech Daily: ${label}`;
       }
-
       return "Tech Daily: N/A";
     }
 
+    function canonicalSource(item){
+      return item?.canonical_source || item?.source || "Source";
+    }
+
+    function publishedLabel(item){
+      const value = item?.published_at || item?.event_date || "";
+      if(!value) return "";
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString();
+    }
+
+    function activeFilters(){
+      return {
+        query: document.getElementById("searchBox").value.trim() || null,
+        market: document.getElementById("marketFilter").value,
+        instrument: document.getElementById("instrumentFilter").value,
+        source: document.getElementById("sourceFilter").value
+      };
+    }
+
     function hasActiveSearch(){
-      return document.getElementById("searchBox").value.trim() !== "" ||
-             document.getElementById("marketFilter").value !== "all" ||
-             document.getElementById("instrumentFilter").value !== "all" ||
-             document.getElementById("sourceFilter").value !== "all";
+      const f = activeFilters();
+      return Boolean(f.query || f.market !== "all" || f.instrument !== "all" || f.source !== "all");
     }
 
-    function dedupeArticles(items){
-      const seen = new Set();
-      const output = [];
-
-      items.forEach(item => {
-        const key = `${String(item.link || "").toLowerCase()}__${String(item.title || "").toLowerCase()}`;
-
-        if(!item.title || seen.has(key)) return;
-
-        seen.add(key);
-        output.push(item);
-      });
-
-      return output;
+    function populateMarketOptions(markets){
+      const values = Array.isArray(markets) ? markets : [];
+      document.getElementById("marketFilter").innerHTML =
+        [`<option value="all">All Markets</option>`]
+          .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(marketLabels[v] || v)}</option>`))
+          .join("");
     }
 
-    function populateInstrumentOptions(){
-      const market = document.getElementById("marketFilter").value;
-      const instruments = market === "all" ? allInstruments() : (instrumentGroups[market] || []);
-
+    function populateInstrumentOptions(instruments){
+      const values = Array.isArray(instruments) ? instruments : [];
       document.getElementById("instrumentFilter").innerHTML =
         [`<option value="all">All Instruments</option>`]
-          .concat(instruments.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
+          .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`))
           .join("");
     }
 
-    function populateSourceOptions(){
-      const sources = [...new Set(allArticles.map(item => item.source).filter(Boolean))].sort();
-
+    function populateSourceOptions(sources){
+      const values = Array.isArray(sources) ? sources : [];
       document.getElementById("sourceFilter").innerHTML =
         [`<option value="all">All Sources</option>`]
-          .concat(sources.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`))
+          .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`))
           .join("");
     }
 
-    function filteredHeadlines(){
-      const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
-      const market = document.getElementById("marketFilter").value;
-      const instrument = document.getElementById("instrumentFilter").value;
-      const source = document.getElementById("sourceFilter").value;
-
-      return allArticles.filter(item => {
-        const text = [
-          item.title || "",
-          item.description || "",
-          item.source || "",
-          item.published || "",
-          ...(item.markets || []),
-          ...(item.instruments || [])
-        ].join(" ").toLowerCase();
-
-        const marketOk = market === "all" || (item.markets || []).includes(market);
-        const instrumentOk = instrument === "all" || itemInstrumentNames(item).includes(normalizeInstrumentName(instrument));
-        const sourceOk = source === "all" || item.source === source;
-        const keywordOk = !keyword || text.includes(keyword);
-
-        return marketOk && instrumentOk && sourceOk && keywordOk;
-      }).sort((a,b) => sourceRank(a) - sourceRank(b) || publishedTime(b) - publishedTime(a) || Number(b.relevance_score || 0) - Number(a.relevance_score || 0));
+    async function invokeArchive(body){
+      if(!window.psdSupabase?.functions?.invoke) throw new Error("Supabase client is unavailable.");
+      const { data, error } = await window.psdSupabase.functions.invoke("market-archive-search-v2", { body });
+      if(error) throw error;
+      if(!data?.ok) throw new Error(data?.error || "Archive request failed.");
+      return data;
     }
 
-    function renderSourceSummary(headlines){
+    function relevantHeadlineCount(){
+      if(window.PSDCore){
+        return window.PSDCore.getHeadlineCount("relevantHeadlines", dashboardData, null, null);
+      }
+      return Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines.length : 0;
+    }
+
+    function updateCountNote(){
+      const archiveCount = Number(archiveMeta?.total_news_articles || 0);
+      const relevantCount = relevantHeadlineCount();
+      const showing = allArticles.length;
+      if(hasActiveSearch()){
+        document.getElementById("resultsCount").textContent =
+          `News & Articles matched: ${currentTotal.toLocaleString()}. Showing ${showing.toLocaleString()}. ` +
+          `Full News & Articles Archive: ${archiveCount.toLocaleString()}. Relevant Headlines: ${relevantCount.toLocaleString()}.`;
+      }else{
+        document.getElementById("resultsCount").textContent =
+          `News & Articles Archive: ${archiveCount.toLocaleString()}. Showing latest ${showing.toLocaleString()}. ` +
+          `Relevant Headlines: ${relevantCount.toLocaleString()}.`;
+      }
+    }
+
+    function renderSourceSummary(items){
       const box = document.getElementById("sourceSummary");
       const list = document.getElementById("sourceSummaryList");
-
-      if(!hasActiveSearch()){
+      if(!hasActiveSearch() || !items.length){
         box.style.display = "none";
         list.innerHTML = "";
         return;
       }
-
-      const sourceNames = [...new Set(headlines.map(h => h.source).filter(Boolean))].sort();
-
-      if(!sourceNames.length){
-        box.style.display = "none";
-        list.innerHTML = "";
-        return;
-      }
-
+      const names = [...new Set(items.map(canonicalSource).filter(Boolean))].sort();
       box.style.display = "block";
-
-      list.innerHTML = sourceNames.map(name => {
-        const sample = headlines.find(h => h.source === name);
-        const url = sourceURL(name) || sample?.source_url || sample?.link || "#";
+      list.innerHTML = names.map(name => {
+        const sample = items.find(h => canonicalSource(h) === name);
+        const url = sourceURL(name) || sample?.url || "#";
         const icon = faviconForURL(url);
-
         return `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">
           ${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo">` : ""}
           <span>${escapeHTML(name)}</span>
@@ -808,116 +757,127 @@
       }).join("");
     }
 
-    function renderHeadlines(){
-      if(!dashboardData) return;
-
-      const headlines = filteredHeadlines();
-
-      renderSourceSummary(headlines);
-
-      const archiveCount = window.PSDCore
-        ? window.PSDCore.getHeadlineCount("newsArchive", dashboardData, null, newsCacheData)
-        : allArticles.length;
-      const relevantCount = window.PSDCore
-        ? window.PSDCore.getHeadlineCount("relevantHeadlines", dashboardData, null, newsCacheData)
-        : (Array.isArray(dashboardData?.top_headlines) ? dashboardData.top_headlines.length : 0);
-
-      document.getElementById("resultsCount").textContent = hasActiveSearch()
-        ? `Instrument Articles matched: ${headlines.length}. News Archive searched: ${archiveCount}. Relevant Headlines: ${relevantCount}.`
-        : `Showing ${headlines.length} article(s). News Archive: ${archiveCount}. Relevant Headlines: ${relevantCount}.`;
-
-      document.getElementById("headlineList").innerHTML = headlines.length
-        ? headlines.slice(0,300).map(item => {
-            const url = sourceURL(item.source) || item.source_url || item.link || "";
+    function renderArticles(){
+      renderSourceSummary(allArticles);
+      updateCountNote();
+      document.getElementById("headlineList").innerHTML = allArticles.length
+        ? allArticles.map(item => {
+            const name = canonicalSource(item);
+            const url = item?.url || "#";
             const icon = faviconForURL(url);
             const techLabel = headlineTech(item);
-
             return `
-              <a class="headline-card" href="${escapeHTML(item.link || "#")}" target="_blank" rel="noopener">
+              <a class="headline-card" href="${escapeHTML(url)}" target="_blank" rel="noopener">
                 <div class="headline-source-row">
-                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(item.source || "Source")} logo" loading="lazy" onerror="this.style.visibility='hidden'">` : ""}
-                  <div class="headline-source-name">${escapeHTML(item.source || "Source")}</div>
+                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(name)} logo" loading="lazy" onerror="this.style.visibility='hidden'">` : ""}
+                  <div class="headline-source-name">${escapeHTML(name)}</div>
                 </div>
-
                 <div class="headline-body">
                   <div class="headline-top">
                     <span class="tech-tag ${normalizeClass(techLabel)}">${escapeHTML(techLabel)}</span>
                     <span class="tag">${escapeHTML(item.vote || "Neutral")}</span>
                     <span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span>
                   </div>
-
                   <div class="headline-title">${escapeHTML(item.title || "Untitled headline")}</div>
-
                   <div class="headline-meta">
                     Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
                     Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}<br>
-                    ${escapeHTML(item.published || "")}
+                    ${escapeHTML(publishedLabel(item))}
                   </div>
-
                   <div class="headline-open">Open article →</div>
                 </div>
-              </a>
-            `;
+              </a>`;
           }).join("")
-        : `<div class="empty-card">No articles matched your search and filters. Try broader keywords or check again after the next hourly scrape.</div>`;
+        : `<div class="empty-card">No News & Articles matched your search and filters.</div>`;
+
+      let holder = document.getElementById("archiveLoadMore");
+      if(!holder){
+        holder = document.createElement("div");
+        holder.id = "archiveLoadMore";
+        holder.style.cssText = "display:flex;justify-content:center;margin:18px 0 4px;";
+        document.getElementById("headlineList").after(holder);
+      }
+      holder.innerHTML = allArticles.length < currentTotal
+        ? `<button class="btn" type="button" id="loadMoreBtn">Load 100 more</button>`
+        : "";
+      const button = document.getElementById("loadMoreBtn");
+      if(button) button.addEventListener("click", loadMore);
     }
 
-    function clearSearch(){
+    async function searchArchive(reset = true){
+      if(reset){
+        currentOffset = 0;
+        allArticles = [];
+      }
+      document.getElementById("headlineList").innerHTML = `<div class="empty-card">Searching the canonical News & Articles archive...</div>`;
+      const f = activeFilters();
+      const result = await invokeArchive({
+        action:"news", query:f.query, market:f.market, instrument:f.instrument,
+        source:f.source, limit:PAGE_SIZE, offset:currentOffset
+      });
+      const rows = Array.isArray(result.data) ? result.data : [];
+      currentTotal = Number(result.total_count || 0);
+      allArticles = reset ? rows : allArticles.concat(rows);
+      currentOffset = allArticles.length;
+      renderArticles();
+    }
+
+    async function loadMore(){
+      try{ await searchArchive(false); }
+      catch(error){ console.error(error); }
+    }
+
+    async function clearSearch(){
       document.getElementById("searchBox").value = "";
       document.getElementById("marketFilter").value = "all";
-      populateInstrumentOptions();
       document.getElementById("instrumentFilter").value = "all";
       document.getElementById("sourceFilter").value = "all";
-      renderHeadlines();
+      await searchArchive(true);
     }
 
     async function loadPage(){
       try{
-        const [dashboardRes, cacheRes, techRes] = await Promise.all([
-          fetch("dashboard_live.json", { cache:"no-store" }),
-          fetch("news_latest.json", { cache:"no-store" }).catch(() => null),
-          fetch("technical_data.json", { cache:"no-store" }).catch(() => null)
-        ]);
+        if(!window.PSDDataV2?.loadNewsArticlesPage) throw new Error("Parallel V2 data-access layer is unavailable.");
+        const pageData = await window.PSDDataV2.loadNewsArticlesPage();
+        dashboardData = pageData.dashboard;
+        technicalData = pageData.technical;
 
-        dashboardData = await dashboardRes.json();
-        technicalData = (techRes && techRes.ok) ? await techRes.json() : null;
+        const metaResult = await invokeArchive({ action:"metadata" });
+        archiveMeta = metaResult.data || {};
+        populateMarketOptions(archiveMeta.markets);
+        populateInstrumentOptions(archiveMeta.instruments);
+        populateSourceOptions(archiveMeta.sources);
 
-        let cacheItems = [];
+        window.__PSD_NEWS_ARCHIVE_V2__ = {
+          dataset_version: archiveMeta.dataset_version,
+          total_news_articles: archiveMeta.total_news_articles,
+          markets: archiveMeta.markets?.length || 0,
+          instruments: archiveMeta.instruments?.length || 0,
+          sources: archiveMeta.sources?.length || 0
+        };
 
-        if(cacheRes && cacheRes.ok){
-          newsCacheData = await cacheRes.json();
-          cacheItems = Array.isArray(newsCacheData.articles) ? newsCacheData.articles : [];
-        }
-
-        const latestItems = Array.isArray(dashboardData.top_headlines) ? dashboardData.top_headlines : [];
-
-        allArticles = dedupeArticles([...cacheItems, ...latestItems]);
-
-        populateInstrumentOptions();
-        populateSourceOptions();
-        renderHeadlines();
+        await searchArchive(true);
       }catch(error){
         console.error(error);
-        document.getElementById("headlineList").innerHTML = `<div class="empty-card">Published articles could not be loaded right now.</div>`;
+        document.getElementById("resultsCount").textContent = "Canonical News & Articles archive unavailable.";
+        document.getElementById("headlineList").innerHTML = `<div class="empty-card">News & Articles could not be loaded right now.</div>`;
       }
     }
 
-    document.getElementById("marketFilter").addEventListener("change", () => {
-      populateInstrumentOptions();
-      renderHeadlines();
+    document.querySelector(".news-search-actions .btn").onclick = () => searchArchive(true).catch(console.error);
+    document.querySelector(".news-search-actions .btn.secondary").onclick = () => clearSearch().catch(console.error);
+    document.getElementById("marketFilter").addEventListener("change", () => searchArchive(true).catch(console.error));
+    document.getElementById("instrumentFilter").addEventListener("change", () => searchArchive(true).catch(console.error));
+    document.getElementById("sourceFilter").addEventListener("change", () => searchArchive(true).catch(console.error));
+    document.getElementById("searchBox").addEventListener("keydown", event => {
+      if(event.key === "Enter") searchArchive(true).catch(console.error);
     });
 
-    document.getElementById("instrumentFilter").addEventListener("change", renderHeadlines);
-    document.getElementById("sourceFilter").addEventListener("change", renderHeadlines);
-    document.getElementById("searchBox").addEventListener("input", renderHeadlines);
-
     const pageUpBtn = document.getElementById("pageUpBtn");
-
     window.addEventListener("scroll", () => {
       if(window.scrollY > 500) pageUpBtn.classList.add("show");
       else pageUpBtn.classList.remove("show");
     });
-
     pageUpBtn.addEventListener("click", () => window.scrollTo({ top:0, behavior:"smooth" }));
 
     loadPage();
