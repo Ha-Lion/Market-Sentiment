@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- V2 FULL-INVENTORY SAFETY: canonical specialty inventory is embedded; stale local config cannot shrink it. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -982,11 +983,12 @@
   </main>
 
   <script src="sentiment-core.js?v=6"></script>
-  <script src="category-page-core.js?v=7"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="category-page-core-v2.js?v=1"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v7 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core-v2.js did not load.");
     }
     const {
       clamp,
@@ -1046,21 +1048,46 @@
 
   <script>
     let ENERGY_ITEMS = [
-      {name:"US Dollar Index / DXY", dataKey:"US Dollar / DXY", symbol:"DXY", aliases:["dxy","us dollar index","dollar index","usd index"], historyKeys:["US Dollar / DXY","US Dollar Index / DXY","DXY"], official:true},
-      {name:"EUR/USD", dataKey:"EUR / EURUSD", symbol:"EURUSD", aliases:["eurusd","eur/usd","euro dollar","euro vs dollar"], historyKeys:["EUR / EURUSD","EURUSD","EUR/USD"], official:true},
-      {name:"USD/JPY", dataKey:"JPY / USDJPY", symbol:"USDJPY", aliases:["usdjpy","usd/jpy","dollar yen","yen"], historyKeys:["JPY / USDJPY","USDJPY","USD/JPY"], official:true},
-      {name:"GBP/USD", dataKey:"GBP / GBPUSD", symbol:"GBPUSD", aliases:["gbpusd","gbp/usd","sterling dollar","pound dollar"], historyKeys:["GBP / GBPUSD","GBPUSD","GBP/USD"], official:true},
-      {name:"USD/CNH", dataKey:"USD/CNH", symbol:"USDCNH", aliases:["usdcnh","usd/cnh","offshore yuan","offshore renminbi","chinese yuan","renminbi","yuan","cnh"], historyKeys:["USD/CNH","USDCNH"], official:true},
-      {name:"USD/CHF", dataKey:"CHF / USDCHF", symbol:"USDCHF", aliases:["usdchf","usd/chf","dollar swiss franc","swiss franc"], historyKeys:["CHF / USDCHF","USDCHF","USD/CHF"], official:true},
-      {name:"USD/CAD", dataKey:"CAD / USDCAD", symbol:"USDCAD", aliases:["usdcad","usd/cad","dollar canadian dollar","canadian dollar"], historyKeys:["CAD / USDCAD","USDCAD","USD/CAD"], official:true},
-      {name:"AUD/USD", dataKey:"AUD / AUDUSD", symbol:"AUDUSD", aliases:["audusd","aud/usd","australian dollar","aussie dollar"], historyKeys:["AUD / AUDUSD","AUDUSD","AUD/USD"], official:true},
-      {name:"NZD/USD", dataKey:"NZD / NZDUSD", symbol:"NZDUSD", aliases:["nzdusd","nzd/usd","new zealand dollar","kiwi dollar"], historyKeys:["NZD / NZDUSD","NZDUSD","NZD/USD"], official:true},
-      {name:"EUR/JPY", dataKey:"EURJPY", symbol:"EURJPY", aliases:["eurjpy","eur/jpy","euro yen"], historyKeys:["EURJPY","EUR/JPY"], official:true},
-      {name:"EUR/GBP", dataKey:"EURGBP", symbol:"EURGBP", aliases:["eurgbp","eur/gbp","euro sterling","euro pound"], historyKeys:["EURGBP","EUR/GBP"], official:true},
-      {name:"GBP/JPY", dataKey:"GBPJPY", symbol:"GBPJPY", aliases:["gbpjpy","gbp/jpy","sterling yen","pound yen"], historyKeys:["GBPJPY","GBP/JPY"], official:true},
-      {name:"USD/MXN", dataKey:"USDMXN", symbol:"USDMXN", aliases:["usdmxn","usd/mxn","mexican peso","peso"], historyKeys:["USDMXN","USD/MXN"], official:true},
-      {name:"USD/HKD", dataKey:"USD/HKD", symbol:"USDHKD", aliases:["usdhkd","usd/hkd","hong kong dollar","hkd"], historyKeys:["USD/HKD","USDHKD"], official:true},
-      {name:"USD/SGD", dataKey:"USD/SGD", symbol:"USDSGD", aliases:["usdsgd","usd/sgd","singapore dollar","sgd"], historyKeys:["USD/SGD","USDSGD"], official:true}
+      {name:"US Dollar / DXY", symbol:"DXY", aliases:["dxy", "us dollar", "dollar index", "usd index", "US Dollar / DXY", "DXY"], official:true, priority:1, historyKeys:["US Dollar / DXY", "DXY"]},
+      {name:"BXY", symbol:"BXY", aliases:["bxy", "british pound index", "sterling index", "pound currency index", "BXY"], official:false, priority:2, historyKeys:["BXY"]},
+      {name:"EXY", symbol:"EXY", aliases:["exy", "euro index", "euro currency index", "EXY"], official:false, priority:3, historyKeys:["EXY"]},
+      {name:"JXY", symbol:"JXY", aliases:["jxy", "japanese yen index", "yen index", "yen currency index", "JXY"], official:false, priority:4, historyKeys:["JXY"]},
+      {name:"EUR / EURUSD", symbol:"EURUSD", aliases:["eurusd", "eur/usd", "euro", "eur", "EUR / EURUSD", "EURUSD"], official:true, priority:5, historyKeys:["EUR / EURUSD", "EURUSD"]},
+      {name:"JPY / USDJPY", symbol:"USDJPY", aliases:["usdjpy", "usd/jpy", "yen", "jpy", "JPY / USDJPY", "USDJPY"], official:true, priority:6, historyKeys:["JPY / USDJPY", "USDJPY"]},
+      {name:"GBP / GBPUSD", symbol:"GBPUSD", aliases:["gbpusd", "gbp/usd", "pound", "gbp", "GBP / GBPUSD", "GBPUSD"], official:true, priority:7, historyKeys:["GBP / GBPUSD", "GBPUSD"]},
+      {name:"AUD / AUDUSD", symbol:"AUDUSD", aliases:["audusd", "aud/usd", "australian dollar", "aud", "AUD / AUDUSD", "AUDUSD"], official:true, priority:8, historyKeys:["AUD / AUDUSD", "AUDUSD"]},
+      {name:"SXY", symbol:"SXY", aliases:["sxy", "swiss franc index", "chf index", "swiss currency index", "SXY"], official:false, priority:9, historyKeys:["SXY"]},
+      {name:"CXY", symbol:"CXY", aliases:["cxy", "canadian dollar index", "cad index", "canadian currency index", "CXY"], official:false, priority:10, historyKeys:["CXY"]},
+      {name:"AXY", symbol:"AXY", aliases:["axy", "australian dollar index", "aud index", "australian currency index", "AXY"], official:false, priority:11, historyKeys:["AXY"]},
+      {name:"ZXY", symbol:"ZXY", aliases:["zxy", "new zealand dollar index", "nzd index", "new zealand currency index", "ZXY"], official:false, priority:12, historyKeys:["ZXY"]},
+      {name:"CAD / USDCAD", symbol:"USDCAD", aliases:["usdcad", "usd/cad", "canadian dollar", "cad", "CAD / USDCAD", "USDCAD"], official:true, priority:13, historyKeys:["CAD / USDCAD", "USDCAD"]},
+      {name:"CHF / USDCHF", symbol:"USDCHF", aliases:["usdchf", "usd/chf", "swiss franc", "chf", "CHF / USDCHF", "USDCHF"], official:true, priority:14, historyKeys:["CHF / USDCHF", "USDCHF"]},
+      {name:"USD/CNH", symbol:"USDCNH", aliases:["usdcnh", "usd/cnh", "offshore yuan", "offshore renminbi", "chinese yuan", "renminbi", "yuan", "cnh", "USD/CNH", "USDCNH"], official:false, priority:15, historyKeys:["USD/CNH", "USDCNH"]},
+      {name:"NZD / NZDUSD", symbol:"NZDUSD", aliases:["nzdusd", "nzd/usd", "new zealand dollar", "nzd", "NZD / NZDUSD", "NZDUSD"], official:true, priority:16, historyKeys:["NZD / NZDUSD", "NZDUSD"]},
+      {name:"EURJPY", symbol:"EURJPY", aliases:["eurjpy", "eur/jpy", "EURJPY"], official:true, priority:17, historyKeys:["EURJPY"]},
+      {name:"GBPJPY", symbol:"GBPJPY", aliases:["gbpjpy", "gbp/jpy", "GBPJPY"], official:false, priority:18, historyKeys:["GBPJPY"]},
+      {name:"EURGBP", symbol:"EURGBP", aliases:["eurgbp", "eur/gbp", "EURGBP"], official:false, priority:19, historyKeys:["EURGBP"]},
+      {name:"AUDJPY", symbol:"AUDJPY", aliases:["audjpy", "aud/jpy", "AUDJPY"], official:true, priority:20, historyKeys:["AUDJPY"]},
+      {name:"EURCHF", symbol:"EURCHF", aliases:["eurchf", "eur/chf", "EURCHF"], official:true, priority:21, historyKeys:["EURCHF"]},
+      {name:"USDMXN", symbol:"USDMXN", aliases:["usdmxn", "usd/mxn", "mexican peso", "USDMXN"], official:false, priority:22, historyKeys:["USDMXN"]},
+      {name:"EUR/AUD", symbol:"EURAUD", aliases:["euraud", "eur/aud", "EUR/AUD", "EURAUD"], official:false, priority:23, historyKeys:["EUR/AUD", "EURAUD"]},
+      {name:"GBP/AUD", symbol:"GBPAUD", aliases:["gbpaud", "gbp/aud", "GBP/AUD", "GBPAUD"], official:false, priority:24, historyKeys:["GBP/AUD", "GBPAUD"]},
+      {name:"CADJPY", symbol:"CADJPY", aliases:["cadjpy", "cad/jpy", "CADJPY"], official:true, priority:25, historyKeys:["CADJPY"]},
+      {name:"EURCAD", symbol:"EURCAD", aliases:["eurcad", "eur/cad", "EURCAD"], official:true, priority:26, historyKeys:["EURCAD"]},
+      {name:"AUDCAD", symbol:"AUDCAD", aliases:["audcad", "aud/cad", "AUDCAD"], official:true, priority:27, historyKeys:["AUDCAD"]},
+      {name:"AUDNZD", symbol:"AUDNZD", aliases:["audnzd", "aud/nzd", "AUDNZD"], official:true, priority:28, historyKeys:["AUDNZD"]},
+      {name:"GBP/CAD", symbol:"GBPCAD", aliases:["gbpcad", "gbp/cad", "GBP/CAD", "GBPCAD"], official:false, priority:29, historyKeys:["GBP/CAD", "GBPCAD"]},
+      {name:"GBP/CHF", symbol:"GBPCHF", aliases:["gbpchf", "gbp/chf", "GBP/CHF", "GBPCHF"], official:false, priority:30, historyKeys:["GBP/CHF", "GBPCHF"]},
+      {name:"GBP/NZD", symbol:"GBPNZD", aliases:["gbpnzd", "gbp/nzd", "GBP/NZD", "GBPNZD"], official:false, priority:31, historyKeys:["GBP/NZD", "GBPNZD"]},
+      {name:"CHF/JPY", symbol:"CHFJPY", aliases:["chfjpy", "chf/jpy", "CHF/JPY", "CHFJPY"], official:false, priority:32, historyKeys:["CHF/JPY", "CHFJPY"]},
+      {name:"NZDJPY", symbol:"NZDJPY", aliases:["nzdjpy", "nzd/jpy", "NZDJPY"], official:true, priority:33, historyKeys:["NZDJPY"]},
+      {name:"EUR/NZD", symbol:"EURNZD", aliases:["eurnzd", "eur/nzd", "EUR/NZD", "EURNZD"], official:false, priority:34, historyKeys:["EUR/NZD", "EURNZD"]},
+      {name:"NZD/CAD", symbol:"NZDCAD", aliases:["nzdcad", "nzd/cad", "NZD/CAD", "NZDCAD"], official:false, priority:35, historyKeys:["NZD/CAD", "NZDCAD"]},
+      {name:"AUD/CHF", symbol:"AUDCHF", aliases:["audchf", "aud/chf", "AUD/CHF", "AUDCHF"], official:false, priority:36, historyKeys:["AUD/CHF", "AUDCHF"]},
+      {name:"USD/NOK", symbol:"USDNOK", aliases:["usdnok", "usd/nok", "USD/NOK", "USDNOK"], official:false, priority:37, historyKeys:["USD/NOK", "USDNOK"]},
+      {name:"USD/SEK", symbol:"USDSEK", aliases:["usdsek", "usd/sek", "USD/SEK", "USDSEK"], official:false, priority:38, historyKeys:["USD/SEK", "USDSEK"]},
+      {name:"USD/SGD", symbol:"USDSGD", aliases:["usdsgd", "usd/sgd", "singapore dollar", "sgd", "USD/SGD", "USDSGD"], official:false, priority:39, historyKeys:["USD/SGD", "USDSGD"]},
+      {name:"USDZAR", symbol:"USDZAR", aliases:["usdzar", "usd/zar", "rand", "USDZAR"], official:true, priority:40, historyKeys:["USDZAR"]}
     ];
 
     let dashboardData = null;
@@ -1089,29 +1116,41 @@
     const ENERGY_EXCLUDE_TERMS=[];
 
     const CATEGORY_KEY = "forex";
-    const DEFAULT_TOP_N = 15;
+    const DEFAULT_TOP_N = 41;
 
     function assetsFromConfig(config, categoryKey, fallbackItems){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
-      const rows = assets
+      const configured = assets
         .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
         .map(asset => {
           const cat = categoryEntry(asset, categoryKey);
-          const dataKey = String(asset.data_key || asset.name || "").trim();
-          const displayName = String(asset.display_name || asset?.market_data?.label || asset.name || dataKey).trim();
           return {
-            name: displayName,
-            dataKey,
-            symbol: asset.symbol || displayName,
-            aliases: uniqueTerms([...(asset.aliases || []), displayName, dataKey, asset.name, asset.symbol]),
+            name: asset.name,
+            symbol: asset.symbol || asset.name,
+            aliases: uniqueTerms([...(asset.aliases || []), asset.name, asset.symbol]),
             official: false,
             priority: Number(cat?.priority || 999),
-            historyKeys: uniqueTerms([dataKey, asset.name, asset.symbol, ...(asset.history_keys || [])])
+            historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
-        })
-        .sort((a,b) => a.priority - b.priority)
-        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
-      return rows.length ? rows : fallbackItems;
+        });
+
+      // V2 safety rule: a stale/local config must never shrink the approved specialty inventory.
+      // Merge configured rows over the embedded canonical inventory and keep any config-only additions.
+      const keyOf = item => normalizeText(item?.name || item?.symbol || "");
+      const configuredMap = new Map(configured.map(item => [keyOf(item), item]));
+      const merged = fallbackItems.map((item,index) => {
+        const configuredItem = configuredMap.get(keyOf(item));
+        if(configuredItem){
+          configuredMap.delete(keyOf(item));
+          return {...item, ...configuredItem, aliases:uniqueTerms([...(item.aliases||[]), ...(configuredItem.aliases||[])]), historyKeys:uniqueTerms([...(item.historyKeys||[]), ...(configuredItem.historyKeys||[])])};
+        }
+        return {...item, priority:Number(item.priority || (index+1))};
+      });
+      configuredMap.forEach(item => merged.push(item));
+      merged.sort((a,b) => Number(a.priority||999) - Number(b.priority||999));
+      const configuredTopN = Number(config?.categories?.[categoryKey]?.default_top_n || 0);
+      const safeTopN = Math.max(fallbackItems.length, configuredTopN || 0);
+      return merged.slice(0, safeTopN || fallbackItems.length);
     }
 
     function applyAssetConfig(config){
