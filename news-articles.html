@@ -714,6 +714,21 @@
       return data;
     }
 
+    async function loadLatest100Fast(){
+      if(!window.psdSupabase?.rpc){
+        throw new Error("Supabase RPC client is unavailable.");
+      }
+
+      const { data, error } = await window.psdSupabase.rpc(
+        "get_market_news_latest100_v3_stage",
+        { p_limit: PAGE_SIZE }
+      );
+
+      if(error) throw error;
+
+      return Array.isArray(data) ? data : [];
+    }
+
     function relevantHeadlineCount(){
       if(window.PSDCore){
         return window.PSDCore.getHeadlineCount("relevantHeadlines", dashboardData, null, null);
@@ -837,30 +852,89 @@
 
     async function loadPage(){
       try{
-        if(!window.PSDDataV2?.loadNewsArticlesPage) throw new Error("Parallel V2 data-access layer is unavailable.");
-        const pageData = await window.PSDDataV2.loadNewsArticlesPage();
-        dashboardData = pageData.dashboard;
-        technicalData = pageData.technical;
+        if(!window.PSDDataV2?.loadLiveDashboard || !window.PSDDataV2?.loadTechnical){
+          throw new Error("V2 data-access layer is unavailable.");
+        }
 
-        const metaResult = await invokeArchive({ action:"metadata" });
-        archiveMeta = metaResult.data || {};
-        populateMarketOptions(archiveMeta.markets);
-        populateInstrumentOptions(archiveMeta.instruments);
-        populateSourceOptions(archiveMeta.sources);
+        document.getElementById("headlineList").innerHTML =
+          `<div class="empty-card">Loading latest News & Articles...</div>`;
 
-        window.__PSD_NEWS_ARCHIVE_V2__ = {
-          dataset_version: archiveMeta.dataset_version,
-          total_news_articles: archiveMeta.total_news_articles,
-          markets: archiveMeta.markets?.length || 0,
-          instruments: archiveMeta.instruments?.length || 0,
-          sources: archiveMeta.sources?.length || 0
-        };
+        // FIRST: fetch and render only the newest 100 canonical articles.
+        const rows = await loadLatest100Fast();
 
-        await searchArchive(true);
+        allArticles = rows;
+        currentOffset = rows.length;
+        currentTotal = rows.length;
+
+        renderArticles();
+
+        // SECOND: supporting information loads after the first 100 are visible.
+        const dashboardPromise = window.PSDDataV2
+          .loadLiveDashboard({ required:false, cache:"no-store" })
+          .catch(error => {
+            console.warn("Dashboard summary delayed/unavailable:", error);
+            return null;
+          });
+
+        const metadataPromise = invokeArchive({ action:"metadata" })
+          .catch(error => {
+            console.warn("Archive metadata delayed/unavailable:", error);
+            return null;
+          });
+
+        const technicalPromise = window.PSDDataV2
+          .loadTechnical()
+          .catch(error => {
+            console.warn("Technical data delayed/unavailable:", error);
+            return null;
+          });
+
+        Promise.all([dashboardPromise, metadataPromise]).then(([dashboard, metaResult]) => {
+          if(dashboard){
+            dashboardData = dashboard;
+          }
+
+          if(metaResult?.data){
+            archiveMeta = metaResult.data || {};
+
+            populateMarketOptions(archiveMeta.markets);
+            populateInstrumentOptions(archiveMeta.instruments);
+            populateSourceOptions(archiveMeta.sources);
+
+            currentTotal = Number(
+              archiveMeta.total_news_articles || currentTotal
+            );
+
+            window.__PSD_NEWS_ARCHIVE_V2__ = {
+              dataset_version: archiveMeta.dataset_version,
+              total_news_articles: archiveMeta.total_news_articles,
+              markets: archiveMeta.markets?.length || 0,
+              instruments: archiveMeta.instruments?.length || 0,
+              sources: archiveMeta.sources?.length || 0
+            };
+          }
+
+          renderArticles();
+        });
+
+        technicalPromise.then(technical => {
+          if(!technical) return;
+
+          technicalData = technical;
+
+          if(allArticles.length){
+            renderArticles();
+          }
+        });
+
       }catch(error){
         console.error(error);
-        document.getElementById("resultsCount").textContent = "Canonical News & Articles archive unavailable.";
-        document.getElementById("headlineList").innerHTML = `<div class="empty-card">News & Articles could not be loaded right now.</div>`;
+
+        document.getElementById("resultsCount").textContent =
+          "Canonical News & Articles archive unavailable.";
+
+        document.getElementById("headlineList").innerHTML =
+          `<div class="empty-card">News & Articles could not be loaded right now.</div>`;
       }
     }
 
