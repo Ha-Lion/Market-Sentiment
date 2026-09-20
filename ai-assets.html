@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- V2 FULL-INVENTORY SAFETY: canonical specialty inventory is embedded; stale local config cannot shrink it. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -982,11 +983,12 @@
   </main>
 
   <script src="sentiment-core.js?v=6"></script>
-  <script src="category-page-core.js?v=7"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="category-page-core-v2.js?v=1"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v7 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core-v2.js did not load.");
     }
     const {
       clamp,
@@ -1046,21 +1048,22 @@
 
   <script>
     let AI_ITEMS = [
-      {name:"NVIDIA / NVDA", symbol:"NVDA", aliases:["nvidia","nvda","nvidia stock","ai chips","gpu demand","blackwell chips","data center gpu","ai accelerator"], official:false},
-      {name:"Broadcom / AVGO", symbol:"AVGO", aliases:["broadcom","avgo","broadcom stock","ai networking","custom ai chips","ai accelerators","semiconductor networking"], official:false},
-      {name:"AMD / AMD", symbol:"AMD", aliases:["advanced micro devices","amd","amd stock","mi300","mi350","ai gpu","ai chips amd","data center accelerator"], official:false},
-      {name:"Micron / MU", symbol:"MU", aliases:["micron","mu stock","hbm memory","high bandwidth memory","ai memory","dram demand","memory chips"], official:false},
-      {name:"Taiwan Semiconductor / TSM", symbol:"TSM", aliases:["taiwan semiconductor","tsmc","tsm stock","chip foundry","advanced chips","ai chip manufacturing","semiconductor foundry"], official:false},
-      {name:"ASML / ASML", symbol:"ASML", aliases:["asml","asml stock","euv lithography","chip equipment","semiconductor equipment","advanced lithography"], official:false},
-      {name:"Microsoft / MSFT", symbol:"MSFT", aliases:["microsoft","msft","azure ai","copilot","openai microsoft","ai cloud","microsoft ai"], official:false},
-      {name:"Alphabet / GOOGL", symbol:"GOOGL", aliases:["alphabet","google","googl","gemini ai","google ai","ai search","google cloud ai","deepmind"], official:false},
-      {name:"Amazon / AMZN", symbol:"AMZN", aliases:["amazon","amzn","aws ai","amazon ai","bedrock ai","anthropic amazon","ai cloud aws"], official:false},
-      {name:"Meta / META", symbol:"META", aliases:["meta","meta platforms","meta stock","llama ai","meta ai","ai infrastructure","open source ai model"], official:false},
-      {name:"Palantir / PLTR", symbol:"PLTR", aliases:["palantir","pltr","aip platform","ai data analytics","government ai","enterprise ai platform"], official:false},
-      {name:"Oracle / ORCL", symbol:"ORCL", aliases:["oracle","orcl","oracle cloud","oci ai","ai cloud infrastructure","database ai"], official:false},
-      {name:"Arm / ARM", symbol:"ARM", aliases:["arm holdings","arm stock","arm chips","chip architecture","ai edge chips","mobile ai chips"], official:false},
-      {name:"Semiconductors / SMH", symbol:"SMH", aliases:["smh","semiconductor etf","semiconductors","chip stocks","ai chip stocks","semiconductor sector"], official:false},
-      {name:"AI ETF / AIQ", symbol:"AIQ", aliases:["aiq","aiq etf","artificial intelligence etf","ai etf","ai technology etf","global x artificial intelligence"], official:false}
+      {name:"NVIDIA / NVDA", symbol:"NVDA", aliases:["nvidia", "nvda", "nvidia stock", "ai chips", "gpu demand", "blackwell chips", "data center gpu", "ai accelerator", "NVIDIA / NVDA", "NVDA"], official:true, priority:1, historyKeys:["NVIDIA / NVDA", "NVDA"]},
+      {name:"Broadcom / AVGO", symbol:"AVGO", aliases:["broadcom", "avgo", "broadcom stock", "ai networking", "custom ai chips", "ai accelerators", "semiconductor networking", "Broadcom / AVGO", "AVGO"], official:true, priority:2, historyKeys:["Broadcom / AVGO", "AVGO"]},
+      {name:"AMD / AMD", symbol:"AMD", aliases:["advanced micro devices", "amd", "amd stock", "mi300", "mi350", "ai gpu", "ai chips amd", "data center accelerator", "AMD / AMD", "AMD"], official:true, priority:3, historyKeys:["AMD / AMD", "AMD"]},
+      {name:"Micron / MU", symbol:"MU", aliases:["micron", "mu stock", "hbm memory", "high bandwidth memory", "ai memory", "dram demand", "memory chips", "Micron / MU", "MU"], official:true, priority:4, historyKeys:["Micron / MU", "MU"]},
+      {name:"Taiwan Semiconductor / TSM", symbol:"TSM", aliases:["taiwan semiconductor", "tsmc", "tsm stock", "chip foundry", "advanced chips", "ai chip manufacturing", "semiconductor foundry", "Taiwan Semiconductor / TSM", "TSM"], official:true, priority:5, historyKeys:["Taiwan Semiconductor / TSM", "TSM"]},
+      {name:"ASML / ASML", symbol:"ASML", aliases:["asml", "asml stock", "euv lithography", "chip equipment", "semiconductor equipment", "advanced lithography", "ASML / ASML", "ASML"], official:true, priority:6, historyKeys:["ASML / ASML", "ASML"]},
+      {name:"Microsoft / MSFT", symbol:"MSFT", aliases:["microsoft", "msft", "azure ai", "copilot", "openai microsoft", "ai cloud", "microsoft ai", "Microsoft / MSFT", "MSFT"], official:true, priority:7, historyKeys:["Microsoft / MSFT", "MSFT"]},
+      {name:"Alphabet / GOOGL", symbol:"GOOGL", aliases:["alphabet", "google", "googl", "gemini ai", "google ai", "ai search", "google cloud ai", "deepmind", "Alphabet / GOOGL", "GOOGL"], official:true, priority:8, historyKeys:["Alphabet / GOOGL", "GOOGL"]},
+      {name:"Amazon / AMZN", symbol:"AMZN", aliases:["amazon", "amzn", "aws ai", "amazon ai", "bedrock ai", "anthropic amazon", "ai cloud aws", "Amazon / AMZN", "AMZN"], official:true, priority:9, historyKeys:["Amazon / AMZN", "AMZN"]},
+      {name:"Meta / META", symbol:"META", aliases:["meta", "meta platforms", "meta stock", "llama ai", "meta ai", "ai infrastructure", "open source ai model", "Meta / META", "META"], official:true, priority:10, historyKeys:["Meta / META", "META"]},
+      {name:"Palantir / PLTR", symbol:"PLTR", aliases:["palantir", "pltr", "aip platform", "ai data analytics", "government ai", "enterprise ai platform", "Palantir / PLTR", "PLTR"], official:true, priority:11, historyKeys:["Palantir / PLTR", "PLTR"]},
+      {name:"Oracle / ORCL", symbol:"ORCL", aliases:["orcl", "oracle cloud", "oci ai", "ai cloud infrastructure", "database ai", "Oracle / ORCL", "ORCL"], official:true, priority:12, historyKeys:["Oracle / ORCL", "ORCL"]},
+      {name:"Arm / ARM", symbol:"ARM", aliases:["arm holdings", "arm stock", "arm chips", "chip architecture", "ai edge chips", "mobile ai chips", "Arm / ARM", "ARM"], official:true, priority:13, historyKeys:["Arm / ARM", "ARM"]},
+      {name:"Semiconductors / SMH", symbol:"SMH", aliases:["smh", "semiconductor etf", "semiconductors", "chip stocks", "ai chip stocks", "semiconductor sector", "Semiconductors / SMH", "SMH"], official:true, priority:14, historyKeys:["Semiconductors / SMH", "SMH"]},
+      {name:"AI ETF / AIQ", symbol:"AIQ", aliases:["aiq", "aiq etf", "artificial intelligence etf", "ai etf", "ai technology etf", "global x artificial intelligence", "AI ETF / AIQ", "AIQ"], official:true, priority:15, historyKeys:["AI ETF / AIQ", "AIQ"]},
+      {name:"Arista Networks / ANET", symbol:"ANET", aliases:["arista networks", "anet", "ai networking", "data center networking", "Arista Networks / ANET", "ANET"], official:false, priority:16, historyKeys:["Arista Networks / ANET", "ANET"]}
     ];
 
     let dashboardData = null;
@@ -1130,11 +1133,11 @@
     ];
 
     const CATEGORY_KEY = "ai_assets";
-    const DEFAULT_TOP_N = 15;
+    const DEFAULT_TOP_N = 16;
 
     function assetsFromConfig(config, categoryKey, fallbackItems){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
-      const rows = assets
+      const configured = assets
         .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
         .map(asset => {
           const cat = categoryEntry(asset, categoryKey);
@@ -1146,10 +1149,25 @@
             priority: Number(cat?.priority || 999),
             historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
-        })
-        .sort((a,b) => a.priority - b.priority)
-        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
-      return rows.length ? rows : fallbackItems;
+        });
+
+      // V2 safety rule: a stale/local config must never shrink the approved specialty inventory.
+      // Merge configured rows over the embedded canonical inventory and keep any config-only additions.
+      const keyOf = item => normalizeText(item?.name || item?.symbol || "");
+      const configuredMap = new Map(configured.map(item => [keyOf(item), item]));
+      const merged = fallbackItems.map((item,index) => {
+        const configuredItem = configuredMap.get(keyOf(item));
+        if(configuredItem){
+          configuredMap.delete(keyOf(item));
+          return {...item, ...configuredItem, aliases:uniqueTerms([...(item.aliases||[]), ...(configuredItem.aliases||[])]), historyKeys:uniqueTerms([...(item.historyKeys||[]), ...(configuredItem.historyKeys||[])])};
+        }
+        return {...item, priority:Number(item.priority || (index+1))};
+      });
+      configuredMap.forEach(item => merged.push(item));
+      merged.sort((a,b) => Number(a.priority||999) - Number(b.priority||999));
+      const configuredTopN = Number(config?.categories?.[categoryKey]?.default_top_n || 0);
+      const safeTopN = Math.max(fallbackItems.length, configuredTopN || 0);
+      return merged.slice(0, safeTopN || fallbackItems.length);
     }
 
     function applyAssetConfig(config){
