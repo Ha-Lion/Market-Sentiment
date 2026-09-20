@@ -2194,6 +2194,7 @@
   </main>
 
   <script src="sentiment-core.js"></script>
+  <script src="data-access-v2.js"></script>
 
   <script>
     let dashboardData = null;
@@ -2457,18 +2458,10 @@
     }
 
     async function loadPrioritySources(){
-      const candidates = ["sources-v2.txt", "sources.json"];
-
-      for(const file of candidates){
-        try{
-          const response = await fetch(file, {cache:"no-store"});
-          if(!response.ok) continue;
-
-          const data = await response.json();
-          if(Array.isArray(data) && data.length) return data.filter(source => source && source.name && source.url);
-        }catch(error){}
+      if(window.PSDDataV2 && window.PSDDataV2.loadPrioritySources){
+        const result = await window.PSDDataV2.loadPrioritySources();
+        return result.data;
       }
-
       return [];
     }
 
@@ -2588,17 +2581,18 @@
 
     async function loadPage(){
       try{
-        const [dashboardRes, statusRes, technicalRes, priorityResult] = await Promise.all([
-          fetch("dashboard_live.json", {cache:"no-store"}),
-          fetch("status.json", {cache:"no-store"}).catch(() => null),
-          fetch("technical_data.json", {cache:"no-store"}).catch(() => null),
-          loadPrioritySources()
-        ]);
+        if(!window.PSDDataV2 || !window.PSDDataV2.loadHomePage){
+          throw new Error("Parallel V2 data-access layer is unavailable.");
+        }
 
-        dashboardData = await dashboardRes.json();
-        statusData = (statusRes && statusRes.ok) ? await statusRes.json() : null;
-        technicalData = (technicalRes && technicalRes.ok) ? await technicalRes.json() : null;
-        prioritySources = Array.isArray(priorityResult) ? priorityResult : [];
+        const pageData = await window.PSDDataV2.loadHomePage();
+        dashboardData = pageData.dashboard;
+        statusData = pageData.status;
+        technicalData = pageData.technical;
+        prioritySources = pageData.prioritySources;
+
+        /* LAB audit hook only. Does not alter displayed values. */
+        window.__PSD_DATA_AUDIT__ = pageData.meta;
 
         renderTopInstruments();
         renderScore(dashboardData);
