@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- V2 FULL-INVENTORY SAFETY: canonical specialty inventory is embedded; stale local config cannot shrink it. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -983,11 +984,14 @@
   </main>
 
   <script src="sentiment-core.js?v=6"></script>
-  <script src="category-page-core.js?v=7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="category-page-core-v2.js?v=1"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v7 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core-v2.js did not load.");
     }
     const {
       clamp,
@@ -1047,16 +1051,22 @@
 
   <script>
     let INDEX_ITEMS = [
-      {name:"S&P 500 / ES", symbol:"S&P", aliases:["s&p 500","sp 500","s&p","spx","es futures","s&p futures","s&p 500 futures"], official:true},
-      {name:"Nasdaq / NQ", symbol:"Nasdaq", aliases:["nasdaq","nasdaq 100","nasdaq futures","nq futures","ndx","tech index"], official:true},
-      {name:"Dow / YM", symbol:"Dow", aliases:["dow","dow jones","dow futures","ym futures","djia"], official:true},
-      {name:"Russell / RTY", symbol:"Russell", aliases:["russell","russell 2000","rty futures","small caps","small-cap index"], official:true},
-      {name:"VIX", symbol:"VIX", aliases:["vix","volatility index","market volatility","fear gauge"], official:true},
-      {name:"DAX", symbol:"DAX", aliases:["dax","germany dax","german stocks","de40"], official:true},
-      {name:"FTSE 100", symbol:"FTSE", aliases:["ftse","ftse 100","uk stocks","london stocks","uk100"], official:true},
-      {name:"Nikkei 225", symbol:"Nikkei", aliases:["nikkei","nikkei 225","japan stocks","japanese stocks"], official:true},
-      {name:"Hang Seng", symbol:"HSI", aliases:["hang seng","hsi","hong kong stocks","hk stocks"], official:true},
-      {name:"Euro Stoxx 50", symbol:"Stoxx", aliases:["euro stoxx","euro stoxx 50","stoxx 50","european stocks"], official:true}
+      {name:"S&P 500 / ES", symbol:"S&P", aliases:["s&p 500", "sp 500", "s&p", "spx", "es futures", "s&p futures", "s&p 500 futures", "S&P 500 / ES", "S&P"], official:true, priority:1, historyKeys:["S&P 500 / ES", "S&P"]},
+      {name:"Nasdaq / NQ", symbol:"Nasdaq", aliases:["nasdaq", "nasdaq 100", "nasdaq futures", "nq futures", "ndx", "tech index", "Nasdaq / NQ", "Nasdaq"], official:true, priority:2, historyKeys:["Nasdaq / NQ", "Nasdaq"]},
+      {name:"Dow / YM", symbol:"Dow", aliases:["dow", "dow jones", "dow futures", "ym futures", "djia", "Dow / YM", "Dow"], official:true, priority:3, historyKeys:["Dow / YM", "Dow"]},
+      {name:"Russell / RTY", symbol:"Russell", aliases:["russell", "russell 2000", "rty futures", "small caps", "small-cap index", "Russell / RTY", "Russell"], official:true, priority:4, historyKeys:["Russell / RTY", "Russell"]},
+      {name:"VIX", symbol:"VIX", aliases:["vix", "volatility index", "market volatility", "fear gauge", "VIX"], official:true, priority:5, historyKeys:["VIX"]},
+      {name:"DAX", symbol:"DAX", aliases:["dax", "germany dax", "german stocks", "de40", "DAX"], official:true, priority:6, historyKeys:["DAX"]},
+      {name:"FTSE 100", symbol:"FTSE", aliases:["ftse", "ftse 100", "uk stocks", "london stocks", "uk100", "FTSE 100", "FTSE"], official:true, priority:7, historyKeys:["FTSE 100", "FTSE"]},
+      {name:"Nikkei 225", symbol:"Nikkei", aliases:["nikkei", "nikkei 225", "japan stocks", "japanese stocks", "Nikkei 225", "Nikkei"], official:true, priority:8, historyKeys:["Nikkei 225", "Nikkei"]},
+      {name:"Hang Seng", symbol:"HSI", aliases:["hang seng", "hsi", "hong kong stocks", "hk stocks", "Hang Seng", "HSI"], official:true, priority:9, historyKeys:["Hang Seng", "HSI"]},
+      {name:"Euro Stoxx 50", symbol:"Stoxx", aliases:["euro stoxx", "euro stoxx 50", "stoxx 50", "european stocks", "Euro Stoxx 50", "Stoxx"], official:true, priority:10, historyKeys:["Euro Stoxx 50", "Stoxx"]},
+      {name:"CAC 40", symbol:"CAC 40", aliases:["cac", "cac 40", "CAC 40"], official:true, priority:11, historyKeys:["CAC 40"]},
+      {name:"CSI 300", symbol:"CSI300", aliases:["csi 300", "csi300", "china a shares", "mainland china stocks", "CSI 300", "CSI300"], official:false, priority:12, historyKeys:["CSI 300", "CSI300"]},
+      {name:"TSX Composite", symbol:"TSX", aliases:["tsx", "tsx composite", "s&p/tsx composite", "canada stocks", "TSX Composite", "TSX"], official:false, priority:13, historyKeys:["TSX Composite", "TSX"]},
+      {name:"ASX 200", symbol:"ASX200", aliases:["asx 200", "asx200", "australia 200", "australian stocks", "ASX 200", "ASX200"], official:false, priority:14, historyKeys:["ASX 200", "ASX200"]},
+      {name:"Nifty 50", symbol:"NIFTY50", aliases:["nifty 50", "nifty50", "india nifty", "indian stocks", "Nifty 50", "NIFTY50"], official:false, priority:15, historyKeys:["Nifty 50", "NIFTY50"]},
+      {name:"KOSPI", symbol:"KOSPI", aliases:["kospi", "south korea stocks", "korean stocks", "KOSPI"], official:false, priority:16, historyKeys:["KOSPI"]}
     ];
 
     let dashboardData = null;
@@ -1075,6 +1085,44 @@
     let comparisonSyncMode = "pair";
     let comparisonSyncCleanup = [];
 
+    // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
+    const canonicalHistoryByName = new Map();
+    const canonicalHistoryFailures = new Set();
+
+    async function waitForPsdSupabase(timeoutMs = 8000){
+      const started = Date.now();
+      while(Date.now() - started < timeoutMs){
+        if(window.psdSupabase?.functions?.invoke) return window.psdSupabase;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return null;
+    }
+
+    async function loadCanonicalInstrumentHistory(name){
+      if(canonicalHistoryByName.has(name)) return canonicalHistoryByName.get(name);
+      if(canonicalHistoryFailures.has(name)) return null;
+      try{
+        const client = await waitForPsdSupabase();
+        if(!client) throw new Error("Supabase client unavailable");
+        const { data, error } = await client.functions.invoke("market-archive-search-v2", {
+          body: { action: "instrument_history", asset: name, limit: 1000 }
+        });
+        if(error) throw error;
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        if(!rows.length) throw new Error(`No canonical history found for ${name}`);
+        canonicalHistoryByName.set(name, rows);
+        return rows;
+      }catch(error){
+        console.warn("Canonical instrument history unavailable; compact JSON fallback retained.", name, error);
+        canonicalHistoryFailures.add(name);
+        return null;
+      }
+    }
+
+    function canonicalHistoryRows(name){
+      return canonicalHistoryByName.get(name) || null;
+    }
+
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
     }
@@ -1085,11 +1133,11 @@
     const INDEX_EXCLUDE_TERMS=[];
 
     const CATEGORY_KEY = "indices";
-    const DEFAULT_TOP_N = 15;
+    const DEFAULT_TOP_N = 16;
 
     function assetsFromConfig(config, categoryKey, fallbackItems){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
-      const rows = assets
+      const configured = assets
         .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
         .map(asset => {
           const cat = categoryEntry(asset, categoryKey);
@@ -1101,10 +1149,25 @@
             priority: Number(cat?.priority || 999),
             historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
-        })
-        .sort((a,b) => a.priority - b.priority)
-        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
-      return rows.length ? rows : fallbackItems;
+        });
+
+      // V2 safety rule: a stale/local config must never shrink the approved specialty inventory.
+      // Merge configured rows over the embedded canonical inventory and keep any config-only additions.
+      const keyOf = item => normalizeText(item?.name || item?.symbol || "");
+      const configuredMap = new Map(configured.map(item => [keyOf(item), item]));
+      const merged = fallbackItems.map((item,index) => {
+        const configuredItem = configuredMap.get(keyOf(item));
+        if(configuredItem){
+          configuredMap.delete(keyOf(item));
+          return {...item, ...configuredItem, aliases:uniqueTerms([...(item.aliases||[]), ...(configuredItem.aliases||[])]), historyKeys:uniqueTerms([...(item.historyKeys||[]), ...(configuredItem.historyKeys||[])])};
+        }
+        return {...item, priority:Number(item.priority || (index+1))};
+      });
+      configuredMap.forEach(item => merged.push(item));
+      merged.sort((a,b) => Number(a.priority||999) - Number(b.priority||999));
+      const configuredTopN = Number(config?.categories?.[categoryKey]?.default_top_n || 0);
+      const safeTopN = Math.max(fallbackItems.length, configuredTopN || 0);
+      return merged.slice(0, safeTopN || fallbackItems.length);
     }
 
     function applyAssetConfig(config){
@@ -1244,8 +1307,19 @@
     }
 
     function marketSeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        const rows = canonical.map(row => {
+          const close = Number(row?.payload?.technical?.daily?.close);
+          const date = String(row?.event_date || "").slice(0,10);
+          return date && Number.isFinite(close) ? {date, value:close, source:"supabase_canonical"} : null;
+        }).filter(Boolean);
+        if(rows.length) return rows;
+      }
       const item=INDEX_ITEMS.find(x=>x.name===name);
-      return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
+      return (technicalForItem(item)?.daily_history||[])
+        .map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close),source:"compact_json_fallback"}))
+        .filter(point=>point.date&&Number.isFinite(point.value));
     }
 
     function marketDirection(name){
@@ -1406,12 +1480,28 @@
     function proxyHistoryRowForAI(record,item){ return null; }
 
     function dailySeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        return canonical.map(row => {
+          const payload = row?.payload || {};
+          const value = Number(payload?.psi);
+          const count = Number(payload?.headline_count || payload?.classified_headline_count || 0);
+          if(!row?.event_date || !Number.isFinite(value) || count <= 0) return null;
+          return {
+            date:String(row.event_date).slice(0,10),
+            label:String(row.event_date).slice(0,10),
+            value,
+            count,
+            sentiment:String(payload?.sentiment_label || row?.global_sentiment_label || "No PSI"),
+            source:"supabase_canonical"
+          };
+        }).filter(Boolean);
+      }
+
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
       const item = INDEX_ITEMS.find(x => x.name === name);
-
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
-
         if(row && row.psi != null && Number(row.headline_count || 0) > 0){
           return {
             date:r.date,
@@ -1419,10 +1509,9 @@
             value:Number(row.psi),
             count:Number(row.headline_count || 0),
             sentiment:String(row.sentiment_label || "No PSI"),
-            source:"official"
+            source:"compact_json_fallback"
           };
         }
-
         return null;
       }).filter(Boolean);
     }
@@ -1471,7 +1560,7 @@
       card?.classList.remove("compare-view");
       syncMount.innerHTML="";
       grid.className="history-grid";
-      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
+      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;const canonicalActive=Boolean(canonicalHistoryRows(activeHistoryName)?.length);subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings • ${canonicalActive ? "Canonical Supabase history" : "Compact JSON fallback"}`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
       grid.innerHTML=`<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain Sentiment History" aria-expanded="false">i</button></h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain Market Price History" aria-expanded="false">i</button></h3><div class="market-chart-actions">${fullMarketChartLink(activeHistoryName)}<button class="chart-size" type="button" data-chart-size="market">Maximize</button></div></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-news" aria-label="Explain Latest News" aria-expanded="false">i</button></h3><div class="history-news-list" id="historyNews"></div></section>`;
       document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
       try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
@@ -1479,6 +1568,21 @@
 
     document.addEventListener("keydown", e => {if(e.key!=="Escape")return;const expanded=document.querySelector(".pulse-chart-panel.expanded");if(expanded){expanded.classList.remove("expanded");const button=expanded.querySelector("[data-chart-size]");if(button)button.textContent="Maximize"}else closeHistory()});
     window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
+
+    const openHistoryLegacyV2 = openHistory;
+    const openCompareHistoryLegacyV2 = openCompareHistory;
+
+    async function openHistoryCanonicalV2(name){
+      await loadCanonicalInstrumentHistory(name);
+      openHistoryLegacyV2(name);
+    }
+
+    async function openCompareHistoryCanonicalV2(){
+      if(selectedCompareNames.length === 2){
+        await Promise.all(selectedCompareNames.map(name => loadCanonicalInstrumentHistory(name)));
+      }
+      openCompareHistoryLegacyV2();
+    }
 
     async function init(){
       try{
@@ -1520,11 +1624,11 @@
       }
     }
 
-    window.openHistory = openHistory;
+    window.openHistory = openHistoryCanonicalV2;
     window.closeHistory = closeHistory;
     window.setHistoryPeriod = setHistoryPeriod;
     window.toggleCompare = toggleCompare;
-    window.openCompareHistory = openCompareHistory;
+    window.openCompareHistory = openCompareHistoryCanonicalV2;
 
     let aiResizeTimer = 0;
     window.addEventListener("resize",()=>{
