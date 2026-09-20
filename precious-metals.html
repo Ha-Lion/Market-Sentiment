@@ -983,11 +983,14 @@
   </main>
 
   <script src="sentiment-core.js?v=6"></script>
-  <script src="category-page-core.js?v=7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="category-page-core-v2.js?v=1"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v7 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core-v2.js did not load.");
     }
     const {
       clamp,
@@ -1074,6 +1077,44 @@
     const comparisonCharts = new Map();
     let comparisonSyncMode = "pair";
     let comparisonSyncCleanup = [];
+
+    // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
+    const canonicalHistoryByName = new Map();
+    const canonicalHistoryFailures = new Set();
+
+    async function waitForPsdSupabase(timeoutMs = 8000){
+      const started = Date.now();
+      while(Date.now() - started < timeoutMs){
+        if(window.psdSupabase?.functions?.invoke) return window.psdSupabase;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return null;
+    }
+
+    async function loadCanonicalInstrumentHistory(name){
+      if(canonicalHistoryByName.has(name)) return canonicalHistoryByName.get(name);
+      if(canonicalHistoryFailures.has(name)) return null;
+      try{
+        const client = await waitForPsdSupabase();
+        if(!client) throw new Error("Supabase client unavailable");
+        const { data, error } = await client.functions.invoke("market-archive-search-v2", {
+          body: { action: "instrument_history", asset: name, limit: 1000 }
+        });
+        if(error) throw error;
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        if(!rows.length) throw new Error(`No canonical history found for ${name}`);
+        canonicalHistoryByName.set(name, rows);
+        return rows;
+      }catch(error){
+        console.warn("Canonical instrument history unavailable; compact JSON fallback retained.", name, error);
+        canonicalHistoryFailures.add(name);
+        return null;
+      }
+    }
+
+    function canonicalHistoryRows(name){
+      return canonicalHistoryByName.get(name) || null;
+    }
 
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -1244,8 +1285,19 @@
     }
 
     function marketSeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        const rows = canonical.map(row => {
+          const close = Number(row?.payload?.technical?.daily?.close);
+          const date = String(row?.event_date || "").slice(0,10);
+          return date && Number.isFinite(close) ? {date, value:close, source:"supabase_canonical"} : null;
+        }).filter(Boolean);
+        if(rows.length) return rows;
+      }
       const item=METAL_ITEMS.find(x=>x.name===name);
-      return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
+      return (technicalForItem(item)?.daily_history||[])
+        .map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close),source:"compact_json_fallback"}))
+        .filter(point=>point.date&&Number.isFinite(point.value));
     }
 
     function marketDirection(name){
@@ -1403,12 +1455,28 @@
     function proxyHistoryRowForAI(record,item){ return null; }
 
     function dailySeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        return canonical.map(row => {
+          const payload = row?.payload || {};
+          const value = Number(payload?.psi);
+          const count = Number(payload?.headline_count || payload?.classified_headline_count || 0);
+          if(!row?.event_date || !Number.isFinite(value) || count <= 0) return null;
+          return {
+            date:String(row.event_date).slice(0,10),
+            label:String(row.event_date).slice(0,10),
+            value,
+            count,
+            sentiment:String(payload?.sentiment_label || row?.global_sentiment_label || "No PSI"),
+            source:"supabase_canonical"
+          };
+        }).filter(Boolean);
+      }
+
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
       const item = METAL_ITEMS.find(x => x.name === name);
-
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
-
         if(row && row.psi != null && Number(row.headline_count || 0) > 0){
           return {
             date:r.date,
@@ -1416,36 +1484,11 @@
             value:Number(row.psi),
             count:Number(row.headline_count || 0),
             sentiment:String(row.sentiment_label || "No PSI"),
-            source:"official"
+            source:"compact_json_fallback"
           };
         }
-
         return null;
       }).filter(Boolean);
-    }
-
-    function renderHistoryStats(series, name, mode, boxId = "historyStats"){
-      const box = document.getElementById(boxId);
-      if(!box) return;
-
-      if(!series.length){
-        box.innerHTML = `<div class="empty-note">No Engine-supplied history exists yet for ${esc(name)}. This will fill in as official historical PSI becomes available.</div>`;
-        return;
-      }
-
-      const latest = series[series.length - 1];
-      const avg = Math.round(series.reduce((a,x) => a + x.value, 0) / series.length);
-      const high = Math.max(...series.map(x => x.value));
-      const low = Math.min(...series.map(x => x.value));
-
-      box.innerHTML = `
-        <div class="history-stat"><span>Latest <button class="psd-glossary-info" type="button" data-pulse-glossary="current-sentiment" aria-label="Explain Latest Sentiment" aria-expanded="false">i</button></span><b>${latest.value}/100</b></div>
-        <div class="history-stat"><span>Average <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-average" aria-label="Explain Average Sentiment" aria-expanded="false">i</button></span><b>${avg}/100</b></div>
-        <div class="history-stat"><span>High</span><b>${high}/100</b></div>
-        <div class="history-stat"><span>Low</span><b>${low}/100</b></div>
-        <div class="history-stat"><span>Records <button class="psd-glossary-info" type="button" data-pulse-glossary="record-count" aria-label="Explain Record Count" aria-expanded="false">i</button></span><b>${series.length}</b></div>
-        <div class="history-stat"><span>View</span><b>${mode.charAt(0).toUpperCase()+mode.slice(1)}</b></div>
-      `;
     }
 
     function historyNewsFor(name){const item=METAL_ITEMS.find(x=>x.name===name);return priorityHeadlines(getCategoryHeadlines().filter(h=>itemMatchesHeadline(item,h)),12)}
@@ -1468,7 +1511,7 @@
       card?.classList.remove("compare-view");
       syncMount.innerHTML="";
       grid.className="history-grid";
-      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
+      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;const canonicalActive=Boolean(canonicalHistoryRows(activeHistoryName)?.length);subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings • ${canonicalActive ? "Canonical Supabase history" : "Compact JSON fallback"}`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
       grid.innerHTML=`<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain Sentiment History" aria-expanded="false">i</button></h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain Market Price History" aria-expanded="false">i</button></h3><div class="market-chart-actions">${fullMarketChartLink(activeHistoryName)}<button class="chart-size" type="button" data-chart-size="market">Maximize</button></div></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-news" aria-label="Explain Latest News" aria-expanded="false">i</button></h3><div class="history-news-list" id="historyNews"></div></section>`;
       document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
       try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
@@ -1476,6 +1519,21 @@
 
     document.addEventListener("keydown", e => {if(e.key!=="Escape")return;const expanded=document.querySelector(".pulse-chart-panel.expanded");if(expanded){expanded.classList.remove("expanded");const button=expanded.querySelector("[data-chart-size]");if(button)button.textContent="Maximize"}else closeHistory()});
     window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
+
+    const openHistoryLegacyV2 = openHistory;
+    const openCompareHistoryLegacyV2 = openCompareHistory;
+
+    async function openHistoryCanonicalV2(name){
+      await loadCanonicalInstrumentHistory(name);
+      openHistoryLegacyV2(name);
+    }
+
+    async function openCompareHistoryCanonicalV2(){
+      if(selectedCompareNames.length === 2){
+        await Promise.all(selectedCompareNames.map(name => loadCanonicalInstrumentHistory(name)));
+      }
+      openCompareHistoryLegacyV2();
+    }
 
     async function init(){
       try{
@@ -1517,11 +1575,11 @@
       }
     }
 
-    window.openHistory = openHistory;
+    window.openHistory = openHistoryCanonicalV2;
     window.closeHistory = closeHistory;
     window.setHistoryPeriod = setHistoryPeriod;
     window.toggleCompare = toggleCompare;
-    window.openCompareHistory = openCompareHistory;
+    window.openCompareHistory = openCompareHistoryCanonicalV2;
 
     let aiResizeTimer = 0;
     window.addEventListener("resize",()=>{
