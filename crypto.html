@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- V2 FULL-INVENTORY SAFETY: canonical specialty inventory is embedded; stale local config cannot shrink it. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -952,11 +953,12 @@
   </main>
 
   <script src="sentiment-core.js?v=6"></script>
-  <script src="category-page-core.js?v=7"></script>
+  <script src="data-access-v2.js"></script>
+  <script src="category-page-core-v2.js?v=1"></script>
   <script>
     const PSDCategoryCore = window.PSDCategoryCore;
     if (!PSDCategoryCore) {
-      throw new Error("PublicSentimentDash: category-page-core.js v7 did not load.");
+      throw new Error("PublicSentimentDash: category-page-core-v2.js did not load.");
     }
     const {
       clamp,
@@ -1016,28 +1018,30 @@
 
   <script>
     let CRYPTO_ITEMS = [
-      {name:"Bitcoin / BTC", symbol:"BTC", aliases:["bitcoin","btc"], official:true},
-      {name:"Ethereum / ETH", symbol:"ETH", aliases:["ethereum","eth"], official:true},
-      {name:"BNB", symbol:"BNB", aliases:["bnb","binance coin"], official:true},
-      {name:"XRP", symbol:"XRP", aliases:["xrp","ripple"], official:true},
-      {name:"Solana / SOL", symbol:"SOL", aliases:["solana","sol"], official:true},
-      {name:"TRON / TRX", symbol:"TRX", aliases:["tron","trx","tron network","tron blockchain","tron dao","justin sun"], official:true},
-      {name:"Hyperliquid / HYPE", symbol:"HYPE", aliases:["hyperliquid","hyperliquid token","hyperliquid exchange","hyperliquid dex"], official:true},
-      {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin","doge"], official:true},
-      {name:"Cardano / ADA", symbol:"ADA", aliases:["cardano","ada"], official:true},
-      {name:"Chainlink / LINK", symbol:"LINK", aliases:["chainlink","link","chainlink oracle","oracle network"], official:true},
-      {name:"Litecoin / LTC", symbol:"LTC", aliases:["litecoin","ltc"], official:true},
-      {name:"Avalanche / AVAX", symbol:"AVAX", aliases:["avalanche","avax","avalanche blockchain","avalanche network"], official:true},
-      {name:"Bitcoin Cash / BCH", symbol:"BCH", aliases:["bitcoin cash","bch"], official:true},
-      {name:"Sui / SUI", symbol:"SUI", aliases:["sui","sui network","sui blockchain","sui token","mysten labs"], official:true},
-      {name:"Hedera / HBAR", symbol:"HBAR", aliases:["hedera","hbar","hedera hashgraph","hedera network"], official:true},
-      {name:"Uniswap / UNI", symbol:"UNI", aliases:["uniswap","uni","uniswap token","uniswap dex"], official:true},
-      {name:"Shiba Inu / SHIB", symbol:"SHIB", aliases:["shiba inu","shib","shiba"], official:true},
-      {name:"Polkadot / DOT", symbol:"DOT", aliases:["polkadot","dot","polkadot network","polkadot ecosystem"], official:true},
-      {name:"General Crypto", symbol:"Crypto", aliases:["crypto","cryptocurrency","digital assets","altcoin","altcoins","blockchain","token"], official:true},
-      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf","bitcoin etf","ethereum etf","etf flows","spot etf","outflows","inflows"], official:true},
-      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation","cryptocurrency regulation","sec","stablecoin regulation","digital asset regulation","tokenization","crypto rules","digital assets regulation"], official:true},
-      {name:"Stablecoins / Depeg Risk", symbol:"Stablecoins", aliases:["stablecoin","stablecoins","stablecoin market","stablecoin depeg","depeg","usdt","tether","usdc","usd coin","stablecoin reserves","stablecoin redemption","stablecoin mint"], official:true}
+      {name:"Bitcoin / BTC", symbol:"BTC", aliases:["bitcoin", "btc", "Bitcoin / BTC", "BTC"], official:true, priority:1, historyKeys:["Bitcoin / BTC", "BTC"]},
+      {name:"Ethereum / ETH", symbol:"ETH", aliases:["ethereum", "eth", "Ethereum / ETH", "ETH"], official:true, priority:2, historyKeys:["Ethereum / ETH", "ETH"]},
+      {name:"BNB", symbol:"BNB", aliases:["bnb", "binance coin", "BNB"], official:true, priority:3, historyKeys:["BNB"]},
+      {name:"XRP", symbol:"XRP", aliases:["xrp", "ripple", "XRP"], official:true, priority:4, historyKeys:["XRP"]},
+      {name:"Solana / SOL", symbol:"SOL", aliases:["solana", "sol", "Solana / SOL", "SOL"], official:true, priority:5, historyKeys:["Solana / SOL", "SOL"]},
+      {name:"TRON / TRX", symbol:"TRX", aliases:["tron", "trx", "tron network", "tron blockchain", "tron dao", "justin sun", "TRON / TRX", "TRX"], official:false, priority:6, historyKeys:["TRON / TRX", "TRX"]},
+      {name:"Hyperliquid / HYPE", symbol:"HYPE", aliases:["hyperliquid", "hyperliquid token", "hyperliquid exchange", "hyperliquid dex", "Hyperliquid / HYPE", "HYPE"], official:false, priority:7, historyKeys:["Hyperliquid / HYPE", "HYPE"]},
+      {name:"Dogecoin / DOGE", symbol:"DOGE", aliases:["dogecoin", "doge", "Dogecoin / DOGE", "DOGE"], official:true, priority:8, historyKeys:["Dogecoin / DOGE", "DOGE"]},
+      {name:"Cardano / ADA", symbol:"ADA", aliases:["cardano", "ada", "Cardano / ADA", "ADA"], official:true, priority:9, historyKeys:["Cardano / ADA", "ADA"]},
+      {name:"Chainlink / LINK", symbol:"LINK", aliases:["chainlink", "link", "chainlink oracle", "oracle network", "Chainlink / LINK", "LINK"], official:false, priority:10, historyKeys:["Chainlink / LINK", "LINK"]},
+      {name:"Litecoin / LTC", symbol:"LTC", aliases:["litecoin", "ltc", "Litecoin / LTC", "LTC"], official:false, priority:11, historyKeys:["Litecoin / LTC", "LTC"]},
+      {name:"Avalanche / AVAX", symbol:"AVAX", aliases:["avalanche", "avax", "avalanche blockchain", "avalanche network", "Avalanche / AVAX", "AVAX"], official:false, priority:12, historyKeys:["Avalanche / AVAX", "AVAX"]},
+      {name:"Bitcoin Cash / BCH", symbol:"BCH", aliases:["bitcoin cash", "bch", "Bitcoin Cash / BCH", "BCH"], official:false, priority:13, historyKeys:["Bitcoin Cash / BCH", "BCH"]},
+      {name:"Sui / SUI", symbol:"SUI", aliases:["sui", "sui network", "sui blockchain", "sui token", "mysten labs", "Sui / SUI", "SUI"], official:false, priority:14, historyKeys:["Sui / SUI", "SUI"]},
+      {name:"Hedera / HBAR", symbol:"HBAR", aliases:["hedera", "hbar", "hedera hashgraph", "hedera network", "Hedera / HBAR", "HBAR"], official:false, priority:15, historyKeys:["Hedera / HBAR", "HBAR"]},
+      {name:"Uniswap / UNI", symbol:"UNI", aliases:["uniswap", "uni", "uniswap token", "uniswap dex", "Uniswap / UNI", "UNI"], official:false, priority:16, historyKeys:["Uniswap / UNI", "UNI"]},
+      {name:"Shiba Inu / SHIB", symbol:"SHIB", aliases:["shiba inu", "shib", "shiba", "Shiba Inu / SHIB", "SHIB"], official:false, priority:17, historyKeys:["Shiba Inu / SHIB", "SHIB"]},
+      {name:"Polkadot / DOT", symbol:"DOT", aliases:["polkadot", "dot", "polkadot network", "polkadot ecosystem", "Polkadot / DOT", "DOT"], official:false, priority:18, historyKeys:["Polkadot / DOT", "DOT"]},
+      {name:"Monero / XMR", symbol:"XMR", aliases:["xmr", "monero / xmr", "Monero / XMR", "XMR"], official:true, priority:19, historyKeys:["Monero / XMR", "XMR"]},
+      {name:"Stellar / XLM", symbol:"XLM", aliases:["xlm", "stellar / xlm", "Stellar / XLM", "XLM"], official:true, priority:20, historyKeys:["Stellar / XLM", "XLM"]},
+      {name:"General Crypto", symbol:"Crypto", aliases:["crypto", "cryptocurrency", "digital assets", "altcoin", "altcoins", "blockchain", "token", "General Crypto", "Crypto"], official:false, priority:21, historyKeys:["General Crypto", "Crypto"]},
+      {name:"Crypto ETFs / Flows", symbol:"ETF", aliases:["crypto etf", "bitcoin etf", "ethereum etf", "etf flows", "spot etf", "Crypto ETFs / Flows", "ETF"], official:false, priority:22, historyKeys:["Crypto ETFs / Flows", "ETF"]},
+      {name:"Crypto Regulation", symbol:"Regulation", aliases:["crypto regulation", "cryptocurrency regulation", "sec crypto", "stablecoin regulation", "digital asset regulation", "tokenization", "crypto rules", "Crypto Regulation", "Regulation"], official:false, priority:23, historyKeys:["Crypto Regulation", "Regulation"]},
+      {name:"Stablecoins / Depeg Risk", symbol:"Stablecoins", aliases:["stablecoin", "stablecoins", "stablecoin market", "stablecoin depeg", "depeg", "usdt", "tether", "usdc", "usd coin", "stablecoin reserves", "stablecoin redemption", "stablecoin mint", "Stablecoins / Depeg Risk", "Stablecoins"], official:false, priority:24, historyKeys:["Stablecoins / Depeg Risk", "Stablecoins"]}
     ];
 
     let dashboardData = null;
@@ -1056,6 +1060,44 @@
     let comparisonSyncMode = "pair";
     let comparisonSyncCleanup = [];
 
+    // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
+    const canonicalHistoryByName = new Map();
+    const canonicalHistoryFailures = new Set();
+
+    async function waitForPsdSupabase(timeoutMs = 8000){
+      const started = Date.now();
+      while(Date.now() - started < timeoutMs){
+        if(window.psdSupabase?.functions?.invoke) return window.psdSupabase;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return null;
+    }
+
+    async function loadCanonicalInstrumentHistory(name){
+      if(canonicalHistoryByName.has(name)) return canonicalHistoryByName.get(name);
+      if(canonicalHistoryFailures.has(name)) return null;
+      try{
+        const client = await waitForPsdSupabase();
+        if(!client) throw new Error("Supabase client unavailable");
+        const { data, error } = await client.functions.invoke("market-archive-search-v2", {
+          body: { action: "instrument_history", asset: name, limit: 1000 }
+        });
+        if(error) throw error;
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        if(!rows.length) throw new Error(`No canonical history found for ${name}`);
+        canonicalHistoryByName.set(name, rows);
+        return rows;
+      }catch(error){
+        console.warn("Canonical instrument history unavailable; compact JSON fallback retained.", name, error);
+        canonicalHistoryFailures.add(name);
+        return null;
+      }
+    }
+
+    function canonicalHistoryRows(name){
+      return canonicalHistoryByName.get(name) || null;
+    }
+
     function esc(v){
       return String(v ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
     }
@@ -1066,11 +1108,11 @@
     const CRYPTO_EXCLUDE_TERMS=[];
 
     const CATEGORY_KEY = "crypto";
-    const DEFAULT_TOP_N = 22;
+    const DEFAULT_TOP_N = 24;
 
     function assetsFromConfig(config, categoryKey, fallbackItems){
       const assets = Array.isArray(config?.assets) ? config.assets : [];
-      const rows = assets
+      const configured = assets
         .filter(asset => asset?.enabled !== false && categoryEntry(asset, categoryKey))
         .map(asset => {
           const cat = categoryEntry(asset, categoryKey);
@@ -1082,10 +1124,25 @@
             priority: Number(cat?.priority || 999),
             historyKeys: uniqueTerms([asset.name, asset.symbol, ...(asset.history_keys || [])])
           };
-        })
-        .sort((a,b) => a.priority - b.priority)
-        .slice(0, Number(config?.categories?.[categoryKey]?.default_top_n || DEFAULT_TOP_N));
-      return rows.length ? rows : fallbackItems;
+        });
+
+      // V2 safety rule: a stale/local config must never shrink the approved specialty inventory.
+      // Merge configured rows over the embedded canonical inventory and keep any config-only additions.
+      const keyOf = item => normalizeText(item?.name || item?.symbol || "");
+      const configuredMap = new Map(configured.map(item => [keyOf(item), item]));
+      const merged = fallbackItems.map((item,index) => {
+        const configuredItem = configuredMap.get(keyOf(item));
+        if(configuredItem){
+          configuredMap.delete(keyOf(item));
+          return {...item, ...configuredItem, aliases:uniqueTerms([...(item.aliases||[]), ...(configuredItem.aliases||[])]), historyKeys:uniqueTerms([...(item.historyKeys||[]), ...(configuredItem.historyKeys||[])])};
+        }
+        return {...item, priority:Number(item.priority || (index+1))};
+      });
+      configuredMap.forEach(item => merged.push(item));
+      merged.sort((a,b) => Number(a.priority||999) - Number(b.priority||999));
+      const configuredTopN = Number(config?.categories?.[categoryKey]?.default_top_n || 0);
+      const safeTopN = Math.max(fallbackItems.length, configuredTopN || 0);
+      return merged.slice(0, safeTopN || fallbackItems.length);
     }
 
     function applyAssetConfig(config){
@@ -1229,8 +1286,19 @@
     }
 
     function marketSeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        const rows = canonical.map(row => {
+          const close = Number(row?.payload?.technical?.daily?.close);
+          const date = String(row?.event_date || "").slice(0,10);
+          return date && Number.isFinite(close) ? {date, value:close, source:"supabase_canonical"} : null;
+        }).filter(Boolean);
+        if(rows.length) return rows;
+      }
       const item=CRYPTO_ITEMS.find(x=>x.name===name);
-      return (technicalForItem(item)?.daily_history||[]).map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close)})).filter(point=>point.date&&Number.isFinite(point.value));
+      return (technicalForItem(item)?.daily_history||[])
+        .map(point=>({date:String(point.date||"").slice(0,10),value:Number(point.close),source:"compact_json_fallback"}))
+        .filter(point=>point.date&&Number.isFinite(point.value));
     }
 
     function marketDirection(name){
@@ -1376,23 +1444,36 @@
     function proxyHistoryRowForAI(record,item){ return null; }
 
     function dailySeries(name){
+      const canonical = canonicalHistoryRows(name);
+      if(Array.isArray(canonical) && canonical.length){
+        return canonical.map(row => {
+          const payload = row?.payload || {};
+          const value = Number(payload?.psi);
+          const count = Number(payload?.headline_count || payload?.classified_headline_count || 0);
+          if(!row?.event_date || !Number.isFinite(value) || count <= 0) return null;
+          return {
+            date:String(row.event_date).slice(0,10),
+            label:String(row.event_date).slice(0,10),
+            value,
+            count,
+            sentiment:String(payload?.sentiment_label || row?.global_sentiment_label || "No PSI"),
+            source:"supabase_canonical"
+          };
+        }).filter(Boolean);
+      }
+
       const records = Array.isArray(historyData?.records) ? historyData.records : [];
       const item = CRYPTO_ITEMS.find(x => x.name === name);
-
       return records.map(r => {
         const row = historyInstrumentRow(r, item, name);
-
         if(row && row.psi != null && Number(row.headline_count || 0) > 0){
           return {
-            date:r.date,
-            label:r.date,
-            value:Number(row.psi),
+            date:r.date, label:r.date, value:Number(row.psi),
             count:Number(row.headline_count || 0),
             sentiment:String(row.sentiment_label || "No PSI"),
-            source:"official"
+            source:"compact_json_fallback"
           };
         }
-
         return null;
       }).filter(Boolean);
     }
@@ -1441,7 +1522,7 @@
       card?.classList.remove("compare-view");
       syncMount.innerHTML="";
       grid.className="history-grid";
-      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
+      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;const canonicalActive=Boolean(canonicalHistoryRows(activeHistoryName)?.length);subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings • ${canonicalActive ? "Canonical Supabase history" : "Compact JSON fallback"}`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
       grid.innerHTML=`<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI)</h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History</h3><div class="market-chart-actions">${fullMarketChartLink(activeHistoryName)}<button class="chart-size" type="button" data-chart-size="market">Maximize</button></div></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News</h3><div class="history-news-list" id="historyNews"></div></section>`;
       document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
       try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
@@ -1449,6 +1530,21 @@
 
     document.addEventListener("keydown", e => {if(e.key!=="Escape")return;const expanded=document.querySelector(".pulse-chart-panel.expanded");if(expanded){expanded.classList.remove("expanded");const button=expanded.querySelector("[data-chart-size]");if(button)button.textContent="Maximize"}else closeHistory()});
     window.addEventListener("psd-theme-change",()=>{if(document.getElementById("historyLayer")?.classList.contains("open"))setTimeout(renderHistory,20)});
+
+    const openHistoryLegacyV2 = openHistory;
+    const openCompareHistoryLegacyV2 = openCompareHistory;
+
+    async function openHistoryCanonicalV2(name){
+      await loadCanonicalInstrumentHistory(name);
+      openHistoryLegacyV2(name);
+    }
+
+    async function openCompareHistoryCanonicalV2(){
+      if(selectedCompareNames.length === 2){
+        await Promise.all(selectedCompareNames.map(name => loadCanonicalInstrumentHistory(name)));
+      }
+      openCompareHistoryLegacyV2();
+    }
 
     async function init(){
       try{
@@ -1490,11 +1586,11 @@
       }
     }
 
-    window.openHistory = openHistory;
+    window.openHistory = openHistoryCanonicalV2;
     window.closeHistory = closeHistory;
     window.setHistoryPeriod = setHistoryPeriod;
     window.toggleCompare = toggleCompare;
-    window.openCompareHistory = openCompareHistory;
+    window.openCompareHistory = openCompareHistoryCanonicalV2;
 
     let aiResizeTimer = 0;
     window.addEventListener("resize",()=>{
