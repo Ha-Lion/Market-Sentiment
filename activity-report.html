@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css?v=20">
-  <link rel="stylesheet" href="activity-report.css?v=15">
+  <link rel="stylesheet" href="activity-report.css?v=16">
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
 </head>
 <body class="admin-locked">
@@ -89,11 +89,77 @@
     </section>
 
 
-    <section id="x-refresh-panel" class="admin-panel x-refresh-panel">
+
+    <section id="automation-controls" class="admin-panel automation-controls">
+      <div class="panel-heading automation-heading">
+        <div>
+          <h2>Automation Controls</h2>
+          <span class="muted">Engine schedules · America/New_York</span>
+        </div>
+        <span id="engine-control-state" class="state-pill">Loading</span>
+      </div>
+
+      <div class="automation-grid">
+
+        <div class="automation-card">
+          <div class="automation-card-head">
+            <div>
+              <strong>Engine V2</strong>
+              <small>Core scraping + PSI production</small>
+            </div>
+            <input id="engine-control-enabled" type="checkbox">
+          </div>
+
+          <div class="automation-inline">
+            <span>Every</span>
+            <input
+              id="engine-control-every"
+              type="number"
+              min="1"
+              max="24"
+              step="1"
+              value="2"
+            >
+            <span>hours at</span>
+            <span>:</span>
+            <input
+              id="engine-control-minute"
+              type="number"
+              min="0"
+              max="59"
+              step="1"
+              value="17"
+            >
+          </div>
+        </div>
+
+
+        <div class="automation-card">
+          <div class="automation-card-head">
+            <div>
+              <strong>AI Analysis</strong>
+              <small>Scheduled AI intelligence</small>
+            </div>
+            <input id="ai-control-enabled" type="checkbox">
+          </div>
+
+          <div class="automation-times-head">
+            <span>Run times</span>
+            <button type="button"
+                    class="automation-add-time"
+                    data-automation-add-time="ai">+ Time</button>
+          </div>
+
+          <div id="ai-control-times"
+               class="automation-times"></div>
+        </div>
+
+
+      <div id="x-refresh-panel" class="automation-card automation-x-card">
       <div class="panel-heading">
         <div>
-          <h2>X Updates</h2>
-          <span class="muted">Controls how often X data is collected</span>
+          <h3>X Signals</h3>
+          <span class="muted">Website and private X collection</span>
         </div>
         <span id="x-refresh-state" class="state-pill">Loading</span>
       </div>
@@ -273,6 +339,78 @@
       </div>
 
       <div id="x-refresh-status" class="admin-status" role="status"></div>
+    </div>
+
+
+
+        <div class="automation-card">
+          <div class="automation-card-head">
+            <div>
+              <strong>Health Monitor</strong>
+              <small>System health + alerts</small>
+            </div>
+            <input id="health-control-enabled" type="checkbox">
+          </div>
+
+          <div class="automation-times-head">
+            <span>Run times</span>
+            <button type="button"
+                    class="automation-add-time"
+                    data-automation-add-time="health">+ Time</button>
+          </div>
+
+          <div id="health-control-times"
+               class="automation-times"></div>
+        </div>
+
+
+        <div class="automation-card">
+          <div class="automation-card-head">
+            <div>
+              <strong>Archive Bridge</strong>
+              <small>R2 → Supabase news search</small>
+            </div>
+            <input id="bridge-control-enabled" type="checkbox">
+          </div>
+
+          <div class="automation-times-head">
+            <span>Run times</span>
+            <button type="button"
+                    class="automation-add-time"
+                    data-automation-add-time="bridge">+ Time</button>
+          </div>
+
+          <div id="bridge-control-times"
+               class="automation-times"></div>
+        </div>
+
+      </div>
+
+      <div class="automation-footer">
+        <div>
+          <span class="muted">Timezone</span>
+          <strong>America/New_York</strong>
+        </div>
+
+        <div class="control-actions">
+          <button id="engine-control-test"
+        type="button">
+  Test schedules
+</button>
+
+<button id="engine-control-save"
+                  class="primary"
+                  type="button">
+            Save Engine Controls
+          </button>
+          <span id="engine-control-saved"
+                class="muted"></span>
+        </div>
+      </div>
+
+      <div id="engine-control-status"
+           class="admin-status"
+           role="status"></div>
     </section>
 
     <section class="admin-panel operational-history-panel">
@@ -348,7 +486,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js?v=12"></script>
-  <script src="activity-report.js?v=17"></script>
+  <script src="activity-report.js?v=19"></script>
   <script src="vote-widget.js" defer></script>
   <script src="mobile/ribbon.js?v=2"></script>
 </body>

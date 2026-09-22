@@ -578,6 +578,475 @@
     );
   }
 
+
+
+  // ==========================================================
+  // UNIFIED ENGINE / AUTOMATION CONTROLS
+  // ==========================================================
+
+  function engineControlStatus(message,type){
+    const node=document.getElementById("engine-control-status");
+    if(!node)return;
+    node.textContent=message||"";
+    node.className="admin-status"+(type?" "+type:"");
+  }
+
+  function automationTimeHost(service){
+    return document.getElementById(service+"-control-times");
+  }
+
+  function addAutomationTime(service,value){
+    const host=automationTimeHost(service);
+    if(!host)return;
+
+    const row=document.createElement("div");
+    row.className="automation-time-row";
+
+    const input=document.createElement("input");
+    input.type="time";
+    input.className="automation-time-input";
+    input.value=value||"08:00";
+
+    const remove=document.createElement("button");
+    remove.type="button";
+    remove.className="automation-time-remove";
+    remove.textContent="×";
+    remove.title="Remove time";
+
+    remove.addEventListener("click",function(){
+      const rows=host.querySelectorAll(".automation-time-row");
+      if(rows.length<=1){
+        engineControlStatus(
+          "At least one run time is required.",
+          "error"
+        );
+        return;
+      }
+      row.remove();
+    });
+
+    row.append(input,remove);
+    host.appendChild(row);
+  }
+
+  function renderAutomationTimes(service,times,fallback){
+    const host=automationTimeHost(service);
+    if(!host)return;
+
+    host.replaceChildren();
+
+    const values=
+      Array.isArray(times)&&times.length
+        ? times
+        : fallback;
+
+    values.forEach(function(value){
+      addAutomationTime(service,value);
+    });
+  }
+
+  function collectAutomationTimes(service){
+    const host=automationTimeHost(service);
+    if(!host)return [];
+
+    return Array.from(
+      host.querySelectorAll(".automation-time-input")
+    )
+    .map(function(input){return input.value;})
+    .filter(Boolean)
+    .sort();
+  }
+
+  function renderEngineControlSettings(state){
+    state=state||{};
+
+    const engine=state.engine||{};
+    const ai=state.ai||{};
+    const health=state.health||{};
+    const bridge=state.bridge||{};
+
+    document.getElementById("engine-control-enabled").checked=
+      engine.enabled!==false;
+
+    document.getElementById("engine-control-every").value=
+      Number(engine.every_value)>=1
+        ? Number(engine.every_value)
+        : 2;
+
+    document.getElementById("engine-control-minute").value=
+      Number.isInteger(Number(engine.minute))
+        ? Number(engine.minute)
+        : 17;
+
+    document.getElementById("ai-control-enabled").checked=
+      ai.enabled!==false;
+
+    document.getElementById("health-control-enabled").checked=
+      health.enabled!==false;
+
+    document.getElementById("bridge-control-enabled").checked=
+      bridge.enabled!==false;
+
+    renderAutomationTimes(
+      "ai",
+      ai.schedule_times,
+      ["08:00","16:00"]
+    );
+
+    renderAutomationTimes(
+      "health",
+      health.schedule_times,
+      ["18:30"]
+    );
+
+    renderAutomationTimes(
+      "bridge",
+      bridge.schedule_times,
+      ["03:37","09:37","15:37","21:37"]
+    );
+
+    const pill=document.getElementById("engine-control-state");
+
+    const enabledCount=[
+      engine.enabled!==false,
+      ai.enabled!==false,
+      health.enabled!==false,
+      bridge.enabled!==false
+    ].filter(Boolean).length;
+
+    pill.textContent=
+      enabledCount===4
+        ? "All ON"
+        : enabledCount+" / 4 ON";
+
+    pill.className=
+      "state-pill "+(enabledCount?"on":"off");
+
+    const saved=document.getElementById("engine-control-saved");
+
+    saved.textContent=
+      state.updated_at
+        ? "Last saved "+
+          new Date(state.updated_at).toLocaleString()
+        : "";
+  }
+
+  async function loadEngineControlSettings(){
+    engineControlStatus("Loading automation controls…");
+
+    const result=await client.rpc(
+      "ms_get_engine_control_settings_v1"
+    );
+
+    if(result.error)throw result.error;
+
+    renderEngineControlSettings(result.data||{});
+
+    engineControlStatus(
+      "Automation controls ready",
+      "success"
+    );
+  }
+
+
+  function collectEngineControlSettings(){
+
+    return {
+      engine:{
+        enabled:
+          document.getElementById(
+            "engine-control-enabled"
+          ).checked,
+        mode:"every",
+        every_value:Number(
+          document.getElementById(
+            "engine-control-every"
+          ).value
+        ),
+        every_unit:"hours",
+        minute:Number(
+          document.getElementById(
+            "engine-control-minute"
+          ).value
+        )
+      },
+
+      ai:{
+        enabled:
+          document.getElementById(
+            "ai-control-enabled"
+          ).checked,
+        mode:"fixed_times",
+        schedule_times:
+          collectAutomationTimes("ai")
+      },
+
+      health:{
+        enabled:
+          document.getElementById(
+            "health-control-enabled"
+          ).checked,
+        mode:"fixed_times",
+        schedule_times:
+          collectAutomationTimes("health")
+      },
+
+      bridge:{
+        enabled:
+          document.getElementById(
+            "bridge-control-enabled"
+          ).checked,
+        mode:"fixed_times",
+        schedule_times:
+          collectAutomationTimes("bridge")
+      },
+
+      timezone:"America/New_York"
+    };
+  }
+
+
+  async function testEngineControlSettings(){
+
+    const button=document.getElementById(
+      "engine-control-test"
+    );
+
+    button.disabled=true;
+    button.textContent="Testing…";
+
+    engineControlStatus(
+      "Testing secure schedule connection…"
+    );
+
+    try{
+
+      const settings=
+        collectEngineControlSettings();
+
+      const result=await client.functions.invoke(
+        "engine-control-center-sync",
+        {
+          body:{
+            action:"preview",
+            settings:settings
+          }
+        }
+      );
+
+      if(result.error)throw result.error;
+
+      if(
+        !result.data ||
+        result.data.ok!==true
+      ){
+        throw new Error(
+          result.data?.error||
+          "Schedule test failed."
+        );
+      }
+
+      const changed=
+        result.data.summary?.changed_files||[];
+
+      engineControlStatus(
+        "Test passed. GitHub connection verified. "+
+        changed.length+
+        " workflow file(s) would change.",
+        "success"
+      );
+
+    }finally{
+      button.disabled=false;
+      button.textContent="Test schedules";
+    }
+  }
+
+  async function saveEngineControlSettings(){
+    const button=document.getElementById(
+      "engine-control-save"
+    );
+
+    const everyValue=Number(
+      document.getElementById(
+        "engine-control-every"
+      ).value
+    );
+
+    const minute=Number(
+      document.getElementById(
+        "engine-control-minute"
+      ).value
+    );
+
+    if(
+      !Number.isInteger(everyValue) ||
+      everyValue<1 ||
+      everyValue>24
+    ){
+      engineControlStatus(
+        "Engine interval must be between 1 and 24 hours.",
+        "error"
+      );
+      return;
+    }
+
+    if(
+      !Number.isInteger(minute) ||
+      minute<0 ||
+      minute>59
+    ){
+      engineControlStatus(
+        "Engine minute must be between 0 and 59.",
+        "error"
+      );
+      return;
+    }
+
+    const aiTimes=collectAutomationTimes("ai");
+    const healthTimes=collectAutomationTimes("health");
+    const bridgeTimes=collectAutomationTimes("bridge");
+
+    if(!aiTimes.length||!healthTimes.length||!bridgeTimes.length){
+      engineControlStatus(
+        "Each fixed schedule needs at least one time.",
+        "error"
+      );
+      return;
+    }
+
+    button.disabled=true;
+    button.textContent="Saving…";
+    engineControlStatus("Saving automation controls…");
+
+    try{
+      const settings={
+        engine:{
+          enabled:
+            document.getElementById(
+              "engine-control-enabled"
+            ).checked,
+          mode:"every",
+          every_value:everyValue,
+          every_unit:"hours",
+          minute:minute
+        },
+
+        ai:{
+          enabled:
+            document.getElementById(
+              "ai-control-enabled"
+            ).checked,
+          mode:"fixed_times",
+          schedule_times:aiTimes
+        },
+
+        health:{
+          enabled:
+            document.getElementById(
+              "health-control-enabled"
+            ).checked,
+          mode:"fixed_times",
+          schedule_times:healthTimes
+        },
+
+        bridge:{
+          enabled:
+            document.getElementById(
+              "bridge-control-enabled"
+            ).checked,
+          mode:"fixed_times",
+          schedule_times:bridgeTimes
+        },
+
+        timezone:"America/New_York"
+      };
+
+      engineControlStatus(
+        "Validating schedules…"
+      );
+
+      const preview=await client.functions.invoke(
+        "engine-control-center-sync",
+        {
+          body:{
+            action:"preview",
+            settings:settings
+          }
+        }
+      );
+
+      if(preview.error)throw preview.error;
+
+      if(
+        !preview.data ||
+        preview.data.ok!==true
+      ){
+        throw new Error(
+          preview.data?.error||
+          "Schedule validation failed."
+        );
+      }
+
+      engineControlStatus(
+        "Validation passed. Applying schedules…"
+      );
+
+      const result=await client.functions.invoke(
+        "engine-control-center-sync",
+        {
+          body:{
+            action:"apply",
+            settings:settings
+          }
+        }
+      );
+
+      if(result.error)throw result.error;
+
+      if(
+        !result.data ||
+        result.data.ok!==true
+      ){
+        throw new Error(
+          result.data?.error||
+          "Schedule update failed."
+        );
+      }
+
+      renderEngineControlSettings(
+        result.data.settings||settings
+      );
+
+      engineControlStatus(
+        "Automation controls saved.",
+        "success"
+      );
+
+    }finally{
+      button.disabled=false;
+      button.textContent="Save Engine Controls";
+    }
+  }
+
+  function wireEngineControlSettings(){
+    document.querySelectorAll(
+      "[data-automation-add-time]"
+    ).forEach(function(button){
+
+      button.addEventListener(
+        "click",
+        function(){
+          addAutomationTime(
+            button.dataset.automationAddTime,
+            "08:00"
+          );
+        }
+      );
+    });
+  }
+
+
   async function loadReport(){
     setStatus("Loading…");
     const results=await Promise.all([
@@ -1262,7 +1731,7 @@ function renderHealthHistory(history){
 
   async function initialize(){
     try{
-      const session=await requireOwner();if(!session)return;reveal();chooseRange(30);await Promise.all([loadReport(),loadHealth(),loadOperationalHistory(),loadXRefreshSettings()]);
+      const session=await requireOwner();if(!session)return;reveal();chooseRange(30);await Promise.all([loadReport(),loadHealth(),loadOperationalHistory(),loadXRefreshSettings(),loadEngineControlSettings()]);
     }catch(error){deny(error);}
   }
 
@@ -1282,7 +1751,35 @@ function renderHealthHistory(history){
     });
   });
 
+
+
+  document.getElementById("engine-control-test")
+    .addEventListener("click",function(){
+      testEngineControlSettings()
+        .catch(function(error){
+          engineControlStatus(
+            error.message||
+            "Schedule connection test failed.",
+            "error"
+          );
+        });
+    });
+
+  document.getElementById("engine-control-save")
+    .addEventListener("click",function(){
+      saveEngineControlSettings()
+        .catch(function(error){
+          engineControlStatus(
+            error.message||
+            "Automation controls could not be saved.",
+            "error"
+          );
+        });
+    });
+
   document.getElementById("admin-signout").addEventListener("click",async function(){await client.auth.signOut({scope:"local"});window.location.replace("index.html");});
+
+  wireEngineControlSettings();
 
   wireXScheduleControls();
 
