@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Public Sentiment Dash — Interactive Dashboard</title>
-  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, technical direction, radar comparison, skyline trend, and sentiment heatwave.">
+  <meta name="description" content="Interactive dashboard for comparing major instruments by public sentiment, user sentiment, headline activity, technical direction, PSI comparison, skyline trend, and sentiment heatwave.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/dashboard.html">
   <link rel="icon" type="image/png" href="logo.png">
@@ -2134,7 +2134,7 @@ select.lab-select.x-signals-select{
     </section>
 
     <div class="dashboard-period-row" aria-label="Dashboard time period">
-      <div class="dashboard-compare-copy">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, radar comparison, heatwave pressure, and strength ranking.</div>
+      <div class="dashboard-compare-copy">Compare up to 5 markets using PSI, user sentiment, technical direction, headline strength, skyline trends, PSI comparison, heatwave pressure, and strength ranking.</div>
       <div class="pill-row">
         <button class="tiny-pill active" type="button" data-period="daily">Daily</button>
         <button class="tiny-pill" type="button" data-period="weekly">Weekly</button>
@@ -2162,14 +2162,38 @@ select.lab-select.x-signals-select{
       <div class="panel lab-panel">
         <div class="panel-top">
           <div>
-            <h2>Radar Comparison</h2>
-            <div class="panel-kicker">Composite market scores are shown only when supplied by Engine V2. Browser-generated radar scores are disabled.</div>
+            <h2>PSI Comparison</h2>
+            <div class="panel-kicker">Compare the selected markets using the existing official PSI values for the active time period.</div>
           </div>
         </div>
-        <div class="radar-wrap">
-          <svg id="radarChart" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"></svg>
+
+        <div
+          id="psiCompareList"
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:16px;
+            padding:22px 18px 18px;
+          "
+        ></div>
+
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:0 18px 18px;
+            color:#8b949e;
+            font-size:11px;
+            font-weight:800;
+          "
+        >
+          <span>0</span>
+          <span>Bearish</span>
+          <span>50</span>
+          <span>Bullish</span>
+          <span>100</span>
         </div>
-        <div class="radar-legend" id="radarLegend"></div>
       </div>
     </section>
 
@@ -3489,32 +3513,99 @@ select.lab-select.x-signals-select{
     }
 
     function renderRadar(data){
-      const svg=document.getElementById("radarChart");
-      const legend=document.getElementById("radarLegend");
+      const box=document.getElementById("psiCompareList");
 
-      if(!svg) return;
+      if(!box) return;
 
-      const dark=document.body.classList.contains("dark-mode");
-      const text=dark?"#e6edf3":"#263b53";
-      const muted=dark?"#8b949e":"#667085";
+      const rows=data.slice(0,5).map((d,idx)=>{
+        const score=periodScoreFor(d);
 
-      svg.innerHTML=`
-        <circle cx="250" cy="250" r="162" fill="none" stroke="rgba(110,170,255,.16)" stroke-width="2"/>
-        <circle cx="250" cy="250" r="115" fill="none" stroke="rgba(110,170,255,.09)" stroke-width="1.5"/>
-        <circle cx="250" cy="250" r="68" fill="none" stroke="rgba(110,170,255,.07)" stroke-width="1"/>
-        <text x="250" y="226" fill="${text}" font-size="20" font-weight="900" text-anchor="middle">COMPOSITE RADAR N/A</text>
-        <text x="250" y="258" fill="${muted}" font-size="13" font-weight="800" text-anchor="middle">Browser-generated market scores are disabled</text>
-        <text x="250" y="282" fill="${muted}" font-size="11" font-weight="700" text-anchor="middle">Waiting for an Engine V2 composite metric</text>
-      `;
+        if(score==null){
+          return `
+            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr 52px;gap:12px;align-items:center;">
+              <div style="font-size:13px;font-weight:900;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${esc(d.name)}
+              </div>
 
-      if(legend){
-        legend.innerHTML=data.slice(0,5).map((d,idx)=>{
-          const p=periodScoreFor(d);
+              <div style="height:18px;border-radius:999px;background:rgba(139,148,158,.14);border:1px solid rgba(139,148,158,.22);position:relative;overflow:hidden;">
+              </div>
 
-          return `<span title="Engine PSI only"><i style="background:${lineColor(idx)};color:${lineColor(idx)}"></i>${esc(d.name)} • ${periodMetricLabel()} ${p??"--"}</span>`;
-        }).join("");
-      }
+              <div style="font-size:17px;font-weight:950;color:#8b949e;text-align:right;">
+                --
+              </div>
+            </div>
+          `;
+        }
+
+        const safe=clamp(Number(score),0,100);
+        const color=sentimentColor(safe);
+        const sentiment=label(safe);
+
+        return `
+          <div>
+            <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr 52px;gap:12px;align-items:center;">
+              <div style="min-width:0;">
+                <div style="font-size:13px;font-weight:900;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${esc(d.name)}
+                </div>
+
+                <div style="font-size:10px;font-weight:800;color:#8b949e;margin-top:2px;">
+                  ${esc(sentiment)}
+                </div>
+              </div>
+
+              <div
+                title="${esc(d.name)} ? ${periodMetricLabel()} PSI ${safe}"
+                style="
+                  height:20px;
+                  border-radius:999px;
+                  background:rgba(139,148,158,.14);
+                  border:1px solid rgba(139,148,158,.22);
+                  position:relative;
+                  overflow:hidden;
+                "
+              >
+                <div
+                  style="
+                    width:${safe}%;
+                    height:100%;
+                    border-radius:999px;
+                    background:${color};
+                    box-shadow:0 0 12px ${color}55;
+                    transition:width .35s ease;
+                  "
+                ></div>
+
+                <div
+                  style="
+                    position:absolute;
+                    left:50%;
+                    top:0;
+                    bottom:0;
+                    width:1px;
+                    background:rgba(255,255,255,.28);
+                  "
+                ></div>
+              </div>
+
+              <div
+                style="
+                  font-size:18px;
+                  font-weight:950;
+                  color:${color};
+                  text-align:right;
+                "
+              >
+                ${safe}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      box.innerHTML=rows.join("");
     }
+
     function heatLabels(){
       if(selectedPeriod === "weekly") return ["6D","5D","4D","3D","2D","1D","Now"];
       return ["11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","Now"];
@@ -4344,8 +4435,8 @@ select.lab-select.x-signals-select{
           text: "Shows how the Public Sentiment Index changed over time for the selected markets. Each colored line represents one market."
         },
         "radar-comparison": {
-          title: "Radar Comparison",
-          text: "Composite radar scoring is not generated in the browser. Current period PSI remains visible while the page waits for an Engine V2 composite metric."
+          title: "PSI Comparison",
+          text: "PSI Comparison displays the existing official PSI values for the selected markets and active period. It introduces no additional scoring model or composite calculation."
         },
         "sentiment-heatwave": {
           title: "Sentiment Heatwave",
