@@ -12,7 +12,6 @@
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css?v=20">
   <script src="sentiment-core.js?v=5"></script>
-  <script src="data-access-v2.js"></script>
 
   <style>
     .lab-wrap{width:100%;max-width:none;margin:0;padding:7px 12px 22px;box-sizing:border-box;min-height:calc(100vh - 170px)}
@@ -2381,8 +2380,14 @@ select.lab-select.x-signals-select{
 
     async function ensureXSignalsLabData(){
       try{
-        if(!window.PSDDataV2?.loadXSignals) return null;
-        xSignalsLabData = await window.PSDDataV2.loadXSignals();
+        const response = await fetch(
+          "x_signals_lab.json",
+          {cache:"no-cache"}
+        );
+
+        if(!response.ok) return null;
+
+        xSignalsLabData = await response.json();
         return xSignalsLabData;
       }
       catch(_error){
@@ -2515,10 +2520,8 @@ select.lab-select.x-signals-select{
     function ensureNewsLatestData(){
       if(newsLatestData) return Promise.resolve(newsLatestData);
       if(newsLatestLoadPromise) return newsLatestLoadPromise;
-      newsLatestLoadPromise = window.PSDDataV2?.loadNewsLatest
-        ? window.PSDDataV2.loadNewsLatest()
-        : Promise.resolve(null);
-      newsLatestLoadPromise = newsLatestLoadPromise
+      newsLatestLoadPromise = fetch("news_latest.json",{cache:"no-cache"})
+        .then(response => response.ok ? response.json() : null)
         .then(data => {
           if(data) newsLatestData = data;
           return newsLatestData;
@@ -3573,22 +3576,24 @@ select.lab-select.x-signals-select{
     async function load(){
       try{
         await ensureXSignalsLabData();
-        if(!window.PSDDataV2?.loadDashboardBase){
-          throw new Error("Parallel V2 data-access layer is unavailable.");
-        }
-        const base = await window.PSDDataV2.loadDashboardBase();
-        if(base.assetsConfig){
-          assetsConfigData = base.assetsConfig;
+        const [configRes, res, statusRes, instrumentHistoryRes] = await Promise.all([
+          fetch("assets_config.json",{cache:"no-cache"}).catch(() => null),
+          fetch("dashboard_live.json",{cache:"no-cache"}).catch(() => null),
+          fetch("status.json",{cache:"no-cache"}).catch(() => null),
+          fetch("instrument_history_compact.json",{cache:"no-cache"}).catch(() => null)
+        ]);
+        if(configRes && configRes.ok){
+          assetsConfigData = await configRes.json();
           loadInstrumentsFromConfig(assetsConfigData);
         }
-        dashboardData = base.dashboard || null;
-        statusData = base.status || null;
-        instrumentHistoryData = base.instrumentHistory || null;
+        if(res && res.ok) dashboardData = await res.json();
+        if(statusRes && statusRes.ok) statusData = await statusRes.json();
+        if(instrumentHistoryRes && instrumentHistoryRes.ok) instrumentHistoryData = await instrumentHistoryRes.json();
         technicalData = technicalSnapshotFromHistory(instrumentHistoryData);
         if(!technicalData){
-          technicalData = await window.PSDDataV2.loadTechnical();
+          const techFallback = await fetch("technical_data.json",{cache:"no-cache"}).catch(() => null);
+          if(techFallback && techFallback.ok) technicalData = await techFallback.json();
         }
-        window.__PSD_DASH_DATA_AUDIT__ = base.meta;
       }catch(e){}
       renderAll();
     }
@@ -4296,19 +4301,18 @@ select.lab-select.x-signals-select{
           if(assetsConfigData) loadDisplayNames(assetsConfigData);
 
           if(!state.history || !assetsConfigData || !state.technical){
-            const baseFallback = (!state.history || !assetsConfigData)
-              ? await window.PSDDataV2.loadDashboardBase()
-              : null;
-            if(!state.history && baseFallback?.instrumentHistory){
-              state.history = baseFallback.instrumentHistory;
+            const [historyResponse,configResponse,technicalResponse] = await Promise.all([
+              state.history ? null : fetch("instrument_history_compact.json",{cache:"no-cache"}),
+              assetsConfigData ? null : fetch("assets_config.json",{cache:"no-cache"}).catch(() => null),
+              state.technical ? null : fetch("technical_data.json",{cache:"no-cache"}).catch(() => null)
+            ]);
+
+            if(historyResponse){
+              if(!historyResponse.ok) throw new Error("HTTP " + historyResponse.status);
+              state.history = await historyResponse.json();
             }
-            if(!assetsConfigData && baseFallback?.assetsConfig){
-              assetsConfigData = baseFallback.assetsConfig;
-              loadDisplayNames(assetsConfigData);
-            }
-            if(!state.technical){
-              state.technical = await window.PSDDataV2.loadTechnical();
-            }
+            if(configResponse && configResponse.ok) loadDisplayNames(await configResponse.json());
+            if(technicalResponse && technicalResponse.ok) state.technical = await technicalResponse.json();
           }
 
           if(!state.history) throw new Error("Instrument history unavailable");
