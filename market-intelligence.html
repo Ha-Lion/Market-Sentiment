@@ -1294,12 +1294,61 @@
       return "neutral";
     };
     const dataStamp=v=>String(v||"").trim();
+    const LAST_GOOD_AI_KEY="psd_last_good_event_intelligence_v1";
+
+    function validEventIntelligence(data=aiIntelligenceData){
+      return Boolean(
+        data &&
+        data.schema==="PSD Event Intelligence v1" &&
+        Array.isArray(data.event_rankings) &&
+        Array.isArray(data.events)
+      );
+    }
 
     function currentEventIntelligence(data=aiIntelligenceData){
-      if(!data||data.schema!=="PSD Event Intelligence v1"||!Array.isArray(data.event_rankings)||!Array.isArray(data.events))return false;
-      const pulseStamp=dataStamp(pulseData?.data_updated_utc||pulseData?.generated_utc);
-      const intelligenceStamp=dataStamp(data.data_updated_utc);
-      return Boolean(pulseStamp&&intelligenceStamp&&pulseStamp===intelligenceStamp);
+      if(!validEventIntelligence(data))return false;
+
+      const pulseStamp=dataStamp(
+        pulseData?.data_updated_utc||
+        pulseData?.generated_utc
+      );
+
+      const intelligenceStamp=dataStamp(
+        data.data_updated_utc
+      );
+
+      return Boolean(
+        pulseStamp &&
+        intelligenceStamp &&
+        pulseStamp===intelligenceStamp
+      );
+    }
+
+    function readLastGoodEventIntelligence(){
+      try{
+        const raw=localStorage.getItem(LAST_GOOD_AI_KEY);
+        if(!raw)return null;
+
+        const parsed=JSON.parse(raw);
+
+        return validEventIntelligence(parsed)
+          ? parsed
+          : null;
+      }catch(_error){
+        return null;
+      }
+    }
+
+    function saveLastGoodEventIntelligence(data){
+      if(!validEventIntelligence(data))return;
+
+      try{
+        localStorage.setItem(
+          LAST_GOOD_AI_KEY,
+          JSON.stringify(data)
+        );
+      }catch(_error){
+      }
     }
 
     function impactBand(score){
@@ -1399,7 +1448,7 @@
     }
 
     function aiEventFor(event){
-      if(!currentEventIntelligence()||!event)return null;
+      if(!validEventIntelligence()||!event)return null;
       const ranking=rankingFor(event);
       if(!ranking||rankingEvidenceCount(ranking)<2||rankingSourceCount(ranking)<2)return null;
       const item=aiIntelligenceData.events.find(entry=>String(entry?.event_id||"")===String(event.id||""))||null;
@@ -2232,30 +2281,125 @@
     }
 
     async function loadPulse(){
-      const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),15000);
+
       try{
-        if(!window.PSDDataV2?.loadMarketIntelligencePage) throw new Error("Parallel V2 data-access layer is unavailable");
-        const pageData=await window.PSDDataV2.loadMarketIntelligencePage({signal:ctrl.signal});
-        pulseData=pageData.pulse;
-        const candidate=pageData.intelligence;
-        aiIntelligenceData=candidate;
-        window.__PSD_INTELLIGENCE_DATA_AUDIT__=pageData.meta;
-        const updated=pulseData?.data_updated_ny||pulseData?.data_updated_utc||"latest available";
-        if(!currentEventIntelligence(candidate)){
-          aiIntelligenceData=null;
-          $("dataStatus").textContent=`Market data updated • ${updated} • Event intelligence awaiting current engine update`;
-        }else{
-          $("dataStatus").textContent=`Updated • ${updated}`;
+        const results=await Promise.allSettled([
+          fetch(
+            "market_pulse.json",
+            {cache:"no-cache",signal:ctrl.signal}
+          ).then(r=>{
+            if(!r.ok){
+              throw new Error(
+                `market_pulse HTTP ${r.status}`
+              );
+            }
+            return r.json();
+          }),
+
+          fetch(
+            "event_intelligence.json",
+            {cache:"no-cache",signal:ctrl.signal}
+          ).then(r=>{
+            if(!r.ok){
+              throw new Error(
+                `event_intelligence HTTP ${r.status}`
+              );
+            }
+            return r.json();
+          })
+        ]);
+
+        const pulseResult=results[0];
+        const aiResult=results[1];
+
+        if(pulseResult.status!=="fulfilled"){
+          throw pulseResult.reason;
         }
+
+        pulseData=pulseResult.value;
+
+        const candidate=
+          aiResult.status==="fulfilled"
+            ? aiResult.value
+            : null;
+
+        const savedAI=
+          readLastGoodEventIntelligence();
+
+        if(validEventIntelligence(candidate)){
+          aiIntelligenceData=candidate;
+          saveLastGoodEventIntelligence(candidate);
+        }else{
+          aiIntelligenceData=savedAI;
+        }
+
+        const updated=
+          pulseData?.data_updated_ny||
+          pulseData?.data_updated_utc||
+          "latest available";
+
+        if(
+          validEventIntelligence(candidate) &&
+          currentEventIntelligence(candidate)
+        ){
+          $("dataStatus").textContent=
+            `Updated \u2022 ${updated}`;
+        }
+        else if(
+          validEventIntelligence(aiIntelligenceData)
+        ){
+          const aiStamp=
+            aiIntelligenceData?.data_updated_ny||
+            aiIntelligenceData?.data_updated_utc||
+            aiIntelligenceData?.generated_utc||
+            "previous successful AI run";
+
+          $("dataStatus").textContent=
+            `Market data updated \u2022 ${updated} \u2022 ` +
+            `Showing last successful AI analysis \u2022 ${aiStamp}`;
+        }
+        else{
+          $("dataStatus").textContent=
+            `Market data updated \u2022 ${updated} \u2022 ` +
+            `No prior successful AI analysis is available`;
+        }
+
       }catch(err){
-        console.warn("Event Intelligence data unavailable",err);
-        pulseData={universe:[]};
-        aiIntelligenceData=null;
-        $("dataStatus").textContent="Current market and event intelligence unavailable";
-      }finally{clearTimeout(timer)}
+
+        console.warn(
+          "Event Intelligence data unavailable",
+          err
+        );
+
+        if(!pulseData){
+          pulseData={universe:[]};
+        }
+
+        if(
+          !validEventIntelligence(aiIntelligenceData)
+        ){
+          aiIntelligenceData=
+            readLastGoodEventIntelligence();
+        }
+
+        $("dataStatus").textContent=
+          validEventIntelligence(aiIntelligenceData)
+            ? "Live update unavailable - showing last successful AI analysis"
+            : "Current market and event intelligence unavailable";
+
+      }finally{
+        clearTimeout(timer);
+      }
+
       rankEvents();
       recordEventSnapshots();
-      activeEvent=currentRankings()[0]?.event||null;
+
+      activeEvent=
+        currentRankings()[0]?.event||
+        null;
+
       renderEvent();
     }
 
