@@ -894,6 +894,587 @@
 
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <link rel="stylesheet" href="mobile/category.css?v=41" media="(max-width:768px)">
+
+
+  <!-- X Signals: exact Interactive Dashboard component + specialty adapter -->
+<style id="identical-dropdown-style">
+
+/* Stop card movement */
+.sentiment-card,
+.sentiment-card:hover,
+.sentiment-card:focus,
+.sentiment-card:focus-within{
+  transform:none !important;
+  translate:none !important;
+  scale:1 !important;
+  animation:none !important;
+  transition:none !important;
+}
+
+
+/*
+Asset dropdown AND X dropdown use the SAME .lab-select class.
+No custom arrow is created.
+The browser renders the SAME native select arrow for both.
+*/
+
+.lab-select{
+  background:
+    linear-gradient(
+      180deg,
+      #fbfdff 0%,
+      #f3f9ff 48%,
+      #e8f4fd 100%
+    ) !important;
+
+  border:
+    1px solid rgba(120,165,205,.62) !important;
+
+  border-radius:10px !important;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    inset 0 -2px 3px rgba(100,145,185,.16),
+    0 2px 4px rgba(40,75,105,.10) !important;
+
+  font-family:inherit !important;
+  font-size:12px !important;
+  font-weight:400 !important;
+}
+
+
+/* X uses same control; only spacing differs */
+.x-signals-select{
+  margin-top:8px !important;
+  margin-bottom:0 !important;
+}
+
+</style>
+<style id="x-logo-position-final">
+
+.x-logo-wrap{
+  position:relative;
+  width:100%;
+}
+
+
+/* Keep existing dropdown appearance */
+.x-logo-wrap .x-signals-select{
+  width:100% !important;
+
+  text-align:center !important;
+  text-align-last:center !important;
+
+  padding-left:38px !important;
+  padding-right:38px !important;
+}
+
+
+/*
+Actual X logo:
+directly LEFT of centered word "Signals"
+*/
+.x-logo-img{
+  position:absolute;
+
+  left:50%;
+
+  /* compensate for the X select's top spacing */
+  top:calc(50% + 4px);
+
+  transform:
+    translate(-67px,-50%);
+
+  width:25px;
+  height:25px;
+
+  object-fit:cover;
+
+  z-index:20;
+  pointer-events:none;
+
+  border-radius:2px;
+}
+
+</style>
+<style id="x-light-blue-shading">
+
+.x-signals-select{
+  background:
+    linear-gradient(
+      180deg,
+      #fbfdff 0%,
+      #f4faff 48%,
+      #e8f4fd 100%
+    ) !important;
+}
+
+</style>
+<style id="x-logo-real-bevel-style">
+
+.x-logo-bevel-frame{
+  position:absolute;
+
+  left:10px;
+  top:calc(50% + 3px);
+
+  transform:
+    translateY(-50%);
+
+  width:28px;
+  height:28px;
+
+  box-sizing:border-box;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  z-index:20;
+  pointer-events:none;
+
+  border-radius:5px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #cfcfcf 22%,
+      #666666 65%,
+      #111111 100%
+    );
+
+  box-shadow:
+    0 2px 3px rgba(0,0,0,.38),
+    inset 1px 1px 1px rgba(255,255,255,.85),
+    inset -1px -1px 1px rgba(0,0,0,.75);
+}
+
+.x-logo-img{
+  position:static !important;
+
+  width:21px !important;
+  height:21px !important;
+
+  object-fit:cover;
+
+  border-radius:2px;
+
+  box-shadow:none !important;
+  border:none !important;
+  transform:none !important;
+}
+
+</style>
+<style id="dropdown-color-only-final">
+
+/* Asset dropdown ONLY */
+.card-control-strip > select.lab-select{
+  background-color:#fff3cf !important;
+}
+
+/* X Signals dropdown ONLY */
+select.lab-select.x-signals-select{
+  background-color:#fff3cf !important;
+}
+
+</style>
+<style id="dropdown-gold-border-only">
+
+/* Asset dropdown ONLY */
+.card-control-strip > select.lab-select{
+  border-color:#d29922 !important;
+}
+
+/* X Signals dropdown ONLY */
+select.lab-select.x-signals-select{
+  border-color:#d29922 !important;
+}
+
+</style>
+<style id="x-signals-fixed-text-position">
+
+/*
+Keep the word Signals in exactly the same position
+whether the label is:
+Signals
+Signals (9)
+Signals (10)
+etc.
+
+Logo and dropdown arrow are untouched.
+*/
+
+select.lab-select.x-signals-select{
+  text-align:left !important;
+  text-align-last:left !important;
+
+  /*
+  Matches the current visual position of "Signals".
+  Additional characters extend to the RIGHT only.
+  */
+  padding-left:calc(50% - 37px) !important;
+}
+
+</style>
+<style id="x-clickable-menu-style">
+
+/* ==========================================================
+   CUSTOM OPENED X MENU
+   Closed select remains completely unchanged.
+   ========================================================== */
+
+.x-clickable-menu{
+  position:fixed;
+
+  display:none;
+
+  box-sizing:border-box;
+
+  max-height:320px;
+
+  overflow-y:auto;
+  overflow-x:hidden;
+
+  border:1px solid #d29922;
+
+  border-radius:7px;
+
+  background:#fffdf7;
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.22);
+
+  z-index:99990;
+}
+
+.x-clickable-menu.show{
+  display:block;
+}
+
+.x-clickable-menu-item{
+  display:block;
+
+  width:100%;
+
+  box-sizing:border-box;
+
+  padding:8px 11px;
+
+  border-bottom:
+    1px solid rgba(210,153,34,.20);
+
+  background:#fffdf7;
+
+  color:#10263b;
+
+  font-family:inherit;
+  font-size:12px;
+  font-weight:400;
+  line-height:1.35;
+
+  text-align:left;
+  text-decoration:none;
+
+  white-space:normal;
+
+  cursor:pointer;
+}
+
+.x-clickable-menu-item:last-child{
+  border-bottom:0;
+}
+
+.x-clickable-menu-item:hover,
+.x-clickable-menu-item:focus{
+  background:#fff3cf;
+
+  color:#071827;
+
+  outline:none;
+}
+
+
+/* ==========================================================
+   POST DETAIL POPUP
+   ========================================================== */
+
+#xPostDetailPopup{
+  position:fixed;
+  inset:0;
+
+  display:none;
+
+  align-items:center;
+  justify-content:center;
+
+  padding:20px;
+
+  z-index:100000;
+}
+
+#xPostDetailPopup.show{
+  display:flex;
+}
+
+.x-post-popup-backdrop{
+  position:absolute;
+  inset:0;
+
+  background:rgba(8,22,34,.48);
+
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+
+.x-post-popup-box{
+  position:relative;
+
+  width:min(610px,calc(100vw - 32px));
+
+  max-height:calc(100vh - 44px);
+
+  overflow:auto;
+
+  box-sizing:border-box;
+
+  padding:20px;
+
+  border:1px solid #d29922;
+
+  border-radius:16px;
+
+  background:#fffdf7;
+
+  color:#10263b;
+
+  box-shadow:
+    0 22px 58px rgba(0,0,0,.30);
+
+  z-index:1;
+}
+
+.x-post-popup-head{
+  display:flex;
+
+  align-items:flex-start;
+  justify-content:space-between;
+
+  gap:14px;
+
+  padding-bottom:13px;
+
+  border-bottom:
+    1px solid rgba(210,153,34,.32);
+}
+
+.x-post-popup-account{
+  display:flex;
+
+  align-items:center;
+
+  gap:10px;
+}
+
+.x-post-popup-logo{
+  display:grid;
+  place-items:center;
+
+  width:31px;
+  height:31px;
+
+  flex:0 0 31px;
+
+  border-radius:5px;
+
+  background:#000;
+
+  color:#fff;
+
+  font-size:17px;
+  font-weight:700;
+}
+
+.x-post-popup-handle{
+  color:#071827;
+
+  font-size:15px;
+  font-weight:800;
+}
+
+.x-post-popup-time{
+  margin-top:3px;
+
+  color:#607386;
+
+  font-size:11px;
+}
+
+.x-post-popup-close{
+  width:30px;
+  height:30px;
+
+  padding:0;
+
+  border:0;
+
+  background:transparent;
+
+  color:#20394d;
+
+  font-size:25px;
+  line-height:1;
+
+  cursor:pointer;
+}
+
+.x-post-popup-text{
+  padding:20px 2px;
+
+  color:#10263b;
+
+  font-size:15px;
+  line-height:1.60;
+
+  white-space:pre-wrap;
+
+  overflow-wrap:anywhere;
+}
+
+.x-post-popup-footer{
+  display:flex;
+
+  align-items:center;
+  justify-content:flex-end;
+
+  padding-top:14px;
+
+  border-top:
+    1px solid rgba(210,153,34,.32);
+}
+
+.x-post-popup-original{
+  display:inline-flex;
+
+  align-items:center;
+  justify-content:center;
+
+  min-height:36px;
+
+  box-sizing:border-box;
+
+  padding:7px 15px;
+
+  border:1px solid #d29922;
+
+  border-radius:999px;
+
+  background:#fff3cf;
+
+  color:#523700;
+
+  font-size:12px;
+  font-weight:800;
+
+  text-decoration:none;
+}
+
+.x-post-popup-original:hover{
+  background:#ffe9a8;
+}
+
+@media(max-width:600px){
+
+  #xPostDetailPopup{
+    padding:12px;
+  }
+
+  .x-post-popup-box{
+    width:calc(100vw - 24px);
+    padding:16px;
+  }
+
+}
+
+</style>
+<style id="dropdown-light-blue-final">
+
+/* Asset dropdown */
+.card-control-strip > select.lab-select{
+  background-color:#eef7ff !important;
+}
+
+/* X Signals dropdown */
+select.lab-select.x-signals-select{
+  background-color:#eef7ff !important;
+}
+
+</style>
+<style id="x-popup-stay-on-site-final">
+.x-post-popup-footer{
+  display:none !important;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js"></script>
+<style id="x-popup-emoji-style">
+.x-post-popup-text img.emoji{
+  height:1.05em;
+  width:1.05em;
+  margin:0 .08em;
+  vertical-align:-0.12em;
+}
+</style>
+<style id="x-popup-photo-media-v1">
+.x-post-popup-media{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:14px;
+}
+
+.x-post-popup-media:empty{
+  display:none;
+}
+
+.x-post-popup-media.single{
+  grid-template-columns:1fr;
+}
+
+.x-post-popup-media img,
+.x-post-popup-media video{
+  display:block;
+  width:100%;
+  max-height:460px;
+  border-radius:10px;
+  border:1px solid rgba(184,134,11,.35);
+}
+
+.x-post-popup-media img{
+  object-fit:cover;
+}
+
+.x-post-popup-media video{
+  object-fit:contain;
+  background:#000;
+}
+
+.x-post-popup-media.single img{
+  object-fit:contain;
+}
+</style>
+<style id="x-specialty-dashboard-compat-v1">
+/* Specialty-page adapter only: preserves the dashboard X component appearance. */
+.x-logo-wrap{width:100%;}
+select.lab-select.x-signals-select{
+  width:100% !important;
+  min-height:36px;
+  color:#10263b !important;
+}
+body.dark-mode select.lab-select.x-signals-select{
+  color:#f5f8ff !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -1059,6 +1640,147 @@
     const comparisonCharts = new Map();
     let comparisonSyncMode = "pair";
     let comparisonSyncCleanup = [];
+
+    let xSignalsLabData = null;
+
+    async function ensureXSignalsLabData(){
+      try{
+        const response = await fetch(
+          "x_signals_lab.json",
+          {cache:"no-cache"}
+        );
+
+        if(!response.ok) return null;
+
+        xSignalsLabData = await response.json();
+        return xSignalsLabData;
+      }
+      catch(_error){
+        return null;
+      }
+    }
+
+    function xSignalsForAsset(assetId){
+      const posts =
+        xSignalsLabData?.signals_by_asset?.[assetId];
+
+      return Array.isArray(posts)
+        ? posts.slice(0,10)
+        : [];
+    }
+
+    function shortXText(text){
+      const value = String(text || "")
+        .replace(/\s+/g," ")
+        .trim();
+
+      return value.length > 72
+        ? value.slice(0,69) + "..."
+        : value;
+    }
+
+    function formatXSignalTime(value){
+      if(!value) return "";
+
+      const dt = new Date(value);
+
+      if(Number.isNaN(dt.getTime()))
+        return "";
+
+      return dt.toLocaleString([],{
+        month:"short",
+        day:"numeric",
+        hour:"numeric",
+        minute:"2-digit"
+      });
+    }
+
+    function renderXSignalsSelect(assetId){
+      const posts = xSignalsForAsset(assetId);
+
+      const title =
+        posts.length
+          ? `Signals (${posts.length})`
+          : "Signals";
+
+      const options = posts.length
+        ? posts.map(post => {
+            const label =
+              `@${post.handle || ""} • ` +
+              `${formatXSignalTime(post.published)} • ` +
+              `${shortXText(post.text)}`;
+
+            return `
+              <option value="${esc(post.url || "")}">
+                ${esc(label)}
+              </option>
+            `;
+          }).join("")
+        : `
+            <option value="" disabled>
+              No X signals available
+            </option>
+          `;
+
+      return `
+        <div class="x-logo-wrap">
+
+          <span class="x-logo-bevel-frame">
+            <img
+              class="x-logo-img"
+              src="x_logo_crop.png"
+              alt=""
+              aria-hidden="true"
+            >
+          </span>
+
+          <select
+            class="lab-select x-signals-select"
+            onchange="openXSignalFromSelect(this)"
+          >
+          <option value="" selected>
+            ${esc(title)}
+          </option>
+
+          ${options}
+          </select>
+        </div>
+      `;
+    }
+
+    function openXSignalFromSelect(select){
+      const url = select.value;
+
+      if(url){
+        window.open(
+          url,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
+
+      select.selectedIndex = 0;
+    }
+
+    window.openXSignalFromSelect =
+      openXSignalFromSelect;
+
+    function xAssetIdForCrypto(item,row){
+      const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
+      const name = normalizeText(item?.name || row?.name || "");
+
+      const bySymbol = {
+        BTC:"btc",
+        ETH:"eth",
+        LINK:"link"
+      };
+
+      if(bySymbol[symbol]) return bySymbol[symbol];
+      if(name === "general crypto") return "crypto_general";
+      if(name === "crypto regulation") return "crypto_regulation";
+      if(name === "stablecoins / depeg risk") return "crypto_stablecoins";
+      return "";
+    }
 
     // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
     const canonicalHistoryByName = new Map();
@@ -1346,6 +2068,7 @@
           "No PSI";
         const item=CRYPTO_ITEMS.find(candidate=>candidate.name===row.name);
         const news=priorityHeadlines(Array.isArray(row.topHeadlines)?row.topHeadlines:[],5);
+        const xAssetId=xAssetIdForCrypto(item,row);
         return `
           <article class="ai-card">
             <div class="ai-card-top">
@@ -1376,6 +2099,8 @@
             <div class="market-insight daily-market-row ${psiToneClass(row.score)}"><span>PSI <button class="psd-glossary-info" type="button" data-pulse-glossary="psi" aria-label="Explain Public Sentiment Index" aria-expanded="false">i</button></span><b>${esc(row.label)}</b></div>
             <div class="market-insight daily-tech-row ${technicalToneClass(dailyTechnicalDirection(row.name))}"><span>Daily technical direction</span><b class="daily-tech-value">${esc(dailyTechnicalDirection(row.name))}</b></div>
             <div class="ai-card-news" aria-label="Leading news outlets">${news.map(h=>{const logo=sourceLogoUrl(h),initial=esc(String(h.source||"N").trim().slice(0,1).toUpperCase()),content=logo?`<img class="headline-logo" src="${esc(logo)}" alt="${esc(h.source||"Source")} logo" loading="lazy" onerror="this.outerHTML='<span class=&quot;headline-logo-fallback&quot;>${initial}</span>'">`:`<span class="headline-logo-fallback">${initial}</span>`;return `<a href="${esc(h.link||'#')}" target="_blank" rel="noopener" title="Open ${esc(h.source||'news')} article" aria-label="Open ${esc(h.source||'news')} article">${content}</a>`}).join("")}</div>
+
+            ${renderXSignalsSelect(xAssetId)}
 
             <button class="history-btn" type="button" onclick="openHistory('${esc(row.name)}')">Historical View</button>
             <label class="compare-control">
@@ -1548,6 +2273,7 @@
 
     async function init(){
       try{
+        await ensureXSignalsLabData();
         const [dashboardPayload, historyPayload, assetConfig] = await Promise.all([
           fetchOptionalJson("dashboard_live.json", 15000),
           fetchOptionalJson("instrument_history_compact.json", 30000),
@@ -1609,5 +2335,925 @@
 
   <script src="mobile/ribbon.js?v=2"></script>
   <script src="mobile/history-scroll-flow.js?v=1"></script>
+
+
+  <!-- X Signals custom menu/popup engine: exact Interactive Dashboard behavior -->
+<script id="x-clickable-menu-final">
+
+(function(){
+
+  let activeSelect = null;
+
+
+  function getSignalData(){
+
+    if(
+      typeof xSignalsLabData !== "undefined" &&
+      xSignalsLabData
+    ){
+      return xSignalsLabData;
+    }
+
+    return null;
+  }
+
+
+  function findPostByUrl(url){
+
+    const data = getSignalData();
+
+    if(
+      !data ||
+      !data.signals_by_asset ||
+      !url
+    ){
+      return null;
+    }
+
+
+    for(
+      const posts of Object.values(
+        data.signals_by_asset
+      )
+    ){
+
+      if(!Array.isArray(posts)){
+        continue;
+      }
+
+
+      const match = posts.find(post =>
+        String(post?.url || "") ===
+        String(url)
+      );
+
+
+      if(match){
+        return match;
+      }
+    }
+
+
+    return null;
+  }
+
+
+  function createMenu(){
+
+    let menu =
+      document.getElementById(
+        "xClickableSignalMenu"
+      );
+
+
+    if(menu){
+      return menu;
+    }
+
+
+    menu =
+      document.createElement("div");
+
+
+    menu.id =
+      "xClickableSignalMenu";
+
+
+    menu.className =
+      "x-clickable-menu";
+
+
+    document.body.appendChild(menu);
+
+
+    return menu;
+  }
+
+
+  function closeMenu(){
+
+    const menu =
+      document.getElementById(
+        "xClickableSignalMenu"
+      );
+
+
+    if(menu){
+      menu.classList.remove("show");
+      menu.innerHTML = "";
+    }
+
+
+    activeSelect = null;
+  }
+
+
+  function positionMenu(select,menu){
+
+    const rect =
+      select.getBoundingClientRect();
+
+
+    const width =
+      rect.width;
+
+
+    menu.style.width =
+      width + "px";
+
+
+    let left =
+      rect.left;
+
+
+    let top =
+      rect.bottom + 4;
+
+
+    menu.style.left =
+      left + "px";
+
+
+    menu.style.top =
+      top + "px";
+
+
+    menu.classList.add("show");
+
+
+    const menuRect =
+      menu.getBoundingClientRect();
+
+
+    /*
+    If menu would fall below viewport,
+    open upward instead.
+    */
+
+    if(
+      menuRect.bottom >
+      window.innerHeight - 8
+    ){
+
+      const above =
+        rect.top -
+        menuRect.height -
+        4;
+
+
+      if(above > 8){
+
+        menu.style.top =
+          above + "px";
+
+      }
+    }
+  }
+
+
+  function openMenu(select){
+
+    const menu =
+      createMenu();
+
+
+    menu.innerHTML = "";
+
+
+    /*
+    Read the existing native options.
+    Option 0 is Signals / Signals (count).
+    Posts begin with option 1.
+    */
+
+    const options =
+      Array.from(select.options)
+        .slice(1);
+
+
+    if(!options.length){
+
+      const empty =
+        document.createElement("div");
+
+
+      empty.className =
+        "x-clickable-menu-item";
+
+
+      empty.textContent =
+        "No X signals available";
+
+
+      menu.appendChild(empty);
+
+    }else{
+
+      options.forEach(option => {
+
+        const link =
+          document.createElement("a");
+
+
+        /*
+        This is now a REAL hyperlink row.
+        We prevent immediate navigation because
+        the first click opens the detail popup.
+        */
+
+        link.href =
+          option.value || "#";
+
+
+        link.className =
+          "x-clickable-menu-item";
+
+
+        link.textContent =
+          option.textContent || "";
+
+
+        link.addEventListener(
+          "click",
+          function(event){
+
+            /*
+            Keep this as a REAL hyperlink.
+
+            Ctrl+click
+            Command+click
+            Shift+click
+            Alt+click
+
+            are allowed to use the browser's
+            normal link behavior.
+            */
+
+            if(
+              event.ctrlKey ||
+              event.metaKey ||
+              event.shiftKey ||
+              event.altKey
+            ){
+              return;
+            }
+
+
+            /*
+            Normal left click:
+            show our post-detail popup first.
+            */
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            const post =
+              findPostByUrl(
+                option.value
+              );
+
+
+            closeMenu();
+
+
+            if(post){
+              openPostPopup(post);
+            }
+
+          }
+        );
+
+
+        menu.appendChild(link);
+
+      });
+
+    }
+
+
+    activeSelect = select;
+
+
+    positionMenu(
+      select,
+      menu
+    );
+  }
+
+
+  function ensurePopup(){
+
+    let popup =
+      document.getElementById(
+        "xPostDetailPopup"
+      );
+
+
+    if(popup){
+      return popup;
+    }
+
+
+    popup =
+      document.createElement("div");
+
+
+    popup.id =
+      "xPostDetailPopup";
+
+
+    popup.innerHTML = `
+      <div
+        class="x-post-popup-backdrop">
+      </div>
+
+      <section
+        class="x-post-popup-box"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="xPostPopupHandle">
+
+        <div class="x-post-popup-head">
+
+          <div class="x-post-popup-account">
+
+            <div class="x-post-popup-logo">
+              X
+            </div>
+
+            <div>
+
+              <div
+                id="xPostPopupHandle"
+                class="x-post-popup-handle">
+                X Signal
+              </div>
+
+              <div
+                id="xPostPopupTime"
+                class="x-post-popup-time">
+              </div>
+
+            </div>
+
+          </div>
+
+          <button
+            type="button"
+            class="x-post-popup-close"
+            aria-label="Close">
+            ×
+          </button>
+
+        </div>
+
+
+        <div
+          id="xPostPopupText"
+          class="x-post-popup-text">
+        </div>
+
+
+        <div class="x-post-popup-footer">
+
+          <a
+            id="xPostPopupOriginal"
+            class="x-post-popup-original"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer">
+
+            View original post on X ↗
+
+          </a>
+
+        </div>
+
+      </section>
+    `;
+
+
+    popup
+      .querySelector(
+        ".x-post-popup-close"
+      )
+      .addEventListener(
+        "click",
+        closePostPopup
+      );
+
+
+    popup
+      .querySelector(
+        ".x-post-popup-backdrop"
+      )
+      .addEventListener(
+        "click",
+        closePostPopup
+      );
+
+
+    document.body.appendChild(
+      popup
+    );
+
+
+    return popup;
+  }
+
+
+  function openPostPopup(post){
+
+    const popup =
+      ensurePopup();
+
+
+    const handle =
+      String(
+        post?.handle || ""
+      ).trim();
+
+
+    const text =
+      String(
+        post?.text || ""
+      ).trim();
+
+
+    const url =
+      String(
+        post?.url || ""
+      ).trim();
+
+
+    let published = "";
+
+
+    if(
+      typeof formatXSignalTime ===
+      "function"
+    ){
+
+      published =
+        formatXSignalTime(
+          post?.published
+        ) || "";
+
+    }else{
+
+      published =
+        String(
+          post?.published || ""
+        );
+
+    }
+
+
+    document
+      .getElementById(
+        "xPostPopupHandle"
+      )
+      .textContent =
+        handle
+          ? "@" + handle
+          : "X Signal";
+
+
+    document
+      .getElementById(
+        "xPostPopupTime"
+      )
+      .textContent =
+        published;
+
+
+    const postTextBox =
+      document.getElementById(
+        "xPostPopupText"
+      );
+
+    postTextBox.textContent = "";
+
+    const postText =
+      text ||
+      "No post text is available.";
+
+    const urlPattern =
+      /(https?:\/\/[^\s]+)/g;
+
+    postText.split(urlPattern)
+      .forEach(part => {
+
+        if(
+          /^https?:\/\//i.test(part)
+        ){
+          const link =
+            document.createElement("a");
+
+          link.href = part;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = part;
+
+          postTextBox.appendChild(link);
+
+        }else{
+
+          postTextBox.appendChild(
+            document.createTextNode(part)
+          );
+
+        }
+
+      });
+
+    if(window.twemoji){
+      window.twemoji.parse(
+        postTextBox,
+        {
+          folder:"svg",
+          ext:".svg"
+        }
+      );
+    }
+
+
+    let mediaBox =
+      document.getElementById(
+        "xPostPopupMedia"
+      );
+
+    if(!mediaBox){
+
+      mediaBox =
+        document.createElement(
+          "div"
+        );
+
+      mediaBox.id =
+        "xPostPopupMedia";
+
+      mediaBox.className =
+        "x-post-popup-media";
+
+      postTextBox.insertAdjacentElement(
+        "afterend",
+        mediaBox
+      );
+    }
+
+    mediaBox.textContent = "";
+
+    mediaBox.className =
+      "x-post-popup-media";
+
+    const mediaItems =
+      Array.isArray(post?.media)
+        ? post.media.filter(
+            item =>
+              item &&
+              (
+                (
+                  item.type === "photo" &&
+                  item.url
+                ) ||
+                (
+                  (
+                    item.type === "video" ||
+                    item.type === "animated_gif"
+                  ) &&
+                  item.local_url
+                )
+              )
+          )
+        : [];
+
+    if(mediaItems.length === 1){
+
+      mediaBox.classList.add(
+        "single"
+      );
+    }
+
+    mediaItems.forEach(
+      item => {
+
+        if(
+          item.type === "photo"
+        ){
+
+          const img =
+            document.createElement(
+              "img"
+            );
+
+          img.src =
+            item.url;
+
+          img.alt =
+            "X post image";
+
+          img.loading =
+            "lazy";
+
+          img.decoding =
+            "async";
+
+          mediaBox.appendChild(
+            img
+          );
+
+          return;
+        }
+
+        const video =
+          document.createElement(
+            "video"
+          );
+
+        video.src =
+          item.local_url;
+
+        video.controls =
+          true;
+
+        video.preload =
+          "metadata";
+
+        video.playsInline =
+          true;
+
+        video.setAttribute(
+          "playsinline",
+          ""
+        );
+
+        if(
+          item.preview_image_url
+        ){
+          video.poster =
+            item.preview_image_url;
+        }
+
+        if(
+          item.type ===
+          "animated_gif"
+        ){
+          video.muted = true;
+          video.loop = true;
+        }
+
+        mediaBox.appendChild(
+          video
+        );
+      }
+    );
+
+
+    const original =
+      document.getElementById(
+        "xPostPopupOriginal"
+      );
+
+
+    if(url){
+
+      original.href = url;
+
+      original.style.display =
+        "inline-flex";
+
+    }else{
+
+      original.removeAttribute(
+        "href"
+      );
+
+      original.style.display =
+        "none";
+
+    }
+
+
+    popup.classList.add("show");
+  }
+
+
+  function closePostPopup(){
+
+    const popup =
+      document.getElementById(
+        "xPostDetailPopup"
+      );
+
+
+    if(popup){
+
+      popup.classList.remove(
+        "show"
+      );
+
+    }
+  }
+
+
+  /*
+  IMPORTANT:
+  Stop the native SELECT from opening.
+  The select itself remains visible, so its
+  approved gold styling, X logo, Signals count,
+  dimensions, and arrow remain unchanged.
+  */
+
+  document.addEventListener(
+    "pointerdown",
+    function(event){
+
+      const select =
+        event.target.closest(
+          "select.x-signals-select"
+        );
+
+
+      if(!select){
+        return;
+      }
+
+
+      event.preventDefault();
+
+      event.stopPropagation();
+
+
+      if(activeSelect === select){
+
+        closeMenu();
+
+      }else{
+
+        closeMenu();
+
+        openMenu(select);
+
+      }
+
+    },
+    true
+  );
+
+
+  /*
+  Keyboard support
+  */
+
+  document.addEventListener(
+    "keydown",
+    function(event){
+
+      const select =
+        event.target.closest(
+          "select.x-signals-select"
+        );
+
+
+      if(
+        select &&
+        (
+          event.key === "Enter" ||
+          event.key === " " ||
+          event.key === "ArrowDown"
+        )
+      ){
+
+        event.preventDefault();
+
+        closeMenu();
+
+        openMenu(select);
+
+        return;
+      }
+
+
+      if(event.key === "Escape"){
+
+        closeMenu();
+
+        closePostPopup();
+
+      }
+
+    },
+    true
+  );
+
+
+  /*
+  Click elsewhere closes only the menu.
+  */
+
+  document.addEventListener(
+    "pointerdown",
+    function(event){
+
+      const menu =
+        document.getElementById(
+          "xClickableSignalMenu"
+        );
+
+
+      if(
+        menu &&
+        menu.classList.contains("show") &&
+        !menu.contains(event.target) &&
+        !event.target.closest(
+          "select.x-signals-select"
+        )
+      ){
+
+        closeMenu();
+
+      }
+
+    }
+  );
+
+
+  /*
+  Keep dropdown anchored correctly if viewport moves.
+  */
+
+  window.addEventListener(
+    "resize",
+    closeMenu
+  );
+
+
+  window.addEventListener(
+    "scroll",
+    function(event){
+
+      const menu =
+        document.getElementById(
+          "xClickableSignalMenu"
+        );
+
+      if(
+        !menu ||
+        !menu.classList.contains("show")
+      ){
+        return;
+      }
+
+      /*
+      IMPORTANT:
+      Scrolling INSIDE the X posting list must NOT
+      close the list.
+      */
+
+      if(
+        event.target === menu ||
+        menu.contains(event.target)
+      ){
+        return;
+      }
+
+      /*
+      If the page itself moves, keep the menu
+      attached to the Signals control.
+      */
+
+      if(activeSelect){
+        positionMenu(
+          activeSelect,
+          menu
+        );
+      }
+
+    },
+    true
+  );
+
+
+  window.openXClickableMenu =
+    openMenu;
+
+
+  window.closeXClickableMenu =
+    closeMenu;
+
+
+  window.openXPostPopup =
+    openPostPopup;
+
+
+  window.closeXPostPopup =
+    closePostPopup;
+
+})();
+</script>
+
 </body>
 </html>
