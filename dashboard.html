@@ -3189,6 +3189,108 @@ select.lab-select.x-signals-select{
   /* END SVM NEWS HISTOGRAM COLUMN V2 */
 
 
+
+
+  /* SVM DYNAMIC HISTOGRAM CSS V4 START */
+
+  .svm-news-histogram{
+    left:0 !important;
+    right:0 !important;
+  }
+
+
+  .svm-news-hist-title{
+    left:60px !important;
+  }
+
+
+  .svm-news-hist-bars{
+    display:block !important;
+    position:relative !important;
+    width:100% !important;
+    height:100% !important;
+  }
+
+
+  .svm-news-bin-dynamic{
+    position:absolute !important;
+
+    top:0 !important;
+    bottom:0 !important;
+
+    width:46px !important;
+    height:100% !important;
+
+    transform:
+      translateX(-50%) !important;
+
+    display:grid !important;
+
+    grid-template-rows:
+      minmax(0,1fr)
+      0
+      minmax(0,1fr)
+      19px
+      !important;
+  }
+
+
+  @media(max-width:900px){
+
+    .svm-news-bin-dynamic{
+      width:36px !important;
+    }
+
+  }
+
+  /* SVM DYNAMIC HISTOGRAM CSS V4 END */
+
+
+
+
+  /* SVM HISTOGRAM AXIS ALIGNMENT V4.1 START */
+
+  /*
+    JS now supplies exact left/right scale widths.
+    These are only safe initial values before the first
+    Lightweight Charts viewport event arrives.
+  */
+
+  .svm-news-histogram{
+    left:38px !important;
+    right:66px !important;
+    overflow:visible !important;
+  }
+
+
+  /*
+    Prevent individual columns or their date labels from
+    drawing into either Y-axis gutter.
+  */
+
+  .svm-news-hist-bars{
+    overflow:hidden !important;
+  }
+
+
+  .svm-news-bin-dynamic{
+    will-change:left;
+  }
+
+
+  /*
+    Keep the News & Articles label relative to the actual
+    histogram plot area. It no longer needs its old
+    full-chart offset.
+  */
+
+  .svm-news-hist-title{
+    left:12px !important;
+  }
+
+  /* SVM HISTOGRAM AXIS ALIGNMENT V4.1 END */
+
+
 </style>
 </head>
 
@@ -5697,10 +5799,18 @@ select.lab-select.x-signals-select{
         bindCombinedCursor();
         bindDrawingClicks();
         bindLinkedScale(priceBox);
+        bindHistogramViewportSync();
 
         const observer = new ResizeObserver(entries => {
           entries.forEach(entry => {
-            if(state.chartPrice) state.chartPrice.applyOptions({width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)});
+            if(state.chartPrice){
+              state.chartPrice.applyOptions({
+                width:Math.max(1,entry.contentRect.width),
+                height:Math.max(1,entry.contentRect.height)
+              });
+
+              scheduleHistogramViewport();
+            }
           });
         });
         observer.observe(priceBox);
@@ -5734,6 +5844,347 @@ select.lab-select.x-signals-select{
         container.addEventListener("pointerup",() => { drag = null; });
         container.addEventListener("pointercancel",() => { drag = null; });
       }
+
+      /* SVM DYNAMIC HISTOGRAM V4 START */
+
+      let histogramViewportFrame = null;
+
+
+      function emitHistogramViewport(){
+
+        if(
+          !state.chartPrice
+          ||
+          !Array.isArray(state.displayRows)
+          ||
+          !state.displayRows.length
+        ){
+          return;
+        }
+
+
+        const timeScale =
+          state.chartPrice.timeScale();
+
+
+        const logicalRange =
+          timeScale.getVisibleLogicalRange();
+
+
+        if(
+          !logicalRange
+          ||
+          !Number.isFinite(logicalRange.from)
+          ||
+          !Number.isFinite(logicalRange.to)
+        ){
+          return;
+        }
+
+
+        /*
+          Include one point beyond each edge.
+
+          This prevents a column from suddenly disappearing
+          while it is partially visible during horizontal
+          scrolling.
+        */
+
+        const firstIndex =
+          Math.max(
+            0,
+            Math.floor(logicalRange.from) - 1
+          );
+
+
+        const lastIndex =
+          Math.min(
+            state.displayRows.length - 1,
+            Math.ceil(logicalRange.to) + 1
+          );
+
+
+        const priceBox =
+          document.getElementById(
+            "svmPriceChart"
+          );
+
+
+        if(!priceBox){
+          return;
+        }
+
+
+        const width =
+          Math.max(
+            1,
+            priceBox.clientWidth
+          );
+
+
+        /*
+          Measure the actual chart price-scale gutters.
+
+          timeToCoordinate() is relative to the drawable
+          time-series pane, not the full outer chart box.
+
+          These values keep histogram bars aligned with
+          crosshair dates and away from both Y axes.
+        */
+
+        let leftScaleWidth = 0;
+        let rightScaleWidth = 0;
+
+
+        try{
+
+          const leftScale =
+            state.chartPrice.priceScale(
+              "left"
+            );
+
+
+          if(
+            leftScale
+            &&
+            typeof leftScale.width
+              === "function"
+          ){
+
+            leftScaleWidth =
+              Number(
+                leftScale.width()
+              )
+              || 0;
+          }
+
+        }
+        catch(_error){
+        }
+
+
+        try{
+
+          const rightScale =
+            state.chartPrice.priceScale(
+              "right"
+            );
+
+
+          if(
+            rightScale
+            &&
+            typeof rightScale.width
+              === "function"
+          ){
+
+            rightScaleWidth =
+              Number(
+                rightScale.width()
+              )
+              || 0;
+          }
+
+        }
+        catch(_error){
+        }
+
+
+        /*
+          Safe fallback only if the chart API does not
+          expose scale width in this Lightweight Charts
+          build.
+        */
+
+        if(
+          leftScaleWidth <= 0
+        ){
+
+          leftScaleWidth = 38;
+        }
+
+
+        if(
+          rightScaleWidth <= 0
+        ){
+
+          rightScaleWidth = 66;
+        }
+
+
+        const plotWidth =
+          Math.max(
+            1,
+            width
+            - leftScaleWidth
+            - rightScaleWidth
+          );
+
+
+        const points = [];
+
+
+        for(
+          let index = firstIndex;
+          index <= lastIndex;
+          index++
+        ){
+
+          const row =
+            state.displayRows[index];
+
+
+          if(
+            !row
+            ||
+            !row.date
+          ){
+            continue;
+          }
+
+
+          const x =
+            timeScale.timeToCoordinate(
+              row.date
+            );
+
+
+          if(
+            x == null
+            ||
+            !Number.isFinite(
+              Number(x)
+            )
+          ){
+            continue;
+          }
+
+
+          /*
+            Retain points slightly outside the pane so
+            panning is visually smooth at both edges.
+          */
+
+          if(
+            x < -40
+            ||
+            x > plotWidth + 40
+          ){
+            continue;
+          }
+
+
+          points.push({
+            date:row.date,
+            x:Number(x),
+            index:index
+          });
+
+        }
+
+
+        const detail = {
+          instrument:
+            state.instrument,
+
+          period:
+            state.period,
+
+          width:
+            width,
+
+          plotWidth:
+            plotWidth,
+
+          leftScaleWidth:
+            leftScaleWidth,
+
+          rightScaleWidth:
+            rightScaleWidth,
+
+          logicalFrom:
+            logicalRange.from,
+
+          logicalTo:
+            logicalRange.to,
+
+          points:
+            points
+        };
+
+
+        window.__PSD_SVM_VIEWPORT__ =
+          detail;
+
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "psd-svm-viewport",
+            {
+              detail:detail
+            }
+          )
+        );
+
+      }
+
+
+      function scheduleHistogramViewport(){
+
+        if(histogramViewportFrame){
+
+          cancelAnimationFrame(
+            histogramViewportFrame
+          );
+        }
+
+
+        histogramViewportFrame =
+          requestAnimationFrame(
+            function(){
+
+              histogramViewportFrame =
+                null;
+
+
+              emitHistogramViewport();
+
+            }
+          );
+
+      }
+
+
+      function bindHistogramViewportSync(){
+
+        if(
+          !state.chartPrice
+        ){
+          return;
+        }
+
+
+        const timeScale =
+          state.chartPrice.timeScale();
+
+
+        timeScale
+          .subscribeVisibleLogicalRangeChange(
+            scheduleHistogramViewport
+          );
+
+
+        window.__PSD_EMIT_SVM_VIEWPORT =
+          scheduleHistogramViewport;
+
+
+        scheduleHistogramViewport();
+
+      }
+
+
+      /* SVM DYNAMIC HISTOGRAM V4 END */
+
 
       function bindCombinedCursor(){
         state.chartPrice.subscribeCrosshairMove(param => {
@@ -5897,7 +6348,15 @@ select.lab-select.x-signals-select{
           ui.status.textContent = label + " view • " + rows.length + " aligned period" + (rows.length === 1 ? "" : "s") + " • source values and sentiment share the same timeline.";
         }
 
-        requestAnimationFrame(resetSevenDays);
+        requestAnimationFrame(function(){
+
+          resetSevenDays();
+
+          requestAnimationFrame(
+            scheduleHistogramViewport
+          );
+
+        });
       }
 
       function availableInstruments(history){
@@ -7525,6 +7984,10 @@ select.lab-select.x-signals-select{
   let newsCache=null;
   let configCache=null;
 
+  let svmHistogramViewport =
+    window.__PSD_SVM_VIEWPORT__
+    || null;
+
 
   function norm(value){
 
@@ -7583,6 +8046,503 @@ select.lab-select.x-signals-select{
   }
 
 
+  /* SVM ARCHIVE HISTOGRAM V3 START */
+
+  const archiveHistogramCache =
+    new Map();
+
+
+  let archiveClientPromise =
+    null;
+
+
+  function loadArchiveScript(
+    src,
+    marker
+  ){
+
+    return new Promise(
+      (resolve,reject)=>{
+
+        const existing =
+          Array.from(
+            document.scripts
+          )
+          .find(
+            script =>
+              String(
+                script.src || ""
+              )
+              .includes(marker)
+          );
+
+
+        if(existing){
+
+          if(
+            marker.includes(
+              "supabase-js"
+            )
+            &&
+            window.supabase
+          ){
+
+            resolve();
+            return;
+          }
+
+
+          if(
+            marker.includes(
+              "supabase-client"
+            )
+            &&
+            window.psdSupabase
+          ){
+
+            resolve();
+            return;
+          }
+
+
+          existing.addEventListener(
+            "load",
+            resolve,
+            {
+              once:true
+            }
+          );
+
+
+          existing.addEventListener(
+            "error",
+            reject,
+            {
+              once:true
+            }
+          );
+
+
+          setTimeout(
+            resolve,
+            1200
+          );
+
+          return;
+        }
+
+
+        const script =
+          document.createElement(
+            "script"
+          );
+
+
+        script.src =
+          src;
+
+
+        script.onload =
+          resolve;
+
+
+        script.onerror =
+          reject;
+
+
+        document.head.appendChild(
+          script
+        );
+
+      }
+    );
+  }
+
+
+  async function ensureArchiveClient(){
+
+    if(
+      window.psdSupabase
+      &&
+      window.psdSupabase.functions
+      &&
+      window.psdSupabase.functions.invoke
+    ){
+
+      return window.psdSupabase;
+    }
+
+
+    if(archiveClientPromise){
+
+      return archiveClientPromise;
+    }
+
+
+    archiveClientPromise =
+      (
+        async()=>{
+
+          if(
+            !window.supabase
+            ||
+            typeof window.supabase.createClient
+              !== "function"
+          ){
+
+            await loadArchiveScript(
+              "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+              "supabase-js"
+            );
+          }
+
+
+          if(!window.psdSupabase){
+
+            await loadArchiveScript(
+              "supabase-client.js?v=17",
+              "supabase-client"
+            );
+          }
+
+
+          for(
+            let i=0;
+            i<40;
+            i++
+          ){
+
+            if(
+              window.psdSupabase
+              &&
+              window.psdSupabase.functions
+              &&
+              window.psdSupabase.functions.invoke
+            ){
+
+              return window.psdSupabase;
+            }
+
+
+            await new Promise(
+              resolve =>
+                setTimeout(
+                  resolve,
+                  100
+                )
+            );
+          }
+
+
+          throw new Error(
+            "Archive client unavailable"
+          );
+
+        }
+      )();
+
+
+    try{
+
+      return await archiveClientPromise;
+
+    }
+    catch(error){
+
+      archiveClientPromise =
+        null;
+
+      throw error;
+    }
+  }
+
+
+  function archiveInstrumentName(
+    selectedValue,
+    config
+  ){
+
+    const target =
+      norm(
+        selectedValue
+      );
+
+
+    const assets =
+      Array.isArray(
+        config?.assets
+      )
+        ? config.assets
+        : [];
+
+
+    for(
+      const asset of assets
+    ){
+
+      const candidates = [
+        asset?.data_key,
+        asset?.name,
+        asset?.display_name,
+        asset?.symbol
+      ]
+        .concat(
+          Array.isArray(
+            asset?.aliases
+          )
+            ? asset.aliases
+            : []
+        )
+        .concat(
+          Array.isArray(
+            asset?.history_keys
+          )
+            ? asset.history_keys
+            : []
+        );
+
+
+      const match =
+        candidates.some(
+          value =>
+            norm(value)
+            === target
+        );
+
+
+      if(match){
+
+        return String(
+          asset?.name
+          || asset?.display_name
+          || selectedValue
+        )
+          .trim();
+      }
+    }
+
+
+    return String(
+      selectedValue || ""
+    )
+      .trim();
+  }
+
+
+  async function invokeArchiveNews(
+    instrument,
+    limit,
+    offset
+  ){
+
+    const client =
+      await ensureArchiveClient();
+
+
+    const {
+      data,
+      error
+    } =
+      await client.functions.invoke(
+        "market-archive-search-v2",
+        {
+          body:{
+            action:"news",
+            query:null,
+            market:"all",
+            instrument:instrument,
+            source:"all",
+            limit:limit,
+            offset:offset
+          }
+        }
+      );
+
+
+    if(error){
+
+      throw error;
+    }
+
+
+    if(!data?.ok){
+
+      throw new Error(
+        data?.error
+        || "Archive request failed"
+      );
+    }
+
+
+    return data;
+  }
+
+
+  async function ensureArchiveNews(
+    instrument
+  ){
+
+    const key =
+      norm(
+        instrument
+      );
+
+
+    if(!key){
+
+      return [];
+    }
+
+
+    if(
+      archiveHistogramCache.has(
+        key
+      )
+    ){
+
+      return archiveHistogramCache.get(
+        key
+      );
+    }
+
+
+    const promise =
+      (
+        async()=>{
+
+          const pageSize =
+            100;
+
+
+          let offset =
+            0;
+
+
+          let total =
+            null;
+
+
+          const rows =
+            [];
+
+
+          /*
+            Read the complete canonical archive
+            for the selected instrument.
+
+            The Archive Bridge handles the
+            R2-backed historical dataset.
+          */
+
+          while(
+            total===null
+            ||
+            offset < total
+          ){
+
+            const result =
+              await invokeArchiveNews(
+                instrument,
+                pageSize,
+                offset
+              );
+
+
+            const page =
+              Array.isArray(
+                result?.data
+              )
+                ? result.data
+                : [];
+
+
+            if(total===null){
+
+              total =
+                Number(
+                  result?.total_count
+                  || 0
+                );
+            }
+
+
+            rows.push(
+              ...page
+            );
+
+
+            offset =
+              rows.length;
+
+
+            if(!page.length){
+
+              break;
+            }
+
+
+            if(
+              page.length
+              < pageSize
+              &&
+              offset >= total
+            ){
+
+              break;
+            }
+          }
+
+
+          window.__PSD_SVM_ARCHIVE_HISTOGRAM__ = {
+            source:
+              "r2-via-market-archive-search-v2",
+
+            instrument:
+              instrument,
+
+            total_count:
+              total,
+
+            loaded_count:
+              rows.length,
+
+            loaded_at:
+              new Date()
+                .toISOString()
+          };
+
+
+          return rows;
+
+        }
+      )();
+
+
+    archiveHistogramCache.set(
+      key,
+      promise
+    );
+
+
+    try{
+
+      return await promise;
+
+    }
+    catch(error){
+
+      archiveHistogramCache.delete(
+        key
+      );
+
+      throw error;
+    }
+  }
+
+
+  /* SVM ARCHIVE HISTOGRAM V3 END */
+
+
   async function ensureConfig(){
 
     if(!configCache){
@@ -7604,6 +8564,7 @@ select.lab-select.x-signals-select{
     const raw=
       item?.published_utc
       || item?.published_at
+      || item?.event_date
       || item?.published
       || item?.cached_utc
       || item?.date
@@ -8231,9 +9192,116 @@ select.lab-select.x-signals-select{
   }
 
 
+  function viewportHistogramBuckets(
+    mode
+  ){
+
+    const viewport =
+      svmHistogramViewport
+      || window.__PSD_SVM_VIEWPORT__
+      || null;
+
+
+    const points =
+      Array.isArray(
+        viewport?.points
+      )
+        ? viewport.points
+        : [];
+
+
+    if(!points.length){
+
+      return [];
+    }
+
+
+    const buckets = [];
+    const seen =
+      new Set();
+
+
+    points.forEach(
+      point=>{
+
+        const rawDate =
+          String(
+            point?.date
+            || ""
+          )
+            .slice(
+              0,
+              10
+            );
+
+
+        if(
+          !/^\d{4}-\d{2}-\d{2}$/
+            .test(rawDate)
+        ){
+          return;
+        }
+
+
+        /*
+          Noon avoids DST / local-midnight shifts while
+          preserving the intended calendar date.
+        */
+
+        const date =
+          new Date(
+            rawDate
+            + "T12:00:00"
+          );
+
+
+        const key =
+          bucketKey(
+            date,
+            mode
+          );
+
+
+        if(
+          seen.has(key)
+        ){
+          return;
+        }
+
+
+        seen.add(key);
+
+
+        buckets.push({
+          key:key,
+          start:date,
+          date:rawDate,
+          x:Number(point.x),
+          bullish:0,
+          bearish:0
+        });
+
+      }
+    );
+
+
+    return buckets
+      .filter(
+        bucket=>
+          Number.isFinite(
+            bucket.x
+          )
+      )
+      .sort(
+        (a,b)=>
+          a.x - b.x
+      );
+  }
+
+
   async function renderHistogram(){
 
-    const box=
+    const box =
       document.getElementById(
         "svmNewsHistogramBars"
       );
@@ -8242,233 +9310,373 @@ select.lab-select.x-signals-select{
     if(!box){
 
       return;
-
     }
 
 
-    const [
-      news,
-      config
-    ]=
-      await Promise.all([
-        ensureNews(),
-        ensureConfig()
-      ]);
-
-
-    if(!news){
-
-      box.innerHTML="";
-      return;
-
-    }
-
-
-    const mode=
+    const mode =
       activeSvmPeriod();
 
 
-    const instrument=
+    const selectedInstrument =
       selectedSvmInstrument();
 
 
-    const keys=
-      instrumentKeys(
-        instrument,
-        config
-      );
+    if(!selectedInstrument){
+
+      box.innerHTML = "";
+      return;
+    }
 
 
-    const buckets=
-      makeBuckets(mode);
+    box.dataset.archiveState =
+      "loading";
 
 
-    const map=
-      new Map(
-        buckets.map(
-          bucket=>[
-            bucket.key,
-            bucket
-          ]
-        )
-      );
+    const existingMarkup =
+      box.innerHTML;
 
 
-    uniqueArticles(news)
-      .filter(
-        article=>
-          matchesInstrument(
-            article,
-            keys
+    try{
+
+      const config =
+        await ensureConfig();
+
+
+      const archiveInstrument =
+        archiveInstrumentName(
+          selectedInstrument,
+          config
+        );
+
+
+      const articles =
+        await ensureArchiveNews(
+          archiveInstrument
+        );
+
+
+      const buckets =
+        viewportHistogramBuckets(
+          mode
+        );
+
+
+      if(!buckets.length){
+
+        box.dataset.archiveState =
+          "waiting-for-viewport";
+
+        return;
+      }
+
+
+      const map =
+        new Map(
+          buckets.map(
+            bucket => [
+              bucket.key,
+              bucket
+            ]
           )
+        );
+
+
+      uniqueArticles(
+        articles
       )
-      .forEach(article=>{
+        .forEach(
+          article=>{
 
-        const vote=
-          articleVote(
-            article
-          );
-
-
-        if(
-          vote!=="bullish"
-          &&
-          vote!=="bearish"
-        ){
-
-          return;
-
-        }
+            const vote =
+              articleVote(
+                article
+              );
 
 
-        const date=
-          articleDate(
-            article
-          );
+            if(
+              vote !== "bullish"
+              &&
+              vote !== "bearish"
+            ){
+
+              return;
+            }
 
 
-        if(!date){
-
-          return;
-
-        }
-
-
-        const bucket=
-          map.get(
-            bucketKey(
-              date,
-              mode
-            )
-          );
+            const date =
+              articleDate(
+                article
+              );
 
 
-        if(!bucket){
+            if(!date){
 
-          return;
-
-        }
-
-
-        bucket[vote]+=1;
-
-      });
+              return;
+            }
 
 
-    const maxCount=
-      Math.max(
-        1,
-        ...buckets.flatMap(
-          bucket=>[
-            bucket.bullish,
-            bucket.bearish
-          ]
-        )
-      );
+            const bucket =
+              map.get(
+                bucketKey(
+                  date,
+                  mode
+                )
+              );
 
 
-    box.style.gridTemplateColumns=
-      `repeat(${buckets.length},minmax(0,1fr))`;
+            if(!bucket){
+
+              return;
+            }
 
 
-    box.innerHTML=
-      buckets
-        .map(
-          (bucket,index)=>{
-
-            const bullHeight=
-              bucket.bullish
-                ? Math.max(
-                    18,
-                    (
-                      bucket.bullish
-                      / maxCount
-                    )
-                    * 100
-                  )
-                : 0;
-
-
-            const bearHeight=
-              bucket.bearish
-                ? Math.max(
-                    18,
-                    (
-                      bucket.bearish
-                      / maxCount
-                    )
-                    * 100
-                  )
-                : 0;
-
-
-            return `
-              <div class="svm-news-bin">
-
-                <div class="svm-news-bull-zone">
-
-                  <div
-                    class="svm-news-bar bull ${
-                      bucket.bullish
-                        ? "has-value"
-                        : ""
-                    }"
-                    style="height:${bullHeight}%"
-                    title="Bullish news: ${bucket.bullish}"
-                  >
-                    ${
-                      bucket.bullish
-                        ? `<span class="svm-news-count">${bucket.bullish}</span>`
-                        : ""
-                    }
-                  </div>
-
-                </div>
-
-
-                <div class="svm-news-zero"></div>
-
-
-                <div class="svm-news-bear-zone">
-
-                  <div
-                    class="svm-news-bar bear ${
-                      bucket.bearish
-                        ? "has-value"
-                        : ""
-                    }"
-                    style="height:${bearHeight}%"
-                    title="Bearish news: ${bucket.bearish}"
-                  >
-                    ${
-                      bucket.bearish
-                        ? `<span class="svm-news-count">${bucket.bearish}</span>`
-                        : ""
-                    }
-                  </div>
-
-                </div>
-
-
-                <span class="svm-news-bin-label">
-                  ${
-                    bucketLabel(
-                      bucket,
-                      mode,
-                      index,
-                      buckets.length
-                    )
-                  }
-                </span>
-
-              </div>
-            `;
+            bucket[vote] += 1;
 
           }
-        )
-        .join("");
+        );
 
+
+      const maxCount =
+        Math.max(
+          1,
+          ...buckets.flatMap(
+            bucket => [
+              bucket.bullish,
+              bucket.bearish
+            ]
+          )
+        );
+
+
+      box.style.gridTemplateColumns =
+        "";
+
+
+      box.style.display =
+        "block";
+
+
+      box.style.position =
+        "relative";
+
+
+      box.innerHTML =
+        buckets
+          .map(
+            (bucket,index)=>{
+
+              const bullHeight =
+                bucket.bullish
+                  ? Math.max(
+                      18,
+                      (
+                        bucket.bullish
+                        / maxCount
+                      )
+                      * 100
+                    )
+                  : 0;
+
+
+              const bearHeight =
+                bucket.bearish
+                  ? Math.max(
+                      18,
+                      (
+                        bucket.bearish
+                        / maxCount
+                      )
+                      * 100
+                    )
+                  : 0;
+
+
+              return `
+                <div
+                  class="svm-news-bin svm-news-bin-dynamic"
+                  style="
+                    left:${bucket.x}px;
+                  "
+                  data-date="${bucket.date}"
+                >
+
+                  <div class="svm-news-bull-zone">
+
+                    <div
+                      class="svm-news-bar bull ${
+                        bucket.bullish
+                          ? "has-value"
+                          : ""
+                      }"
+                      style="height:${bullHeight}%"
+                      title="Bullish news: ${bucket.bullish}"
+                    >
+                      ${
+                        bucket.bullish
+                          ? `<span class="svm-news-count">${bucket.bullish}</span>`
+                          : ""
+                      }
+                    </div>
+
+                  </div>
+
+
+                  <div class="svm-news-zero"></div>
+
+
+                  <div class="svm-news-bear-zone">
+
+                    <div
+                      class="svm-news-bar bear ${
+                        bucket.bearish
+                          ? "has-value"
+                          : ""
+                      }"
+                      style="height:${bearHeight}%"
+                      title="Bearish news: ${bucket.bearish}"
+                    >
+                      ${
+                        bucket.bearish
+                          ? `<span class="svm-news-count">${bucket.bearish}</span>`
+                          : ""
+                      }
+                    </div>
+
+                  </div>
+
+
+                  <span class="svm-news-bin-label">
+                    ${
+                      bucketLabel(
+                        bucket,
+                        mode,
+                        index,
+                        buckets.length
+                      )
+                    }
+                  </span>
+
+                </div>
+              `;
+
+            }
+          )
+          .join("");
+
+
+      box.dataset.archiveState =
+        "ready";
+
+
+      box.dataset.archiveInstrument =
+        archiveInstrument;
+
+
+      box.dataset.archiveRows =
+        String(
+          articles.length
+        );
+
+    }
+    catch(error){
+
+      console.error(
+        "SVM archive histogram failed:",
+        error
+      );
+
+
+      box.dataset.archiveState =
+        "error";
+
+
+      /*
+        Keep the last visible histogram instead
+        of blanking the chart during a temporary
+        archive/API problem.
+      */
+
+      if(existingMarkup){
+
+        box.innerHTML =
+          existingMarkup;
+      }
+
+    }
   }
+
+
+  window.addEventListener(
+    "psd-svm-viewport",
+    function(event){
+
+      const detail =
+        event?.detail;
+
+
+      if(
+        !detail
+        ||
+        !Array.isArray(
+          detail.points
+        )
+      ){
+        return;
+      }
+
+
+      svmHistogramViewport =
+        detail;
+
+
+      /*
+        The histogram overlay must begin exactly where
+        the drawable chart pane begins and end before
+        the right-side market-price axis.
+      */
+
+      const histogram =
+        document.getElementById(
+          "svmNewsHistogram"
+        );
+
+
+      if(histogram){
+
+        const left =
+          Math.max(
+            0,
+            Number(
+              detail.leftScaleWidth
+            )
+            || 0
+          );
+
+
+        const right =
+          Math.max(
+            0,
+            Number(
+              detail.rightScaleWidth
+            )
+            || 0
+          );
+
+
+        histogram.style.left =
+          left + "px";
+
+
+        histogram.style.right =
+          right + "px";
+
+      }
+
+
+      queueRender();
+
+    }
+  );
 
 
   function queueRender(){
@@ -8538,9 +9746,78 @@ select.lab-select.x-signals-select{
     queueRender
   );
 
+
+  window.addEventListener(
+    "load",
+    function(){
+
+      setTimeout(
+        function(){
+
+          if(
+            typeof window.__PSD_EMIT_SVM_VIEWPORT
+              === "function"
+          ){
+
+            window.__PSD_EMIT_SVM_VIEWPORT();
+
+          }
+
+        },
+        150
+      );
+
+    }
+  );
+
 })();
 </script>
 <!-- SVM NEWS HISTOGRAM V1 END -->
+
+
+<!-- REMOVE FULL DATE LABELS V1 START -->
+<style>
+  /* Hide the extra full-date labels above the x-axis.
+     Keep the original day-number axis labels only. */
+  .svm-news-bin-label{
+    display:none !important;
+  }
+</style>
+
+<script>
+(function () {
+  function removeFullDateLabels() {
+    document.querySelectorAll(".svm-news-bin-label").forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  function run() {
+    removeFullDateLabels();
+    setTimeout(removeFullDateLabels, 250);
+    setTimeout(removeFullDateLabels, 1000);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run);
+  } else {
+    run();
+  }
+
+  window.addEventListener("load", run);
+
+  const mo = new MutationObserver(function () {
+    removeFullDateLabels();
+  });
+
+  window.addEventListener("load", function () {
+    if (document.body) {
+      mo.observe(document.body, { childList: true, subtree: true });
+    }
+  });
+})();
+</script>
+<!-- REMOVE FULL DATE LABELS V1 END -->
 
 </body>
 </html>
