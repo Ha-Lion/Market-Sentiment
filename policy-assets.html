@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Policy & Geopolitical Assets Sentiment — Public Sentiment Dash</title>
-  <meta name="description" content="Track public sentiment across policy, geopolitical events, defense, tariffs, sanctions, and politically sensitive assets.">
+  <meta name="description" content="Track public sentiment across policy, geopolitical events, defense, tariffs, sanctions, and politically sensitive assets. Asset names identify the specific token, company, ETF, or prediction-market segment being tracked.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://publicsentimentdash.com/policy-assets.html">
   <link rel="icon" type="image/png" href="logo.png">
@@ -1665,6 +1665,45 @@ body.dark-mode select.lab-select.x-signals-select{
       {name:"Cybersecurity / CIBR", symbol:"CIBR", aliases:["cibr", "cybersecurity etf", "cybersecurity stocks", "cyber defense", "Cybersecurity / CIBR", "CIBR"], official:false, priority:16, historyKeys:["Cybersecurity / CIBR", "CIBR"]}
     ];
 
+    /*
+      Clear public-facing labels for Policy & Geo assets.
+      IMPORTANT: internal canonical names/symbols remain unchanged so
+      PSI, history, technical data, and backend lookups stay compatible.
+    */
+    const POLICY_DISPLAY_NAMES = Object.freeze({
+      TRUMP: "TRUMP Meme Coin / TRUMP",
+      WLFI: "World Liberty Financial Governance Token / WLFI",
+      Kalshi: "Kalshi Political Prediction Markets",
+      Polymarket: "Polymarket Political Prediction Markets",
+      DJT: "Trump Media & Technology Group / DJT",
+      COIN: "Coinbase Global / COIN",
+      MSTR: "Strategy / MSTR",
+      TSLA: "Tesla, Inc. / TSLA",
+      ITA: "iShares U.S. Aerospace & Defense ETF / ITA",
+      LMT: "Lockheed Martin / LMT",
+      REMX: "VanEck Rare Earth & Strategic Metals ETF / REMX",
+      SMH: "VanEck Semiconductor ETF / SMH",
+      FXI: "iShares China Large-Cap ETF / FXI",
+      URA: "Global X Uranium ETF / URA",
+      GEO: "The GEO Group / GEO",
+      CIBR: "First Trust Nasdaq Cybersecurity ETF / CIBR"
+    });
+
+    function policyDisplayName(value){
+      const raw = String(value?.name ?? value ?? "").trim();
+      const item =
+        (value && typeof value === "object")
+          ? value
+          : POLICY_ITEMS.find(candidate =>
+              candidate.name === raw ||
+              candidate.symbol === raw
+            );
+
+      const symbol = String(item?.symbol || "").trim();
+      return POLICY_DISPLAY_NAMES[symbol] || item?.name || raw;
+    }
+
+
     let dashboardData = null;
     let historyData = null;
     let technicalData = null;
@@ -2105,7 +2144,7 @@ body.dark-mode select.lab-select.x-signals-select{
           <article class="ai-card">
             <div class="ai-card-top">
               <div style="min-width:0;">
-                <div class="ai-name">${esc(row.name)}</div>
+                <div class="ai-name">${esc(policyDisplayName(item || row.name))}</div>
                 <div class="ai-symbol">${esc(row.symbol)} • ${sourceText}</div>
               </div>
             </div>
@@ -2260,7 +2299,7 @@ body.dark-mode select.lab-select.x-signals-select{
       if(!box) return;
 
       if(!series.length){
-        box.innerHTML = `<div class="empty-note">No Engine-supplied history exists yet for ${esc(name)}. This will fill in as official historical PSI becomes available.</div>`;
+        box.innerHTML = `<div class="empty-note">No Engine-supplied history exists yet for ${esc(policyDisplayName(name))}. This will fill in as official historical PSI becomes available.</div>`;
         return;
       }
 
@@ -2290,7 +2329,7 @@ body.dark-mode select.lab-select.x-signals-select{
         range.textContent="";
         grid.className="history-grid compare-assets-grid";
         syncMount.innerHTML=`<div class="comparison-sync-controls" role="group" aria-label="Comparison chart synchronization"><strong>Synchronize crosshair + date range:</strong><button class="comparison-sync-button" type="button" data-sync-mode="pair">Each asset pair</button><button class="comparison-sync-button" type="button" data-sync-mode="sentiment">Both sentiment charts</button><button class="comparison-sync-button" type="button" data-sync-mode="market">Both market charts</button><button class="comparison-sync-button" type="button" data-sync-mode="all">All four charts</button><button class="comparison-sync-button" type="button" data-sync-mode="individual">Individual charts</button></div>`;
-        grid.innerHTML=activeCompareNames.map((name,index)=>`<section class="compare-asset-column"><h3>${esc(name)}</h3><section class="pulse-chart-panel" data-chart-panel="compare-sentiment-${index}"><div class="pulse-chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain Sentiment History" aria-expanded="false">i</button></h3><button class="chart-size" type="button" data-chart-size="compare-sentiment-${index}">Maximize</button></div><div class="interactive-chart" id="compareSentiment${index}"></div></section><section class="pulse-chart-panel" data-chart-panel="compare-market-${index}"><div class="pulse-chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain Market Price History" aria-expanded="false">i</button></h3><div class="market-chart-actions">${fullMarketChartLink(name)}<button class="chart-size" type="button" data-chart-size="compare-market-${index}">Maximize</button></div></div><div class="interactive-chart" id="compareMarket${index}"></div></section></section>`).join("");
+        grid.innerHTML=activeCompareNames.map((name,index)=>`<section class="compare-asset-column"><h3>${esc(policyDisplayName(name))}</h3><section class="pulse-chart-panel" data-chart-panel="compare-sentiment-${index}"><div class="pulse-chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain Sentiment History" aria-expanded="false">i</button></h3><button class="chart-size" type="button" data-chart-size="compare-sentiment-${index}">Maximize</button></div><div class="interactive-chart" id="compareSentiment${index}"></div></section><section class="pulse-chart-panel" data-chart-panel="compare-market-${index}"><div class="pulse-chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain Market Price History" aria-expanded="false">i</button></h3><div class="market-chart-actions">${fullMarketChartLink(name)}<button class="chart-size" type="button" data-chart-size="compare-market-${index}">Maximize</button></div></div><div class="interactive-chart" id="compareMarket${index}"></div></section></section>`).join("");
         document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
         document.querySelectorAll("[data-sync-mode]").forEach(button=>button.addEventListener("click",()=>activateComparisonSync(button.dataset.syncMode)));
         try{await ensureCharts();activeCompareNames.forEach((name,index)=>{makeInteractiveChart(`compareSentiment${index}`,dailySeries(name),"#57dfc6",true,`sentiment-${index}`);makeInteractiveChart(`compareMarket${index}`,marketSeries(name),"#69b9ff",false,`market-${index}`)});activateComparisonSync(comparisonSyncMode)}catch(_error){grid.querySelectorAll(".interactive-chart").forEach(box=>box.innerHTML='<div class="empty-note">Interactive chart could not load.</div>')}
@@ -2299,7 +2338,7 @@ body.dark-mode select.lab-select.x-signals-select{
       card?.classList.remove("compare-view");
       syncMount.innerHTML="";
       grid.className="history-grid";
-      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=activeHistoryName;const canonicalActive=Boolean(canonicalHistoryRows(activeHistoryName)?.length);subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings • ${canonicalActive ? "Canonical Supabase history" : "Compact JSON fallback"}`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
+      const sentiment=dailySeries(activeHistoryName),market=marketSeries(activeHistoryName),first=sentiment[0]?.date,last=sentiment.at(-1)?.date;title.textContent=policyDisplayName(activeHistoryName);const canonicalActive=Boolean(canonicalHistoryRows(activeHistoryName)?.length);subtitle.textContent=`Daily • ${sentiment.length} sentiment readings • ${market.length} market readings • ${canonicalActive ? "Canonical Supabase history" : "Compact JSON fallback"}`;range.textContent=first&&last?`Full available sentiment history: ${first} to ${last}`:"Sentiment history unavailable";
       grid.innerHTML=`<section class="pulse-chart-panel" data-chart-panel="sentiment"><div class="pulse-chart-head"><h3>Sentiment History (PSI) <button class="psd-glossary-info" type="button" data-pulse-glossary="sentiment-history" aria-label="Explain Sentiment History" aria-expanded="false">i</button></h3><button class="chart-size" type="button" data-chart-size="sentiment">Maximize</button></div><div class="interactive-chart" id="sentimentChart"></div></section><section class="pulse-chart-panel" data-chart-panel="market"><div class="pulse-chart-head"><h3>Market Price History <button class="psd-glossary-info" type="button" data-pulse-glossary="market-history" aria-label="Explain Market Price History" aria-expanded="false">i</button></h3><div class="market-chart-actions">${fullMarketChartLink(activeHistoryName)}<button class="chart-size" type="button" data-chart-size="market">Maximize</button></div></div><div class="interactive-chart" id="marketChart"></div></section><section class="history-news"><h3>Latest News <button class="psd-glossary-info" type="button" data-pulse-glossary="latest-news" aria-label="Explain Latest News" aria-expanded="false">i</button></h3><div class="history-news-list" id="historyNews"></div></section>`;
       document.getElementById("historyNews").innerHTML=newsHtml(historyNewsFor(activeHistoryName));document.querySelectorAll("[data-chart-size]").forEach(button=>button.addEventListener("click",()=>toggleChart(button.dataset.chartSize)));
       try{await ensureCharts();makeInteractiveChart("sentimentChart",sentiment,"#57dfc6",true);makeInteractiveChart("marketChart",market,"#69b9ff",false)}catch(_error){document.getElementById("sentimentChart").innerHTML='<div class="empty-note">Interactive chart could not load.</div>'}
