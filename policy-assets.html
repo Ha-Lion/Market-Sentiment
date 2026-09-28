@@ -1552,6 +1552,13 @@ body.dark-mode select.lab-select.x-signals-select{
 
     <div class="ai-carousel" id="aiCarousel"><section class="ai-top-grid" id="aiTopGrid"></section></div>
 
+    <section class="ai-panels">
+      <div class="ai-panel">
+        <h2>Latest X Policy &amp; Geopolitical Signals</h2>
+        <p>Valid Policy/Geo posts that do not prove a specific listed asset appear here instead of being forced onto the wrong asset.</p>
+        <div id="policyGeneralXSignals"></div>
+      </div>
+    </section>
 
     <section id="categoryIntelligence" class="category-intelligence-mount" aria-live="polite"></section>
 
@@ -1849,10 +1856,23 @@ body.dark-mode select.lab-select.x-signals-select{
       const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
       const name = normalizeText(item?.name || row?.name || "");
 
-      if(symbol === "TRUMP" || name === "official trump / trump") return "trump_token";
-      if(symbol === "COIN" || name === "coinbase / coin") return "coin";
-      if(symbol === "MSTR" || name === "microstrategy / mstr") return "mstr";
-      if(symbol === "TSLA" || name === "tesla / tsla") return "tsla";
+      if(symbol === "TRUMP") return "trump_token";
+      if(symbol === "WLFI") return "wlfi";
+      if(symbol === "KALSHI" || name === "kalshi politics") return "kalshi_politics";
+      if(symbol === "POLYMARKET" || name === "polymarket politics") return "polymarket_politics";
+      if(symbol === "DJT") return "djt";
+      if(symbol === "COIN") return "coin";
+      if(symbol === "MSTR") return "mstr";
+      if(symbol === "TSLA") return "tsla";
+      if(symbol === "ITA") return "ita";
+      if(symbol === "LMT") return "lmt";
+      if(symbol === "REMX") return "remx";
+      if(symbol === "SMH") return "policy_smh";
+      if(symbol === "FXI") return "fxi";
+      if(symbol === "URA") return "ura";
+      if(symbol === "GEO") return "geo";
+      if(symbol === "CIBR") return "policy_cibr";
+
       return "";
     }
 
@@ -2365,6 +2385,15 @@ body.dark-mode select.lab-select.x-signals-select{
     async function init(){
       try{
         await ensureXSignalsLabData();
+
+        const policyGeneralMount =
+          document.getElementById("policyGeneralXSignals");
+
+        if(policyGeneralMount){
+          policyGeneralMount.innerHTML =
+            renderXSignalsSelect("policy_general");
+        }
+
         const [dashboardPayload, historyPayload, assetConfig] = await Promise.all([
           fetchOptionalJson("dashboard_live.json", 15000),
           fetchOptionalJson("instrument_history_compact.json", 30000),
