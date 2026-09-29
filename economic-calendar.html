@@ -171,6 +171,23 @@
   }
 </style>
 
+  
+<style id="ec-v24-save-button">
+  #settings-save-top{
+    display:none;
+    background:#d5a11e!important;
+    color:#000!important;
+    border-color:#a87800!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 2px 5px rgba(0,0,0,.14);
+    font-weight:900!important;
+  }
+  body.dark-mode #settings-save-top{
+    color:#fff!important;
+    background:#8b6414!important;
+    border-color:#d5a11e!important;
+  }
+</style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -1101,21 +1118,21 @@
             <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code||"")}</strong> ${esc(c.name)}</span></td>
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
-              <button class="ec-event-link" type="button" data-open-event="${esc(e.id||"")}">${esc(e.event||e.category||"Economic event")}</button>
-              <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(e.id||"")}">i</button>
+              <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(e.event||e.category||"Economic event")}</button>
+              <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(eventUIKey(e))}">i</button>
               <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
             </td>
             <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
             <td class="value">${formatValue(e.forecast||e.te_forecast,e.unit)}</td>
             <td class="value muted">${formatValue(e.previous,e.unit)}</td>
-            <td><span class="ec-spark-empty" data-spark-event="${esc(e.id||"")}">Load</span></td>
+            <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">Load</span></td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
-                <button class="ec-icon-btn" type="button" title="Add to calendar" aria-label="Add to calendar" data-action="calendar" data-event-id="${esc(e.id||"")}">📅</button>
-                <button class="ec-icon-btn" type="button" title="Email reminder using your saved reminder time" aria-label="Email reminder" aria-pressed="false" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
-                <button class="ec-icon-btn" type="button" title="Text reminder using your saved reminder time" aria-label="Text reminder" aria-pressed="false" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
-                <button class="ec-icon-btn" type="button" title="Desktop notification using your saved reminder time" aria-label="Desktop notification" aria-pressed="false" data-action="desktop" data-event-id="${esc(e.id||"")}">🔔</button>
+                <button class="ec-icon-btn" type="button" title="Add to calendar" aria-label="Add to calendar" data-action="calendar" data-event-id="${esc(eventUIKey(e))}">📅</button>
+                <button class="ec-icon-btn" type="button" title="Email reminder using your saved reminder time" aria-label="Email reminder" aria-pressed="false" data-action="email" data-event-id="${esc(eventUIKey(e))}">✉</button>
+                <button class="ec-icon-btn" type="button" title="Text reminder using your saved reminder time" aria-label="Text reminder" aria-pressed="false" data-action="sms" data-event-id="${esc(eventUIKey(e))}">📱</button>
+                <button class="ec-icon-btn" type="button" title="Desktop notification using your saved reminder time" aria-label="Desktop notification" aria-pressed="false" data-action="desktop" data-event-id="${esc(eventUIKey(e))}">🔔</button>
               </div>
             </td>
           </tr>`;
@@ -1361,42 +1378,86 @@
     function fillModalBase(e){
       const g=glossaryFor(e);
       const d=parseProviderDate(e.date);
-      document.getElementById("event-modal-title").textContent=e.event||e.category||"Economic Event";
-      document.getElementById("event-modal-sub").textContent=`${normalizedCountryCode(e)||""} ${e.country||countryName(normalizedCountryCode(e))} · ${timeText(d)} · ${TZ_LABELS[settings.timezone]||settings.timezone}`;
-      document.getElementById("event-modal-definition").innerHTML=`<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
+      const c=displayCountry(e);
+
+      document.getElementById("event-modal-title").textContent=
+        e.event||e.category||"Economic Event";
+
+      document.getElementById("event-modal-sub").textContent=
+        `${c.code?c.code+" ":""}${c.name||"Global"} · ${timeText(d)} · ${TZ_LABELS[settings.timezone]||settings.timezone}`;
+
+      document.getElementById("event-modal-definition").innerHTML=
+        `<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
+
       document.getElementById("event-modal-kpis").innerHTML=`
         <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
         <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast||e.te_forecast,e.unit)}</strong></div>
         <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,e.unit)}</strong></div>
-        <div class="ec-kpi"><span>Impact</span><strong>${impactFromImportance(e.importance)}</strong></div>`;
-      const src=e.source||"FinanceCalendar / official release source";
+        <div class="ec-kpi"><span>Impact</span><strong>${esc(impactFromImportance(e.importance))}</strong></div>`;
+
+      const src=e.source||"Economic calendar provider";
+      const sourceUrl=e.source_url||"";
       document.getElementById("event-modal-source").innerHTML=`
         <strong>${esc(src)}</strong><br>
         ${e.reference?`Reference: ${esc(e.reference)}<br>`:""}
-        Category: ${esc(classifyEvent(e))}${e.currency?` · Currency: ${esc(e.currency)}`:""}<br><a href="https://www.financecalendar.com/" target="_blank" rel="noopener">Data attribution: financecalendar.com</a>`;
+        ${e.category?`Provider category: ${esc(e.category)}<br>`:""}
+        Classification: ${esc(classifyEvent(e))}
+        ${e.currency?` · Currency: ${esc(e.currency)}`:""}
+        ${e.unit?` · Unit: ${esc(e.unit)}`:""}
+        ${sourceUrl?`<br><a href="${esc(sourceUrl)}" target="_blank" rel="noopener">Open source</a>`:""}`;
     }
 
     async function openEventModal(e){
       activeModalEvent=e;
       activeChartSeries="actual";
-      fillModalBase(e);
-      document.querySelectorAll(".ec-chart-toggle").forEach(b=>b.classList.toggle("active",b.dataset.chartSeries==="actual"));
+
       const backdrop=document.getElementById("event-modal-backdrop");
       backdrop.classList.add("open");
       backdrop.setAttribute("aria-hidden","false");
       document.body.style.overflow="hidden";
+
+      try{
+        fillModalBase(e);
+      }catch(err){
+        console.error("Event detail render failed",err);
+        document.getElementById("event-modal-title").textContent=e.event||"Economic Event";
+        document.getElementById("event-modal-sub").textContent=e.country||"";
+        document.getElementById("event-modal-definition").textContent=
+          "Event details are available from the calendar row. Additional detail is loading.";
+      }
+
+      document.querySelectorAll(".ec-chart-toggle").forEach(b=>
+        b.classList.toggle("active",b.dataset.chartSeries==="actual")
+      );
 
       const chart=document.getElementById("event-big-chart");
       const note=document.getElementById("event-history-note");
       note.textContent="Loading 12-month event history…";
       drawCanvasLine(chart,[],"actual");
 
-      const [hist]=await Promise.all([fetchEventHistory(e),loadRelatedNews(e)]);
-      if(activeModalEvent!==e) return;
-      drawCanvasLine(chart,hist.history||[],activeChartSeries);
-      note.textContent=hist.mode==="configured"
-        ? `${(hist.history||[]).length} historical releases found over the last 12 months.`
-        : "No matching historical releases were returned for this event yet.";
+      const newsHost=document.getElementById("event-related-news");
+      newsHost.innerHTML='<div class="ec-detail-loading">Loading related news…</div>';
+
+      // Load history and news independently so one failure never empties the popup.
+      fetchEventHistory(e).then(hist=>{
+        if(activeModalEvent!==e) return;
+        drawCanvasLine(chart,hist?.history||[],activeChartSeries);
+        note.textContent=hist?.mode==="configured"
+          ? `${(hist.history||[]).length} historical releases found over the last 12 months.`
+          : "Historical releases are not available for this event yet.";
+      }).catch(err=>{
+        console.warn("History load failed",err);
+        if(activeModalEvent===e){
+          note.textContent="Historical releases are temporarily unavailable.";
+        }
+      });
+
+      loadRelatedNews(e).catch(err=>{
+        console.warn("Related news load failed",err);
+        if(activeModalEvent===e){
+          newsHost.innerHTML='<div class="ec-detail-loading">No related news available right now.</div>';
+        }
+      });
     }
 
     function closeEventModal(){
@@ -1586,6 +1647,7 @@
         }
 
         allEvents=Array.isArray(data.events)?data.events:[];
+        ensureEventUIKeys();
         setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
         document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
         document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
@@ -1715,12 +1777,36 @@
       await loadFeed();
     }));
 
-    [search,countryFilter,impactFilter,categoryFilter].forEach(x=>x.addEventListener("input",render));
+    search.addEventListener("input",render);
+    [countryFilter,impactFilter,categoryFilter].forEach(x=>{
+      x.addEventListener("change",render);
+      x.addEventListener("input",render);
+    });
 
     document.getElementById("clear-filters").addEventListener("click",()=>{
       search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false; render();
     });
 
+
+
+    function syncSettingsFromControlsAndRender(){
+      settings.categories=selectedValues("saved-category");
+      settings.impacts=selectedValues("saved-impact");
+      settings.timezone=document.getElementById("saved-timezone").value||settings.timezone;
+
+      const countryChecks=[...document.querySelectorAll('input[name="saved-country"]')];
+      if(countryChecks.length){
+        const checked=countryChecks.filter(x=>x.checked).map(x=>x.value);
+        if(checked.length) settings.countries=checked;
+      }
+
+      rebuildQuickFilters();
+      render();
+    }
+
+    document.querySelectorAll('input[name="saved-category"],input[name="saved-impact"]').forEach(input=>{
+      input.addEventListener("change",syncSettingsFromControlsAndRender);
+    });
 
     document.getElementById("all-country-checkboxes").addEventListener("change",ev=>{
       const input=ev.target.closest('input[name="saved-country"]');
@@ -1728,6 +1814,8 @@
       const set=new Set(settings.countries);
       if(input.checked) set.add(input.value); else set.delete(input.value);
       settings.countries=[...set];
+      rebuildQuickFilters();
+      render();
     });
 
     document.getElementById("country-settings-search").addEventListener("input",ev=>renderCountrySettings(ev.target.value));
@@ -1735,18 +1823,24 @@
     document.getElementById("country-select-all").addEventListener("click",()=>{
       settings.countries=["EU",...ALL_COUNTRY_CODES];
       renderCountrySettings(document.getElementById("country-settings-search").value);
-      document.getElementById("settings-save-status").textContent="All countries selected — click Save Settings.";
+      rebuildQuickFilters();
+      render();
+      document.getElementById("settings-save-status").textContent="All countries selected — click Save.";
     });
 
     document.getElementById("country-major").addEventListener("click",()=>{
       settings.countries=["US","EU","GB","JP","CA","CN","AU","CH","DE","FR","IN","BR","KR","SG"];
       renderCountrySettings(document.getElementById("country-settings-search").value);
-      document.getElementById("settings-save-status").textContent="Major markets selected — click Save Settings.";
+      rebuildQuickFilters();
+      render();
+      document.getElementById("settings-save-status").textContent="Major markets selected — click Save.";
     });
 
     document.getElementById("country-clear").addEventListener("click",()=>{
       settings.countries=[];
       renderCountrySettings(document.getElementById("country-settings-search").value);
+      rebuildQuickFilters();
+      render();
       document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
     });
 
@@ -1768,7 +1862,7 @@
       const panel=document.getElementById("settings-panel");
       panel.classList.toggle("open");
       const topSave=document.getElementById("settings-save-top");
-      if(topSave) topSave.style.display="none";
+      if(topSave) topSave.style.display=panel.classList.contains("open")?"inline-flex":"none";
     });
 
     document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
@@ -1818,7 +1912,11 @@
     });
 
     document.getElementById("settings-save").addEventListener("click",async()=>{
-      if(!currentUser||!window.psdSupabase) return;
+      const status=document.getElementById("settings-save-status");
+      if(!currentUser||!window.psdSupabase){
+        status.textContent="Log in to save these settings.";
+        return;
+      }
       const phone=document.getElementById("account-phone").value.trim();
       const wantsSms=document.getElementById("default-sms-reminder").checked;
       if(phone && !/^\+[1-9][0-9]{7,14}$/.test(phone)){
@@ -1832,6 +1930,7 @@
 
       const next={
         countries:[...settings.countries],
+
         categories:selectedValues("saved-category"),
         impacts:selectedValues("saved-impact"),
         timezone:document.getElementById("saved-timezone").value,
@@ -1840,7 +1939,6 @@
         reminder_desktop:document.getElementById("default-desktop-reminder").checked,
         reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30)
       };
-      const status=document.getElementById("settings-save-status");
       if(!next.countries.length||!next.categories.length||!next.impacts.length){
         status.textContent="Keep at least one option in each group.";
         return;
@@ -1869,6 +1967,8 @@
 
       const settingsPanel=document.getElementById("settings-panel");
       if(settingsPanel) settingsPanel.classList.remove("open");
+      const topSave=document.getElementById("settings-save-top");
+      if(topSave) topSave.style.display="none";
 
       await loadFeed(true);
       setTimeout(()=>preloadWeekInBackground(true),250);
@@ -1922,8 +2022,26 @@
       applyReminderButtonStates();
     }
 
+    function eventUIKey(e,index=0){
+      if(e && e._ui_key) return e._ui_key;
+      const base=String(e?.id||"").trim();
+      if(base) return base;
+      return [
+        String(e?.country_code||e?.country||""),
+        String(e?.event||e?.category||"event"),
+        String(e?.date||""),
+        String(index)
+      ].join("|");
+    }
+
+    function ensureEventUIKeys(){
+      allEvents.forEach((e,i)=>{
+        if(!e._ui_key) e._ui_key=eventUIKey(e,i);
+      });
+    }
+
     function eventById(id){
-      return allEvents.find(e=>String(e.id||"")===String(id||""));
+      return allEvents.find((e,i)=>String(eventUIKey(e,i))===String(id||""));
     }
 
     function downloadICS(e){
