@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Economic Calendar Lab | Public Sentiment Dash</title>
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css?v=20">
+  <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
+  <style>
+    :root{
+      --ec-bg:#f5f7fb;--ec-card:#fff;--ec-border:#dfe4ec;--ec-text:#172033;
+      --ec-muted:#6b7280;--ec-accent:#1f5eff;--ec-high:#dc2626;--ec-medium:#d97706;
+      --ec-low:#16a34a;--ec-soft:#eef3ff;
+    }
+    body[data-theme="dark"]{
+      --ec-bg:#0f1420;--ec-card:#171e2c;--ec-border:#2b3446;--ec-text:#edf2f7;
+      --ec-muted:#9aa6b7;--ec-accent:#7aa2ff;--ec-soft:#1e2a44;
+    }
+    body{background:var(--ec-bg);}
+    .ec-page{max-width:1420px;margin:0 auto;padding:28px 20px 60px;color:var(--ec-text);}
+    .ec-hero{display:flex;gap:24px;justify-content:space-between;align-items:flex-end;margin-bottom:18px;}
+    .ec-hero h1{font-size:clamp(28px,4vw,42px);line-height:1.05;margin:0 0 8px;font-weight:800;letter-spacing:-.03em;}
+    .ec-hero p{margin:0;color:var(--ec-muted);font-size:15px;}
+    .ec-lab-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--ec-border);border-radius:999px;background:var(--ec-card);font-size:12px;font-weight:700;white-space:nowrap;}
+    .ec-lab-badge:before{content:"";width:8px;height:8px;border-radius:50%;background:#8b5cf6;}
+    .ec-shell{background:var(--ec-card);border:1px solid var(--ec-border);border-radius:18px;box-shadow:0 8px 30px rgba(16,24,40,.06);overflow:hidden;}
+    .ec-tabs{display:flex;gap:8px;padding:14px 16px;border-bottom:1px solid var(--ec-border);overflow:auto;}
+    .ec-tab,.ec-action{border:1px solid var(--ec-border);background:transparent;color:var(--ec-text);border-radius:9px;padding:9px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+    .ec-tab.active{background:var(--ec-accent);border-color:var(--ec-accent);color:#fff;}
+    .ec-action{margin-left:auto;background:var(--ec-soft);color:var(--ec-accent);}
+    .ec-filters{display:grid;grid-template-columns:1.2fr repeat(3,minmax(130px,.6fr));gap:10px;padding:14px 16px;border-bottom:1px solid var(--ec-border);}
+    .ec-input,.ec-select{width:100%;box-sizing:border-box;border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:9px;padding:10px 11px;font:inherit;font-size:13px;}
+    .ec-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--ec-border);}
+    .ec-stat{padding:13px 16px;border-right:1px solid var(--ec-border);}
+    .ec-stat:last-child{border-right:0;}
+    .ec-stat span{display:block;font-size:11px;color:var(--ec-muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+    .ec-stat strong{display:block;margin-top:3px;font-size:19px;}
+    .ec-table-wrap{overflow-x:auto;}
+    .ec-table{width:100%;border-collapse:collapse;min-width:970px;}
+    .ec-table th{position:sticky;top:0;text-align:left;padding:11px 14px;background:var(--ec-card);border-bottom:1px solid var(--ec-border);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);}
+    .ec-table td{padding:13px 14px;border-bottom:1px solid var(--ec-border);font-size:13px;vertical-align:middle;}
+    .ec-table tbody tr:hover{background:color-mix(in srgb,var(--ec-soft) 60%,transparent);}
+    .ec-time{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;}
+    .ec-country{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:700;}
+    .ec-event strong{display:block;font-size:13px;}
+    .ec-event small{color:var(--ec-muted);}
+    .impact{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;}
+    .impact i{display:inline-block;width:8px;height:8px;border-radius:50%;}
+    .impact.high i{background:var(--ec-high)} .impact.medium i{background:var(--ec-medium)} .impact.low i{background:var(--ec-low)}
+    .value{font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap;}
+    .muted{color:var(--ec-muted);}
+    .actual-positive{color:#16803a}.actual-negative{color:#c62828}
+    .ec-assets{display:flex;gap:5px;flex-wrap:wrap;}
+    .ec-chip{display:inline-block;padding:4px 7px;border-radius:999px;background:var(--ec-soft);color:var(--ec-accent);font-size:10px;font-weight:800;}
+    .ec-empty{text-align:center;padding:38px 20px;color:var(--ec-muted);}
+    .ec-footer-note{padding:12px 16px;color:var(--ec-muted);font-size:11px;background:color-mix(in srgb,var(--ec-soft) 45%,transparent);}
+    .ec-history-panel{display:none;padding:16px;border-bottom:1px solid var(--ec-border);background:color-mix(in srgb,var(--ec-soft) 40%,transparent);}
+    .ec-history-panel.open{display:block;}
+    .ec-history-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;}
+    .ec-history-grid label{font-size:11px;font-weight:700;color:var(--ec-muted);}
+    .ec-history-grid input{margin-top:5px;}
+    @media(max-width:800px){
+      .ec-page{padding:20px 10px 45px}
+      .ec-hero{align-items:flex-start;flex-direction:column;gap:10px}
+      .ec-filters{grid-template-columns:1fr 1fr}
+      .ec-summary{grid-template-columns:1fr 1fr}
+      .ec-stat:nth-child(2){border-right:0}
+      .ec-stat:nth-child(-n+2){border-bottom:1px solid var(--ec-border)}
+      .ec-action{margin-left:0}
+      .ec-history-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <script>window.PSD_DISABLE_ANALYTICS = true;</script>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=20"></script>
+  <script src="site-theme.js?v=20" defer></script>
+
+  <main class="ec-page">
+    <header class="ec-hero">
+      <div>
+        <h1>Economic Calendar</h1>
+        <p>Key economic releases, expectations and market-relevant events.</p>
+      </div>
+      <span class="ec-lab-badge">LAB · Sample data</span>
+    </header>
+
+    <section class="ec-shell">
+      <div class="ec-tabs" aria-label="Calendar range">
+        <button class="ec-tab active" data-range="today">Today</button>
+        <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
+        <button class="ec-tab" data-range="week">This Week</button>
+        <button class="ec-tab" data-range="next">Next Week</button>
+        <button id="history-toggle" class="ec-action" type="button">Historical Data</button>
+      </div>
+
+      <div id="history-panel" class="ec-history-panel">
+        <div class="ec-history-grid">
+          <label>From<input id="history-from" class="ec-input" type="date"></label>
+          <label>To<input id="history-to" class="ec-input" type="date"></label>
+          <button id="history-load" class="ec-tab" type="button">Load history</button>
+        </div>
+      </div>
+
+      <div class="ec-filters">
+        <input id="search" class="ec-input" type="search" placeholder="Search events, e.g. CPI, Fed, payrolls">
+        <select id="country" class="ec-select">
+          <option value="">All countries</option>
+          <option value="US">United States</option>
+          <option value="EU">Euro Area</option>
+          <option value="UK">United Kingdom</option>
+          <option value="JP">Japan</option>
+          <option value="CA">Canada</option>
+        </select>
+        <select id="impact" class="ec-select">
+          <option value="">All impact</option>
+          <option value="high">High impact</option>
+          <option value="medium">Medium impact</option>
+          <option value="low">Low impact</option>
+        </select>
+        <select id="category" class="ec-select">
+          <option value="">All categories</option>
+          <option value="Inflation">Inflation</option>
+          <option value="Labor">Labor</option>
+          <option value="Central Bank">Central Bank</option>
+          <option value="Growth">Growth</option>
+          <option value="Energy">Energy</option>
+        </select>
+      </div>
+
+      <div class="ec-summary">
+        <div class="ec-stat"><span>Events shown</span><strong id="stat-events">0</strong></div>
+        <div class="ec-stat"><span>High impact</span><strong id="stat-high">0</strong></div>
+        <div class="ec-stat"><span>Next event</span><strong id="stat-next">—</strong></div>
+        <div class="ec-stat"><span>Timezone</span><strong style="font-size:14px">New York</strong></div>
+      </div>
+
+      <div class="ec-table-wrap">
+        <table class="ec-table">
+          <thead>
+            <tr>
+              <th>Time</th><th>Country</th><th>Impact</th><th>Event</th>
+              <th>Actual</th><th>Forecast</th><th>Previous</th><th>Relevant Assets</th>
+            </tr>
+          </thead>
+          <tbody id="calendar-body"></tbody>
+        </table>
+      </div>
+
+      <div class="ec-footer-note">
+        Lab V1 uses demonstration data only. Production API credentials are intentionally not exposed in the browser.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const events = [
+      {range:'today',time:'08:30 AM',country:'US',flag:'🇺🇸',impact:'high',category:'Inflation',event:'Core PCE Price Index MoM',detail:'Inflation',actual:'0.3%',forecast:'0.2%',previous:'0.2%',tone:'negative',assets:['USD','Gold','SPY','Treasuries']},
+      {range:'today',time:'10:00 AM',country:'US',flag:'🇺🇸',impact:'medium',category:'Growth',event:'Pending Home Sales MoM',detail:'Housing',actual:'—',forecast:'0.6%',previous:'-0.4%',assets:['USD','SPY']},
+      {range:'today',time:'11:00 AM',country:'EU',flag:'🇪🇺',impact:'medium',category:'Central Bank',event:'ECB President Speech',detail:'Central Bank',actual:'—',forecast:'—',previous:'—',assets:['EUR','DAX','Gold']},
+      {range:'tomorrow',time:'09:45 AM',country:'US',flag:'🇺🇸',impact:'high',category:'Growth',event:'Chicago PMI',detail:'Business Activity',actual:'—',forecast:'47.2',previous:'46.5',assets:['USD','SPY','Treasuries']},
+      {range:'tomorrow',time:'10:00 AM',country:'US',flag:'🇺🇸',impact:'high',category:'Labor',event:'JOLTS Job Openings',detail:'Labor Market',actual:'—',forecast:'7.10M',previous:'7.18M',assets:['USD','SPY','Treasuries']},
+      {range:'week',time:'08:15 AM',country:'US',flag:'🇺🇸',impact:'high',category:'Labor',event:'ADP Employment Change',detail:'Labor Market',actual:'—',forecast:'85K',previous:'54K',assets:['USD','SPY','Gold']},
+      {range:'week',time:'10:30 AM',country:'US',flag:'🇺🇸',impact:'medium',category:'Energy',event:'EIA Crude Oil Inventories',detail:'Energy',actual:'—',forecast:'-1.4M',previous:'-0.9M',assets:['WTI','Brent','XLE']},
+      {range:'week',time:'08:30 AM',country:'US',flag:'🇺🇸',impact:'high',category:'Labor',event:'Nonfarm Payrolls',detail:'Labor Market',actual:'—',forecast:'72K',previous:'22K',assets:['USD','SPY','Gold','Treasuries']},
+      {range:'next',time:'02:00 PM',country:'US',flag:'🇺🇸',impact:'high',category:'Central Bank',event:'Federal Reserve Rate Decision',detail:'Central Bank',actual:'—',forecast:'3.75%',previous:'4.00%',assets:['USD','SPY','Gold','Treasuries']},
+      {range:'next',time:'07:30 AM',country:'EU',flag:'🇪🇺',impact:'high',category:'Inflation',event:'Euro Area CPI YoY',detail:'Inflation',actual:'—',forecast:'2.1%',previous:'2.0%',assets:['EUR','DAX','Gold']}
+    ];
+
+    let currentRange = 'today';
+    const body = document.getElementById('calendar-body');
+    const search = document.getElementById('search');
+    const country = document.getElementById('country');
+    const impact = document.getElementById('impact');
+    const category = document.getElementById('category');
+
+    function rangesForEvent(e){
+      if(currentRange === 'week') return ['today','tomorrow','week'].includes(e.range);
+      return e.range === currentRange;
+    }
+    function visibleEvents(){
+      const q = search.value.trim().toLowerCase();
+      return events.filter(e => rangesForEvent(e))
+        .filter(e => !country.value || e.country === country.value)
+        .filter(e => !impact.value || e.impact === impact.value)
+        .filter(e => !category.value || e.category === category.value)
+        .filter(e => !q || (e.event+' '+e.detail+' '+e.category+' '+e.assets.join(' ')).toLowerCase().includes(q));
+    }
+    function render(){
+      const rows = visibleEvents();
+      document.getElementById('stat-events').textContent = rows.length;
+      document.getElementById('stat-high').textContent = rows.filter(x=>x.impact==='high').length;
+      document.getElementById('stat-next').textContent = rows.length ? rows[0].time : '—';
+      body.innerHTML = rows.length ? rows.map(e => `
+        <tr>
+          <td class="ec-time">${e.time}</td>
+          <td><span class="ec-country"><span>${e.flag}</span>${e.country==='US'?'United States':e.country==='EU'?'Euro Area':e.country}</span></td>
+          <td><span class="impact ${e.impact}"><i></i>${e.impact[0].toUpperCase()+e.impact.slice(1)}</span></td>
+          <td class="ec-event"><strong>${e.event}</strong><small>${e.detail}</small></td>
+          <td class="value ${e.tone==='positive'?'actual-positive':e.tone==='negative'?'actual-negative':''}">${e.actual}</td>
+          <td class="value">${e.forecast}</td>
+          <td class="value muted">${e.previous}</td>
+          <td><div class="ec-assets">${e.assets.map(a=>`<span class="ec-chip">${a}</span>`).join('')}</div></td>
+        </tr>`).join('') : '<tr><td colspan="8" class="ec-empty">No events match the selected filters.</td></tr>';
+    }
+
+    document.querySelectorAll('.ec-tab[data-range]').forEach(btn => btn.addEventListener('click', () => {
+      currentRange = btn.dataset.range;
+      document.querySelectorAll('.ec-tab[data-range]').forEach(x=>x.classList.toggle('active',x===btn));
+      render();
+    }));
+
+    [search,country,impact,category].forEach(x=>x.addEventListener('input',render));
+    document.getElementById('history-toggle').addEventListener('click',()=>document.getElementById('history-panel').classList.toggle('open'));
+    document.getElementById('history-load').addEventListener('click',()=>{
+      alert('Historical API connection will be added after the Trading Economics access plan/key is selected.');
+    });
+    render();
+  </script>
+
+  <script src="mobile/ribbon.js?v=2"></script>
+</body>
+</html>
