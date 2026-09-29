@@ -418,7 +418,7 @@
       </div>
 
       <div class="ec-provider">
-        <span>Source: <strong id="provider-name">Trading Economics</strong> · Times automatically convert to your selected timezone. Calendar values update when the provider publishes them.</span>
+        <span>Source: <strong id="provider-name">FinanceCalendar</strong> · <a href="https://www.financecalendar.com/" target="_blank" rel="noopener">financecalendar.com</a> · Times automatically convert to your selected timezone.</span>
         <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
       </div>
     </section>
@@ -1113,11 +1113,11 @@
         <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast||e.te_forecast,e.unit)}</strong></div>
         <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,e.unit)}</strong></div>
         <div class="ec-kpi"><span>Impact</span><strong>${impactFromImportance(e.importance)}</strong></div>`;
-      const src=e.source||"Trading Economics / official release source";
+      const src=e.source||"FinanceCalendar / official release source";
       document.getElementById("event-modal-source").innerHTML=`
         <strong>${esc(src)}</strong><br>
         ${e.reference?`Reference: ${esc(e.reference)}<br>`:""}
-        Category: ${esc(classifyEvent(e))}${e.currency?` · Currency: ${esc(e.currency)}`:""}`;
+        Category: ${esc(classifyEvent(e))}${e.currency?` · Currency: ${esc(e.currency)}`:""}<br><a href="https://www.financecalendar.com/" target="_blank" rel="noopener">Data attribution: financecalendar.com</a>`;
     }
 
     async function openEventModal(e){
@@ -1140,7 +1140,7 @@
       drawCanvasLine(chart,hist.history||[],activeChartSeries);
       note.textContent=hist.mode==="configured"
         ? `${(hist.history||[]).length} historical releases found over the last 12 months.`
-        : "Historical event chart will populate after the production Trading Economics API key is connected.";
+        : "No matching historical releases were returned for this event yet.";
     }
 
     function closeEventModal(){
@@ -1174,12 +1174,12 @@
 
         allEvents=Array.isArray(data.events)?data.events:[];
         lastFetchAt=new Date();
-        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"Sample fallback");
-        document.getElementById("provider-name").textContent=data.source||"Trading Economics";
+        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
+        document.getElementById("provider-name").textContent=data.source||"FinanceCalendar";
         document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
         if(data.mode==="sample-fallback"){
-          warning.textContent="The page is fully wired but is showing fallback sample events until the Trading Economics production API key is saved as the Supabase secret TRADING_ECONOMICS_API_KEY.";
+          warning.textContent="The page is fully wired but is showing fallback sample events until the FinanceCalendar production API key is saved as the Supabase secret TRADING_ECONOMICS_API_KEY.";
           warning.classList.add("show");
         }
         render();
@@ -1511,7 +1511,7 @@
 
       const payload={
         user_id:currentUser.id,
-        provider:"Trading Economics",
+        provider:"FinanceCalendar",
         provider_event_id:String(e.id||`${e.country_code}-${e.event}-${e.date}`),
         event_name:e.event||e.category||"Economic Event",
         country_code:e.country_code||null,
