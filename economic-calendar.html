@@ -1084,6 +1084,8 @@
     let refreshTimer = null;
     let countdownTimer = null;
     const historyCache = new Map();
+    const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v1:";
     let activeModalEvent = null;
     let activeChartSeries = "history";
     let weekPreloadCache = null;
@@ -1404,6 +1406,19 @@
     async function fetchEventHistory(e){
       const key=historyKey(e);
       if(historyCache.has(key)) return historyCache.get(key);
+
+      const storageKey=HISTORY_CACHE_PREFIX+key;
+      try{
+        const raw=localStorage.getItem(storageKey);
+        if(raw){
+          const cached=JSON.parse(raw);
+          if(cached && cached.saved_at && Date.now()-cached.saved_at<24*60*60*1000){
+            historyCache.set(key,cached.result);
+            return cached.result;
+          }
+        }
+      }catch(_err){}
+
       let result={history:[],mode:"unavailable"};
       try{
         const res=await fetch(DETAIL_HISTORY_URL,{
@@ -1414,7 +1429,7 @@
             series_id:e.series_id||e.eventId||"",
             category:e.category||"",
             country:e.country||countryName(e.country_code),
-            country_code:e.country_code||"",
+            country_code:normalizedCountryCode(e),
             date:e.date||""
           })
         });
@@ -1422,13 +1437,37 @@
       }catch(err){
         console.warn("Event history unavailable",err);
       }
+
       historyCache.set(key,result);
+      try{
+        localStorage.setItem(storageKey,JSON.stringify({saved_at:Date.now(),result}));
+      }catch(_err){}
       return result;
+    }
+
+
+
+    function dedupeHistoryByMonth(history){
+      const byMonth=new Map();
+      (history||[]).forEach(row=>{
+        const d=parseProviderDate(row.date);
+        if(!d) return;
+        const key=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+        const completeness=[row.actual,row.forecast,row.previous,row.revised].filter(v=>v!==null&&v!==undefined&&String(v)!=="").length;
+        const prev=byMonth.get(key);
+        if(!prev || completeness>prev.completeness || (completeness===prev.completeness && d>prev.date)){
+          byMonth.set(key,{...row,_month:key,completeness,date:d});
+        }
+      });
+      return [...byMonth.values()]
+        .sort((a,b)=>a.date-b.date)
+        .map(({_month,completeness,date,...row})=>row);
     }
 
     function drawCanvasLine(host,history,series="actual"){
       if(!host) return;
-      const rows=(history||[]).map(x=>{
+      const monthHistory=dedupeHistoryByMonth(history);
+      const rows=monthHistory.map(x=>{
         let chosenSeries=series;
         let value=null;
 
@@ -1504,7 +1543,7 @@
     }
 
     function drawSparkline(host,history){
-      const rows=(history||[]).map(x=>numericValue(x.actual)).filter(v=>v!==null);
+      const rows=dedupeHistoryByMonth(history).map(x=>numericValue(x.actual)).filter(v=>v!==null);
       if(rows.length<2){
         host.textContent="No history";
         return;
@@ -1721,7 +1760,7 @@
 
 
     function historicalForecastStats(history){
-      const errors=(history||[]).map(x=>{
+      const errors=dedupeHistoryByMonth(history).map(x=>{
         const a=numericValue(x.actual);
         const f=numericValue(x.forecast);
         if(a===null||f===null) return null;
@@ -1750,7 +1789,7 @@
     }
 
     function forecastAccuracy(history){
-      const pairs=(history||[]).map(x=>{
+      const pairs=dedupeHistoryByMonth(history).map(x=>{
         const a=numericValue(x.actual),f=numericValue(x.forecast);
         return a===null||f===null?null:{a,f};
       }).filter(Boolean);
@@ -1956,11 +1995,13 @@
         drawCanvasLine(chart,hist?.history||[],activeChartSeries);
         updateEventAnalytics(e,hist?.history||[]);
         if(hist?.mode==="configured"){
-          const count=(hist.history||[]).length;
+          const monthly=dedupeHistoryByMonth(hist.history||[]);
+          const count=monthly.length;
+          const coverage=`${count}/12 months currently available`;
           if(hist.history_kind==="related"){
-            note.textContent=`Related history · ${hist.related_event_name||"closely matched indicator"} · ${count} releases available in the last 12 months.`;
+            note.textContent=`Related history · ${hist.related_event_name||"closely matched indicator"} · ${coverage}.`;
           }else{
-            note.textContent=`Exact history · ${count} releases available in the last 12 months.`;
+            note.textContent=`Exact history · ${coverage}.`;
           }
         }else{
           note.textContent="Historical releases are not available for this event yet.";
@@ -2113,9 +2154,46 @@
       return weekPreloadPromise;
     }
 
+
+    function saveWeekCache(data,range){
+      try{
+        localStorage.setItem(WEEK_CACHE_KEY,JSON.stringify({
+          saved_at:Date.now(),
+          range,
+          countries:[...settings.countries].sort(),
+          data
+        }));
+      }catch(_err){}
+    }
+
+    function getWeekCache(range){
+      try{
+        const raw=localStorage.getItem(WEEK_CACHE_KEY);
+        if(!raw) return null;
+        const cached=JSON.parse(raw);
+        if(!cached?.data?.events || !cached.range) return null;
+        const sameRange=cached.range.start===range.start && cached.range.end===range.end;
+        const sameCountries=JSON.stringify(cached.countries||[])===JSON.stringify([...settings.countries].sort());
+        if(!sameRange||!sameCountries) return null;
+        return cached;
+      }catch(_err){
+        return null;
+      }
+    }
+
     async function loadFeed(manual=false){
       const r=getRange(currentRange);
       displayRangeLabel();
+
+      if(!manual && currentRange==="week"){
+        const cached=getWeekCache(r);
+        if(cached){
+          allEvents=Array.isArray(cached.data.events)?cached.data.events:[];
+          ensureEventUIKeys();
+          lastFetchAt=new Date(cached.saved_at||Date.now());
+          render();
+        }
+      }
       if(activeController) activeController.abort();
       activeController=new AbortController();
 
@@ -2169,6 +2247,9 @@
 
         allEvents=Array.isArray(data.events)?data.events:[];
         ensureEventUIKeys();
+        if(currentRange==="week"){
+          saveWeekCache(data,r);
+        }
         setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
         document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
         document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
