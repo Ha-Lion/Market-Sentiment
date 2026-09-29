@@ -303,7 +303,10 @@
             <small>Countries, event classifications, impact and timezone.</small>
           </div>
         </div>
-        <button id="settings-toggle" class="ec-settings-button" type="button">Settings</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button id="settings-save-top" class="ec-tab active" type="button" style="display:none">Save</button>
+          <button id="settings-toggle" class="ec-settings-button" type="button">Settings</button>
+        </div>
       </div>
 
       <div id="settings-panel" class="ec-settings-panel">
@@ -1267,7 +1270,7 @@
         document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
         if(data.mode==="sample-fallback"){
-          warning.textContent="The page is fully wired but is showing fallback sample events until the FinanceCalendar production API key is saved as the Supabase secret TRADING_ECONOMICS_API_KEY.";
+          warning.textContent="FinanceCalendar returned no events for this selection. Try another date range or refresh.";
           warning.classList.add("show");
         }
         render();
@@ -1283,6 +1286,25 @@
         document.getElementById("stat-high").textContent="—";
         document.getElementById("stat-next").textContent="—";
         document.getElementById("stat-next-name").textContent="";
+      }
+    }
+
+    function localSettingsKey(){
+      return `psd-economic-calendar-settings:${currentUser?.id||"guest"}`;
+    }
+
+    function saveLocalSettings(value){
+      try{ localStorage.setItem(localSettingsKey(),JSON.stringify(value)); }
+      catch(err){ console.warn("Calendar local save failed",err); }
+    }
+
+    function loadLocalSettings(){
+      try{
+        const raw=localStorage.getItem(localSettingsKey());
+        return raw ? normalizeSettings(JSON.parse(raw)) : null;
+      }catch(err){
+        console.warn("Calendar local load failed",err);
+        return null;
       }
     }
 
@@ -1302,7 +1324,10 @@
         currentPhoneNumber="";
         document.getElementById("account-email").textContent="Log in to use email alerts";
         document.getElementById("account-phone").value="";
+        const localSaved=loadLocalSettings();
+        if(localSaved) settings=localSaved;
         applySettingsControls();
+        await loadReminderStates();
         await loadFeed();
         return;
       }
@@ -1312,6 +1337,11 @@
       note.hidden=true;
       document.getElementById("account-email").textContent=currentUser.email||"Email available through account";
       status.textContent="Loading saved settings…";
+      const localSaved=loadLocalSettings();
+      if(localSaved){
+        settings=localSaved;
+        applySettingsControls();
+      }
 
       try{
         const [prefResult,profileResult]=await Promise.all([
@@ -1322,16 +1352,23 @@
         if(profileResult.error) throw profileResult.error;
         const data=prefResult.data;
         currentDashboardLayout=data&&data.dashboard_layout&&typeof data.dashboard_layout==="object"?data.dashboard_layout:{};
-        settings=normalizeSettings(currentDashboardLayout.calendar_settings);
+        if(currentDashboardLayout.calendar_settings){
+          settings=normalizeSettings(currentDashboardLayout.calendar_settings);
+          saveLocalSettings(settings);
+        }else if(localSaved){
+          settings=localSaved;
+        }else{
+          settings=cloneDefault();
+        }
         currentPhoneNumber=(profileResult.data&&profileResult.data.phone_number)||"";
         document.getElementById("account-phone").value=currentPhoneNumber;
         if(!currentPhoneNumber) settings.reminder_sms=false;
         status.textContent="Saved to your account";
       }catch(err){
         console.error("Calendar settings load failed",err);
-        settings=cloneDefault();
+        settings=localSaved||cloneDefault();
         currentDashboardLayout={};
-        status.textContent="Could not load saved settings";
+        status.textContent=localSaved?"Using saved browser settings":"Could not load saved settings";
       }
       applySettingsControls();
       await loadReminderStates();
@@ -1404,30 +1441,35 @@
       const set=new Set(settings.countries);
       if(input.checked) set.add(input.value); else set.delete(input.value);
       settings.countries=[...set];
+      saveLocalSettings(settings);
     });
 
     document.getElementById("country-settings-search").addEventListener("input",ev=>renderCountrySettings(ev.target.value));
 
     document.getElementById("country-select-all").addEventListener("click",()=>{
       settings.countries=["EU",...ALL_COUNTRY_CODES];
+      saveLocalSettings(settings);
       renderCountrySettings(document.getElementById("country-settings-search").value);
       document.getElementById("settings-save-status").textContent="All countries selected — click Save Settings.";
     });
 
     document.getElementById("country-major").addEventListener("click",()=>{
       settings.countries=["US","EU","GB","JP","CA","CN","AU","CH","DE","FR","IN","BR","KR","SG"];
+      saveLocalSettings(settings);
       renderCountrySettings(document.getElementById("country-settings-search").value);
       document.getElementById("settings-save-status").textContent="Major markets selected — click Save Settings.";
     });
 
     document.getElementById("country-clear").addEventListener("click",()=>{
       settings.countries=[];
+      saveLocalSettings(settings);
       renderCountrySettings(document.getElementById("country-settings-search").value);
       document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
     });
 
     document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
       settings.timezone=btn.dataset.timezone;
+      saveLocalSettings(settings);
       document.getElementById("saved-timezone").value=settings.timezone;
       applySettingsControls();
       render();
@@ -1441,25 +1483,45 @@
     });
 
     document.getElementById("settings-toggle").addEventListener("click",()=>{
-      document.getElementById("settings-panel").classList.toggle("open");
+      const panel=document.getElementById("settings-panel");
+      panel.classList.toggle("open");
+      document.getElementById("settings-save-top").style.display=panel.classList.contains("open")?"inline-flex":"none";
     });
 
     document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
       settings.timezone=ev.target.value;
+      saveLocalSettings(settings);
       applySettingsControls();
       render();
       const status=document.getElementById("settings-save-status");
       if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
     });
 
+
+    document.getElementById("settings-fieldset").addEventListener("change",ev=>{
+      if(ev.target.matches('input[name="saved-category"],input[name="saved-impact"],#default-email-reminder,#default-sms-reminder,#default-desktop-reminder,#default-reminder-minutes')){
+        const draft={
+          ...settings,
+          categories:selectedValues("saved-category"),
+          impacts:selectedValues("saved-impact"),
+          reminder_email:document.getElementById("default-email-reminder").checked,
+          reminder_sms:document.getElementById("default-sms-reminder").checked,
+          reminder_desktop:document.getElementById("default-desktop-reminder").checked,
+          reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30)
+        };
+        saveLocalSettings(draft);
+      }
+    });
+
     document.getElementById("settings-reset").addEventListener("click",()=>{
       settings=cloneDefault();
+      saveLocalSettings(settings);
       applySettingsControls();
       document.getElementById("settings-save-status").textContent="Defaults selected — click Save Settings.";
     });
 
-    document.getElementById("settings-save").addEventListener("click",async()=>{
-      if(!currentUser||!window.psdSupabase) return;
+    async function saveCalendarSettings(){
+      const status=document.getElementById("settings-save-status");
       const phone=document.getElementById("account-phone").value.trim();
       const wantsSms=document.getElementById("default-sms-reminder").checked;
       if(phone && !/^\+[1-9][0-9]{7,14}$/.test(phone)){
@@ -1486,6 +1548,16 @@
         status.textContent="Keep at least one option in each group.";
         return;
       }
+      settings=next;
+      saveLocalSettings(next);
+
+      if(!currentUser||!window.psdSupabase){
+        applySettingsControls();
+        status.textContent="Saved in this browser ✓";
+        await loadFeed(true);
+        return;
+      }
+
       status.textContent="Saving…";
       const merged={...currentDashboardLayout,calendar_settings:next};
       const [prefSave,profileSave]=await Promise.all([
@@ -1504,11 +1576,14 @@
       currentPhoneNumber=phone;
       currentDashboardLayout=merged;
       settings=next;
+      saveLocalSettings(next);
       applySettingsControls();
       status.textContent="Saved to your account ✓";
       await loadFeed(true);
-    });
+    }
 
+    document.getElementById("settings-save").addEventListener("click",saveCalendarSettings);
+    document.getElementById("settings-save-top").addEventListener("click",saveCalendarSettings);
 
 
     function reminderKeyForEvent(e){
@@ -1534,8 +1609,27 @@
       });
     }
 
+    function reminderLocalKey(){
+      return `psd-economic-calendar-reminders:${currentUser?.id||"guest"}`;
+    }
+
+    function saveReminderStateLocal(){
+      try{ localStorage.setItem(reminderLocalKey(),JSON.stringify([...reminderState.entries()])); }
+      catch(err){ console.warn("Reminder local save failed",err); }
+    }
+
+    function loadReminderStateLocal(){
+      try{
+        const raw=localStorage.getItem(reminderLocalKey());
+        if(!raw)return;
+        const rows=JSON.parse(raw);
+        if(Array.isArray(rows)) rows.forEach(([k,v])=>reminderState.set(k,v));
+      }catch(err){ console.warn("Reminder local load failed",err); }
+    }
+
     async function loadReminderStates(){
       reminderState.clear();
+      loadReminderStateLocal();
       if(!currentUser||!window.psdSupabase){
         applyReminderButtonStates();
         return;
@@ -1554,6 +1648,7 @@
       }catch(err){
         console.warn("Reminder state load failed",err);
       }
+      saveReminderStateLocal();
       applyReminderButtonStates();
     }
 
@@ -1631,6 +1726,7 @@
       const rowKey=reminderKeyForEvent(e);
       const existing=reminderState.get(rowKey)||{};
       reminderState.set(rowKey,{...existing,...payload});
+      saveReminderStateLocal();
       applyReminderButtonStates();
       return true;
     }
@@ -1689,6 +1785,7 @@
         console.error("Reminder cancellation failed",error);
         return false;
       }
+      saveReminderStateLocal();
       applyReminderButtonStates();
       return true;
     }
