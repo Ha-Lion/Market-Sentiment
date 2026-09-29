@@ -321,6 +321,31 @@
   }
 </style>
 
+  
+<style id="ec-v27-intelligence">
+  .ec-market-tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .ec-tool-btn{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:8px;padding:7px 9px;font:inherit;font-size:10px;font-weight:800;cursor:pointer}
+  .ec-tool-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+  .ec-tool-btn:active{transform:translateY(1px) scale(.985)}
+  .ec-my-markets{display:flex;flex-wrap:wrap;gap:6px 10px}
+  .ec-analytics-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+  .ec-analytics-card{border:1px solid var(--ec-border);border-radius:10px;padding:9px 10px;background:var(--ec-soft2)}
+  .ec-analytics-card span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);font-weight:800}
+  .ec-analytics-card strong{display:block;margin-top:3px;font-size:16px}
+  .ec-analytics-card small{display:block;margin-top:3px;color:var(--ec-muted);font-size:9px;line-height:1.3}
+  .ec-reaction-grid{display:grid;grid-template-columns:120px repeat(4,1fr);gap:1px;background:var(--ec-border);border:1px solid var(--ec-border);border-radius:10px;overflow:hidden}
+  .ec-reaction-grid > div{background:var(--ec-card);padding:7px 8px;font-size:10px}
+  .ec-reaction-grid .head{font-weight:900;background:var(--ec-soft2)}
+  .ec-pos{color:#0b8f4d!important;font-weight:850}
+  .ec-neg{color:#c9342e!important;font-weight:850}
+  .ec-zero{color:var(--ec-muted)!important}
+  .ec-score-pill{display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:3px 6px;border-radius:999px;background:var(--ec-soft);font-size:10px;font-weight:900}
+  @media(max-width:800px){
+    .ec-analytics-grid{grid-template-columns:1fr}
+    .ec-reaction-grid{grid-template-columns:100px repeat(4,minmax(64px,1fr));overflow-x:auto}
+  }
+</style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -370,7 +395,7 @@
     .ec-settings-panel.open{display:block;}
     .ec-settings-locked{opacity:.48;filter:grayscale(.25);}
     .ec-settings-login-note{padding:10px 12px;border:1px dashed var(--ec-border);border-radius:9px;color:var(--ec-muted);font-size:12px;margin-bottom:12px;}
-    .ec-settings-grid{display:grid;grid-template-columns:1.35fr 1.45fr .75fr .9fr .85fr;gap:14px;}
+    .ec-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
     .ec-settings-group{border:1px solid var(--ec-border);border-radius:12px;padding:12px;background:var(--ec-soft2);}
     .ec-settings-group h3{font-size:12px;margin:0 0 10px;}
     .ec-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;}
@@ -604,8 +629,11 @@
 
         <span class="ec-toolbar-spacer"></span>
         <label class="ec-view-toggle" title="Optional: hide events that have already been released"><input id="upcoming-only" type="checkbox"> Upcoming only</label>
+        <label class="ec-view-toggle" title="Show only events related to markets selected in Settings"><input id="my-markets-only" type="checkbox"> My Markets only</label>
         <button id="refresh-btn" class="ec-action" type="button">↻ Refresh</button>
-        <button id="history-btn" class="ec-action" type="button" disabled title="Historical data is the next phase">Historical Data</button>
+        <button id="export-csv" class="ec-tool-btn" type="button" title="Export visible events to CSV">CSV</button>
+        <button id="export-ics" class="ec-tool-btn" type="button" title="Export visible events to calendar file">ICS</button>
+        <button id="share-view" class="ec-tool-btn" type="button" title="Copy a shareable link to this calendar view">Share</button>
       </div>
 
       <div class="ec-settings-bar">
@@ -697,6 +725,24 @@
                   </select>
                 </label>
               </div>
+            </div>
+
+            <div class="ec-settings-group">
+              <h3>My Markets</h3>
+              <div class="ec-my-markets">
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="SPY"> SPY</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="USD"> USD</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Treasuries"> Treasuries</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Gold"> Gold</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="EUR"> EUR</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="GBP"> GBP</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="JPY"> JPY</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="WTI"> WTI</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Brent"> Brent</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Copper"> Copper</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="BTC"> BTC</label>
+              </div>
+              <div class="ec-reminder-note">Use “My Markets only” above the calendar to focus the feed.</div>
             </div>
 
             <div class="ec-settings-group">
@@ -808,6 +854,20 @@
           </section>
 
           <section class="ec-detail-section">
+            <h3>PSD Event Analytics</h3>
+            <div id="event-analytics" class="ec-analytics-grid">
+              <div class="ec-analytics-card"><span>Surprise Score</span><strong id="analytics-surprise">—</strong><small id="analytics-surprise-note">Waiting for history</small></div>
+              <div class="ec-analytics-card"><span>Forecast Accuracy · 12M</span><strong id="analytics-accuracy">—</strong><small id="analytics-accuracy-note">Waiting for history</small></div>
+              <div class="ec-analytics-card"><span>PSD Intelligence Score</span><strong id="analytics-intelligence">—</strong><small>Rule-based v1 · no AI cost</small></div>
+            </div>
+          </section>
+
+          <section class="ec-detail-section">
+            <h3>Market Reaction</h3>
+            <div id="event-market-reaction" class="ec-definition">Loading market reaction…</div>
+          </section>
+
+          <section class="ec-detail-section">
             <h3>Source & release details</h3>
             <div id="event-modal-source" class="ec-definition"></div>
           </section>
@@ -843,6 +903,7 @@
 
     const FEED_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed";
     const DETAIL_HISTORY_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-history";
+    const REACTION_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-reaction";
     const AUTO_REFRESH_MS = 30 * 1000;
 
     const COUNTRY = {
@@ -950,7 +1011,8 @@
       reminder_email:false,
       reminder_sms:false,
       reminder_desktop:false,
-      reminder_minutes:30
+      reminder_minutes:30,
+      my_markets:[]
     };
 
     const TZ_LABELS = {
@@ -1162,7 +1224,8 @@
         reminder_email:Boolean(s.reminder_email),
         reminder_sms:Boolean(s.reminder_sms),
         reminder_desktop:Boolean(s.reminder_desktop),
-        reminder_minutes:Number.isFinite(Number(s.reminder_minutes))?Number(s.reminder_minutes):30
+        reminder_minutes:Number.isFinite(Number(s.reminder_minutes))?Number(s.reminder_minutes):30,
+        my_markets:Array.isArray(s.my_markets)?s.my_markets:[]
       };
     }
 
@@ -1171,6 +1234,7 @@
       [["saved-category","categories"],["saved-impact","impacts"]].forEach(([name,key])=>{
         document.querySelectorAll(`input[name="${name}"]`).forEach(i=>i.checked=settings[key].includes(i.value));
       });
+      document.querySelectorAll('input[name="saved-market"]').forEach(i=>i.checked=settings.my_markets.includes(i.value));
       document.getElementById("saved-timezone").value=settings.timezone;
       document.getElementById("default-email-reminder").checked=Boolean(settings.reminder_email);
       document.getElementById("default-sms-reminder").checked=Boolean(settings.reminder_sms);
@@ -1199,11 +1263,13 @@
     function visibleEvents(){
       const q=search.value.trim().toLowerCase();
       const now=Date.now();
+      const myOnly=document.getElementById("my-markets-only")?.checked;
       return allEvents
         .filter(e=>!upcomingOnly || (parseProviderDate(e.date)?.getTime()||0) >= now)
         .filter(e=>settings.countries.includes(e.country_code))
         .filter(e=>settings.impacts.includes(impactFromImportance(e.importance)))
         .filter(e=>settings.categories.includes(classifyEvent(e)))
+        .filter(e=>!myOnly || !settings.my_markets.length || relevantAssets(e).some(a=>settings.my_markets.includes(a)))
         .filter(e=>!countryFilter.value||e.country_code===countryFilter.value)
         .filter(e=>!impactFilter.value||impactFromImportance(e.importance)===impactFilter.value)
         .filter(e=>!categoryFilter.value||classifyEvent(e)===categoryFilter.value)
@@ -1588,6 +1654,143 @@
       positionEconomicGlossary(pop,button);
     }
 
+
+    function historicalForecastStats(history){
+      const errors=(history||[]).map(x=>{
+        const a=numericValue(x.actual);
+        const f=numericValue(x.forecast);
+        if(a===null||f===null) return null;
+        return a-f;
+      }).filter(v=>v!==null);
+
+      if(!errors.length) return {count:0,mean:0,sd:0,mae:null};
+      const mean=errors.reduce((a,b)=>a+b,0)/errors.length;
+      const variance=errors.reduce((s,x)=>s+Math.pow(x-mean,2),0)/errors.length;
+      const sd=Math.sqrt(variance);
+      const mae=errors.reduce((s,x)=>s+Math.abs(x),0)/errors.length;
+      return {count:errors.length,mean,sd,mae};
+    }
+
+    function currentSurpriseScore(e,history){
+      const a=numericValue(e.actual);
+      const f=numericValue(e.forecast||e.te_forecast);
+      if(a===null||f===null) return null;
+      const stats=historicalForecastStats(history);
+      const raw=a-f;
+      if(stats.sd>0 && stats.count>=3){
+        return {value:raw/stats.sd,label:"σ",raw,method:"Historical forecast-error standard deviation"};
+      }
+      const denom=Math.max(Math.abs(f),1e-9);
+      return {value:(raw/denom)*100,label:"%",raw,method:"Percent difference vs forecast"};
+    }
+
+    function forecastAccuracy(history){
+      const pairs=(history||[]).map(x=>{
+        const a=numericValue(x.actual),f=numericValue(x.forecast);
+        return a===null||f===null?null:{a,f};
+      }).filter(Boolean);
+      if(!pairs.length) return null;
+      const ape=pairs.map(x=>Math.abs(x.a-x.f)/Math.max(Math.abs(x.a),1e-9));
+      const mape=ape.reduce((a,b)=>a+b,0)/ape.length;
+      return {score:Math.max(0,Math.min(100,100-(mape*100))),count:pairs.length,mape:mape*100};
+    }
+
+    function intelligenceScore(e,history){
+      const impact=impactFromImportance(e.importance);
+      const impactPts=impact==="high"?45:impact==="medium"?30:15;
+      const surprise=currentSurpriseScore(e,history);
+      let surprisePts=0;
+      if(surprise){
+        const mag=Math.abs(surprise.label==="σ"?surprise.value:surprise.value/25);
+        surprisePts=Math.min(25,mag*10);
+      }
+      const acc=forecastAccuracy(history);
+      const reliabilityPts=acc?Math.min(15,(acc.count/8)*15):0;
+      const breadthPts=Math.min(15,relevantAssets(e).length*3);
+      return Math.round(Math.min(100,impactPts+surprisePts+reliabilityPts+breadthPts));
+    }
+
+    function updateEventAnalytics(e,history){
+      const surprise=currentSurpriseScore(e,history);
+      const acc=forecastAccuracy(history);
+      const intel=intelligenceScore(e,history);
+
+      const surpriseEl=document.getElementById("analytics-surprise");
+      const surpriseNote=document.getElementById("analytics-surprise-note");
+      if(surprise){
+        surpriseEl.textContent=(surprise.value>=0?"+":"")+surprise.value.toFixed(2)+surprise.label;
+        surpriseNote.textContent=surprise.method;
+      }else{
+        surpriseEl.textContent="Pending";
+        surpriseNote.textContent="Available when Actual and Forecast are both published";
+      }
+
+      const accEl=document.getElementById("analytics-accuracy");
+      const accNote=document.getElementById("analytics-accuracy-note");
+      if(acc){
+        accEl.textContent=Math.round(acc.score)+"%";
+        accNote.textContent=`Based on ${acc.count} historical releases · avg error ${acc.mape.toFixed(1)}%`;
+      }else{
+        accEl.textContent="—";
+        accNote.textContent="Not enough forecast history";
+      }
+
+      document.getElementById("analytics-intelligence").textContent=intel+"/100";
+    }
+
+    function reactionClass(v){
+      if(v===null||v===undefined||!Number.isFinite(v)) return "ec-zero";
+      if(v>0) return "ec-pos";
+      if(v<0) return "ec-neg";
+      return "ec-zero";
+    }
+
+    function reactionText(v){
+      if(v===null||v===undefined||!Number.isFinite(v)) return "—";
+      return `${v>0?"+":""}${v.toFixed(2)}%`;
+    }
+
+    async function loadMarketReaction(e){
+      const host=document.getElementById("event-market-reaction");
+      const d=parseProviderDate(e.date);
+      if(!d){host.textContent="Market reaction is unavailable for this event.";return;}
+      const assets=relevantAssets(e).slice(0,5);
+      if(!assets.length){host.textContent="No mapped market assets for this event yet.";return;}
+
+      try{
+        const res=await fetch(REACTION_URL,{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify({event_time:d.toISOString(),assets})
+        });
+        const data=await res.json();
+        if(data.mode==="future"){
+          host.textContent="Market reaction will populate after the release.";
+          return;
+        }
+        const rows=Array.isArray(data.reactions)?data.reactions:[];
+        if(!rows.length){
+          host.textContent="Intraday market reaction is not available for this event yet.";
+          return;
+        }
+        host.innerHTML=`
+          <div class="ec-reaction-grid">
+            <div class="head">Asset</div><div class="head">+5m</div><div class="head">+30m</div><div class="head">+1h</div><div class="head">+1d</div>
+            ${rows.map(r=>`
+              <div><strong>${esc(r.asset)}</strong></div>
+              <div class="${reactionClass(r.changes?.["5m"])}">${reactionText(r.changes?.["5m"])}</div>
+              <div class="${reactionClass(r.changes?.["30m"])}">${reactionText(r.changes?.["30m"])}</div>
+              <div class="${reactionClass(r.changes?.["1h"])}">${reactionText(r.changes?.["1h"])}</div>
+              <div class="${reactionClass(r.changes?.["1d"])}">${reactionText(r.changes?.["1d"])}</div>
+            `).join("")}
+          </div>
+          <div class="ec-reminder-note" style="margin-top:6px">Price reaction is measured from the closest available market price around the scheduled release time.</div>`;
+      }catch(err){
+        console.warn("Market reaction load failed",err);
+        host.textContent="Market reaction is temporarily unavailable.";
+      }
+    }
+
     function fillModalBase(e){
       const g=glossaryFor(e);
       const d=parseProviderDate(e.date);
@@ -1601,6 +1804,11 @@
 
       document.getElementById("event-modal-definition").innerHTML=
         `<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
+
+      document.getElementById("analytics-surprise").textContent="—";
+      document.getElementById("analytics-accuracy").textContent="—";
+      document.getElementById("analytics-intelligence").textContent=Math.round((impactFromImportance(e.importance)==="high"?45:impactFromImportance(e.importance)==="medium"?30:15)+Math.min(15,relevantAssets(e).length*3))+"/100";
+      document.getElementById("event-market-reaction").textContent="Loading market reaction…";
 
       document.getElementById("event-modal-kpis").innerHTML=`
         <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
@@ -1678,6 +1886,7 @@
       fetchEventHistory(e).then(hist=>{
         if(activeModalEvent!==e) return;
         drawCanvasLine(chart,hist?.history||[],activeChartSeries);
+        updateEventAnalytics(e,hist?.history||[]);
         note.textContent=hist?.mode==="configured"
           ? `${(hist.history||[]).length} historical releases found over the last 12 months.`
           : "Historical releases are not available for this event yet.";
@@ -1688,6 +1897,7 @@
         }
       });
 
+      loadMarketReaction(e);
       loadRelatedNews(e).catch(err=>{
         console.warn("Related news load failed",err);
         if(activeModalEvent===e){
@@ -2019,6 +2229,12 @@
       x.addEventListener("input",render);
     });
 
+
+    document.getElementById("my-markets-only").addEventListener("change",render);
+    document.getElementById("export-csv").addEventListener("click",exportVisibleCSV);
+    document.getElementById("export-ics").addEventListener("click",exportVisibleICS);
+    document.getElementById("share-view").addEventListener("click",shareCurrentView);
+
     document.getElementById("clear-filters").addEventListener("click",()=>{
       search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false; render();
     });
@@ -2162,7 +2378,8 @@
         reminder_email:document.getElementById("default-email-reminder").checked,
         reminder_sms:wantsSms,
         reminder_desktop:document.getElementById("default-desktop-reminder").checked,
-        reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30)
+        reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30),
+        my_markets:selectedValues("saved-market")
       };
       if(!next.countries.length||!next.categories.length||!next.impacts.length){
         status.textContent="Keep at least one option in each group.";
@@ -2517,6 +2734,81 @@
     }));
 
 
+
+    function csvEscape(v){
+      const s=String(v??"");
+      return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+    }
+
+    function downloadTextFile(name,content,type){
+      const blob=new Blob([content],{type:type||"text/plain;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+
+    function exportVisibleCSV(){
+      const rows=visibleEvents();
+      const lines=[["Time","Country","Impact","Event","Actual","Forecast","Previous","Classification","Relevant Assets"]];
+      rows.forEach(e=>{
+        const d=parseProviderDate(e.date);
+        const c=displayCountry(e);
+        lines.push([
+          d?d.toISOString():"",
+          c.name,
+          impactFromImportance(e.importance),
+          e.event||e.category||"",
+          e.actual||"",
+          e.forecast||e.te_forecast||"",
+          e.previous||"",
+          classifyEvent(e),
+          relevantAssets(e).join(" | ")
+        ]);
+      });
+      downloadTextFile("economic-calendar.csv",lines.map(r=>r.map(csvEscape).join(",")).join("\n"),"text/csv;charset=utf-8");
+    }
+
+    function exportVisibleICS(){
+      const events=visibleEvents().map(e=>{
+        const d=parseProviderDate(e.date);
+        if(!d) return "";
+        const end=new Date(d.getTime()+60*60*1000);
+        const stamp=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+        const c=displayCountry(e);
+        return [
+          "BEGIN:VEVENT",
+          `UID:${String(eventUIKey(e)).replace(/[^a-z0-9]/gi,"-")}@publicsentimentdash.com`,
+          `DTSTAMP:${stamp(new Date())}`,
+          `DTSTART:${stamp(d)}`,
+          `DTEND:${stamp(end)}`,
+          `SUMMARY:${(e.event||"Economic Event").replace(/[\n,;]/g," ")}`,
+          `DESCRIPTION:${c.name} | Actual: ${e.actual||"—"} | Forecast: ${e.forecast||"—"} | Previous: ${e.previous||"—"}`,
+          "END:VEVENT"
+        ].join("\r\n");
+      }).filter(Boolean);
+      downloadTextFile("economic-calendar.ics",["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Public Sentiment Dash//Economic Calendar//EN",...events,"END:VCALENDAR"].join("\r\n"),"text/calendar;charset=utf-8");
+    }
+
+    async function shareCurrentView(){
+      const u=new URL(window.location.href);
+      u.searchParams.set("range",currentRange);
+      if(countryFilter.value)u.searchParams.set("country",countryFilter.value);else u.searchParams.delete("country");
+      if(impactFilter.value)u.searchParams.set("impact",impactFilter.value);else u.searchParams.delete("impact");
+      if(categoryFilter.value)u.searchParams.set("category",categoryFilter.value);else u.searchParams.delete("category");
+      if(search.value.trim())u.searchParams.set("q",search.value.trim());else u.searchParams.delete("q");
+      if(document.getElementById("my-markets-only")?.checked)u.searchParams.set("markets","1");else u.searchParams.delete("markets");
+
+      try{
+        await navigator.clipboard.writeText(u.toString());
+        const btn=document.getElementById("share-view");
+        const old=btn.textContent;btn.textContent="Copied ✓";
+        setTimeout(()=>btn.textContent=old,1200);
+      }catch{
+        window.prompt("Copy this calendar link:",u.toString());
+      }
+    }
+
     const refresh=()=>loadFeed(true);
     document.getElementById("refresh-btn").addEventListener("click",refresh);
     document.getElementById("provider-refresh").addEventListener("click",refresh);
@@ -2532,6 +2824,17 @@
 
     displayRangeLabel();
     applySettingsControls();
+
+    const sharedParams=new URLSearchParams(window.location.search);
+    const sharedCountry=sharedParams.get("country");
+    const sharedImpact=sharedParams.get("impact");
+    const sharedCategory=sharedParams.get("category");
+    const sharedQ=sharedParams.get("q");
+    if(sharedCountry) countryFilter.value=sharedCountry;
+    if(sharedImpact) impactFilter.value=sharedImpact;
+    if(sharedCategory) categoryFilter.value=sharedCategory;
+    if(sharedQ) search.value=sharedQ;
+    if(sharedParams.get("markets")==="1") document.getElementById("my-markets-only").checked=true;
     setTimeout(()=>preloadWeekInBackground(false),500);
 
     if(window.psdSupabase){
