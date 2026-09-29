@@ -275,6 +275,7 @@
           <button id="last-30" class="ec-action ec-date-go" type="button" title="Last 30 days">−30d</button>
           <button id="next-30" class="ec-action ec-date-go" type="button" title="Next 30 days">+30d</button>
         </div>
+        <button class="ec-tab" data-range="yesterday">Yesterday</button>
         <button class="ec-tab" data-range="today">Today</button>
         <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
         <button class="ec-tab" data-range="week">This Week</button>
@@ -289,7 +290,7 @@
         </div>
 
         <span class="ec-toolbar-spacer"></span>
-        <label class="ec-view-toggle"><input id="upcoming-only" type="checkbox"> Upcoming only</label>
+        <label class="ec-view-toggle" title="Optional: hide events that have already been released"><input id="upcoming-only" type="checkbox"> Upcoming only</label>
         <button id="refresh-btn" class="ec-action" type="button">↻ Refresh</button>
         <button id="history-btn" class="ec-action" type="button" disabled title="Historical data is the next phase">Historical Data</button>
       </div>
@@ -666,8 +667,14 @@
       if(range==="custom" && customRange) return customRange;
       const now = new Date();
       now.setHours(12,0,0,0);
+      if(range==="yesterday"){
+        const t=addDays(now,-1); return {start:localISODate(t),end:localISODate(t)};
+      }
       if(range==="tomorrow"){
         const t=addDays(now,1); return {start:localISODate(t),end:localISODate(t)};
+      }
+      if(range==="lastweek"){
+        const s=addDays(startOfWeek(now),-7); return {start:localISODate(s),end:localISODate(addDays(s,6))};
       }
       if(range==="week"){
         return {start:localISODate(startOfWeek(now)),end:localISODate(addDays(startOfWeek(now),6))};
@@ -1373,6 +1380,13 @@
     document.querySelectorAll(".ec-tab[data-range]").forEach(btn=>btn.addEventListener("click",async()=>{
       customRange=null;
       currentRange=btn.dataset.range;
+
+      if(currentRange==="today" || currentRange==="yesterday" || currentRange==="lastweek"){
+        upcomingOnly=false;
+        const upcomingBox=document.getElementById("upcoming-only");
+        if(upcomingBox) upcomingBox.checked=false;
+      }
+
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",x===btn));
       await loadFeed();
     }));
