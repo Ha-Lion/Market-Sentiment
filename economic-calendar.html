@@ -164,11 +164,11 @@
 </style>
 
   
-<style id="ec-v22-hide-refresh-status">
-  #auto-refresh-label,
-  #last-updated{display:none!important}
+<style id="ec-v23-hide-auto-refresh">
   .ec-stat:has(#auto-refresh-label),
-  .ec-stat:has(#last-updated){display:none!important}
+  .ec-stat:has(#last-updated){
+    display:none!important;
+  }
 </style>
 
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
@@ -441,7 +441,7 @@
         <button class="ec-tab" data-range="yesterday">Yesterday</button>
         <button class="ec-tab" data-range="today">Today</button>
         <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
-        <button class="ec-tab" data-range="week">This Week</button>
+        <button class="ec-tab active" data-range="week">This Week</button>
         <button class="ec-tab" data-range="next">Next Week</button>
         <span class="ec-date-label" id="range-label">—</span>
 
@@ -463,7 +463,7 @@
           ⚙️
           <div>
             Saved Calendar Settings
-            <small>Countries, event classifications, impact and timezone · changes auto-save; Save closes Settings.</small>
+            <small>Countries, event classifications, impact and timezone.</small>
           </div>
         </div>
         <div class="ec-settings-top-actions" style="display:flex;gap:6px;align-items:center">
@@ -831,7 +831,7 @@
       };
     }
 
-    let currentRange = "thisweek";
+    let currentRange = "week";
     let customRange = null;
     let upcomingOnly = false;
     let currentUser = null;
@@ -846,6 +846,7 @@
     let activeModalEvent = null;
     let activeChartSeries = "actual";
     let weekPreloadCache = null;
+    let weekPreloadPromise = null;
     const reminderState = new Map();
     let pendingCancel = null;
     let activeController = null;
@@ -1459,70 +1460,75 @@
     }
 
 
-    function calendarCountriesKey(){
-      return [...settings.countries].sort().join(",");
+    function weekCacheKey(){
+      return JSON.stringify({
+        timezone:settings.timezone,
+        countries:[...settings.countries].sort()
+      });
     }
 
-    function rangeInside(inner,outer){
-      return inner.start>=outer.start && inner.end<=outer.end;
-    }
-
-    function eventDateKeyInSelectedTimezone(e){
-      const d=parseProviderDate(e.date);
-      if(!d) return "";
+    function dateKeyInTimezone(dateObj,tz){
       const parts=new Intl.DateTimeFormat("en-CA",{
-        timeZone:settings.timezone,
+        timeZone:tz,
         year:"numeric",month:"2-digit",day:"2-digit"
-      }).formatToParts(d);
+      }).formatToParts(dateObj);
       const get=t=>parts.find(p=>p.type===t)?.value||"";
       return `${get("year")}-${get("month")}-${get("day")}`;
     }
 
-    function filterEventsToRange(events,r){
+    function filterEventsToDateRange(events,range){
       return (events||[]).filter(e=>{
-        const k=eventDateKeyInSelectedTimezone(e);
-        return k && k>=r.start && k<=r.end;
+        const d=parseProviderDate(e.date);
+        if(!d) return false;
+        const key=dateKeyInTimezone(d,settings.timezone);
+        return key>=range.start && key<=range.end;
       });
     }
 
-    async function fetchCalendarRange(r,signal){
-      const res=await fetch(FEED_URL,{
-        method:"POST",
-        headers:{"content-type":"application/json"},
-        body:JSON.stringify({start:r.start,end:r.end,countries:settings.countries}),
-        signal,
-        cache:"no-store"
-      });
-      const data=await res.json().catch(()=>({}));
-      if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
-      return data;
-    }
-
-    async function preloadCurrentWeek(force=false){
-      const week=getRange("week");
-      const key=calendarCountriesKey();
+    async function preloadWeekInBackground(force=false){
+      const range=getRange("week");
+      const key=weekCacheKey();
 
       if(!force && weekPreloadCache &&
-         weekPreloadCache.start===week.start &&
-         weekPreloadCache.end===week.end &&
-         weekPreloadCache.countriesKey===key){
+         weekPreloadCache.start===range.start &&
+         weekPreloadCache.end===range.end &&
+         weekPreloadCache.key===key){
         return weekPreloadCache;
       }
 
-      try{
-        const data=await fetchCalendarRange(week,undefined);
-        weekPreloadCache={
-          start:week.start,
-          end:week.end,
-          countriesKey:key,
-          data,
-          fetchedAt:new Date()
-        };
-        return weekPreloadCache;
-      }catch(err){
-        console.warn("Weekly preload failed",err);
-        return null;
-      }
+      if(weekPreloadPromise && !force) return weekPreloadPromise;
+
+      weekPreloadPromise=(async()=>{
+        try{
+          const res=await fetch(FEED_URL,{
+            method:"POST",
+            headers:{"content-type":"application/json"},
+            body:JSON.stringify({
+              start:range.start,
+              end:range.end,
+              countries:settings.countries
+            }),
+            cache:"no-store"
+          });
+          if(!res.ok) return null;
+          const data=await res.json();
+          weekPreloadCache={
+            start:range.start,
+            end:range.end,
+            key,
+            data,
+            fetchedAt:new Date()
+          };
+          return weekPreloadCache;
+        }catch(err){
+          console.warn("Week preload failed",err);
+          return null;
+        }finally{
+          weekPreloadPromise=null;
+        }
+      })();
+
+      return weekPreloadPromise;
     }
 
     async function loadFeed(manual=false){
@@ -1536,43 +1542,53 @@
       body.innerHTML='<tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>';
 
       try{
-        const week=getRange("week");
-        const key=calendarCountriesKey();
-        let data=null;
-
-        const canUseWeekCache =
+        const weekRange=getRange("week");
+        const cacheMatches =
           !manual &&
           weekPreloadCache &&
-          weekPreloadCache.start===week.start &&
-          weekPreloadCache.end===week.end &&
-          weekPreloadCache.countriesKey===key &&
-          rangeInside(r,week);
+          weekPreloadCache.start===weekRange.start &&
+          weekPreloadCache.end===weekRange.end &&
+          weekPreloadCache.key===weekCacheKey() &&
+          r.start>=weekRange.start &&
+          r.end<=weekRange.end;
 
-        if(canUseWeekCache){
+        let data;
+
+        if(cacheMatches){
           data={...weekPreloadCache.data};
-          data.events=filterEventsToRange(weekPreloadCache.data.events,r);
+          data.events=filterEventsToDateRange(weekPreloadCache.data.events,r);
           lastFetchAt=weekPreloadCache.fetchedAt||new Date();
         }else{
-          data=await fetchCalendarRange(r,activeController.signal);
+          const res=await fetch(FEED_URL,{
+            method:"POST",
+            headers:{"content-type":"application/json"},
+            body:JSON.stringify({start:r.start,end:r.end,countries:settings.countries}),
+            signal:activeController.signal,
+            cache:"no-store"
+          });
+
+          data=await res.json().catch(()=>({}));
+          if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
+
           lastFetchAt=new Date();
 
-          if(r.start===week.start && r.end===week.end){
+          if(r.start===weekRange.start && r.end===weekRange.end){
             weekPreloadCache={
-              start:week.start,
-              end:week.end,
-              countriesKey:key,
+              start:weekRange.start,
+              end:weekRange.end,
+              key:weekCacheKey(),
               data,
               fetchedAt:lastFetchAt
             };
           }else{
-            setTimeout(()=>preloadCurrentWeek(false),0);
+            setTimeout(()=>preloadWeekInBackground(false),250);
           }
         }
 
         allEvents=Array.isArray(data.events)?data.events:[];
         setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
         document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
-        document.getElementById("last-updated") && (if(document.getElementById("last-updated")) document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
+        document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
         if(data.mode==="sample-fallback"){
           warning.textContent="The page is fully wired but is showing fallback sample events until the FinanceCalendar production API key is saved as the Supabase secret TRADING_ECONOMICS_API_KEY.";
@@ -1851,13 +1867,11 @@
       applySettingsControls();
       status.textContent="Saved to your account ✓";
 
-      const panel=document.getElementById("settings-panel");
-      panel.classList.remove("open");
-      const topSave=document.getElementById("settings-save-top");
-      if(topSave) topSave.style.display="none";
+      const settingsPanel=document.getElementById("settings-panel");
+      if(settingsPanel) settingsPanel.classList.remove("open");
 
       await loadFeed(true);
-      setTimeout(()=>preloadCurrentWeek(true),0);
+      setTimeout(()=>preloadWeekInBackground(true),250);
     });
 
 
@@ -2171,8 +2185,7 @@
 
     displayRangeLabel();
     applySettingsControls();
-
-    setTimeout(()=>preloadCurrentWeek(false),250);
+    setTimeout(()=>preloadWeekInBackground(false),500);
 
     if(window.psdSupabase){
       window.psdSupabase.auth.getSession().then(({data})=>loadAccountSettings(data&&data.session?data.session:null));
