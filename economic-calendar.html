@@ -1085,7 +1085,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v1:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v2:";
     let activeModalEvent = null;
     let activeChartSeries = "history";
     let weekPreloadCache = null;
@@ -1997,8 +1997,10 @@
         if(hist?.mode==="configured"){
           const monthly=dedupeHistoryByMonth(hist.history||[]);
           const count=monthly.length;
-          const coverage=`${count}/12 months currently available`;
-          if(hist.history_kind==="related"){
+          const coverage=`${Math.min(count,12)}/12 months currently available`;
+          if(hist.history_kind==="repository"){
+            note.textContent=`Official history · ${hist.source||"stored repository"} · ${coverage}.`;
+          }else if(hist.history_kind==="related"){
             note.textContent=`Related history · ${hist.related_event_name||"closely matched indicator"} · ${coverage}.`;
           }else{
             note.textContent=`Exact history · ${coverage}.`;
