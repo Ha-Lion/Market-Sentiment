@@ -115,6 +115,54 @@
   }
 </style>
 
+  
+<style id="ec-v20-contrast-flags">
+  body:not(.dark-mode) .ec-page,
+  body:not(.dark-mode) .ec-page *,
+  body:not(.dark-mode) .ec-page a,
+  body:not(.dark-mode) .ec-page button,
+  body:not(.dark-mode) .ec-page input,
+  body:not(.dark-mode) .ec-page select,
+  body:not(.dark-mode) .ec-page small,
+  body:not(.dark-mode) .ec-page .muted,
+  body:not(.dark-mode) .ec-page .ec-muted{
+    color:#000!important;
+  }
+
+  body.dark-mode .ec-page,
+  body.dark-mode .ec-page *,
+  body.dark-mode .ec-page a,
+  body.dark-mode .ec-page button,
+  body.dark-mode .ec-page input,
+  body.dark-mode .ec-page select,
+  body.dark-mode .ec-page small{
+    color:#fff!important;
+  }
+
+  .ec-flag-img{
+    width:18px;
+    height:13px;
+    object-fit:cover;
+    border-radius:2px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.10);
+    vertical-align:-2px;
+    margin-right:5px;
+  }
+
+  .ec-country{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+  }
+
+  .ec-country-choice{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+</style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -693,8 +741,21 @@
     ];
 
     function countryFlag(code){
-      if(code==="EU") return "🇪🇺";
-      return code.replace(/./g,ch=>String.fromCodePoint(127397+ch.charCodeAt(0)));
+      if(code==="EU") return "EU";
+      return code;
+    }
+
+    function flagImageUrl(code){
+      const c=String(code||"").toLowerCase();
+      if(!c) return "";
+      if(c==="eu") return "https://flagcdn.com/w40/eu.png";
+      return `https://flagcdn.com/w40/${c}.png`;
+    }
+
+    function flagMarkup(code,name=""){
+      const src=flagImageUrl(code);
+      if(!src) return "";
+      return `<img class="ec-flag-img" src="${src}" alt="${esc(name||code)} flag" loading="lazy" referrerpolicy="no-referrer">`;
     }
 
     function countryName(code){
@@ -712,7 +773,7 @@
       host.innerHTML=codes.map(code=>`
         <label class="ec-check">
           <input type="checkbox" name="saved-country" value="${code}" ${settings.countries.includes(code)?"checked":""}>
-          <span>${countryFlag(code)} ${countryName(code)}</span>
+          <span class="ec-country-choice">${flagMarkup(code,countryName(code))}${esc(code)} ${esc(countryName(code))}</span>
         </label>`).join("");
     }
 
@@ -956,7 +1017,7 @@
       const oldCategory=categoryFilter.value;
 
       countryFilter.innerHTML='<option value="">All selected countries</option>'+
-        settings.countries.map(c=>`<option value="${c}">${countryFlag(c)} ${esc(countryName(c))}</option>`).join("");
+        settings.countries.map(c=>`<option value="${c}">${esc(c)} · ${esc(countryName(c))}</option>`).join("");
       if(settings.countries.includes(oldCountry)) countryFilter.value=oldCountry;
 
       const cats=[...new Set(allEvents.map(classifyEvent).filter(c=>settings.categories.includes(c)))].sort();
@@ -1027,7 +1088,7 @@
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
             <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
-            <td><span class="ec-country"><span>${c.flag}</span>${esc(c.name)}</span></td>
+            <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code||"")}</strong> ${esc(c.name)}</span></td>
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
               <button class="ec-event-link" type="button" data-open-event="${esc(e.id||"")}">${esc(e.event||e.category||"Economic event")}</button>
@@ -1037,7 +1098,7 @@
             <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
             <td class="value">${formatValue(e.forecast||e.te_forecast,e.unit)}</td>
             <td class="value muted">${formatValue(e.previous,e.unit)}</td>
-            <td><span class="ec-spark-empty" data-spark-event="${esc(e.id||"")}">12M</span></td>
+            <td><span class="ec-spark-empty" data-spark-event="${esc(e.id||"")}">Load</span></td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
@@ -1052,7 +1113,11 @@
       body.innerHTML=html;
       applyReminderButtonStates();
       updateCountdown();
-      setTimeout(hydrateVisibleSparklines,0);
+      if("requestIdleCallback" in window){
+        requestIdleCallback(()=>hydrateVisibleSparklines(),{timeout:1800});
+      }else{
+        setTimeout(hydrateVisibleSparklines,1200);
+      }
     }
 
     function setStatus(kind,text){
@@ -1185,7 +1250,7 @@
     }
 
     async function hydrateVisibleSparklines(){
-      const hosts=[...document.querySelectorAll("[data-spark-event]")].slice(0,25);
+      const hosts=[...document.querySelectorAll("[data-spark-event]")].slice(0,8);
       for(const host of hosts){
         const e=eventById(host.dataset.sparkEvent);
         if(!e) continue;
@@ -1287,7 +1352,7 @@
       const g=glossaryFor(e);
       const d=parseProviderDate(e.date);
       document.getElementById("event-modal-title").textContent=e.event||e.category||"Economic Event";
-      document.getElementById("event-modal-sub").textContent=`${countryFlag(e.country_code||"US")} ${e.country||countryName(e.country_code)} · ${timeText(d)} · ${TZ_LABELS[settings.timezone]||settings.timezone}`;
+      document.getElementById("event-modal-sub").textContent=`${normalizedCountryCode(e)||""} ${e.country||countryName(normalizedCountryCode(e))} · ${timeText(d)} · ${TZ_LABELS[settings.timezone]||settings.timezone}`;
       document.getElementById("event-modal-definition").innerHTML=`<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
       document.getElementById("event-modal-kpis").innerHTML=`
         <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
