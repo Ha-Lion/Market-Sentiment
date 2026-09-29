@@ -40,6 +40,15 @@
     .ec-action{background:var(--ec-soft);color:var(--ec-accent);}
     .ec-action:disabled{opacity:.48;cursor:not-allowed;}
     .ec-date-label{font-size:12px;color:var(--ec-muted);white-space:nowrap;padding:0 3px;font-weight:650;}
+    .ec-tz-strip{display:flex;gap:6px;align-items:center;padding-left:6px;border-left:1px solid var(--ec-border);}
+    .ec-tz-btn{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:999px;padding:7px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;}
+    .ec-tz-btn:hover{background:var(--ec-soft);}
+    .ec-tz-btn.active{background:var(--ec-soft);border-color:var(--ec-accent);color:var(--ec-accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ec-accent) 35%,transparent);}
+    .ec-view-toggle{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:var(--ec-muted);white-space:nowrap;}
+    .ec-view-toggle input{width:15px;height:15px;}
+    .ec-past-row{opacity:.57;}
+    .ec-past-row:hover{opacity:.78;}
+    .ec-live-time{display:block;font-size:9px;font-weight:600;color:var(--ec-muted);margin-top:2px;white-space:nowrap;}
     .ec-settings-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--ec-border);background:color-mix(in srgb,var(--ec-soft) 32%,transparent);}
     .ec-settings-title{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;}
     .ec-settings-title small{display:block;color:var(--ec-muted);font-size:11px;font-weight:500;margin-top:2px;}
@@ -84,7 +93,9 @@
     .actual-up{color:var(--ec-good)} .actual-down{color:var(--ec-bad)}
     .ec-assets{display:flex;gap:5px;flex-wrap:wrap;}
     .ec-chip{display:inline-block;padding:4px 7px;border-radius:999px;background:var(--ec-soft);color:var(--ec-accent);font-size:10px;font-weight:800;}
-    .ec-event-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+    .ec-event-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;align-items:center;}
+    .ec-actions-cell{white-space:nowrap;text-align:right;min-width:128px;}
+    .ec-table th:last-child{text-align:right;min-width:128px;}
     .ec-icon-btn{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ec-border);border-radius:8px;background:var(--ec-card);color:var(--ec-text);cursor:pointer;font-size:14px;line-height:1;}
     .ec-icon-btn:hover{background:var(--ec-soft);color:var(--ec-accent);}
     .ec-icon-btn.active{background:var(--ec-soft);color:var(--ec-accent);border-color:var(--ec-accent);}
@@ -102,7 +113,8 @@
     @media(min-width:1200px){
       .ec-table th,.ec-table td{padding-left:16px;padding-right:16px;}
       .ec-table th:nth-child(4),.ec-table td:nth-child(4){width:28%;}
-      .ec-table th:nth-child(8),.ec-table td:nth-child(8){width:20%;}
+      .ec-table th:nth-child(8),.ec-table td:nth-child(8){width:18%;}
+      .ec-table th:nth-child(9),.ec-table td:nth-child(9){width:140px;}
     }
     @media(max-width:1100px){
       .ec-settings-grid{grid-template-columns:1fr 1fr;}
@@ -122,6 +134,8 @@
       .ec-stat:last-child{grid-column:1/-1;border-bottom:0}
       .ec-toolbar-spacer{display:none}
       .ec-date-label{display:none}
+      .ec-tz-strip{width:100%;order:10;border-left:0;padding-left:0;margin-top:2px;overflow-x:auto}
+      .ec-view-toggle{order:11}
     }
   </style>
 </head>
@@ -149,7 +163,16 @@
         <button class="ec-tab" data-range="week">This Week</button>
         <button class="ec-tab" data-range="next">Next Week</button>
         <span class="ec-date-label" id="range-label">—</span>
+
+        <div class="ec-tz-strip" aria-label="Quick timezone">
+          <button class="ec-tz-btn active" type="button" data-timezone="America/New_York">New York</button>
+          <button class="ec-tz-btn" type="button" data-timezone="Europe/London">London</button>
+          <button class="ec-tz-btn" type="button" data-timezone="Asia/Tokyo">Tokyo</button>
+          <button class="ec-tz-btn" type="button" data-timezone="Asia/Hong_Kong">Hong Kong</button>
+        </div>
+
         <span class="ec-toolbar-spacer"></span>
+        <label class="ec-view-toggle"><input id="upcoming-only" type="checkbox"> Upcoming only</label>
         <button id="refresh-btn" class="ec-action" type="button">↻ Refresh</button>
         <button id="history-btn" class="ec-action" type="button" disabled title="Historical data is the next phase">Historical Data</button>
       </div>
@@ -236,16 +259,20 @@
             <div class="ec-settings-group">
               <h3>Timezone</h3>
               <select id="saved-timezone" class="ec-select">
-                <option value="America/New_York">New York (ET)</option>
-                <option value="America/Chicago">Chicago (CT)</option>
-                <option value="America/Denver">Denver (MT)</option>
-                <option value="America/Los_Angeles">Los Angeles (PT)</option>
+                <option value="America/New_York">New York — Eastern Time</option>
+                <option value="America/Chicago">Chicago — Central Time</option>
+                <option value="America/Denver">Denver — Mountain Time</option>
+                <option value="America/Los_Angeles">Los Angeles — Pacific Time</option>
                 <option value="Europe/London">London</option>
-                <option value="Europe/Paris">Paris / CET</option>
+                <option value="Europe/Paris">Paris / Central Europe</option>
                 <option value="Asia/Tokyo">Tokyo</option>
                 <option value="Asia/Hong_Kong">Hong Kong</option>
+                <option value="Asia/Singapore">Singapore</option>
+                <option value="Asia/Dubai">Dubai</option>
+                <option value="Australia/Sydney">Sydney</option>
                 <option value="UTC">UTC</option>
               </select>
+              <div class="ec-reminder-note">Your saved timezone controls all event times on this page.</div>
             </div>
           </div>
 
@@ -283,17 +310,17 @@
           <thead>
             <tr>
               <th>Time</th><th>Country</th><th>Impact</th><th>Event</th>
-              <th>Actual</th><th>Forecast</th><th>Previous</th><th>Relevant Assets</th>
+              <th>Actual</th><th>Forecast</th><th>Previous</th><th>Relevant Assets</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="calendar-body">
-            <tr><td colspan="8" class="ec-loading">Loading economic calendar…</td></tr>
+            <tr><td colspan="9" class="ec-loading">Loading economic calendar…</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="ec-provider">
-        <span>Source: <strong id="provider-name">Trading Economics</strong> · Calendar values update when the provider publishes them.</span>
+        <span>Source: <strong id="provider-name">Trading Economics</strong> · Times automatically convert to your selected timezone. Calendar values update when the provider publishes them.</span>
         <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
       </div>
     </section>
@@ -336,10 +363,11 @@
       "America/New_York":"New York (ET)","America/Chicago":"Chicago (CT)",
       "America/Denver":"Denver (MT)","America/Los_Angeles":"Los Angeles (PT)",
       "Europe/London":"London","Europe/Paris":"Paris / CET","Asia/Tokyo":"Tokyo",
-      "Asia/Hong_Kong":"Hong Kong","UTC":"UTC"
+      "Asia/Hong_Kong":"Hong Kong","Asia/Singapore":"Singapore","Asia/Dubai":"Dubai","Australia/Sydney":"Sydney","UTC":"UTC"
     };
 
     let currentRange = "today";
+    let upcomingOnly = false;
     let currentUser = null;
     let currentDashboardLayout = {};
     let settings = structuredClone(DEFAULT_SETTINGS);
@@ -492,6 +520,9 @@
       document.getElementById("default-sms-reminder").checked=Boolean(settings.reminder_sms);
       document.getElementById("default-reminder-minutes").value=String(settings.reminder_minutes||30);
       document.getElementById("stat-timezone").textContent=TZ_LABELS[settings.timezone]||settings.timezone;
+      document.querySelectorAll(".ec-tz-btn").forEach(btn=>{
+        btn.classList.toggle("active", btn.dataset.timezone===settings.timezone);
+      });
     }
 
     function rebuildQuickFilters(){
@@ -510,7 +541,9 @@
 
     function visibleEvents(){
       const q=search.value.trim().toLowerCase();
+      const now=Date.now();
       return allEvents
+        .filter(e=>!upcomingOnly || (parseProviderDate(e.date)?.getTime()||0) >= now)
         .filter(e=>settings.countries.includes(e.country_code))
         .filter(e=>settings.impacts.includes(impactFromImportance(e.importance)))
         .filter(e=>settings.categories.includes(classifyEvent(e)))
@@ -548,7 +581,7 @@
       document.getElementById("stat-next-name").textContent=next?next.event:"No upcoming event in view";
 
       if(!rows.length){
-        body.innerHTML='<tr><td colspan="8" class="ec-empty">No events match your current settings and filters.</td></tr>';
+        body.innerHTML='<tr><td colspan="9" class="ec-empty">No events match your current settings and filters.</td></tr>';
         updateCountdown();
         return;
       }
@@ -559,30 +592,32 @@
         const d=parseProviderDate(e.date);
         const dk=dayKey(d);
         if(dk!==lastDay){
-          html+=`<tr class="ec-day-row"><td colspan="8">${esc(dayLabel(d))}</td></tr>`;
+          html+=`<tr class="ec-day-row"><td colspan="9">${esc(dayLabel(d))}</td></tr>`;
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
         const c=COUNTRY[e.country_code]||{name:e.country||e.country_code||"—",flag:"🌐"};
         const assets=relevantAssets(e);
         html+=`
-          <tr>
-            <td class="ec-time">${esc(timeText(d))}</td>
+          <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
+            <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
             <td><span class="ec-country"><span>${c.flag}</span>${esc(c.name)}</span></td>
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
               <strong>${esc(e.event||e.category||"Economic event")}</strong>
               <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
-              <div class="ec-event-actions">
-                <button class="ec-icon-btn" type="button" title="Add to calendar" data-action="calendar" data-event-id="${esc(e.id||"")}">📅</button>
-                <button class="ec-icon-btn" type="button" title="Email reminder" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
-                <button class="ec-icon-btn" type="button" title="Text reminder" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
-              </div>
             </td>
             <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
             <td class="value">${formatValue(e.forecast||e.te_forecast,e.unit)}</td>
             <td class="value muted">${formatValue(e.previous,e.unit)}</td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
+            <td class="ec-actions-cell">
+              <div class="ec-event-actions">
+                <button class="ec-icon-btn" type="button" title="Add to calendar" aria-label="Add to calendar" data-action="calendar" data-event-id="${esc(e.id||"")}">📅</button>
+                <button class="ec-icon-btn" type="button" title="Email reminder" aria-label="Email reminder" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
+                <button class="ec-icon-btn" type="button" title="Text reminder" aria-label="Text reminder" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
+              </div>
+            </td>
           </tr>`;
       }
       body.innerHTML=html;
@@ -614,7 +649,7 @@
 
       setStatus("loading",manual?"Refreshing…":"Loading live data");
       warning.classList.remove("show");
-      body.innerHTML='<tr><td colspan="8" class="ec-loading">Loading economic calendar…</td></tr>';
+      body.innerHTML='<tr><td colspan="9" class="ec-loading">Loading economic calendar…</td></tr>';
 
       try{
         const res=await fetch(FEED_URL,{
@@ -646,7 +681,7 @@
         setStatus("error","Feed unavailable");
         warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
         warning.classList.add("show");
-        body.innerHTML=`<tr><td colspan="8" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
+        body.innerHTML=`<tr><td colspan="9" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
         document.getElementById("stat-events").textContent="—";
         document.getElementById("stat-high").textContent="—";
         document.getElementById("stat-next").textContent="—";
@@ -704,11 +739,33 @@
     [search,countryFilter,impactFilter,categoryFilter].forEach(x=>x.addEventListener("input",render));
 
     document.getElementById("clear-filters").addEventListener("click",()=>{
-      search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; render();
+      search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false; render();
+    });
+
+    document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      settings.timezone=btn.dataset.timezone;
+      document.getElementById("saved-timezone").value=settings.timezone;
+      applySettingsControls();
+      render();
+      const status=document.getElementById("settings-save-status");
+      if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
+    }));
+
+    document.getElementById("upcoming-only").addEventListener("change",(ev)=>{
+      upcomingOnly=Boolean(ev.target.checked);
+      render();
     });
 
     document.getElementById("settings-toggle").addEventListener("click",()=>{
       document.getElementById("settings-panel").classList.toggle("open");
+    });
+
+    document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
+      settings.timezone=ev.target.value;
+      applySettingsControls();
+      render();
+      const status=document.getElementById("settings-save-status");
+      if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
     });
 
     document.getElementById("settings-reset").addEventListener("click",()=>{
