@@ -52,6 +52,69 @@
   }
 </style>
 
+  
+<style id="ec-contrast-and-dayrows">
+  /* Strong readable typography */
+  body:not(.dark-mode) .ec-page,
+  body:not(.dark-mode) .ec-page h1,
+  body:not(.dark-mode) .ec-page h2,
+  body:not(.dark-mode) .ec-page h3,
+  body:not(.dark-mode) .ec-page strong,
+  body:not(.dark-mode) .ec-page label,
+  body:not(.dark-mode) .ec-page th,
+  body:not(.dark-mode) .ec-page td,
+  body:not(.dark-mode) .ec-page button,
+  body:not(.dark-mode) .ec-page select,
+  body:not(.dark-mode) .ec-page input{
+    color:#000!important;
+  }
+
+  body.dark-mode .ec-page,
+  body.dark-mode .ec-page h1,
+  body.dark-mode .ec-page h2,
+  body.dark-mode .ec-page h3,
+  body.dark-mode .ec-page strong,
+  body.dark-mode .ec-page label,
+  body.dark-mode .ec-page th,
+  body.dark-mode .ec-page td,
+  body.dark-mode .ec-page button,
+  body.dark-mode .ec-page select,
+  body.dark-mode .ec-page input{
+    color:#fff!important;
+  }
+
+  body:not(.dark-mode) .ec-page .ec-muted,
+  body:not(.dark-mode) .ec-page .muted,
+  body:not(.dark-mode) .ec-page small,
+  body:not(.dark-mode) .ec-page .ec-reminder-note,
+  body:not(.dark-mode) .ec-page .ec-field-note{
+    color:#22364a!important;
+  }
+
+  body.dark-mode .ec-page .ec-muted,
+  body.dark-mode .ec-page .muted,
+  body.dark-mode .ec-page small,
+  body.dark-mode .ec-page .ec-reminder-note,
+  body.dark-mode .ec-page .ec-field-note{
+    color:#d8e2ee!important;
+  }
+
+  /* More recognizable date separator rows */
+  .ec-day-row td{
+    background:#c7dcf2!important;
+    color:#06213d!important;
+    font-weight:900!important;
+    border-top:1px solid #8fb3d7!important;
+    border-bottom:1px solid #8fb3d7!important;
+  }
+  body.dark-mode .ec-day-row td{
+    background:#17395f!important;
+    color:#fff!important;
+    border-top-color:#2b5f91!important;
+    border-bottom-color:#2b5f91!important;
+  }
+</style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -344,7 +407,7 @@
           ⚙️
           <div>
             Saved Calendar Settings
-            <small>Countries, event classifications, impact and timezone.</small>
+            <small>Countries, event classifications, impact and timezone · changes auto-save.</small>
           </div>
         </div>
         <div class="ec-settings-top-actions" style="display:flex;gap:6px;align-items:center">
@@ -452,7 +515,7 @@
           <div class="ec-settings-actions">
             <span id="settings-save-status" class="ec-save-status"></span>
             <button id="settings-reset" class="ec-settings-button" type="button">Reset</button>
-            <button id="settings-save" class="ec-tab active" type="button">Save Settings</button>
+            <button id="settings-save" class="ec-tab active" type="button">Save Now</button>
           </div>
         </fieldset>
       </div>
@@ -582,6 +645,42 @@
       NO:{name:"Norway",flag:"🇳🇴"}, SE:{name:"Sweden",flag:"🇸🇪"}
     };
 
+
+
+    const COUNTRY_NAME_TO_CODE = {
+      "united states":"US","usa":"US","u.s.":"US",
+      "euro area":"EU","eurozone":"EU",
+      "united kingdom":"GB","uk":"GB",
+      "japan":"JP","canada":"CA","china":"CN","australia":"AU","new zealand":"NZ",
+      "switzerland":"CH","germany":"DE","france":"FR","italy":"IT","spain":"ES",
+      "india":"IN","brazil":"BR","mexico":"MX","south korea":"KR","korea":"KR",
+      "singapore":"SG","norway":"NO","sweden":"SE","hong kong":"HK","taiwan":"TW",
+      "russia":"RU","turkey":"TR","south africa":"ZA","indonesia":"ID","malaysia":"MY",
+      "thailand":"TH","philippines":"PH","vietnam":"VN","israel":"IL","saudi arabia":"SA",
+      "united arab emirates":"AE","poland":"PL","czech republic":"CZ","czechia":"CZ",
+      "hungary":"HU","romania":"RO","denmark":"DK","finland":"FI","belgium":"BE",
+      "netherlands":"NL","portugal":"PT","greece":"GR","ireland":"IE","austria":"AT"
+    };
+
+    function normalizedCountryCode(e){
+      let code=String(e?.country_code||e?.countryCode||"").trim().toUpperCase();
+      if(code==="UK") code="GB";
+      if(code==="EA"||code==="EMU") code="EU";
+      if(/^[A-Z]{2}$/.test(code)) return code;
+
+      const name=String(e?.country||e?.countryName||"").trim().toLowerCase();
+      return COUNTRY_NAME_TO_CODE[name]||"";
+    }
+
+    function displayCountry(e){
+      const code=normalizedCountryCode(e);
+      const name=String(e?.country||e?.countryName||"").trim() || (code?countryName(code):"Global");
+      return {
+        code,
+        name,
+        flag: code ? countryFlag(code) : "🌐"
+      };
+    }
 
     const ALL_COUNTRY_CODES = [
       "AE","AF","AL","AM","AO","AR","AT","AU","AZ","BA","BD","BE","BF","BG","BH","BI","BJ","BN","BO","BR","BS","BT","BW","BY","BZ",
@@ -923,7 +1022,7 @@
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
-        const c=COUNTRY[e.country_code]||{name:e.country||countryName(e.country_code)||e.country_code||"—",flag:e.country_code?countryFlag(e.country_code):"🌐"};
+        const c=displayCountry(e);
         const assets=relevantAssets(e);
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
@@ -1491,7 +1590,7 @@
       const panel=document.getElementById("settings-panel");
       panel.classList.toggle("open");
       const topSave=document.getElementById("settings-save-top");
-      if(topSave) topSave.style.display=panel.classList.contains("open")?"inline-flex":"none";
+      if(topSave) topSave.style.display="none";
     });
 
     document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
@@ -1505,6 +1604,34 @@
     document.getElementById("settings-save-top").addEventListener("click",()=>{
       document.getElementById("settings-save").click();
     });
+
+
+    let ecAutoSaveTimer=null;
+
+    function scheduleCalendarAutoSave(){
+      clearTimeout(ecAutoSaveTimer);
+      ecAutoSaveTimer=setTimeout(()=>{
+        const saveBtn=document.getElementById("settings-save");
+        if(saveBtn && !saveBtn.disabled){
+          saveBtn.click();
+          const status=document.getElementById("settings-save-status");
+          if(status) status.textContent="Auto-saved ✓";
+        }
+      },450);
+    }
+
+    const autoSaveRoot=document.getElementById("settings-fieldset");
+    if(autoSaveRoot){
+      autoSaveRoot.addEventListener("change",scheduleCalendarAutoSave);
+      autoSaveRoot.addEventListener("input",ev=>{
+        if(ev.target.matches('input[type="search"],input[type="tel"]')) return;
+        scheduleCalendarAutoSave();
+      });
+    }
+
+    document.getElementById("country-select-all")?.addEventListener("click",scheduleCalendarAutoSave);
+    document.getElementById("country-major")?.addEventListener("click",scheduleCalendarAutoSave);
+    document.getElementById("country-clear")?.addEventListener("click",scheduleCalendarAutoSave);
 
     document.getElementById("settings-reset").addEventListener("click",()=>{
       settings=cloneDefault();
