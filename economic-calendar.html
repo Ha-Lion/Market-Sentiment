@@ -189,6 +189,120 @@
 </style>
 
   
+
+<style id="ec-v26-settings-close">
+  #settings-close-top{
+    background:var(--ec-card)!important;
+    color:var(--ec-text)!important;
+    border:1px solid var(--ec-border)!important;
+    font-weight:850!important;
+  }
+  #settings-close-top:hover{
+    border-color:#b42318!important;
+    color:#b42318!important;
+  }
+  body.dark-mode #settings-close-top:hover{
+    color:#ffb4b4!important;
+    border-color:#a85858!important;
+  }
+</style>
+
+
+<style id="ec-v26-histogram">
+  .ec-histogram-wrap{
+    position:relative;
+    height:300px!important;
+    overflow:hidden;
+    padding:14px 16px 26px!important;
+    perspective:900px;
+  }
+  .ec-histogram{
+    height:100%;
+    display:flex;
+    align-items:flex-end;
+    gap:10px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:18px 8px 30px;
+    box-sizing:border-box;
+    scrollbar-width:thin;
+  }
+  .ec-hist-col{
+    position:relative;
+    flex:1 0 54px;
+    min-width:54px;
+    max-width:76px;
+    height:100%;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    cursor:pointer;
+  }
+  .ec-hist-bar{
+    position:relative;
+    width:30px;
+    min-height:3px;
+    border-radius:3px 3px 1px 1px;
+    background:linear-gradient(180deg,#5d75ff 0%,#3f51ff 55%,#2f3ccc 100%);
+    box-shadow:
+      5px -5px 0 rgba(43,57,180,.82),
+      7px -2px 8px rgba(32,45,120,.22);
+    transform:skewY(-2deg);
+    transform-origin:bottom center;
+    transition:transform .15s ease,filter .15s ease,box-shadow .15s ease;
+  }
+  .ec-hist-col:hover .ec-hist-bar,
+  .ec-hist-col:focus-within .ec-hist-bar{
+    transform:skewY(-2deg) translateY(-3px) scaleX(1.06);
+    filter:brightness(1.08);
+    box-shadow:
+      6px -6px 0 rgba(43,57,180,.9),
+      9px -3px 12px rgba(32,45,120,.28);
+  }
+  .ec-hist-label{
+    position:absolute;
+    bottom:-22px;
+    left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap;
+    font-size:8px;
+    color:var(--ec-muted);
+  }
+  .ec-hist-value{
+    position:absolute;
+    bottom:calc(var(--bar-h,0px) + 8px);
+    left:50%;
+    transform:translateX(-50%);
+    font-size:8px;
+    font-weight:900;
+    color:var(--ec-text);
+    white-space:nowrap;
+    pointer-events:none;
+  }
+  .ec-chart-callout{
+    position:absolute;
+    z-index:5;
+    min-width:150px;
+    max-width:220px;
+    padding:8px 10px;
+    border:1px solid var(--ec-border);
+    border-radius:9px;
+    background:var(--ec-card);
+    color:var(--ec-text);
+    box-shadow:0 10px 28px rgba(0,0,0,.20);
+    font-size:10px;
+    line-height:1.35;
+    pointer-events:none;
+  }
+  .ec-chart-callout strong{display:block;font-size:11px;margin-bottom:3px}
+  body.dark-mode .ec-hist-bar{
+    background:linear-gradient(180deg,#8fa2ff 0%,#6779ff 55%,#4a5bd2 100%);
+    box-shadow:
+      5px -5px 0 rgba(76,89,194,.88),
+      7px -2px 8px rgba(0,0,0,.38);
+  }
+</style>
+
 <style id="ec-v25-button-motion">
   .ec-tab,.ec-action,.ec-settings-button,.ec-mini-btn,.ec-icon-btn,.ec-modal-close,.ec-chart-toggle,
   #settings-save,#settings-save-top,#settings-reset,.ec-clear,.ec-tz-btn{
@@ -504,6 +618,7 @@
         </div>
         <div class="ec-settings-top-actions" style="display:flex;gap:6px;align-items:center">
           <button id="settings-save-top" class="ec-tab active" type="button" style="display:none">Save</button>
+          <button id="settings-close-top" class="ec-settings-button" type="button" style="display:none">Close</button>
           <button id="settings-toggle" class="ec-settings-button" type="button" aria-expanded="false">Settings</button>
         </div>
       </div>
@@ -680,8 +795,9 @@
               <button class="ec-chart-toggle" data-chart-series="forecast" type="button">Forecast</button>
               <button class="ec-chart-toggle" data-chart-series="previous" type="button">Previous</button>
             </div>
-            <div class="ec-big-chart-wrap">
-              <canvas id="event-big-chart" class="ec-big-chart"></canvas>
+            <div class="ec-big-chart-wrap ec-histogram-wrap">
+              <div id="event-big-chart" class="ec-histogram" aria-label="12-month historical histogram"></div>
+              <div id="event-chart-callout" class="ec-chart-callout" hidden></div>
             </div>
             <div id="event-history-note" class="ec-reminder-note" style="margin-top:6px;"></div>
           </section>
@@ -1227,81 +1343,101 @@
       return result;
     }
 
-    function drawCanvasLine(canvas,history,series="actual"){
-      if(!canvas) return;
-      const ctx=canvas.getContext("2d");
-      const rect=canvas.getBoundingClientRect();
-      const dpr=window.devicePixelRatio||1;
-      canvas.width=Math.max(1,Math.floor(rect.width*dpr));
-      canvas.height=Math.max(1,Math.floor(rect.height*dpr));
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      const w=rect.width,h=rect.height;
-      ctx.clearRect(0,0,w,h);
-
+    function drawCanvasLine(host,history,series="actual"){
+      if(!host) return;
       const rows=(history||[]).map(x=>({
         date:parseProviderDate(x.date),
-        value:numericValue(x[series])
+        value:numericValue(x[series]),
+        actual:x.actual,
+        forecast:x.forecast,
+        previous:x.previous,
+        unit:x.unit||""
       })).filter(x=>x.date&&x.value!==null).sort((a,b)=>a.date-b.date);
 
-      const cs=getComputedStyle(document.body);
-      const muted=cs.getPropertyValue("--ec-muted").trim()||"#777";
-      const accent=cs.getPropertyValue("--ec-accent").trim()||"#365cff";
-      const border=cs.getPropertyValue("--ec-border").trim()||"#ddd";
-
-      if(rows.length<2){
-        ctx.fillStyle=muted;
-        ctx.font="11px system-ui";
-        ctx.textAlign="center";
-        ctx.fillText("No historical series available for this event yet",w/2,h/2);
+      if(rows.length<1){
+        host.innerHTML='<div class="ec-detail-loading" style="width:100%;align-self:center">No historical series available for this event yet.</div>';
+        const callout=document.getElementById("event-chart-callout");
+        if(callout) callout.hidden=true;
         return;
       }
 
       const vals=rows.map(x=>x.value);
       let min=Math.min(...vals),max=Math.max(...vals);
       if(min===max){min-=1;max+=1;}
-      const pad=18;
+      const range=max-min||1;
 
-      ctx.strokeStyle=border;
-      ctx.lineWidth=1;
-      for(let i=0;i<4;i++){
-        const y=pad+(h-pad*2)*(i/3);
-        ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke();
-      }
+      host.innerHTML=rows.map((r,i)=>{
+        const pct=Math.max(4,((r.value-min)/range)*82+8);
+        const dateLabel=new Intl.DateTimeFormat("en-US",{month:"short",year:"2-digit"}).format(r.date);
+        return `<button class="ec-hist-col" type="button"
+          data-hist-index="${i}"
+          aria-label="${esc(dateLabel)} ${esc(String(r.value))}">
+          <span class="ec-hist-value" style="--bar-h:${pct}%">${esc(String(r.value))}</span>
+          <span class="ec-hist-bar" style="height:${pct}%"></span>
+          <span class="ec-hist-label">${esc(dateLabel)}</span>
+        </button>`;
+      }).join("");
 
-      ctx.strokeStyle=accent;
-      ctx.lineWidth=2;
-      ctx.beginPath();
-      rows.forEach((r,i)=>{
-        const x=pad+(w-pad*2)*(i/(rows.length-1));
-        const y=h-pad-((r.value-min)/(max-min))*(h-pad*2);
-        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      const callout=document.getElementById("event-chart-callout");
+      host.querySelectorAll(".ec-hist-col").forEach(btn=>{
+        const show=()=>{
+          const r=rows[Number(btn.dataset.histIndex)];
+          const rect=btn.getBoundingClientRect();
+          const wrap=host.parentElement.getBoundingClientRect();
+          callout.innerHTML=`
+            <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
+            ${series.charAt(0).toUpperCase()+series.slice(1)}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
+            Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}
+          `;
+          callout.hidden=false;
+          const left=Math.max(8,Math.min(rect.left-wrap.left,wrap.width-220));
+          const top=Math.max(8,rect.top-wrap.top-76);
+          callout.style.left=left+"px";
+          callout.style.top=top+"px";
+        };
+        btn.addEventListener("mouseenter",show);
+        btn.addEventListener("focus",show);
+        btn.addEventListener("click",show);
+        btn.addEventListener("mouseleave",()=>{callout.hidden=true});
+        btn.addEventListener("blur",()=>{callout.hidden=true});
       });
-      ctx.stroke();
-
-      ctx.fillStyle=accent;
-      rows.forEach((r,i)=>{
-        const x=pad+(w-pad*2)*(i/(rows.length-1));
-        const y=h-pad-((r.value-min)/(max-min))*(h-pad*2);
-        ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();
-      });
-
-      ctx.fillStyle=muted;
-      ctx.font="9px system-ui";
-      ctx.textAlign="left";
-      ctx.fillText(String(max),2,10);
-      ctx.fillText(String(min),2,h-3);
     }
 
     function drawSparkline(host,history){
-      const rows=(history||[]).map(x=>({v:numericValue(x.actual)})).filter(x=>x.v!==null);
+      const rows=(history||[]).map(x=>numericValue(x.actual)).filter(v=>v!==null);
       if(rows.length<2){
         host.textContent="No history";
         return;
       }
+
       const canvas=document.createElement("canvas");
       canvas.className="ec-spark";
       host.replaceWith(canvas);
-      requestAnimationFrame(()=>drawCanvasLine(canvas,history,"actual"));
+
+      requestAnimationFrame(()=>{
+        const rect=canvas.getBoundingClientRect();
+        const dpr=window.devicePixelRatio||1;
+        canvas.width=Math.max(1,Math.floor(rect.width*dpr));
+        canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+        const ctx=canvas.getContext("2d");
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+
+        const w=rect.width,h=rect.height,pad=3;
+        let min=Math.min(...rows),max=Math.max(...rows);
+        if(min===max){min-=1;max+=1;}
+        const accent=getComputedStyle(document.body).getPropertyValue("--ec-accent").trim()||"#365cff";
+
+        ctx.clearRect(0,0,w,h);
+        ctx.strokeStyle=accent;
+        ctx.lineWidth=1.5;
+        ctx.beginPath();
+        rows.forEach((v,i)=>{
+          const x=pad+(w-pad*2)*(i/(rows.length-1));
+          const y=h-pad-((v-min)/(max-min))*(h-pad*2);
+          if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+      });
     }
 
     async function hydrateVisibleSparklines(){
@@ -1965,7 +2101,10 @@
       panel.setAttribute("aria-hidden",isOpen?"false":"true");
       document.getElementById("settings-toggle").setAttribute("aria-expanded",isOpen?"true":"false");
       const topSave=document.getElementById("settings-save-top");
-      if(topSave) topSave.style.display=panel.classList.contains("open")?"inline-flex":"none";
+      const topClose=document.getElementById("settings-close-top");
+      const openNow=panel.classList.contains("open");
+      if(topSave) topSave.style.display=openNow?"inline-flex":"none";
+      if(topClose) topClose.style.display=openNow?"inline-flex":"none";
     });
 
     document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
@@ -1978,6 +2117,15 @@
 
     document.getElementById("settings-save-top").addEventListener("click",()=>{
       document.getElementById("settings-save").click();
+    });
+
+    document.getElementById("settings-close-top").addEventListener("click",()=>{
+      const panel=document.getElementById("settings-panel");
+      panel.classList.remove("open");
+      panel.setAttribute("aria-hidden","true");
+      document.getElementById("settings-toggle").setAttribute("aria-expanded","false");
+      document.getElementById("settings-save-top").style.display="none";
+      document.getElementById("settings-close-top").style.display="none";
     });
 
 
@@ -2047,6 +2195,8 @@
       }
       const topSave=document.getElementById("settings-save-top");
       if(topSave) topSave.style.display="none";
+      const topClose=document.getElementById("settings-close-top");
+      if(topClose) topClose.style.display="none";
       const toggleBtn=document.getElementById("settings-toggle");
       if(toggleBtn) toggleBtn.setAttribute("aria-expanded","false");
 
@@ -2366,12 +2516,6 @@
       drawCanvasLine(document.getElementById("event-big-chart"),hist?.history||[],activeChartSeries);
     }));
 
-    window.addEventListener("resize",()=>{
-      if(activeModalEvent){
-        const hist=historyCache.get(historyKey(activeModalEvent));
-        drawCanvasLine(document.getElementById("event-big-chart"),hist?.history||[],activeChartSeries);
-      }
-    });
 
     const refresh=()=>loadFeed(true);
     document.getElementById("refresh-btn").addEventListener("click",refresh);
