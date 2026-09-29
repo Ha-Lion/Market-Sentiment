@@ -16,7 +16,7 @@
       --ec-low:#16a34a;--ec-soft:#eef3ff;--ec-soft2:#f7f9fc;--ec-good:#16803a;
       --ec-warn:#b45309;--ec-bad:#c62828;
     }
-    body[data-theme="dark"]{
+    body[data-theme="dark"], body.dark-mode{
       --ec-bg:#0f1420;--ec-card:#171e2c;--ec-border:#2b3446;--ec-text:#edf2f7;
       --ec-muted:#9aa6b7;--ec-accent:#7aa2ff;--ec-soft:#1e2a44;--ec-soft2:#121925;
       --ec-good:#5fd38d;--ec-warn:#f3b45e;--ec-bad:#ff7b7b;
@@ -98,14 +98,37 @@
     .ec-table th:last-child{text-align:right;min-width:166px;}
     .ec-icon-btn{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ec-border);border-radius:8px;background:var(--ec-card);color:var(--ec-text);cursor:pointer;font-size:14px;line-height:1;}
     .ec-icon-btn:hover{background:var(--ec-soft);color:var(--ec-accent);}
-    .ec-icon-btn.active{background:var(--ec-soft);color:var(--ec-accent);border-color:var(--ec-accent);}
+    .ec-icon-btn.active{
+      background:linear-gradient(180deg,#fff1f1 0%,#ffdede 100%);
+      color:#b42318;
+      border-color:#e89090;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 3px rgba(120,20,20,.18);
+      transform:translateY(-1px);
+    }
+    body[data-theme="dark"] .ec-icon-btn.active,
+    body.dark-mode .ec-icon-btn.active{
+      background:linear-gradient(180deg,#582626 0%,#3c1c1c 100%);
+      color:#ffb4b4;
+      border-color:#a85858;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.45);
+    }
+    .ec-cancel-pop{
+      position:fixed;z-index:100020;width:210px;padding:9px 10px;
+      border:1px solid var(--ec-border);border-radius:9px;background:var(--ec-card);
+      color:var(--ec-text);box-shadow:0 12px 34px rgba(0,0,0,.22);font-size:10px;line-height:1.35;
+    }
+    .ec-cancel-pop[hidden]{display:none}
+    .ec-cancel-pop strong{display:block;font-size:11px;margin-bottom:7px}
+    .ec-cancel-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
+    .ec-cancel-actions button{border:1px solid var(--ec-border);border-radius:7px;padding:5px 8px;background:var(--ec-card);color:var(--ec-text);font:inherit;font-weight:800;cursor:pointer}
+    .ec-cancel-actions .confirm{background:#fff0f0;color:#b42318;border-color:#e89090}
+    body[data-theme="dark"] .ec-cancel-actions .confirm,
+    body.dark-mode .ec-cancel-actions .confirm{background:#4b2222;color:#ffb4b4;border-color:#955050}
     .ec-icon-btn:disabled{opacity:.42;cursor:not-allowed;}
     .ec-reminder-note{font-size:10px;color:var(--ec-muted);margin-top:5px;}
 
     .ec-event-link{border:0;background:none;padding:0;color:var(--ec-text);font:inherit;font-weight:800;cursor:pointer;text-align:left;}
     .ec-event-link:hover{color:var(--ec-accent);text-decoration:underline;}
-    .ec-glossary-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid var(--ec-border);border-radius:50%;background:var(--ec-card);color:var(--ec-muted);font-size:10px;font-weight:900;cursor:pointer;margin-left:5px;vertical-align:middle;}
-    .ec-glossary-btn:hover{color:var(--ec-accent);border-color:var(--ec-accent);}
     .ec-spark{display:inline-block;width:92px;height:28px;vertical-align:middle;}
     .ec-spark-empty{display:inline-flex;width:92px;height:28px;align-items:center;justify-content:center;color:var(--ec-muted);font-size:9px;border-bottom:1px dashed var(--ec-border);}
     .ec-modal-backdrop{position:fixed;inset:0;background:rgba(10,16,28,.58);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999;}
@@ -143,7 +166,6 @@
     body[data-theme="dark"] .ec-definition,
     body[data-theme="dark"] .ec-big-chart-wrap,
     body[data-theme="dark"] .ec-icon-btn,
-    body[data-theme="dark"] .ec-glossary-btn{box-shadow:none;}
     body[data-theme="dark"] .ec-event-link{color:var(--ec-text);}
     body[data-theme="dark"] input[type="date"]{color-scheme:dark;}
     @media(max-width:900px){
@@ -449,6 +471,17 @@
     </section>
   </div>
 
+
+  <div id="ec-cancel-pop" class="ec-cancel-pop" hidden>
+    <strong id="ec-cancel-title">Cancel reminder?</strong>
+    <div id="ec-cancel-text">Do you want to cancel this reminder?</div>
+    <div class="ec-cancel-actions">
+      <button id="ec-cancel-no" type="button">Keep</button>
+      <button id="ec-cancel-yes" class="confirm" type="button">Cancel alert</button>
+    </div>
+  </div>
+
+  <script src="glossary.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js?v=12"></script>
 
@@ -568,6 +601,8 @@
     const historyCache = new Map();
     let activeModalEvent = null;
     let activeChartSeries = "actual";
+    const reminderState = new Map();
+    let pendingCancel = null;
     let activeController = null;
 
     const body = document.getElementById("calendar-body");
@@ -815,7 +850,7 @@
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
               <button class="ec-event-link" type="button" data-open-event="${esc(e.id||"")}">${esc(e.event||e.category||"Economic event")}</button>
-              <button class="ec-glossary-btn" type="button" title="Glossary" aria-label="Event glossary" data-glossary-event="${esc(e.id||"")}">?</button>
+              <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(e.id||"")}">i</button>
               <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
             </td>
             <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
@@ -826,14 +861,15 @@
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
                 <button class="ec-icon-btn" type="button" title="Add to calendar" aria-label="Add to calendar" data-action="calendar" data-event-id="${esc(e.id||"")}">📅</button>
-                <button class="ec-icon-btn" type="button" title="Email reminder using your saved reminder time" aria-label="Email reminder" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
-                <button class="ec-icon-btn" type="button" title="Text reminder using your saved reminder time" aria-label="Text reminder" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
-                <button class="ec-icon-btn" type="button" title="Desktop notification using your saved reminder time" aria-label="Desktop notification" data-action="desktop" data-event-id="${esc(e.id||"")}">🔔</button>
+                <button class="ec-icon-btn" type="button" title="Email reminder using your saved reminder time" aria-label="Email reminder" aria-pressed="false" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
+                <button class="ec-icon-btn" type="button" title="Text reminder using your saved reminder time" aria-label="Text reminder" aria-pressed="false" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
+                <button class="ec-icon-btn" type="button" title="Desktop notification using your saved reminder time" aria-label="Desktop notification" aria-pressed="false" data-action="desktop" data-event-id="${esc(e.id||"")}">🔔</button>
               </div>
             </td>
           </tr>`;
       }
       body.innerHTML=html;
+      applyReminderButtonStates();
       updateCountdown();
       setTimeout(hydrateVisibleSparklines,0);
     }
@@ -1014,6 +1050,58 @@
       }
     }
 
+
+    let activeEconomicGlossaryButton=null;
+
+    function economicGlossaryPopover(){
+      let pop=document.getElementById("psdGlossaryPopover");
+      if(pop) return pop;
+      pop=document.createElement("div");
+      pop.id="psdGlossaryPopover";
+      pop.className="psd-glossary-popover";
+      pop.setAttribute("role","dialog");
+      pop.setAttribute("aria-live","polite");
+      pop.hidden=true;
+      pop.innerHTML='<button class="psd-glossary-close" type="button" aria-label="Close explanation">×</button><div class="psd-glossary-title"></div><p class="psd-glossary-text"></p>';
+      document.body.appendChild(pop);
+      pop.querySelector(".psd-glossary-close").addEventListener("click",closeEconomicGlossary);
+      return pop;
+    }
+
+    function closeEconomicGlossary(){
+      const pop=document.getElementById("psdGlossaryPopover");
+      if(pop) pop.hidden=true;
+      if(activeEconomicGlossaryButton) activeEconomicGlossaryButton.setAttribute("aria-expanded","false");
+      activeEconomicGlossaryButton=null;
+    }
+
+    function positionEconomicGlossary(pop,button){
+      const rect=button.getBoundingClientRect();
+      const width=pop.offsetWidth,height=pop.offsetHeight,gap=8;
+      let left=Math.min(rect.left,window.innerWidth-width-12);
+      left=Math.max(12,left);
+      let top=rect.bottom+gap;
+      if(top+height>window.innerHeight-12) top=Math.max(12,rect.top-height-gap);
+      pop.style.left=left+"px";
+      pop.style.top=top+"px";
+    }
+
+    function openEconomicGlossary(button,e){
+      const g=glossaryFor(e);
+      const pop=economicGlossaryPopover();
+      if(activeEconomicGlossaryButton===button){
+        closeEconomicGlossary();
+        return;
+      }
+      if(activeEconomicGlossaryButton) activeEconomicGlossaryButton.setAttribute("aria-expanded","false");
+      activeEconomicGlossaryButton=button;
+      button.setAttribute("aria-expanded","true");
+      pop.querySelector(".psd-glossary-title").textContent=g.title;
+      pop.querySelector(".psd-glossary-text").textContent=g.text;
+      pop.hidden=false;
+      positionEconomicGlossary(pop,button);
+    }
+
     function fillModalBase(e){
       const g=glossaryFor(e);
       const d=parseProviderDate(e.date);
@@ -1158,6 +1246,7 @@
         status.textContent="Could not load saved settings";
       }
       applySettingsControls();
+      await loadReminderStates();
       await loadFeed();
     }
 
@@ -1326,6 +1415,53 @@
     });
 
 
+
+    function reminderKeyForEvent(e){
+      const dt=parseProviderDate(e.date);
+      return `${String(e.id||`${e.country_code}-${e.event}`)}|${dt?dt.toISOString():""}`;
+    }
+
+    function channelField(channel){
+      return channel==="email" ? "email_enabled" : channel==="sms" ? "sms_enabled" : "desktop_enabled";
+    }
+
+    function isChannelActive(e,channel){
+      const row=reminderState.get(reminderKeyForEvent(e));
+      return Boolean(row && row[channelField(channel)]);
+    }
+
+    function applyReminderButtonStates(){
+      document.querySelectorAll('.ec-icon-btn[data-action="email"],.ec-icon-btn[data-action="sms"],.ec-icon-btn[data-action="desktop"]').forEach(btn=>{
+        const e=eventById(btn.dataset.eventId);
+        if(!e) return;
+        btn.classList.toggle("active",isChannelActive(e,btn.dataset.action));
+        btn.setAttribute("aria-pressed",isChannelActive(e,btn.dataset.action)?"true":"false");
+      });
+    }
+
+    async function loadReminderStates(){
+      reminderState.clear();
+      if(!currentUser||!window.psdSupabase){
+        applyReminderButtonStates();
+        return;
+      }
+      try{
+        const {data,error}=await window.psdSupabase
+          .from("calendar_event_reminders")
+          .select("id,provider_event_id,event_time,email_enabled,sms_enabled,desktop_enabled,is_enabled")
+          .eq("user_id",currentUser.id)
+          .eq("is_enabled",true);
+        if(error) throw error;
+        (data||[]).forEach(row=>{
+          const key=`${String(row.provider_event_id||"")}|${new Date(row.event_time).toISOString()}`;
+          reminderState.set(key,row);
+        });
+      }catch(err){
+        console.warn("Reminder state load failed",err);
+      }
+      applyReminderButtonStates();
+    }
+
     function eventById(id){
       return allEvents.find(e=>String(e.id||"")===String(id||""));
     }
@@ -1362,13 +1498,13 @@
     async function saveEventReminder(e, channel){
       if(!currentUser||!window.psdSupabase){
         alert("Please log in to save reminders.");
-        return;
+        return false;
       }
       if(channel==="sms" && !currentPhoneNumber){
         document.getElementById("settings-panel").classList.add("open");
         document.getElementById("account-phone").focus();
         alert("Add your mobile number in Calendar Settings first. It is optional unless you want text alerts.");
-        return;
+        return false;
       }
       const dt=parseProviderDate(e.date);
       if(!dt) return;
@@ -1395,12 +1531,72 @@
       if(error){
         console.error("Reminder save failed",error);
         alert("Reminder could not be saved.");
-        return;
+        return false;
       }
-      const label=channel==="email"?"Email":channel==="sms"?"Text":"Desktop";
-      alert(`${label} reminder saved for ${settings.reminder_minutes||30} minutes before this event.`);
+      const rowKey=reminderKeyForEvent(e);
+      const existing=reminderState.get(rowKey)||{};
+      reminderState.set(rowKey,{...existing,...payload});
+      applyReminderButtonStates();
+      return true;
     }
 
+
+
+    function closeCancelPopover(){
+      document.getElementById("ec-cancel-pop").hidden=true;
+      pendingCancel=null;
+    }
+
+    function askCancelReminder(btn,e,channel){
+      const pop=document.getElementById("ec-cancel-pop");
+      const label=channel==="email"?"email alert":channel==="sms"?"text alert":"desktop notification";
+      document.getElementById("ec-cancel-title").textContent="Cancel alert?";
+      document.getElementById("ec-cancel-text").textContent=`Do you want to cancel this ${label} for ${e.event||"this event"}?`;
+      const r=btn.getBoundingClientRect();
+      pop.hidden=false;
+      const w=pop.offsetWidth,h=pop.offsetHeight;
+      let left=Math.min(r.left,window.innerWidth-w-10);
+      left=Math.max(10,left);
+      let top=r.bottom+7;
+      if(top+h>window.innerHeight-10) top=Math.max(10,r.top-h-7);
+      pop.style.left=left+"px";
+      pop.style.top=top+"px";
+      pendingCancel={btn,e,channel};
+    }
+
+    async function cancelReminderChannel(e,channel){
+      if(!currentUser||!window.psdSupabase)return false;
+      const key=reminderKeyForEvent(e);
+      const row=reminderState.get(key);
+      if(!row)return true;
+      const field=channelField(channel);
+      const next={...row,[field]:false};
+      const any=Boolean(next.email_enabled||next.sms_enabled||next.desktop_enabled);
+      let error=null;
+      if(any){
+        ({error}=await window.psdSupabase
+          .from("calendar_event_reminders")
+          .update({[field]:false,updated_at:new Date().toISOString()})
+          .eq("user_id",currentUser.id)
+          .eq("provider_event_id",String(e.id||`${e.country_code}-${e.event}-${e.date}`))
+          .eq("event_time",parseProviderDate(e.date).toISOString()));
+        if(!error) reminderState.set(key,next);
+      }else{
+        ({error}=await window.psdSupabase
+          .from("calendar_event_reminders")
+          .delete()
+          .eq("user_id",currentUser.id)
+          .eq("provider_event_id",String(e.id||`${e.country_code}-${e.event}-${e.date}`))
+          .eq("event_time",parseProviderDate(e.date).toISOString()));
+        if(!error) reminderState.delete(key);
+      }
+      if(error){
+        console.error("Reminder cancellation failed",error);
+        return false;
+      }
+      applyReminderButtonStates();
+      return true;
+    }
 
     async function enableDesktopNotification(e){
       if(!("Notification" in window)){
@@ -1430,13 +1626,12 @@
 
 
     body.addEventListener("click",async(ev)=>{
-      const glossaryBtn=ev.target.closest("[data-glossary-event]");
+      const glossaryBtn=ev.target.closest("[data-economic-glossary]");
       if(glossaryBtn){
-        const e=eventById(glossaryBtn.dataset.glossaryEvent);
-        if(e){
-          const g=glossaryFor(e);
-          alert(`${g.title}\n\n${g.text}`);
-        }
+        ev.preventDefault();
+        ev.stopPropagation();
+        const e=eventById(glossaryBtn.dataset.economicGlossary);
+        if(e) openEconomicGlossary(glossaryBtn,e);
         return;
       }
 
@@ -1458,17 +1653,39 @@
         downloadICS(e);
         return;
       }
-      if(action==="desktop"){
-        await enableDesktopNotification(e);
-        btn.classList.add("active");
+      if(action==="desktop"||action==="email"||action==="sms"){
+        if(isChannelActive(e,action)){
+          askCancelReminder(btn,e,action);
+          return;
+        }
+        if(action==="desktop"){
+          await enableDesktopNotification(e);
+        }else{
+          await saveEventReminder(e,action);
+        }
+        applyReminderButtonStates();
         return;
-      }
-      if(action==="email"||action==="sms"){
-        await saveEventReminder(e,action);
-        btn.classList.add("active");
       }
     });
 
+
+
+    document.getElementById("ec-cancel-no").addEventListener("click",closeCancelPopover);
+    document.getElementById("ec-cancel-yes").addEventListener("click",async()=>{
+      if(!pendingCancel)return closeCancelPopover();
+      const {e,channel}=pendingCancel;
+      await cancelReminderChannel(e,channel);
+      closeCancelPopover();
+    });
+    document.addEventListener("click",ev=>{
+      const pop=document.getElementById("ec-cancel-pop");
+      if(!pop.hidden && !ev.target.closest("#ec-cancel-pop") && !ev.target.closest(".ec-icon-btn")) closeCancelPopover();
+      if(activeEconomicGlossaryButton && !ev.target.closest("#psdGlossaryPopover") && !ev.target.closest("[data-economic-glossary]")) closeEconomicGlossary();
+    });
+    window.addEventListener("scroll",()=>{
+      closeCancelPopover();
+      closeEconomicGlossary();
+    },true);
 
     document.getElementById("event-modal-close").addEventListener("click",closeEventModal);
     document.getElementById("event-modal-backdrop").addEventListener("click",ev=>{
