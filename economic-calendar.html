@@ -346,6 +346,22 @@
   }
 </style>
 
+  
+<style id="ec-v28-history-watchlist">
+  .ec-related-history-note{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    margin-left:6px;
+    padding:2px 6px;
+    border-radius:999px;
+    background:var(--ec-soft);
+    border:1px solid var(--ec-border);
+    font-size:9px;
+    font-weight:850;
+  }
+</style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -728,7 +744,7 @@
             </div>
 
             <div class="ec-settings-group">
-              <h3>My Markets</h3>
+              <h3>My Markets / Watchlist</h3>
               <div class="ec-my-markets">
                 <label class="ec-check"><input type="checkbox" name="saved-market" value="SPY"> SPY</label>
                 <label class="ec-check"><input type="checkbox" name="saved-market" value="USD"> USD</label>
@@ -742,7 +758,7 @@
                 <label class="ec-check"><input type="checkbox" name="saved-market" value="Copper"> Copper</label>
                 <label class="ec-check"><input type="checkbox" name="saved-market" value="BTC"> BTC</label>
               </div>
-              <div class="ec-reminder-note">Use “My Markets only” above the calendar to focus the feed.</div>
+              <div id="watchlist-link-note" class="ec-reminder-note">Logged-in members automatically use their existing Watchlist. Manual selections are used as fallback.</div>
             </div>
 
             <div class="ec-settings-group">
@@ -837,7 +853,8 @@
 
           <section class="ec-detail-section">
             <div class="ec-chart-controls">
-              <button class="ec-chart-toggle active" data-chart-series="actual" type="button">Actual</button>
+              <button class="ec-chart-toggle active" data-chart-series="history" type="button">History</button>
+              <button class="ec-chart-toggle" data-chart-series="actual" type="button">Actual</button>
               <button class="ec-chart-toggle" data-chart-series="forecast" type="button">Forecast</button>
               <button class="ec-chart-toggle" data-chart-series="previous" type="button">Previous</button>
             </div>
@@ -1059,6 +1076,8 @@
     let currentUser = null;
     let currentDashboardLayout = {};
     let currentPhoneNumber = "";
+    let watchlistInstruments = [];
+    let watchlistMarketTags = new Set();
     let settings = structuredClone(DEFAULT_SETTINGS);
     let allEvents = [];
     let lastFetchAt = null;
@@ -1066,7 +1085,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     let activeModalEvent = null;
-    let activeChartSeries = "actual";
+    let activeChartSeries = "history";
     let weekPreloadCache = null;
     let weekPreloadPromise = null;
     const reminderState = new Map();
@@ -1269,7 +1288,9 @@
         .filter(e=>settings.countries.includes(e.country_code))
         .filter(e=>settings.impacts.includes(impactFromImportance(e.importance)))
         .filter(e=>settings.categories.includes(classifyEvent(e)))
-        .filter(e=>!myOnly || !settings.my_markets.length || relevantAssets(e).some(a=>settings.my_markets.includes(a)))
+        .filter(e=>!myOnly ||
+          (watchlistMarketTags.size ? eventMatchesWatchlist(e) :
+            (!settings.my_markets.length || relevantAssets(e).some(a=>settings.my_markets.includes(a)))))
         .filter(e=>!countryFilter.value||e.country_code===countryFilter.value)
         .filter(e=>!impactFilter.value||impactFromImportance(e.importance)===impactFilter.value)
         .filter(e=>!categoryFilter.value||classifyEvent(e)===categoryFilter.value)
@@ -1334,7 +1355,7 @@
             <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
             <td class="value">${formatValue(e.forecast||e.te_forecast,e.unit)}</td>
             <td class="value muted">${formatValue(e.previous,e.unit)}</td>
-            <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">Load</span></td>
+            <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
@@ -1349,11 +1370,7 @@
       body.innerHTML=html;
       applyReminderButtonStates();
       updateCountdown();
-      if("requestIdleCallback" in window){
-        requestIdleCallback(()=>hydrateVisibleSparklines(),{timeout:1800});
-      }else{
-        setTimeout(hydrateVisibleSparklines,1200);
-      }
+      setTimeout(hydrateVisibleSparklines,0);
     }
 
     function setStatus(kind,text){
@@ -1411,14 +1428,31 @@
 
     function drawCanvasLine(host,history,series="actual"){
       if(!host) return;
-      const rows=(history||[]).map(x=>({
-        date:parseProviderDate(x.date),
-        value:numericValue(x[series]),
-        actual:x.actual,
-        forecast:x.forecast,
-        previous:x.previous,
-        unit:x.unit||""
-      })).filter(x=>x.date&&x.value!==null).sort((a,b)=>a.date-b.date);
+      const rows=(history||[]).map(x=>{
+        let chosenSeries=series;
+        let value=null;
+
+        if(series==="history"){
+          const av=numericValue(x.actual);
+          const pv=numericValue(x.previous);
+          const fv=numericValue(x.forecast);
+          if(av!==null){value=av;chosenSeries="actual";}
+          else if(pv!==null){value=pv;chosenSeries="previous";}
+          else if(fv!==null){value=fv;chosenSeries="forecast";}
+        }else{
+          value=numericValue(x[series]);
+        }
+
+        return {
+          date:parseProviderDate(x.date),
+          value,
+          chosenSeries,
+          actual:x.actual,
+          forecast:x.forecast,
+          previous:x.previous,
+          unit:x.unit||""
+        };
+      }).filter(x=>x.date&&x.value!==null).sort((a,b)=>a.date-b.date);
 
       if(rows.length<1){
         host.innerHTML='<div class="ec-detail-loading" style="width:100%;align-self:center">No historical series available for this event yet.</div>';
@@ -1452,7 +1486,7 @@
           const wrap=host.parentElement.getBoundingClientRect();
           callout.innerHTML=`
             <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
-            ${series.charAt(0).toUpperCase()+series.slice(1)}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
+            ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
             Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}
           `;
           callout.hidden=false;
@@ -1478,6 +1512,7 @@
 
       const canvas=document.createElement("canvas");
       canvas.className="ec-spark";
+      canvas.title="12-month historical trend";
       host.replaceWith(canvas);
 
       requestAnimationFrame(()=>{
@@ -1506,16 +1541,46 @@
       });
     }
 
-    async function hydrateVisibleSparklines(){
-      const hosts=[...document.querySelectorAll("[data-spark-event]")].slice(0,8);
-      for(const host of hosts){
+    function hydrateVisibleSparklines(){
+      const hosts=[...document.querySelectorAll("[data-spark-event]")];
+      if(!hosts.length) return;
+
+      const loadHost=async host=>{
+        if(!host.isConnected || host.dataset.historyLoading==="1") return;
+        host.dataset.historyLoading="1";
         const e=eventById(host.dataset.sparkEvent);
-        if(!e) continue;
-        const result=await fetchEventHistory(e);
-        if(!host.isConnected) continue;
-        drawSparkline(host,result.history||[]);
+        if(!e){host.textContent="—";return;}
+
+        try{
+          const result=await fetchEventHistory(e);
+          if(!host.isConnected) return;
+          const history=result?.history||[];
+          if(history.length){
+            drawSparkline(host,history);
+          }else{
+            host.textContent="—";
+            host.classList.add("muted");
+          }
+        }catch(err){
+          if(host.isConnected) host.textContent="—";
+        }
+      };
+
+      if("IntersectionObserver" in window){
+        const observer=new IntersectionObserver(entries=>{
+          entries.forEach(entry=>{
+            if(entry.isIntersecting){
+              observer.unobserve(entry.target);
+              loadHost(entry.target);
+            }
+          });
+        },{rootMargin:"220px 0px"});
+        hosts.forEach(h=>observer.observe(h));
+      }else{
+        hosts.forEach(loadHost);
       }
     }
+
 
     function formatNewsDate(v){
       if(!v)return "";
@@ -1834,10 +1899,12 @@
           ? " It was unchanged from the previous reading."
           : ` It was ${diff>0?"higher":"lower"} than the previous reading.`;
       }
+      const watchMatches=relevantAssets(e).filter(a=>watchlistMarketTags.has(a));
       document.getElementById("event-modal-context").innerHTML=`
         <strong>${esc(classification)} · ${esc(c.name||"Global")}</strong><br>
         ${esc(surpriseText+trendText)}
-        ${e.reference?`<br>Reference period: ${esc(e.reference)}`:""}`;
+        ${e.reference?`<br>Reference period: ${esc(e.reference)}`:""}
+        ${watchMatches.length?`<br><strong>In your Watchlist:</strong> ${watchMatches.map(esc).join(", ")}`:""}`;
 
       const src=e.source||"Economic calendar provider";
       const sourceUrl=e.source_url||"";
@@ -1848,12 +1915,13 @@
         Classification: ${esc(classifyEvent(e))}
         ${e.currency?` · Currency: ${esc(e.currency)}`:""}
         ${e.unit?` · Unit: ${esc(e.unit)}`:""}
-        ${sourceUrl?`<br><a href="${esc(sourceUrl)}" target="_blank" rel="noopener">Open source</a>`:""}`;
+        ${sourceUrl?`<br><a href="${esc(sourceUrl)}" target="_blank" rel="noopener">Open source</a>`:""}
+        ${currentUser?`<br><a href="watchlist.html">Open My Watchlist</a>`:""}`;
     }
 
     async function openEventModal(e){
       activeModalEvent=e;
-      activeChartSeries="actual";
+      activeChartSeries="history";
 
       const backdrop=document.getElementById("event-modal-backdrop");
       backdrop.classList.add("open");
@@ -1871,7 +1939,7 @@
       }
 
       document.querySelectorAll(".ec-chart-toggle").forEach(b=>
-        b.classList.toggle("active",b.dataset.chartSeries==="actual")
+        b.classList.toggle("active",b.dataset.chartSeries==="history")
       );
 
       const chart=document.getElementById("event-big-chart");
@@ -1887,9 +1955,16 @@
         if(activeModalEvent!==e) return;
         drawCanvasLine(chart,hist?.history||[],activeChartSeries);
         updateEventAnalytics(e,hist?.history||[]);
-        note.textContent=hist?.mode==="configured"
-          ? `${(hist.history||[]).length} historical releases found over the last 12 months.`
-          : "Historical releases are not available for this event yet.";
+        if(hist?.mode==="configured"){
+          const count=(hist.history||[]).length;
+          if(hist.history_kind==="related"){
+            note.textContent=`Related history · ${hist.related_event_name||"closely matched indicator"} · ${count} releases available in the last 12 months.`;
+          }else{
+            note.textContent=`Exact history · ${count} releases available in the last 12 months.`;
+          }
+        }else{
+          note.textContent="Historical releases are not available for this event yet.";
+        }
       }).catch(err=>{
         console.warn("History load failed",err);
         if(activeModalEvent===e){
@@ -2118,6 +2193,81 @@
       }
     }
 
+
+    function watchlistTagFromInstrument(name){
+      const s=String(name||"").toLowerCase();
+      const tags=[];
+
+      if(/s&p 500|\/ es\b|\bspy\b/.test(s)) tags.push("SPY");
+      if(/nasdaq|\/ nq\b/.test(s)) tags.push("SPY");
+      if(/dow|\/ ym\b|russell|\/ rty\b/.test(s)) tags.push("SPY");
+      if(/dollar|dxy/.test(s)) tags.push("USD");
+      if(/eur|eurusd/.test(s)) tags.push("EUR");
+      if(/gbp|gbpusd/.test(s)) tags.push("GBP");
+      if(/jpy|usdjpy/.test(s)) tags.push("JPY");
+      if(/cad|usdcad/.test(s)) tags.push("CAD");
+      if(/aud|audusd/.test(s)) tags.push("AUD");
+      if(/bitcoin|btc/.test(s)) tags.push("BTC");
+      if(/gold/.test(s)) tags.push("Gold");
+      if(/silver/.test(s)) tags.push("Silver");
+      if(/copper/.test(s)) tags.push("Copper");
+      if(/crude|oil/.test(s)) tags.push("WTI");
+      if(/natural gas/.test(s)) tags.push("Natural Gas");
+      if(/dax/.test(s)) tags.push("DAX");
+      if(/ftse/.test(s)) tags.push("FTSE 100");
+      if(/nikkei|n225/.test(s)) tags.push("Nikkei 225");
+      if(/hang seng|hsi/.test(s)) tags.push("Hang Seng");
+
+      return tags;
+    }
+
+    async function loadMemberWatchlist(){
+      watchlistInstruments=[];
+      watchlistMarketTags=new Set();
+
+      if(!currentUser||!window.psdSupabase) return;
+
+      try{
+        const {data:wl,error:wlError}=await window.psdSupabase
+          .from("watchlists")
+          .select("id")
+          .eq("user_id",currentUser.id)
+          .eq("is_default",true)
+          .limit(1)
+          .maybeSingle();
+
+        if(wlError||!wl?.id) return;
+
+        const {data:items,error:itemError}=await window.psdSupabase
+          .from("watchlist_items")
+          .select("instrument")
+          .eq("watchlist_id",wl.id)
+          .order("display_order",{ascending:true});
+
+        if(itemError) return;
+
+        watchlistInstruments=(items||[]).map(x=>String(x.instrument||"").trim()).filter(Boolean);
+        watchlistInstruments.forEach(name=>{
+          watchlistTagFromInstrument(name).forEach(tag=>watchlistMarketTags.add(tag));
+        });
+
+        // If the member has a real watchlist, it becomes the source of truth for My Markets.
+        if(watchlistMarketTags.size){
+          settings.my_markets=[...watchlistMarketTags];
+          document.querySelectorAll('input[name="saved-market"]').forEach(i=>{
+            i.checked=settings.my_markets.includes(i.value);
+          });
+        }
+      }catch(err){
+        console.warn("Watchlist load failed",err);
+      }
+    }
+
+    function eventMatchesWatchlist(e){
+      if(!watchlistMarketTags.size) return false;
+      return relevantAssets(e).some(asset=>watchlistMarketTags.has(asset));
+    }
+
     async function loadAccountSettings(session){
       currentUser=session&&session.user?session.user:null;
       const fieldset=document.getElementById("settings-fieldset");
@@ -2158,6 +2308,7 @@
         currentPhoneNumber=(profileResult.data&&profileResult.data.phone_number)||"";
         document.getElementById("account-phone").value=currentPhoneNumber;
         if(!currentPhoneNumber) settings.reminder_sms=false;
+        await loadMemberWatchlist();
         status.textContent="Saved to your account";
       }catch(err){
         console.error("Calendar settings load failed",err);
