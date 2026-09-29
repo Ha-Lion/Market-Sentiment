@@ -447,8 +447,7 @@
     .actual-up{color:var(--ec-good)} .actual-down{color:var(--ec-bad)}
     .ec-assets{display:flex;gap:5px;flex-wrap:wrap;}
     .ec-chip{display:inline-block;padding:4px 7px;border-radius:999px;background:var(--ec-soft);color:var(--ec-accent);font-size:10px;font-weight:800;}
-    .ec-event-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;align-items:center;}
-    .ec-actions-cell{white-space:nowrap;text-align:right;min-width:166px;}
+    .ec-event-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;align-items:center;}    .ec-actions-cell{white-space:nowrap;text-align:right;min-width:166px;}
     .ec-table th:last-child{text-align:right;min-width:166px;}
     .ec-icon-btn{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ec-border);border-radius:8px;background:var(--ec-card);color:var(--ec-text);cursor:pointer;font-size:14px;line-height:1;}
     .ec-icon-btn:hover{background:var(--ec-soft);color:var(--ec-accent);}
@@ -649,22 +648,10 @@
         <button id="refresh-btn" class="ec-action" type="button">↻ Refresh</button>
         <button id="export-csv" class="ec-tool-btn" type="button" title="Export visible events to CSV">CSV</button>
         <button id="export-ics" class="ec-tool-btn" type="button" title="Export visible events to calendar file">ICS</button>
+        <button id="settings-save-top" class="ec-tab active" type="button" style="display:none">Save</button>
+        <button id="settings-close-top" class="ec-settings-button" type="button" style="display:none">Close</button>
+        <button id="settings-toggle" class="ec-settings-button" type="button" aria-expanded="false">Settings</button>
         <button id="share-view" class="ec-tool-btn" type="button" title="Copy a shareable link to this calendar view">Share</button>
-      </div>
-
-      <div class="ec-settings-bar">
-        <div class="ec-settings-title">
-          ⚙️
-          <div>
-            Saved Calendar Settings
-            <small>Countries, event classifications, impact and timezone.</small>
-          </div>
-        </div>
-        <div class="ec-settings-top-actions" style="display:flex;gap:6px;align-items:center">
-          <button id="settings-save-top" class="ec-tab active" type="button" style="display:none">Save</button>
-          <button id="settings-close-top" class="ec-settings-button" type="button" style="display:none">Close</button>
-          <button id="settings-toggle" class="ec-settings-button" type="button" aria-expanded="false">Settings</button>
-        </div>
       </div>
 
       <div id="settings-panel" class="ec-settings-panel" aria-hidden="true">
@@ -897,8 +884,7 @@
           </div>
         </aside>
       </div>
-    </section>
-  </div>
+    </section>  </div>
 
 
   <div id="ec-cancel-pop" class="ec-cancel-pop" hidden>
@@ -1077,6 +1063,255 @@
     let customRange = null;
     let upcomingOnly = false;
     let currentUser = null;
+
+    /*
+     * ECONOMIC CALENDAR MEMBER ACCESS
+     *
+     * Guests may freely:
+     * - View Yesterday
+     * - View Today
+     * - View Tomorrow
+     * - View This Week
+     * - Use Upcoming only
+     * - Refresh the visible calendar
+     *
+     * Advanced features below open the same account gate design used by
+     * AI Market Pulse / AI Market Intelligence.
+     */
+
+    let calendarGateLastOpenAt = 0;
+
+    function calendarHasMemberAccess(){
+      if(currentUser) return true;
+
+      const accountLink=document.getElementById("psd-account-nav-link");
+      if(accountLink?.dataset?.signedIn==="true") return true;
+
+      try{
+        if(sessionStorage.getItem("psd-ribbon-member-ui")==="true") return true;
+      }catch(_err){}
+
+      return false;
+    }
+
+    function ensureCalendarMemberGateStyles(){
+      /*
+       * site-nav.js uses this same id and CSS for its AI member gate.
+       * If that gate has already injected the styles, reuse them.
+       */
+      if(document.getElementById("psd-member-feature-gate-styles")) return;
+
+      const style=document.createElement("style");
+      style.id="psd-member-feature-gate-styles";
+      style.textContent=`
+        body.psd-member-feature-gate-open{overflow:hidden!important}
+        .psd-member-feature-gate{
+          position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;
+          padding:18px;background:rgba(3,7,12,.76);backdrop-filter:blur(7px)
+        }
+        .psd-member-feature-card{
+          position:relative;width:min(560px,calc(100vw - 28px));padding:26px 28px 24px;
+          border:1px solid rgba(226,173,56,.66);border-radius:22px;
+          background:linear-gradient(145deg,#121923,#090e15);color:#f6f8fb;
+          box-shadow:0 28px 80px rgba(0,0,0,.58),0 0 34px rgba(226,173,56,.12);
+          font-family:Inter,"Segoe UI",Arial,sans-serif;text-align:left
+        }
+        .psd-member-feature-kicker{
+          display:inline-flex;margin:0 0 12px;padding:6px 11px;border:1px solid rgba(255,211,111,.68);
+          border-radius:999px;background:#fff8df;color:#624812;font-size:12px;font-weight:900
+        }
+        .psd-member-feature-card h2{margin:0 48px 9px 0;color:#fff;font-size:24px;line-height:1.13;letter-spacing:-.02em}
+        .psd-member-feature-card p{margin:0;color:#dbe4ed;font-size:14px;line-height:1.45}
+        .psd-member-feature-privacy{margin-top:10px!important;color:#aebdca!important;font-size:12px!important}
+        .psd-member-feature-actions{display:flex;align-items:center;gap:10px;margin-top:20px}
+        .psd-member-feature-signin{
+          display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;
+          border:1px solid #d8a633;border-radius:999px;background:linear-gradient(180deg,#5a4315,#211b10);
+          color:#ffe08a;font:900 13px Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;
+          box-shadow:0 0 18px rgba(226,173,56,.16)
+        }
+        .psd-member-feature-signin:hover,.psd-member-feature-signin:focus-visible{
+          border-color:#ffe08a;background:linear-gradient(180deg,#72571c,#2b2211);outline:none
+        }
+        .psd-member-feature-close{
+          position:absolute;top:14px;right:14px;width:40px;height:40px;display:grid;place-items:center;
+          border:2px solid #fff0ad;border-radius:50%;background:#f4b92f;color:#171006;
+          font:900 23px/1 Arial,sans-serif;cursor:pointer;
+          box-shadow:0 5px 18px rgba(0,0,0,.42),0 0 0 3px rgba(244,185,47,.16)
+        }
+        .psd-member-feature-close:hover,.psd-member-feature-close:focus-visible{background:#ffd35c;outline:none}
+        @media(max-width:620px){
+          .psd-member-feature-card{padding:23px 20px 21px}
+          .psd-member-feature-card h2{font-size:21px}
+          .psd-member-feature-signin{width:100%}
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    function closeCalendarMemberGate(){
+      const gate=document.getElementById("psd-member-feature-gate");
+      if(gate) gate.remove();
+      document.body.classList.remove("psd-member-feature-gate-open");
+    }
+
+    function showCalendarMemberGate(){
+      if(calendarHasMemberAccess()) return;
+
+      const now=Date.now();
+      if(now-calendarGateLastOpenAt<350) return;
+      calendarGateLastOpenAt=now;
+
+      ensureCalendarMemberGateStyles();
+
+      const oldGate=document.getElementById("psd-member-feature-gate");
+      if(oldGate) oldGate.remove();
+
+      const gate=document.createElement("div");
+      gate.id="psd-member-feature-gate";
+      gate.className="psd-member-feature-gate";
+      gate.setAttribute("role","dialog");
+      gate.setAttribute("aria-modal","true");
+      gate.setAttribute("aria-labelledby","psd-member-feature-title");
+      gate.innerHTML=`
+        <section class="psd-member-feature-card">
+          <button class="psd-member-feature-close" type="button" aria-label="Close">×</button>
+          <div class="psd-member-feature-kicker">Free Account</div>
+          <h2 id="psd-member-feature-title">Create a Free Account to Unlock More AI-Built Features</h2>
+          <p>Just email + password.</p>
+          <p class="psd-member-feature-privacy">No spam. No marketing emails.</p>
+          <div class="psd-member-feature-actions">
+            <button class="psd-member-feature-signin" type="button">Sign Up / Log In →</button>
+          </div>
+        </section>`;
+
+      document.body.appendChild(gate);
+      document.body.classList.add("psd-member-feature-gate-open");
+
+      const closeButton=gate.querySelector(".psd-member-feature-close");
+      const signinButton=gate.querySelector(".psd-member-feature-signin");
+
+      const onKeydown=event=>{
+        if(event.key!=="Escape") return;
+        document.removeEventListener("keydown",onKeydown);
+        closeCalendarMemberGate();
+      };
+
+      closeButton.addEventListener("click",()=>{
+        document.removeEventListener("keydown",onKeydown);
+        closeCalendarMemberGate();
+      });
+
+      gate.addEventListener("click",event=>{
+        if(event.target!==gate) return;
+        document.removeEventListener("keydown",onKeydown);
+        closeCalendarMemberGate();
+      });
+
+      document.addEventListener("keydown",onKeydown);
+
+      signinButton.addEventListener("click",event=>{
+        event.preventDefault();
+        document.removeEventListener("keydown",onKeydown);
+        closeCalendarMemberGate();
+
+        const nextPage="economic-calendar.html"+window.location.search+window.location.hash;
+        window.location.href="auth.html?next="+encodeURIComponent(nextPage);
+      });
+
+      window.setTimeout(()=>signinButton.focus(),0);
+    }
+
+    function calendarMemberOnlyTarget(target){
+      if(!target || typeof target.closest!=="function") return false;
+
+      /* 1. Four quick timezone controls */
+      if(target.closest(".ec-tz-btn")) return true;
+
+      /* 2. Settings and everything inside Settings */
+      if(target.closest(
+        "#settings-toggle,"+
+        "#settings-save-top,"+
+        "#settings-close-top,"+
+        "#settings-panel button,"+
+        "#settings-panel input,"+
+        "#settings-panel select"
+      )) return true;
+
+      /* 3. CSV / ICS / Share */
+      if(target.closest("#export-csv,#export-ics,#share-view")) return true;
+
+      /* 4. Search + country + impact + classification + Clear */
+      if(target.closest(
+        ".ec-filters input,"+
+        ".ec-filters select,"+
+        ".ec-filters button"
+      )) return true;
+
+      /* My Markets is also account-specific */
+      if(target.closest("#my-markets-only")) return true;
+
+      /* 5. Opening an event/news detail popup */
+      if(target.closest("[data-open-event]")) return true;
+
+      /* 6. Custom date-range fields / calendar button */
+      if(target.closest("#custom-from,#custom-to,#custom-go")) return true;
+
+      /* 7. -30d / +30d */
+      if(target.closest("#last-30,#next-30")) return true;
+
+      /*
+       * Guests are intentionally limited to:
+       * Yesterday / Today / Tomorrow / This Week.
+       */
+      if(target.closest('.ec-tab[data-range="next"]')) return true;
+
+      /*
+       * The "Show next events" helper jumps to another custom date,
+       * so it follows the same member rule.
+       */
+      if(target.closest("#open-next-date")) return true;
+
+      /* 8. Calendar / email / SMS / desktop alert actions */
+      if(target.closest(".ec-icon-btn")) return true;
+
+      return false;
+    }
+
+    function blockCalendarGuestAction(event){
+      if(calendarHasMemberAccess()) return;
+      if(!calendarMemberOnlyTarget(event.target)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if(typeof event.stopImmediatePropagation==="function") event.stopImmediatePropagation();
+
+      const active=document.activeElement;
+      if(active && typeof active.blur==="function" && calendarMemberOnlyTarget(active)){
+        try{active.blur();}catch(_err){}
+      }
+
+      showCalendarMemberGate();
+    }
+
+    /*
+     * pointerdown prevents native date/select pickers from opening before
+     * the click handler can intercept them.
+     */
+    document.addEventListener("pointerdown",blockCalendarGuestAction,true);
+    document.addEventListener("click",blockCalendarGuestAction,true);
+
+    /*
+     * Keyboard users can reach inputs/selects with Tab, so gate focus too.
+     */
+    document.addEventListener("focusin",event=>{
+      if(calendarHasMemberAccess()) return;
+      if(!calendarMemberOnlyTarget(event.target)) return;
+
+      event.preventDefault();
+      try{event.target.blur();}catch(_err){}
+      showCalendarMemberGate();
+    },true);
     let currentDashboardLayout = {};
     let currentPhoneNumber = "";
     let watchlistInstruments = [];
@@ -1347,8 +1582,7 @@
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
-        const c=displayCountry(e);
-        const assets=relevantAssets(e);
+        const c=displayCountry(e);        const assets=relevantAssets(e);
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
             <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
@@ -1797,8 +2031,7 @@
 
     function positionEconomicGlossary(pop,button){
       const rect=button.getBoundingClientRect();
-      const width=pop.offsetWidth,height=pop.offsetHeight,gap=8;
-      let left=Math.min(rect.left,window.innerWidth-width-12);
+      const width=pop.offsetWidth,height=pop.offsetHeight,gap=8;      let left=Math.min(rect.left,window.innerWidth-width-12);
       left=Math.max(12,left);
       let top=rect.bottom+gap;
       if(top+height>window.innerHeight-12) top=Math.max(12,rect.top-height-gap);
@@ -2247,8 +2480,7 @@
         if(!cached?.data?.events || !cached.range) return null;
         const sameRange=cached.range.start===range.start && cached.range.end===range.end;
         const sameCountries=JSON.stringify(cached.countries||[])===JSON.stringify([...settings.countries].sort());
-        if(!sameRange||!sameCountries) return null;
-        return cached;
+        if(!sameRange||!sameCountries) return null;        return cached;
       }catch(_err){
         return null;
       }
@@ -2697,8 +2929,7 @@
       settings.countries=[];
       renderCountrySettings(document.getElementById("country-settings-search").value);
       rebuildQuickFilters();
-      render();
-      document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
+      render();      document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
     });
 
     document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
@@ -3147,8 +3378,7 @@
 
     function downloadTextFile(name,content,type){
       const blob=new Blob([content],{type:type||"text/plain;charset=utf-8"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
+      const url=URL.createObjectURL(blob);      const a=document.createElement("a");
       a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
