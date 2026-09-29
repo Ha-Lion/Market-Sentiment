@@ -48,7 +48,7 @@
     .ec-settings-panel.open{display:block;}
     .ec-settings-locked{opacity:.48;filter:grayscale(.25);}
     .ec-settings-login-note{padding:10px 12px;border:1px dashed var(--ec-border);border-radius:9px;color:var(--ec-muted);font-size:12px;margin-bottom:12px;}
-    .ec-settings-grid{display:grid;grid-template-columns:1.4fr 1.5fr .8fr .9fr;gap:14px;}
+    .ec-settings-grid{display:grid;grid-template-columns:1.35fr 1.45fr .75fr .9fr .85fr;gap:14px;}
     .ec-settings-group{border:1px solid var(--ec-border);border-radius:12px;padding:12px;background:var(--ec-soft2);}
     .ec-settings-group h3{font-size:12px;margin:0 0 10px;}
     .ec-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;}
@@ -84,6 +84,12 @@
     .actual-up{color:var(--ec-good)} .actual-down{color:var(--ec-bad)}
     .ec-assets{display:flex;gap:5px;flex-wrap:wrap;}
     .ec-chip{display:inline-block;padding:4px 7px;border-radius:999px;background:var(--ec-soft);color:var(--ec-accent);font-size:10px;font-weight:800;}
+    .ec-event-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+    .ec-icon-btn{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ec-border);border-radius:8px;background:var(--ec-card);color:var(--ec-text);cursor:pointer;font-size:14px;line-height:1;}
+    .ec-icon-btn:hover{background:var(--ec-soft);color:var(--ec-accent);}
+    .ec-icon-btn.active{background:var(--ec-soft);color:var(--ec-accent);border-color:var(--ec-accent);}
+    .ec-icon-btn:disabled{opacity:.42;cursor:not-allowed;}
+    .ec-reminder-note{font-size:10px;color:var(--ec-muted);margin-top:5px;}
     .ec-empty,.ec-loading,.ec-error{text-align:center;padding:42px 20px;color:var(--ec-muted);}
     .ec-error strong{display:block;color:var(--ec-bad);margin-bottom:5px;}
     .ec-provider{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 16px;color:var(--ec-muted);font-size:11px;background:var(--ec-soft2);flex-wrap:wrap;}
@@ -208,6 +214,26 @@
             </div>
 
             <div class="ec-settings-group">
+              <h3>Reminder Defaults</h3>
+              <div class="ec-checks one-col">
+                <label class="ec-check"><input type="checkbox" id="default-email-reminder"> ✉ Email reminder</label>
+                <label class="ec-check"><input type="checkbox" id="default-sms-reminder"> 📱 Text reminder</label>
+              </div>
+              <label style="display:block;margin-top:10px;font-size:11px;color:var(--ec-muted);">
+                Remind me
+                <select id="default-reminder-minutes" class="ec-select" style="margin-top:5px;">
+                  <option value="10">10 minutes before</option>
+                  <option value="15">15 minutes before</option>
+                  <option value="30" selected>30 minutes before</option>
+                  <option value="60">1 hour before</option>
+                  <option value="120">2 hours before</option>
+                  <option value="1440">1 day before</option>
+                </select>
+              </label>
+              <div class="ec-reminder-note">Email/text delivery will use your account contact information once delivery service is enabled.</div>
+            </div>
+
+            <div class="ec-settings-group">
               <h3>Timezone</h3>
               <select id="saved-timezone" class="ec-select">
                 <option value="America/New_York">New York (ET)</option>
@@ -300,7 +326,10 @@
       countries:["US","EU","UK","JP","CA"],
       categories:["Inflation","Labor","Central Bank","Growth","Energy","Housing","Trade","Government","Consumer","Other"],
       impacts:["high","medium","low"],
-      timezone:"America/New_York"
+      timezone:"America/New_York",
+      reminder_email:false,
+      reminder_sms:false,
+      reminder_minutes:30
     };
 
     const TZ_LABELS = {
@@ -447,7 +476,10 @@
         countries:Array.isArray(s.countries)&&s.countries.length?s.countries:[...DEFAULT_SETTINGS.countries],
         categories:Array.isArray(s.categories)&&s.categories.length?s.categories:[...DEFAULT_SETTINGS.categories],
         impacts:Array.isArray(s.impacts)&&s.impacts.length?s.impacts:[...DEFAULT_SETTINGS.impacts],
-        timezone:typeof s.timezone==="string"&&s.timezone?s.timezone:DEFAULT_SETTINGS.timezone
+        timezone:typeof s.timezone==="string"&&s.timezone?s.timezone:DEFAULT_SETTINGS.timezone,
+        reminder_email:Boolean(s.reminder_email),
+        reminder_sms:Boolean(s.reminder_sms),
+        reminder_minutes:Number.isFinite(Number(s.reminder_minutes))?Number(s.reminder_minutes):30
       };
     }
 
@@ -456,6 +488,9 @@
         document.querySelectorAll(`input[name="${name}"]`).forEach(i=>i.checked=settings[key].includes(i.value));
       });
       document.getElementById("saved-timezone").value=settings.timezone;
+      document.getElementById("default-email-reminder").checked=Boolean(settings.reminder_email);
+      document.getElementById("default-sms-reminder").checked=Boolean(settings.reminder_sms);
+      document.getElementById("default-reminder-minutes").value=String(settings.reminder_minutes||30);
       document.getElementById("stat-timezone").textContent=TZ_LABELS[settings.timezone]||settings.timezone;
     }
 
@@ -538,6 +573,11 @@
             <td class="ec-event">
               <strong>${esc(e.event||e.category||"Economic event")}</strong>
               <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
+              <div class="ec-event-actions">
+                <button class="ec-icon-btn" type="button" title="Add to calendar" data-action="calendar" data-event-id="${esc(e.id||"")}">📅</button>
+                <button class="ec-icon-btn" type="button" title="Email reminder" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
+                <button class="ec-icon-btn" type="button" title="Text reminder" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
+              </div>
             </td>
             <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
             <td class="value">${formatValue(e.forecast||e.te_forecast,e.unit)}</td>
@@ -590,12 +630,12 @@
 
         allEvents=Array.isArray(data.events)?data.events:[];
         lastFetchAt=new Date();
-        setStatus("live",data.mode==="guest"?"Live feed · guest access":"Live data");
+        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"Sample fallback");
         document.getElementById("provider-name").textContent=data.source||"Trading Economics";
         document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
-        if(data.mode==="guest"){
-          warning.textContent="The calendar connection is working with Trading Economics guest access. For full country coverage and dependable production updates, add your Trading Economics API key on the server.";
+        if(data.mode==="sample-fallback"){
+          warning.textContent="The page is working, but it is currently showing fallback sample events because a full Trading Economics API key has not been configured yet.";
           warning.classList.add("show");
         }
         render();
@@ -683,7 +723,10 @@
         countries:selectedValues("saved-country"),
         categories:selectedValues("saved-category"),
         impacts:selectedValues("saved-impact"),
-        timezone:document.getElementById("saved-timezone").value
+        timezone:document.getElementById("saved-timezone").value,
+        reminder_email:document.getElementById("default-email-reminder").checked,
+        reminder_sms:document.getElementById("default-sms-reminder").checked,
+        reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30)
       };
       const status=document.getElementById("settings-save-status");
       if(!next.countries.length||!next.categories.length||!next.impacts.length){
@@ -703,6 +746,90 @@
       applySettingsControls();
       status.textContent="Saved to your account ✓";
       await loadFeed(true);
+    });
+
+
+    function eventById(id){
+      return allEvents.find(e=>String(e.id||"")===String(id||""));
+    }
+
+    function downloadICS(e){
+      const d=parseProviderDate(e.date);
+      if(!d) return;
+      const start=new Date(d);
+      const end=new Date(start.getTime()+60*60*1000);
+      const stamp=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+      const uid=`${e.id||Date.now()}@publicsentimentdash.com`;
+      const ics=[
+        "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Public Sentiment Dash//Economic Calendar//EN",
+        "BEGIN:VEVENT",
+        `UID:${uid}`,
+        `DTSTAMP:${stamp(new Date())}`,
+        `DTSTART:${stamp(start)}`,
+        `DTEND:${stamp(end)}`,
+        `SUMMARY:${String(e.event||"Economic Event").replace(/[,\n;]/g," ")}`,
+        `DESCRIPTION:${String(e.country||"")} economic event. Forecast: ${String(e.forecast||e.te_forecast||"—")}. Previous: ${String(e.previous||"—")}.`,
+        "END:VEVENT","END:VCALENDAR"
+      ].join("\r\n");
+      const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=`economic-event-${String(e.id||"calendar").replace(/[^a-z0-9_-]/gi,"-")}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+
+    async function saveEventReminder(e, channel){
+      if(!currentUser||!window.psdSupabase){
+        alert("Please log in to save email or text reminders.");
+        return;
+      }
+      const dt=parseProviderDate(e.date);
+      if(!dt) return;
+
+      const payload={
+        user_id:currentUser.id,
+        provider:"Trading Economics",
+        provider_event_id:String(e.id||`${e.country_code}-${e.event}-${e.date}`),
+        event_name:e.event||e.category||"Economic Event",
+        country_code:e.country_code||null,
+        event_time:dt.toISOString(),
+        reminder_minutes:Number(settings.reminder_minutes||30),
+        email_enabled:channel==="email" ? true : Boolean(settings.reminder_email),
+        sms_enabled:channel==="sms" ? true : Boolean(settings.reminder_sms),
+        is_enabled:true,
+        updated_at:new Date().toISOString()
+      };
+
+      const {error}=await window.psdSupabase
+        .from("calendar_event_reminders")
+        .upsert(payload,{onConflict:"user_id,provider,provider_event_id,event_time"});
+
+      if(error){
+        console.error("Reminder save failed",error);
+        alert("Reminder could not be saved.");
+        return;
+      }
+      alert(`${channel==="email"?"Email":"Text"} reminder saved for ${settings.reminder_minutes||30} minutes before this event.`);
+    }
+
+    body.addEventListener("click",async(ev)=>{
+      const btn=ev.target.closest(".ec-icon-btn");
+      if(!btn) return;
+      const e=eventById(btn.dataset.eventId);
+      if(!e) return;
+      const action=btn.dataset.action;
+      if(action==="calendar"){
+        downloadICS(e);
+        return;
+      }
+      if(action==="email"||action==="sms"){
+        await saveEventReminder(e,action);
+        btn.classList.add("active");
+      }
     });
 
     const refresh=()=>loadFeed(true);
