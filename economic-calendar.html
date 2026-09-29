@@ -8,6 +8,50 @@
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="site-theme.css?v=20">
+
+<style id="psd-glossary-info-visual-fix">
+  .psd-glossary-info{
+    display:inline-grid;
+    place-items:center;
+    width:16px;
+    height:16px;
+    min-width:16px;
+    padding:0;
+    margin-left:4px;
+    border:1px solid #71849a;
+    border-radius:50%;
+    background:transparent;
+    color:#d32f2f!important;
+    font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+    vertical-align:middle;
+    cursor:pointer;
+    opacity:1!important;
+    box-shadow:none;
+    transform-origin:center;
+    animation:psdPulseGlossary 5s ease-in-out infinite;
+  }
+
+  .psd-glossary-info:hover,
+  .psd-glossary-info:focus-visible,
+  .psd-glossary-info[aria-expanded="true"]{
+    color:#d32f2f!important;
+    border-color:#ef5350!important;
+    background:rgba(239,83,80,.08)!important;
+    animation:none!important;
+    outline:none;
+  }
+
+  @keyframes psdPulseGlossary{
+    0%,82%,100%{transform:scale(1);box-shadow:none}
+    87%{transform:scale(1.11);box-shadow:0 0 0 3px rgba(211,47,47,.10),0 0 10px rgba(211,47,47,.32)}
+    92%{transform:scale(1);box-shadow:0 0 5px rgba(211,47,47,.18)}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .psd-glossary-info{animation:none!important}
+  }
+</style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -303,7 +347,10 @@
             <small>Countries, event classifications, impact and timezone.</small>
           </div>
         </div>
-        <button id="settings-toggle" class="ec-settings-button" type="button">Settings</button>
+        <div class="ec-settings-top-actions" style="display:flex;gap:6px;align-items:center">
+          <button id="settings-save-top" class="ec-tab active" type="button" style="display:none">Save</button>
+          <button id="settings-toggle" class="ec-settings-button" type="button">Settings</button>
+        </div>
       </div>
 
       <div id="settings-panel" class="ec-settings-panel">
@@ -447,7 +494,7 @@
       </div>
 
       <div class="ec-provider">
-        <span>Source: <strong id="provider-name">FinanceCalendar</strong> · <a href="https://www.financecalendar.com/" target="_blank" rel="noopener">financecalendar.com</a> · Times automatically convert to your selected timezone.</span>
+        <span>Source: <strong id="provider-name">Biquote + FinanceCalendar</strong> · richer merged economic-event coverage · Times automatically convert to your selected timezone.</span>
         <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
       </div>
     </section>
@@ -1263,7 +1310,7 @@
         allEvents=Array.isArray(data.events)?data.events:[];
         lastFetchAt=new Date();
         setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
-        document.getElementById("provider-name").textContent=data.source||"FinanceCalendar";
+        document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
         document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
         if(data.mode==="sample-fallback"){
@@ -1441,7 +1488,10 @@
     });
 
     document.getElementById("settings-toggle").addEventListener("click",()=>{
-      document.getElementById("settings-panel").classList.toggle("open");
+      const panel=document.getElementById("settings-panel");
+      panel.classList.toggle("open");
+      const topSave=document.getElementById("settings-save-top");
+      if(topSave) topSave.style.display=panel.classList.contains("open")?"inline-flex":"none";
     });
 
     document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
@@ -1450,6 +1500,10 @@
       render();
       const status=document.getElementById("settings-save-status");
       if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
+    });
+
+    document.getElementById("settings-save-top").addEventListener("click",()=>{
+      document.getElementById("settings-save").click();
     });
 
     document.getElementById("settings-reset").addEventListener("click",()=>{
