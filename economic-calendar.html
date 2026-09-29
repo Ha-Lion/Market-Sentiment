@@ -213,18 +213,13 @@
           <div class="ec-settings-grid">
             <div class="ec-settings-group">
               <h3>Countries</h3>
-              <div class="ec-checks">
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="US" checked> 🇺🇸 United States</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="EU" checked> 🇪🇺 Euro Area</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="UK" checked> 🇬🇧 United Kingdom</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="JP" checked> 🇯🇵 Japan</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="CA" checked> 🇨🇦 Canada</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="CN"> 🇨🇳 China</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="AU"> 🇦🇺 Australia</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="CH"> 🇨🇭 Switzerland</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="DE"> 🇩🇪 Germany</label>
-                <label class="ec-check"><input type="checkbox" name="saved-country" value="IN"> 🇮🇳 India</label>
+              <div class="ec-country-tools">
+                <button id="country-select-all" class="ec-mini-btn" type="button">Select all</button>
+                <button id="country-major" class="ec-mini-btn" type="button">Major markets</button>
+                <button id="country-clear" class="ec-mini-btn" type="button">Clear</button>
               </div>
+              <input id="country-settings-search" class="ec-country-search" type="search" placeholder="Search countries…">
+              <div id="all-country-checkboxes" class="ec-checks ec-country-scroll"></div>
             </div>
 
             <div class="ec-settings-group">
@@ -253,24 +248,36 @@
             </div>
 
             <div class="ec-settings-group">
-              <h3>Reminder Defaults</h3>
-              <div class="ec-checks one-col">
-                <label class="ec-check"><input type="checkbox" id="default-email-reminder"> ✉ Email reminder</label>
-                <label class="ec-check"><input type="checkbox" id="default-sms-reminder"> 📱 Text reminder</label>
-                <label class="ec-check"><input type="checkbox" id="default-desktop-reminder"> 🔔 Desktop notification</label>
+              <h3>Alerts & Contact</h3>
+              <div class="ec-contact-grid">
+                <div>
+                  <div class="ec-contact-label">Account email</div>
+                  <div id="account-email" class="ec-contact-value">Log in to use email alerts</div>
+                </div>
+                <label class="ec-contact-label">
+                  Mobile number <span style="font-weight:500">(optional)</span>
+                  <div class="ec-phone-row">
+                    <input id="account-phone" class="ec-input" type="tel" autocomplete="tel" placeholder="+12125551234">
+                  </div>
+                </label>
+                <div class="ec-field-note">Only needed for text alerts. Use international format, for example +12125551234.</div>
+                <div class="ec-checks one-col" style="margin-top:3px;">
+                  <label class="ec-check"><input type="checkbox" id="default-email-reminder"> ✉ Email reminder</label>
+                  <label class="ec-check"><input type="checkbox" id="default-sms-reminder"> 📱 Text reminder</label>
+                  <label class="ec-check"><input type="checkbox" id="default-desktop-reminder"> 🔔 Desktop notification</label>
+                </div>
+                <label class="ec-contact-label">
+                  Default reminder time
+                  <select id="default-reminder-minutes" class="ec-select" style="margin-top:4px;">
+                    <option value="10">10 minutes before</option>
+                    <option value="20">20 minutes before</option>
+                    <option value="30" selected>30 minutes before</option>
+                    <option value="60">1 hour before</option>
+                    <option value="120">2 hours before</option>
+                    <option value="1440">1 day before</option>
+                  </select>
+                </label>
               </div>
-              <label style="display:block;margin-top:10px;font-size:11px;color:var(--ec-muted);">
-                Remind me
-                <select id="default-reminder-minutes" class="ec-select" style="margin-top:5px;">
-                  <option value="10">10 minutes before</option>
-                  <option value="15">15 minutes before</option>
-                  <option value="30" selected>30 minutes before</option>
-                  <option value="60">1 hour before</option>
-                  <option value="120">2 hours before</option>
-                  <option value="1440">1 day before</option>
-                </select>
-              </label>
-              <div class="ec-reminder-note">Email/text delivery will use your account contact information once delivery service is enabled. Desktop notifications require browser permission.</div>
             </div>
 
             <div class="ec-settings-group">
@@ -366,8 +373,43 @@
       NO:{name:"Norway",flag:"🇳🇴"}, SE:{name:"Sweden",flag:"🇸🇪"}
     };
 
+
+    const ALL_COUNTRY_CODES = [
+      "AE","AF","AL","AM","AO","AR","AT","AU","AZ","BA","BD","BE","BF","BG","BH","BI","BJ","BN","BO","BR","BS","BT","BW","BY","BZ",
+      "CA","CD","CF","CG","CH","CI","CL","CM","CN","CO","CR","CU","CV","CY","CZ","DE","DJ","DK","DO","DZ","EC","EE","EG","ER","ES","ET",
+      "FI","FJ","FR","GA","GB","GE","GH","GM","GN","GQ","GR","GT","GW","GY","HK","HN","HR","HT","HU","ID","IE","IL","IN","IQ","IR","IS",
+      "IT","JM","JO","JP","KE","KG","KH","KR","KW","KZ","LA","LB","LK","LR","LT","LU","LV","LY","MA","MD","ME","MG","MK","ML","MM","MN",
+      "MR","MT","MU","MV","MW","MX","MY","MZ","NA","NE","NG","NI","NL","NO","NP","NZ","OM","PA","PE","PG","PH","PK","PL","PR","PS","PT",
+      "PY","QA","RO","RS","RU","RW","SA","SD","SE","SG","SI","SK","SL","SN","SO","SR","SV","SY","SZ","TD","TG","TH","TJ","TM","TN","TR",
+      "TT","TW","TZ","UA","UG","US","UY","UZ","VE","VN","YE","ZA","ZM","ZW"
+    ];
+
+    function countryFlag(code){
+      if(code==="EU") return "🇪🇺";
+      return code.replace(/./g,ch=>String.fromCodePoint(127397+ch.charCodeAt(0)));
+    }
+
+    function countryName(code){
+      if(code==="EU") return "Euro Area";
+      try{return new Intl.DisplayNames(["en"],{type:"region"}).of(code)||code;}catch{return code;}
+    }
+
+    function renderCountrySettings(filterText=""){
+      const host=document.getElementById("all-country-checkboxes");
+      if(!host) return;
+      const q=filterText.trim().toLowerCase();
+      const codes=["EU",...ALL_COUNTRY_CODES]
+        .filter(code=>!q || countryName(code).toLowerCase().includes(q) || code.toLowerCase().includes(q))
+        .sort((a,b)=>countryName(a).localeCompare(countryName(b)));
+      host.innerHTML=codes.map(code=>`
+        <label class="ec-check">
+          <input type="checkbox" name="saved-country" value="${code}" ${settings.countries.includes(code)?"checked":""}>
+          <span>${countryFlag(code)} ${countryName(code)}</span>
+        </label>`).join("");
+    }
+
     const DEFAULT_SETTINGS = {
-      countries:["US","EU","UK","JP","CA"],
+      countries:["US","EU","GB","JP","CA"],
       categories:["Inflation","Labor","Central Bank","Growth","Energy","Housing","Trade","Government","Consumer","Other"],
       impacts:["high","medium","low"],
       timezone:"America/New_York",
@@ -389,6 +431,7 @@
     let upcomingOnly = false;
     let currentUser = null;
     let currentDashboardLayout = {};
+    let currentPhoneNumber = "";
     let settings = structuredClone(DEFAULT_SETTINGS);
     let allEvents = [];
     let lastFetchAt = null;
@@ -546,7 +589,8 @@
     }
 
     function applySettingsControls(){
-      [["saved-country","countries"],["saved-category","categories"],["saved-impact","impacts"]].forEach(([name,key])=>{
+      renderCountrySettings(document.getElementById("country-settings-search")?.value||"");
+      [["saved-category","categories"],["saved-impact","impacts"]].forEach(([name,key])=>{
         document.querySelectorAll(`input[name="${name}"]`).forEach(i=>i.checked=settings[key].includes(i.value));
       });
       document.getElementById("saved-timezone").value=settings.timezone;
@@ -565,7 +609,7 @@
       const oldCategory=categoryFilter.value;
 
       countryFilter.innerHTML='<option value="">All selected countries</option>'+
-        settings.countries.filter(c=>COUNTRY[c]).map(c=>`<option value="${c}">${COUNTRY[c].flag} ${COUNTRY[c].name}</option>`).join("");
+        settings.countries.map(c=>`<option value="${c}">${countryFlag(c)} ${esc(countryName(c))}</option>`).join("");
       if(settings.countries.includes(oldCountry)) countryFilter.value=oldCountry;
 
       const cats=[...new Set(allEvents.map(classifyEvent).filter(c=>settings.categories.includes(c)))].sort();
@@ -631,7 +675,7 @@
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
-        const c=COUNTRY[e.country_code]||{name:e.country||e.country_code||"—",flag:"🌐"};
+        const c=COUNTRY[e.country_code]||{name:e.country||countryName(e.country_code)||e.country_code||"—",flag:e.country_code?countryFlag(e.country_code):"🌐"};
         const assets=relevantAssets(e);
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
@@ -649,9 +693,9 @@
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
                 <button class="ec-icon-btn" type="button" title="Add to calendar" aria-label="Add to calendar" data-action="calendar" data-event-id="${esc(e.id||"")}">📅</button>
-                <button class="ec-icon-btn" type="button" title="Email reminder" aria-label="Email reminder" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
-                <button class="ec-icon-btn" type="button" title="Text reminder" aria-label="Text reminder" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
-                <button class="ec-icon-btn" type="button" title="Desktop notification" aria-label="Desktop notification" data-action="desktop" data-event-id="${esc(e.id||"")}">🔔</button>
+                <button class="ec-icon-btn" type="button" title="Email reminder using your saved reminder time" aria-label="Email reminder" data-action="email" data-event-id="${esc(e.id||"")}">✉</button>
+                <button class="ec-icon-btn" type="button" title="Text reminder using your saved reminder time" aria-label="Text reminder" data-action="sms" data-event-id="${esc(e.id||"")}">📱</button>
+                <button class="ec-icon-btn" type="button" title="Desktop notification using your saved reminder time" aria-label="Desktop notification" data-action="desktop" data-event-id="${esc(e.id||"")}">🔔</button>
               </div>
             </td>
           </tr>`;
@@ -738,6 +782,9 @@
         fieldset.classList.add("ec-settings-locked");
         note.hidden=false;
         status.textContent="";
+        currentPhoneNumber="";
+        document.getElementById("account-email").textContent="Log in to use email alerts";
+        document.getElementById("account-phone").value="";
         applySettingsControls();
         await loadFeed();
         return;
@@ -746,15 +793,22 @@
       fieldset.disabled=false;
       fieldset.classList.remove("ec-settings-locked");
       note.hidden=true;
+      document.getElementById("account-email").textContent=currentUser.email||"Email available through account";
       status.textContent="Loading saved settings…";
 
       try{
-        const {data,error}=await window.psdSupabase
-          .from("user_preferences").select("dashboard_layout")
-          .eq("user_id",currentUser.id).maybeSingle();
-        if(error) throw error;
+        const [prefResult,profileResult]=await Promise.all([
+          window.psdSupabase.from("user_preferences").select("dashboard_layout").eq("user_id",currentUser.id).maybeSingle(),
+          window.psdSupabase.from("profiles").select("phone_number,sms_alerts_opt_in").eq("id",currentUser.id).maybeSingle()
+        ]);
+        if(prefResult.error) throw prefResult.error;
+        if(profileResult.error) throw profileResult.error;
+        const data=prefResult.data;
         currentDashboardLayout=data&&data.dashboard_layout&&typeof data.dashboard_layout==="object"?data.dashboard_layout:{};
         settings=normalizeSettings(currentDashboardLayout.calendar_settings);
+        currentPhoneNumber=(profileResult.data&&profileResult.data.phone_number)||"";
+        document.getElementById("account-phone").value=currentPhoneNumber;
+        if(!currentPhoneNumber) settings.reminder_sms=false;
         status.textContent="Saved to your account";
       }catch(err){
         console.error("Calendar settings load failed",err);
@@ -818,6 +872,35 @@
       search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false; render();
     });
 
+
+    document.getElementById("all-country-checkboxes").addEventListener("change",ev=>{
+      const input=ev.target.closest('input[name="saved-country"]');
+      if(!input) return;
+      const set=new Set(settings.countries);
+      if(input.checked) set.add(input.value); else set.delete(input.value);
+      settings.countries=[...set];
+    });
+
+    document.getElementById("country-settings-search").addEventListener("input",ev=>renderCountrySettings(ev.target.value));
+
+    document.getElementById("country-select-all").addEventListener("click",()=>{
+      settings.countries=["EU",...ALL_COUNTRY_CODES];
+      renderCountrySettings(document.getElementById("country-settings-search").value);
+      document.getElementById("settings-save-status").textContent="All countries selected — click Save Settings.";
+    });
+
+    document.getElementById("country-major").addEventListener("click",()=>{
+      settings.countries=["US","EU","GB","JP","CA","CN","AU","CH","DE","FR","IN","BR","KR","SG"];
+      renderCountrySettings(document.getElementById("country-settings-search").value);
+      document.getElementById("settings-save-status").textContent="Major markets selected — click Save Settings.";
+    });
+
+    document.getElementById("country-clear").addEventListener("click",()=>{
+      settings.countries=[];
+      renderCountrySettings(document.getElementById("country-settings-search").value);
+      document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
+    });
+
     document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
       settings.timezone=btn.dataset.timezone;
       document.getElementById("saved-timezone").value=settings.timezone;
@@ -852,13 +935,24 @@
 
     document.getElementById("settings-save").addEventListener("click",async()=>{
       if(!currentUser||!window.psdSupabase) return;
+      const phone=document.getElementById("account-phone").value.trim();
+      const wantsSms=document.getElementById("default-sms-reminder").checked;
+      if(phone && !/^\+[1-9][0-9]{7,14}$/.test(phone)){
+        status.textContent="Phone must use international format, e.g. +12125551234.";
+        return;
+      }
+      if(wantsSms && !phone){
+        status.textContent="Add a mobile number to enable text reminders.";
+        return;
+      }
+
       const next={
-        countries:selectedValues("saved-country"),
+        countries:[...settings.countries],
         categories:selectedValues("saved-category"),
         impacts:selectedValues("saved-impact"),
         timezone:document.getElementById("saved-timezone").value,
         reminder_email:document.getElementById("default-email-reminder").checked,
-        reminder_sms:document.getElementById("default-sms-reminder").checked,
+        reminder_sms:wantsSms,
         reminder_desktop:document.getElementById("default-desktop-reminder").checked,
         reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30)
       };
@@ -869,12 +963,20 @@
       }
       status.textContent="Saving…";
       const merged={...currentDashboardLayout,calendar_settings:next};
-      const {error}=await window.psdSupabase.from("user_preferences").upsert({
-        user_id:currentUser.id,dashboard_layout:merged,updated_at:new Date().toISOString()
-      },{onConflict:"user_id"});
-      if(error){
-        console.error(error); status.textContent="Save failed"; return;
+      const [prefSave,profileSave]=await Promise.all([
+        window.psdSupabase.from("user_preferences").upsert({
+          user_id:currentUser.id,dashboard_layout:merged,updated_at:new Date().toISOString()
+        },{onConflict:"user_id"}),
+        window.psdSupabase.from("profiles").update({
+          phone_number:phone||null,
+          sms_alerts_opt_in:Boolean(next.reminder_sms),
+          updated_at:new Date().toISOString()
+        }).eq("id",currentUser.id)
+      ]);
+      if(prefSave.error||profileSave.error){
+        console.error(prefSave.error||profileSave.error); status.textContent="Save failed"; return;
       }
+      currentPhoneNumber=phone;
       currentDashboardLayout=merged;
       settings=next;
       applySettingsControls();
@@ -918,7 +1020,13 @@
 
     async function saveEventReminder(e, channel){
       if(!currentUser||!window.psdSupabase){
-        alert("Please log in to save email or text reminders.");
+        alert("Please log in to save reminders.");
+        return;
+      }
+      if(channel==="sms" && !currentPhoneNumber){
+        document.getElementById("settings-panel").classList.add("open");
+        document.getElementById("account-phone").focus();
+        alert("Add your mobile number in Calendar Settings first. It is optional unless you want text alerts.");
         return;
       }
       const dt=parseProviderDate(e.date);
