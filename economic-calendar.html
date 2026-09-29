@@ -826,7 +826,7 @@
       </div>
 
       <div class="ec-provider">
-        <span>Source: <strong id="provider-name">Biquote + FinanceCalendar</strong> · richer merged economic-event coverage · Times automatically convert to your selected timezone.</span>
+        <span>Source: <strong id="provider-name">Biquote + FinanceCalendar</strong> · Times automatically convert to your selected timezone.</span>
         <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
       </div>
     </section>
@@ -965,7 +965,10 @@
 
     function displayCountry(e){
       const code=normalizedCountryCode(e);
-      const name=String(e?.country||e?.countryName||"").trim() || (code?countryName(code):"Global");
+      const rawName=String(e?.country||e?.countryName||"").trim();
+      const name=(!rawName || (code && rawName.toUpperCase()===code))
+        ? (code?countryName(code):"Global")
+        : rawName;
       return {
         code,
         name,
@@ -1085,7 +1088,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v2:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v5:";
     let activeModalEvent = null;
     let activeChartSeries = "history";
     let weekPreloadCache = null;
@@ -1093,6 +1096,8 @@
     const reminderState = new Map();
     let pendingCancel = null;
     let activeController = null;
+    let autoRefreshTick = 0;
+    let lastFullWeekNetworkAt = 0;
 
     const body = document.getElementById("calendar-body");
     const search = document.getElementById("search");
@@ -1400,7 +1405,7 @@
     }
 
     function historyKey(e){
-      return `${e.country||e.country_code}|${e.event||e.category}`;
+      return String(e.series_id||e.eventId||`${normalizedCountryCode(e)}|${e.event||e.category}`);
     }
 
     async function fetchEventHistory(e){
@@ -1428,9 +1433,11 @@
             event:e.event||e.category,
             series_id:e.series_id||e.eventId||"",
             category:e.category||"",
-            country:e.country||countryName(e.country_code),
+            country:e.country||countryName(normalizedCountryCode(e)),
             country_code:normalizedCountryCode(e),
-            date:e.date||""
+            date:e.date||"",
+            importance:e.importance??null,
+            source_url:e.source_url||""
           })
         });
         if(res.ok) result=await res.json();
@@ -1449,98 +1456,155 @@
 
     function dedupeHistoryByMonth(history){
       const byMonth=new Map();
-      (history||[]).forEach(row=>{
-        const d=parseProviderDate(row.date);
+
+      (history||[]).forEach((row,index)=>{
+        const d=parseProviderDate(row?.date);
         if(!d) return;
+
         const key=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
-        const completeness=[row.actual,row.forecast,row.previous,row.revised].filter(v=>v!==null&&v!==undefined&&String(v)!=="").length;
+        const completeness=[
+          numericValue(row?.actual),
+          numericValue(row?.forecast),
+          numericValue(row?.previous),
+          numericValue(row?.revised)
+        ].filter(v=>v!==null).length;
+
+        const current={
+          ...row,
+          _parsedDate:d,
+          _month:key,
+          _completeness:completeness,
+          _index:index
+        };
+
         const prev=byMonth.get(key);
-        if(!prev || completeness>prev.completeness || (completeness===prev.completeness && d>prev.date)){
-          byMonth.set(key,{...row,_month:key,completeness,date:d});
+        if(
+          !prev ||
+          current._completeness>prev._completeness ||
+          (current._completeness===prev._completeness && current._parsedDate>prev._parsedDate)
+        ){
+          byMonth.set(key,current);
         }
       });
-      return [...byMonth.values()]
-        .sort((a,b)=>a.date-b.date)
-        .map(({_month,completeness,date,...row})=>row);
+
+      return [...byMonth.values()].sort((a,b)=>a._parsedDate-b._parsedDate);
     }
 
-    function drawCanvasLine(host,history,series="actual"){
-      if(!host) return;
-      const monthHistory=dedupeHistoryByMonth(history);
-      const rows=monthHistory.map(x=>{
-        let chosenSeries=series;
-        let value=null;
+    function usableHistoryMonths(history){
+      return dedupeHistoryByMonth(history).filter(x=>
+        numericValue(x.actual)!==null ||
+        numericValue(x.previous)!==null ||
+        numericValue(x.forecast)!==null
+      );
+    }
 
-        if(series==="history"){
-          const av=numericValue(x.actual);
-          const pv=numericValue(x.previous);
-          const fv=numericValue(x.forecast);
-          if(av!==null){value=av;chosenSeries="actual";}
-          else if(pv!==null){value=pv;chosenSeries="previous";}
-          else if(fv!==null){value=fv;chosenSeries="forecast";}
-        }else{
-          value=numericValue(x[series]);
-        }
+    function historyValueForSeries(row,series){
+      if(series==="history"){
+        const a=numericValue(row.actual);
+        if(a!==null) return {value:a,chosenSeries:"actual"};
 
-        return {
-          date:parseProviderDate(x.date),
-          value,
-          chosenSeries,
-          actual:x.actual,
-          forecast:x.forecast,
-          previous:x.previous,
-          unit:x.unit||""
-        };
-      }).filter(x=>x.date&&x.value!==null).sort((a,b)=>a.date-b.date);
+        const p=numericValue(row.previous);
+        if(p!==null) return {value:p,chosenSeries:"previous"};
 
-      if(rows.length<1){
-        host.innerHTML='<div class="ec-detail-loading" style="width:100%;align-self:center">No historical series available for this event yet.</div>';
-        const callout=document.getElementById("event-chart-callout");
-        if(callout) callout.hidden=true;
-        return;
+        const f=numericValue(row.forecast);
+        if(f!==null) return {value:f,chosenSeries:"forecast"};
+
+        return {value:null,chosenSeries:"history"};
       }
 
-      const vals=rows.map(x=>x.value);
-      let min=Math.min(...vals),max=Math.max(...vals);
-      if(min===max){min-=1;max+=1;}
-      const range=max-min||1;
-
-      host.innerHTML=rows.map((r,i)=>{
-        const pct=Math.max(4,((r.value-min)/range)*82+8);
-        const dateLabel=new Intl.DateTimeFormat("en-US",{month:"short",year:"2-digit"}).format(r.date);
-        return `<button class="ec-hist-col" type="button"
-          data-hist-index="${i}"
-          aria-label="${esc(dateLabel)} ${esc(String(r.value))}">
-          <span class="ec-hist-value" style="--bar-h:${pct}%">${esc(String(r.value))}</span>
-          <span class="ec-hist-bar" style="height:${pct}%"></span>
-          <span class="ec-hist-label">${esc(dateLabel)}</span>
-        </button>`;
-      }).join("");
-
-      const callout=document.getElementById("event-chart-callout");
-      host.querySelectorAll(".ec-hist-col").forEach(btn=>{
-        const show=()=>{
-          const r=rows[Number(btn.dataset.histIndex)];
-          const rect=btn.getBoundingClientRect();
-          const wrap=host.parentElement.getBoundingClientRect();
-          callout.innerHTML=`
-            <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
-            ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
-            Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}
-          `;
-          callout.hidden=false;
-          const left=Math.max(8,Math.min(rect.left-wrap.left,wrap.width-220));
-          const top=Math.max(8,rect.top-wrap.top-76);
-          callout.style.left=left+"px";
-          callout.style.top=top+"px";
-        };
-        btn.addEventListener("mouseenter",show);
-        btn.addEventListener("focus",show);
-        btn.addEventListener("click",show);
-        btn.addEventListener("mouseleave",()=>{callout.hidden=true});
-        btn.addEventListener("blur",()=>{callout.hidden=true});
-      });
+      return {
+        value:numericValue(row[series]),
+        chosenSeries:series
+      };
     }
+
+    function drawCanvasLine(host,history,series="history"){
+      if(!host) return;
+
+      try{
+        const months=usableHistoryMonths(history);
+
+        const rows=months.map(row=>{
+          const selected=historyValueForSeries(row,series);
+          return {
+            date:row._parsedDate || parseProviderDate(row.date),
+            value:selected.value,
+            chosenSeries:selected.chosenSeries,
+            actual:row.actual,
+            forecast:row.forecast,
+            previous:row.previous,
+            unit:row.unit||""
+          };
+        }).filter(row=>row.date && row.value!==null);
+
+        const callout=document.getElementById("event-chart-callout");
+        if(callout) callout.hidden=true;
+
+        if(!rows.length){
+          host.innerHTML='<div class="ec-detail-loading" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">No usable historical values are available for this series yet.</div>';
+          return;
+        }
+
+        const vals=rows.map(x=>x.value);
+        let min=Math.min(...vals);
+        let max=Math.max(...vals);
+
+        // Keep very small changes visible without exaggerating zero.
+        if(min===max){
+          const pad=Math.max(Math.abs(min)*0.08,1);
+          min-=pad;
+          max+=pad;
+        }
+
+        const range=max-min||1;
+
+        host.innerHTML=rows.map((r,i)=>{
+          const pct=Math.max(8,Math.min(92,((r.value-min)/range)*76+12));
+          const dateLabel=new Intl.DateTimeFormat("en-US",{
+            month:"short",
+            year:"2-digit"
+          }).format(r.date);
+
+          return `<button class="ec-hist-col" type="button"
+            data-hist-index="${i}"
+            aria-label="${esc(dateLabel)} ${esc(String(r.value))}">
+            <span class="ec-hist-value" style="--bar-h:${pct}%">${esc(String(Number(r.value.toFixed ? r.value.toFixed(3) : r.value)))}</span>
+            <span class="ec-hist-bar" style="height:${pct}%"></span>
+            <span class="ec-hist-label">${esc(dateLabel)}</span>
+          </button>`;
+        }).join("");
+
+        host.querySelectorAll(".ec-hist-col").forEach(btn=>{
+          const show=()=>{
+            const r=rows[Number(btn.dataset.histIndex)];
+            if(!r || !callout) return;
+
+            const rect=btn.getBoundingClientRect();
+            const wrap=host.parentElement.getBoundingClientRect();
+
+            callout.innerHTML=`
+              <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
+              ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
+              Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}
+            `;
+
+            callout.hidden=false;
+            callout.style.left=Math.max(8,Math.min(rect.left-wrap.left,wrap.width-220))+"px";
+            callout.style.top=Math.max(8,rect.top-wrap.top-76)+"px";
+          };
+
+          btn.addEventListener("mouseenter",show);
+          btn.addEventListener("focus",show);
+          btn.addEventListener("click",show);
+          btn.addEventListener("mouseleave",()=>{if(callout)callout.hidden=true;});
+          btn.addEventListener("blur",()=>{if(callout)callout.hidden=true;});
+        });
+      }catch(err){
+        console.error("Economic history chart render failed",err);
+        host.innerHTML='<div class="ec-detail-loading" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">Historical data loaded, but the chart could not be rendered.</div>';
+      }
+    }
+
 
     function drawSparkline(host,history){
       const rows=dedupeHistoryByMonth(history).map(x=>numericValue(x.actual)).filter(v=>v!==null);
@@ -1984,7 +2048,7 @@
       const chart=document.getElementById("event-big-chart");
       const note=document.getElementById("event-history-note");
       note.textContent="Loading 12-month event history…";
-      drawCanvasLine(chart,[],"actual");
+      chart.innerHTML='<div class="ec-detail-loading" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">Loading historical data…</div>';
 
       const newsHost=document.getElementById("event-related-news");
       newsHost.innerHTML='<div class="ec-detail-loading">Loading related news…</div>';
@@ -1992,14 +2056,20 @@
       // Load history and news independently so one failure never empties the popup.
       fetchEventHistory(e).then(hist=>{
         if(activeModalEvent!==e) return;
-        drawCanvasLine(chart,hist?.history||[],activeChartSeries);
+        activeChartSeries="history";
+        document.querySelectorAll(".ec-chart-toggle").forEach(b=>
+          b.classList.toggle("active",b.dataset.chartSeries==="history")
+        );
+        drawCanvasLine(chart,hist?.history||[],"history");
         updateEventAnalytics(e,hist?.history||[]);
         if(hist?.mode==="configured"){
-          const monthly=dedupeHistoryByMonth(hist.history||[]);
+          const monthly=usableHistoryMonths(hist.history||[]);
           const count=monthly.length;
           const coverage=`${Math.min(count,12)}/12 months currently available`;
           if(hist.history_kind==="repository"){
             note.textContent=`Official history · ${hist.source||"stored repository"} · ${coverage}.`;
+          }else if(hist.history_kind==="archive"){
+            note.textContent=`Archived exact history · ${coverage}.`;
           }else if(hist.history_kind==="related"){
             note.textContent=`Related history · ${hist.related_event_name||"closely matched indicator"} · ${coverage}.`;
           }else{
@@ -2144,6 +2214,7 @@
             data,
             fetchedAt:new Date()
           };
+          saveWeekCache(data,range);
           return weekPreloadCache;
         }catch(err){
           console.warn("Week preload failed",err);
@@ -2183,87 +2254,125 @@
       }
     }
 
+    async function fetchFeedRange(range,signal){
+      const res=await fetch(FEED_URL,{
+        method:"POST",
+        headers:{"content-type":"application/json"},
+        body:JSON.stringify({start:range.start,end:range.end,countries:settings.countries}),
+        signal,
+        cache:"no-store"
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
+      return data;
+    }
+
+    function mergeEventUpdates(base,updates){
+      const map=new Map();
+      (base||[]).forEach((e,i)=>{
+        const key=String(e.id||eventUIKey(e,i));
+        map.set(key,e);
+      });
+      (updates||[]).forEach((e,i)=>{
+        const key=String(e.id||eventUIKey(e,i));
+        map.set(key,{...(map.get(key)||{}),...e});
+      });
+      return [...map.values()].sort((a,b)=>
+        (parseProviderDate(a.date)?.getTime()||0)-(parseProviderDate(b.date)?.getTime()||0)
+      );
+    }
+
     async function loadFeed(manual=false){
       const r=getRange(currentRange);
       displayRangeLabel();
 
-      if(!manual && currentRange==="week"){
-        const cached=getWeekCache(r);
-        if(cached){
-          allEvents=Array.isArray(cached.data.events)?cached.data.events:[];
-          ensureEventUIKeys();
-          lastFetchAt=new Date(cached.saved_at||Date.now());
-          render();
+      let showedCached=false;
+
+      if(!manual){
+        if(currentRange==="week"){
+          const cached=getWeekCache(r);
+          if(cached){
+            allEvents=Array.isArray(cached.data.events)?cached.data.events:[];
+            ensureEventUIKeys();
+            lastFetchAt=new Date(cached.saved_at||Date.now());
+            render();
+            showedCached=true;
+          }
+        }else{
+          const weekRange=getRange("week");
+          const inWeek=r.start>=weekRange.start && r.end<=weekRange.end;
+          if(inWeek){
+            const memory=weekPreloadCache;
+            const local=getWeekCache(weekRange);
+            const weekData=memory?.data || local?.data;
+            if(weekData?.events){
+              allEvents=filterEventsToDateRange(weekData.events,r);
+              ensureEventUIKeys();
+              lastFetchAt=memory?.fetchedAt || new Date(local?.saved_at||Date.now());
+              render();
+              showedCached=true;
+            }
+          }
         }
       }
+
       if(activeController) activeController.abort();
       activeController=new AbortController();
 
-      setStatus("loading",manual?"Refreshing…":"Loading live data");
+      setStatus("loading",
+        manual ? "Refreshing…" :
+        showedCached ? "Updating live data" : "Loading live data"
+      );
       warning.classList.remove("show");
-      body.innerHTML='<tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>';
+
+      if(!showedCached){
+        body.innerHTML='<tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>';
+      }
 
       try{
-        const weekRange=getRange("week");
-        const cacheMatches =
-          !manual &&
-          weekPreloadCache &&
-          weekPreloadCache.start===weekRange.start &&
-          weekPreloadCache.end===weekRange.end &&
-          weekPreloadCache.key===weekCacheKey() &&
-          r.start>=weekRange.start &&
-          r.end<=weekRange.end;
-
-        let data;
-
-        if(cacheMatches){
-          data={...weekPreloadCache.data};
-          data.events=filterEventsToDateRange(weekPreloadCache.data.events,r);
-          lastFetchAt=weekPreloadCache.fetchedAt||new Date();
-        }else{
-          const res=await fetch(FEED_URL,{
-            method:"POST",
-            headers:{"content-type":"application/json"},
-            body:JSON.stringify({start:r.start,end:r.end,countries:settings.countries}),
-            signal:activeController.signal,
-            cache:"no-store"
-          });
-
-          data=await res.json().catch(()=>({}));
-          if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
-
-          lastFetchAt=new Date();
-
-          if(r.start===weekRange.start && r.end===weekRange.end){
-            weekPreloadCache={
-              start:weekRange.start,
-              end:weekRange.end,
-              key:weekCacheKey(),
-              data,
-              fetchedAt:lastFetchAt
-            };
-          }else{
-            setTimeout(()=>preloadWeekInBackground(false),250);
-          }
-        }
+        const data=await fetchFeedRange(r,activeController.signal);
+        lastFetchAt=new Date();
 
         allEvents=Array.isArray(data.events)?data.events:[];
         ensureEventUIKeys();
-        if(currentRange==="week"){
-          saveWeekCache(data,r);
-        }
-        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
-        document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
-        document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
-        if(data.mode==="sample-fallback"){
-          warning.textContent="The page is fully wired but is showing fallback sample events until the FinanceCalendar production API key is saved as the Supabase secret TRADING_ECONOMICS_API_KEY.";
-          warning.classList.add("show");
+        const weekRange=getRange("week");
+        if(r.start===weekRange.start && r.end===weekRange.end){
+          weekPreloadCache={
+            start:weekRange.start,
+            end:weekRange.end,
+            key:weekCacheKey(),
+            data,
+            fetchedAt:lastFetchAt
+          };
+          saveWeekCache(data,weekRange);
+          lastFullWeekNetworkAt=Date.now();
+        }else{
+          setTimeout(()=>preloadWeekInBackground(false),300);
         }
+
+        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"Calendar feed");
+        document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
+        const updated=document.getElementById("last-updated");
+        if(updated) updated.textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
+
+        if(data.provider_error){
+          console.warn("Calendar provider note:",data.provider_error);
+        }
+
         render();
       }catch(err){
         if(err.name==="AbortError") return;
         console.error("Economic calendar load failed",err);
+
+        if(showedCached && allEvents.length){
+          setStatus("loading","Cached data");
+          warning.textContent="Live refresh is temporarily unavailable. Showing the most recently cached calendar.";
+          warning.classList.add("show");
+          render();
+          return;
+        }
+
         allEvents=[];
         setStatus("error","Feed unavailable");
         warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
@@ -2273,6 +2382,62 @@
         document.getElementById("stat-high").textContent="—";
         document.getElementById("stat-next").textContent="—";
         document.getElementById("stat-next-name").textContent="";
+      }
+    }
+
+    async function refreshTodayIntoWeek(){
+      const todayRange=getRange("today");
+      try{
+        const data=await fetchFeedRange(todayRange,undefined);
+        if(currentRange!=="week") return;
+
+        allEvents=mergeEventUpdates(allEvents,Array.isArray(data.events)?data.events:[]);
+        ensureEventUIKeys();
+        lastFetchAt=new Date();
+
+        const weekRange=getRange("week");
+        const weekData={
+          start:weekRange.start,
+          end:weekRange.end,
+          countries:[...settings.countries],
+          source:data.source||"Biquote + FinanceCalendar",
+          mode:"configured",
+          fetched_at:lastFetchAt.toISOString(),
+          provider_error:data.provider_error||null,
+          events:allEvents
+        };
+
+        weekPreloadCache={
+          start:weekRange.start,
+          end:weekRange.end,
+          key:weekCacheKey(),
+          data:weekData,
+          fetchedAt:lastFetchAt
+        };
+        saveWeekCache(weekData,weekRange);
+
+        setStatus("live","Live data");
+        render();
+      }catch(err){
+        console.warn("30-second live-value refresh failed",err);
+      }
+    }
+
+    async function autoRefreshCalendar(){
+      autoRefreshTick++;
+
+      if(currentRange==="week"){
+        const fullRefreshDue=
+          !lastFullWeekNetworkAt ||
+          Date.now()-lastFullWeekNetworkAt >= 10*60*1000;
+
+        if(fullRefreshDue){
+          await loadFeed(false);
+        }else{
+          await refreshTodayIntoWeek();
+        }
+      }else{
+        await loadFeed(false);
       }
     }
 
@@ -2369,6 +2534,9 @@
         document.getElementById("account-phone").value="";
         applySettingsControls();
         await loadFeed();
+        if(currentRange!=="week"){
+          setTimeout(()=>preloadWeekInBackground(false),300);
+        }
         return;
       }
 
@@ -2402,6 +2570,9 @@
       applySettingsControls();
       await loadReminderStates();
       await loadFeed();
+      if(currentRange!=="week"){
+        setTimeout(()=>preloadWeekInBackground(false),300);
+      }
     }
 
 
@@ -3047,7 +3218,7 @@
     document.getElementById("refresh-btn").addEventListener("click",refresh);
     document.getElementById("provider-refresh").addEventListener("click",refresh);
 
-    refreshTimer=setInterval(()=>loadFeed(false),AUTO_REFRESH_MS);
+    refreshTimer=setInterval(autoRefreshCalendar,AUTO_REFRESH_MS);
     countdownTimer=setInterval(updateCountdown,30000);
 
     const todayISO=localISODate(new Date());
@@ -3069,8 +3240,6 @@
     if(sharedCategory) categoryFilter.value=sharedCategory;
     if(sharedQ) search.value=sharedQ;
     if(sharedParams.get("markets")==="1") document.getElementById("my-markets-only").checked=true;
-    setTimeout(()=>preloadWeekInBackground(false),500);
-
     if(window.psdSupabase){
       window.psdSupabase.auth.getSession().then(({data})=>loadAccountSettings(data&&data.session?data.session:null));
       window.psdSupabase.auth.onAuthStateChange((_event,session)=>{
