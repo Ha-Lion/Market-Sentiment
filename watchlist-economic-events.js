@@ -1,181 +1,3100 @@
-(function(){
-  "use strict";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Economic Calendar | Public Sentiment Dash</title>
+  <meta name="robots" content="index,follow">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="site-theme.css?v=20">
 
-  const FEED_URL="https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed";
-  const client=window.psdSupabase;
-  if(!client)return;
-
-  function esc(v){
-    return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-  }
-  function pad(n){return String(n).padStart(2,"0");}
-  function ymd(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
-  function startOfWeek(d){
-    const x=new Date(d);x.setHours(0,0,0,0);
-    const day=x.getDay();x.setDate(x.getDate()-(day===0?6:day-1));return x;
-  }
-  function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
-
-  function watchlistTags(name){
-    const s=String(name||"").toLowerCase();
-    const tags=[];
-    if(/s&p 500|\/ es\b|\bspy\b|nasdaq|\/ nq\b|dow|\/ ym\b|russell|\/ rty\b/.test(s)) tags.push("SPY");
-    if(/dollar|dxy/.test(s)) tags.push("USD");
-    if(/eur|eurusd/.test(s)) tags.push("EUR");
-    if(/gbp|gbpusd/.test(s)) tags.push("GBP");
-    if(/jpy|usdjpy/.test(s)) tags.push("JPY");
-    if(/cad|usdcad/.test(s)) tags.push("CAD");
-    if(/aud|audusd/.test(s)) tags.push("AUD");
-    if(/bitcoin|btc/.test(s)) tags.push("BTC");
-    if(/gold/.test(s)) tags.push("Gold");
-    if(/silver/.test(s)) tags.push("Silver");
-    if(/copper/.test(s)) tags.push("Copper");
-    if(/crude|oil/.test(s)) tags.push("WTI","Brent");
-    if(/natural gas/.test(s)) tags.push("Natural Gas");
-    if(/dax/.test(s)) tags.push("DAX");
-    if(/ftse/.test(s)) tags.push("FTSE 100");
-    if(/nikkei|n225/.test(s)) tags.push("Nikkei 225");
-    if(/hang seng|hsi/.test(s)) tags.push("Hang Seng");
-    if(/inflation|real yields/.test(s)) tags.push("Gold","Treasuries","USD");
-    return [...new Set(tags)];
+<style id="psd-glossary-info-visual-fix">
+  .psd-glossary-info{
+    display:inline-grid;
+    place-items:center;
+    width:16px;
+    height:16px;
+    min-width:16px;
+    padding:0;
+    margin-left:4px;
+    border:1px solid #71849a;
+    border-radius:50%;
+    background:transparent;
+    color:#d32f2f!important;
+    font:900 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;
+    vertical-align:middle;
+    cursor:pointer;
+    opacity:1!important;
+    box-shadow:none;
+    transform-origin:center;
+    animation:psdPulseGlossary 5s ease-in-out infinite;
   }
 
-  function countryAssets(e){
-    const c=String(e.country_code||"").toUpperCase();
-    const out=[];
-    if(c==="US")out.push("USD","SPY","Treasuries","Gold");
-    if(c==="EU"||c==="DE"||c==="FR"||c==="IT"||c==="ES")out.push("EUR","DAX","Gold");
-    if(c==="GB"||c==="UK")out.push("GBP","FTSE 100","Gold");
-    if(c==="JP")out.push("JPY","Nikkei 225");
-    if(c==="CA")out.push("CAD");
-    if(c==="CN")out.push("CNY","Hang Seng","Copper");
-    if(c==="AU")out.push("AUD","Gold");
-    if(c==="CH")out.push("CHF");
-    const name=String(e.event||e.category||"").toLowerCase();
-    if(/oil|crude|petroleum|inventory/.test(name))out.push("WTI","Brent");
-    if(/inflation|cpi|pce|ppi/.test(name))out.push("Gold","Treasuries");
-    return [...new Set(out)];
+  .psd-glossary-info:hover,
+  .psd-glossary-info:focus-visible,
+  .psd-glossary-info[aria-expanded="true"]{
+    color:#d32f2f!important;
+    border-color:#ef5350!important;
+    background:rgba(239,83,80,.08)!important;
+    animation:none!important;
+    outline:none;
   }
 
-  function impact(e){
-    const n=Number(e.importance||0);
-    return n>=3?"High":n===2?"Medium":"Low";
-  }
-  function impactClass(v){return v==="High"?"high":v==="Medium"?"medium":"low";}
-  function when(e){
-    const d=new Date(e.date);
-    if(Number.isNaN(d.getTime()))return "—";
-    return new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}).format(d);
+  @keyframes psdPulseGlossary{
+    0%,82%,100%{transform:scale(1);box-shadow:none}
+    87%{transform:scale(1.11);box-shadow:0 0 0 3px rgba(211,47,47,.10),0 0 10px rgba(211,47,47,.32)}
+    92%{transform:scale(1);box-shadow:0 0 5px rgba(211,47,47,.18)}
   }
 
-  function installSection(){
-    if(document.getElementById("watchlist-economic-events"))return document.getElementById("watchlist-economic-events");
-    const grid=document.getElementById("watchlist-grid");
-    if(!grid)return null;
+  @media (prefers-reduced-motion:reduce){
+    .psd-glossary-info{animation:none!important}
+  }
+</style>
 
-    const section=document.createElement("section");
-    section.id="watchlist-economic-events";
-    section.className="panel watchlist-economic-events";
-    section.innerHTML=`
-      <div class="watchlist-economic-head">
-        <div>
-          <h2>Economic Events This Week</h2>
-          <p>Events connected to markets already saved in your Watchlist.</p>
-        </div>
-        <a class="watchlist-action secondary" href="economic-calendar.html">Open Economic Calendar</a>
+  
+<style id="ec-contrast-and-dayrows">
+  /* Strong readable typography */
+  body:not(.dark-mode) .ec-page,
+  body:not(.dark-mode) .ec-page h1,
+  body:not(.dark-mode) .ec-page h2,
+  body:not(.dark-mode) .ec-page h3,
+  body:not(.dark-mode) .ec-page strong,
+  body:not(.dark-mode) .ec-page label,
+  body:not(.dark-mode) .ec-page th,
+  body:not(.dark-mode) .ec-page td,
+  body:not(.dark-mode) .ec-page button,
+  body:not(.dark-mode) .ec-page select,
+  body:not(.dark-mode) .ec-page input{
+    color:#000!important;
+  }
+
+  body.dark-mode .ec-page,
+  body.dark-mode .ec-page h1,
+  body.dark-mode .ec-page h2,
+  body.dark-mode .ec-page h3,
+  body.dark-mode .ec-page strong,
+  body.dark-mode .ec-page label,
+  body.dark-mode .ec-page th,
+  body.dark-mode .ec-page td,
+  body.dark-mode .ec-page button,
+  body.dark-mode .ec-page select,
+  body.dark-mode .ec-page input{
+    color:#fff!important;
+  }
+
+  body:not(.dark-mode) .ec-page .ec-muted,
+  body:not(.dark-mode) .ec-page .muted,
+  body:not(.dark-mode) .ec-page small,
+  body:not(.dark-mode) .ec-page .ec-reminder-note,
+  body:not(.dark-mode) .ec-page .ec-field-note{
+    color:#22364a!important;
+  }
+
+  body.dark-mode .ec-page .ec-muted,
+  body.dark-mode .ec-page .muted,
+  body.dark-mode .ec-page small,
+  body.dark-mode .ec-page .ec-reminder-note,
+  body.dark-mode .ec-page .ec-field-note{
+    color:#d8e2ee!important;
+  }
+
+  /* More recognizable date separator rows */
+  .ec-day-row td{
+    background:#c7dcf2!important;
+    color:#06213d!important;
+    font-weight:900!important;
+    border-top:1px solid #8fb3d7!important;
+    border-bottom:1px solid #8fb3d7!important;
+  }
+  body.dark-mode .ec-day-row td{
+    background:#17395f!important;
+    color:#fff!important;
+    border-top-color:#2b5f91!important;
+    border-bottom-color:#2b5f91!important;
+  }
+</style>
+
+  
+<style id="ec-v20-contrast-flags">
+  body:not(.dark-mode) .ec-page,
+  body:not(.dark-mode) .ec-page *,
+  body:not(.dark-mode) .ec-page a,
+  body:not(.dark-mode) .ec-page button,
+  body:not(.dark-mode) .ec-page input,
+  body:not(.dark-mode) .ec-page select,
+  body:not(.dark-mode) .ec-page small,
+  body:not(.dark-mode) .ec-page .muted,
+  body:not(.dark-mode) .ec-page .ec-muted{
+    color:#000!important;
+  }
+
+  body.dark-mode .ec-page,
+  body.dark-mode .ec-page *,
+  body.dark-mode .ec-page a,
+  body.dark-mode .ec-page button,
+  body.dark-mode .ec-page input,
+  body.dark-mode .ec-page select,
+  body.dark-mode .ec-page small{
+    color:#fff!important;
+  }
+
+  .ec-flag-img{
+    width:18px;
+    height:13px;
+    object-fit:cover;
+    border-radius:2px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.10);
+    vertical-align:-2px;
+    margin-right:5px;
+  }
+
+  .ec-country{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+  }
+
+  .ec-country-choice{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+</style>
+
+  
+<style id="ec-v23-hide-auto-refresh">
+  .ec-stat:has(#auto-refresh-label),
+  .ec-stat:has(#last-updated){
+    display:none!important;
+  }
+</style>
+
+  
+<style id="ec-v24-save-button">
+  #settings-save-top{
+    display:none;
+    background:#d5a11e!important;
+    color:#000!important;
+    border-color:#a87800!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 2px 5px rgba(0,0,0,.14);
+    font-weight:900!important;
+  }
+  body.dark-mode #settings-save-top{
+    color:#fff!important;
+    background:#8b6414!important;
+    border-color:#d5a11e!important;
+  }
+</style>
+
+  
+
+<style id="ec-v26-settings-close">
+  #settings-close-top{
+    background:var(--ec-card)!important;
+    color:var(--ec-text)!important;
+    border:1px solid var(--ec-border)!important;
+    font-weight:850!important;
+  }
+  #settings-close-top:hover{
+    border-color:#b42318!important;
+    color:#b42318!important;
+  }
+  body.dark-mode #settings-close-top:hover{
+    color:#ffb4b4!important;
+    border-color:#a85858!important;
+  }
+</style>
+
+
+<style id="ec-v26-histogram">
+  .ec-histogram-wrap{
+    position:relative;
+    height:300px!important;
+    overflow:hidden;
+    padding:14px 16px 26px!important;
+    perspective:900px;
+  }
+  .ec-histogram{
+    height:100%;
+    display:flex;
+    align-items:flex-end;
+    gap:10px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:18px 8px 30px;
+    box-sizing:border-box;
+    scrollbar-width:thin;
+  }
+  .ec-hist-col{
+    position:relative;
+    flex:1 0 54px;
+    min-width:54px;
+    max-width:76px;
+    height:100%;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    cursor:pointer;
+  }
+  .ec-hist-bar{
+    position:relative;
+    width:30px;
+    min-height:3px;
+    border-radius:3px 3px 1px 1px;
+    background:linear-gradient(180deg,#5d75ff 0%,#3f51ff 55%,#2f3ccc 100%);
+    box-shadow:
+      5px -5px 0 rgba(43,57,180,.82),
+      7px -2px 8px rgba(32,45,120,.22);
+    transform:skewY(-2deg);
+    transform-origin:bottom center;
+    transition:transform .15s ease,filter .15s ease,box-shadow .15s ease;
+  }
+  .ec-hist-col:hover .ec-hist-bar,
+  .ec-hist-col:focus-within .ec-hist-bar{
+    transform:skewY(-2deg) translateY(-3px) scaleX(1.06);
+    filter:brightness(1.08);
+    box-shadow:
+      6px -6px 0 rgba(43,57,180,.9),
+      9px -3px 12px rgba(32,45,120,.28);
+  }
+  .ec-hist-label{
+    position:absolute;
+    bottom:-22px;
+    left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap;
+    font-size:8px;
+    color:var(--ec-muted);
+  }
+  .ec-hist-value{
+    position:absolute;
+    bottom:calc(var(--bar-h,0px) + 8px);
+    left:50%;
+    transform:translateX(-50%);
+    font-size:8px;
+    font-weight:900;
+    color:var(--ec-text);
+    white-space:nowrap;
+    pointer-events:none;
+  }
+  .ec-chart-callout{
+    position:absolute;
+    z-index:5;
+    min-width:150px;
+    max-width:220px;
+    padding:8px 10px;
+    border:1px solid var(--ec-border);
+    border-radius:9px;
+    background:var(--ec-card);
+    color:var(--ec-text);
+    box-shadow:0 10px 28px rgba(0,0,0,.20);
+    font-size:10px;
+    line-height:1.35;
+    pointer-events:none;
+  }
+  .ec-chart-callout strong{display:block;font-size:11px;margin-bottom:3px}
+  body.dark-mode .ec-hist-bar{
+    background:linear-gradient(180deg,#8fa2ff 0%,#6779ff 55%,#4a5bd2 100%);
+    box-shadow:
+      5px -5px 0 rgba(76,89,194,.88),
+      7px -2px 8px rgba(0,0,0,.38);
+  }
+</style>
+
+<style id="ec-v25-button-motion">
+  .ec-tab,.ec-action,.ec-settings-button,.ec-mini-btn,.ec-icon-btn,.ec-modal-close,.ec-chart-toggle,
+  #settings-save,#settings-save-top,#settings-reset,.ec-clear,.ec-tz-btn{
+    transition:transform .14s ease, box-shadow .14s ease, background .14s ease, border-color .14s ease, opacity .14s ease;
+    will-change:transform;
+  }
+  .ec-tab:hover,.ec-action:hover,.ec-settings-button:hover,.ec-mini-btn:hover,.ec-icon-btn:hover,.ec-modal-close:hover,.ec-chart-toggle:hover,
+  #settings-save:hover,#settings-save-top:hover,#settings-reset:hover,.ec-clear:hover,.ec-tz-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 3px 8px rgba(0,0,0,.14);
+  }
+  .ec-tab:active,.ec-action:active,.ec-settings-button:active,.ec-mini-btn:active,.ec-icon-btn:active,.ec-modal-close:active,.ec-chart-toggle:active,
+  #settings-save:active,#settings-save-top:active,#settings-reset:active,.ec-clear:active,.ec-tz-btn:active{
+    transform:translateY(1px) scale(.985);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.18);
+  }
+</style>
+
+  
+<style id="ec-v27-intelligence">
+  .ec-market-tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .ec-tool-btn{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:8px;padding:7px 9px;font:inherit;font-size:10px;font-weight:800;cursor:pointer}
+  .ec-tool-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+  .ec-tool-btn:active{transform:translateY(1px) scale(.985)}
+  .ec-my-markets{display:flex;flex-wrap:wrap;gap:6px 10px}
+  .ec-analytics-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+  .ec-analytics-card{border:1px solid var(--ec-border);border-radius:10px;padding:9px 10px;background:var(--ec-soft2)}
+  .ec-analytics-card span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);font-weight:800}
+  .ec-analytics-card strong{display:block;margin-top:3px;font-size:16px}
+  .ec-analytics-card small{display:block;margin-top:3px;color:var(--ec-muted);font-size:9px;line-height:1.3}
+  .ec-reaction-grid{display:grid;grid-template-columns:120px repeat(4,1fr);gap:1px;background:var(--ec-border);border:1px solid var(--ec-border);border-radius:10px;overflow:hidden}
+  .ec-reaction-grid > div{background:var(--ec-card);padding:7px 8px;font-size:10px}
+  .ec-reaction-grid .head{font-weight:900;background:var(--ec-soft2)}
+  .ec-pos{color:#0b8f4d!important;font-weight:850}
+  .ec-neg{color:#c9342e!important;font-weight:850}
+  .ec-zero{color:var(--ec-muted)!important}
+  .ec-score-pill{display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:3px 6px;border-radius:999px;background:var(--ec-soft);font-size:10px;font-weight:900}
+  @media(max-width:800px){
+    .ec-analytics-grid{grid-template-columns:1fr}
+    .ec-reaction-grid{grid-template-columns:100px repeat(4,minmax(64px,1fr));overflow-x:auto}
+  }
+</style>
+
+  
+<style id="ec-v28-history-watchlist">
+  .ec-related-history-note{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    margin-left:6px;
+    padding:2px 6px;
+    border-radius:999px;
+    background:var(--ec-soft);
+    border:1px solid var(--ec-border);
+    font-size:9px;
+    font-weight:850;
+  }
+</style>
+
+  <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
+  <style>
+    :root{
+      --ec-bg:#edf2f8;--ec-card:#fff;--ec-border:#d9e0ea;--ec-text:#10203a;
+      --ec-muted:#667085;--ec-accent:#365cff;--ec-high:#dc2626;--ec-medium:#d97706;
+      --ec-low:#16a34a;--ec-soft:#eef3ff;--ec-soft2:#f7f9fc;--ec-good:#16803a;
+      --ec-warn:#b45309;--ec-bad:#c62828;
+    }
+    body[data-theme="dark"], body.dark-mode{
+      --ec-bg:#0f1420;--ec-card:#171e2c;--ec-border:#2b3446;--ec-text:#edf2f7;
+      --ec-muted:#9aa6b7;--ec-accent:#7aa2ff;--ec-soft:#1e2a44;--ec-soft2:#121925;
+      --ec-good:#5fd38d;--ec-warn:#f3b45e;--ec-bad:#ff7b7b;
+    }
+    body{background:var(--ec-bg);}
+    .ec-page{width:calc(100% - 24px);max-width:none;margin:0 auto;padding:6px 0 40px;color:var(--ec-text);}
+    .ec-hero{display:flex;gap:14px;justify-content:space-between;align-items:center;margin-bottom:5px;min-height:54px;}
+    .ec-hero h1{font-size:clamp(26px,2.5vw,36px);line-height:.98;margin:0 0 2px;font-weight:800;letter-spacing:-.03em;}
+    .ec-hero p{margin:0;color:var(--ec-muted);font-size:11px;line-height:1.15;}
+    .ec-status-wrap{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+    .ec-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--ec-border);border-radius:999px;background:var(--ec-card);font-size:10px;font-weight:800;white-space:nowrap;}
+    .ec-badge:before{content:"";width:8px;height:8px;border-radius:50%;background:#9ca3af;}
+    .ec-badge.live:before{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.12);}
+    .ec-badge.loading:before{background:#d97706;}
+    .ec-badge.error:before{background:#dc2626;}
+    .ec-shell{width:100%;background:var(--ec-card);border:1px solid var(--ec-border);border-radius:16px;box-shadow:0 8px 30px rgba(16,24,40,.06);overflow:hidden;}
+    .ec-toolbar{display:flex;gap:6px;padding:6px 10px;border-bottom:1px solid var(--ec-border);overflow:auto;align-items:center;flex-wrap:wrap;}
+    .ec-tab,.ec-action,.ec-settings-button{border:1px solid var(--ec-border);background:transparent;color:var(--ec-text);border-radius:8px;padding:7px 10px;font:inherit;font-size:11px;font-weight:750;cursor:pointer;white-space:nowrap;}
+    .ec-tab.active{background:var(--ec-accent);border-color:var(--ec-accent);color:#fff;}
+    .ec-toolbar-spacer{flex:1;}
+    .ec-action{background:var(--ec-soft);color:var(--ec-accent);}
+    .ec-action:disabled{opacity:.48;cursor:not-allowed;}
+    .ec-date-label{font-size:12px;color:var(--ec-muted);white-space:nowrap;padding:0 3px;font-weight:650;}
+    .ec-tz-strip{display:flex;gap:6px;align-items:center;padding-left:6px;border-left:1px solid var(--ec-border);}
+    .ec-tz-btn{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:999px;padding:5px 8px;font:inherit;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap;}
+    .ec-tz-btn:hover{background:var(--ec-soft);}
+    .ec-tz-btn.active{background:var(--ec-soft);border-color:var(--ec-accent);color:var(--ec-accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ec-accent) 35%,transparent);}
+    .ec-view-toggle{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:750;color:var(--ec-muted);white-space:nowrap;}
+    .ec-view-toggle input{width:15px;height:15px;}
+    .ec-past-row{opacity:.57;}
+    .ec-past-row:hover{opacity:.78;}
+    .ec-live-time{display:block;font-size:9px;font-weight:600;color:var(--ec-muted);margin-top:2px;white-space:nowrap;}
+    .ec-settings-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 10px;border-bottom:1px solid var(--ec-border);background:color-mix(in srgb,var(--ec-soft) 32%,transparent);}
+    .ec-settings-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;}
+    .ec-settings-title small{display:block;color:var(--ec-muted);font-size:9px;font-weight:500;margin-top:1px;}
+    .ec-settings-button{background:var(--ec-card);}
+    .ec-settings-panel{display:none;padding:16px;border-bottom:1px solid var(--ec-border);background:var(--ec-card);}
+    .ec-settings-panel.open{display:block;}
+    .ec-settings-locked{opacity:.48;filter:grayscale(.25);}
+    .ec-settings-login-note{padding:10px 12px;border:1px dashed var(--ec-border);border-radius:9px;color:var(--ec-muted);font-size:12px;margin-bottom:12px;}
+    .ec-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+    .ec-settings-group{border:1px solid var(--ec-border);border-radius:12px;padding:12px;background:var(--ec-soft2);}
+    .ec-settings-group h3{font-size:12px;margin:0 0 10px;}
+    .ec-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;}
+    .ec-checks.one-col{grid-template-columns:1fr;}
+    .ec-check{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;}
+    .ec-check input{width:15px;height:15px;}
+    .ec-settings-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px;}
+    .ec-save-status{font-size:11px;color:var(--ec-muted);}
+    .ec-filters{display:grid;grid-template-columns:minmax(300px,1.7fr) repeat(3,minmax(160px,.7fr)) auto;gap:7px;padding:7px 10px;border-bottom:1px solid var(--ec-border);}
+    .ec-input,.ec-select{width:100%;box-sizing:border-box;border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:8px;padding:8px 9px;font:inherit;font-size:11px;}
+    .ec-clear{padding-inline:14px;}
+    .ec-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-bottom:1px solid var(--ec-border);}
+    .ec-stat{padding:5px 10px;border-right:1px solid var(--ec-border);}
+    .ec-stat:last-child{border-right:0;}
+    .ec-stat span{display:block;font-size:9px;color:var(--ec-muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;}
+    .ec-stat strong{display:block;margin-top:0;font-size:14px;}
+    .ec-stat small{display:block;color:var(--ec-muted);font-size:9px;margin-top:1px;}
+    .ec-table-wrap{overflow-x:auto;}
+    .ec-table{width:100%;border-collapse:collapse;min-width:1180px;table-layout:auto;}
+    .ec-table th{position:sticky;top:0;text-align:left;padding:8px 12px;background:var(--ec-card);border-bottom:1px solid var(--ec-border);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);z-index:1;}
+    .ec-table td{padding:9px 12px;border-bottom:1px solid var(--ec-border);font-size:12px;vertical-align:middle;}
+    .ec-table tbody tr:hover{background:color-mix(in srgb,var(--ec-soft) 60%,transparent);}
+    .ec-day-row td{background:var(--ec-soft2);font-weight:800;color:var(--ec-text);padding:6px 12px;font-size:11px;}
+    .ec-time{font-variant-numeric:tabular-nums;font-weight:750;white-space:nowrap;}
+    .ec-country{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:700;}
+    .ec-event strong{display:block;font-size:13px;}
+    .ec-event small{color:var(--ec-muted);}
+    .impact{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;}
+    .impact i{display:inline-block;width:8px;height:8px;border-radius:50%;}
+    .impact.high i{background:var(--ec-high)} .impact.medium i{background:var(--ec-medium)} .impact.low i{background:var(--ec-low)}
+    .value{font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap;}
+    .muted{color:var(--ec-muted);}
+    .actual-up{color:var(--ec-good)} .actual-down{color:var(--ec-bad)}
+    .ec-assets{display:flex;gap:5px;flex-wrap:wrap;}
+    .ec-chip{display:inline-block;padding:4px 7px;border-radius:999px;background:var(--ec-soft);color:var(--ec-accent);font-size:10px;font-weight:800;}
+    .ec-event-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;align-items:center;}
+    .ec-actions-cell{white-space:nowrap;text-align:right;min-width:166px;}
+    .ec-table th:last-child{text-align:right;min-width:166px;}
+    .ec-icon-btn{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ec-border);border-radius:8px;background:var(--ec-card);color:var(--ec-text);cursor:pointer;font-size:14px;line-height:1;}
+    .ec-icon-btn:hover{background:var(--ec-soft);color:var(--ec-accent);}
+    .ec-icon-btn.active{
+      background:linear-gradient(180deg,#fff1f1 0%,#ffdede 100%);
+      color:#b42318;
+      border-color:#e89090;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 3px rgba(120,20,20,.18);
+      transform:translateY(-1px);
+    }
+    body[data-theme="dark"] .ec-icon-btn.active,
+    body.dark-mode .ec-icon-btn.active{
+      background:linear-gradient(180deg,#582626 0%,#3c1c1c 100%);
+      color:#ffb4b4;
+      border-color:#a85858;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.45);
+    }
+    .ec-cancel-pop{
+      position:fixed;z-index:100020;width:210px;padding:9px 10px;
+      border:1px solid var(--ec-border);border-radius:9px;background:var(--ec-card);
+      color:var(--ec-text);box-shadow:0 12px 34px rgba(0,0,0,.22);font-size:10px;line-height:1.35;
+    }
+    .ec-cancel-pop[hidden]{display:none}
+    .ec-cancel-pop strong{display:block;font-size:11px;margin-bottom:7px}
+    .ec-cancel-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
+    .ec-cancel-actions button{border:1px solid var(--ec-border);border-radius:7px;padding:5px 8px;background:var(--ec-card);color:var(--ec-text);font:inherit;font-weight:800;cursor:pointer}
+    .ec-cancel-actions .confirm{background:#fff0f0;color:#b42318;border-color:#e89090}
+    body[data-theme="dark"] .ec-cancel-actions .confirm,
+    body.dark-mode .ec-cancel-actions .confirm{background:#4b2222;color:#ffb4b4;border-color:#955050}
+    .ec-icon-btn:disabled{opacity:.42;cursor:not-allowed;}
+    .ec-reminder-note{font-size:10px;color:var(--ec-muted);margin-top:5px;}
+
+    .ec-event-link{border:0;background:none;padding:0;color:var(--ec-text);font:inherit;font-weight:800;cursor:pointer;text-align:left;}
+    .ec-event-link:hover{color:var(--ec-accent);text-decoration:underline;}
+    .ec-spark{display:inline-block;width:92px;height:28px;vertical-align:middle;}
+    .ec-spark-empty{display:inline-flex;width:92px;height:28px;align-items:center;justify-content:center;color:var(--ec-muted);font-size:9px;border-bottom:1px dashed var(--ec-border);}
+    .ec-modal-backdrop{position:fixed;inset:0;background:rgba(10,16,28,.58);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999;}
+    .ec-modal-backdrop.open{display:flex;}
+    .ec-modal{width:min(1380px,97vw);max-height:92vh;overflow:hidden;background:var(--ec-card);color:var(--ec-text);border:1px solid var(--ec-border);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.28);display:flex;flex-direction:column;}
+    .ec-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:13px 16px;border-bottom:1px solid var(--ec-border);background:var(--ec-soft2);}
+    .ec-modal-head h2{margin:0;font-size:20px;line-height:1.15;}
+    .ec-modal-sub{margin-top:4px;color:var(--ec-muted);font-size:11px;}
+    .ec-modal-close{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:18px;}
+    .ec-modal-body{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:0;overflow:hidden;}
+    .ec-modal-main{padding:14px 16px;overflow:auto;}
+    .ec-modal-side{border-left:1px solid var(--ec-border);padding:12px;background:var(--ec-soft2);overflow:auto;}
+    .ec-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+    .ec-kpi{border:1px solid var(--ec-border);border-radius:10px;padding:8px 10px;background:var(--ec-soft2);}
+    .ec-kpi span{display:block;font-size:9px;color:var(--ec-muted);text-transform:uppercase;font-weight:800;}
+    .ec-kpi strong{display:block;margin-top:2px;font-size:14px;}
+    .ec-detail-section{margin-top:14px;}
+    .ec-detail-section h3,.ec-modal-side h3{font-size:12px;margin:0 0 8px;}
+    .ec-definition{padding:10px 12px;border:1px solid var(--ec-border);border-radius:10px;background:var(--ec-soft2);font-size:12px;line-height:1.45;}
+    .ec-big-chart-wrap{height:270px;border:1px solid var(--ec-border);border-radius:12px;padding:8px;background:var(--ec-card);}
+    .ec-big-chart{width:100%;height:100%;}
+    .ec-news-list{display:grid;gap:8px;}
+    .ec-news-card{display:block;border:1px solid var(--ec-border);border-radius:10px;padding:9px;background:var(--ec-card);color:var(--ec-text);text-decoration:none;cursor:pointer;}
+    .ec-news-card:hover{border-color:var(--ec-accent);background:var(--ec-soft);}
+    .ec-news-card strong{display:block;font-size:11px;line-height:1.3;}
+    .ec-news-card small{display:block;margin-top:4px;color:var(--ec-muted);font-size:9px;}
+    .ec-detail-loading{padding:28px;text-align:center;color:var(--ec-muted);}
+    .ec-chart-controls{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+    .ec-chart-toggle{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:7px;padding:5px 8px;font:inherit;font-size:9px;font-weight:800;cursor:pointer;}
+    .ec-chart-toggle.active{background:var(--ec-soft);color:var(--ec-accent);border-color:var(--ec-accent);}
+    body[data-theme="dark"] .ec-modal-backdrop{background:rgba(0,0,0,.72);}
+    body[data-theme="dark"] .ec-news-card,
+    body[data-theme="dark"] .ec-modal,
+    body[data-theme="dark"] .ec-kpi,
+    body[data-theme="dark"] .ec-definition,
+    body[data-theme="dark"] .ec-big-chart-wrap,
+    body[data-theme="dark"] .ec-icon-btn,
+    body[data-theme="dark"] .ec-event-link{color:var(--ec-text);}
+    body[data-theme="dark"] input[type="date"]{color-scheme:dark;}
+    @media(max-width:900px){
+      .ec-modal-body{grid-template-columns:1fr;}
+      .ec-modal-side{border-left:0;border-top:1px solid var(--ec-border);max-height:280px;}
+      .ec-kpis{grid-template-columns:1fr 1fr;}
+    }
+
+
+    .ec-next-up{
+      display:none;
+      margin:8px 10px 0;
+      padding:8px 10px;
+      border:1px solid var(--ec-border);
+      border-radius:9px;
+      background:var(--ec-soft2);
+      color:var(--ec-text);
+      font-size:11px;
+      line-height:1.35;
+    }
+    .ec-next-up.show{display:block}
+    .ec-next-up strong{font-weight:850}
+    .ec-next-up button{
+      margin-left:8px;
+      border:1px solid var(--ec-border);
+      background:var(--ec-card);
+      color:var(--ec-text);
+      border-radius:7px;
+      padding:4px 8px;
+      font:inherit;
+      font-size:10px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .ec-empty,.ec-loading,.ec-error{text-align:center;padding:42px 20px;color:var(--ec-muted);}
+    .ec-error strong{display:block;color:var(--ec-bad);margin-bottom:5px;}
+    .ec-provider{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 16px;color:var(--ec-muted);font-size:11px;background:var(--ec-soft2);flex-wrap:wrap;}
+    .ec-provider strong{color:var(--ec-text);}
+    .ec-refresh-link{border:0;background:none;color:var(--ec-accent);font:inherit;font-weight:800;cursor:pointer;padding:0;}
+    .ec-updated{white-space:nowrap;}
+    .ec-warning{display:none;margin:7px 10px 0;padding:7px 9px;border:1px solid #f3c56c;border-radius:9px;background:#fff8e7;color:#8a5a00;font-size:12px;}
+    body[data-theme="dark"] .ec-warning{background:#2d2411;color:#f2c96d;border-color:#5f4b1d;}
+    .ec-warning.show{display:block;}
+
+    .ec-date-picker{display:flex;align-items:center;gap:6px;}
+    .ec-date-picker input{width:122px;border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:8px;padding:6px 7px;font:inherit;font-size:10px;}
+    .ec-date-go{padding:7px 9px;}
+    .ec-tz-stack{display:flex;flex-direction:column;align-items:center;gap:2px;}
+    .ec-tz-time{font-size:8px;color:var(--ec-muted);font-weight:700;line-height:1;}
+
+    @media(min-width:1200px){
+      .ec-table th,.ec-table td{padding-left:16px;padding-right:16px;}
+      .ec-table th:nth-child(4),.ec-table td:nth-child(4){width:28%;}
+      .ec-table th:nth-child(8),.ec-table td:nth-child(8){width:110px;}
+      .ec-table th:nth-child(9),.ec-table td:nth-child(9){width:17%;}
+      .ec-table th:nth-child(10),.ec-table td:nth-child(10){width:176px;}
+    }
+    @media(max-width:1100px){
+      .ec-settings-grid{grid-template-columns:1fr 1fr;}
+      .ec-filters{grid-template-columns:1fr 1fr 1fr;}
+      .ec-filters #search{grid-column:span 2;}
+    }
+    @media(max-width:800px){
+      .ec-hero p{display:none}
+      .ec-page{width:calc(100% - 20px);padding:20px 0 45px}
+      .ec-hero{align-items:flex-start;flex-direction:column;gap:10px}
+      .ec-status-wrap{justify-content:flex-start}
+      .ec-settings-grid{grid-template-columns:1fr}
+      .ec-filters{grid-template-columns:1fr 1fr}
+      .ec-filters #search{grid-column:1/-1}
+      .ec-summary{grid-template-columns:1fr 1fr}
+      .ec-stat{border-bottom:1px solid var(--ec-border)}
+      .ec-stat:nth-child(even){border-right:0}
+      .ec-stat:last-child{grid-column:1/-1;border-bottom:0}
+      .ec-toolbar-spacer{display:none}
+      .ec-date-label{display:none}
+      .ec-tz-strip{width:100%;order:10;border-left:0;padding-left:0;margin-top:2px;overflow-x:auto}
+      .ec-view-toggle{order:11}
+    }
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=20"></script>
+  <script src="site-theme.js?v=20" defer></script>
+
+  <main class="ec-page">
+    <header class="ec-hero">
+      <div>
+        <h1>Economic Calendar</h1>
+        <p>Live economic releases, expectations and market-relevant events.</p>
       </div>
-      <div id="watchlist-economic-status" class="watchlist-status">Loading economic events…</div>
-      <div id="watchlist-economic-list" class="watchlist-economic-list"></div>`;
-    grid.insertAdjacentElement("afterend",section);
+      <div class="ec-status-wrap">
+        <span id="feed-status" class="ec-badge loading">Loading live data</span>
+        <span id="countdown-badge" class="ec-badge">Next event: —</span>
+      </div>
+    </header>
 
-    const style=document.createElement("style");
-    style.id="watchlist-economic-style";
-    style.textContent=`
-      .watchlist-economic-events{margin-top:14px;padding:14px}
-      .watchlist-economic-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
-      .watchlist-economic-head h2{margin:0 0 3px;font-size:22px}
-      .watchlist-economic-head p{margin:0;color:var(--muted);font-size:12px}
-      .watchlist-economic-list{display:grid;gap:7px}
-      .watchlist-economic-row{display:grid;grid-template-columns:150px 95px minmax(220px,1fr) 220px 90px;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--card)}
-      .watchlist-economic-row strong{font-size:12px}
-      .watchlist-economic-row small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
-      .watchlist-economic-impact{font-size:10px;font-weight:900}
-      .watchlist-economic-impact.high{color:#d83b38}.watchlist-economic-impact.medium{color:#c77b13}.watchlist-economic-impact.low{color:#248b4d}
-      .watchlist-economic-assets{display:flex;flex-wrap:wrap;gap:4px}
-      .watchlist-economic-chip{padding:3px 6px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:9px;font-weight:800}
-      .watchlist-economic-link{justify-self:end;text-decoration:none;border:1px solid #9a6500;border-radius:999px;padding:5px 8px;background:#fff7df;color:#563800;font-size:9px;font-weight:900}
-      body.dark-mode .watchlist-economic-link{background:#33280d;color:#ffe4a3;border-color:#b88a24}
-      @media(max-width:900px){.watchlist-economic-row{grid-template-columns:1fr}.watchlist-economic-link{justify-self:start}}
-    `;
-    document.head.appendChild(style);
-    return section;
-  }
+    <section class="ec-shell">
+      <div class="ec-toolbar" aria-label="Calendar range">
+        <div class="ec-date-picker">
+          <input id="custom-from" type="date" aria-label="From date">
+          <span>to</span>
+          <input id="custom-to" type="date" aria-label="To date">
+          <button id="custom-go" class="ec-action ec-date-go" type="button" title="Load custom date range">📅</button>
+          <button id="last-30" class="ec-action ec-date-go" type="button" title="Last 30 days">−30d</button>
+          <button id="next-30" class="ec-action ec-date-go" type="button" title="Next 30 days">+30d</button>
+        </div>
+        <button class="ec-tab" data-range="yesterday">Yesterday</button>
+        <button class="ec-tab" data-range="today">Today</button>
+        <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
+        <button class="ec-tab active" data-range="week">This Week</button>
+        <button class="ec-tab" data-range="next">Next Week</button>
+        <span class="ec-date-label" id="range-label">—</span>
 
-  async function load(){
-    const section=installSection();
-    if(!section)return;
+        <div class="ec-tz-strip" aria-label="Quick timezone">
+          <div class="ec-tz-stack"><button class="ec-tz-btn active" type="button" data-timezone="America/New_York">New York</button><span class="ec-tz-time" data-clock="America/New_York">—</span></div>
+          <div class="ec-tz-stack"><button class="ec-tz-btn" type="button" data-timezone="Europe/London">London</button><span class="ec-tz-time" data-clock="Europe/London">—</span></div>
+          <div class="ec-tz-stack"><button class="ec-tz-btn" type="button" data-timezone="Asia/Tokyo">Tokyo</button><span class="ec-tz-time" data-clock="Asia/Tokyo">—</span></div>
+          <div class="ec-tz-stack"><button class="ec-tz-btn" type="button" data-timezone="Asia/Hong_Kong">Hong Kong</button><span class="ec-tz-time" data-clock="Asia/Hong_Kong">—</span></div>
+        </div>
 
-    const status=document.getElementById("watchlist-economic-status");
-    const list=document.getElementById("watchlist-economic-list");
+        <span class="ec-toolbar-spacer"></span>
+        <label class="ec-view-toggle" title="Optional: hide events that have already been released"><input id="upcoming-only" type="checkbox"> Upcoming only</label>
+        <label class="ec-view-toggle" title="Show only events related to markets selected in Settings"><input id="my-markets-only" type="checkbox"> My Markets only</label>
+        <button id="refresh-btn" class="ec-action" type="button">↻ Refresh</button>
+        <button id="export-csv" class="ec-tool-btn" type="button" title="Export visible events to CSV">CSV</button>
+        <button id="export-ics" class="ec-tool-btn" type="button" title="Export visible events to calendar file">ICS</button>
+        <button id="share-view" class="ec-tool-btn" type="button" title="Copy a shareable link to this calendar view">Share</button>
+      </div>
 
-    try{
-      const sessionResult=await client.auth.getSession();
-      const user=sessionResult?.data?.session?.user;
-      if(!user){status.textContent="Sign in to see watchlist-linked economic events.";return;}
+      <div class="ec-settings-bar">
+        <div class="ec-settings-title">
+          ⚙️
+          <div>
+            Saved Calendar Settings
+            <small>Countries, event classifications, impact and timezone.</small>
+          </div>
+        </div>
+        <div class="ec-settings-top-actions" style="display:flex;gap:6px;align-items:center">
+          <button id="settings-save-top" class="ec-tab active" type="button" style="display:none">Save</button>
+          <button id="settings-close-top" class="ec-settings-button" type="button" style="display:none">Close</button>
+          <button id="settings-toggle" class="ec-settings-button" type="button" aria-expanded="false">Settings</button>
+        </div>
+      </div>
 
-      const {data:wl,error:wlErr}=await client.from("watchlists")
-        .select("id").eq("user_id",user.id).eq("is_default",true).limit(1).maybeSingle();
-      if(wlErr)throw wlErr;
-      if(!wl?.id){status.textContent="Your watchlist is empty.";return;}
+      <div id="settings-panel" class="ec-settings-panel" aria-hidden="true">
+        <div id="settings-login-note" class="ec-settings-login-note">
+          Log in to customize and permanently save these calendar settings to your account.
+        </div>
 
-      const {data:items,error:itemErr}=await client.from("watchlist_items")
-        .select("instrument").eq("watchlist_id",wl.id).order("display_order",{ascending:true});
-      if(itemErr)throw itemErr;
+        <fieldset id="settings-fieldset" disabled style="border:0;padding:0;margin:0" class="ec-settings-locked">
+          <div class="ec-settings-grid">
+            <div class="ec-settings-group">
+              <h3>Countries</h3>
+              <div class="ec-country-tools">
+                <button id="country-select-all" class="ec-mini-btn" type="button">Select all</button>
+                <button id="country-major" class="ec-mini-btn" type="button">Major markets</button>
+                <button id="country-clear" class="ec-mini-btn" type="button">Clear</button>
+              </div>
+              <input id="country-settings-search" class="ec-country-search" type="search" placeholder="Search countries…">
+              <div id="all-country-checkboxes" class="ec-checks ec-country-scroll"></div>
+            </div>
 
-      const tagSet=new Set();
-      (items||[]).forEach(x=>watchlistTags(x.instrument).forEach(t=>tagSet.add(t)));
-      if(!tagSet.size){status.textContent="No economic-market mappings are available for your current watchlist yet.";return;}
+            <div class="ec-settings-group">
+              <h3>Event Classification</h3>
+              <div class="ec-checks">
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Inflation" checked> Inflation</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Labor" checked> Labor / Employment</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Central Bank" checked> Central Bank</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Growth" checked> Growth / Business</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Energy" checked> Energy</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Housing" checked> Housing</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Trade" checked> Trade</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Government" checked> Government / Fiscal</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Consumer" checked> Consumer</label>
+                <label class="ec-check"><input type="checkbox" name="saved-category" value="Other" checked> Other</label>
+              </div>
+            </div>
 
-      const start=startOfWeek(new Date());
-      const end=addDays(start,6);
-      const res=await fetch(FEED_URL,{
-        method:"POST",
-        headers:{"content-type":"application/json"},
-        body:JSON.stringify({start:ymd(start),end:ymd(end),countries:[]})
+            <div class="ec-settings-group">
+              <h3>Impact</h3>
+              <div class="ec-checks one-col">
+                <label class="ec-check"><input type="checkbox" name="saved-impact" value="high" checked> 🔴 High impact</label>
+                <label class="ec-check"><input type="checkbox" name="saved-impact" value="medium" checked> 🟠 Medium impact</label>
+                <label class="ec-check"><input type="checkbox" name="saved-impact" value="low" checked> 🟢 Low impact</label>
+              </div>
+            </div>
+
+            <div class="ec-settings-group">
+              <h3>Alerts & Contact</h3>
+              <div class="ec-contact-grid">
+                <div>
+                  <div class="ec-contact-label">Account email</div>
+                  <div id="account-email" class="ec-contact-value">Log in to use email alerts</div>
+                </div>
+                <label class="ec-contact-label">
+                  Mobile number <span style="font-weight:500">(optional)</span>
+                  <div class="ec-phone-row">
+                    <input id="account-phone" class="ec-input" type="tel" autocomplete="tel" placeholder="+12125551234">
+                  </div>
+                </label>
+                <div class="ec-field-note">Only needed for text alerts. Use international format, for example +12125551234.</div>
+                <div class="ec-checks one-col" style="margin-top:3px;">
+                  <label class="ec-check"><input type="checkbox" id="default-email-reminder"> ✉ Email reminder</label>
+                  <label class="ec-check"><input type="checkbox" id="default-sms-reminder"> 📱 Text reminder</label>
+                  <label class="ec-check"><input type="checkbox" id="default-desktop-reminder"> 🔔 Desktop notification</label>
+                </div>
+                <label class="ec-contact-label">
+                  Default reminder time
+                  <select id="default-reminder-minutes" class="ec-select" style="margin-top:4px;">
+                    <option value="10">10 minutes before</option>
+                    <option value="20">20 minutes before</option>
+                    <option value="30" selected>30 minutes before</option>
+                    <option value="60">1 hour before</option>
+                    <option value="120">2 hours before</option>
+                    <option value="1440">1 day before</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="ec-settings-group">
+              <h3>My Markets / Watchlist</h3>
+              <div class="ec-my-markets">
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="SPY"> SPY</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="USD"> USD</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Treasuries"> Treasuries</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Gold"> Gold</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="EUR"> EUR</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="GBP"> GBP</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="JPY"> JPY</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="WTI"> WTI</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Brent"> Brent</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="Copper"> Copper</label>
+                <label class="ec-check"><input type="checkbox" name="saved-market" value="BTC"> BTC</label>
+              </div>
+              <div id="watchlist-link-note" class="ec-reminder-note">Logged-in members automatically use their existing Watchlist. Manual selections are used as fallback.</div>
+            </div>
+
+            <div class="ec-settings-group">
+              <h3>Timezone</h3>
+              <select id="saved-timezone" class="ec-select">
+                <option value="America/New_York">New York — Eastern Time</option>
+                <option value="America/Chicago">Chicago — Central Time</option>
+                <option value="America/Denver">Denver — Mountain Time</option>
+                <option value="America/Los_Angeles">Los Angeles — Pacific Time</option>
+                <option value="Europe/London">London</option>
+                <option value="Europe/Paris">Paris / Central Europe</option>
+                <option value="Asia/Tokyo">Tokyo</option>
+                <option value="Asia/Hong_Kong">Hong Kong</option>
+                <option value="Asia/Singapore">Singapore</option>
+                <option value="Asia/Dubai">Dubai</option>
+                <option value="Australia/Sydney">Sydney</option>
+                <option value="UTC">UTC</option>
+              </select>
+              <div class="ec-reminder-note">Your saved timezone controls all event times on this page.</div>
+            </div>
+          </div>
+
+          <div class="ec-settings-actions">
+            <span id="settings-save-status" class="ec-save-status"></span>
+            <button id="settings-reset" class="ec-settings-button" type="button">Reset</button>
+            <button id="settings-save" class="ec-tab active" type="button">Save Now</button>
+          </div>
+        </fieldset>
+      </div>
+
+      <div id="provider-warning" class="ec-warning"></div>
+
+      <div class="ec-filters">
+        <input id="search" class="ec-input" type="search" placeholder="Search CPI, Fed, payrolls, GDP, oil…">
+        <select id="country" class="ec-select"><option value="">All selected countries</option></select>
+        <select id="impact" class="ec-select">
+          <option value="">All impact</option><option value="high">High impact</option>
+          <option value="medium">Medium impact</option><option value="low">Low impact</option>
+        </select>
+        <select id="category" class="ec-select"><option value="">All classifications</option></select>
+        <button id="clear-filters" class="ec-settings-button ec-clear" type="button">Clear</button>
+      </div>
+
+      <div class="ec-summary">
+        <div class="ec-stat"><span>Events shown</span><strong id="stat-events">—</strong></div>
+        <div class="ec-stat"><span>High impact</span><strong id="stat-high">—</strong></div>
+        <div class="ec-stat"><span>Next event</span><strong id="stat-next">—</strong><small id="stat-next-name"></small></div>
+        <div class="ec-stat"><span>Timezone</span><strong id="stat-timezone">New York</strong></div>
+        <div class="ec-stat"><span>Auto refresh</span><strong></strong><small id="last-updated">Not loaded</small></div>
+      </div>
+
+      <div id="ec-next-up" class="ec-next-up"></div>
+      <div class="ec-table-wrap">
+        <table class="ec-table">
+          <thead>
+            <tr>
+              <th>Time</th><th>Country</th><th>Impact</th><th>Event</th>
+              <th>Actual</th><th>Forecast</th><th>Previous</th><th>12M History</th><th>Relevant Assets</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="calendar-body">
+            <tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ec-provider">
+        <span>Source: <strong id="provider-name">Biquote + FinanceCalendar</strong> · richer merged economic-event coverage · Times automatically convert to your selected timezone.</span>
+        <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
+      </div>
+    </section>
+  </main>
+
+
+  <div id="event-modal-backdrop" class="ec-modal-backdrop" aria-hidden="true">
+    <section class="ec-modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+      <header class="ec-modal-head">
+        <div>
+          <h2 id="event-modal-title">Economic Event</h2>
+          <div id="event-modal-sub" class="ec-modal-sub"></div>
+        </div>
+        <button id="event-modal-close" class="ec-modal-close" type="button" aria-label="Close">×</button>
+      </header>
+      <div class="ec-modal-body">
+        <div class="ec-modal-main">
+          <div id="event-modal-kpis" class="ec-kpis"></div>
+
+          <section class="ec-detail-section">
+            <h3>What this event means</h3>
+            <div id="event-modal-definition" class="ec-definition"></div>
+          </section>
+
+          <section class="ec-detail-section">
+            <div class="ec-chart-controls">
+              <button class="ec-chart-toggle active" data-chart-series="history" type="button">History</button>
+              <button class="ec-chart-toggle" data-chart-series="actual" type="button">Actual</button>
+              <button class="ec-chart-toggle" data-chart-series="forecast" type="button">Forecast</button>
+              <button class="ec-chart-toggle" data-chart-series="previous" type="button">Previous</button>
+            </div>
+            <div class="ec-big-chart-wrap ec-histogram-wrap">
+              <div id="event-big-chart" class="ec-histogram" aria-label="12-month historical histogram"></div>
+              <div id="event-chart-callout" class="ec-chart-callout" hidden></div>
+            </div>
+            <div id="event-history-note" class="ec-reminder-note" style="margin-top:6px;"></div>
+          </section>
+
+          <section class="ec-detail-section">
+            <h3>Event context</h3>
+            <div id="event-modal-context" class="ec-definition"></div>
+          </section>
+
+          <section class="ec-detail-section">
+            <h3>PSD Event Analytics</h3>
+            <div id="event-analytics" class="ec-analytics-grid">
+              <div class="ec-analytics-card"><span>Surprise Score</span><strong id="analytics-surprise">—</strong><small id="analytics-surprise-note">Waiting for history</small></div>
+              <div class="ec-analytics-card"><span>Forecast Accuracy · 12M</span><strong id="analytics-accuracy">—</strong><small id="analytics-accuracy-note">Waiting for history</small></div>
+              <div class="ec-analytics-card"><span>PSD Intelligence Score</span><strong id="analytics-intelligence">—</strong><small>Rule-based v1 · no AI cost</small></div>
+            </div>
+          </section>
+
+          <section class="ec-detail-section">
+            <h3>Market Reaction</h3>
+            <div id="event-market-reaction" class="ec-definition">Loading market reaction…</div>
+          </section>
+
+          <section class="ec-detail-section">
+            <h3>Source & release details</h3>
+            <div id="event-modal-source" class="ec-definition"></div>
+          </section>
+        </div>
+
+        <aside class="ec-modal-side">
+          <h3>Related news</h3>
+          <div id="event-related-news" class="ec-news-list">
+            <div class="ec-detail-loading">Loading related news…</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="ec-cancel-pop" class="ec-cancel-pop" hidden>
+    <strong id="ec-cancel-title">Cancel reminder?</strong>
+    <div id="ec-cancel-text">Do you want to cancel this reminder?</div>
+    <div class="ec-cancel-actions">
+      <button id="ec-cancel-no" type="button">Keep</button>
+      <button id="ec-cancel-yes" class="confirm" type="button">Cancel alert</button>
+    </div>
+  </div>
+
+  <script src="glossary.js?v=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js?v=12"></script>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const FEED_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed";
+    const DETAIL_HISTORY_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-history";
+    const REACTION_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-reaction";
+    const AUTO_REFRESH_MS = 30 * 1000;
+
+    const COUNTRY = {
+      US:{name:"United States",flag:"🇺🇸"}, EU:{name:"Euro Area",flag:"🇪🇺"},
+      UK:{name:"United Kingdom",flag:"🇬🇧"}, JP:{name:"Japan",flag:"🇯🇵"},
+      CA:{name:"Canada",flag:"🇨🇦"}, CN:{name:"China",flag:"🇨🇳"},
+      AU:{name:"Australia",flag:"🇦🇺"}, CH:{name:"Switzerland",flag:"🇨🇭"},
+      DE:{name:"Germany",flag:"🇩🇪"}, IN:{name:"India",flag:"🇮🇳"},
+      NZ:{name:"New Zealand",flag:"🇳🇿"}, FR:{name:"France",flag:"🇫🇷"},
+      IT:{name:"Italy",flag:"🇮🇹"}, ES:{name:"Spain",flag:"🇪🇸"},
+      BR:{name:"Brazil",flag:"🇧🇷"}, MX:{name:"Mexico",flag:"🇲🇽"},
+      KR:{name:"South Korea",flag:"🇰🇷"}, SG:{name:"Singapore",flag:"🇸🇬"},
+      NO:{name:"Norway",flag:"🇳🇴"}, SE:{name:"Sweden",flag:"🇸🇪"}
+    };
+
+
+
+    const COUNTRY_NAME_TO_CODE = {
+      "united states":"US","usa":"US","u.s.":"US",
+      "euro area":"EU","eurozone":"EU",
+      "united kingdom":"GB","uk":"GB",
+      "japan":"JP","canada":"CA","china":"CN","australia":"AU","new zealand":"NZ",
+      "switzerland":"CH","germany":"DE","france":"FR","italy":"IT","spain":"ES",
+      "india":"IN","brazil":"BR","mexico":"MX","south korea":"KR","korea":"KR",
+      "singapore":"SG","norway":"NO","sweden":"SE","hong kong":"HK","taiwan":"TW",
+      "russia":"RU","turkey":"TR","south africa":"ZA","indonesia":"ID","malaysia":"MY",
+      "thailand":"TH","philippines":"PH","vietnam":"VN","israel":"IL","saudi arabia":"SA",
+      "united arab emirates":"AE","poland":"PL","czech republic":"CZ","czechia":"CZ",
+      "hungary":"HU","romania":"RO","denmark":"DK","finland":"FI","belgium":"BE",
+      "netherlands":"NL","portugal":"PT","greece":"GR","ireland":"IE","austria":"AT"
+    };
+
+    function normalizedCountryCode(e){
+      let code=String(e?.country_code||e?.countryCode||"").trim().toUpperCase();
+      if(code==="UK") code="GB";
+      if(code==="EA"||code==="EMU") code="EU";
+      if(/^[A-Z]{2}$/.test(code)) return code;
+
+      const name=String(e?.country||e?.countryName||"").trim().toLowerCase();
+      return COUNTRY_NAME_TO_CODE[name]||"";
+    }
+
+    function displayCountry(e){
+      const code=normalizedCountryCode(e);
+      const name=String(e?.country||e?.countryName||"").trim() || (code?countryName(code):"Global");
+      return {
+        code,
+        name,
+        flag: code ? countryFlag(code) : "🌐"
+      };
+    }
+
+    const ALL_COUNTRY_CODES = [
+      "AE","AF","AL","AM","AO","AR","AT","AU","AZ","BA","BD","BE","BF","BG","BH","BI","BJ","BN","BO","BR","BS","BT","BW","BY","BZ",
+      "CA","CD","CF","CG","CH","CI","CL","CM","CN","CO","CR","CU","CV","CY","CZ","DE","DJ","DK","DO","DZ","EC","EE","EG","ER","ES","ET",
+      "FI","FJ","FR","GA","GB","GE","GH","GM","GN","GQ","GR","GT","GW","GY","HK","HN","HR","HT","HU","ID","IE","IL","IN","IQ","IR","IS",
+      "IT","JM","JO","JP","KE","KG","KH","KR","KW","KZ","LA","LB","LK","LR","LT","LU","LV","LY","MA","MD","ME","MG","MK","ML","MM","MN",
+      "MR","MT","MU","MV","MW","MX","MY","MZ","NA","NE","NG","NI","NL","NO","NP","NZ","OM","PA","PE","PG","PH","PK","PL","PR","PS","PT",
+      "PY","QA","RO","RS","RU","RW","SA","SD","SE","SG","SI","SK","SL","SN","SO","SR","SV","SY","SZ","TD","TG","TH","TJ","TM","TN","TR",
+      "TT","TW","TZ","UA","UG","US","UY","UZ","VE","VN","YE","ZA","ZM","ZW"
+    ];
+
+    function countryFlag(code){
+      if(code==="EU") return "EU";
+      return code;
+    }
+
+    function flagImageUrl(code){
+      const c=String(code||"").toLowerCase();
+      if(!c) return "";
+      if(c==="eu") return "https://flagcdn.com/w40/eu.png";
+      return `https://flagcdn.com/w40/${c}.png`;
+    }
+
+    function flagMarkup(code,name=""){
+      const src=flagImageUrl(code);
+      if(!src) return "";
+      return `<img class="ec-flag-img" src="${src}" alt="${esc(name||code)} flag" loading="lazy" referrerpolicy="no-referrer">`;
+    }
+
+    function countryName(code){
+      if(code==="EU") return "Euro Area";
+      try{return new Intl.DisplayNames(["en"],{type:"region"}).of(code)||code;}catch{return code;}
+    }
+
+    function renderCountrySettings(filterText=""){
+      const host=document.getElementById("all-country-checkboxes");
+      if(!host) return;
+      const q=filterText.trim().toLowerCase();
+      const codes=["EU",...ALL_COUNTRY_CODES]
+        .filter(code=>!q || countryName(code).toLowerCase().includes(q) || code.toLowerCase().includes(q))
+        .sort((a,b)=>countryName(a).localeCompare(countryName(b)));
+      host.innerHTML=codes.map(code=>`
+        <label class="ec-check">
+          <input type="checkbox" name="saved-country" value="${code}" ${settings.countries.includes(code)?"checked":""}>
+          <span class="ec-country-choice">${flagMarkup(code,countryName(code))}${esc(code)} ${esc(countryName(code))}</span>
+        </label>`).join("");
+    }
+
+    const DEFAULT_SETTINGS = {
+      countries:["US","EU","GB","JP","CA"],
+      categories:["Inflation","Labor","Central Bank","Growth","Energy","Housing","Trade","Government","Consumer","Other"],
+      impacts:["high","medium","low"],
+      timezone:"America/New_York",
+      reminder_email:false,
+      reminder_sms:false,
+      reminder_desktop:false,
+      reminder_minutes:30,
+      my_markets:[]
+    };
+
+    const TZ_LABELS = {
+      "America/New_York":"New York (ET)","America/Chicago":"Chicago (CT)",
+      "America/Denver":"Denver (MT)","America/Los_Angeles":"Los Angeles (PT)",
+      "Europe/London":"London","Europe/Paris":"Paris / CET","Asia/Tokyo":"Tokyo",
+      "Asia/Hong_Kong":"Hong Kong","Asia/Singapore":"Singapore","Asia/Dubai":"Dubai","Australia/Sydney":"Sydney","UTC":"UTC"
+    };
+
+
+    const EVENT_GLOSSARY = [
+      {re:/consumer price|cpi/i,title:"Consumer Price Index (CPI)",text:"Measures changes in prices paid by consumers. Markets watch it closely for inflation pressure and possible central-bank policy changes."},
+      {re:/producer price|ppi/i,title:"Producer Price Index (PPI)",text:"Tracks price changes received by producers. It can offer an early signal of inflation moving through the supply chain."},
+      {re:/pce/i,title:"PCE Price Index",text:"A U.S. inflation measure based on personal consumption expenditures. The Federal Reserve closely follows the core PCE measure."},
+      {re:/nonfarm payroll|payroll/i,title:"Nonfarm Payrolls",text:"Monthly U.S. employment change excluding farm workers and a few other categories. It is one of the most closely watched labor-market releases."},
+      {re:/unemployment/i,title:"Unemployment Rate",text:"The share of the labor force that is unemployed and actively seeking work."},
+      {re:/jobless claims|unemployment claims/i,title:"Jobless Claims",text:"Weekly U.S. filings for unemployment benefits. They provide a timely view of labor-market conditions."},
+      {re:/jolts|job openings/i,title:"JOLTS Job Openings",text:"Measures U.S. job vacancies and labor-market turnover, including hires and quits."},
+      {re:/gdp|gross domestic product/i,title:"Gross Domestic Product (GDP)",text:"Measures the value of goods and services produced in an economy and is a broad gauge of economic growth."},
+      {re:/pmi|purchasing managers/i,title:"Purchasing Managers’ Index (PMI)",text:"A survey-based indicator of business activity. Readings above 50 generally indicate expansion; below 50 generally indicate contraction."},
+      {re:/interest rate|rate decision|fomc|fed funds/i,title:"Central Bank Rate Decision",text:"A central bank decision on its policy interest rate. Markets focus on both the decision and guidance about future policy."},
+      {re:/retail sales/i,title:"Retail Sales",text:"Measures consumer spending at retail businesses and is an important indicator of household demand."},
+      {re:/home sales|housing starts|building permits/i,title:"Housing Activity",text:"Measures activity in residential real estate and construction, which can reflect consumer demand, financing conditions and economic momentum."},
+      {re:/crude oil|oil inventories|eia/i,title:"Crude Oil Inventories",text:"Measures changes in commercial crude-oil stockpiles. Unexpected changes can influence oil prices and energy markets."},
+      {re:/trade balance/i,title:"Trade Balance",text:"The difference between the value of a country’s exports and imports over a period."}
+    ];
+
+    function glossaryFor(e){
+      const name=`${e.event||""} ${e.category||""}`;
+      const hit=EVENT_GLOSSARY.find(x=>x.re.test(name));
+      if(hit) return hit;
+      const classification=classifyEvent(e);
+      const country=displayCountry(e).name||"the reporting economy";
+      const providerCategory=e.category ? String(e.category).replace(/[_-]+/g," ") : classification;
+      return {
+        title:e.event||e.category||"Economic event",
+        text:`${e.event||"This release"} is a ${providerCategory} indicator for ${country}. It is classified here as ${classification}. Compare Actual with Forecast and Previous values to see whether the release surprised expectations and whether the underlying trend is strengthening or weakening.`
+      };
+    }
+
+    let currentRange = "week";
+    let customRange = null;
+    let upcomingOnly = false;
+    let currentUser = null;
+    let currentDashboardLayout = {};
+    let currentPhoneNumber = "";
+    let watchlistInstruments = [];
+    let watchlistMarketTags = new Set();
+    let settings = structuredClone(DEFAULT_SETTINGS);
+    let allEvents = [];
+    let lastFetchAt = null;
+    let refreshTimer = null;
+    let countdownTimer = null;
+    const historyCache = new Map();
+    const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v3:";
+    let activeModalEvent = null;
+    let activeChartSeries = "history";
+    let weekPreloadCache = null;
+    let weekPreloadPromise = null;
+    const reminderState = new Map();
+    let pendingCancel = null;
+    let activeController = null;
+
+    const body = document.getElementById("calendar-body");
+    const search = document.getElementById("search");
+    const countryFilter = document.getElementById("country");
+    const impactFilter = document.getElementById("impact");
+    const categoryFilter = document.getElementById("category");
+    const feedStatus = document.getElementById("feed-status");
+    const warning = document.getElementById("provider-warning");
+
+    function cloneDefault(){ return JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); }
+    function pad(n){ return String(n).padStart(2,"0"); }
+
+    function localISODate(d){
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    function addDays(d,n){
+      const x = new Date(d);
+      x.setDate(x.getDate()+n);
+      x.setHours(12,0,0,0);
+      return x;
+    }
+
+    function startOfWeek(d){
+      const x = new Date(d);
+      const day = x.getDay();
+      const diff = day === 0 ? -6 : 1-day;
+      return addDays(x,diff);
+    }
+
+    function getRange(range){
+      if(range==="custom" && customRange) return customRange;
+      const now = new Date();
+      now.setHours(12,0,0,0);
+      if(range==="yesterday"){
+        const t=addDays(now,-1); return {start:localISODate(t),end:localISODate(t)};
+      }
+      if(range==="tomorrow"){
+        const t=addDays(now,1); return {start:localISODate(t),end:localISODate(t)};
+      }
+      if(range==="lastweek"){
+        const s=addDays(startOfWeek(now),-7); return {start:localISODate(s),end:localISODate(addDays(s,6))};
+      }
+      if(range==="week"){
+        return {start:localISODate(startOfWeek(now)),end:localISODate(addDays(startOfWeek(now),6))};
+      }
+      if(range==="next"){
+        const s=addDays(startOfWeek(now),7); return {start:localISODate(s),end:localISODate(addDays(s,6))};
+      }
+      return {start:localISODate(now),end:localISODate(now)};
+    }
+
+    function displayRangeLabel(){
+      const r=getRange(currentRange);
+      const fmt=s=>new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric"}).format(new Date(s+"T12:00:00"));
+      document.getElementById("range-label").textContent = r.start===r.end ? fmt(r.start) : `${fmt(r.start)} – ${fmt(r.end)}`;
+    }
+
+    function classifyEvent(e){
+      const s = `${e.category||""} ${e.event||""}`.toLowerCase();
+      if(/cpi|pce|inflation|price index|ppi|consumer price|producer price/.test(s)) return "Inflation";
+      if(/employment|unemployment|payroll|job|jolts|claims|wage|earnings/.test(s)) return "Labor";
+      if(/central bank|interest rate|rate decision|fed|fomc|ecb|boe|boj|rba|rbnz|snb|monetary/.test(s)) return "Central Bank";
+      if(/oil|gas|energy|crude|eia|inventory/.test(s)) return "Energy";
+      if(/housing|home|mortgage|building permit|construction/.test(s)) return "Housing";
+      if(/trade|export|import|current account/.test(s)) return "Trade";
+      if(/budget|fiscal|government|debt|treasury auction/.test(s)) return "Government";
+      if(/consumer|retail|confidence|sentiment/.test(s)) return "Consumer";
+      if(/gdp|pmi|industrial|manufacturing|services|production|business|orders|activity/.test(s)) return "Growth";
+      return "Other";
+    }
+
+    function impactFromImportance(n){
+      n=Number(n||1);
+      return n>=3 ? "high" : n===2 ? "medium" : "low";
+    }
+
+    function relevantAssets(e){
+      const c=e.country_code;
+      const cat=classifyEvent(e);
+      const map={
+        US:["USD","SPY","Treasuries"], EU:["EUR","DAX","Gold"], UK:["GBP","FTSE 100"],
+        JP:["JPY","Nikkei 225"], CA:["CAD","TSX"], CN:["CNY","Hang Seng","Copper"],
+        AU:["AUD","ASX 200"], CH:["CHF","SMI"], DE:["EUR","DAX"], IN:["INR","Nifty 50"]
+      };
+      let a=[...(map[c]||[])];
+      if(cat==="Inflation"||cat==="Central Bank") a.push("Gold");
+      if(cat==="Energy") a.push("WTI","Brent");
+      if(cat==="Labor"&&c==="US") a.push("Gold");
+      return [...new Set(a)].slice(0,5);
+    }
+
+    function parseProviderDate(v){
+      if(!v) return null;
+      const d=new Date(v);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function timeText(d){
+      if(!d) return "—";
+      try{
+        return new Intl.DateTimeFormat("en-US",{timeZone:settings.timezone,hour:"2-digit",minute:"2-digit",hour12:true}).format(d);
+      }catch{
+        return new Intl.DateTimeFormat("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}).format(d);
+      }
+    }
+
+    function dayKey(d){
+      if(!d) return "";
+      try{
+        const parts=new Intl.DateTimeFormat("en-CA",{timeZone:settings.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
+        const get=t=>parts.find(p=>p.type===t)?.value||"";
+        return `${get("year")}-${get("month")}-${get("day")}`;
+      }catch{return localISODate(d);}
+    }
+
+    function dayLabel(d){
+      if(!d) return "";
+      return new Intl.DateTimeFormat("en-US",{timeZone:settings.timezone,weekday:"long",month:"long",day:"numeric"}).format(d);
+    }
+
+    function esc(v){
+      return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    }
+
+
+    function updateZoneClocks(){
+      const now=new Date();
+      document.querySelectorAll("[data-clock]").forEach(el=>{
+        const tz=el.dataset.clock;
+        try{
+          el.textContent=new Intl.DateTimeFormat("en-US",{
+            timeZone:tz,hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true
+          }).format(now);
+        }catch{el.textContent="—";}
       });
-      if(!res.ok)throw new Error("Economic calendar feed unavailable.");
-      const data=await res.json();
-      const events=(Array.isArray(data.events)?data.events:[])
-        .map(e=>({...e,_assets:countryAssets(e)}))
-        .filter(e=>e._assets.some(a=>tagSet.has(a)))
-        .sort((a,b)=>new Date(a.date)-new Date(b.date))
-        .slice(0,20);
+    }
 
-      if(!events.length){
-        status.textContent="No watchlist-linked economic events are scheduled this week.";
-        list.innerHTML="";
+    function selectedValues(name){
+      return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x=>x.value);
+    }
+
+    function normalizeSettings(v){
+      const s=v&&typeof v==="object"?v:{};
+      return {
+        countries:Array.isArray(s.countries)&&s.countries.length?s.countries:[...DEFAULT_SETTINGS.countries],
+        categories:Array.isArray(s.categories)&&s.categories.length?s.categories:[...DEFAULT_SETTINGS.categories],
+        impacts:Array.isArray(s.impacts)&&s.impacts.length?s.impacts:[...DEFAULT_SETTINGS.impacts],
+        timezone:typeof s.timezone==="string"&&s.timezone?s.timezone:DEFAULT_SETTINGS.timezone,
+        reminder_email:Boolean(s.reminder_email),
+        reminder_sms:Boolean(s.reminder_sms),
+        reminder_desktop:Boolean(s.reminder_desktop),
+        reminder_minutes:Number.isFinite(Number(s.reminder_minutes))?Number(s.reminder_minutes):30,
+        my_markets:Array.isArray(s.my_markets)?s.my_markets:[]
+      };
+    }
+
+    function applySettingsControls(){
+      renderCountrySettings(document.getElementById("country-settings-search")?.value||"");
+      [["saved-category","categories"],["saved-impact","impacts"]].forEach(([name,key])=>{
+        document.querySelectorAll(`input[name="${name}"]`).forEach(i=>i.checked=settings[key].includes(i.value));
+      });
+      document.querySelectorAll('input[name="saved-market"]').forEach(i=>i.checked=settings.my_markets.includes(i.value));
+      document.getElementById("saved-timezone").value=settings.timezone;
+      document.getElementById("default-email-reminder").checked=Boolean(settings.reminder_email);
+      document.getElementById("default-sms-reminder").checked=Boolean(settings.reminder_sms);
+      document.getElementById("default-desktop-reminder").checked=Boolean(settings.reminder_desktop);
+      document.getElementById("default-reminder-minutes").value=String(settings.reminder_minutes||30);
+      document.getElementById("stat-timezone").textContent=TZ_LABELS[settings.timezone]||settings.timezone;
+      document.querySelectorAll(".ec-tz-btn").forEach(btn=>{
+        btn.classList.toggle("active", btn.dataset.timezone===settings.timezone);
+      });
+    }
+
+    function rebuildQuickFilters(){
+      const oldCountry=countryFilter.value;
+      const oldCategory=categoryFilter.value;
+
+      countryFilter.innerHTML='<option value="">All selected countries</option>'+
+        settings.countries.map(c=>`<option value="${c}">${esc(c)} · ${esc(countryName(c))}</option>`).join("");
+      if(settings.countries.includes(oldCountry)) countryFilter.value=oldCountry;
+
+      const cats=[...new Set(allEvents.map(classifyEvent).filter(c=>settings.categories.includes(c)))].sort();
+      categoryFilter.innerHTML='<option value="">All classifications</option>'+
+        cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+      if(cats.includes(oldCategory)) categoryFilter.value=oldCategory;
+    }
+
+    function visibleEvents(){
+      const q=search.value.trim().toLowerCase();
+      const now=Date.now();
+      const myOnly=document.getElementById("my-markets-only")?.checked;
+      return allEvents
+        .filter(e=>!upcomingOnly || (parseProviderDate(e.date)?.getTime()||0) >= now)
+        .filter(e=>settings.countries.includes(e.country_code))
+        .filter(e=>settings.impacts.includes(impactFromImportance(e.importance)))
+        .filter(e=>settings.categories.includes(classifyEvent(e)))
+        .filter(e=>!myOnly ||
+          (watchlistMarketTags.size ? eventMatchesWatchlist(e) :
+            (!settings.my_markets.length || relevantAssets(e).some(a=>settings.my_markets.includes(a)))))
+        .filter(e=>!countryFilter.value||e.country_code===countryFilter.value)
+        .filter(e=>!impactFilter.value||impactFromImportance(e.importance)===impactFilter.value)
+        .filter(e=>!categoryFilter.value||classifyEvent(e)===categoryFilter.value)
+        .filter(e=>!q||`${e.event||""} ${e.category||""} ${e.country||""} ${e.currency||""}`.toLowerCase().includes(q))
+        .sort((a,b)=>(parseProviderDate(a.date)?.getTime()||0)-(parseProviderDate(b.date)?.getTime()||0));
+    }
+
+    function formatValue(v,unit){
+      if(v===null||v===undefined||v==="") return "—";
+      let s=String(v);
+      if(unit && !/[a-z%]$/i.test(s) && !["","Points","Index Points"].includes(unit)) s+=unit==="%"?"%":` ${unit}`;
+      return esc(s);
+    }
+
+    function actualClass(e){
+      const a=parseFloat(String(e.actual).replace(/[^0-9.-]/g,""));
+      const f=parseFloat(String(e.forecast).replace(/[^0-9.-]/g,""));
+      if(!Number.isFinite(a)||!Number.isFinite(f)||a===f) return "";
+      return a>f?"actual-up":"actual-down";
+    }
+
+    function render(){
+      rebuildQuickFilters();
+      const rows=visibleEvents();
+      const now=Date.now();
+      const future=rows.filter(e=>(parseProviderDate(e.date)?.getTime()||0)>=now);
+      const next=future[0]||null;
+
+      document.getElementById("stat-events").textContent=rows.length;
+      document.getElementById("stat-high").textContent=rows.filter(e=>impactFromImportance(e.importance)==="high").length;
+      document.getElementById("stat-next").textContent=next?timeText(parseProviderDate(next.date)):"—";
+      document.getElementById("stat-next-name").textContent=next?next.event:"No upcoming event in view";
+
+      if(!rows.length){
+        body.innerHTML='<tr><td colspan="10" class="ec-empty">No events match your current settings and filters.</td></tr>';
+        updateCountdown();
         return;
       }
 
-      status.textContent=`${events.length} watchlist-linked economic event${events.length===1?"":"s"} this week.`;
-      list.innerHTML=events.map(e=>{
-        const rel=e._assets.filter(a=>tagSet.has(a));
-        const imp=impact(e);
-        const q=encodeURIComponent(e.event||e.category||"");
-        return `<article class="watchlist-economic-row">
-          <div><strong>${esc(when(e))}</strong><small>${esc(e.country||e.country_code||"")}</small></div>
-          <div class="watchlist-economic-impact ${impactClass(imp)}">${esc(imp)}</div>
-          <div><strong>${esc(e.event||e.category||"Economic event")}</strong><small>${esc(e.category||"")}</small></div>
-          <div class="watchlist-economic-assets">${rel.map(a=>`<span class="watchlist-economic-chip">${esc(a)}</span>`).join("")}</div>
-          <a class="watchlist-economic-link" href="economic-calendar.html?q=${q}">View</a>
-        </article>`;
-      }).join("");
-    }catch(err){
-      console.error(err);
-      status.textContent="Economic events could not be loaded right now.";
+      let lastDay="";
+      let html="";
+      for(const e of rows){
+        const d=parseProviderDate(e.date);
+        const dk=dayKey(d);
+        if(dk!==lastDay){
+          html+=`<tr class="ec-day-row"><td colspan="10">${esc(dayLabel(d))}</td></tr>`;
+          lastDay=dk;
+        }
+        const impact=impactFromImportance(e.importance);
+        const c=displayCountry(e);
+        const assets=relevantAssets(e);
+        html+=`
+          <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
+            <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
+            <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code||"")}</strong> ${esc(c.name)}</span></td>
+            <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
+            <td class="ec-event">
+              <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(e.event||e.category||"Economic event")}</button>
+              <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(eventUIKey(e))}">i</button>
+              <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
+            </td>
+            <td class="value ${actualClass(e)}">${formatValue(e.actual,e.unit)}</td>
+            <td class="value">${formatValue(e.forecast||e.te_forecast,e.unit)}</td>
+            <td class="value muted">${formatValue(e.previous,e.unit)}</td>
+            <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
+            <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
+            <td class="ec-actions-cell">
+              <div class="ec-event-actions">
+                <button class="ec-icon-btn" type="button" title="Add to calendar" aria-label="Add to calendar" data-action="calendar" data-event-id="${esc(eventUIKey(e))}">📅</button>
+                <button class="ec-icon-btn" type="button" title="Email reminder using your saved reminder time" aria-label="Email reminder" aria-pressed="false" data-action="email" data-event-id="${esc(eventUIKey(e))}">✉</button>
+                <button class="ec-icon-btn" type="button" title="Text reminder using your saved reminder time" aria-label="Text reminder" aria-pressed="false" data-action="sms" data-event-id="${esc(eventUIKey(e))}">📱</button>
+                <button class="ec-icon-btn" type="button" title="Desktop notification using your saved reminder time" aria-label="Desktop notification" aria-pressed="false" data-action="desktop" data-event-id="${esc(eventUIKey(e))}">🔔</button>
+              </div>
+            </td>
+          </tr>`;
+      }
+      body.innerHTML=html;
+      applyReminderButtonStates();
+      updateCountdown();
+      setTimeout(hydrateVisibleSparklines,0);
     }
-  }
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",load,{once:true});
-  else load();
-})();
+    function setStatus(kind,text){
+      feedStatus.className=`ec-badge ${kind||""}`.trim();
+      feedStatus.textContent=text;
+    }
+
+    function updateCountdown(){
+      const now=Date.now();
+      const next=visibleEvents().find(e=>(parseProviderDate(e.date)?.getTime()||0)>=now);
+      const badge=document.getElementById("countdown-badge");
+      if(!next){ badge.textContent="Next event: —"; return; }
+      const ms=parseProviderDate(next.date).getTime()-now;
+      const mins=Math.max(0,Math.floor(ms/60000));
+      const days=Math.floor(mins/1440), hrs=Math.floor((mins%1440)/60), mm=mins%60;
+      let t=days>0?`${days}d ${hrs}h`:hrs>0?`${hrs}h ${mm}m`:`${mm}m`;
+      badge.textContent=`Next event: ${t}`;
+    }
+
+
+    function numericValue(v){
+      if(v===null||v===undefined||v==="") return null;
+      const n=parseFloat(String(v).replace(/[^0-9.+-]/g,""));
+      return Number.isFinite(n)?n:null;
+    }
+
+    function historyKey(e){
+      return `${e.country||e.country_code}|${e.event||e.category}`;
+    }
+
+    async function fetchEventHistory(e){
+      const key=historyKey(e);
+      if(historyCache.has(key)) return historyCache.get(key);
+
+      const storageKey=HISTORY_CACHE_PREFIX+key;
+      try{
+        const raw=localStorage.getItem(storageKey);
+        if(raw){
+          const cached=JSON.parse(raw);
+          if(cached && cached.saved_at && Date.now()-cached.saved_at<24*60*60*1000){
+            historyCache.set(key,cached.result);
+            return cached.result;
+          }
+        }
+      }catch(_err){}
+
+      let result={history:[],mode:"unavailable"};
+      try{
+        const res=await fetch(DETAIL_HISTORY_URL,{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify({
+            event:e.event||e.category,
+            series_id:e.series_id||e.eventId||"",
+            category:e.category||"",
+            country:e.country||countryName(e.country_code),
+            country_code:normalizedCountryCode(e),
+            date:e.date||""
+          })
+        });
+        if(res.ok) result=await res.json();
+      }catch(err){
+        console.warn("Event history unavailable",err);
+      }
+
+      historyCache.set(key,result);
+      try{
+        localStorage.setItem(storageKey,JSON.stringify({saved_at:Date.now(),result}));
+      }catch(_err){}
+      return result;
+    }
+
+
+
+    function dedupeHistoryByMonth(history){
+      const byMonth=new Map();
+      (history||[]).forEach(row=>{
+        const d=parseProviderDate(row.date);
+        if(!d) return;
+        const key=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+        const completeness=[row.actual,row.forecast,row.previous,row.revised].filter(v=>v!==null&&v!==undefined&&String(v)!=="").length;
+        const prev=byMonth.get(key);
+        if(!prev || completeness>prev.completeness || (completeness===prev.completeness && d>prev.date)){
+          byMonth.set(key,{...row,_month:key,completeness,date:d});
+        }
+      });
+      return [...byMonth.values()]
+        .sort((a,b)=>a.date-b.date)
+        .map(({_month,completeness,...row})=>row);
+    }
+
+    function usableHistoryMonths(history){
+      return dedupeHistoryByMonth(history).filter(x=>{
+        return numericValue(x.actual)!==null ||
+               numericValue(x.previous)!==null ||
+               numericValue(x.forecast)!==null;
+      });
+    }
+
+    function drawCanvasLine(host,history,series="actual"){
+      if(!host) return;
+      const monthHistory=dedupeHistoryByMonth(history);
+      const rows=monthHistory.map(x=>{
+        let chosenSeries=series;
+        let value=null;
+
+        if(series==="history"){
+          const av=numericValue(x.actual);
+          const pv=numericValue(x.previous);
+          const fv=numericValue(x.forecast);
+          if(av!==null){value=av;chosenSeries="actual";}
+          else if(pv!==null){value=pv;chosenSeries="previous";}
+          else if(fv!==null){value=fv;chosenSeries="forecast";}
+        }else{
+          value=numericValue(x[series]);
+        }
+
+        return {
+          date:parseProviderDate(x.date),
+          value,
+          chosenSeries,
+          actual:x.actual,
+          forecast:x.forecast,
+          previous:x.previous,
+          unit:x.unit||""
+        };
+      }).filter(x=>x.date&&x.value!==null).sort((a,b)=>a.date-b.date);
+
+      if(rows.length<1){
+        host.innerHTML='<div class="ec-detail-loading" style="width:100%;align-self:center">No historical series available for this event yet.</div>';
+        const callout=document.getElementById("event-chart-callout");
+        if(callout) callout.hidden=true;
+        return;
+      }
+
+      const vals=rows.map(x=>x.value);
+      let min=Math.min(...vals),max=Math.max(...vals);
+      if(min===max){min-=1;max+=1;}
+      const range=max-min||1;
+
+      host.innerHTML=rows.map((r,i)=>{
+        const pct=Math.max(4,((r.value-min)/range)*82+8);
+        const dateLabel=new Intl.DateTimeFormat("en-US",{month:"short",year:"2-digit"}).format(r.date);
+        return `<button class="ec-hist-col" type="button"
+          data-hist-index="${i}"
+          aria-label="${esc(dateLabel)} ${esc(String(r.value))}">
+          <span class="ec-hist-value" style="--bar-h:${pct}%">${esc(String(r.value))}</span>
+          <span class="ec-hist-bar" style="height:${pct}%"></span>
+          <span class="ec-hist-label">${esc(dateLabel)}</span>
+        </button>`;
+      }).join("");
+
+      const callout=document.getElementById("event-chart-callout");
+      host.querySelectorAll(".ec-hist-col").forEach(btn=>{
+        const show=()=>{
+          const r=rows[Number(btn.dataset.histIndex)];
+          const rect=btn.getBoundingClientRect();
+          const wrap=host.parentElement.getBoundingClientRect();
+          callout.innerHTML=`
+            <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
+            ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
+            Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}
+          `;
+          callout.hidden=false;
+          const left=Math.max(8,Math.min(rect.left-wrap.left,wrap.width-220));
+          const top=Math.max(8,rect.top-wrap.top-76);
+          callout.style.left=left+"px";
+          callout.style.top=top+"px";
+        };
+        btn.addEventListener("mouseenter",show);
+        btn.addEventListener("focus",show);
+        btn.addEventListener("click",show);
+        btn.addEventListener("mouseleave",()=>{callout.hidden=true});
+        btn.addEventListener("blur",()=>{callout.hidden=true});
+      });
+    }
+
+    function drawSparkline(host,history){
+      const rows=dedupeHistoryByMonth(history).map(x=>numericValue(x.actual)).filter(v=>v!==null);
+      if(rows.length<2){
+        host.textContent="No history";
+        return;
+      }
+
+      const canvas=document.createElement("canvas");
+      canvas.className="ec-spark";
+      canvas.title="12-month historical trend";
+      host.replaceWith(canvas);
+
+      requestAnimationFrame(()=>{
+        const rect=canvas.getBoundingClientRect();
+        const dpr=window.devicePixelRatio||1;
+        canvas.width=Math.max(1,Math.floor(rect.width*dpr));
+        canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+        const ctx=canvas.getContext("2d");
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+
+        const w=rect.width,h=rect.height,pad=3;
+        let min=Math.min(...rows),max=Math.max(...rows);
+        if(min===max){min-=1;max+=1;}
+        const accent=getComputedStyle(document.body).getPropertyValue("--ec-accent").trim()||"#365cff";
+
+        ctx.clearRect(0,0,w,h);
+        ctx.strokeStyle=accent;
+        ctx.lineWidth=1.5;
+        ctx.beginPath();
+        rows.forEach((v,i)=>{
+          const x=pad+(w-pad*2)*(i/(rows.length-1));
+          const y=h-pad-((v-min)/(max-min))*(h-pad*2);
+          if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+      });
+    }
+
+    function hydrateVisibleSparklines(){
+      const hosts=[...document.querySelectorAll("[data-spark-event]")];
+      if(!hosts.length) return;
+
+      const loadHost=async host=>{
+        if(!host.isConnected || host.dataset.historyLoading==="1") return;
+        host.dataset.historyLoading="1";
+        const e=eventById(host.dataset.sparkEvent);
+        if(!e){host.textContent="—";return;}
+
+        try{
+          const result=await fetchEventHistory(e);
+          if(!host.isConnected) return;
+          const history=result?.history||[];
+          if(history.length){
+            drawSparkline(host,history);
+          }else{
+            host.textContent="—";
+            host.classList.add("muted");
+          }
+        }catch(err){
+          if(host.isConnected) host.textContent="—";
+        }
+      };
+
+      if("IntersectionObserver" in window){
+        const observer=new IntersectionObserver(entries=>{
+          entries.forEach(entry=>{
+            if(entry.isIntersecting){
+              observer.unobserve(entry.target);
+              loadHost(entry.target);
+            }
+          });
+        },{rootMargin:"220px 0px"});
+        hosts.forEach(h=>observer.observe(h));
+      }else{
+        hosts.forEach(loadHost);
+      }
+    }
+
+
+    function formatNewsDate(v){
+      if(!v)return "";
+      const d=new Date(v);
+      if(Number.isNaN(d.getTime()))return "";
+      return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric"}).format(d);
+    }
+
+    async function loadRelatedNews(e){
+      const host=document.getElementById("event-related-news");
+      host.innerHTML='<div class="ec-detail-loading">Loading related news…</div>';
+
+      if(!window.psdSupabase?.functions?.invoke){
+        host.innerHTML='<div class="ec-detail-loading">Related news is unavailable.</div>';
+        return;
+      }
+
+      const eventTerms=(e.event||e.category||"")
+        .replace(/\b(yoy|mom|qoq|index|rate|change|m\/m|y\/y)\b/gi," ")
+        .replace(/\s+/g," ")
+        .trim();
+
+      const c=displayCountry(e);
+      const fallbackTerms=[
+        classifyEvent(e),
+        e.category||"",
+        c.name||"",
+        c.code||""
+      ].filter(Boolean).join(" ").trim();
+
+      async function archiveSearch(q,limit=8){
+        if(!q) return [];
+        const {data,error}=await window.psdSupabase.functions.invoke("market-archive-search-v2",{
+          body:{action:"news",query:q,limit,offset:0}
+        });
+        if(error) throw error;
+        return Array.isArray(data?.data)?data.data:[];
+      }
+
+      try{
+        let rows=await archiveSearch(eventTerms,10);
+
+        if(rows.length<3 && fallbackTerms){
+          const fallbackRows=await archiveSearch(fallbackTerms,10);
+          const seen=new Set(rows.map(x=>x.url||x.id||x.title));
+          for(const item of fallbackRows){
+            const key=item.url||item.id||item.title;
+            if(!seen.has(key)){
+              rows.push(item);
+              seen.add(key);
+            }
+            if(rows.length>=5) break;
+          }
+        }
+
+        rows=rows.slice(0,5);
+
+        if(!rows.length){
+          host.innerHTML=`
+            <div class="ec-detail-loading">
+              No closely related archived article was found.<br>
+              <small>Showing event context instead.</small>
+            </div>
+            <div class="ec-news-card" role="note">
+              <strong>${esc(classifyEvent(e))} · ${esc(c.name||"Global")}</strong>
+              <small>${esc(glossaryFor(e).text)}</small>
+            </div>`;
+          return;
+        }
+
+        host.innerHTML=rows.map(n=>`
+          <a class="ec-news-card" href="${esc(n.url||"#")}" target="_blank" rel="noopener">
+            <strong>${esc(n.title||"Related news")}</strong>
+            <small>${esc(n.canonical_source||n.source||"")} ${n.published_at?`· ${esc(formatNewsDate(n.published_at))}`:""}</small>
+          </a>`).join("");
+      }catch(err){
+        console.warn("Related news load failed",err);
+        host.innerHTML=`
+          <div class="ec-detail-loading">Related news is temporarily unavailable.</div>
+          <div class="ec-news-card" role="note">
+            <strong>${esc(classifyEvent(e))} · ${esc(displayCountry(e).name||"Global")}</strong>
+            <small>${esc(glossaryFor(e).text)}</small>
+          </div>`;
+      }
+    }
+
+
+    let activeEconomicGlossaryButton=null;
+
+    function economicGlossaryPopover(){
+      let pop=document.getElementById("psdGlossaryPopover");
+      if(pop) return pop;
+      pop=document.createElement("div");
+      pop.id="psdGlossaryPopover";
+      pop.className="psd-glossary-popover";
+      pop.setAttribute("role","dialog");
+      pop.setAttribute("aria-live","polite");
+      pop.hidden=true;
+      pop.innerHTML='<button class="psd-glossary-close" type="button" aria-label="Close explanation">×</button><div class="psd-glossary-title"></div><p class="psd-glossary-text"></p>';
+      document.body.appendChild(pop);
+      pop.querySelector(".psd-glossary-close").addEventListener("click",closeEconomicGlossary);
+      return pop;
+    }
+
+    function closeEconomicGlossary(){
+      const pop=document.getElementById("psdGlossaryPopover");
+      if(pop) pop.hidden=true;
+      if(activeEconomicGlossaryButton) activeEconomicGlossaryButton.setAttribute("aria-expanded","false");
+      activeEconomicGlossaryButton=null;
+    }
+
+    function positionEconomicGlossary(pop,button){
+      const rect=button.getBoundingClientRect();
+      const width=pop.offsetWidth,height=pop.offsetHeight,gap=8;
+      let left=Math.min(rect.left,window.innerWidth-width-12);
+      left=Math.max(12,left);
+      let top=rect.bottom+gap;
+      if(top+height>window.innerHeight-12) top=Math.max(12,rect.top-height-gap);
+      pop.style.left=left+"px";
+      pop.style.top=top+"px";
+    }
+
+    function openEconomicGlossary(button,e){
+      const g=glossaryFor(e);
+      const pop=economicGlossaryPopover();
+      if(activeEconomicGlossaryButton===button){
+        closeEconomicGlossary();
+        return;
+      }
+      if(activeEconomicGlossaryButton) activeEconomicGlossaryButton.setAttribute("aria-expanded","false");
+      activeEconomicGlossaryButton=button;
+      button.setAttribute("aria-expanded","true");
+      pop.querySelector(".psd-glossary-title").textContent=g.title;
+      pop.querySelector(".psd-glossary-text").textContent=g.text;
+      pop.hidden=false;
+      positionEconomicGlossary(pop,button);
+    }
+
+
+    function historicalForecastStats(history){
+      const errors=dedupeHistoryByMonth(history).map(x=>{
+        const a=numericValue(x.actual);
+        const f=numericValue(x.forecast);
+        if(a===null||f===null) return null;
+        return a-f;
+      }).filter(v=>v!==null);
+
+      if(!errors.length) return {count:0,mean:0,sd:0,mae:null};
+      const mean=errors.reduce((a,b)=>a+b,0)/errors.length;
+      const variance=errors.reduce((s,x)=>s+Math.pow(x-mean,2),0)/errors.length;
+      const sd=Math.sqrt(variance);
+      const mae=errors.reduce((s,x)=>s+Math.abs(x),0)/errors.length;
+      return {count:errors.length,mean,sd,mae};
+    }
+
+    function currentSurpriseScore(e,history){
+      const a=numericValue(e.actual);
+      const f=numericValue(e.forecast||e.te_forecast);
+      if(a===null||f===null) return null;
+      const stats=historicalForecastStats(history);
+      const raw=a-f;
+      if(stats.sd>0 && stats.count>=3){
+        return {value:raw/stats.sd,label:"σ",raw,method:"Historical forecast-error standard deviation"};
+      }
+      const denom=Math.max(Math.abs(f),1e-9);
+      return {value:(raw/denom)*100,label:"%",raw,method:"Percent difference vs forecast"};
+    }
+
+    function forecastAccuracy(history){
+      const pairs=dedupeHistoryByMonth(history).map(x=>{
+        const a=numericValue(x.actual),f=numericValue(x.forecast);
+        return a===null||f===null?null:{a,f};
+      }).filter(Boolean);
+      if(!pairs.length) return null;
+      const ape=pairs.map(x=>Math.abs(x.a-x.f)/Math.max(Math.abs(x.a),1e-9));
+      const mape=ape.reduce((a,b)=>a+b,0)/ape.length;
+      return {score:Math.max(0,Math.min(100,100-(mape*100))),count:pairs.length,mape:mape*100};
+    }
+
+    function intelligenceScore(e,history){
+      const impact=impactFromImportance(e.importance);
+      const impactPts=impact==="high"?45:impact==="medium"?30:15;
+      const surprise=currentSurpriseScore(e,history);
+      let surprisePts=0;
+      if(surprise){
+        const mag=Math.abs(surprise.label==="σ"?surprise.value:surprise.value/25);
+        surprisePts=Math.min(25,mag*10);
+      }
+      const acc=forecastAccuracy(history);
+      const reliabilityPts=acc?Math.min(15,(acc.count/8)*15):0;
+      const breadthPts=Math.min(15,relevantAssets(e).length*3);
+      return Math.round(Math.min(100,impactPts+surprisePts+reliabilityPts+breadthPts));
+    }
+
+    function updateEventAnalytics(e,history){
+      const surprise=currentSurpriseScore(e,history);
+      const acc=forecastAccuracy(history);
+      const intel=intelligenceScore(e,history);
+
+      const surpriseEl=document.getElementById("analytics-surprise");
+      const surpriseNote=document.getElementById("analytics-surprise-note");
+      if(surprise){
+        surpriseEl.textContent=(surprise.value>=0?"+":"")+surprise.value.toFixed(2)+surprise.label;
+        surpriseNote.textContent=surprise.method;
+      }else{
+        surpriseEl.textContent="Pending";
+        surpriseNote.textContent="Available when Actual and Forecast are both published";
+      }
+
+      const accEl=document.getElementById("analytics-accuracy");
+      const accNote=document.getElementById("analytics-accuracy-note");
+      if(acc){
+        accEl.textContent=Math.round(acc.score)+"%";
+        accNote.textContent=`Based on ${acc.count} historical releases · avg error ${acc.mape.toFixed(1)}%`;
+      }else{
+        accEl.textContent="—";
+        accNote.textContent="Not enough forecast history";
+      }
+
+      document.getElementById("analytics-intelligence").textContent=intel+"/100";
+    }
+
+    function reactionClass(v){
+      if(v===null||v===undefined||!Number.isFinite(v)) return "ec-zero";
+      if(v>0) return "ec-pos";
+      if(v<0) return "ec-neg";
+      return "ec-zero";
+    }
+
+    function reactionText(v){
+      if(v===null||v===undefined||!Number.isFinite(v)) return "—";
+      return `${v>0?"+":""}${v.toFixed(2)}%`;
+    }
+
+    async function loadMarketReaction(e){
+      const host=document.getElementById("event-market-reaction");
+      const d=parseProviderDate(e.date);
+      if(!d){host.textContent="Market reaction is unavailable for this event.";return;}
+      const assets=relevantAssets(e).slice(0,5);
+      if(!assets.length){host.textContent="No mapped market assets for this event yet.";return;}
+
+      try{
+        const res=await fetch(REACTION_URL,{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify({event_time:d.toISOString(),assets})
+        });
+        const data=await res.json();
+        if(data.mode==="future"){
+          host.textContent="Market reaction will populate after the release.";
+          return;
+        }
+        const rows=Array.isArray(data.reactions)?data.reactions:[];
+        if(!rows.length){
+          host.textContent="Intraday market reaction is not available for this event yet.";
+          return;
+        }
+        host.innerHTML=`
+          <div class="ec-reaction-grid">
+            <div class="head">Asset</div><div class="head">+5m</div><div class="head">+30m</div><div class="head">+1h</div><div class="head">+1d</div>
+            ${rows.map(r=>`
+              <div><strong>${esc(r.asset)}</strong></div>
+              <div class="${reactionClass(r.changes?.["5m"])}">${reactionText(r.changes?.["5m"])}</div>
+              <div class="${reactionClass(r.changes?.["30m"])}">${reactionText(r.changes?.["30m"])}</div>
+              <div class="${reactionClass(r.changes?.["1h"])}">${reactionText(r.changes?.["1h"])}</div>
+              <div class="${reactionClass(r.changes?.["1d"])}">${reactionText(r.changes?.["1d"])}</div>
+            `).join("")}
+          </div>
+          <div class="ec-reminder-note" style="margin-top:6px">Price reaction is measured from the closest available market price around the scheduled release time.</div>`;
+      }catch(err){
+        console.warn("Market reaction load failed",err);
+        host.textContent="Market reaction is temporarily unavailable.";
+      }
+    }
+
+    function fillModalBase(e){
+      const g=glossaryFor(e);
+      const d=parseProviderDate(e.date);
+      const c=displayCountry(e);
+
+      document.getElementById("event-modal-title").textContent=
+        e.event||e.category||"Economic Event";
+
+      document.getElementById("event-modal-sub").innerHTML=
+        `${flagMarkup(c.code,c.name)} <strong>${esc(c.code||"")}</strong> ${esc(c.name||"Global")} · ${esc(timeText(d))} · ${esc(TZ_LABELS[settings.timezone]||settings.timezone)}`;
+
+      document.getElementById("event-modal-definition").innerHTML=
+        `<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
+
+      document.getElementById("analytics-surprise").textContent="—";
+      document.getElementById("analytics-accuracy").textContent="—";
+      document.getElementById("analytics-intelligence").textContent=Math.round((impactFromImportance(e.importance)==="high"?45:impactFromImportance(e.importance)==="medium"?30:15)+Math.min(15,relevantAssets(e).length*3))+"/100";
+      document.getElementById("event-market-reaction").textContent="Loading market reaction…";
+
+      document.getElementById("event-modal-kpis").innerHTML=`
+        <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
+        <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast||e.te_forecast,e.unit)}</strong></div>
+        <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,e.unit)}</strong></div>
+        <div class="ec-kpi"><span>Impact</span><strong>${esc(impactFromImportance(e.importance))}</strong></div>`;
+
+      const classification=classifyEvent(e);
+      const surpriseActual=numericValue(e.actual);
+      const surpriseForecast=numericValue(e.forecast||e.te_forecast);
+      const previousNumeric=numericValue(e.previous);
+      let surpriseText="Actual has not been released yet.";
+      if(surpriseActual!==null && surpriseForecast!==null){
+        const diff=surpriseActual-surpriseForecast;
+        surpriseText=diff===0
+          ? "Actual matched the forecast."
+          : `Actual was ${Math.abs(diff).toLocaleString()} ${diff>0?"above":"below"} forecast.`;
+      }
+      let trendText="";
+      if(surpriseActual!==null && previousNumeric!==null){
+        const diff=surpriseActual-previousNumeric;
+        trendText=diff===0
+          ? " It was unchanged from the previous reading."
+          : ` It was ${diff>0?"higher":"lower"} than the previous reading.`;
+      }
+      const watchMatches=relevantAssets(e).filter(a=>watchlistMarketTags.has(a));
+      document.getElementById("event-modal-context").innerHTML=`
+        <strong>${esc(classification)} · ${esc(c.name||"Global")}</strong><br>
+        ${esc(surpriseText+trendText)}
+        ${e.reference?`<br>Reference period: ${esc(e.reference)}`:""}
+        ${watchMatches.length?`<br><strong>In your Watchlist:</strong> ${watchMatches.map(esc).join(", ")}`:""}`;
+
+      const src=e.source||"Economic calendar provider";
+      const sourceUrl=e.source_url||"";
+      document.getElementById("event-modal-source").innerHTML=`
+        <strong>${esc(src)}</strong><br>
+        ${e.reference?`Reference: ${esc(e.reference)}<br>`:""}
+        ${e.category?`Provider category: ${esc(e.category)}<br>`:""}
+        Classification: ${esc(classifyEvent(e))}
+        ${e.currency?` · Currency: ${esc(e.currency)}`:""}
+        ${e.unit?` · Unit: ${esc(e.unit)}`:""}
+        ${sourceUrl?`<br><a href="${esc(sourceUrl)}" target="_blank" rel="noopener">Open source</a>`:""}
+        ${currentUser?`<br><a href="watchlist.html">Open My Watchlist</a>`:""}`;
+    }
+
+    async function openEventModal(e){
+      activeModalEvent=e;
+      activeChartSeries="history";
+
+      const backdrop=document.getElementById("event-modal-backdrop");
+      backdrop.classList.add("open");
+      backdrop.setAttribute("aria-hidden","false");
+      document.body.style.overflow="hidden";
+
+      try{
+        fillModalBase(e);
+      }catch(err){
+        console.error("Event detail render failed",err);
+        document.getElementById("event-modal-title").textContent=e.event||"Economic Event";
+        document.getElementById("event-modal-sub").textContent=e.country||"";
+        document.getElementById("event-modal-definition").textContent=
+          "Event details are available from the calendar row. Additional detail is loading.";
+      }
+
+      document.querySelectorAll(".ec-chart-toggle").forEach(b=>
+        b.classList.toggle("active",b.dataset.chartSeries==="history")
+      );
+
+      const chart=document.getElementById("event-big-chart");
+      const note=document.getElementById("event-history-note");
+      note.textContent="Loading 12-month event history…";
+      drawCanvasLine(chart,[],"actual");
+
+      const newsHost=document.getElementById("event-related-news");
+      newsHost.innerHTML='<div class="ec-detail-loading">Loading related news…</div>';
+
+      // Load history and news independently so one failure never empties the popup.
+      fetchEventHistory(e).then(hist=>{
+        if(activeModalEvent!==e) return;
+        drawCanvasLine(chart,hist?.history||[],activeChartSeries);
+        updateEventAnalytics(e,hist?.history||[]);
+        if(hist?.mode==="configured"){
+          const monthly=usableHistoryMonths(hist.history||[]);
+          const count=monthly.length;
+          const coverage=`${Math.min(count,12)}/12 months currently available`;
+          if(hist.history_kind==="repository"){
+            note.textContent=`Official history · ${hist.source||"stored repository"} · ${coverage}.`;
+          }else if(hist.history_kind==="related"){
+            note.textContent=`Related history · ${hist.related_event_name||"closely matched indicator"} · ${coverage}.`;
+          }else{
+            note.textContent=`Exact history · ${coverage}.`;
+          }
+        }else{
+          note.textContent="Historical releases are not available for this event yet.";
+        }
+      }).catch(err=>{
+        console.warn("History load failed",err);
+        if(activeModalEvent===e){
+          note.textContent="Historical releases are temporarily unavailable.";
+        }
+      });
+
+      loadMarketReaction(e);
+      loadRelatedNews(e).catch(err=>{
+        console.warn("Related news load failed",err);
+        if(activeModalEvent===e){
+          newsHost.innerHTML='<div class="ec-detail-loading">No related news available right now.</div>';
+        }
+      });
+    }
+
+    function closeEventModal(){
+      document.getElementById("event-modal-backdrop").classList.remove("open");
+      document.getElementById("event-modal-backdrop").setAttribute("aria-hidden","true");
+      document.body.style.overflow="";
+      activeModalEvent=null;
+    }
+
+
+    async function findNextUpcomingDate(){
+      const start=localISODate(addDays(new Date(),1));
+      const end=localISODate(addDays(new Date(),14));
+      try{
+        const res=await fetch(FEED_URL,{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify({start,end,countries:settings.countries})
+        });
+        if(!res.ok) return null;
+        const data=await res.json();
+        const rows=Array.isArray(data.events)?data.events:[];
+        if(!rows.length) return null;
+        const first=rows
+          .map(e=>({e,d:parseProviderDate(e.date)}))
+          .filter(x=>x.d)
+          .sort((a,b)=>a.d-b.d)[0];
+        if(!first) return null;
+        return {
+          date:localISODate(first.d),
+          label:new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric"}).format(first.d),
+          count:rows.filter(e=>{
+            const d=parseProviderDate(e.date);
+            return d && localISODate(d)===localISODate(first.d);
+          }).length
+        };
+      }catch(err){
+        console.warn("Next event lookup failed",err);
+        return null;
+      }
+    }
+
+    async function showNextUpcomingNotice(){
+      const host=document.getElementById("ec-next-up");
+      if(!host) return;
+      host.classList.remove("show");
+      host.innerHTML="";
+      const next=await findNextUpcomingDate();
+      if(!next) return;
+      host.innerHTML=`<strong>No events scheduled for the selected date.</strong> Next scheduled events: ${esc(next.label)} (${next.count} event${next.count===1?"":"s"}).
+        <button type="button" id="open-next-date">Show next events</button>`;
+      host.classList.add("show");
+      document.getElementById("open-next-date").addEventListener("click",async()=>{
+        document.getElementById("custom-from").value=next.date;
+        document.getElementById("custom-to").value=next.date;
+        customRange={start:next.date,end:next.date};
+        currentRange="custom";
+        document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+        await loadFeed();
+      });
+    }
+
+
+    function weekCacheKey(){
+      return JSON.stringify({
+        timezone:settings.timezone,
+        countries:[...settings.countries].sort()
+      });
+    }
+
+    function dateKeyInTimezone(dateObj,tz){
+      const parts=new Intl.DateTimeFormat("en-CA",{
+        timeZone:tz,
+        year:"numeric",month:"2-digit",day:"2-digit"
+      }).formatToParts(dateObj);
+      const get=t=>parts.find(p=>p.type===t)?.value||"";
+      return `${get("year")}-${get("month")}-${get("day")}`;
+    }
+
+    function filterEventsToDateRange(events,range){
+      return (events||[]).filter(e=>{
+        const d=parseProviderDate(e.date);
+        if(!d) return false;
+        const key=dateKeyInTimezone(d,settings.timezone);
+        return key>=range.start && key<=range.end;
+      });
+    }
+
+    async function preloadWeekInBackground(force=false){
+      const range=getRange("week");
+      const key=weekCacheKey();
+
+      if(!force && weekPreloadCache &&
+         weekPreloadCache.start===range.start &&
+         weekPreloadCache.end===range.end &&
+         weekPreloadCache.key===key){
+        return weekPreloadCache;
+      }
+
+      if(weekPreloadPromise && !force) return weekPreloadPromise;
+
+      weekPreloadPromise=(async()=>{
+        try{
+          const res=await fetch(FEED_URL,{
+            method:"POST",
+            headers:{"content-type":"application/json"},
+            body:JSON.stringify({
+              start:range.start,
+              end:range.end,
+              countries:settings.countries
+            }),
+            cache:"no-store"
+          });
+          if(!res.ok) return null;
+          const data=await res.json();
+          weekPreloadCache={
+            start:range.start,
+            end:range.end,
+            key,
+            data,
+            fetchedAt:new Date()
+          };
+          return weekPreloadCache;
+        }catch(err){
+          console.warn("Week preload failed",err);
+          return null;
+        }finally{
+          weekPreloadPromise=null;
+        }
+      })();
+
+      return weekPreloadPromise;
+    }
+
+
+    function saveWeekCache(data,range){
+      try{
+        localStorage.setItem(WEEK_CACHE_KEY,JSON.stringify({
+          saved_at:Date.now(),
+          range,
+          countries:[...settings.countries].sort(),
+          data
+        }));
+      }catch(_err){}
+    }
+
+    function getWeekCache(range){
+      try{
+        const raw=localStorage.getItem(WEEK_CACHE_KEY);
+        if(!raw) return null;
+        const cached=JSON.parse(raw);
+        if(!cached?.data?.events || !cached.range) return null;
+        const sameRange=cached.range.start===range.start && cached.range.end===range.end;
+        const sameCountries=JSON.stringify(cached.countries||[])===JSON.stringify([...settings.countries].sort());
+        if(!sameRange||!sameCountries) return null;
+        return cached;
+      }catch(_err){
+        return null;
+      }
+    }
+
+    async function loadFeed(manual=false){
+      const r=getRange(currentRange);
+      displayRangeLabel();
+
+      if(!manual && currentRange==="week"){
+        const cached=getWeekCache(r);
+        if(cached){
+          allEvents=Array.isArray(cached.data.events)?cached.data.events:[];
+          ensureEventUIKeys();
+          lastFetchAt=new Date(cached.saved_at||Date.now());
+          render();
+        }
+      }
+      if(activeController) activeController.abort();
+      activeController=new AbortController();
+
+      setStatus("loading",manual?"Refreshing…":"Loading live data");
+      warning.classList.remove("show");
+      body.innerHTML='<tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>';
+
+      try{
+        const weekRange=getRange("week");
+        const cacheMatches =
+          !manual &&
+          weekPreloadCache &&
+          weekPreloadCache.start===weekRange.start &&
+          weekPreloadCache.end===weekRange.end &&
+          weekPreloadCache.key===weekCacheKey() &&
+          r.start>=weekRange.start &&
+          r.end<=weekRange.end;
+
+        let data;
+
+        if(cacheMatches){
+          data={...weekPreloadCache.data};
+          data.events=filterEventsToDateRange(weekPreloadCache.data.events,r);
+          lastFetchAt=weekPreloadCache.fetchedAt||new Date();
+        }else{
+          const res=await fetch(FEED_URL,{
+            method:"POST",
+            headers:{"content-type":"application/json"},
+            body:JSON.stringify({start:r.start,end:r.end,countries:settings.countries}),
+            signal:activeController.signal,
+            cache:"no-store"
+          });
+
+          data=await res.json().catch(()=>({}));
+          if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
+
+          lastFetchAt=new Date();
+
+          if(r.start===weekRange.start && r.end===weekRange.end){
+            weekPreloadCache={
+              start:weekRange.start,
+              end:weekRange.end,
+              key:weekCacheKey(),
+              data,
+              fetchedAt:lastFetchAt
+            };
+          }else{
+            setTimeout(()=>preloadWeekInBackground(false),250);
+          }
+        }
+
+        allEvents=Array.isArray(data.events)?data.events:[];
+        ensureEventUIKeys();
+        if(currentRange==="week"){
+          saveWeekCache(data,r);
+        }
+        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"FinanceCalendar");
+        document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
+        document.getElementById("last-updated").textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
+
+        if(data.mode==="sample-fallback"){
+          warning.textContent="The page is fully wired but is showing fallback sample events until the FinanceCalendar production API key is saved as the Supabase secret TRADING_ECONOMICS_API_KEY.";
+          warning.classList.add("show");
+        }
+        render();
+      }catch(err){
+        if(err.name==="AbortError") return;
+        console.error("Economic calendar load failed",err);
+        allEvents=[];
+        setStatus("error","Feed unavailable");
+        warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
+        warning.classList.add("show");
+        body.innerHTML=`<tr><td colspan="10" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
+        document.getElementById("stat-events").textContent="—";
+        document.getElementById("stat-high").textContent="—";
+        document.getElementById("stat-next").textContent="—";
+        document.getElementById("stat-next-name").textContent="";
+      }
+    }
+
+
+    function watchlistTagFromInstrument(name){
+      const s=String(name||"").toLowerCase();
+      const tags=[];
+
+      if(/s&p 500|\/ es\b|\bspy\b/.test(s)) tags.push("SPY");
+      if(/nasdaq|\/ nq\b/.test(s)) tags.push("SPY");
+      if(/dow|\/ ym\b|russell|\/ rty\b/.test(s)) tags.push("SPY");
+      if(/dollar|dxy/.test(s)) tags.push("USD");
+      if(/eur|eurusd/.test(s)) tags.push("EUR");
+      if(/gbp|gbpusd/.test(s)) tags.push("GBP");
+      if(/jpy|usdjpy/.test(s)) tags.push("JPY");
+      if(/cad|usdcad/.test(s)) tags.push("CAD");
+      if(/aud|audusd/.test(s)) tags.push("AUD");
+      if(/bitcoin|btc/.test(s)) tags.push("BTC");
+      if(/gold/.test(s)) tags.push("Gold");
+      if(/silver/.test(s)) tags.push("Silver");
+      if(/copper/.test(s)) tags.push("Copper");
+      if(/crude|oil/.test(s)) tags.push("WTI");
+      if(/natural gas/.test(s)) tags.push("Natural Gas");
+      if(/dax/.test(s)) tags.push("DAX");
+      if(/ftse/.test(s)) tags.push("FTSE 100");
+      if(/nikkei|n225/.test(s)) tags.push("Nikkei 225");
+      if(/hang seng|hsi/.test(s)) tags.push("Hang Seng");
+
+      return tags;
+    }
+
+    async function loadMemberWatchlist(){
+      watchlistInstruments=[];
+      watchlistMarketTags=new Set();
+
+      if(!currentUser||!window.psdSupabase) return;
+
+      try{
+        const {data:wl,error:wlError}=await window.psdSupabase
+          .from("watchlists")
+          .select("id")
+          .eq("user_id",currentUser.id)
+          .eq("is_default",true)
+          .limit(1)
+          .maybeSingle();
+
+        if(wlError||!wl?.id) return;
+
+        const {data:items,error:itemError}=await window.psdSupabase
+          .from("watchlist_items")
+          .select("instrument")
+          .eq("watchlist_id",wl.id)
+          .order("display_order",{ascending:true});
+
+        if(itemError) return;
+
+        watchlistInstruments=(items||[]).map(x=>String(x.instrument||"").trim()).filter(Boolean);
+        watchlistInstruments.forEach(name=>{
+          watchlistTagFromInstrument(name).forEach(tag=>watchlistMarketTags.add(tag));
+        });
+
+        // If the member has a real watchlist, it becomes the source of truth for My Markets.
+        if(watchlistMarketTags.size){
+          settings.my_markets=[...watchlistMarketTags];
+          document.querySelectorAll('input[name="saved-market"]').forEach(i=>{
+            i.checked=settings.my_markets.includes(i.value);
+          });
+        }
+      }catch(err){
+        console.warn("Watchlist load failed",err);
+      }
+    }
+
+    function eventMatchesWatchlist(e){
+      if(!watchlistMarketTags.size) return false;
+      return relevantAssets(e).some(asset=>watchlistMarketTags.has(asset));
+    }
+
+    async function loadAccountSettings(session){
+      currentUser=session&&session.user?session.user:null;
+      const fieldset=document.getElementById("settings-fieldset");
+      const note=document.getElementById("settings-login-note");
+      const status=document.getElementById("settings-save-status");
+
+      if(!currentUser||!window.psdSupabase){
+        settings=cloneDefault();
+        currentDashboardLayout={};
+        fieldset.disabled=true;
+        fieldset.classList.add("ec-settings-locked");
+        note.hidden=false;
+        status.textContent="";
+        currentPhoneNumber="";
+        document.getElementById("account-email").textContent="Log in to use email alerts";
+        document.getElementById("account-phone").value="";
+        applySettingsControls();
+        await loadFeed();
+        return;
+      }
+
+      fieldset.disabled=false;
+      fieldset.classList.remove("ec-settings-locked");
+      note.hidden=true;
+      document.getElementById("account-email").textContent=currentUser.email||"Email available through account";
+      status.textContent="Loading saved settings…";
+
+      try{
+        const [prefResult,profileResult]=await Promise.all([
+          window.psdSupabase.from("user_preferences").select("dashboard_layout").eq("user_id",currentUser.id).maybeSingle(),
+          window.psdSupabase.from("profiles").select("phone_number,sms_alerts_opt_in").eq("id",currentUser.id).maybeSingle()
+        ]);
+        if(prefResult.error) throw prefResult.error;
+        if(profileResult.error) throw profileResult.error;
+        const data=prefResult.data;
+        currentDashboardLayout=data&&data.dashboard_layout&&typeof data.dashboard_layout==="object"?data.dashboard_layout:{};
+        settings=normalizeSettings(currentDashboardLayout.calendar_settings);
+        currentPhoneNumber=(profileResult.data&&profileResult.data.phone_number)||"";
+        document.getElementById("account-phone").value=currentPhoneNumber;
+        if(!currentPhoneNumber) settings.reminder_sms=false;
+        await loadMemberWatchlist();
+        status.textContent="Saved to your account";
+      }catch(err){
+        console.error("Calendar settings load failed",err);
+        settings=cloneDefault();
+        currentDashboardLayout={};
+        status.textContent="Could not load saved settings";
+      }
+      applySettingsControls();
+      await loadReminderStates();
+      await loadFeed();
+    }
+
+
+
+    async function loadPreset(daysBack, daysForward){
+      const today=new Date();
+      const from=addDays(today,daysBack);
+      const to=addDays(today,daysForward);
+      document.getElementById("custom-from").value=localISODate(from);
+      document.getElementById("custom-to").value=localISODate(to);
+      customRange={start:localISODate(from),end:localISODate(to)};
+      currentRange="custom";
+      document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+      await loadFeed();
+    }
+
+    document.getElementById("last-30").addEventListener("click",()=>loadPreset(-30,0));
+    document.getElementById("next-30").addEventListener("click",()=>loadPreset(0,30));
+
+    document.getElementById("custom-go").addEventListener("click",async()=>{
+      const from=document.getElementById("custom-from").value;
+      const to=document.getElementById("custom-to").value;
+      if(!from||!to){
+        alert("Choose both From and To dates.");
+        return;
+      }
+      if(new Date(to)<new Date(from)){
+        alert("The To date must be on or after the From date.");
+        return;
+      }
+      const span=Math.round((Date.parse(to+"T00:00:00Z")-Date.parse(from+"T00:00:00Z"))/86400000);
+      if(span>366){
+        alert("Please choose a range of one year or less.");
+        return;
+      }
+      customRange={start:from,end:to};
+      currentRange="custom";
+      document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+      await loadFeed();
+    });
+
+    document.querySelectorAll(".ec-tab[data-range]").forEach(btn=>btn.addEventListener("click",async()=>{
+      customRange=null;
+      currentRange=btn.dataset.range;
+
+      if(currentRange==="today" || currentRange==="yesterday" || currentRange==="lastweek"){
+        upcomingOnly=false;
+        const upcomingBox=document.getElementById("upcoming-only");
+        if(upcomingBox) upcomingBox.checked=false;
+      }
+
+      document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",x===btn));
+      await loadFeed();
+    }));
+
+    search.addEventListener("input",render);
+    [countryFilter,impactFilter,categoryFilter].forEach(x=>{
+      x.addEventListener("change",render);
+      x.addEventListener("input",render);
+    });
+
+
+    document.getElementById("my-markets-only").addEventListener("change",render);
+    document.getElementById("export-csv").addEventListener("click",exportVisibleCSV);
+    document.getElementById("export-ics").addEventListener("click",exportVisibleICS);
+    document.getElementById("share-view").addEventListener("click",shareCurrentView);
+
+    document.getElementById("clear-filters").addEventListener("click",()=>{
+      search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false; render();
+    });
+
+
+
+    function syncSettingsFromControlsAndRender(){
+      settings.categories=selectedValues("saved-category");
+      settings.impacts=selectedValues("saved-impact");
+      settings.timezone=document.getElementById("saved-timezone").value||settings.timezone;
+
+      const countryChecks=[...document.querySelectorAll('input[name="saved-country"]')];
+      if(countryChecks.length){
+        const checked=countryChecks.filter(x=>x.checked).map(x=>x.value);
+        if(checked.length) settings.countries=checked;
+      }
+
+      rebuildQuickFilters();
+      render();
+    }
+
+    document.querySelectorAll('input[name="saved-category"],input[name="saved-impact"]').forEach(input=>{
+      input.addEventListener("change",syncSettingsFromControlsAndRender);
+    });
+
+    document.getElementById("all-country-checkboxes").addEventListener("change",ev=>{
+      const input=ev.target.closest('input[name="saved-country"]');
+      if(!input) return;
+      const set=new Set(settings.countries);
+      if(input.checked) set.add(input.value); else set.delete(input.value);
+      settings.countries=[...set];
+      rebuildQuickFilters();
+      render();
+    });
+
+    document.getElementById("country-settings-search").addEventListener("input",ev=>renderCountrySettings(ev.target.value));
+
+    document.getElementById("country-select-all").addEventListener("click",()=>{
+      settings.countries=["EU",...ALL_COUNTRY_CODES];
+      renderCountrySettings(document.getElementById("country-settings-search").value);
+      rebuildQuickFilters();
+      render();
+      document.getElementById("settings-save-status").textContent="All countries selected — click Save.";
+    });
+
+    document.getElementById("country-major").addEventListener("click",()=>{
+      settings.countries=["US","EU","GB","JP","CA","CN","AU","CH","DE","FR","IN","BR","KR","SG"];
+      renderCountrySettings(document.getElementById("country-settings-search").value);
+      rebuildQuickFilters();
+      render();
+      document.getElementById("settings-save-status").textContent="Major markets selected — click Save.";
+    });
+
+    document.getElementById("country-clear").addEventListener("click",()=>{
+      settings.countries=[];
+      renderCountrySettings(document.getElementById("country-settings-search").value);
+      rebuildQuickFilters();
+      render();
+      document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
+    });
+
+    document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      settings.timezone=btn.dataset.timezone;
+      document.getElementById("saved-timezone").value=settings.timezone;
+      applySettingsControls();
+      render();
+      const status=document.getElementById("settings-save-status");
+      if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
+    }));
+
+    document.getElementById("upcoming-only").addEventListener("change",(ev)=>{
+      upcomingOnly=Boolean(ev.target.checked);
+      render();
+    });
+
+    document.getElementById("settings-toggle").addEventListener("click",()=>{
+      const panel=document.getElementById("settings-panel");
+      panel.classList.toggle("open");
+      const isOpen=panel.classList.contains("open");
+      panel.setAttribute("aria-hidden",isOpen?"false":"true");
+      document.getElementById("settings-toggle").setAttribute("aria-expanded",isOpen?"true":"false");
+      const topSave=document.getElementById("settings-save-top");
+      const topClose=document.getElementById("settings-close-top");
+      const openNow=panel.classList.contains("open");
+      if(topSave) topSave.style.display=openNow?"inline-flex":"none";
+      if(topClose) topClose.style.display=openNow?"inline-flex":"none";
+    });
+
+    document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
+      settings.timezone=ev.target.value;
+      applySettingsControls();
+      render();
+      const status=document.getElementById("settings-save-status");
+      if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
+    });
+
+    document.getElementById("settings-save-top").addEventListener("click",()=>{
+      document.getElementById("settings-save").click();
+    });
+
+    document.getElementById("settings-close-top").addEventListener("click",()=>{
+      const panel=document.getElementById("settings-panel");
+      panel.classList.remove("open");
+      panel.setAttribute("aria-hidden","true");
+      document.getElementById("settings-toggle").setAttribute("aria-expanded","false");
+      document.getElementById("settings-save-top").style.display="none";
+      document.getElementById("settings-close-top").style.display="none";
+    });
+
+
+
+    document.getElementById("settings-reset").addEventListener("click",()=>{
+      settings=cloneDefault();
+      applySettingsControls();
+      document.getElementById("settings-save-status").textContent="Defaults selected — click Save Settings.";
+    });
+
+    document.getElementById("settings-save").addEventListener("click",async()=>{
+      const status=document.getElementById("settings-save-status");
+      if(!currentUser||!window.psdSupabase){
+        status.textContent="Log in to save these settings.";
+        return;
+      }
+      const phone=document.getElementById("account-phone").value.trim();
+      const wantsSms=document.getElementById("default-sms-reminder").checked;
+      if(phone && !/^\+[1-9][0-9]{7,14}$/.test(phone)){
+        status.textContent="Phone must use international format, e.g. +12125551234.";
+        return;
+      }
+      if(wantsSms && !phone){
+        status.textContent="Add a mobile number to enable text reminders.";
+        return;
+      }
+
+      const next={
+        countries:[...settings.countries],
+
+        categories:selectedValues("saved-category"),
+        impacts:selectedValues("saved-impact"),
+        timezone:document.getElementById("saved-timezone").value,
+        reminder_email:document.getElementById("default-email-reminder").checked,
+        reminder_sms:wantsSms,
+        reminder_desktop:document.getElementById("default-desktop-reminder").checked,
+        reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30),
+        my_markets:selectedValues("saved-market")
+      };
+      if(!next.countries.length||!next.categories.length||!next.impacts.length){
+        status.textContent="Keep at least one option in each group.";
+        return;
+      }
+      status.textContent="Saving…";
+      const merged={...currentDashboardLayout,calendar_settings:next};
+      const [prefSave,profileSave]=await Promise.all([
+        window.psdSupabase.from("user_preferences").upsert({
+          user_id:currentUser.id,dashboard_layout:merged,updated_at:new Date().toISOString()
+        },{onConflict:"user_id"}),
+        window.psdSupabase.from("profiles").update({
+          phone_number:phone||null,
+          sms_alerts_opt_in:Boolean(next.reminder_sms),
+          updated_at:new Date().toISOString()
+        }).eq("id",currentUser.id)
+      ]);
+      if(prefSave.error||profileSave.error){
+        console.error(prefSave.error||profileSave.error); status.textContent="Save failed"; return;
+      }
+      currentPhoneNumber=phone;
+      currentDashboardLayout=merged;
+      settings=next;
+      weekPreloadCache=null;
+
+      const settingsPanel=document.getElementById("settings-panel");
+      if(settingsPanel){
+        settingsPanel.classList.remove("open");
+        settingsPanel.setAttribute("aria-hidden","true");
+      }
+      const topSave=document.getElementById("settings-save-top");
+      if(topSave) topSave.style.display="none";
+      const topClose=document.getElementById("settings-close-top");
+      if(topClose) topClose.style.display="none";
+      const toggleBtn=document.getElementById("settings-toggle");
+      if(toggleBtn) toggleBtn.setAttribute("aria-expanded","false");
+
+      status.textContent="Saved to your account ✓";
+      applySettingsControls();
+
+      setTimeout(()=>{
+        loadFeed(true).catch(err=>console.warn("Refresh after save failed",err));
+        preloadWeekInBackground(true).catch(err=>console.warn("Week preload after save failed",err));
+      },60);
+    });
+
+
+
+    function reminderKeyForEvent(e){
+      const dt=parseProviderDate(e.date);
+      return `${String(e.id||`${e.country_code}-${e.event}`)}|${dt?dt.toISOString():""}`;
+    }
+
+    function channelField(channel){
+      return channel==="email" ? "email_enabled" : channel==="sms" ? "sms_enabled" : "desktop_enabled";
+    }
+
+    function isChannelActive(e,channel){
+      const row=reminderState.get(reminderKeyForEvent(e));
+      return Boolean(row && row[channelField(channel)]);
+    }
+
+    function applyReminderButtonStates(){
+      document.querySelectorAll('.ec-icon-btn[data-action="email"],.ec-icon-btn[data-action="sms"],.ec-icon-btn[data-action="desktop"]').forEach(btn=>{
+        const e=eventById(btn.dataset.eventId);
+        if(!e) return;
+        btn.classList.toggle("active",isChannelActive(e,btn.dataset.action));
+        btn.setAttribute("aria-pressed",isChannelActive(e,btn.dataset.action)?"true":"false");
+      });
+    }
+
+    async function loadReminderStates(){
+      reminderState.clear();
+      if(!currentUser||!window.psdSupabase){
+        applyReminderButtonStates();
+        return;
+      }
+      try{
+        const {data,error}=await window.psdSupabase
+          .from("calendar_event_reminders")
+          .select("id,provider_event_id,event_time,email_enabled,sms_enabled,desktop_enabled,is_enabled")
+          .eq("user_id",currentUser.id)
+          .eq("is_enabled",true);
+        if(error) throw error;
+        (data||[]).forEach(row=>{
+          const key=`${String(row.provider_event_id||"")}|${new Date(row.event_time).toISOString()}`;
+          reminderState.set(key,row);
+        });
+      }catch(err){
+        console.warn("Reminder state load failed",err);
+      }
+      applyReminderButtonStates();
+    }
+
+    function eventUIKey(e,index=0){
+      if(e && e._ui_key) return e._ui_key;
+      const base=String(e?.id||"").trim();
+      if(base) return base;
+      return [
+        String(e?.country_code||e?.country||""),
+        String(e?.event||e?.category||"event"),
+        String(e?.date||""),
+        String(index)
+      ].join("|");
+    }
+
+    function ensureEventUIKeys(){
+      allEvents.forEach((e,i)=>{
+        if(!e._ui_key) e._ui_key=eventUIKey(e,i);
+      });
+    }
+
+    function eventById(id){
+      return allEvents.find((e,i)=>String(eventUIKey(e,i))===String(id||""));
+    }
+
+    function downloadICS(e){
+      const d=parseProviderDate(e.date);
+      if(!d) return;
+      const start=new Date(d);
+      const end=new Date(start.getTime()+60*60*1000);
+      const stamp=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+      const uid=`${e.id||Date.now()}@publicsentimentdash.com`;
+      const ics=[
+        "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Public Sentiment Dash//Economic Calendar//EN",
+        "BEGIN:VEVENT",
+        `UID:${uid}`,
+        `DTSTAMP:${stamp(new Date())}`,
+        `DTSTART:${stamp(start)}`,
+        `DTEND:${stamp(end)}`,
+        `SUMMARY:${String(e.event||"Economic Event").replace(/[,\n;]/g," ")}`,
+        `DESCRIPTION:${String(e.country||"")} economic event. Forecast: ${String(e.forecast||e.te_forecast||"—")}. Previous: ${String(e.previous||"—")}.`,
+        "END:VEVENT","END:VCALENDAR"
+      ].join("\r\n");
+      const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      a.download=`economic-event-${String(e.id||"calendar").replace(/[^a-z0-9_-]/gi,"-")}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+
+    async function saveEventReminder(e, channel){
+      if(!currentUser||!window.psdSupabase){
+        alert("Please log in to save reminders.");
+        return false;
+      }
+      if(channel==="sms" && !currentPhoneNumber){
+        document.getElementById("settings-panel").classList.add("open");
+        document.getElementById("account-phone").focus();
+        alert("Add your mobile number in Calendar Settings first. It is optional unless you want text alerts.");
+        return false;
+      }
+      const dt=parseProviderDate(e.date);
+      if(!dt) return;
+
+      const payload={
+        user_id:currentUser.id,
+        provider:"FinanceCalendar",
+        provider_event_id:String(e.id||`${e.country_code}-${e.event}-${e.date}`),
+        event_name:e.event||e.category||"Economic Event",
+        country_code:e.country_code||null,
+        event_time:dt.toISOString(),
+        reminder_minutes:Number(settings.reminder_minutes||30),
+        email_enabled:channel==="email" ? true : Boolean(settings.reminder_email),
+        sms_enabled:channel==="sms" ? true : Boolean(settings.reminder_sms),
+        desktop_enabled:channel==="desktop" ? true : Boolean(settings.reminder_desktop),
+        is_enabled:true,
+        updated_at:new Date().toISOString()
+      };
+
+      const {error}=await window.psdSupabase
+        .from("calendar_event_reminders")
+        .upsert(payload,{onConflict:"user_id,provider,provider_event_id,event_time"});
+
+      if(error){
+        console.error("Reminder save failed",error);
+        alert("Reminder could not be saved.");
+        return false;
+      }
+      const rowKey=reminderKeyForEvent(e);
+      const existing=reminderState.get(rowKey)||{};
+      reminderState.set(rowKey,{...existing,...payload});
+      applyReminderButtonStates();
+      return true;
+    }
+
+
+
+    function closeCancelPopover(){
+      document.getElementById("ec-cancel-pop").hidden=true;
+      pendingCancel=null;
+    }
+
+    function askCancelReminder(btn,e,channel){
+      const pop=document.getElementById("ec-cancel-pop");
+      const label=channel==="email"?"email alert":channel==="sms"?"text alert":"desktop notification";
+      document.getElementById("ec-cancel-title").textContent="Cancel alert?";
+      document.getElementById("ec-cancel-text").textContent=`Do you want to cancel this ${label} for ${e.event||"this event"}?`;
+      const r=btn.getBoundingClientRect();
+      pop.hidden=false;
+      const w=pop.offsetWidth,h=pop.offsetHeight;
+      let left=Math.min(r.left,window.innerWidth-w-10);
+      left=Math.max(10,left);
+      let top=r.bottom+7;
+      if(top+h>window.innerHeight-10) top=Math.max(10,r.top-h-7);
+      pop.style.left=left+"px";
+      pop.style.top=top+"px";
+      pendingCancel={btn,e,channel};
+    }
+
+    async function cancelReminderChannel(e,channel){
+      if(!currentUser||!window.psdSupabase)return false;
+      const key=reminderKeyForEvent(e);
+      const row=reminderState.get(key);
+      if(!row)return true;
+      const field=channelField(channel);
+      const next={...row,[field]:false};
+      const any=Boolean(next.email_enabled||next.sms_enabled||next.desktop_enabled);
+      let error=null;
+      if(any){
+        ({error}=await window.psdSupabase
+          .from("calendar_event_reminders")
+          .update({[field]:false,updated_at:new Date().toISOString()})
+          .eq("user_id",currentUser.id)
+          .eq("provider_event_id",String(e.id||`${e.country_code}-${e.event}-${e.date}`))
+          .eq("event_time",parseProviderDate(e.date).toISOString()));
+        if(!error) reminderState.set(key,next);
+      }else{
+        ({error}=await window.psdSupabase
+          .from("calendar_event_reminders")
+          .delete()
+          .eq("user_id",currentUser.id)
+          .eq("provider_event_id",String(e.id||`${e.country_code}-${e.event}-${e.date}`))
+          .eq("event_time",parseProviderDate(e.date).toISOString()));
+        if(!error) reminderState.delete(key);
+      }
+      if(error){
+        console.error("Reminder cancellation failed",error);
+        return false;
+      }
+      applyReminderButtonStates();
+      return true;
+    }
+
+    async function enableDesktopNotification(e){
+      if(!("Notification" in window)){
+        alert("Desktop notifications are not supported by this browser.");
+        return;
+      }
+
+      let permission=Notification.permission;
+      if(permission==="default"){
+        permission=await Notification.requestPermission();
+      }
+      if(permission!=="granted"){
+        alert("Desktop notifications are blocked. Please allow notifications for this site in your browser settings.");
+        return;
+      }
+
+      await saveEventReminder(e,"desktop");
+
+      try{
+        new Notification("Economic Calendar reminder enabled",{
+          body:`${e.event||"Economic event"} · ${timeText(parseProviderDate(e.date))}`,
+          icon:"logo.png",
+          tag:`economic-calendar-${e.id||e.event}`
+        });
+      }catch{}
+    }
+
+
+    body.addEventListener("click",async(ev)=>{
+      const glossaryBtn=ev.target.closest("[data-economic-glossary]");
+      if(glossaryBtn){
+        ev.preventDefault();
+        ev.stopPropagation();
+        const e=eventById(glossaryBtn.dataset.economicGlossary);
+        if(e) openEconomicGlossary(glossaryBtn,e);
+        return;
+      }
+
+      const eventBtn=ev.target.closest("[data-open-event]");
+      if(eventBtn){
+        const e=eventById(eventBtn.dataset.openEvent);
+        if(e) await openEventModal(e);
+        return;
+      }
+    });
+
+    body.addEventListener("click",async(ev)=>{
+      const btn=ev.target.closest(".ec-icon-btn");
+      if(!btn) return;
+      const e=eventById(btn.dataset.eventId);
+      if(!e) return;
+      const action=btn.dataset.action;
+      if(action==="calendar"){
+        downloadICS(e);
+        return;
+      }
+      if(action==="desktop"||action==="email"||action==="sms"){
+        if(isChannelActive(e,action)){
+          askCancelReminder(btn,e,action);
+          return;
+        }
+        if(action==="desktop"){
+          await enableDesktopNotification(e);
+        }else{
+          await saveEventReminder(e,action);
+        }
+        applyReminderButtonStates();
+        return;
+      }
+    });
+
+
+
+    document.getElementById("ec-cancel-no").addEventListener("click",closeCancelPopover);
+    document.getElementById("ec-cancel-yes").addEventListener("click",async()=>{
+      if(!pendingCancel)return closeCancelPopover();
+      const {e,channel}=pendingCancel;
+      await cancelReminderChannel(e,channel);
+      closeCancelPopover();
+    });
+    document.addEventListener("click",ev=>{
+      const pop=document.getElementById("ec-cancel-pop");
+      if(!pop.hidden && !ev.target.closest("#ec-cancel-pop") && !ev.target.closest(".ec-icon-btn")) closeCancelPopover();
+      if(activeEconomicGlossaryButton && !ev.target.closest("#psdGlossaryPopover") && !ev.target.closest("[data-economic-glossary]")) closeEconomicGlossary();
+    });
+    window.addEventListener("scroll",()=>{
+      closeCancelPopover();
+      closeEconomicGlossary();
+    },true);
+
+    document.getElementById("event-modal-close").addEventListener("click",closeEventModal);
+    document.getElementById("event-modal-backdrop").addEventListener("click",ev=>{
+      if(ev.target===ev.currentTarget) closeEventModal();
+    });
+    document.addEventListener("keydown",ev=>{
+      if(ev.key==="Escape" && document.getElementById("event-modal-backdrop").classList.contains("open")) closeEventModal();
+    });
+
+    document.querySelectorAll(".ec-chart-toggle").forEach(btn=>btn.addEventListener("click",()=>{
+      activeChartSeries=btn.dataset.chartSeries;
+      document.querySelectorAll(".ec-chart-toggle").forEach(x=>x.classList.toggle("active",x===btn));
+      if(!activeModalEvent)return;
+      const hist=historyCache.get(historyKey(activeModalEvent));
+      drawCanvasLine(document.getElementById("event-big-chart"),hist?.history||[],activeChartSeries);
+    }));
+
+
+
+    function csvEscape(v){
+      const s=String(v??"");
+      return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+    }
+
+    function downloadTextFile(name,content,type){
+      const blob=new Blob([content],{type:type||"text/plain;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+
+    function exportVisibleCSV(){
+      const rows=visibleEvents();
+      const lines=[["Time","Country","Impact","Event","Actual","Forecast","Previous","Classification","Relevant Assets"]];
+      rows.forEach(e=>{
+        const d=parseProviderDate(e.date);
+        const c=displayCountry(e);
+        lines.push([
+          d?d.toISOString():"",
+          c.name,
+          impactFromImportance(e.importance),
+          e.event||e.category||"",
+          e.actual||"",
+          e.forecast||e.te_forecast||"",
+          e.previous||"",
+          classifyEvent(e),
+          relevantAssets(e).join(" | ")
+        ]);
+      });
+      downloadTextFile("economic-calendar.csv",lines.map(r=>r.map(csvEscape).join(",")).join("\n"),"text/csv;charset=utf-8");
+    }
+
+    function exportVisibleICS(){
+      const events=visibleEvents().map(e=>{
+        const d=parseProviderDate(e.date);
+        if(!d) return "";
+        const end=new Date(d.getTime()+60*60*1000);
+        const stamp=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+        const c=displayCountry(e);
+        return [
+          "BEGIN:VEVENT",
+          `UID:${String(eventUIKey(e)).replace(/[^a-z0-9]/gi,"-")}@publicsentimentdash.com`,
+          `DTSTAMP:${stamp(new Date())}`,
+          `DTSTART:${stamp(d)}`,
+          `DTEND:${stamp(end)}`,
+          `SUMMARY:${(e.event||"Economic Event").replace(/[\n,;]/g," ")}`,
+          `DESCRIPTION:${c.name} | Actual: ${e.actual||"—"} | Forecast: ${e.forecast||"—"} | Previous: ${e.previous||"—"}`,
+          "END:VEVENT"
+        ].join("\r\n");
+      }).filter(Boolean);
+      downloadTextFile("economic-calendar.ics",["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Public Sentiment Dash//Economic Calendar//EN",...events,"END:VCALENDAR"].join("\r\n"),"text/calendar;charset=utf-8");
+    }
+
+    async function shareCurrentView(){
+      const u=new URL(window.location.href);
+      u.searchParams.set("range",currentRange);
+      if(countryFilter.value)u.searchParams.set("country",countryFilter.value);else u.searchParams.delete("country");
+      if(impactFilter.value)u.searchParams.set("impact",impactFilter.value);else u.searchParams.delete("impact");
+      if(categoryFilter.value)u.searchParams.set("category",categoryFilter.value);else u.searchParams.delete("category");
+      if(search.value.trim())u.searchParams.set("q",search.value.trim());else u.searchParams.delete("q");
+      if(document.getElementById("my-markets-only")?.checked)u.searchParams.set("markets","1");else u.searchParams.delete("markets");
+
+      try{
+        await navigator.clipboard.writeText(u.toString());
+        const btn=document.getElementById("share-view");
+        const old=btn.textContent;btn.textContent="Copied ✓";
+        setTimeout(()=>btn.textContent=old,1200);
+      }catch{
+        window.prompt("Copy this calendar link:",u.toString());
+      }
+    }
+
+    const refresh=()=>loadFeed(true);
+    document.getElementById("refresh-btn").addEventListener("click",refresh);
+    document.getElementById("provider-refresh").addEventListener("click",refresh);
+
+    refreshTimer=setInterval(()=>loadFeed(false),AUTO_REFRESH_MS);
+    countdownTimer=setInterval(updateCountdown,30000);
+
+    const todayISO=localISODate(new Date());
+    document.getElementById("custom-from").value=todayISO;
+    document.getElementById("custom-to").value=todayISO;
+    updateZoneClocks();
+    setInterval(updateZoneClocks,1000);
+
+    displayRangeLabel();
+    applySettingsControls();
+
+    const sharedParams=new URLSearchParams(window.location.search);
+    const sharedCountry=sharedParams.get("country");
+    const sharedImpact=sharedParams.get("impact");
+    const sharedCategory=sharedParams.get("category");
+    const sharedQ=sharedParams.get("q");
+    if(sharedCountry) countryFilter.value=sharedCountry;
+    if(sharedImpact) impactFilter.value=sharedImpact;
+    if(sharedCategory) categoryFilter.value=sharedCategory;
+    if(sharedQ) search.value=sharedQ;
+    if(sharedParams.get("markets")==="1") document.getElementById("my-markets-only").checked=true;
+    setTimeout(()=>preloadWeekInBackground(false),500);
+
+    if(window.psdSupabase){
+      window.psdSupabase.auth.getSession().then(({data})=>loadAccountSettings(data&&data.session?data.session:null));
+      window.psdSupabase.auth.onAuthStateChange((_event,session)=>{
+        setTimeout(()=>loadAccountSettings(session),0);
+      });
+    }else{
+      loadAccountSettings(null);
+    }
+
+    window.addEventListener("beforeunload",()=>{
+      clearInterval(refreshTimer); clearInterval(countdownTimer);
+      if(activeController) activeController.abort();
+    });
+  })();
+  </script>
+
+  <script src="mobile/ribbon.js?v=2"></script>
+</body>
+</html>
