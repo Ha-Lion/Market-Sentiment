@@ -174,6 +174,33 @@
       .ec-kpis{grid-template-columns:1fr 1fr;}
     }
 
+
+    .ec-next-up{
+      display:none;
+      margin:8px 10px 0;
+      padding:8px 10px;
+      border:1px solid var(--ec-border);
+      border-radius:9px;
+      background:var(--ec-soft2);
+      color:var(--ec-text);
+      font-size:11px;
+      line-height:1.35;
+    }
+    .ec-next-up.show{display:block}
+    .ec-next-up strong{font-weight:850}
+    .ec-next-up button{
+      margin-left:8px;
+      border:1px solid var(--ec-border);
+      background:var(--ec-card);
+      color:var(--ec-text);
+      border-radius:7px;
+      padding:4px 8px;
+      font:inherit;
+      font-size:10px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
     .ec-empty,.ec-loading,.ec-error{text-align:center;padding:42px 20px;color:var(--ec-muted);}
     .ec-error strong{display:block;color:var(--ec-bad);margin-bottom:5px;}
     .ec-provider{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 16px;color:var(--ec-muted);font-size:11px;background:var(--ec-soft2);flex-wrap:wrap;}
@@ -248,7 +275,7 @@
           <button id="last-30" class="ec-action ec-date-go" type="button" title="Last 30 days">−30d</button>
           <button id="next-30" class="ec-action ec-date-go" type="button" title="Next 30 days">+30d</button>
         </div>
-        <button class="ec-tab active" data-range="today">Today</button>
+        <button class="ec-tab" data-range="today">Today</button>
         <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
         <button class="ec-tab" data-range="week">This Week</button>
         <button class="ec-tab" data-range="next">Next Week</button>
@@ -403,6 +430,7 @@
         <div class="ec-stat"><span>Auto refresh</span><strong>5 min</strong><small id="last-updated">Not loaded</small></div>
       </div>
 
+      <div id="ec-next-up" class="ec-next-up"></div>
       <div class="ec-table-wrap">
         <table class="ec-table">
           <thead>
@@ -587,7 +615,7 @@
       };
     }
 
-    let currentRange = "today";
+    let currentRange = "thisweek";
     let customRange = null;
     let upcomingOnly = false;
     let currentUser = null;
@@ -1148,6 +1176,59 @@
       document.getElementById("event-modal-backdrop").setAttribute("aria-hidden","true");
       document.body.style.overflow="";
       activeModalEvent=null;
+    }
+
+
+    async function findNextUpcomingDate(){
+      const start=localISODate(addDays(new Date(),1));
+      const end=localISODate(addDays(new Date(),14));
+      try{
+        const res=await fetch(FEED_URL,{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify({start,end,countries:settings.countries})
+        });
+        if(!res.ok) return null;
+        const data=await res.json();
+        const rows=Array.isArray(data.events)?data.events:[];
+        if(!rows.length) return null;
+        const first=rows
+          .map(e=>({e,d:parseProviderDate(e.date)}))
+          .filter(x=>x.d)
+          .sort((a,b)=>a.d-b.d)[0];
+        if(!first) return null;
+        return {
+          date:localISODate(first.d),
+          label:new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric"}).format(first.d),
+          count:rows.filter(e=>{
+            const d=parseProviderDate(e.date);
+            return d && localISODate(d)===localISODate(first.d);
+          }).length
+        };
+      }catch(err){
+        console.warn("Next event lookup failed",err);
+        return null;
+      }
+    }
+
+    async function showNextUpcomingNotice(){
+      const host=document.getElementById("ec-next-up");
+      if(!host) return;
+      host.classList.remove("show");
+      host.innerHTML="";
+      const next=await findNextUpcomingDate();
+      if(!next) return;
+      host.innerHTML=`<strong>No events scheduled for the selected date.</strong> Next scheduled events: ${esc(next.label)} (${next.count} event${next.count===1?"":"s"}).
+        <button type="button" id="open-next-date">Show next events</button>`;
+      host.classList.add("show");
+      document.getElementById("open-next-date").addEventListener("click",async()=>{
+        document.getElementById("custom-from").value=next.date;
+        document.getElementById("custom-to").value=next.date;
+        customRange={start:next.date,end:next.date};
+        currentRange="custom";
+        document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+        await loadFeed();
+      });
     }
 
     async function loadFeed(manual=false){
