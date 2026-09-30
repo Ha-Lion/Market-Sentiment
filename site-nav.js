@@ -870,7 +870,7 @@
     loadSiteStatus();
 
     if(current === "economic-calendar.html"){
-      loadScript("economic-calendar-reminder-fix.js?v=1","psd-economic-calendar-reminder-fix").catch(function(error){
+      loadScript("economic-calendar-reminder-fix.js?v=2","psd-economic-calendar-reminder-fix").catch(function(error){
         console.error("Calendar reminder UI patch failed:",error);
       });
     }
