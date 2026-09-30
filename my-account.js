@@ -20,10 +20,19 @@
   function normalizeOptionalPhone(v){
     const raw=String(v||"").trim();
     if(!raw)return "";
+
     const digits=raw.replace(/[^0-9]/g,"");
+
+    /* U.S./Canada convenience: 10 digits -> +1XXXXXXXXXX */
+    if(digits.length===10){
+      return "+1"+digits;
+    }
+
+    /* Already includes country code, with or without formatting. */
     if(raw.startsWith("+") && /^[1-9][0-9]{7,14}$/.test(digits)){
       return "+"+digits;
     }
+
     return null;
   }
 
@@ -203,7 +212,7 @@
         return;
       }
       if(phoneNumber===null){
-        status("Enter the phone number in international format, for example +12125551234, or leave it blank.","error");
+        status("Enter a valid phone number. U.S. 10-digit numbers are accepted automatically, or use international format such as +12125551234.","error");
         return;
       }
 
@@ -220,9 +229,22 @@
             phone_number:phoneNumber||null,
             updated_at:new Date().toISOString()
           })
-          .eq("id",user.id);
+          .eq("id",user.id)
+          .select("first_name,last_name,secondary_email,phone_number")
+          .single();
 
         if(saved.error)throw saved.error;
+
+        const verified=saved.data||{};
+        const persisted=
+          String(verified.first_name||"")===firstName &&
+          String(verified.last_name||"")===lastName &&
+          String(verified.secondary_email||"")===secondEmail &&
+          String(verified.phone_number||"")===String(phoneNumber||"");
+
+        if(!persisted){
+          throw new Error("Account information was not saved correctly. Please try again.");
+        }
 
         if(primaryEmail!==String(user.email||"").toLowerCase()){
           const emailUpdate=await client.auth.updateUser({email:primaryEmail});
