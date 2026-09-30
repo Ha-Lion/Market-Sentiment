@@ -17,9 +17,14 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   }
 
-  function validOptionalPhone(v){
-    if(!v)return true;
-    return /^\+?[0-9\s().-]{7,32}$/.test(v);
+  function normalizeOptionalPhone(v){
+    const raw=String(v||"").trim();
+    if(!raw)return "";
+    const digits=raw.replace(/[^0-9]/g,"");
+    if(raw.startsWith("+") && /^[1-9][0-9]{7,14}$/.test(digits)){
+      return "+"+digits;
+    }
+    return null;
   }
 
   async function init(){
@@ -183,7 +188,7 @@
       const lastName=clean(last.value,80);
       const primaryEmail=clean(primary.value,320).toLowerCase();
       const secondEmail=clean(secondary.value,320).toLowerCase();
-      const phoneNumber=clean(phone.value,32);
+      const phoneNumber=normalizeOptionalPhone(phone.value);
 
       if(!primaryEmail || !validOptionalEmail(primaryEmail)){
         status("Enter a valid primary email address.","error");
@@ -197,8 +202,8 @@
         status("The second email should be different from your primary email.","error");
         return;
       }
-      if(!validOptionalPhone(phoneNumber)){
-        status("Enter a valid phone number or leave it blank.","error");
+      if(phoneNumber===null){
+        status("Enter the phone number in international format, for example +12125551234, or leave it blank.","error");
         return;
       }
 
