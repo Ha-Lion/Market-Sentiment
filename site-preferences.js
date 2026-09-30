@@ -39,8 +39,8 @@
         <span class="psd-account-nav-wrap">
           <a href="auth.html" id="psd-account-nav-link"${isActive ? ' class="active"' : ''}>${link.label}</a>
           <div class="psd-account-menu" id="psd-account-menu" hidden>
-            <a href="account.html#preferences">Preferences</a>
-            <a href="account.html#profile">Update Information</a>
+            <a href="account.html">Preferences</a>
+            <a href="my-account.html">My Account</a>
             <a href="watchlist.html">My Watchlist</a>
             <a href="activity-report.html" id="psd-activity-report-link" hidden>Activity Report</a>
             <button type="button" id="psd-nav-signout">Log Out</button>
@@ -275,7 +275,6 @@
     }
   }
 
-
   function ensureAccountNavStyles(){
     if(document.getElementById("psd-account-nav-styles")) return;
 
@@ -328,7 +327,6 @@
         background:rgba(210,153,34,.10);
       }
 
-      /* Exact two-row ribbon rule used by the established public pages. */
       .nav-row-break{
         flex-basis:100%;
         width:0;
@@ -337,7 +335,6 @@
         margin:0;
       }
 
-      /* Keep the existing proven ribbon layout unchanged. */
       .nav a::before{
         display:none!important;
         content:none!important;
@@ -430,8 +427,8 @@
     }
 
     const blockedAccountLinks = new Set([
-      "account.html#preferences",
-      "account.html#profile",
+      "account.html",
+      "my-account.html",
       "watchlist.html",
       "activity-report.html"
     ]);
@@ -470,10 +467,6 @@
         });
     };
 
-    /*
-      Mobile ribbon creation is asynchronous.
-      Clean immediately and again after its delayed builds.
-    */
     cleanMenu();
 
     setTimeout(cleanMenu, 100);
@@ -501,11 +494,6 @@
         document.getElementById("psd-ribbon-watchlist-link");
 
       if(!session){
-
-        /*
-          Session is now confirmed signed out.
-          Remove private account options from mobile navigation.
-        */
         removeSignedOutMobileAccountLinks();
         if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = true;
         accountLink.textContent = "Sign In";
@@ -565,7 +553,6 @@
         signout.textContent = "Logging out…";
 
         try{
-          /* On the account page, save any pending preference fields first. */
           if(typeof window.PSDSavePendingAccountSettings === "function"){
             await window.PSDSavePendingAccountSettings();
           }
@@ -573,14 +560,10 @@
           const client = await ensureAccountInfrastructure();
           if(!client) throw new Error("Account service is unavailable.");
 
-          /* End only this browser session and clear its stored auth session. */
           const result = await client.auth.signOut({ scope: "local" });
           if(result && result.error) throw result.error;
 
           menu.hidden = true;
-
-          /* replace() loads a fresh home page and removes the private page
-             from the Back-button history. */
           window.location.replace(homeUrl);
         }catch(error){
           console.error("Logout failed:", error);
