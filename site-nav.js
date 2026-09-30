@@ -85,8 +85,8 @@
         <span class="psd-account-nav-wrap">
           <a href="auth.html" id="psd-account-nav-link"${initialClass ? ' class="' + initialClass + '"' : ''} data-signed-in="${cachedMemberUI() ? 'true' : 'false'}">${cachedLabel}</a>
           <div class="psd-account-menu" id="psd-account-menu" hidden>
-            <a href="account.html#preferences">Preferences</a>
-            <a href="account.html#profile">Update Information</a>
+            <a href="account.html">Preferences</a>
+            <a href="my-account.html">My Account</a>
             <a href="watchlist.html">My Watchlist</a>
             <a href="activity-report.html" id="psd-activity-report-link" hidden>Control Center</a>
             <button type="button" id="psd-nav-signout">Log Out</button>
@@ -204,19 +204,11 @@
     closeButton.addEventListener("click", closeTour);
     document.addEventListener("keydown", onKeyDown);
 
-    /*
-     * The overlay already fills the viewport. Avoid consuming the browser's
-     * click permission with requestFullscreen() before video.play().
-     */
     const startPlayback = function(){
       const playResult = video.play();
 
       if(playResult && typeof playResult.catch === "function"){
         playResult.catch(function(){
-          /*
-           * Browser fallback: start muted if unmuted playback is blocked.
-           * Controls remain visible so the viewer can immediately unmute.
-           */
           video.muted = true;
           const mutedPlay = video.play();
           if(mutedPlay && typeof mutedPlay.catch === "function"){
@@ -283,7 +275,6 @@
     window.location.href = authPageUrl(nextPage);
   }
 
-
   function ensureMemberFeatureGateStyles(){
     if(document.getElementById("psd-member-feature-gate-styles")) return;
 
@@ -334,7 +325,6 @@
     `;
     document.head.appendChild(style);
   }
-
 
   function closeMemberFeatureGate(returnHome){
     const gate = document.getElementById("psd-member-feature-gate");
@@ -421,7 +411,6 @@
       });
     });
 
-
     const current = currentFile();
     if(memberFeaturePages[current]){
       userHasActiveSession().then(function(signedIn){
@@ -482,8 +471,8 @@
     }
 
     const blockedAccountLinks = new Set([
-      "account.html#preferences",
-      "account.html#profile",
+      "account.html",
+      "my-account.html",
       "watchlist.html",
       "activity-report.html"
     ]);
@@ -522,10 +511,6 @@
         });
     };
 
-    /*
-      Mobile ribbon creation is asynchronous.
-      Clean immediately and again after its delayed builds.
-    */
     cleanMenu();
 
     setTimeout(cleanMenu, 100);
@@ -553,11 +538,6 @@
         document.getElementById("psd-ribbon-watchlist-link");
 
       if(!session){
-
-        /*
-          Session is now confirmed signed out.
-          Remove private account options from mobile navigation.
-        */
         removeSignedOutMobileAccountLinks();
         cacheMemberUI(false);
         if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = true;
@@ -573,9 +553,6 @@
         return;
       }
 
-      /* A confirmed auth session is enough to keep My Watchlist visible.
-         Show it before the optional profile lookup so changing pages cannot
-         make the ribbon link disappear while profile data is loading. */
       cacheMemberUI(true);
       if(ribbonWatchlistLink) ribbonWatchlistLink.hidden = false;
 
@@ -628,7 +605,6 @@
         signout.textContent = "Logging out…";
 
         try{
-          /* On the account page, save any pending preference fields first. */
           if(typeof window.PSDSavePendingAccountSettings === "function"){
             await window.PSDSavePendingAccountSettings();
           }
@@ -636,14 +612,10 @@
           const client = await ensureAccountInfrastructure();
           if(!client) throw new Error("Account service is unavailable.");
 
-          /* End only this browser session and clear its stored auth session. */
           const result = await client.auth.signOut({ scope: "local" });
           if(result && result.error) throw result.error;
 
           menu.hidden = true;
-
-          /* replace() loads a fresh home page and removes the private page
-             from the Back-button history. */
           window.location.replace(homeUrl);
         }catch(error){
           console.error("Logout failed:", error);
@@ -739,24 +711,11 @@
     }
   }
 
-
   function alignRibbonGeometry(){
     const aiBuilt = document.querySelector(".psd-shared-header .brand-stamp.psd-dancing-label");
     const learning = document.querySelector(".psd-shared-header .psd-learning-label");
 
     if(aiBuilt && learning){
-        /*
-         * Keep "Constantly learning & improving" in its CSS-defined position.
-         * Do NOT measure or horizontally translate it in JavaScript.
-         *
-         * This removes the load-timing race that could push the pill left
-         * over the logo while preserving its existing CSS size and location.
-         */
-
-        /*
-         * Preserve the existing height matching only.
-         * No other ribbon element geometry is changed here.
-         */
         const learningHeight = learning.offsetHeight;
         if(learningHeight > 0){
           aiBuilt.style.setProperty("height", learningHeight + "px", "important");
@@ -765,11 +724,6 @@
         }
     }
 
-    /*
-     * Align Market Pulse's icon/link left edge exactly with Crypto Sentiment.
-     * This is measured from the live ribbon, so it stays exact even if the
-     * browser width changes.
-     */
     const crypto = document.querySelector('.psd-shared-header .psd-nav-assets a[href="crypto.html"]');
     const pulse = document.querySelector('.psd-shared-header .psd-market-pulse-link');
     const pulseRow = document.querySelector('.psd-shared-header .psd-nav-fourth');
@@ -785,7 +739,6 @@
       }
     }
   }
-
 
   function savedRibbonTheme(){
     try{
@@ -901,8 +854,6 @@
     ensureTourStyles();
     enforceRibbonNamesAndAIStyle();
     initializeRibbonThemeButton();
-
-    /* One geometry pass only. CSS is already present before first paint. */
     alignRibbonGeometry();
 
     const tourButton = document.getElementById("site-tour-button");
@@ -930,10 +881,6 @@
     });
   });
 
-  /*
-   * Render immediately whenever the shared mount already exists.
-   * This removes the avoidable DOMContentLoaded delay used by the old ribbon.
-   */
   if(document.getElementById("site-header")) render();
   else if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", render, {once:true});
   else render();
