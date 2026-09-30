@@ -1,7 +1,23 @@
 (function(){
   "use strict";
 
-  function hideContactFields(){
+  function installTemporarySmsHide(){
+    if(document.getElementById("psd-hide-calendar-sms")) return;
+
+    const style=document.createElement("style");
+    style.id="psd-hide-calendar-sms";
+    style.textContent=`
+      .ec-icon-btn[data-action="sms"]{
+        display:none!important;
+      }
+      label.ec-check:has(#default-sms-reminder){
+        display:none!important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function cleanReminderSettings(){
     const group=document.querySelector(".ec-settings-group.ec-settings-alerts");
     if(!group)return;
 
@@ -13,7 +29,7 @@
 
     const phone=document.getElementById("account-phone");
     if(phone){
-      let phoneBlock=phone.closest("label");
+      const phoneBlock=phone.closest("label");
       if(phoneBlock) phoneBlock.style.display="none";
 
       const note=phoneBlock && phoneBlock.nextElementSibling;
@@ -22,13 +38,16 @@
       }
     }
 
+    const sms=document.getElementById("default-sms-reminder");
+    if(sms) sms.checked=false;
+
     let helper=group.querySelector(".psd-reminder-account-note");
     if(!helper){
       helper=document.createElement("div");
       helper.className="ec-reminder-note psd-reminder-account-note";
-      helper.textContent="Email and mobile number are managed in My Account.";
       group.querySelector(".ec-contact-grid")?.appendChild(helper);
     }
+    if(helper) helper.textContent="Email is managed in My Account.";
   }
 
   async function syncPhoneFromMyAccount(){
@@ -56,22 +75,11 @@
   }
 
   function run(){
-    hideContactFields();
+    installTemporarySmsHide();
+    cleanReminderSettings();
     syncPhoneFromMyAccount();
 
-    const panel=document.getElementById("settings-panel");
-    if(panel && window.MutationObserver){
-      const observer=new MutationObserver(function(){
-        hideContactFields();
-        syncPhoneFromMyAccount();
-      });
-      observer.observe(panel,{attributes:true,attributeFilter:["class"]});
-    }
-
-    window.addEventListener("psd-profile-updated",function(){
-      syncPhoneFromMyAccount();
-    });
-
+    window.addEventListener("psd-profile-updated",syncPhoneFromMyAccount);
     window.addEventListener("psd-member-status-change",function(){
       setTimeout(syncPhoneFromMyAccount,50);
     });
