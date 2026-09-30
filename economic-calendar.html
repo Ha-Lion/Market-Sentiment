@@ -328,7 +328,7 @@
   .ec-tool-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
   .ec-tool-btn:active{transform:translateY(1px) scale(.985)}
   .ec-my-markets{display:flex;flex-wrap:wrap;gap:6px 10px}
-  .ec-analytics-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+  .ec-analytics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
   .ec-analytics-card{border:1px solid var(--ec-border);border-radius:10px;padding:9px 10px;background:var(--ec-soft2)}
   .ec-analytics-card span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);font-weight:800}
   .ec-analytics-card strong{display:block;margin-top:3px;font-size:16px}
@@ -414,6 +414,48 @@
     .ec-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
     .ec-settings-group{border:1px solid var(--ec-border);border-radius:12px;padding:12px;background:var(--ec-soft2);}
     .ec-settings-group h3{font-size:12px;margin:0 0 10px;}
+    /* V40 settings layout */
+    .ec-settings-alerts{grid-column:span 1;}
+    .ec-settings-preferences{grid-column:span 2;}
+    .ec-settings-countries{grid-column:1/-1;}
+    .ec-settings-preferences .ec-pref-section{
+      padding:0 0 12px;
+      margin:0 0 12px;
+      border-bottom:1px solid var(--ec-border);
+    }
+    .ec-settings-preferences .ec-pref-section:last-child{
+      padding-bottom:0;
+      margin-bottom:0;
+      border-bottom:0;
+    }
+    .ec-settings-preferences .ec-pref-title{
+      font-size:11px;
+      font-weight:900;
+      margin:0 0 8px;
+    }
+    .ec-settings-preferences .ec-checks{
+      grid-template-columns:repeat(5,minmax(0,1fr));
+    }
+    .ec-settings-preferences .ec-impact-checks{
+      display:flex;
+      gap:10px 18px;
+      flex-wrap:wrap;
+    }
+    .ec-settings-preferences .ec-my-markets{
+      gap:8px 16px;
+    }
+    .ec-settings-countries .ec-checks{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+    }
+    @media(max-width:1100px){
+      .ec-settings-alerts,.ec-settings-preferences{grid-column:1/-1;}
+      .ec-settings-preferences .ec-checks{grid-template-columns:repeat(3,minmax(0,1fr));}
+      .ec-settings-countries .ec-checks{grid-template-columns:repeat(4,minmax(0,1fr));}
+    }
+    @media(max-width:800px){
+      .ec-settings-preferences .ec-checks,
+      .ec-settings-countries .ec-checks{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
     .ec-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;}
     .ec-checks.one-col{grid-template-columns:1fr;}
     .ec-check{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;}
@@ -661,43 +703,7 @@
 
         <fieldset id="settings-fieldset" disabled style="border:0;padding:0;margin:0" class="ec-settings-locked">
           <div class="ec-settings-grid">
-            <div class="ec-settings-group">
-              <h3>Countries</h3>
-              <div class="ec-country-tools">
-                <button id="country-select-all" class="ec-mini-btn" type="button">Select all</button>
-                <button id="country-major" class="ec-mini-btn" type="button">Major markets</button>
-                <button id="country-clear" class="ec-mini-btn" type="button">Clear</button>
-              </div>
-              <input id="country-settings-search" class="ec-country-search" type="search" placeholder="Search countries…">
-              <div id="all-country-checkboxes" class="ec-checks ec-country-scroll"></div>
-            </div>
-
-            <div class="ec-settings-group">
-              <h3>Event Classification</h3>
-              <div class="ec-checks">
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Inflation" checked> Inflation</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Labor" checked> Labor / Employment</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Central Bank" checked> Central Bank</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Growth" checked> Growth / Business</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Energy" checked> Energy</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Housing" checked> Housing</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Trade" checked> Trade</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Government" checked> Government / Fiscal</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Consumer" checked> Consumer</label>
-                <label class="ec-check"><input type="checkbox" name="saved-category" value="Other" checked> Other</label>
-              </div>
-            </div>
-
-            <div class="ec-settings-group">
-              <h3>Impact</h3>
-              <div class="ec-checks one-col">
-                <label class="ec-check"><input type="checkbox" name="saved-impact" value="high" checked> 🔴 High impact</label>
-                <label class="ec-check"><input type="checkbox" name="saved-impact" value="medium" checked> 🟠 Medium impact</label>
-                <label class="ec-check"><input type="checkbox" name="saved-impact" value="low" checked> 🟢 Low impact</label>
-              </div>
-            </div>
-
-            <div class="ec-settings-group">
+            <div class="ec-settings-group ec-settings-alerts">
               <h3>Alerts & Contact</h3>
               <div class="ec-contact-grid">
                 <div>
@@ -730,43 +736,80 @@
               </div>
             </div>
 
-            <div class="ec-settings-group">
-              <h3>My Markets / Watchlist</h3>
-              <div class="ec-my-markets">
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="SPY"> SPY</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="USD"> USD</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="Treasuries"> Treasuries</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="Gold"> Gold</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="EUR"> EUR</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="GBP"> GBP</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="JPY"> JPY</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="WTI"> WTI</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="Brent"> Brent</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="Copper"> Copper</label>
-                <label class="ec-check"><input type="checkbox" name="saved-market" value="BTC"> BTC</label>
+            <div class="ec-settings-group ec-settings-preferences">
+              <h3>Markets / Watchlist, Impact & Event Classification</h3>
+
+              <div class="ec-pref-section">
+                <div class="ec-pref-title">Markets / Watchlist</div>
+                <div class="ec-my-markets">
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="SPY"> SPY</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="USD"> USD</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Treasuries"> Treasuries</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Gold"> Gold</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="EUR"> EUR</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="GBP"> GBP</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="JPY"> JPY</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="WTI"> WTI</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Brent"> Brent</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Copper"> Copper</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-market" value="BTC"> BTC</label>
+                </div>
+                <div id="watchlist-link-note" class="ec-reminder-note">Logged-in members automatically use their existing Watchlist. Manual selections are used as fallback.</div>
               </div>
-              <div id="watchlist-link-note" class="ec-reminder-note">Logged-in members automatically use their existing Watchlist. Manual selections are used as fallback.</div>
+
+              <div class="ec-pref-section">
+                <div class="ec-pref-title">Impact</div>
+                <div class="ec-impact-checks">
+                  <label class="ec-check"><input type="checkbox" name="saved-impact" value="high" checked> 🔴 High impact</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-impact" value="medium" checked> 🟠 Medium impact</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-impact" value="low" checked> 🟢 Low impact</label>
+                </div>
+              </div>
+
+              <div class="ec-pref-section">
+                <div class="ec-pref-title">Event Classification</div>
+                <div class="ec-checks">
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Inflation" checked> Inflation</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Labor" checked> Labor / Employment</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Central Bank" checked> Central Bank</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Growth" checked> Growth / Business</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Energy" checked> Energy</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Housing" checked> Housing</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Trade" checked> Trade</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Government" checked> Government / Fiscal</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Consumer" checked> Consumer</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Other" checked> Other</label>
+                </div>
+              </div>
             </div>
 
-            <div class="ec-settings-group">
-              <h3>Timezone</h3>
-              <select id="saved-timezone" class="ec-select">
-                <option value="America/New_York">New York — Eastern Time</option>
-                <option value="America/Chicago">Chicago — Central Time</option>
-                <option value="America/Denver">Denver — Mountain Time</option>
-                <option value="America/Los_Angeles">Los Angeles — Pacific Time</option>
-                <option value="Europe/London">London</option>
-                <option value="Europe/Paris">Paris / Central Europe</option>
-                <option value="Asia/Tokyo">Tokyo</option>
-                <option value="Asia/Hong_Kong">Hong Kong</option>
-                <option value="Asia/Singapore">Singapore</option>
-                <option value="Asia/Dubai">Dubai</option>
-                <option value="Australia/Sydney">Sydney</option>
-                <option value="UTC">UTC</option>
-              </select>
-              <div class="ec-reminder-note">Your saved timezone controls all event times on this page.</div>
+            <div class="ec-settings-group ec-settings-countries">
+              <h3>Countries / Regions</h3>
+              <div class="ec-country-tools">
+                <button id="country-select-all" class="ec-mini-btn" type="button">Select all</button>
+                <button id="country-major" class="ec-mini-btn" type="button">Major markets</button>
+                <button id="country-clear" class="ec-mini-btn" type="button">Clear</button>
+              </div>
+              <input id="country-settings-search" class="ec-country-search" type="search" placeholder="Search countries…">
+              <div id="all-country-checkboxes" class="ec-checks ec-country-scroll"></div>
             </div>
           </div>
+
+          <!-- Timezone remains controlled by the toolbar. Hidden select preserves existing saved-settings JS. -->
+          <select id="saved-timezone" hidden aria-hidden="true" tabindex="-1">
+            <option value="America/New_York">New York — Eastern Time</option>
+            <option value="America/Chicago">Chicago — Central Time</option>
+            <option value="America/Denver">Denver — Mountain Time</option>
+            <option value="America/Los_Angeles">Los Angeles — Pacific Time</option>
+            <option value="Europe/London">London</option>
+            <option value="Europe/Paris">Paris / Central Europe</option>
+            <option value="Asia/Tokyo">Tokyo</option>
+            <option value="Asia/Hong_Kong">Hong Kong</option>
+            <option value="Asia/Singapore">Singapore</option>
+            <option value="Asia/Dubai">Dubai</option>
+            <option value="Australia/Sydney">Sydney</option>
+            <option value="UTC">UTC</option>
+          </select>
 
           <div class="ec-settings-actions">
             <span id="settings-save-status" class="ec-save-status"></span>
@@ -813,7 +856,12 @@
       </div>
 
       <div class="ec-provider">
-        <span>Source: <strong id="provider-name">Biquote + FinanceCalendar</strong> · Times automatically convert to your selected timezone.</span>
+        <span>
+          Source: <strong id="provider-name">FinanceCalendar</strong>
+          · <a href="https://www.financecalendar.com/" target="_blank" rel="noopener">financecalendar.com</a>
+          · <a href="data-sources.html">Data Sources &amp; Licensing</a>
+          · Times automatically convert to your selected timezone.
+        </span>
         <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
       </div>
     </section>
@@ -862,6 +910,7 @@
             <div id="event-analytics" class="ec-analytics-grid">
               <div class="ec-analytics-card"><span>Surprise Score</span><strong id="analytics-surprise">—</strong><small id="analytics-surprise-note">Waiting for history</small></div>
               <div class="ec-analytics-card"><span>Forecast Accuracy · 12M</span><strong id="analytics-accuracy">—</strong><small id="analytics-accuracy-note">Waiting for history</small></div>
+              <div class="ec-analytics-card"><span>Revision Tracker · 12M</span><strong id="analytics-revision">—</strong><small id="analytics-revision-note">Waiting for history</small></div>
               <div class="ec-analytics-card"><span>PSD Intelligence Score</span><strong id="analytics-intelligence">—</strong><small>Rule-based v1 · no AI cost</small></div>
             </div>
           </section>
@@ -1812,6 +1861,7 @@
             actual:row.actual,
             forecast:row.forecast,
             previous:row.previous,
+            revised:row.revised,
             unit:row.unit||""
           };
         }).filter(row=>row.date && row.value!==null);
@@ -1864,7 +1914,7 @@
             callout.innerHTML=`
               <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
               ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
-              Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}
+              Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}${r.revised!==undefined&&r.revised!==null&&r.revised!==""?` · Revised: ${formatValue(r.revised,r.unit)}`:""}
             `;
 
             callout.hidden=false;
@@ -2195,6 +2245,35 @@
       return {score:Math.max(0,Math.min(100,100-(mape*100))),count:pairs.length,mape:mape*100};
     }
 
+    function revisionAnalytics(e,history){
+      const months=dedupeHistoryByMonth(history);
+      const revisions=months.map(row=>{
+        const original=numericValue(row.previous);
+        const revised=numericValue(row.revised);
+        if(original===null||revised===null||original===revised) return null;
+        return {
+          original,
+          revised,
+          delta:revised-original,
+          date:row._parsedDate||parseProviderDate(row.date)
+        };
+      }).filter(Boolean);
+
+      const currentOriginal=numericValue(e.previous);
+      const currentRevised=numericValue(e.revised);
+      const current=(currentOriginal!==null&&currentRevised!==null&&currentOriginal!==currentRevised)
+        ? {original:currentOriginal,revised:currentRevised,delta:currentRevised-currentOriginal}
+        : null;
+
+      const latest=revisions.length?revisions[revisions.length-1]:null;
+      return {
+        count:revisions.length,
+        current,
+        latest,
+        totalMonths:months.length
+      };
+    }
+
     function intelligenceScore(e,history){
       const impact=impactFromImportance(e.importance);
       const impactPts=impact==="high"?45:impact==="medium"?30:15;
@@ -2213,6 +2292,7 @@
     function updateEventAnalytics(e,history){
       const surprise=currentSurpriseScore(e,history);
       const acc=forecastAccuracy(history);
+      const revision=revisionAnalytics(e,history);
       const intel=intelligenceScore(e,history);
 
       const surpriseEl=document.getElementById("analytics-surprise");
@@ -2233,6 +2313,24 @@
       }else{
         accEl.textContent="—";
         accNote.textContent="Not enough forecast history";
+      }
+
+      const revEl=document.getElementById("analytics-revision");
+      const revNote=document.getElementById("analytics-revision-note");
+      if(revision.current){
+        const delta=revision.current.delta;
+        revEl.textContent=`${formatValue(revision.current.original,e.unit)} → ${formatValue(revision.current.revised,e.unit)}`;
+        revNote.textContent=`Current prior reading revised ${delta>0?"+":""}${delta.toFixed(3)}${e.unit==="%"?" pp":""}`;
+      }else if(revision.latest){
+        const delta=revision.latest.delta;
+        revEl.textContent=`${revision.count} revision${revision.count===1?"":"s"}`;
+        revNote.textContent=`Latest: ${formatValue(revision.latest.original,e.unit)} → ${formatValue(revision.latest.revised,e.unit)} (${delta>0?"+":""}${delta.toFixed(3)}${e.unit==="%"?" pp":""})`;
+      }else if(revision.totalMonths){
+        revEl.textContent="No revisions";
+        revNote.textContent=`No changed prior readings found across ${revision.totalMonths} historical release${revision.totalMonths===1?"":"s"}`;
+      }else{
+        revEl.textContent="—";
+        revNote.textContent="No revision history available yet";
       }
 
       document.getElementById("analytics-intelligence").textContent=intel+"/100";
@@ -2307,6 +2405,8 @@
 
       document.getElementById("analytics-surprise").textContent="—";
       document.getElementById("analytics-accuracy").textContent="—";
+      document.getElementById("analytics-revision").textContent="—";
+      document.getElementById("analytics-revision-note").textContent="Waiting for history";
       document.getElementById("analytics-intelligence").textContent=Math.round((impactFromImportance(e.importance)==="high"?45:impactFromImportance(e.importance)==="medium"?30:15)+Math.min(15,relevantAssets(e).length*3))+"/100";
       document.getElementById("event-market-reaction").textContent="Loading market reaction…";
 
@@ -2314,6 +2414,7 @@
         <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
         <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast||e.te_forecast,e.unit)}</strong></div>
         <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,e.unit)}</strong></div>
+        ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,e.unit)}</strong></div>`:""}
         <div class="ec-kpi"><span>Impact</span><strong>${esc(impactFromImportance(e.importance))}</strong></div>`;
 
       const classification=classifyEvent(e);
@@ -2591,7 +2692,12 @@
       const res=await fetch(FEED_URL,{
         method:"POST",
         headers:{"content-type":"application/json"},
-        body:JSON.stringify({start:range.start,end:range.end,countries:settings.countries}),
+        body:JSON.stringify({
+          start:range.start,
+          end:range.end,
+          countries:settings.countries,
+          force_live:Boolean(forceNetwork)
+        }),
         signal,
         cache:forceNetwork?"no-store":"default"
       });
@@ -2701,8 +2807,9 @@
           setTimeout(()=>preloadWeekInBackground(false),300);
         }
 
-        setStatus(data.mode==="configured"?"live":"loading",data.mode==="configured"?"Live data":"Calendar feed");
-        document.getElementById("provider-name").textContent=data.source||"Biquote + FinanceCalendar";
+        const healthyFeed=data.mode==="configured"||data.mode==="snapshot";
+        setStatus(healthyFeed?"live":"loading",healthyFeed?"Live data":"Calendar feed");
+        document.getElementById("provider-name").textContent=data.source||"FinanceCalendar";
         const updated=document.getElementById("last-updated");
         if(updated) updated.textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
@@ -2750,7 +2857,7 @@
           start:weekRange.start,
           end:weekRange.end,
           countries:[...settings.countries],
-          source:data.source||"Biquote + FinanceCalendar",
+          source:data.source||"FinanceCalendar",
           mode:"configured",
           fetched_at:lastFetchAt.toISOString(),
           provider_error:data.provider_error||null,
