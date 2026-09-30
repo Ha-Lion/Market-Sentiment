@@ -10,35 +10,291 @@
   <link rel="stylesheet" href="site.css">
   <link rel="stylesheet" href="account.css?v=12">
   <link rel="stylesheet" href="site-theme.css?v=20">
+
   <style>
     body{min-height:100vh}
-    main.page.account-page{width:auto;max-width:none;margin:0;padding:14px;min-height:calc(100vh - 180px)}
-    .my-account-shell{max-width:1180px;margin:0 auto}
-    .identity-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px}
-    .avatar-panel{display:flex;flex-direction:column;align-items:center;text-align:center}
-    .avatar-preview{
-      width:170px;height:170px;border-radius:50%;object-fit:cover;
-      border:4px solid rgba(210,153,34,.55);background:#131923;
-      box-shadow:0 12px 28px rgba(0,0,0,.20);margin:8px 0 14px
+
+    main.page.account-page{
+      width:auto;
+      max-width:none;
+      margin:0;
+      padding:14px 18px 26px;
+      min-height:calc(100vh - 180px);
     }
+
+    .my-account-shell{
+      max-width:1040px;
+      margin:0 auto;
+    }
+
+    .my-account-header{
+      padding:16px 20px!important;
+      margin-bottom:12px!important;
+    }
+
+    .my-account-header .account-meta{
+      align-items:flex-start;
+    }
+
+    .my-account-header h1{
+      margin:5px 0 4px;
+      font-size:30px;
+      line-height:1.08;
+    }
+
+    .my-account-header .psd-help{
+      margin:0;
+      font-size:12px;
+    }
+
+    .account-body-card{
+      padding:20px!important;
+      margin-bottom:12px!important;
+    }
+
+    .identity-grid{
+      display:grid;
+      grid-template-columns:190px minmax(0,1fr);
+      gap:26px;
+      align-items:start;
+    }
+
+    .avatar-panel{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      padding-right:18px;
+      border-right:1px solid var(--theme-line);
+    }
+
+    .avatar-panel h2,
+    .details-panel h2,
+    .compact-card h2{
+      margin:0 0 12px;
+      font-size:18px!important;
+    }
+
+    .avatar-preview,
     .avatar-placeholder{
-      width:170px;height:170px;border-radius:50%;display:grid;place-items:center;
-      border:4px solid rgba(210,153,34,.55);background:rgba(210,153,34,.10);
-      color:#d29922;font-size:54px;font-weight:900;margin:8px 0 14px
+      width:112px;
+      height:112px;
+      border-radius:50%;
+      margin:2px 0 12px;
+      border:3px solid rgba(210,153,34,.62);
+      box-shadow:0 7px 18px rgba(0,0,0,.12);
     }
-    .avatar-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+    .avatar-preview{
+      object-fit:cover;
+      background:#f5f7fa;
+    }
+
+    .avatar-placeholder{
+      display:grid;
+      place-items:center;
+      background:rgba(210,153,34,.10);
+      color:#a97811;
+      font-size:38px;
+      font-weight:900;
+    }
+
     #avatar-file{display:none}
-    .profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .profile-fields .full{grid-column:1/-1}
-    .email-note{margin-top:3px}
-    .primary-email-row{display:flex;gap:8px;align-items:center}
-    .primary-email-row input{flex:1}
+
+    .avatar-actions{
+      display:flex;
+      gap:7px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    .avatar-actions .psd-button{
+      min-height:34px;
+      padding:7px 11px;
+      font-size:12px;
+    }
+
+    .avatar-panel .psd-help{
+      max-width:170px;
+      margin:10px 0 0;
+      font-size:11px;
+      line-height:1.4;
+    }
+
+    .details-panel{
+      min-width:0;
+    }
+
+    .details-panel form{
+      max-width:720px;
+    }
+
+    .profile-fields{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px 14px;
+    }
+
+    .profile-fields .full{
+      grid-column:1/-1;
+    }
+
+    .psd-field{
+      gap:5px;
+    }
+
+    .psd-field label{
+      font-size:12px;
+    }
+
+    .details-panel .psd-input,
+    .compact-card .psd-input{
+      min-height:38px;
+      padding:8px 10px;
+      border-radius:9px;
+      font-size:13px;
+    }
+
+    .details-panel .psd-help,
+    .compact-card .psd-help{
+      margin-top:2px;
+      font-size:11px;
+      line-height:1.4;
+    }
+
+    .save-row{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:14px;
+    }
+
+    .save-row .psd-button{
+      width:auto;
+      min-width:170px;
+      min-height:38px;
+      padding:8px 18px;
+      font-size:13px;
+    }
+
+    .compact-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .compact-card{
+      padding:18px 20px!important;
+    }
+
+    .compact-card .psd-form{
+      gap:12px;
+    }
+
+    .compact-card .psd-button{
+      min-height:38px;
+      padding:8px 18px;
+      font-size:13px;
+    }
+
+    .compact-card .inline-actions{
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .compact-card .inline-actions .psd-button{
+      width:auto;
+      min-width:150px;
+    }
+
+    .danger-zone{
+      border-color:rgba(180,35,24,.26)!important;
+    }
+
+    .danger-zone p{
+      margin:0 0 10px;
+    }
+
+    /* light-mode corrections */
+    body:not(.dark-mode) .my-account-header,
+    body:not(.dark-mode) .account-body-card,
+    body:not(.dark-mode) .compact-card{
+      background:#ffffff!important;
+      border:1px solid #c9d5df!important;
+      color:#0b1f31!important;
+      box-shadow:0 8px 22px rgba(25,50,72,.10)!important;
+    }
+
+    body:not(.dark-mode) .my-account-header h1,
+    body:not(.dark-mode) .avatar-panel h2,
+    body:not(.dark-mode) .details-panel h2,
+    body:not(.dark-mode) .compact-card h2,
+    body:not(.dark-mode) .psd-field label{
+      color:#0b1f31!important;
+    }
+
+    body:not(.dark-mode) .my-account-header .psd-help,
+    body:not(.dark-mode) .avatar-panel .psd-help,
+    body:not(.dark-mode) .details-panel .psd-help,
+    body:not(.dark-mode) .compact-card .psd-help,
+    body:not(.dark-mode) .compact-card p{
+      color:#52677a!important;
+    }
+
+    body:not(.dark-mode) .details-panel .psd-input,
+    body:not(.dark-mode) .compact-card .psd-input{
+      background:#fff!important;
+      color:#0b1f31!important;
+      border-color:#9db0c0!important;
+    }
+
+    body:not(.dark-mode) .details-panel .psd-input::placeholder,
+    body:not(.dark-mode) .compact-card .psd-input::placeholder{
+      color:#7e8e9c!important;
+    }
+
+    body:not(.dark-mode) .avatar-placeholder{
+      background:#fff8e6!important;
+    }
+
+    body:not(.dark-mode) .avatar-panel{
+      border-right-color:#d9e1e8;
+    }
+
+    body:not(.dark-mode) .avatar-actions .psd-button.secondary{
+      background:#fff!important;
+      color:#173047!important;
+      border-color:#9db0c0!important;
+    }
+
+    body.dark-mode .my-account-header,
+    body.dark-mode .account-body-card,
+    body.dark-mode .compact-card{
+      background:#121820!important;
+    }
+
+    @media(max-width:860px){
+      .compact-grid{grid-template-columns:1fr}
+    }
+
     @media(max-width:760px){
+      main.page.account-page{padding:10px}
       .identity-grid{grid-template-columns:1fr}
+      .avatar-panel{
+        padding-right:0;
+        padding-bottom:16px;
+        border-right:0;
+        border-bottom:1px solid var(--theme-line);
+      }
       .profile-fields{grid-template-columns:1fr}
       .profile-fields .full{grid-column:auto}
+      .details-panel form{max-width:none}
+      .save-row{justify-content:stretch}
+      .save-row .psd-button{width:100%}
+      .my-account-header h1{font-size:25px}
+      .compact-card .inline-actions .psd-button{width:100%}
     }
   </style>
+
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
 </head>
 <body>
@@ -48,7 +304,8 @@
 
   <main class="page account-page">
     <div class="my-account-shell">
-      <section class="panel account-card full">
+
+      <section class="panel account-card full my-account-header">
         <div class="account-meta">
           <div>
             <div class="page-chip">My Account</div>
@@ -59,28 +316,35 @@
         <div id="my-account-status" class="psd-status" role="status" aria-live="polite"></div>
       </section>
 
-      <section class="panel account-card full">
+      <section class="panel account-card full account-body-card">
         <div class="identity-grid">
+
           <div class="avatar-panel">
             <h2>Profile Picture</h2>
             <img id="avatar-preview" class="avatar-preview hidden" alt="Your profile picture">
             <div id="avatar-placeholder" class="avatar-placeholder" aria-hidden="true">👤</div>
+
             <input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+
             <div class="avatar-actions">
               <label class="psd-button secondary" for="avatar-file">Choose Picture</label>
               <button id="avatar-remove" class="psd-button secondary" type="button">Remove</button>
             </div>
+
             <p class="psd-help">Optional. JPG, PNG, WebP, or GIF. Maximum 5 MB.</p>
           </div>
 
-          <div>
+          <div class="details-panel">
             <h2>Account Details</h2>
+
             <form id="my-account-form" class="psd-form">
               <div class="profile-fields">
+
                 <div class="psd-field">
                   <label for="first-name">First name</label>
                   <input class="psd-input" id="first-name" type="text" maxlength="80" autocomplete="given-name">
                 </div>
+
                 <div class="psd-field">
                   <label for="last-name">Last name</label>
                   <input class="psd-input" id="last-name" type="text" maxlength="80" autocomplete="family-name">
@@ -89,7 +353,7 @@
                 <div class="psd-field full">
                   <label for="primary-email">Primary email</label>
                   <input class="psd-input" id="primary-email" type="email" maxlength="320" autocomplete="email" required>
-                  <span class="psd-help email-note">This is your sign-in email. If you change it, Supabase may require email confirmation before the new address becomes active.</span>
+                  <span class="psd-help">This is your sign-in email. Supabase may require confirmation if you change it.</span>
                 </div>
 
                 <div class="psd-field">
@@ -100,15 +364,44 @@
                 <div class="psd-field">
                   <label for="phone-number">Phone number <span style="font-weight:500">(optional)</span></label>
                   <input class="psd-input" id="phone-number" type="tel" maxlength="32" autocomplete="tel" placeholder="+12125551234">
-                  <span class="psd-help">Use international format if you want to use text alerts later.</span>
+                  <span class="psd-help">International format is recommended for future text alerts.</span>
                 </div>
+
               </div>
 
-              <button class="psd-button" type="submit">Save My Account</button>
+              <div class="save-row">
+                <button class="psd-button" type="submit">Save My Account</button>
+              </div>
             </form>
           </div>
+
         </div>
       </section>
+
+      <div class="compact-grid">
+        <section class="panel account-card compact-card">
+          <h2>Password</h2>
+          <form id="password-form" class="psd-form">
+            <div class="psd-field">
+              <label for="account-new-password">New password</label>
+              <input class="psd-input" id="account-new-password" type="password" autocomplete="new-password" minlength="8" required>
+              <span class="psd-help">Use at least 8 characters.</span>
+            </div>
+            <button class="psd-button" type="submit">Change Password</button>
+          </form>
+        </section>
+
+        <section class="panel account-card compact-card danger-zone">
+          <h2>Delete Account</h2>
+          <p>Request deletion of your account and personalized data. A seven-day cancellation period is provided.</p>
+          <div class="inline-actions">
+            <button class="psd-button danger" id="request-delete-button" type="button">Request Deletion</button>
+            <button class="psd-button secondary hidden" id="cancel-delete-button" type="button">Cancel Deletion</button>
+          </div>
+          <p id="deletion-status" class="psd-help"></p>
+        </section>
+      </div>
+
     </div>
   </main>
 
@@ -117,6 +410,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="supabase-client.js?v=12" defer></script>
   <script src="my-account.js?v=1" defer></script>
+  <script src="auth-account.js?v=12" defer></script>
   <script src="site-footer.js?v=1" defer></script>
   <script src="vote-widget.js" defer></script>
   <script src="mobile/ribbon.js?v=2"></script>
