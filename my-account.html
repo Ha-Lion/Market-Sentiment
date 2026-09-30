@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account | Public Sentiment Dash</title>
+  <meta name="description" content="Manage your Public Sentiment Dash personal account information.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="account.css?v=12">
+  <link rel="stylesheet" href="site-theme.css?v=20">
+  <style>
+    body{min-height:100vh}
+    main.page.account-page{width:auto;max-width:none;margin:0;padding:14px;min-height:calc(100vh - 180px)}
+    .my-account-shell{max-width:1180px;margin:0 auto}
+    .identity-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px}
+    .avatar-panel{display:flex;flex-direction:column;align-items:center;text-align:center}
+    .avatar-preview{
+      width:170px;height:170px;border-radius:50%;object-fit:cover;
+      border:4px solid rgba(210,153,34,.55);background:#131923;
+      box-shadow:0 12px 28px rgba(0,0,0,.20);margin:8px 0 14px
+    }
+    .avatar-placeholder{
+      width:170px;height:170px;border-radius:50%;display:grid;place-items:center;
+      border:4px solid rgba(210,153,34,.55);background:rgba(210,153,34,.10);
+      color:#d29922;font-size:54px;font-weight:900;margin:8px 0 14px
+    }
+    .avatar-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    #avatar-file{display:none}
+    .profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .profile-fields .full{grid-column:1/-1}
+    .email-note{margin-top:3px}
+    .account-switch{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .account-switch a{text-decoration:none}
+    .primary-email-row{display:flex;gap:8px;align-items:center}
+    .primary-email-row input{flex:1}
+    @media(max-width:760px){
+      .identity-grid{grid-template-columns:1fr}
+      .profile-fields{grid-template-columns:1fr}
+      .profile-fields .full{grid-column:auto}
+    }
+  </style>
+  <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
+</head>
+<body>
+  <div id="site-header"></div>
+  <script src="site-nav.js?v=20"></script>
+  <script src="site-theme.js?v=20" defer></script>
+
+  <main class="page account-page">
+    <div class="my-account-shell">
+      <section class="panel account-card full">
+        <div class="account-meta">
+          <div>
+            <div class="page-chip">My Account</div>
+            <h1>Personal Information</h1>
+            <p class="psd-help">Manage the personal details connected to your Public Sentiment Dash account.</p>
+            <div class="account-switch">
+              <a class="psd-button secondary" href="account.html">Preferences</a>
+            </div>
+          </div>
+        </div>
+        <div id="my-account-status" class="psd-status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel account-card full">
+        <div class="identity-grid">
+          <div class="avatar-panel">
+            <h2>Profile Picture</h2>
+            <img id="avatar-preview" class="avatar-preview hidden" alt="Your profile picture">
+            <div id="avatar-placeholder" class="avatar-placeholder" aria-hidden="true">👤</div>
+            <input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+            <div class="avatar-actions">
+              <label class="psd-button secondary" for="avatar-file">Choose Picture</label>
+              <button id="avatar-remove" class="psd-button secondary" type="button">Remove</button>
+            </div>
+            <p class="psd-help">Optional. JPG, PNG, WebP, or GIF. Maximum 5 MB.</p>
+          </div>
+
+          <div>
+            <h2>Account Details</h2>
+            <form id="my-account-form" class="psd-form">
+              <div class="profile-fields">
+                <div class="psd-field">
+                  <label for="first-name">First name</label>
+                  <input class="psd-input" id="first-name" type="text" maxlength="80" autocomplete="given-name">
+                </div>
+                <div class="psd-field">
+                  <label for="last-name">Last name</label>
+                  <input class="psd-input" id="last-name" type="text" maxlength="80" autocomplete="family-name">
+                </div>
+
+                <div class="psd-field full">
+                  <label for="primary-email">Primary email</label>
+                  <input class="psd-input" id="primary-email" type="email" maxlength="320" autocomplete="email" required>
+                  <span class="psd-help email-note">This is your sign-in email. If you change it, Supabase may require email confirmation before the new address becomes active.</span>
+                </div>
+
+                <div class="psd-field">
+                  <label for="secondary-email">Second email <span style="font-weight:500">(optional)</span></label>
+                  <input class="psd-input" id="secondary-email" type="email" maxlength="320" autocomplete="email">
+                </div>
+
+                <div class="psd-field">
+                  <label for="phone-number">Phone number <span style="font-weight:500">(optional)</span></label>
+                  <input class="psd-input" id="phone-number" type="tel" maxlength="32" autocomplete="tel" placeholder="+12125551234">
+                  <span class="psd-help">Use international format if you want to use text alerts later.</span>
+                </div>
+              </div>
+
+              <button class="psd-button" type="submit">Save My Account</button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-client.js?v=12" defer></script>
+  <script src="my-account.js?v=1" defer></script>
+  <script src="site-footer.js?v=1" defer></script>
+  <script src="vote-widget.js" defer></script>
+  <script src="mobile/ribbon.js?v=2"></script>
+</body>
+</html>
