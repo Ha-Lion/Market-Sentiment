@@ -896,9 +896,9 @@
     </div>
   </div>
 
-  <script src="glossary.js?v=1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-client.js?v=12"></script>
+  <script src="glossary.js?v=1" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-client.js?v=12" defer></script>
 
   <script>
   (() => {
@@ -1324,6 +1324,7 @@
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
     const HISTORY_CACHE_PREFIX = "psd-economic-history-v5:";
+    const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
     let activeChartSeries = "history";
     let weekPreloadCache = null;
@@ -1333,6 +1334,8 @@
     let activeController = null;
     let autoRefreshTick = 0;
     let lastFullWeekNetworkAt = 0;
+    let lastAccountSessionKey = null;
+    let startupFeedPromise = null;
 
     /* V35 performance: history sparklines are non-critical.
        Render the calendar first, then load visible history quietly with
@@ -1497,6 +1500,39 @@
         reminder_minutes:Number.isFinite(Number(s.reminder_minutes))?Number(s.reminder_minutes):30,
         my_markets:Array.isArray(s.my_markets)?s.my_markets:[]
       };
+    }
+
+
+    function calendarSettingsSignature(value){
+      const s=normalizeSettings(value);
+      return JSON.stringify({
+        countries:[...s.countries].sort(),
+        categories:[...s.categories].sort(),
+        impacts:[...s.impacts].sort(),
+        timezone:s.timezone
+      });
+    }
+
+    function saveCalendarSettingsCache(value){
+      try{
+        localStorage.setItem(SETTINGS_CACHE_KEY,JSON.stringify({
+          saved_at:Date.now(),
+          settings:normalizeSettings(value)
+        }));
+      }catch(_err){}
+    }
+
+    function restoreCalendarSettingsCache(){
+      try{
+        const raw=localStorage.getItem(SETTINGS_CACHE_KEY);
+        if(!raw) return false;
+        const cached=JSON.parse(raw);
+        if(!cached || !cached.settings) return false;
+        settings=normalizeSettings(cached.settings);
+        return true;
+      }catch(_err){
+        return false;
+      }
     }
 
     function applySettingsControls(){
@@ -2499,7 +2535,7 @@
               end:range.end,
               countries:settings.countries
             }),
-            cache:"no-store"
+            cache:"default"
           });
           if(!res.ok) return null;
           const data=await res.json();
@@ -2543,19 +2579,21 @@
         if(!cached?.data?.events || !cached.range) return null;
         const sameRange=cached.range.start===range.start && cached.range.end===range.end;
         const sameCountries=JSON.stringify(cached.countries||[])===JSON.stringify([...settings.countries].sort());
-        if(!sameRange||!sameCountries) return null;        return cached;
+        if(!sameRange||!sameCountries) return null;
+        cached.age_ms=Math.max(0,Date.now()-Number(cached.saved_at||0));
+        return cached;
       }catch(_err){
         return null;
       }
     }
 
-    async function fetchFeedRange(range,signal){
+    async function fetchFeedRange(range,signal,forceNetwork=false){
       const res=await fetch(FEED_URL,{
         method:"POST",
         headers:{"content-type":"application/json"},
         body:JSON.stringify({start:range.start,end:range.end,countries:settings.countries}),
         signal,
-        cache:"no-store"
+        cache:forceNetwork?"no-store":"default"
       });
       const data=await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
@@ -2582,6 +2620,7 @@
       displayRangeLabel();
 
       let showedCached=false;
+      let cachedAgeMs=Infinity;
 
       if(!manual){
         if(currentRange==="week"){
@@ -2592,6 +2631,7 @@
             lastFetchAt=new Date(cached.saved_at||Date.now());
             render();
             showedCached=true;
+            cachedAgeMs=Number(cached.age_ms||0);
           }
         }else{
           const weekRange=getRange("week");
@@ -2606,9 +2646,24 @@
               lastFetchAt=memory?.fetchedAt || new Date(local?.saved_at||Date.now());
               render();
               showedCached=true;
+              cachedAgeMs=memory?.fetchedAt
+                ? Math.max(0,Date.now()-new Date(memory.fetchedAt).getTime())
+                : Number(local?.age_ms||Infinity);
             }
           }
         }
+      }
+
+      /*
+       * V36 return-navigation fast path:
+       * if a full cache was saved less than one minute ago, the user already
+       * has fresh data. Do not immediately hit the upstream provider again.
+       * The normal auto-refresh loop will refresh it shortly.
+       */
+      if(!manual && showedCached && cachedAgeMs<60000){
+        setStatus("live","Live data");
+        lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
+        return;
       }
 
       if(activeController) activeController.abort();
@@ -2625,7 +2680,7 @@
       }
 
       try{
-        const data=await fetchFeedRange(r,activeController.signal);
+        const data=await fetchFeedRange(r,activeController.signal,manual);
         lastFetchAt=new Date();
 
         allEvents=Array.isArray(data.events)?data.events:[];
@@ -2812,14 +2867,18 @@
     }
 
     async function loadAccountSettings(session){
+      const previousSignature=calendarSettingsSignature(settings);
       currentUser=session&&session.user?session.user:null;
+
       const fieldset=document.getElementById("settings-fieldset");
       const note=document.getElementById("settings-login-note");
       const status=document.getElementById("settings-save-status");
 
       if(!currentUser||!window.psdSupabase){
         settings=cloneDefault();
+        saveCalendarSettingsCache(settings);
         currentDashboardLayout={};
+
         fieldset.disabled=true;
         fieldset.classList.add("ec-settings-locked");
         note.hidden=false;
@@ -2827,10 +2886,15 @@
         currentPhoneNumber="";
         document.getElementById("account-email").textContent="Log in to use email alerts";
         document.getElementById("account-phone").value="";
+
         applySettingsControls();
-        await loadFeed();
-        if(currentRange!=="week"){
-          setTimeout(()=>preloadWeekInBackground(false),300);
+
+        /* The initial calendar has already started. Only refetch if the
+           confirmed guest settings differ from the cache used at startup. */
+        if(calendarSettingsSignature(settings)!==previousSignature){
+          await loadFeed(false);
+        }else if(allEvents.length){
+          render();
         }
         return;
       }
@@ -2843,49 +2907,76 @@
 
       try{
         const [prefResult,profileResult]=await Promise.all([
-          window.psdSupabase.from("user_preferences").select("dashboard_layout").eq("user_id",currentUser.id).maybeSingle(),
-          window.psdSupabase.from("profiles").select("phone_number,sms_alerts_opt_in").eq("id",currentUser.id).maybeSingle()
+          window.psdSupabase
+            .from("user_preferences")
+            .select("dashboard_layout")
+            .eq("user_id",currentUser.id)
+            .maybeSingle(),
+
+          window.psdSupabase
+            .from("profiles")
+            .select("phone_number,sms_alerts_opt_in")
+            .eq("id",currentUser.id)
+            .maybeSingle()
         ]);
+
         if(prefResult.error) throw prefResult.error;
         if(profileResult.error) throw profileResult.error;
+
         const data=prefResult.data;
-        currentDashboardLayout=data&&data.dashboard_layout&&typeof data.dashboard_layout==="object"?data.dashboard_layout:{};
+        currentDashboardLayout=
+          data&&data.dashboard_layout&&typeof data.dashboard_layout==="object"
+            ? data.dashboard_layout
+            : {};
+
         settings=normalizeSettings(currentDashboardLayout.calendar_settings);
+        saveCalendarSettingsCache(settings);
+
         currentPhoneNumber=(profileResult.data&&profileResult.data.phone_number)||"";
         document.getElementById("account-phone").value=currentPhoneNumber;
+
         if(!currentPhoneNumber) settings.reminder_sms=false;
-        await loadMemberWatchlist();
         status.textContent="Saved to your account";
       }catch(err){
         console.error("Calendar settings load failed",err);
-        settings=cloneDefault();
+
+        /* Keep the locally cached settings on a temporary Supabase failure.
+           Replacing them with defaults would force another full calendar load. */
         currentDashboardLayout={};
-        status.textContent="Could not load saved settings";
+        status.textContent="Using cached calendar settings";
       }
+
       applySettingsControls();
 
-      /* V35 performance:
-         The calendar feed is the critical content. Do not block it behind
-         Watchlist and reminder queries. Start the calendar immediately,
-         then finish member-only enrichment in parallel. */
-      const feedPromise=loadFeed();
+      const accountSignature=calendarSettingsSignature(settings);
 
-      Promise.allSettled([
+      /*
+       * V36:
+       * Calendar content is already visible by this point.
+       * Watchlist/reminder enrichment happens in parallel and never blocks it.
+       */
+      const enrichmentPromise=Promise.allSettled([
         loadMemberWatchlist(),
         loadReminderStates()
       ]).then(()=>{
         applySettingsControls();
-        /* Re-render only after member enrichment arrives; this is cheap and
-           does not refetch the main calendar. */
         if(allEvents.length) render();
-      }).catch(err=>{
+      });
+
+      /* Refetch only when the account's countries/settings differ from what
+         was used for the instant startup render. */
+      if(accountSignature!==previousSignature){
+        await loadFeed(false);
+      }else if(allEvents.length){
+        render();
+      }
+
+      enrichmentPromise.catch(err=>{
         console.warn("Calendar member enrichment failed",err);
       });
 
-      await feedPromise;
-
       if(currentRange!=="week"){
-        setTimeout(()=>preloadWeekInBackground(false),300);
+        setTimeout(()=>preloadWeekInBackground(false),600);
       }
     }
 
@@ -3121,6 +3212,7 @@
       currentPhoneNumber=phone;
       currentDashboardLayout=merged;
       settings=next;
+      saveCalendarSettingsCache(settings);
       weekPreloadCache=null;
 
       const settingsPanel=document.getElementById("settings-panel");
@@ -3539,6 +3631,14 @@
     updateZoneClocks();
     setInterval(updateZoneClocks,1000);
 
+    /*
+     * V36 CACHE-FIRST STARTUP
+     * Restore the last known calendar settings synchronously and start
+     * loadFeed() immediately. loadFeed() paints the local week cache before
+     * its first network await, so returning to this page no longer waits for
+     * Supabase authentication/profile/watchlist calls.
+     */
+    restoreCalendarSettingsCache();
     displayRangeLabel();
     applySettingsControls();
 
@@ -3547,28 +3647,105 @@
     const sharedImpact=sharedParams.get("impact");
     const sharedCategory=sharedParams.get("category");
     const sharedQ=sharedParams.get("q");
+
     if(sharedCountry) countryFilter.value=sharedCountry;
     if(sharedImpact) impactFilter.value=sharedImpact;
     if(sharedCategory) categoryFilter.value=sharedCategory;
     if(sharedQ) search.value=sharedQ;
-    if(sharedParams.get("markets")==="1") document.getElementById("my-markets-only").checked=true;
-    if(window.psdSupabase){
-      window.psdSupabase.auth.getSession().then(({data})=>loadAccountSettings(data&&data.session?data.session:null));
-      window.psdSupabase.auth.onAuthStateChange((_event,session)=>{
-        setTimeout(()=>loadAccountSettings(session),0);
-      });
-    }else{
-      loadAccountSettings(null);
+    if(sharedParams.get("markets")==="1"){
+      document.getElementById("my-markets-only").checked=true;
     }
 
-    window.addEventListener("beforeunload",()=>{
-      clearInterval(refreshTimer); clearInterval(countdownTimer);
-      if(sparklineHydrationTimer) clearTimeout(sparklineHydrationTimer);
+    startupFeedPromise=loadFeed(false).catch(err=>{
+      console.warn("Initial calendar load failed",err);
+    });
+
+    function handleCalendarSession(session){
+      const key=session&&session.user?String(session.user.id):"guest";
+      if(key===lastAccountSessionKey) return;
+      lastAccountSessionKey=key;
+
+      loadAccountSettings(session||null).catch(err=>{
+        console.warn("Calendar account enrichment failed",err);
+      });
+    }
+
+    function resolveCalendarSession(){
+      if(!window.psdSupabase||!window.psdSupabase.auth) return;
+
+      window.psdSupabase.auth.getSession().then(({data})=>{
+        handleCalendarSession(data&&data.session?data.session:null);
+      }).catch(err=>{
+        console.warn("Calendar session lookup failed",err);
+      });
+    }
+
+    /*
+     * supabase-client.js publishes this event after its own session lookup.
+     * Listening here avoids making authentication a prerequisite for the
+     * calendar's first paint.
+     */
+    window.addEventListener("psd-member-status-change",event=>{
+      const visitor=event&&event.detail?event.detail.visitor_type:"";
+      if(visitor==="member"){
+        resolveCalendarSession();
+      }else if(visitor==="guest"){
+        handleCalendarSession(null);
+      }
+    });
+
+    /* If the client happened to initialize before this listener, resolve it. */
+    if(window.psdSupabase){
+      resolveCalendarSession();
+    }
+
+    function cleanupCalendarRuntime(){
+      clearInterval(refreshTimer);
+      clearInterval(countdownTimer);
+
+      if(sparklineHydrationTimer){
+        clearTimeout(sparklineHydrationTimer);
+        sparklineHydrationTimer=null;
+      }
+
       if(sparklineObserver){
         try{sparklineObserver.disconnect();}catch(_err){}
+        sparklineObserver=null;
       }
+
       sparklineQueue.length=0;
-      if(activeController) activeController.abort();
+
+      if(activeController){
+        activeController.abort();
+        activeController=null;
+      }
+    }
+
+    /*
+     * Do not use beforeunload. It can prevent Back/Forward Cache restoration
+     * in some browsers. A persisted pagehide means the browser is preserving
+     * the page, so leave its state intact.
+     */
+    window.addEventListener("pagehide",event=>{
+      if(!event.persisted) cleanupCalendarRuntime();
+    });
+
+    window.addEventListener("pageshow",event=>{
+      if(!event.persisted) return;
+
+      /* BFCache return: DOM + JS state are already present. Repaint instantly,
+         then perform a small background live-value refresh. */
+      displayRangeLabel();
+      if(allEvents.length) render();
+      setStatus("live","Live data");
+
+      setTimeout(()=>{
+        if(currentRange==="week"){
+          refreshTodayIntoWeek().catch(()=>{});
+        }else{
+          loadFeed(false).catch(()=>{});
+        }
+      },250);
     });
   })();
   </script>
