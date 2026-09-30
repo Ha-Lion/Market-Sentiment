@@ -1,26 +1,31 @@
 $ErrorActionPreference = "Stop"
 
 $Repo = (Get-Location).Path
-Write-Host "===== PUBLIC SENTIMENT DASH: ACCOUNT SPLIT ====="
-Write-Host "Repository: $Repo"
-Write-Host ""
 
-$Required = @("site-nav.js", "site-preferences.js", "account.html", "privacy.html")
+$Required = @(
+  "site-nav.js",
+  "site-preferences.js",
+  "account.html",
+  "my-account.html"
+)
+
 foreach ($File in $Required) {
   if (-not (Test-Path (Join-Path $Repo $File))) {
-    throw "Run this script from the root of the Market-Sentiment repository. Missing: $File"
+    throw "Run this from the root of the Market-Sentiment repo. Missing: $File"
   }
 }
 
 $Package = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Replace only the two already-created pages and My Account JS.
 Copy-Item (Join-Path $Package "account.html") (Join-Path $Repo "account.html") -Force
 Copy-Item (Join-Path $Package "my-account.html") (Join-Path $Repo "my-account.html") -Force
 Copy-Item (Join-Path $Package "my-account.js") (Join-Path $Repo "my-account.js") -Force
 
-function Patch-MenuFile([string]$Path) {
+function Fix-AccountMenu([string]$Path) {
   $Text = Get-Content $Path -Raw
 
+  # Desktop dropdown links
   $Text = $Text.Replace(
     '<a href="account.html#preferences">Preferences</a>',
     '<a href="account.html">Preferences</a>'
@@ -31,6 +36,7 @@ function Patch-MenuFile([string]$Path) {
     '<a href="my-account.html">My Account</a>'
   )
 
+  # Mobile/private link filtering references
   $Text = $Text.Replace(
     '"account.html#preferences",',
     '"account.html",'
@@ -44,41 +50,32 @@ function Patch-MenuFile([string]$Path) {
   Set-Content $Path $Text -Encoding UTF8
 }
 
-Patch-MenuFile (Join-Path $Repo "site-nav.js")
-Patch-MenuFile (Join-Path $Repo "site-preferences.js")
+Fix-AccountMenu (Join-Path $Repo "site-nav.js")
+Fix-AccountMenu (Join-Path $Repo "site-preferences.js")
 
-$PrivacyPath = Join-Path $Repo "privacy.html"
-$Privacy = Get-Content $PrivacyPath -Raw
-$Old = '<li><b>Account information:</b> If you create an account, we collect your email address, encrypted authentication credentials, optional display name, account identifiers, confirmation and recovery status, and account creation or sign-in timestamps. Passwords are handled by the authentication provider and are not visible to Public Sentiment Dash in readable form.</li>'
-$New = '<li><b>Account information:</b> If you create an account, we collect your primary email address, encrypted authentication credentials, optional first and last name, optional second email address, optional phone number, optional profile picture/avatar, username or display name, account identifiers, confirmation and recovery status, and account creation or sign-in timestamps. Passwords are handled by the authentication provider and are not visible to Public Sentiment Dash in readable form.</li>'
+# Verify
+$Nav = Get-Content (Join-Path $Repo "site-nav.js") -Raw
+$Prefs = Get-Content (Join-Path $Repo "site-preferences.js") -Raw
+$Account = Get-Content (Join-Path $Repo "account.html") -Raw
+$MyAccount = Get-Content (Join-Path $Repo "my-account.html") -Raw
 
-if ($Privacy.Contains($Old)) {
-  $Privacy = $Privacy.Replace($Old, $New)
-  Set-Content $PrivacyPath $Privacy -Encoding UTF8
-} else {
-  Write-Warning "Privacy account-information paragraph was not an exact match. privacy.html was left unchanged."
+if ($Nav -match 'Update Information') { throw "site-nav.js still contains Update Information." }
+if ($Prefs -match 'Update Information') { throw "site-preferences.js still contains Update Information." }
+if ($Nav -notmatch 'href="my-account\.html">My Account</a>') { throw "site-nav.js is missing My Account." }
+if ($Prefs -notmatch 'href="my-account\.html">My Account</a>') { throw "site-preferences.js is missing My Account." }
+
+if ($Account -match 'href="my-account\.html"') {
+  throw "Preferences page still contains an internal My Account link."
+}
+
+if ($MyAccount -match 'href="account\.html"') {
+  throw "My Account page still contains an internal Preferences link."
 }
 
 Write-Host ""
-Write-Host "===== VERIFY ====="
-$Nav = Get-Content (Join-Path $Repo "site-nav.js") -Raw
-$Prefs = Get-Content (Join-Path $Repo "site-preferences.js") -Raw
-
-if ($Nav -notmatch 'href="my-account\.html">My Account</a>') { throw "site-nav.js My Account link was not installed." }
-if ($Prefs -notmatch 'href="my-account\.html">My Account</a>') { throw "site-preferences.js My Account link was not installed." }
-if ($Nav -match 'Update Information') { throw "site-nav.js still contains Update Information." }
-if ($Prefs -match 'Update Information') { throw "site-preferences.js still contains Update Information." }
-
-Write-Host "OK: account.html is now Preferences"
-Write-Host "OK: my-account.html created"
-Write-Host "OK: my-account.js created"
-Write-Host "OK: dropdown renamed to My Account"
-Write-Host "OK: mobile signed-out private-link filtering updated"
+Write-Host "SUCCESS"
+Write-Host "Preferences and My Account are now separate pages."
+Write-Host "Ribbon dropdown now links to each page separately."
 Write-Host ""
-Write-Host "Review changes with:"
-Write-Host "  git diff -- account.html my-account.html my-account.js site-nav.js site-preferences.js privacy.html"
-Write-Host ""
-Write-Host "If the diff looks good:"
-Write-Host '  git add account.html my-account.html my-account.js site-nav.js site-preferences.js privacy.html'
-Write-Host '  git commit -m "Split My Account from Preferences"'
-Write-Host '  git push'
+Write-Host "Review:"
+Write-Host "git diff -- account.html my-account.html my-account.js site-nav.js site-preferences.js"
