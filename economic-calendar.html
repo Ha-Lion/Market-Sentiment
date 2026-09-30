@@ -1334,6 +1334,15 @@
     let autoRefreshTick = 0;
     let lastFullWeekNetworkAt = 0;
 
+    /* V35 performance: history sparklines are non-critical.
+       Render the calendar first, then load visible history quietly with
+       a small concurrency limit so the page does not flood the network. */
+    let sparklineHydrationTimer = null;
+    let sparklineObserver = null;
+    let sparklineActive = 0;
+    const SPARKLINE_CONCURRENCY = 2;
+    const sparklineQueue = [];
+
     const body = document.getElementById("calendar-body");
     const search = document.getElementById("search");
     const countryFilter = document.getElementById("country");
@@ -1611,7 +1620,7 @@
       body.innerHTML=html;
       applyReminderButtonStates();
       updateCountdown();
-      setTimeout(hydrateVisibleSparklines,0);
+      scheduleSparklineHydration();
     }
 
     function setStatus(kind,text){
@@ -1878,18 +1887,45 @@
       });
     }
 
-    function hydrateVisibleSparklines(){
-      const hosts=[...document.querySelectorAll("[data-spark-event]")];
-      if(!hosts.length) return;
+    function scheduleSparklineHydration(){
+      if(sparklineHydrationTimer){
+        clearTimeout(sparklineHydrationTimer);
+        sparklineHydrationTimer=null;
+      }
 
-      const loadHost=async host=>{
-        if(!host.isConnected || host.dataset.historyLoading==="1") return;
+      const start=()=>{
+        sparklineHydrationTimer=null;
+        hydrateVisibleSparklines();
+      };
+
+      /* Give the table, toolbar and user interaction the first turn.
+         requestIdleCallback is used when available; timeout keeps behavior
+         reliable in Safari and older browsers. */
+      sparklineHydrationTimer=setTimeout(()=>{
+        if("requestIdleCallback" in window){
+          window.requestIdleCallback(start,{timeout:1200});
+        }else{
+          start();
+        }
+      },700);
+    }
+
+    function pumpSparklineQueue(){
+      while(sparklineActive<SPARKLINE_CONCURRENCY && sparklineQueue.length){
+        const host=sparklineQueue.shift();
+        if(!host || !host.isConnected || host.dataset.historyLoading==="1") continue;
+
         host.dataset.historyLoading="1";
-        const e=eventById(host.dataset.sparkEvent);
-        if(!e){host.textContent="—";return;}
+        sparklineActive++;
 
-        try{
-          const result=await fetchEventHistory(e);
+        const e=eventById(host.dataset.sparkEvent);
+        if(!e){
+          host.textContent="—";
+          sparklineActive--;
+          continue;
+        }
+
+        fetchEventHistory(e).then(result=>{
           if(!host.isConnected) return;
           const history=result?.history||[];
           if(history.length){
@@ -1898,23 +1934,50 @@
             host.textContent="—";
             host.classList.add("muted");
           }
-        }catch(err){
+        }).catch(()=>{
           if(host.isConnected) host.textContent="—";
-        }
-      };
+        }).finally(()=>{
+          sparklineActive=Math.max(0,sparklineActive-1);
+          pumpSparklineQueue();
+        });
+      }
+    }
+
+    function queueSparklineHost(host){
+      if(!host || !host.isConnected) return;
+      if(host.dataset.historyLoading==="1" || host.dataset.historyQueued==="1") return;
+      host.dataset.historyQueued="1";
+      sparklineQueue.push(host);
+      pumpSparklineQueue();
+    }
+
+    function hydrateVisibleSparklines(){
+      const hosts=[...document.querySelectorAll("[data-spark-event]")];
+      if(!hosts.length) return;
+
+      if(sparklineObserver){
+        try{sparklineObserver.disconnect();}catch(_err){}
+        sparklineObserver=null;
+      }
 
       if("IntersectionObserver" in window){
-        const observer=new IntersectionObserver(entries=>{
+        sparklineObserver=new IntersectionObserver(entries=>{
           entries.forEach(entry=>{
-            if(entry.isIntersecting){
-              observer.unobserve(entry.target);
-              loadHost(entry.target);
-            }
+            if(!entry.isIntersecting) return;
+            sparklineObserver.unobserve(entry.target);
+            queueSparklineHost(entry.target);
           });
-        },{rootMargin:"220px 0px"});
-        hosts.forEach(h=>observer.observe(h));
+        },{
+          /* Only begin when the row is near the viewport.
+             This prevents a full-week request storm on first paint. */
+          rootMargin:"80px 0px",
+          threshold:0.01
+        });
+
+        hosts.forEach(host=>sparklineObserver.observe(host));
       }else{
-        hosts.forEach(loadHost);
+        /* Fallback: only queue the first few visible-history cells. */
+        hosts.slice(0,6).forEach(queueSparklineHost);
       }
     }
 
@@ -2800,8 +2863,27 @@
         status.textContent="Could not load saved settings";
       }
       applySettingsControls();
-      await loadReminderStates();
-      await loadFeed();
+
+      /* V35 performance:
+         The calendar feed is the critical content. Do not block it behind
+         Watchlist and reminder queries. Start the calendar immediately,
+         then finish member-only enrichment in parallel. */
+      const feedPromise=loadFeed();
+
+      Promise.allSettled([
+        loadMemberWatchlist(),
+        loadReminderStates()
+      ]).then(()=>{
+        applySettingsControls();
+        /* Re-render only after member enrichment arrives; this is cheap and
+           does not refetch the main calendar. */
+        if(allEvents.length) render();
+      }).catch(err=>{
+        console.warn("Calendar member enrichment failed",err);
+      });
+
+      await feedPromise;
+
       if(currentRange!=="week"){
         setTimeout(()=>preloadWeekInBackground(false),300);
       }
@@ -3481,6 +3563,11 @@
 
     window.addEventListener("beforeunload",()=>{
       clearInterval(refreshTimer); clearInterval(countdownTimer);
+      if(sparklineHydrationTimer) clearTimeout(sparklineHydrationTimer);
+      if(sparklineObserver){
+        try{sparklineObserver.disconnect();}catch(_err){}
+      }
+      sparklineQueue.length=0;
       if(activeController) activeController.abort();
     });
   })();
