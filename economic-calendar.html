@@ -1214,8 +1214,6 @@
      * - View Today
      * - View Tomorrow
      * - View This Week
-     * - Use Upcoming only
-     * - Refresh the visible calendar
      *
      * Advanced features below open the same account gate design used by
      * AI Market Pulse / AI Market Intelligence.
@@ -1367,10 +1365,25 @@
     function calendarMemberOnlyTarget(target){
       if(!target || typeof target.closest!=="function") return false;
 
-      /* 1. Four quick timezone controls */
+      /*
+       * PUBLIC GUEST ALLOW-LIST:
+       * Yesterday / Today / Tomorrow / This Week are the only
+       * interactive calendar controls that do not require sign-in.
+       */
+      if(target.closest(
+        '.ec-tab[data-range="yesterday"],'+
+        '.ec-tab[data-range="today"],'+
+        '.ec-tab[data-range="tomorrow"],'+
+        '.ec-tab[data-range="week"]'
+      )) return false;
+
+      /* All other date-range tabs are member-only. */
+      if(target.closest(".ec-tab[data-range]")) return true;
+
+      /* Timezone controls */
       if(target.closest(".ec-tz-btn")) return true;
 
-      /* 2. Settings and everything inside Settings */
+      /* Settings and everything inside Settings */
       if(target.closest(
         "#settings-toggle,"+
         "#settings-save-top,"+
@@ -1380,41 +1393,29 @@
         "#settings-panel select"
       )) return true;
 
-      /* 3. CSV / ICS / Share */
+      /* Export / Add to Calendar / Share */
       if(target.closest("#export-csv,#export-ics,#share-view")) return true;
 
-      /* 4. Search + country + impact + classification + Clear */
+      /* Search + country + impact + classification + Clear */
       if(target.closest(
         ".ec-filters input,"+
         ".ec-filters select,"+
         ".ec-filters button"
       )) return true;
 
-      /* My Markets is also account-specific */
+      /* Upcoming-only and manual refresh are member-only. */
+      if(target.closest("#upcoming-only,#refresh-btn,#provider-refresh")) return true;
+
+      /* My Markets is account-specific. */
       if(target.closest("#my-markets-only")) return true;
 
-      /* 5. Opening an event/news detail popup */
+      /* Opening event/news detail popup */
       if(target.closest("[data-open-event]")) return true;
 
-      /* 6. Custom date-range fields / calendar button */
-      if(target.closest("#custom-from,#custom-to,#custom-go")) return true;
+      /* Custom date range and presets */
+      if(target.closest("#custom-from,#custom-to,#custom-go,#last-30,#next-30,#open-next-date")) return true;
 
-      /* 7. -30d / +30d */
-      if(target.closest("#last-30,#next-30")) return true;
-
-      /*
-       * Guests are intentionally limited to:
-       * Yesterday / Today / Tomorrow / This Week.
-       */
-      if(target.closest('.ec-tab[data-range="next"]')) return true;
-
-      /*
-       * The "Show next events" helper jumps to another custom date,
-       * so it follows the same member rule.
-       */
-      if(target.closest("#open-next-date")) return true;
-
-      /* 8. Calendar / email / SMS / desktop alert actions */
+      /* Calendar / email / SMS / desktop alert actions */
       if(target.closest(".ec-icon-btn")) return true;
 
       return false;
