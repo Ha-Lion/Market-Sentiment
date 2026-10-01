@@ -19,6 +19,7 @@
 
   const assetLinks = [
     { href: "market-pulse.html", icon: "✦", label: "AI Market Pulse", memberOnly: true },
+    { href: "economic-calendar.html", icon: "◷", label: "Economic Calendar" },
     { href: "market-intelligence.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
     { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" },
     { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
@@ -116,6 +117,14 @@
       pulseLink.classList.add("psd-ai-feature-link");
       pulseLink.setAttribute("data-psd-member-feature", "true");
       pulseLink.setAttribute("aria-label", "AI Market Pulse — free account required");
+    }
+
+    const calendarLink = header.querySelector('a[href="economic-calendar.html"]');
+    if(calendarLink){
+      if(calendarLink.textContent.trim() !== "Economic Calendar") calendarLink.textContent = "Economic Calendar";
+      calendarLink.classList.add("psd-ai-feature-link");
+      calendarLink.removeAttribute("data-psd-member-feature");
+      calendarLink.setAttribute("aria-label", "Economic Calendar");
     }
 
     let intelligenceLink = header.querySelector('a[href="market-intelligence.html"]');
@@ -785,6 +794,10 @@
   }
 
   function render(){
+    loadStylesheet("ribbon-economic-calendar.css?v=1","psd-ribbon-economic-calendar-css").catch(function(error){
+      console.error("Economic Calendar ribbon styling failed:",error);
+    });
+
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
