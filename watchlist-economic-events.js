@@ -20,10 +20,7 @@
   }
 
   function pad(n){return String(n).padStart(2,"0");}
-
-  function ymd(d){
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  }
+  function ymd(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
 
   function startOfWeek(d){
     const x=new Date(d);
@@ -90,17 +87,10 @@
     return names[code]||code||"Global";
   }
 
-  function eventMatchesProfile(e,profile){
-    const country=normalizedCountry(e);
-    const category=eventCategory(e);
+  function minImpactAllows(e,profile){
     const impact=impactName(e);
-
     if(profile.minImpact==="medium" && impact==="Low")return false;
     if(profile.minImpact==="high" && impact!=="High")return false;
-
-    if(profile.countries.length && !profile.countries.includes(country))return false;
-    if(profile.categories.length && !profile.categories.includes(category))return false;
-
     return true;
   }
 
@@ -114,149 +104,175 @@
       AUD:"AU",CHF:"CH",NZD:"NZ",CNY:"CN"
     };
 
+    const makeFx=(a,b)=>({
+      kind:"fx",
+      countries:[currencyCountry[a],currencyCountry[b]].filter(Boolean),
+      categories:[],
+      minImpact:"low",
+      maxEvents:8,
+      categoryWeights:{
+        "Central Bank":6,"Inflation":5,"Labor":4,"Growth":3,
+        "Consumer":2,"Trade":2,"Housing":1,"Energy":1,"Other":1
+      },
+      patterns:[
+        {re:/rate decision|fomc|fed|ecb|boe|boj|rba|rbnz|snb/i,bonus:36},
+        {re:/cpi|pce|inflation|ppi/i,bonus:28},
+        {re:/payroll|nfp|employment|jobless|unemployment/i,bonus:20},
+        {re:/gdp|pmi/i,bonus:15}
+      ],
+      reason:`Events affecting ${a} or ${b}`
+    });
+
     /* Forex pairs: events from both currencies. */
     const compact=s.replace(/[^A-Z]/g,"");
     if(/^[A-Z]{6}$/.test(compact)){
-      const a=compact.slice(0,3);
-      const b=compact.slice(3,6);
-      return {
-        countries:[currencyCountry[a],currencyCountry[b]].filter(Boolean),
-        categories:[],
-        minImpact:"low",
-        reason:`Events affecting ${a} or ${b}`
-      };
+      return makeFx(compact.slice(0,3),compact.slice(3,6));
     }
 
-    /* Some card titles expose the pair instead of the compact symbol. */
     const pairMatch=n.toUpperCase().match(/\b(USD|EUR|GBP|JPY|CAD|AUD|CHF|NZD|CNY)\s*\/\s*(USD|EUR|GBP|JPY|CAD|AUD|CHF|NZD|CNY)\b/);
-    if(pairMatch){
-      return {
-        countries:[currencyCountry[pairMatch[1]],currencyCountry[pairMatch[2]]].filter(Boolean),
-        categories:[],
-        minImpact:"low",
-        reason:`Events affecting ${pairMatch[1]} or ${pairMatch[2]}`
-      };
-    }
+    if(pairMatch) return makeFx(pairMatch[1],pairMatch[2]);
 
-    /* U.S. equity names and U.S. index futures. */
-    if(
-      /\b(pltr|palantir|dow|ym|s&p|spy|nasdaq|nq|russell|rty|mstr|coin|djt|lmt)\b/i.test(text)
-    ){
-      return {
-        countries:["US"],
-        categories:["Inflation","Labor","Central Bank","Consumer","Growth","Housing"],
-        minImpact:"medium",
-        reason:"U.S. macro events most relevant to this asset"
-      };
-    }
-
-    /* Bitcoin / crypto: focus on liquidity, rates, inflation and labor. */
     if(/\b(bitcoin|btc|ethereum|eth|crypto)\b/i.test(text)){
       return {
+        kind:"crypto",
         countries:["US"],
         categories:["Inflation","Labor","Central Bank","Growth"],
         minImpact:"medium",
-        reason:"U.S. liquidity, rates and macro events most relevant to crypto"
+        maxEvents:4,
+        categoryWeights:{"Central Bank":6,"Inflation":6,"Labor":3,"Growth":2},
+        patterns:[
+          {re:/fomc|federal reserve|fed|rate decision|interest rate/i,bonus:38},
+          {re:/cpi|pce|inflation|ppi/i,bonus:34},
+          {re:/nonfarm|nfp|payroll/i,bonus:22},
+          {re:/gdp/i,bonus:12},
+          {re:/ism|pmi/i,bonus:10},
+          {re:/jobless|claims/i,bonus:5}
+        ],
+        reason:"Top U.S. liquidity, rate and inflation releases most relevant to crypto"
       };
     }
 
-    /* Gold / real yields / precious-metals cards. */
-    if(/\b(gold|gld|precious|real yields|inflation)\b/i.test(text)){
+    if(/\b(gold|gld|precious|real yields|gold etf|gold flows)\b/i.test(text)){
       return {
+        kind:"gold",
         countries:["US"],
         categories:["Inflation","Labor","Central Bank","Growth"],
         minImpact:"medium",
-        reason:"U.S. inflation, rates and growth events most relevant to gold and real yields"
+        maxEvents:4,
+        categoryWeights:{"Inflation":7,"Central Bank":6,"Labor":4,"Growth":1},
+        patterns:[
+          {re:/cpi|pce|inflation|ppi/i,bonus:42},
+          {re:/fomc|federal reserve|fed|rate decision|interest rate/i,bonus:38},
+          {re:/nonfarm|nfp|payroll|jobless|claims/i,bonus:24},
+          {re:/gdp/i,bonus:6},
+          {re:/ism|pmi/i,bonus:1}
+        ],
+        reason:"Top U.S. inflation, rate and real-yield drivers most relevant to gold"
       };
     }
 
-    /* Oil / energy. */
     if(/\b(crude|wti|brent|oil|energy|natural gas)\b/i.test(text)){
       return {
+        kind:"energy",
         countries:["US"],
         categories:["Energy","Growth","Central Bank"],
         minImpact:"medium",
-        reason:"Energy inventories and major U.S. macro events"
+        maxEvents:4,
+        categoryWeights:{"Energy":8,"Growth":4,"Central Bank":2},
+        patterns:[
+          {re:/eia|inventory|inventories|crude|oil|gas/i,bonus:50},
+          {re:/gdp|ism|pmi|manufacturing/i,bonus:22},
+          {re:/fomc|fed|rate decision/i,bonus:8}
+        ],
+        reason:"Energy inventories and demand-sensitive macro releases most relevant to this asset"
       };
     }
 
-    /* Europe. */
-    if(/\b(dax|euro|eur|stoxx)\b/i.test(text)){
+    if(/\b(pltr|palantir|dow|ym|s&p|spy|nasdaq|nq|russell|rty|mstr|coin|djt|lmt)\b/i.test(text)){
       return {
-        countries:["EU","DE","FR","IT","ES"],
-        categories:[],
+        kind:"us-equity",
+        countries:["US"],
+        categories:["Inflation","Labor","Central Bank","Consumer","Growth","Housing"],
         minImpact:"medium",
-        reason:"Euro-area economic releases"
+        maxEvents:5,
+        categoryWeights:{
+          "Central Bank":6,"Growth":5,"Labor":4,"Consumer":4,"Inflation":3,"Housing":2
+        },
+        patterns:[
+          {re:/fomc|fed|rate decision|interest rate/i,bonus:36},
+          {re:/gdp|ism|pmi/i,bonus:26},
+          {re:/nonfarm|nfp|payroll/i,bonus:23},
+          {re:/consumer confidence|retail sales/i,bonus:20},
+          {re:/cpi|pce|inflation/i,bonus:18}
+        ],
+        reason:"Highest-impact U.S. macro releases most relevant to this equity asset"
       };
     }
 
-    /* UK. */
-    if(/\b(ftse|gbp|uk)\b/i.test(text)){
-      return {
-        countries:["GB"],
-        categories:[],
-        minImpact:"medium",
-        reason:"UK economic releases"
-      };
-    }
+    const regional=(countries,reason)=>({
+      kind:"regional",
+      countries,
+      categories:[],
+      minImpact:"medium",
+      maxEvents:6,
+      categoryWeights:{
+        "Central Bank":6,"Inflation":5,"Labor":4,"Growth":4,
+        "Consumer":3,"Trade":2,"Housing":2,"Energy":1,"Other":1
+      },
+      patterns:[
+        {re:/rate decision|central bank|fomc|ecb|boe|boj|rba|rbnz|snb/i,bonus:32},
+        {re:/cpi|inflation|ppi/i,bonus:25},
+        {re:/employment|payroll|unemployment|jobless/i,bonus:20},
+        {re:/gdp|pmi/i,bonus:18}
+      ],
+      reason
+    });
 
-    /* Japan. */
-    if(/\b(nikkei|jpy|japan)\b/i.test(text)){
-      return {
-        countries:["JP"],
-        categories:[],
-        minImpact:"medium",
-        reason:"Japan economic releases"
-      };
-    }
+    if(/\b(dax|euro|eur|stoxx)\b/i.test(text)) return regional(["EU","DE","FR","IT","ES"],"Euro-area economic releases most relevant to this asset");
+    if(/\b(ftse|gbp|uk)\b/i.test(text)) return regional(["GB"],"UK economic releases most relevant to this asset");
+    if(/\b(nikkei|jpy|japan)\b/i.test(text)) return regional(["JP"],"Japan economic releases most relevant to this asset");
+    if(/\b(cad|canada|tsx)\b/i.test(text)) return regional(["CA"],"Canadian economic releases most relevant to this asset");
+    if(/\b(aud|australia|asx)\b/i.test(text)) return regional(["AU"],"Australian economic releases most relevant to this asset");
+    if(/\b(chf|swiss|switzerland|smi)\b/i.test(text)) return regional(["CH"],"Swiss economic releases most relevant to this asset");
+    if(/\b(nzd|new zealand)\b/i.test(text)) return regional(["NZ"],"New Zealand economic releases most relevant to this asset");
 
-    /* Canada. */
-    if(/\b(cad|canada|tsx)\b/i.test(text)){
-      return {
-        countries:["CA"],
-        categories:[],
-        minImpact:"medium",
-        reason:"Canadian economic releases"
-      };
-    }
-
-    /* Australia. */
-    if(/\b(aud|australia|asx)\b/i.test(text)){
-      return {
-        countries:["AU"],
-        categories:[],
-        minImpact:"medium",
-        reason:"Australian economic releases"
-      };
-    }
-
-    /* Switzerland. */
-    if(/\b(chf|swiss|switzerland|smi)\b/i.test(text)){
-      return {
-        countries:["CH"],
-        categories:[],
-        minImpact:"medium",
-        reason:"Swiss economic releases"
-      };
-    }
-
-    /* New Zealand. */
-    if(/\b(nzd|new zealand)\b/i.test(text)){
-      return {
-        countries:["NZ"],
-        categories:[],
-        minImpact:"medium",
-        reason:"New Zealand economic releases"
-      };
-    }
-
-    /* Default: global high-impact events only. */
     return {
+      kind:"default",
       countries:[],
       categories:["Inflation","Labor","Central Bank","Growth"],
       minImpact:"high",
-      reason:"Major macro releases most likely to affect this asset"
+      maxEvents:4,
+      categoryWeights:{"Central Bank":6,"Inflation":5,"Labor":4,"Growth":3},
+      patterns:[],
+      reason:"Major high-impact macro releases most likely to affect this asset"
     };
+  }
+
+  function eventRelevanceScore(e,profile){
+    if(!minImpactAllows(e,profile)) return -1;
+
+    const country=normalizedCountry(e);
+    const category=eventCategory(e);
+    const text=`${e?.event||""} ${e?.category||""}`.toLowerCase();
+
+    if(profile.countries.length && !profile.countries.includes(country)) return -1;
+    if(profile.categories.length && !profile.categories.includes(category)) return -1;
+
+    let score=0;
+
+    const impact=impactName(e);
+    score += impact==="High" ? 30 : impact==="Medium" ? 18 : 7;
+
+    if(profile.countries.includes(country)) score += 20;
+
+    const categoryWeight=Number(profile.categoryWeights?.[category]||0);
+    score += categoryWeight*10;
+
+    for(const rule of profile.patterns||[]){
+      if(rule.re.test(text)) score += Number(rule.bonus||0);
+    }
+
+    return score;
   }
 
   async function getWeeklyFeed(){
@@ -281,8 +297,7 @@
 
       const data=await res.json();
       return (Array.isArray(data.events)?data.events:[])
-        .filter(e=>e&&e.date)
-        .sort((a,b)=>new Date(a.date)-new Date(b.date));
+        .filter(e=>e&&e.date);
     })();
 
     return weeklyFeedPromise;
@@ -295,70 +310,30 @@
     if(!style.id){
       style.id="watchlist-card-economic-style";
       style.textContent=`
-        .watchlist-economic-note{
-          margin:0 0 10px;
-          color:var(--muted);
-          font-size:11px;
-        }
-        .watchlist-economic-list{
-          display:grid;
-          gap:7px;
-        }
+        .watchlist-economic-note{margin:0 0 10px;color:var(--muted);font-size:11px}
+        .watchlist-economic-list{display:grid;gap:7px}
         .watchlist-economic-row{
           display:grid;
           grid-template-columns:155px 75px 90px minmax(240px,1fr) 115px 115px 115px 65px;
-          gap:8px;
-          align-items:center;
-          border:1px solid var(--line);
-          border-radius:10px;
-          padding:8px 9px;
-          background:var(--card);
+          gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;
+          padding:8px 9px;background:var(--card)
         }
         .watchlist-economic-row strong{font-size:11px}
-        .watchlist-economic-row small{
-          display:block;
-          color:var(--muted);
-          font-size:9px;
-          margin-top:2px;
-        }
-        .watchlist-economic-impact{
-          font-size:10px;
-          font-weight:900;
-        }
+        .watchlist-economic-row small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+        .watchlist-economic-impact{font-size:10px;font-weight:900}
         .watchlist-economic-impact.high{color:#d83b38}
         .watchlist-economic-impact.medium{color:#c77b13}
         .watchlist-economic-impact.low{color:#248b4d}
-        .watchlist-economic-number{
-          font-size:10px;
-          font-weight:800;
-          white-space:nowrap;
-        }
+        .watchlist-economic-number{font-size:10px;font-weight:800;white-space:nowrap}
         .watchlist-economic-link{
-          justify-self:end;
-          text-decoration:none;
-          border:1px solid #9a6500;
-          border-radius:999px;
-          padding:5px 8px;
-          background:#fff7df;
-          color:#563800;
-          font-size:9px;
-          font-weight:900;
+          justify-self:end;text-decoration:none;border:1px solid #9a6500;border-radius:999px;
+          padding:5px 8px;background:#fff7df;color:#563800;font-size:9px;font-weight:900
         }
-        body.dark-mode .watchlist-economic-link{
-          background:#33280d;
-          color:#ffe4a3;
-          border-color:#b88a24;
-        }
+        body.dark-mode .watchlist-economic-link{background:#33280d;color:#ffe4a3;border-color:#b88a24}
         @media(max-width:900px){
-          .watchlist-economic-row{
-            grid-template-columns:1fr 1fr;
-          }
-          .watchlist-economic-row > div:nth-child(4){
-            grid-column:1/-1;
-          }
-          .watchlist-economic-link{
-            justify-self:start;
-          }
+          .watchlist-economic-row{grid-template-columns:1fr 1fr}
+          .watchlist-economic-row > div:nth-child(4){grid-column:1/-1}
+          .watchlist-economic-link{justify-self:start}
         }
       `;
       document.head.appendChild(style);
@@ -366,7 +341,7 @@
 
     const note=document.createElement("div");
     note.className="watchlist-economic-note";
-    note.textContent=profile.reason+" · Current week";
+    note.textContent=profile.reason+" · Ranked by relevance · Current week";
     modalBody.appendChild(note);
 
     if(!events.length){
@@ -380,7 +355,8 @@
     const list=document.createElement("div");
     list.className="watchlist-economic-list";
 
-    events.forEach(e=>{
+    events.forEach(item=>{
+      const e=item.event;
       const country=normalizedCountry(e);
       const q=encodeURIComponent(e.event||e.category||"");
       const row=document.createElement("article");
@@ -389,7 +365,10 @@
         <div><strong>${esc(eventTime(e))}</strong></div>
         <div class="watchlist-economic-impact ${impactClass(e)}">${esc(impactName(e))}</div>
         <div><strong>${esc(countryName(country))}</strong><small>${esc(country)}</small></div>
-        <div><strong>${esc(e.event||e.category||"Economic event")}</strong><small>${esc(eventCategory(e))}</small></div>
+        <div>
+          <strong>${esc(e.event||e.category||"Economic event")}</strong>
+          <small>${esc(eventCategory(e))} · relevance ${esc(item.score)}</small>
+        </div>
         <div class="watchlist-economic-number">Actual: ${esc(e.actual??"—")}</div>
         <div class="watchlist-economic-number">Forecast: ${esc(e.forecast??e.te_forecast??"—")}</div>
         <div class="watchlist-economic-number">Previous: ${esc(e.previous??"—")}</div>
@@ -418,8 +397,10 @@
       if(!modal.classList.contains("open"))return;
 
       const relevant=allEvents
-        .filter(e=>eventMatchesProfile(e,profile))
-        .slice(0,40);
+        .map(event=>({event,score:eventRelevanceScore(event,profile)}))
+        .filter(item=>item.score>=0)
+        .sort((a,b)=>b.score-a.score || new Date(a.event.date)-new Date(b.event.date))
+        .slice(0,profile.maxEvents||5);
 
       renderEvents(name,profile,relevant);
     }catch(err){
@@ -440,26 +421,15 @@
       button.type="button";
       button.className="watchlist-economic-button";
       button.textContent="Economic Calendar";
-      button.addEventListener("click",()=>{
-        openEconomicCalendarForCard(card);
-      });
-
+      button.addEventListener("click",()=>openEconomicCalendarForCard(card));
       actions.appendChild(button);
     });
   }
 
   installButtons();
 
-  const observer=new MutationObserver(()=>{
-    installButtons();
-  });
+  const observer=new MutationObserver(()=>installButtons());
+  observer.observe(grid,{childList:true,subtree:true});
 
-  observer.observe(grid,{
-    childList:true,
-    subtree:true
-  });
-
-  window.addEventListener("beforeunload",()=>{
-    observer.disconnect();
-  });
+  window.addEventListener("beforeunload",()=>observer.disconnect());
 })();
