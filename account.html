@@ -13,11 +13,174 @@
   <style>
     .nav-row-break{flex-basis:100%;height:0}
     body{min-height:100vh}
-    main.page.account-page{width:auto;max-width:none;margin:0;padding:14px;min-height:calc(100vh - 180px)}
-    main.account-page .account-card.full{max-width:none!important;margin:0 0 12px!important}
-    main.account-page .account-grid{max-width:none;width:100%;gap:12px}
-    body:not(.dark-mode){--bg:var(--theme-bg);--panel:var(--theme-card);--card:var(--theme-card-2);--line:var(--theme-line);--text:var(--theme-text);--soft:var(--theme-soft);--muted:var(--theme-muted);--blue:var(--theme-blue)}
-    body:not(.dark-mode) .panel{background:var(--theme-card);color:#061522;box-shadow:0 12px 28px rgba(25,50,72,.13)}
+
+    /* Compact Account Preferences layout */
+    main.page.account-page{
+      width:min(1220px,calc(100% - 28px));
+      max-width:1220px;
+      margin:0 auto;
+      padding:12px 0 28px;
+      min-height:calc(100vh - 180px);
+    }
+
+    main.account-page .account-card.full{
+      max-width:none!important;
+      margin:0 0 10px!important;
+      padding:14px 18px!important;
+    }
+
+    main.account-page .account-grid{
+      max-width:none;
+      width:100%;
+      gap:10px;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    main.account-page .account-card{
+      padding:15px 18px!important;
+      border-radius:14px;
+    }
+
+    main.account-page .account-card h1{
+      margin:4px 0 2px;
+      font-size:34px;
+      line-height:1.05;
+    }
+
+    main.account-page .account-card h2{
+      margin:0 0 10px;
+      font-size:20px;
+      line-height:1.15;
+    }
+
+    main.account-page .page-chip{
+      padding:5px 10px;
+      font-size:11px;
+    }
+
+    main.account-page .account-email{
+      margin:7px 0 0;
+      font-size:14px;
+    }
+
+    main.account-page .account-meta{
+      align-items:center;
+      gap:12px;
+    }
+
+    main.account-page .psd-form{
+      gap:9px;
+    }
+
+    main.account-page .psd-field{
+      gap:4px;
+    }
+
+    main.account-page .psd-field label{
+      font-size:11px;
+    }
+
+    main.account-page .psd-input,
+    main.account-page .psd-select{
+      min-height:38px;
+      padding:8px 10px;
+      border-radius:9px;
+      font-size:13px;
+    }
+
+    main.account-page .psd-button{
+      min-height:36px;
+      padding:8px 14px;
+      font-size:12px;
+    }
+
+    main.account-page .psd-status{
+      min-height:0;
+      margin:6px 0 0;
+      font-size:11px;
+    }
+
+    main.account-page .psd-status:empty{
+      display:none;
+    }
+
+    main.account-page .psd-help{
+      margin:8px 0 0;
+      font-size:10.5px;
+      line-height:1.35;
+    }
+
+    main.account-page .checkbox-row{
+      gap:7px;
+      font-size:12px;
+    }
+
+    main.account-page .watchlist-list{
+      margin:9px 0 0;
+      gap:5px;
+      max-height:190px;
+      overflow:auto;
+    }
+
+    main.account-page .watchlist-item{
+      border-radius:8px;
+      padding:6px 9px;
+      font-size:11px;
+    }
+
+    main.account-page .watchlist-remove{
+      padding:4px 8px;
+      font-size:10px;
+    }
+
+    main.account-page .watchlist-card-actions{
+      margin-top:9px;
+      gap:7px;
+    }
+
+    main.account-page .notification-title-row{
+      margin-bottom:7px;
+    }
+
+    main.account-page .coming-soon-badge{
+      padding:4px 8px;
+      font-size:9px;
+    }
+
+    main.account-page .notification-coming-soon{
+      margin:8px 0 0;
+      padding:8px 10px;
+      border-radius:9px;
+      font-size:10px;
+      line-height:1.35;
+    }
+
+    main.account-page .notification-disabled .checkbox-row{
+      margin:0;
+      min-height:20px;
+    }
+
+    main.account-page .inline-actions{
+      gap:7px;
+    }
+
+    /* Hidden compatibility fields expected by auth-account.js.
+       They preserve existing account logic without exposing obsolete UI. */
+    #account-legacy-compat{
+      display:none!important;
+    }
+
+    body:not(.dark-mode){
+      --bg:var(--theme-bg);
+      --panel:var(--theme-card);
+      --card:var(--theme-card-2);
+      --line:var(--theme-line);
+      --text:var(--theme-text);
+      --soft:var(--theme-soft);
+      --muted:var(--theme-muted);
+      --blue:var(--theme-blue)
+    }
+    body:not(.dark-mode) .panel{background:var(--theme-card);color:#061522;box-shadow:0 8px 20px rgba(25,50,72,.10)}
     body:not(.dark-mode) .page-chip{background:var(--theme-gold-soft);color:#523700;border-color:#a97200}
     body:not(.dark-mode) .account-card h1,
     body:not(.dark-mode) .account-card h2,
@@ -34,6 +197,12 @@
     body .psd-shared-header .social-pill.linkedin{opacity:1!important;visibility:visible!important;font-weight:900!important;text-shadow:none!important}
     body:not(.dark-mode) .psd-shared-header .social-pill.linkedin{color:#061522!important;background:#fff!important;border-color:#8da8bd!important}
     body.dark-mode .psd-shared-header .social-pill.linkedin{color:#fff!important}
+
+    @media(max-width:780px){
+      main.page.account-page{width:min(100% - 16px,1220px);padding-top:8px}
+      main.account-page .account-grid{grid-template-columns:1fr}
+      main.account-page .account-card h1{font-size:28px}
+    }
   </style>
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
 </head>
@@ -54,6 +223,17 @@
       </div>
       <div id="account-status" class="psd-status" role="status" aria-live="polite"></div>
     </section>
+
+    <!-- Compatibility fields required by the current shared account script.
+         Hidden because profile editing was intentionally moved elsewhere. -->
+    <div id="account-legacy-compat" aria-hidden="true">
+      <form id="profile-form">
+        <input id="username" type="text" tabindex="-1">
+        <select id="timezone" tabindex="-1">
+          <option value="UTC">UTC</option>
+        </select>
+      </form>
+    </div>
 
     <div class="account-grid">
       <section class="panel account-card" id="preferences">
@@ -110,8 +290,7 @@
           </fieldset>
         </form>
         <p class="notification-coming-soon" id="notification-coming-soon">
-          Notifications are coming soon. These controls will be enabled only after alert rules,
-          frequency limits, duplicate protection, quiet hours, and delivery options are fully customized and tested.
+          Notifications are coming soon. Alert rules, frequency limits, duplicate protection, quiet hours and delivery options are still being finalized.
         </p>
       </section>
 
@@ -128,7 +307,7 @@
 
       <section class="panel account-card danger-zone">
         <h2>Delete Account</h2>
-        <p>Request deletion of your account and personalized data. A seven-day cancellation period is provided.</p>
+        <p class="psd-help">Request deletion of your account and personalized data. A seven-day cancellation period is provided.</p>
         <div class="inline-actions">
           <button class="psd-button danger" id="request-delete-button" type="button">Request Deletion</button>
           <button class="psd-button secondary hidden" id="cancel-delete-button" type="button">Cancel Deletion</button>
