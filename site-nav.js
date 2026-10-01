@@ -18,16 +18,16 @@
   ];
 
   const assetLinks = [
-    { href: "market-pulse.html", icon: "✦", label: "AI Market Pulse", memberOnly: true },
-    { href: "economic-calendar.html", icon: "◷", label: "Economic Calendar" },
-    { href: "market-intelligence.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
     { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" },
     { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
     { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
     { href: "precious-metals.html", icon: "◆", label: "Precious Metals" },
     { href: "indices.html", icon: "▥", label: "Indices Sentiment" },
     { href: "policy-assets.html", icon: "⚖", label: "Policy & Geo Assets" },
-    { href: "ai-assets.html", icon: "AI", label: "AI Assets" }
+    { href: "ai-assets.html", icon: "AI", label: "AI Assets" },
+    { href: "market-intelligence.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
+    { href: "market-pulse.html", icon: "✦", label: "AI Market Pulse", memberOnly: true },
+    { href: "economic-calendar.html", icon: "✦", label: "Economic Calendar" }
   ];
 
   const supportUrl = "https://gofund.me/0d687f045";
@@ -794,10 +794,6 @@
   }
 
   function render(){
-    loadStylesheet("ribbon-economic-calendar.css?v=1","psd-ribbon-economic-calendar-css").catch(function(error){
-      console.error("Economic Calendar ribbon styling failed:",error);
-    });
-
     const mount = document.getElementById("site-header");
     if(!mount) return;
     const current = currentFile();
