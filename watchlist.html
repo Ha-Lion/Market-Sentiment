@@ -115,7 +115,79 @@
 
   <div id="site-footer"></div>
 
-  <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js" defer></script>
+  <!--
+    Load Lightweight Charts only when a user actually opens Comparison.
+    Keeping this third-party CDN request out of the initial page-load path
+    prevents it from holding the browser's loading indicator open.
+  -->
+  <script>
+    (function(){
+      "use strict";
+
+      var chartLibraryPromise=null;
+
+      function loadWatchlistChartLibrary(){
+        if(window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
+        if(chartLibraryPromise) return chartLibraryPromise;
+
+        chartLibraryPromise=new Promise(function(resolve,reject){
+          var script=document.createElement("script");
+          script.src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js";
+          script.async=true;
+
+          script.onload=function(){
+            if(window.LightweightCharts){
+              resolve(window.LightweightCharts);
+            }else{
+              chartLibraryPromise=null;
+              reject(new Error("Interactive chart library did not initialize."));
+            }
+          };
+
+          script.onerror=function(){
+            chartLibraryPromise=null;
+            reject(new Error("Interactive chart library could not load."));
+          };
+
+          document.head.appendChild(script);
+        });
+
+        return chartLibraryPromise;
+      }
+
+      document.addEventListener("click",function(event){
+        var button=event.target && event.target.closest
+          ? event.target.closest(".watchlist-comparison")
+          : null;
+
+        if(!button || window.LightweightCharts || button.dataset.psdChartReady==="true"){
+          return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var originalText=button.textContent;
+        button.disabled=true;
+        button.textContent="Loading…";
+
+        loadWatchlistChartLibrary()
+          .then(function(){
+            button.dataset.psdChartReady="true";
+            button.disabled=false;
+            button.textContent=originalText;
+            button.click();
+          })
+          .catch(function(error){
+            console.error("Watchlist chart library load failed:",error);
+            button.disabled=false;
+            button.textContent=originalText;
+            window.alert("Interactive chart could not load right now. Please try again.");
+          });
+      },true);
+    })();
+  </script>
+
   <script src="watchlist.js?v=20" defer></script>
   <script src="watchlist-economic-events.js?v=3" defer></script>
   <script src="site-footer.js?v=1" defer></script>
