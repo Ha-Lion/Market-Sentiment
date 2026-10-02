@@ -18,16 +18,16 @@
   ];
 
   const assetLinks = [
-    { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" },
-    { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
-    { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
-    { href: "precious-metals.html", icon: "◆", label: "Precious Metals" },
-    { href: "indices.html", icon: "▥", label: "Indices Sentiment" },
-    { href: "policy-assets.html", icon: "⚖", label: "Policy & Geo Assets" },
-    { href: "ai-assets.html", icon: "AI", label: "AI Assets" },
-    { href: "market-intelligence.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
+    { href: "economic-calendar.html", icon: "✦", label: "Economic Calendar" },
     { href: "market-pulse.html", icon: "✦", label: "AI Market Pulse", memberOnly: true },
-    { href: "economic-calendar.html", icon: "✦", label: "Economic Calendar" }
+    { href: "market-intelligence.html", icon: "AI", label: "AI Market Intelligence", memberOnly: true },
+    { href: "ai-assets.html", icon: "AI", label: "AI Assets" },
+    { href: "policy-assets.html", icon: "⚖", label: "Policy & Geo Assets" },
+    { href: "indices.html", icon: "▥", label: "Indices Sentiment" },
+    { href: "precious-metals.html", icon: "◆", label: "Precious Metals" },
+    { href: "energy.html", icon: "⚡", label: "Energy Sentiment" },
+    { href: "forex-sentiment-today.html", icon: "⇄", label: "Forex Sentiment" },
+    { href: "crypto.html", icon: "₿", label: "Crypto Sentiment" }
   ];
 
   const supportUrl = "https://gofund.me/0d687f045";
@@ -121,7 +121,9 @@
 
     const calendarLink = header.querySelector('a[href="economic-calendar.html"]');
     if(calendarLink){
-      if(calendarLink.textContent.trim() !== "Economic Calendar") calendarLink.textContent = "Economic Calendar";
+      if(!calendarLink.querySelector(".psd-calendar-sparkle")){
+        calendarLink.innerHTML = '<span class="psd-calendar-sparkle" aria-hidden="true" style="display:inline-block;margin-right:4px;color:#b77a00;font-size:10px;line-height:1;text-shadow:0 0 6px rgba(210,153,34,.38);">✦</span><span>Economic Calendar</span>';
+      }
       calendarLink.classList.add("psd-ai-feature-link");
       calendarLink.removeAttribute("data-psd-member-feature");
       calendarLink.setAttribute("aria-label", "Economic Calendar");
