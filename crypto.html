@@ -1475,6 +1475,7 @@ body.dark-mode select.lab-select.x-signals-select{
 }
 </style>
 
+  <script src="x-asset-resolver.js"></script>
 </head>
 
 <body>
@@ -1766,20 +1767,9 @@ body.dark-mode select.lab-select.x-signals-select{
       openXSignalFromSelect;
 
     function xAssetIdForCrypto(item,row){
-      const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
-      const name = normalizeText(item?.name || row?.name || "");
-
-      const bySymbol = {
-        BTC:"btc",
-        ETH:"eth",
-        LINK:"link"
-      };
-
-      if(bySymbol[symbol]) return bySymbol[symbol];
-      if(name === "general crypto") return "crypto_general";
-      if(name === "crypto regulation") return "crypto_regulation";
-      if(name === "stablecoins / depeg risk") return "crypto_stablecoins";
-      return "";
+      return window.psdResolveXAssetId
+        ? window.psdResolveXAssetId(item,row,"crypto.html")
+        : "";
     }
 
     // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
