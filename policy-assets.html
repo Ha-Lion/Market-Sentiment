@@ -1521,6 +1521,7 @@ body.dark-mode select.lab-select.x-signals-select{
 </style>
 
 
+  <script src="x-asset-resolver.js"></script>
 </head>
 
 <body>
@@ -1853,27 +1854,9 @@ body.dark-mode select.lab-select.x-signals-select{
 
 
     function xAssetIdForSpecialty(item,row){
-      const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
-      const name = normalizeText(item?.name || row?.name || "");
-
-      if(symbol === "TRUMP") return "trump_token";
-      if(symbol === "WLFI") return "wlfi";
-      if(symbol === "KALSHI" || name === "kalshi politics") return "kalshi_politics";
-      if(symbol === "POLYMARKET" || name === "polymarket politics") return "polymarket_politics";
-      if(symbol === "DJT") return "djt";
-      if(symbol === "COIN") return "coin";
-      if(symbol === "MSTR") return "mstr";
-      if(symbol === "TSLA") return "tsla";
-      if(symbol === "ITA") return "ita";
-      if(symbol === "LMT") return "lmt";
-      if(symbol === "REMX") return "remx";
-      if(symbol === "SMH") return "policy_smh";
-      if(symbol === "FXI") return "fxi";
-      if(symbol === "URA") return "ura";
-      if(symbol === "GEO") return "geo";
-      if(symbol === "CIBR") return "policy_cibr";
-
-      return "";
+      return window.psdResolveXAssetId
+        ? window.psdResolveXAssetId(item,row,"policy-assets.html")
+        : "";
     }
 
 
