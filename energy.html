@@ -1448,6 +1448,7 @@ body.dark-mode select.lab-select.x-signals-select{
 </style>
 
 
+  <script src="x-asset-resolver.js"></script>
 </head>
 
 <body>
@@ -1728,12 +1729,9 @@ body.dark-mode select.lab-select.x-signals-select{
 
 
     function xAssetIdForSpecialty(item,row){
-      const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
-      const name = normalizeText(item?.name || row?.name || "");
-
-      if(name === "general energy") return "energy_general";
-      if(name === "oil inventories / eia") return "oil_inventories_eia";
-      return "";
+      return window.psdResolveXAssetId
+        ? window.psdResolveXAssetId(item,row,"energy.html")
+        : "";
     }
 
     // V2 canonical historical instrument layer. Current/live PSI remains unchanged.
