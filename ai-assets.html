@@ -1512,6 +1512,7 @@ body.dark-mode select.lab-select.x-signals-select{
 </style>
 
 
+  <script src="x-asset-resolver.js"></script>
 </head>
 
 <body>
@@ -1796,9 +1797,9 @@ body.dark-mode select.lab-select.x-signals-select{
 
 
     function xAssetIdForSpecialty(item,row){
-      const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
-      if(symbol === "GOOGL") return "googl";
-      return "";
+      return window.psdResolveXAssetId
+        ? window.psdResolveXAssetId(item,row,"ai-assets.html")
+        : "";
     }
 
     function esc(v){
