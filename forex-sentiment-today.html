@@ -1504,6 +1504,7 @@ body.dark-mode select.lab-select.x-signals-select{
 </style>
 
 
+  <script src="x-asset-resolver.js"></script>
 </head>
 
 <body>
@@ -1812,11 +1813,9 @@ body.dark-mode select.lab-select.x-signals-select{
 
 
     function xAssetIdForSpecialty(item,row){
-      const symbol = String(item?.symbol || row?.symbol || "").trim().toUpperCase();
-
-      if(symbol === "EURUSD") return "dashboard_eur_eurusd";
-      if(symbol === "GBPUSD") return "dashboard_gbp_gbpusd";
-      return "";
+      return window.psdResolveXAssetId
+        ? window.psdResolveXAssetId(item,row,"forex-sentiment-today.html")
+        : "";
     }
 
     function esc(v){
