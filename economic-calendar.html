@@ -363,6 +363,24 @@
 </style>
 
 
+
+<style id="ec-v44-stable-range-layout">
+  /*
+   * Keep the calendar footprint stable when switching from a busy range
+   * (This Week) to a short range (Today/Tomorrow). The data changes, but
+   * the page should not visually collapse or appear to "minimize".
+   */
+  .ec-table-wrap{
+    min-height:clamp(340px,48vh,590px);
+  }
+
+  @media(max-width:800px){
+    .ec-table-wrap{
+      min-height:360px;
+    }
+  }
+</style>
+
 <style id="ec-v43-gold-button-theme">
   /* Calendar controls: white at rest, PSD gold on hover/selection */
   .ec-page .ec-tab,
@@ -3318,7 +3336,8 @@
       await loadFeed();
     });
 
-    document.querySelectorAll(".ec-tab[data-range]").forEach(btn=>btn.addEventListener("click",async()=>{
+    document.querySelectorAll(".ec-tab[data-range]").forEach(btn=>btn.addEventListener("click",async(event)=>{
+      event.preventDefault();
       customRange=null;
       currentRange=btn.dataset.range;
 
