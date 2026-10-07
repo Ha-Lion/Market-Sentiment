@@ -1385,6 +1385,8 @@
     let allEvents = [];
     let lastFetchAt = null;
     let refreshTimer = null;
+    let releaseWatchTimer = null;
+    let releaseWatchBusy = false;
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
@@ -2914,6 +2916,87 @@
       }
     }
 
+    function hasPendingOfficialReleaseWindow(){
+      const now=Date.now();
+      return allEvents.some(e=>{
+        if(!e || !e.official) return false;
+        const d=parseProviderDate(e.date);
+        if(!d) return false;
+
+        const hasActual=
+          e.actual!==null &&
+          e.actual!==undefined &&
+          String(e.actual)!=="";
+
+        if(hasActual) return false;
+
+        const t=d.getTime();
+        return now>=t-(10*60*1000) && now<=t+(15*60*1000);
+      });
+    }
+
+    async function refreshOfficialReleaseWindow(){
+      if(releaseWatchBusy || document.hidden || !hasPendingOfficialReleaseWindow()) return;
+
+      releaseWatchBusy=true;
+      try{
+        const r=getRange("today");
+        const res=await fetch(FEED_URL,{
+          method:"POST",
+          headers:{"content-type":"application/json"},
+          body:JSON.stringify({
+            start:r.start,
+            end:r.end,
+            countries:settings.countries,
+            force_live:false
+          }),
+          cache:"no-store"
+        });
+
+        if(!res.ok) return;
+
+        const data=await res.json().catch(()=>({}));
+        const updates=Array.isArray(data.events)?data.events:[];
+        if(!updates.length) return;
+
+        allEvents=mergeEventUpdates(allEvents,updates);
+        ensureEventUIKeys();
+        lastFetchAt=new Date();
+
+        const weekRange=getRange("week");
+        if(currentRange==="week"){
+          const weekData={
+            start:weekRange.start,
+            end:weekRange.end,
+            countries:[...settings.countries],
+            source:data.source||"FinanceCalendar",
+            mode:"configured",
+            fetched_at:lastFetchAt.toISOString(),
+            provider_error:data.provider_error||null,
+            events:allEvents
+          };
+
+          weekPreloadCache={
+            start:weekRange.start,
+            end:weekRange.end,
+            key:weekCacheKey(),
+            data:weekData,
+            fetchedAt:lastFetchAt
+          };
+          saveWeekCache(weekData,weekRange);
+        }
+
+        setStatus("live","Live data");
+        document.getElementById("provider-name").textContent=
+          data.source||"FinanceCalendar";
+        render();
+      }catch(err){
+        console.warn("Official release fast refresh failed",err);
+      }finally{
+        releaseWatchBusy=false;
+      }
+    }
+
 
     function watchlistTagFromInstrument(name){
       const s=String(name||"").toLowerCase();
@@ -3746,6 +3829,7 @@
     document.getElementById("provider-refresh").addEventListener("click",refresh);
 
     refreshTimer=setInterval(autoRefreshCalendar,AUTO_REFRESH_MS);
+    releaseWatchTimer=setInterval(refreshOfficialReleaseWindow,5000);
     countdownTimer=setInterval(updateCountdown,30000);
 
     const todayISO=localISODate(new Date());
@@ -3824,6 +3908,7 @@
 
     function cleanupCalendarRuntime(){
       clearInterval(refreshTimer);
+      clearInterval(releaseWatchTimer);
       clearInterval(countdownTimer);
 
       if(sparklineHydrationTimer){
