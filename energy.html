@@ -3163,6 +3163,37 @@ body.dark-mode select.lab-select.x-signals-select{
 
     if(popup){
 
+      /*
+      Stop any X-post media before hiding the popup.
+      Without this cleanup, HTML5 video/audio can keep
+      playing even after the popup is no longer visible.
+      */
+      popup
+        .querySelectorAll("video, audio")
+        .forEach(function(media){
+
+          try{
+            media.pause();
+          }catch(error){}
+
+          try{
+            media.currentTime = 0;
+          }catch(error){}
+
+          media.removeAttribute("src");
+
+          media
+            .querySelectorAll("source")
+            .forEach(function(source){
+              source.removeAttribute("src");
+            });
+
+          try{
+            media.load();
+          }catch(error){}
+        });
+
+
       popup.classList.remove(
         "show"
       );
