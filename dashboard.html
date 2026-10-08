@@ -7626,6 +7626,44 @@ select.lab-select.x-signals-select{
 
     if(popup){
 
+      // Stop any X-post media immediately before hiding the popup.
+      // Simply removing the "show" class leaves HTML5 video/audio
+      // playback running in the background.
+      popup
+        .querySelectorAll(
+          "video, audio"
+        )
+        .forEach(media => {
+
+          try{
+            media.pause();
+          }catch(error){}
+
+          try{
+            media.currentTime = 0;
+          }catch(error){}
+
+          // Fully detach the media source so the browser cannot
+          // continue buffering/playing audio after the modal closes.
+          media.removeAttribute(
+            "src"
+          );
+
+          try{
+            media.load();
+          }catch(error){}
+
+        });
+
+      const mediaBox =
+        popup.querySelector(
+          "#xPostPopupMedia"
+        );
+
+      if(mediaBox){
+        mediaBox.textContent = "";
+      }
+
       popup.classList.remove(
         "show"
       );
