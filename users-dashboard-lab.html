@@ -848,10 +848,14 @@ modal.addEventListener('click',e=>{
 });
 modal.addEventListener('click',e=>{const st=e.target.closest('[data-star]'),rd=e.target.closest('[data-read]'),op=e.target.closest('[data-open]'),soc=e.target.closest('[data-social]');if(st){state.star[st.dataset.star]=state.star[st.dataset.star]?false:Date.now();pane('news')}if(rd){state.read[rd.dataset.read]=Date.now();pane('news')}if(op)pane(op.dataset.open);if(soc){let s=SOCIAL.find(x=>x[0]===soc.dataset.social);if(s)consent(s[0],s[1])}});
 // V49: one portable, versioned backup includes every workspace, not only the visible one.
+// V50: portable workspace backup also includes optional news search preferences; never credentials.
 $('#backup').onclick=()=>{
  storePresets();
  const copy={schema:2,kind:'psd-workspaces',exportedAt:new Date().toISOString(),active:activePreset,
   slots:profiles.map((p,i)=>({name:p.name,data:i===activePreset?captureWorkspace():structuredClone(p.data)}))};
+ try {const prefs=JSON.parse(localStorage.getItem(V48_NEWS_PREF_KEY)||'null');
+  if(prefs&&typeof prefs==='object'&&!Array.isArray(prefs))copy.newsPreferences=v50CleanNewsPreferences(prefs);
+ }catch{}
  const blob=new Blob([JSON.stringify(copy,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
  a.download='public-sentiment-dashboard-workspaces.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
@@ -874,7 +878,7 @@ function v49WorkspaceData(d){
  });
  if(new Set(validatedTiles.map(t=>t.id)).size!==validatedTiles.length)throw Error('Duplicate tiles');
  const cleaned={...structuredClone(defaults),selected:ASSETS.includes(d.selected)?d.selected:'',
-  watch:d.watch.map(a=>a===null||ASSETS.includes(a)?a:null),
+  watch:d.watch.map(a=>a===null||ASSETS.includes(a)?a:null).map((a,i,arr)=>a&&arr.indexOf(a)!==i?null:a),
   tech:Array.isArray(d.tech)?[...new Set(d.tech.filter(x=>TECH.includes(x)))].slice(0,15):structuredClone(defaults.tech),
   sources:Array.isArray(d.sources)?[...new Set(d.sources.filter(x=>SOURCES.includes(x)))]:structuredClone(defaults.sources),
   fund:{},consent:{},read:{},star:{},settings:{},techByAsset:{},tiles:validatedTiles};
@@ -888,17 +892,44 @@ function v49WorkspaceData(d){
  }
  normalizeWatchSelection(cleaned);return cleaned;
 }
-$('#importFile').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{if(f.size>2000000)throw Error('File exceeds 2 MB');const input=JSON.parse(await f.text());
- if(input.schema===2&&input.kind==='psd-workspaces'){
-  if(!Array.isArray(input.slots)||input.slots.length!==3||!Number.isInteger(input.active)||input.active<0||input.active>2)throw Error('Invalid workspace backup');
-  const incoming=input.slots.map((p,i)=>({name:typeof p?.name==='string'&&p.name.trim()?p.name.trim().replace(/[<>]/g,'').slice(0,26):'Workspace '+(i+1),data:v49WorkspaceData(p?.data)}));
-  if(!confirm('Restore all three saved workspaces? This replaces the layouts and preferences currently saved in this browser.'))return;
-  const next={active:input.active,slots:incoming};
-  try{localStorage.setItem(PRESETS_KEY,JSON.stringify(next));localStorage.setItem(KEY,JSON.stringify(incoming[next.active].data))}
-  catch(err){throw Error('Browser storage is full or unavailable; no completed restore')}
-  location.reload();return;
- }
-if(input.schema!==1||!input.dashboard||!Array.isArray(input.dashboard.tiles)||!Array.isArray(input.dashboard.watch))throw Error('Invalid dashboard backup');const d=input.dashboard;if(d.tiles.length>100||d.watch.length>15||d.tech?.length>15)throw Error('Invalid dashboard size');const validTiles=d.tiles.every(t=>t&&typeof t.id==='string'&&typeof t.title==='string'&&typeof t.type==='string'&&['x','y','w','h'].every(k=>Number.isFinite(t[k])&&t[k]>=0&&t[k]<5000));if(!validTiles)throw Error('Invalid tile positions');const permitted=new Set([...blueprint.map(x=>x[0]),...tiles.map(x=>x.id)]);if(d.tiles.some(t=>!permitted.has(t.id)&&!/^custom[0-9]+$/.test(t.id)))throw Error('Unexpected tile identifiers');const cleaned={...structuredClone(defaults),selected:ASSETS.includes(d.selected)?d.selected:'EUR/USD',watch:d.watch.filter(x=>x===null||ASSETS.includes(x)).slice(0,15),tech:Array.isArray(d.tech)?d.tech.filter(x=>TECH.includes(x)).slice(0,10):defaults.tech,sources:Array.isArray(d.sources)?d.sources.filter(x=>SOURCES.includes(x)):defaults.sources,fund:{},consent:{},read:{},star:{},settings:{},techByAsset:{},tiles:d.tiles.map(t=>({id:t.id.slice(0,80),title:t.title.slice(0,60),type:t.type,x:t.x,y:t.y,w:Math.max(145,t.w),h:Math.max(80,t.h),locked:!!t.locked,closed:!!t.closed,min:!!t.min,maxed:!!t.maxed}))};if(d.fund&&typeof d.fund==='object')for(const [asset,values]of Object.entries(d.fund))if(ASSETS.includes(asset)&&Array.isArray(values))cleaned.fund[asset]=values.filter(x=>FUNDS.includes(x)).slice(0,6);if(d.techByAsset&&typeof d.techByAsset==='object')for(const [asset,values] of Object.entries(d.techByAsset))if(ASSETS.includes(asset)&&Array.isArray(values))cleaned.techByAsset[asset]=[...new Set(values.filter(x=>TECH.includes(x)))].slice(0,10);if(d.settings?.notifications&&Array.isArray(d.settings.notifications))cleaned.settings.notifications=d.settings.notifications.filter(x=>typeof x==='string').slice(0,10);if(!confirm('Replace this lab dashboard layout with the imported backup?'))return;localStorage.setItem(KEY,JSON.stringify(cleaned));location.reload()}catch(err){alert('Cannot import: '+err.message)}finally{e.target.value=''}};
+// V50: normalize old and new backups through one validator. Restore is rolled back on storage errors.
+function v50CleanNewsPreferences(p){
+ if(!p||typeof p!=='object'||Array.isArray(p))throw Error('Invalid news preferences');
+ return {keyword:typeof p.keyword==='string'?p.keyword.slice(0,160):'',
+  asset:typeof p.asset==='string'&&ASSETS.includes(p.asset)?p.asset:'',
+  source:typeof p.source==='string'&&SOURCES.includes(p.source)?p.source:'',
+  order:p.order==='oldest'?'oldest':'newest',favorites:p.favorites===true};
+}
+function v50RestoreStorage(updates){
+ const old=updates.map(([k])=>[k,localStorage.getItem(k)]);
+ try{for(const [k,v]of updates)localStorage.setItem(k,JSON.stringify(v))}
+ catch(error){for(const [k,v]of old){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch{}}
+  throw Error('Could not save restored workspaces. Your earlier settings were retained where browser storage allowed.');}
+}
+$('#importFile').onchange=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ try{
+  if(f.size>2000000)throw Error('File exceeds 2 MB');
+  const input=JSON.parse(await f.text());
+  if(input?.schema===2&&input.kind==='psd-workspaces'){
+   if(!Array.isArray(input.slots)||input.slots.length!==3||!Number.isInteger(input.active)||input.active<0||input.active>2)throw Error('Invalid workspace backup');
+   const incoming=input.slots.map((p,i)=>({name:typeof p?.name==='string'&&p.name.trim()?p.name.trim().replace(/[<>]/g,'').slice(0,26):'Workspace '+(i+1),data:v49WorkspaceData(p?.data)}));
+   const updates=[[PRESETS_KEY,{active:input.active,slots:incoming}],[KEY,incoming[input.active].data]];
+   if(input.newsPreferences!==undefined)updates.push([V48_NEWS_PREF_KEY,v50CleanNewsPreferences(input.newsPreferences)]);
+   if(!confirm('Restore all three workspaces? Your current saved layouts and preferences will be replaced.'))return;
+   v50RestoreStorage(updates);location.reload();return;
+  }
+  if(input?.schema===1&&input.dashboard){
+   const cleaned=v49WorkspaceData(input.dashboard);
+   if(!confirm('Restore this older dashboard backup into your current workspace?'))return;
+   // Update the active workspace AND its saved preset, so a later page load cannot undo the restoration.
+   const restored=profiles.map((p,i)=>({name:p.name,data:i===activePreset?cleaned:structuredClone(p.data)}));
+   v50RestoreStorage([[PRESETS_KEY,{active:activePreset,slots:restored}],[KEY,cleaned]]);
+   location.reload();return;
+  }
+  throw Error('Unsupported dashboard backup format');
+ }catch(err){alert('Cannot restore backup: '+err.message)}finally{e.target.value=''}
+};
 $('#importData').onclick=()=>$('#dataFile').click();$('#dataHealth').onclick=healthPane;$('#templateData').onclick=downloadTemplate;
 $('#clearData').onclick=()=>{if(!confirm('Clear imported market snapshot from this browser?'))return;snap=null;localStorage.removeItem(SNAP_KEY);render()};
 $('#dataFile').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{if(f.size>1024*1024)throw Error('Snapshot exceeds 1 MB');let d=JSON.parse(await f.text());if(!d||d.schema!==1||!ageOK(d.generatedAt,48)||typeof d.instruments!=='object'||!d.instruments||Array.isArray(d.instruments))throw Error('Invalid or outdated snapshot');let output={schema:1,generatedAt:d.generatedAt,instruments:{},regions:{}};for(let [a,v] of Object.entries(d.instruments)){if(!ASSETS.includes(a)||!v||typeof v!=='object')continue;let entry={psi:{},technical:{},fundamentals:{}};for(const period of ['daily','weekly','monthly']){let o=v.psi?.[period];if(psiValue(o)!==null)entry.psi[period]={value:o.value,evidenceAt:o.evidenceAt}}for(const name of TECH){let o=v.technical?.[name];if(dataPoint(o)!==null)entry.technical[name]={value:o.value,asOf:o.asOf}}for(const name of FUNDS){let o=v.fundamentals?.[name];if(dataPoint(o,168)!==null)entry.fundamentals[name]={value:o.value,asOf:o.asOf}}output.instruments[a]=entry}for(const id of ['global','us','euro']){let o=d.regions?.[id];if(psiValue(o)!==null)output.regions[id]={value:o.value,evidenceAt:o.evidenceAt}}if(!Object.keys(output.instruments).length&&!Object.keys(output.regions).length)throw Error('No supported valid data points (timestamps and PSI evidence required)');snap=output;localStorage.setItem(SNAP_KEY,JSON.stringify(output));recordSnapshot(output);render();alert('Snapshot imported. Valid recent data displays; missing or stale data remains blank.')}catch(err){alert('Import rejected: '+err.message)}finally{e.target.value=''}};
