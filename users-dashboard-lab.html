@@ -130,6 +130,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .tile .handle{z-index:45}
 .tile .bar [title]{transition:background-color .15s ease}
 .tile .bar [title]:focus-visible{outline:2px solid #e9be69;outline-offset:2px}
+.tile .bar:focus-visible{outline:2px solid var(--gold,#d5ad61);outline-offset:-3px} 
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
@@ -173,7 +174,7 @@ try{const raw=JSON.parse(localStorage.getItem(PRESETS_KEY)||'null');if(raw&&Arra
 if(!profiles)profiles=[{name:'Workspace 1',data:captureWorkspace()},{name:'Workspace 2',data:freshWorkspace()},{name:'Workspace 3',data:freshWorkspace()}];
 function storePresets(){try{profiles[activePreset].data=captureWorkspace();localStorage.setItem(PRESETS_KEY,JSON.stringify({active:activePreset,slots:profiles}))}catch(e){console.warn('Unable to save workspace',e)}}
 function showPresetButtons(){document.querySelectorAll('[data-preset]').forEach(b=>{const i=Number(b.dataset.preset);b.textContent=profiles[i].name;b.classList.toggle('active',i===activePreset);b.setAttribute('aria-pressed',String(i===activePreset));b.title=profiles[i].name+' — click to switch, double-click to rename'})}
-function switchPreset(n){if(!Number.isInteger(n)||n<0||n>2||n===activePreset)return;storePresets();activePreset=n;restoreWorkspace(profiles[n].data);showPresetButtons();render();refreshV8Status();applyWatermark();window.scrollTo({top:0,behavior:'instant'})}
+function switchPreset(n){previousArrangement=null;document.getElementById('undoArrange').disabled=true;if(!Number.isInteger(n)||n<0||n>2||n===activePreset)return;storePresets();activePreset=n;restoreWorkspace(profiles[n].data);showPresetButtons();render();refreshV8Status();applyWatermark();window.scrollTo({top:0,behavior:'instant'})}
 function renamePreset(n){if(!Number.isInteger(n)||n<0||n>2)return;const name=prompt('Name for this workspace (up to 26 characters):',profiles[n].name);if(name===null)return;const clean=name.trim().replace(/[<>]/g,'').slice(0,26);if(!clean){alert('Please enter a workspace name.');return}profiles[n].name=clean;storePresets();showPresetButtons();if(modal.classList.contains('open')&&document.getElementById('modalTitle').textContent==='Dashboard Settings')settingsMenu()}
 document.getElementById('workspacePresets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(b)switchPreset(Number(b.dataset.preset))});
 document.getElementById('workspacePresets').addEventListener('dblclick',e=>{const b=e.target.closest('[data-preset]');if(b)renamePreset(Number(b.dataset.preset))});
@@ -236,7 +237,7 @@ function fitBoardHeight(){
   const minViewport=Math.max(600,window.innerHeight-board.getBoundingClientRect().top-35);
   board.style.minHeight=Math.max(minViewport,Math.ceil(maxBottom*scale+100))+'px';
 }
-function render(){let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span><button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}fitBoardHeight();persist()}
+function render(){let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span><button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}fitBoardHeight();persist()}
 function open(title,html,buttons=''){ $('#modalTitle').textContent=title;body.innerHTML=html;footer.innerHTML=buttons;modal.classList.add('open')};function shut(){modal.classList.remove('open')};$('#closeModal').onclick=shut;modal.addEventListener('click',e=>{if(e.target===modal)shut()});document.addEventListener('keydown',e=>{if(e.key==='Escape')shut()});
 function settingsMenu(){open('Dashboard Settings',`<div class="grid2">${[['account','My Account & Subscription'],['assets','My Watchlist Assets'],['technical','Technical Indicators'],['fundamental','Fundamental Drivers'],['sources','News & Article Sources'],['social','Social Media & Websites'],['notification','Notification Preferences'],['security','Privacy, Security & Terms']].map(([id,txt])=>`<button class="tile-link" data-open="${id}">${txt} <span>↗</span></button>`).join('')}</div><div class="section">Saved workspaces</div><div class="grid2">${profiles.map((p,i)=>`<button class="tile-link" data-v15-rename="${i}">Rename ${safe(p.name)} <span>✎</span></button>`).join('')}</div><div class="section">Workspace management</div><p class="muted">Copy your current dashboard to another workspace, or restore one workspace to its original layout. Other workspaces remain unchanged.</p><div class="grid2"><button class="tile-link" data-v20-action="copy">Copy Current Workspace <span>↗</span></button><button class="tile-link" data-v20-action="reset">Reset One Workspace <span>↗</span></button></div><div class="section">Workspace preferences</div><div class="grid2"><button class="tile-link" data-v9-action="restore">Restore Closed Tiles <span>↗</span></button><button class="tile-link" data-v9-action="unlock">Unlock All Tiles <span>↗</span></button><button class="tile-link" data-v9-action="autoArrange">Arrange Tiles <span>↗</span></button><button class="tile-link" data-v9-action="undoArrange">Undo Arrangement <span>↗</span></button><button class="tile-link" data-v9-action="densityToggle">Compact Spacing <span>↗</span></button><button class="tile-link" data-v9-action="backup">Export Layout <span>↗</span></button><button class="tile-link" data-v9-action="importLayout">Import Layout <span>↗</span></button></div><details class="lab-advanced"><summary>Lab diagnostics (testing only)</summary><div class="grid2"><button class="tile-link" data-v9-action="importData">Import Market Data Snapshot</button><button class="tile-link" data-v9-action="clearData">Clear Market Snapshot</button><button class="tile-link" data-v9-action="dataHealth">Data Health Diagnostics</button><button class="tile-link" data-v9-action="templateData">Download Data Template</button></div></details>`)}
 function options(items,selected,cl='pick'){return `<div class="config-grid">${items.map(n=>`<label class="option"><input type="checkbox" class="${cl}" value="${safe(n)}" ${selected.includes(n)?'checked':''}><span>${safe(n)}</span></label>`).join('')}</div>`};function chosen(cl){return [...body.querySelectorAll('.'+cl+':checked')].map(x=>x.value)}
@@ -270,6 +271,18 @@ board.addEventListener('keydown',e=>{
  e.preventDefault();render();
  const restored=Array.from(board.querySelectorAll('.tile')).find(el=>el.dataset.id===t.id);
  restored?.querySelector('.handle')?.focus();
+});
+// V21: move unlocked tiles with keyboard from a focused tile header.
+board.addEventListener('keydown',e=>{
+ const bar=e.target.closest('.bar');if(!bar||e.target!==bar)return;
+ const t=tiles.find(x=>x.id===bar.closest('.tile')?.dataset.id);
+ if(!t||t.locked||t.maxed)return;
+ const step=e.shiftKey?50:10;
+ const offsets={ArrowUp:[0,-step],ArrowDown:[0,step],ArrowLeft:[-step,0],ArrowRight:[step,0]};
+ if(!offsets[e.key])return;
+ e.preventDefault();t.x=Math.max(0,Math.min(1370-t.w,t.x+offsets[e.key][0]));
+ t.y=Math.max(0,Math.min(100000,t.y+offsets[e.key][1]));render();
+ [...board.querySelectorAll('.tile')].find(el=>el.dataset.id===t.id)?.querySelector('.bar')?.focus();
 });
 board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=++Z);el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{t.x=Math.max(0,ox+dx);t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
 modal.addEventListener('click',e=>{const st=e.target.closest('[data-star]'),rd=e.target.closest('[data-read]'),op=e.target.closest('[data-open]'),soc=e.target.closest('[data-social]');if(st){state.star[st.dataset.star]=state.star[st.dataset.star]?false:Date.now();pane('news')}if(rd){state.read[rd.dataset.read]=Date.now();pane('news')}if(op)pane(op.dataset.open);if(soc){let s=SOCIAL.find(x=>x[0]===soc.dataset.social);if(s)consent(s[0],s[1])}});
@@ -310,13 +323,19 @@ $('#autoArrange').onclick=()=>{
  if(!movable.length){alert('No movable tiles. Unlock at least one tile.');return;}
  if(!confirm(`Arrange ${movable.length} unlocked tiles? Locked tiles will remain in place.`))return;
  previousArrangement=tiles.map(t=>({id:t.id,x:t.x,y:t.y,w:t.w,h:t.h}));
- // Keep locked tiles in place; pack unlocked tiles below their reserved area to avoid overlaps.
- const fixed=tiles.filter(t=>!t.closed&&(t.locked||t.maxed));
- const startY=fixed.length?Math.max(...fixed.map(t=>t.y+t.h))+24:10;
- const columns=[10,350,690,1030];let col=0,y=startY,rowHeight=0;
- for(const t of movable){const width=Math.min(325,Math.max(220,t.w));const height=Math.max(140,t.min?85:t.h);
-   if(col===4){col=0;y+=rowHeight+14;rowHeight=0;}
-   t.x=columns[col++];t.y=y;t.w=width;rowHeight=Math.max(rowHeight,height);
+ // Place unlocked tiles in the earliest non-overlapping locations while retaining all locked tiles.
+ const occupied=tiles.filter(t=>!t.closed&&(t.locked||t.maxed)).map(t=>({x:t.x,y:t.y,w:t.w,h:t.min?39:t.h}));
+ const collides=(r,o)=>r.x<o.x+o.w+12&&r.x+r.w+12>o.x&&r.y<o.y+o.h+12&&r.y+r.h+12>o.y;
+ for(const t of movable){
+   const w=Math.max(145,Math.min(430,t.w)),h=t.min?39:Math.max(80,t.h);
+   let found=null;
+   for(let y=12;y<=120000&&!found;y+=24){
+     for(let x=12;x+w<=1370;x+=24){
+       const candidate={x,y,w,h};
+       if(!occupied.some(r=>collides(candidate,r))){found=candidate;break}
+     }
+   }
+   if(found){t.x=found.x;t.y=found.y;t.w=found.w;occupied.push(found)}
  }
  $('#undoArrange').disabled=false;render();refreshV8Status();
 };
