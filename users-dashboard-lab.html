@@ -339,19 +339,40 @@ function v31LoadHeadlines(feed){
 }
 let v32Query='',v32Source='',v32UnreadOnly=false;
 let v33FavoritesOnly=false,v33Sort='newest';
+// V34: publisher preferences reflect publishers actually available in the PSI feed.
+// An absent preference means all sources (avoids accidentally hiding articles in old layouts).
+function v34AvailableSources(){return [...new Set(v31Visible().map(h=>h.source))].sort((a,b)=>a.localeCompare(b))}
+function v34SourceEnabled(source){return !Array.isArray(state.newsFeedSources)||state.newsFeedSources.includes(source)}
+function v34SourceSettings(){
+ const available=v34AvailableSources();
+ open('Watchlist News Sources',`<p class="notice">Choose which publishers appear in your watchlist news. These options reflect sources currently available in the website PSI headline feed.</p><p class="muted">${available.length} available publishers. Newly appearing publishers are included automatically when all are selected.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" data-v34-all="1">Select all</button><button class="btn" data-v34-none="1">Clear selection</button><button class="btn" data-v34-back="1">Back to News</button></div><div class="grid2">${available.map(src=>`<label class="field" style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-v34-source="${safe(src)}" ${v34SourceEnabled(src)?'checked':''}><span>${safe(src)}</span></label>`).join('')||'<p>No sources available for your selected watchlist assets.</p>'}</div>`);
+}
+
 function v31NewsPane(){
  const all=v31Visible();
- const sources=[...new Set(all.map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
- if(v32Source&&!sources.includes(v32Source))v32Source='';
+ const sources=[...new Set(all.filter(h=>v34SourceEnabled(h.source)).map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
+ if(v32Source&&(!sources.includes(v32Source)||!v34SourceEnabled(v32Source)))v32Source='';
  const q=v32Query.toLocaleLowerCase().trim();
- const items=all.filter(h=>(!q||[h.title,h.source].join(' ').toLocaleLowerCase().includes(q))&&(!v32Source||h.source===v32Source)&&(!v32UnreadOnly||!v31ReadFlag(h.id))&&(!v33FavoritesOnly||!!state.star[h.id])).sort((a,b)=>v33Sort==='oldest'?a.time-b.time:b.time-a.time);
+ const items=all.filter(h=>v34SourceEnabled(h.source)&&(!q||[h.title,h.source].join(' ').toLocaleLowerCase().includes(q))&&(!v32Source||h.source===v32Source)&&(!v32UnreadOnly||!v31ReadFlag(h.id))&&(!v33FavoritesOnly||!!state.star[h.id])).sort((a,b)=>v33Sort==='oldest'?a.time-b.time:b.time-a.time);
  open('Latest News & Articles · Watchlist',
  `<p class="notice">Watchlist headlines from the PSI feed · ${all.length} available · ${v31Unread()} unread. Search results: ${items.length}.</p>`+
- `<div class="v32filters"><label>Search headlines<input id="v32Search" type="search" placeholder="Keyword or publisher" value="${safe(v32Query)}"></label><label>Source<select id="v32Source"><option value="">All sources</option>${sources.map(src=>`<option value="${safe(src)}" ${src===v32Source?'selected':''}>${safe(src)}</option>`).join('')}</select></label><label class="v32check"><input id="v32Unread" type="checkbox" ${v32UnreadOnly?'checked':''}> Unread only</label><label class="v32check"><input id="v33Favorites" type="checkbox" ${v33FavoritesOnly?'checked':''}> Favorites only</label><label>Order<select id="v33Sort"><option value="newest" ${v33Sort==='newest'?'selected':''}>Newest first</option><option value="oldest" ${v33Sort==='oldest'?'selected':''}>Oldest first</option></select></label></div>`+
+ `<div style="display:flex;justify-content:flex-end;margin:8px 0"><button class="btn" data-v34-manage="1">Manage News Sources</button></div><div class="v32filters"><label>Search headlines<input id="v32Search" type="search" placeholder="Keyword or publisher" value="${safe(v32Query)}"></label><label>Source<select id="v32Source"><option value="">All sources</option>${sources.map(src=>`<option value="${safe(src)}" ${src===v32Source?'selected':''}>${safe(src)}</option>`).join('')}</select></label><label class="v32check"><input id="v32Unread" type="checkbox" ${v32UnreadOnly?'checked':''}> Unread only</label><label class="v32check"><input id="v33Favorites" type="checkbox" ${v33FavoritesOnly?'checked':''}> Favorites only</label><label>Order<select id="v33Sort"><option value="newest" ${v33Sort==='newest'?'selected':''}>Newest first</option><option value="oldest" ${v33Sort==='oldest'?'selected':''}>Oldest first</option></select></label></div>`+
  (items.map(h=>`<article class="news ${v31ReadFlag(h.id)?'':'unread'}"><div class="news-head"><button class="star" data-v31-star="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove favorite':'Add favorite'}">${state.star[h.id]?'★':'☆'}</button><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleString()}</span></div><div class="headline">${safe(h.title)}</div><a class="btn" href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" data-v31-open="${safe(h.id)}">Open article ↗</a></article>`).join('')||'<p class="notice">No articles match these filters.</p>'));
 }
 // Rebuild filtered results only when selection is committed, preserving search focus while typing.
 function v32Refresh(){v31NewsPane()}
+modal.addEventListener('click',e=>{
+ if(e.target.closest('[data-v34-manage]')){v34SourceSettings();return}
+ if(e.target.closest('[data-v34-back]')){v31NewsPane();return}
+ if(e.target.closest('[data-v34-all]')){state.newsFeedSources=null;persist();v34SourceSettings();return}
+ if(e.target.closest('[data-v34-none]')){state.newsFeedSources=[];persist();v34SourceSettings();return}
+});
+modal.addEventListener('change',e=>{
+ const cb=e.target.closest('[data-v34-source]');if(!cb)return;
+ const all=v34AvailableSources();const chosen=new Set(Array.isArray(state.newsFeedSources)?state.newsFeedSources:all);
+ if(cb.checked)chosen.add(cb.dataset.v34Source);else chosen.delete(cb.dataset.v34Source);
+ state.newsFeedSources=chosen.size===all.length?null:[...chosen];persist();
+});
 modal.addEventListener('change',e=>{
  if(e.target.id==='v32Source'){v32Source=e.target.value;v32Refresh()}
  if(e.target.id==='v32Unread'){v32UnreadOnly=e.target.checked;v32Refresh()}
