@@ -159,7 +159,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .board .tile::before,.board .tile::after,.board .tile .content::before,.board .tile .content::after { content:none !important; background-image:none !important; }
 @media(max-width:800px){.board::before{background-position:center 85px !important;background-size:95vw auto !important;opacity:.26 !important}}
 .v26-regional-trend{margin-top:12px;padding-top:9px;border-top:1px solid #9e7d4538}.v26-regional-trend svg{width:100%;height:65px;display:block;overflow:visible;margin:4px 0}.v26-regional-trend .muted{font-size:10px}
-.v32filters{display:grid;grid-template-columns:minmax(170px,2fr) minmax(150px,1fr) auto;gap:12px;align-items:end;margin:12px 0 18px}
+.v32filters{display:grid;grid-template-columns:minmax(170px,2fr) minmax(150px,1fr) auto auto minmax(130px,1fr);gap:12px;align-items:end;margin:12px 0 18px}
 .v32filters label{font-size:13px;font-weight:600}
 .v32filters input[type=search],.v32filters select{display:block;width:100%;margin-top:5px;padding:9px;border-radius:9px;border:1px solid #b69858;background:var(--card,#192b44);color:var(--text,#fff)}
 .v32filters .v32check{display:flex;align-items:center;gap:7px;padding-bottom:11px;white-space:nowrap}
@@ -338,15 +338,16 @@ function v31LoadHeadlines(feed){
  v31Headlines.sort((a,b)=>b.time-a.time);
 }
 let v32Query='',v32Source='',v32UnreadOnly=false;
+let v33FavoritesOnly=false,v33Sort='newest';
 function v31NewsPane(){
  const all=v31Visible();
  const sources=[...new Set(all.map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
  if(v32Source&&!sources.includes(v32Source))v32Source='';
  const q=v32Query.toLocaleLowerCase().trim();
- const items=all.filter(h=>(!q||[h.title,h.source].join(' ').toLocaleLowerCase().includes(q))&&(!v32Source||h.source===v32Source)&&(!v32UnreadOnly||!v31ReadFlag(h.id)));
+ const items=all.filter(h=>(!q||[h.title,h.source].join(' ').toLocaleLowerCase().includes(q))&&(!v32Source||h.source===v32Source)&&(!v32UnreadOnly||!v31ReadFlag(h.id))&&(!v33FavoritesOnly||!!state.star[h.id])).sort((a,b)=>v33Sort==='oldest'?a.time-b.time:b.time-a.time);
  open('Latest News & Articles · Watchlist',
  `<p class="notice">Watchlist headlines from the PSI feed · ${all.length} available · ${v31Unread()} unread. Search results: ${items.length}.</p>`+
- `<div class="v32filters"><label>Search headlines<input id="v32Search" type="search" placeholder="Keyword or publisher" value="${safe(v32Query)}"></label><label>Source<select id="v32Source"><option value="">All sources</option>${sources.map(src=>`<option value="${safe(src)}" ${src===v32Source?'selected':''}>${safe(src)}</option>`).join('')}</select></label><label class="v32check"><input id="v32Unread" type="checkbox" ${v32UnreadOnly?'checked':''}> Unread only</label></div>`+
+ `<div class="v32filters"><label>Search headlines<input id="v32Search" type="search" placeholder="Keyword or publisher" value="${safe(v32Query)}"></label><label>Source<select id="v32Source"><option value="">All sources</option>${sources.map(src=>`<option value="${safe(src)}" ${src===v32Source?'selected':''}>${safe(src)}</option>`).join('')}</select></label><label class="v32check"><input id="v32Unread" type="checkbox" ${v32UnreadOnly?'checked':''}> Unread only</label><label class="v32check"><input id="v33Favorites" type="checkbox" ${v33FavoritesOnly?'checked':''}> Favorites only</label><label>Order<select id="v33Sort"><option value="newest" ${v33Sort==='newest'?'selected':''}>Newest first</option><option value="oldest" ${v33Sort==='oldest'?'selected':''}>Oldest first</option></select></label></div>`+
  (items.map(h=>`<article class="news ${v31ReadFlag(h.id)?'':'unread'}"><div class="news-head"><button class="star" data-v31-star="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove favorite':'Add favorite'}">${state.star[h.id]?'★':'☆'}</button><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleString()}</span></div><div class="headline">${safe(h.title)}</div><a class="btn" href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" data-v31-open="${safe(h.id)}">Open article ↗</a></article>`).join('')||'<p class="notice">No articles match these filters.</p>'));
 }
 // Rebuild filtered results only when selection is committed, preserving search focus while typing.
@@ -354,6 +355,8 @@ function v32Refresh(){v31NewsPane()}
 modal.addEventListener('change',e=>{
  if(e.target.id==='v32Source'){v32Source=e.target.value;v32Refresh()}
  if(e.target.id==='v32Unread'){v32UnreadOnly=e.target.checked;v32Refresh()}
+ if(e.target.id==='v33Favorites'){v33FavoritesOnly=e.target.checked;v32Refresh()}
+ if(e.target.id==='v33Sort'){v33Sort=e.target.value==='oldest'?'oldest':'newest';v32Refresh()}
 });
 modal.addEventListener('input',e=>{
  if(e.target.id!=='v32Search')return;
