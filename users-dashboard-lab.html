@@ -481,7 +481,12 @@ function v36Technical(name,key){
  const e=v36Asset(name);const d=e?.technical?.daily;
  if(!d||!ageOK(v36Updated,48))return null;
  const field={'RSI (14)':'rsi14','SMA (20)':'ma20'}[key];
- const n=field?d[field]:null;return typeof n==='number'&&Number.isFinite(n)?Number(n.toFixed(2)):null;
+ // Use only explicitly mapped feed fields; do not infer indicators from unrelated values.
+ const n=field?d[field]:null;
+ if(!Number.isFinite(n))return null;
+ if(key==='RSI (14)'&&(n<0||n>100))return null;
+ if(key==='SMA (20)'&&n<=0)return null;
+ return Number(n.toFixed(2));
 }
 async function v36Refresh(){
  if(Date.now()-v36LastFetch<240000)return;
@@ -525,7 +530,7 @@ function v37OpenDiagnostics(){
   const actual=Object.values(readings).filter(v=>typeof v==='number'&&Number.isFinite(v)).length;
   return `<div class="tableline"><span>${safe(name)}</span><span>${valid?'Fresh headline evidence':'No validated PSI'} · headlines ${safe(String(count))} · technical fields ${actual}</span></div>`;
  }).join('')||'<p class="notice">Choose assets in Watchlist Settings to see per-asset checks.</p>';
- open('Market Data Diagnostics',`<div class="stack"><div class="row chip"><strong>Read-only website instrument feed</strong><span>${v36Feed?'Loaded':'Unavailable'}</span></div><div class="row chip"><span>Last snapshot</span><span>${safe(stamp)}</span></div><div class="row chip"><span>Feed issue</span><span>${safe(v37FeedError||'None detected')}</span></div><p class="notice">A PSI value is shown as live only with positive headline counts, a valid score and headline evidence within 48 hours. Weekly and monthly PSI are not inferred from a daily score. Historical imports are labeled separately. This panel never changes engine data.</p><div class="section">Watchlist audit</div>${rows}<p class="notice">Technical feed mappings currently support RSI (14) and SMA (20). Other requested indicators require verified source fields or calculations; blanks are intentional.</p></div>`, `<button class="btn" id="v37RefreshModal">Refresh feed now</button>`);
+ open('Market Data Diagnostics',`<div class="stack"><div class="row chip"><strong>Read-only website instrument feed</strong><span>${v36Feed?'Loaded':'Unavailable'}</span></div><div class="row chip"><span>Last snapshot</span><span>${safe(stamp)}</span></div><div class="row chip"><span>Feed issue</span><span>${safe(v37FeedError||'None detected')}</span></div><p class="notice">A PSI value is shown as live only with positive headline counts, a valid score and headline evidence within 48 hours. Weekly and monthly PSI are not inferred from a daily score. Historical imports are labeled separately. This panel never changes engine data.</p><div class="section">Watchlist audit</div>${rows}<p class="notice">Technical feed mappings currently support RSI (14) and SMA (20). Use Data Coverage to audit all chosen indicators and fundamentals; unavailable values remain blank.</p></div>`, `<button class="btn" id="v37RefreshModal">Refresh feed now</button>`);
  const action=document.getElementById('v37RefreshModal');if(action)action.onclick=()=>{shut();v36LastFetch=0;v37FeedError='Refreshing';v37UpdateBadge();v36Refresh();};
 }
 window.addEventListener('load',()=>{
@@ -536,11 +541,50 @@ window.addEventListener('load',()=>{
  toolbar.append(status,refresh);v37UpdateBadge();
 });
 setInterval(v37UpdateBadge,60000);
+
+// V38: asset-specific feed coverage, provenance, and non-fabricated exports.
+function v38Coverage(name){
+ const entry=v36Asset(name), imported=snapshotAsset(name);
+ const choice=state.techByAsset[name]||state.tech;
+ const fundamentals=state.fund[name]||defaultFunds(name);
+ const technical=choice.map(label=>{
+  const live=v36Technical(name,label), local=dataPoint(imported.technical?.[label]);
+  return {name:label,value:live!==null?live:local,source:live!==null?'Website feed':local!==null?'Imported snapshot':'Unavailable'};
+ });
+ const fundamental=fundamentals.map(label=>{
+  const local=dataPoint(imported.fundamentals?.[label],168);
+  return {name:label,value:local,source:local!==null?'Imported snapshot':'Unavailable'};
+ });
+ return {name,technical,fundamental,psi:v36PSI(name,'daily'),updated:v36Updated};
+}
+function v38ExportCSV(){
+ const names=state.watch.filter(Boolean),rows=[['Asset','Category','Indicator','Value','Provenance','Website feed timestamp']];
+ for(const name of names){const d=v38Coverage(name);
+  rows.push([name,'PSI','Daily PSI',d.psi??'',d.psi!==null?'Verified website feed':'Unavailable',d.updated||'']);
+  for(const kind of ['technical','fundamental'])for(const item of d[kind])
+   rows.push([name,kind,item.name,item.value??'',item.source,item.source==='Website feed'?d.updated||'':'']);
+ }
+ const escaped=rows.map(row=>row.map(x=>'"'+String(x??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const blob=new Blob([escaped],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='dashboard-indicator-coverage-v38.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function v38OpenCoverage(){
+ const names=state.watch.filter(Boolean);
+ const rows=names.map(name=>{const d=v38Coverage(name),tech=d.technical.filter(x=>x.value!==null).length,fund=d.fundamental.filter(x=>x.value!==null).length;
+  return `<div class="tableline"><span>${safe(name)}</span><span>Technical ${tech}/${d.technical.length} · Fundamentals ${fund}/${d.fundamental.length} · PSI ${d.psi!==null?'verified':'unavailable'}</span></div>`;
+ }).join('')||'<p class="notice">Choose watchlist assets to inspect their data coverage.</p>';
+ open('Indicator & Fundamental Coverage',`<p class="notice">Actual values only. Technical readings: website feed when supported, otherwise timestamp-validated manual imports. Fundamental values: timestamp-validated imports only. No calculations or forecasts are fabricated.</p>${rows}<p class="notice">Supported direct website indicators: RSI (14) and SMA (20). Additional indicators need a documented engine output or a verified price-series calculation. Export lists values and provenance.</p>`, `<button class="btn accent" id="v38Export">Export Coverage CSV</button>`);
+ document.getElementById('v38Export').onclick=v38ExportCSV;
+}
+window.addEventListener('load',()=>{
+ const toolbar=document.querySelector('.top .buttons')||document.querySelector('.top');if(!toolbar||document.getElementById('v38Coverage'))return;
+ const button=document.createElement('button');button.type='button';button.className='btn';button.id='v38Coverage';button.textContent='Data Coverage';button.title='Inspect available technical and fundamental data for the watchlist';button.onclick=v38OpenCoverage;toolbar.append(button);
+});
 function tileContent(t){let a=state.watch.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">No asset selected</div><p class="notice">Click an empty slot in My Watchlist to assign an asset, then select it to update this tile.</p>`;switch(t.type){case'watch':return `<div class="muted">${state.watch.filter(Boolean).length} / 15 assets selected · click any slot to choose or change an asset</div><div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}"><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':'+'}</button>`}).join('')}</div>`;
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Website PSI · '+record.updatedAt:imported!==null?'Imported snapshot · timestamp checked':'No recent regional PSI available';return `<div class="muted">Fixed regional index</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const v=live!==null?live:imported;const status=live!==null?'Website instrument PSI · verified recent headlines':imported!==null?'Imported snapshot · not live':period!=='daily'?'No verified '+period+' PSI feed':'No valid PSI evidence within 48 hours';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
-case'technical':{let selected=state.techByAsset[a]||state.tech;return `<div class="muted">${safe(a)} · ${selected.length} of 10 selected · asset-specific</div><div class="grid2" style="margin-top:10px">${selected.map(x=>`<div class="stat"><div class="muted">${safe(x)}</div><div class="big">${showPoint(v36Technical(a,x)??dataPoint(snapshotAsset(a).technical?.[x]))}</div><div class="fake">${v36Technical(a,x)!==null?'Website technical data':dataPoint(snapshotAsset(a).technical?.[x])===null?'Not available in verified feed':'Imported snapshot'}</div></div>`).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
-case'fundamental':{let funds=state.fund[a]||defaultFunds(a);return `<div class="muted">${safe(a)} · Automatically mapped, user-editable</div><div class="stack" style="margin-top:8px">${funds.map(x=>`<div class="row chip"><span>${safe(x)}</span><span class="muted">${showPoint(dataPoint(snapshotAsset(a).fundamentals?.[x],168))}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
+case'technical':{let selected=state.techByAsset[a]||state.tech;return `<div class="muted">${safe(a)} · ${selected.length} of 10 selected · asset-specific</div><div class="grid2" style="margin-top:10px">${v38Coverage(a).technical.map(x=>`<div class="stat"><div class="muted">${safe(x.name)}</div><div class="big">${showPoint(x.value)}</div><div class="fake">${safe(x.source)}</div></div>`).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
+case'fundamental':{let funds=state.fund[a]||defaultFunds(a);return `<div class="muted">${safe(a)} · Automatically mapped, user-editable</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip"><span>${safe(x.name)}</span><span class="muted">${showPoint(x.value)} · ${safe(x.source)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
 case'social':return `<div class="social">${SOCIAL.slice(0,5).map(([name])=>`<div class="social-row"><div class="row"><strong>${safe(name)}</strong><button class="ctrl" data-social="${safe(name)}">Open ↗</button></div><div class="muted">Messages — · Notifications —</div></div>`).join('')}</div><button class="tile-link" data-open="social">Manage social integrations <span>↗</span></button>`;
