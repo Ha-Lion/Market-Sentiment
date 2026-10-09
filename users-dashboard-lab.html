@@ -172,7 +172,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v35-search-actions a{text-decoration:none}
 .v35-search-frame{flex:1;min-height:400px;width:100%;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
 @media(max-width:650px){.modal.v35-search-modal{padding:4px}.modal.v35-search-modal .dialog{width:100%;height:96vh;max-height:96vh}.v35-search-frame{min-height:300px}}
-</style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
+.v39-history-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0;font-size:11px}.v39-history-controls label{display:flex;align-items:center;gap:5px}.v39-history-controls select{max-width:100px;border:1px solid var(--line);color:var(--txt);background:var(--panel2);border-radius:5px;padding:3px}.v39-history-controls .muted{margin-left:auto}</style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
  const light=r.classList.contains('light')||b?.classList.contains('light')||r.dataset.theme==='light'||b?.dataset.theme==='light'||r.getAttribute('data-bs-theme')==='light';
@@ -257,10 +257,35 @@ function recordSnapshot(d){
  history.sort((a,b)=>Date.parse(a.time)-Date.parse(b.time));history=history.slice(-120);
  try{localStorage.setItem(HISTORY_KEY,JSON.stringify(history))}catch{}
 }
+// V39: history is strictly sourced from imported timestamped snapshots.
+function v39Points(asset){
+ const dedup=new Map();
+ for(const h of history){
+  const time=Date.parse(h?.time), value=h?.values?.[asset];
+  if(!Number.isFinite(time)||time>Date.now()+300000||typeof value!=='number'||!Number.isFinite(value)||value<0||value>100)continue;
+  dedup.set(time,{time,value});
+ }
+ return [...dedup.values()].sort((a,b)=>a.time-b.time);
+}
+function v39RangePoints(asset){
+ const all=v39Points(asset),days=Number(state.historyDays)||0;
+ if(!days)return all;
+ const cutoff=Date.now()-days*86400000;
+ return all.filter(p=>p.time>=cutoff);
+}
+function v39ExportHistory(){
+ const assets=state.watch.filter(Boolean),rows=[['Asset','Timestamp UTC','Daily PSI','Source']];
+ for(const name of assets)for(const p of v39RangePoints(name))rows.push([name,new Date(p.time).toISOString(),p.value,'Imported timestamped snapshot']);
+ const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download='dashboard-psi-history-v39.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function v39HistoryControls(asset){
+ const days=Number(state.historyDays)||0,points=v39RangePoints(asset);
+ return `<div class="v39-history-controls"><label>Period <select data-v39-range aria-label="Historical chart time range">${[[0,'All'],[7,'7 days'],[30,'30 days'],[90,'90 days'],[365,'1 year']].map(([n,label])=>`<option value="${n}" ${days===n?'selected':''}>${label}</option>`).join('')}</select></label><span class="muted">${points.length} timestamped imported ${points.length===1?'point':'points'}</span><button type="button" class="ctrl" data-v39-export title="Export history for watchlist assets">CSV ↓</button></div>`;
+}
 function plot(a,kind){
- const points=history.map(x=>({time:Date.parse(x.time),value:x.values[a]}))
-  .filter(x=>Number.isFinite(x.time)&&typeof x.value==='number'&&Number.isFinite(x.value)&&x.value>=0&&x.value<=100)
-  .sort((x,y)=>x.time-y.time);
+ const points=v39RangePoints(a);
  if(points.length<2)return `<div class="notice">Historical PSI chart will appear after at least two valid, timestamped snapshots are imported for ${safe(a)}.</div>`;
  const min=points[0].time,max=points[points.length-1].time;
  if(min===max)return `<div class="notice">Import snapshots from different times to see a trend.</div>`;
@@ -588,7 +613,7 @@ case'fundamental':{let funds=state.fund[a]||defaultFunds(a);return `<div class="
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
 case'social':return `<div class="social">${SOCIAL.slice(0,5).map(([name])=>`<div class="social-row"><div class="row"><strong>${safe(name)}</strong><button class="ctrl" data-social="${safe(name)}">Open ↗</button></div><div class="muted">Messages — · Notifications —</div></div>`).join('')}</div><button class="tile-link" data-open="social">Manage social integrations <span>↗</span></button>`;
-case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · Imported readings</span><span class="chip gold">HISTORY</span></div><div style="height:calc(100% - 74px);min-height:100px">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical imports · not a live feed</span><button class="ctrl" data-external="https://www.tradingview.com/">TradingView ↗</button></div>`;
+case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · Imported daily PSI</span><span class="chip gold">HISTORY</span></div>${v39HistoryControls(a)}<div style="height:calc(100% - 112px);min-height:100px">${plot(a,t.type)}</div><div class="row"><span class="muted">Local imported snapshots · not a live price chart</span><button class="ctrl" data-external="https://www.tradingview.com/">TradingView ↗</button></div>`;
 default:return `<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
   const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370);
@@ -687,7 +712,8 @@ function tileSettings(t){
  if($('#psiPeriod'))$('#psiPeriod').value=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');if(typeSelect){const updateTypeHelp=()=>{const hint=$('#tileTypeHelp');if(hint)hint.textContent=V29_TILE_HELP[typeSelect.value]||'Select the analysis for this tile.'};updateTypeHelp();typeSelect.addEventListener('change',()=>{updateTypeHelp(); $('#psiPeriodField').style.display=typeSelect.value==='psi'?'':'none';const title=$('#tileTitle');if(!title.dataset.edited)title.value=V28_TYPE_TITLES[typeSelect.value]||'Custom Tile'});$('#tileTitle').addEventListener('input',()=>{$('#tileTitle').dataset.edited='1'})}
  $('#saveTile').onclick=()=>{const newType=typeSelect?.value;if(newType&&newType!=='custom')t.type=newType;if(t.type==='psi')t.psiPeriod=$('#psiPeriod')?.value||'daily';t.title=$('#tileTitle').value.trim()||(V28_TYPE_TITLES[t.type]||t.title);t.w=Math.max(145,Math.min(1250,Number($('#tileWidth').value)||t.w));t.h=Math.max(80,Math.min(3000,Number($('#tileHeight').value)||t.h));shut();render()};
 }
-board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-watch-slot')){editWatchSlot(Number(b.dataset.watchSlot));return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.social){const s=SOCIAL.find(x=>x[0]===b.dataset.social);if(s)consent(s[0],s[1]);return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':t.min=!t.min;t.maxed=false;break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
+board.addEventListener('change',e=>{const select=e.target.closest('[data-v39-range]');if(!select)return;state.historyDays=[0,7,30,90,365].includes(Number(select.value))?Number(select.value):0;render()});
+board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v39-export')){v39ExportHistory();return}if(b.hasAttribute('data-watch-slot')){editWatchSlot(Number(b.dataset.watchSlot));return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.social){const s=SOCIAL.find(x=>x[0]===b.dataset.social);if(s)consent(s[0],s[1]);return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':t.min=!t.min;t.maxed=false;break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
 board.addEventListener('keydown',e=>{
  const grip=e.target.closest('.handle');if(!grip)return;
  const t=tiles.find(x=>x.id===grip.closest('.tile')?.dataset.id);
