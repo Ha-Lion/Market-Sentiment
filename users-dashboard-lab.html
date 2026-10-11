@@ -370,7 +370,13 @@ function v31ReadFlag(id){return !!state.read[id]}
 function v31Visible(){
  const now=Date.now(),selected=state.watch.filter(Boolean);
  if(!selected.length)return [];
- return v31Headlines.filter(h=>selected.some(a=>v31MatchesAsset(h,a)) &&
+ // Excel §7.F: bookmarked watchlist headlines remain available for one month,
+ // even after the live seven-day headline feed rotates them out.
+ const combined=new Map(v31Headlines.map(h=>[h.id,h]));
+ if(typeof v51Saved==='object')for(const h of Object.values(v51Saved)){
+   if(h && state.star[h.id] && !combined.has(h.id))combined.set(h.id,h);
+ }
+ return [...combined.values()].filter(h=>selected.some(a=>v31MatchesAsset(h,a)) &&
    (state.star[h.id] ? now-Number(state.star[h.id])<30*86400000 :
     v31ReadFlag(h.id) ? now-Number(state.read[h.id])<48*3600000 : now-h.time<7*86400000));
 }
@@ -929,7 +935,18 @@ board.addEventListener('keydown',e=>{
 board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=++Z);el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{t.x=Math.max(0,ox+dx);t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
 modal.addEventListener('click',e=>{
  const star=e.target.closest('[data-v31-star]');
- if(star){e.preventDefault();const id=star.dataset.v31Star;state.star[id]=state.star[id]?false:Date.now();persist();v31NewsPane();return}
+ if(star){
+  e.preventDefault();const id=star.dataset.v31Star;
+  if(state.star[id]){delete state.star[id];if(typeof v51Saved==='object')delete v51Saved[id]}
+  else{
+   const headline=v31Headlines.find(h=>h.id===id)||(typeof v51Saved==='object'?v51Saved[id]:null);
+   const record=typeof v51Sanitize==='function'?v51Sanitize(headline):null;
+   if(!record)return;
+   state.star[id]=Date.now();v51Saved[id]=record;
+  }
+  if(typeof v51SaveList==='function')v51SaveList();
+  persist();v31NewsPane();return
+ }
  const article=e.target.closest('[data-v31-open]');
  if(article){state.read[article.dataset.v31Open]=Date.now();persist();render();setTimeout(()=>{if(modal.classList.contains('open'))v31NewsPane()},0)}
 });
