@@ -1501,7 +1501,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v6:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v7:";
     const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
     let activeChartSeries = "history";
@@ -1874,7 +1874,7 @@
         const raw=localStorage.getItem(storageKey);
         if(raw){
           const cached=JSON.parse(raw);
-          if(cached && cached.saved_at && Date.now()-cached.saved_at<24*60*60*1000){
+          if(cached && cached.saved_at && Array.isArray(cached.result?.history) && cached.result.history.length>0 && Date.now()-cached.saved_at<24*60*60*1000){
             historyCache.set(key,cached.result);
             return cached.result;
           }
@@ -1885,9 +1885,10 @@
       try{
         const res=await fetch(DETAIL_HISTORY_URL,{
           method:"POST",
-          headers:{"content-type":"application/json"},
+          cache:"no-store",
+          headers:{"content-type":"application/json","cache-control":"no-cache"},
           body:JSON.stringify({
-            event:e.event||e.category,
+            event:(normalizedCountryCode(e)==="US" && /^jobless\s+claims$/i.test(String(e.event||"").trim())) ? "Initial Jobless Claims" : (e.event||e.category),
             series_id:e.series_id||e.eventId||"",
             category:e.category||"",
             country:e.country||countryName(normalizedCountryCode(e)),
@@ -1902,10 +1903,17 @@
         console.warn("Event history unavailable",err);
       }
 
-      historyCache.set(key,result);
-      try{
-        localStorage.setItem(storageKey,JSON.stringify({saved_at:Date.now(),result}));
-      }catch(_err){}
+      // Do not hold empty or failed history responses for 24 hours.
+      // A temporary upstream error must not suppress the graph after recovery.
+      if(Array.isArray(result?.history) && result.history.length){
+        historyCache.set(key,result);
+        try{
+          localStorage.setItem(storageKey,JSON.stringify({saved_at:Date.now(),result}));
+        }catch(_err){}
+      }else{
+        historyCache.delete(key);
+        try{localStorage.removeItem(storageKey);}catch(_err){}
+      }
       return result;
     }
 
@@ -3667,6 +3675,10 @@
       const dt=parseProviderDate(e.date);
       if(!dt) return;
 
+      // Multiple channels belong to the same reminder. Preserve the channels
+      // already enabled for this event when adding another one.
+      const rowKey=reminderKeyForEvent(e);
+      const existing=reminderState.get(rowKey)||{};
       const payload={
         user_id:currentUser.id,
         provider:"FinanceCalendar",
@@ -3675,9 +3687,9 @@
         country_code:e.country_code||null,
         event_time:dt.toISOString(),
         reminder_minutes:Number(settings.reminder_minutes||30),
-        email_enabled:channel==="email" ? true : Boolean(settings.reminder_email),
-        sms_enabled:channel==="sms" ? true : Boolean(settings.reminder_sms),
-        desktop_enabled:channel==="desktop" ? true : Boolean(settings.reminder_desktop),
+        email_enabled:channel==="email" || Boolean(existing.email_enabled) || Boolean(settings.reminder_email),
+        sms_enabled:channel==="sms" || Boolean(existing.sms_enabled) || Boolean(settings.reminder_sms),
+        desktop_enabled:channel==="desktop" || Boolean(existing.desktop_enabled) || Boolean(settings.reminder_desktop),
         is_enabled:true,
         updated_at:new Date().toISOString()
       };
@@ -3691,8 +3703,6 @@
         alert("Reminder could not be saved.");
         return false;
       }
-      const rowKey=reminderKeyForEvent(e);
-      const existing=reminderState.get(rowKey)||{};
       reminderState.set(rowKey,{...existing,...payload});
       applyReminderButtonStates();
       return true;
