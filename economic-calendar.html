@@ -630,6 +630,15 @@
       border-color:#a85858;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.45);
     }
+    /* Each alert channel has an independent, chronological three-state signal. */
+    .ec-icon-btn[data-alert-state="unused"]{background:#edf7ff!important;border-color:#b7d9f4!important;color:#3676a8!important;box-shadow:none!important;}
+    .ec-icon-btn[data-alert-state="active"]{background:#ffe0e7!important;border-color:#e999ae!important;color:#b5264e!important;box-shadow:inset 0 0 0 1px rgba(181,38,78,.10)!important;}
+    .ec-icon-btn[data-alert-state="past"]{background:#eceef1!important;border-color:#c7cbd2!important;color:#858b95!important;box-shadow:none!important;}
+    body.dark-mode .ec-icon-btn[data-alert-state="unused"]{background:#253a4c!important;color:#b0d6fa!important;border-color:#597c98!important;}
+    body.dark-mode .ec-icon-btn[data-alert-state="active"]{background:#572b39!important;color:#ffd1df!important;border-color:#af667e!important;}
+    body.dark-mode .ec-icon-btn[data-alert-state="past"]{background:#343942!important;color:#aeb4be!important;border-color:#626a75!important;}
+    /* Health monitoring / live-data state: gold outline. */
+    #feed-status{border:1px solid #b8860b!important;}
     .ec-cancel-pop{
       position:fixed;z-index:100020;width:210px;padding:9px 10px;
       border:1px solid var(--ec-border);border-radius:9px;background:var(--ec-card);
@@ -1501,7 +1510,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v7:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v8:";
     const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
     let activeChartSeries = "history";
@@ -1886,7 +1895,7 @@
         const res=await fetch(DETAIL_HISTORY_URL,{
           method:"POST",
           cache:"no-store",
-          headers:{"content-type":"application/json","cache-control":"no-cache"},
+          headers:{"content-type":"application/json"},
           body:JSON.stringify({
             event:(normalizedCountryCode(e)==="US" && /^jobless\s+claims$/i.test(String(e.event||"").trim())) ? "Initial Jobless Claims" : (e.event||e.category),
             series_id:e.series_id||e.eventId||"",
@@ -1899,6 +1908,7 @@
           })
         });
         if(res.ok) result=await res.json();
+        else console.warn("Event history API returned HTTP",res.status);
       }catch(err){
         console.warn("Event history unavailable",err);
       }
@@ -3579,11 +3589,23 @@
     }
 
     function applyReminderButtonStates(){
+      const now=Date.now();
       document.querySelectorAll('.ec-icon-btn[data-action="email"],.ec-icon-btn[data-action="sms"],.ec-icon-btn[data-action="desktop"]').forEach(btn=>{
         const e=eventById(btn.dataset.eventId);
         if(!e) return;
-        btn.classList.toggle("active",isChannelActive(e,btn.dataset.action));
-        btn.setAttribute("aria-pressed",isChannelActive(e,btn.dataset.action)?"true":"false");
+        const channel=btn.dataset.action;
+        const row=reminderState.get(reminderKeyForEvent(e));
+        const enabled=Boolean(row && row.is_enabled!==false && row[channelField(channel)]);
+        const scheduled=parseProviderDate(e.date);
+        // A reminder is past once its configured fire time has elapsed.
+        const lead=Number(row?.reminder_minutes ?? settings.reminder_minutes ?? 30);
+        const fireAt=scheduled ? scheduled.getTime()-Math.max(0,lead)*60000 : NaN;
+        const expired=Number.isFinite(fireAt) && fireAt<=now;
+        const state=enabled ? (expired?'past':'active') : 'unused';
+        btn.dataset.alertState=state;
+        btn.classList.toggle("active",state==='active');
+        btn.setAttribute("aria-pressed",enabled?'true':'false');
+        btn.setAttribute("title",state==='past'?'Past '+channel+' reminder':state==='active'?'Active '+channel+' reminder': 'Set '+channel+' reminder');
       });
     }
 
@@ -3673,7 +3695,12 @@
         return false;
       }
       const dt=parseProviderDate(e.date);
-      if(!dt) return;
+      if(!dt) return false;
+      const leadMinutes=Math.max(0,Number(settings.reminder_minutes||30));
+      if(dt.getTime()-leadMinutes*60000<=Date.now()){
+        alert("This reminder time has already passed. Choose a future event.");
+        return false;
+      }
 
       // Multiple channels belong to the same reminder. Preserve the channels
       // already enabled for this event when adding another one.
@@ -3687,9 +3714,9 @@
         country_code:e.country_code||null,
         event_time:dt.toISOString(),
         reminder_minutes:Number(settings.reminder_minutes||30),
-        email_enabled:channel==="email" || Boolean(existing.email_enabled) || Boolean(settings.reminder_email),
-        sms_enabled:channel==="sms" || Boolean(existing.sms_enabled) || Boolean(settings.reminder_sms),
-        desktop_enabled:channel==="desktop" || Boolean(existing.desktop_enabled) || Boolean(settings.reminder_desktop),
+        email_enabled:channel==="email" || Boolean(existing.email_enabled),
+        sms_enabled:channel==="sms" || Boolean(existing.sms_enabled),
+        desktop_enabled:channel==="desktop" || Boolean(existing.desktop_enabled),
         is_enabled:true,
         updated_at:new Date().toISOString()
       };
@@ -3959,6 +3986,7 @@
     document.getElementById("custom-to").value=todayISO;
     updateZoneClocks();
     setInterval(updateZoneClocks,1000);
+    setInterval(applyReminderButtonStates,30000);
 
     /*
      * V36 CACHE-FIRST STARTUP
