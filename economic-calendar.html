@@ -785,6 +785,20 @@
       .ec-view-toggle{order:11}
     }
   </style>
+<style id="ec-v10-data-monitor">
+  .ec-page #ec-data-health.ec-health-monitor{
+    border:1.5px solid #b8860b!important;
+    background:var(--ec-card)!important;
+    color:var(--ec-text)!important;
+    box-shadow:0 0 0 1px rgba(184,134,11,.14);
+    font-weight:850!important;
+  }
+  .ec-page #ec-data-health.ec-health-monitor::before{background:#b8860b;box-shadow:none}
+  .ec-page #ec-data-health[data-quality="missing"]::before{background:#c0392b}
+  .ec-page #ec-data-health[data-quality="partial"]::before{background:#d59b13}
+  .ec-page #ec-data-health[data-quality="good"]::before{background:#16803a}
+  .ec-page #ec-data-health[data-quality="unavailable"]::before{background:#858a94}
+</style>
 </head>
 <body>
   <div id="site-header"></div>
@@ -799,6 +813,7 @@
       </div>
       <div class="ec-status-wrap">
         <span id="feed-status" class="ec-badge loading">Loading live data</span>
+        <span id="ec-data-health" class="ec-badge ec-health-monitor" role="status" aria-live="polite" title="Source data completeness is checked separately from feed connectivity">Data coverage: checking</span>
         <span id="countdown-badge" class="ec-badge">Next event: —</span>
       </div>
     </header>
@@ -1803,6 +1818,25 @@
       return {total:rows.length,actual,forecast,previous};
     }
 
+    function updateDataHealth(data,sourceState="live"){
+      const node=document.getElementById("ec-data-health");
+      if(!node)return;
+      if(sourceState==="unavailable"){
+        node.dataset.quality="unavailable";
+        node.textContent="Data coverage: unavailable";
+        node.title="The calendar feed could not be refreshed. Historical or cached events may still be shown.";
+        return;
+      }
+      const rows=Array.isArray(data?.events)?data.events:allEvents;
+      const q=calendarValueCoverage(rows);
+      const past=rows.filter(e=>{const t=parseProviderDate(e?.date)?.getTime();return Number.isFinite(t)&&t<Date.now();});
+      const pastActual=past.filter(e=>numericReleaseValue(e.actual)).length;
+      const pct=q.total?Math.round(q.actual*100/q.total):0;
+      node.dataset.quality=q.total===0?"unavailable":past.length>=3&&pastActual===0?"missing":q.actual<q.total||q.forecast<q.total?"partial":"good";
+      node.textContent=`Data: A ${q.actual}/${q.total} · F ${q.forecast}/${q.total} · P ${q.previous}/${q.total}`;
+      node.title=`Feed ${sourceState}. Actual, Forecast and Previous numeric fields among ${q.total} events in this view. Past events with Actual: ${pastActual}/${past.length}. ${data?.data_quality?.archived_restored_count||0} values restored from saved provider releases. Source completeness is not a guarantee of official first-print verification.`;
+    }
+
     function showCalendarCoverageNotice(data){
       warning.classList.remove("show");
       warning.textContent="";
@@ -1920,6 +1954,7 @@
       applyReminderButtonStates();
       updateCountdown();
       scheduleSparklineHydration();
+      updateDataHealth({events:allEvents},"displayed");
     }
 
     function setStatus(kind,text){
@@ -3024,6 +3059,7 @@
        */
       if(!manual && showedCached && cachedAgeMs<60000){
         setStatus("live","Recently cached");
+        updateDataHealth({events:allEvents},"cached");
         lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
         return;
       }
@@ -3074,6 +3110,7 @@
         }
 
         render();
+        updateDataHealth(data,"live");
         showCalendarCoverageNotice(data);
       }catch(err){
         if(err.name==="AbortError") return;
@@ -3081,6 +3118,7 @@
 
         if(showedCached && allEvents.length){
           setStatus("loading","Cached data");
+          updateDataHealth({events:allEvents},"cached");
           warning.textContent="Live refresh is temporarily unavailable. Showing the most recently cached calendar.";
           warning.classList.add("show");
           render();
@@ -3089,6 +3127,7 @@
 
         allEvents=[];
         setStatus("error","Feed unavailable");
+        updateDataHealth(null,"unavailable");
         warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
         warning.classList.add("show");
         body.innerHTML=`<tr><td colspan="10" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
