@@ -1808,6 +1808,27 @@
       }
     }
 
+    // Source quality: calendar providers sometimes place descriptive prose in
+    // "previous". Never present a sentence as an official numeric observation.
+    function numericReleaseValue(v){
+      if(v===null||v===undefined||String(v).trim()==="")return false;
+      const value=String(v).trim();
+      // Numeric observations with common economic measurement suffixes.
+      return /^[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:\s*(?:%|k|m|b|bps|bp|points?|jobs?|barrels?|million|billion|thousand))?$/i.test(value);
+    }
+    function previousReleaseDisplay(e){
+      const v=e?.previous;
+      if(v===null||v===undefined||String(v).trim()==="")return "—";
+      return numericReleaseValue(v)?formatValue(v,e.unit):"—";
+    }
+    function previousReleaseLabel(e){
+      const v=e?.previous;
+      if(v!==null&&v!==undefined&&String(v).trim()!==""&&!numericReleaseValue(v)){
+        return ` title="${esc("Previous release not supplied as a numeric observation. Provider commentary: "+String(v).slice(0,240))}"`;
+      }
+      return economicValueLabel(v,"Previous");
+    }
+
     function formatValue(v,unit){
       if(v===null||v===undefined||v==="") return "—";
       let s=String(v);
@@ -1863,7 +1884,7 @@
             </td>
             <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,e.unit)}</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,e.unit)}</td>
-            <td class="value muted"${economicValueLabel(e.previous,"Previous")}>${formatValue(e.previous,e.unit)}</td>
+            <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
