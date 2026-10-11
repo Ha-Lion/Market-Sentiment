@@ -1510,7 +1510,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v8:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v9:";
     const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
     let activeChartSeries = "history";
@@ -1898,6 +1898,7 @@
           headers:{"content-type":"application/json"},
           body:JSON.stringify({
             event:(normalizedCountryCode(e)==="US" && /^jobless\s+claims$/i.test(String(e.event||"").trim())) ? "Initial Jobless Claims" : (e.event||e.category),
+            indicator_id:(normalizedCountryCode(e)==="US" && /^(?:initial\s+)?jobless\s+claims$/i.test(String(e.event||"").trim())) ? "us_initial_jobless_claims" : "",
             series_id:e.series_id||e.eventId||"",
             category:e.category||"",
             country:e.country||countryName(normalizedCountryCode(e)),
@@ -1908,8 +1909,12 @@
           })
         });
         if(res.ok) result=await res.json();
-        else console.warn("Event history API returned HTTP",res.status);
+        else {
+          result={history:[],mode:"api-error",error:`History service returned HTTP ${res.status}`};
+          console.warn("Event history API returned HTTP",res.status);
+        }
       }catch(err){
+        result={history:[],mode:"api-error",error:"Unable to reach the history service"};
         console.warn("Event history unavailable",err);
       }
 
@@ -2656,7 +2661,7 @@
             note.textContent=`Exact history · ${coverage}.`;
           }
         }else{
-          note.textContent="Historical releases are not available for this event yet.";
+          note.textContent=hist?.mode==="api-error" ? (hist.error||"History service temporarily unavailable") : "Historical releases are not available for this event yet.";
         }
       }).catch(err=>{
         console.warn("History load failed",err);
@@ -3601,7 +3606,8 @@
         const lead=Number(row?.reminder_minutes ?? settings.reminder_minutes ?? 30);
         const fireAt=scheduled ? scheduled.getTime()-Math.max(0,lead)*60000 : NaN;
         const expired=Number.isFinite(fireAt) && fireAt<=now;
-        const state=enabled ? (expired?'past':'active') : 'unused';
+        const wasSelected=Boolean(row && row[channelField(channel)]);
+        const state=wasSelected && expired ? 'past' : enabled ? 'active' : 'unused';
         btn.dataset.alertState=state;
         btn.classList.toggle("active",state==='active');
         btn.setAttribute("aria-pressed",enabled?'true':'false');
@@ -3618,9 +3624,8 @@
       try{
         const {data,error}=await window.psdSupabase
           .from("calendar_event_reminders")
-          .select("id,provider_event_id,event_time,email_enabled,sms_enabled,desktop_enabled,is_enabled")
-          .eq("user_id",currentUser.id)
-          .eq("is_enabled",true);
+          .select("id,provider_event_id,event_time,email_enabled,sms_enabled,desktop_enabled,is_enabled,reminder_minutes")
+          .eq("user_id",currentUser.id);
         if(error) throw error;
         (data||[]).forEach(row=>{
           const key=`${String(row.provider_event_id||"")}|${new Date(row.event_time).toISOString()}`;
