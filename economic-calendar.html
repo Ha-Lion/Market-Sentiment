@@ -559,17 +559,28 @@
       grid-template-columns:repeat(6,minmax(0,1fr));
     }
 
-    .ec-beta-notice{
+    body:not(.dark-mode) .ec-page .ec-beta-notice{
       margin:0 0 14px;
       padding:9px 12px;
-      border:1px solid rgba(212,160,23,.34);
+      border:1px solid #bd870e;
+      border-left:4px solid #b42318;
       border-radius:10px;
-      background:rgba(212,160,23,.08);
-      color:var(--ec-text);
-      font-size:13px;
-      line-height:1.45;
+      background:#fff7df;
+      color:#563800!important;
+      font-size:12px;
+      font-weight:700;
+      line-height:1.4;
     }
-    .ec-beta-notice strong{color:#c99516;}
+    body:not(.dark-mode) .ec-page .ec-beta-notice strong{color:#a21818!important;font-weight:900;letter-spacing:.015em;}
+    body.dark-mode .ec-page .ec-beta-notice,
+    body[data-theme="dark"] .ec-page .ec-beta-notice{
+      background:#30240c;
+      color:#ffeab2!important;
+      border-color:#bf901e;
+      border-left-color:#ff8996;
+    }
+    body.dark-mode .ec-page .ec-beta-notice strong,
+    body[data-theme="dark"] .ec-page .ec-beta-notice strong{color:#ff9ea8!important;}
     @media(max-width:1100px){
       .ec-settings-alerts,.ec-settings-preferences{grid-column:1/-1;}
       .ec-settings-preferences .ec-checks{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -793,7 +804,7 @@
     </header>
 
     <div class="ec-beta-notice" role="note" aria-label="Beta notice">
-      <strong>Beta Notice:</strong> This Economic Calendar is currently in beta. Data coverage, release times, and reported values may still be refined as we continue improving the system.
+      <strong>BETA:</strong> Economic data is still being verified. <strong>Target release: mid-November 2026 (estimated).</strong>
     </div>
 
     <section class="ec-shell">
@@ -1785,7 +1796,7 @@
 
     function calendarValueCoverage(events){
       const rows=(events||[]).filter(e=>e&&e.event);
-      const has=v=>v!==null&&v!==undefined&&String(v).trim()!=="";
+      const has=v=>numericReleaseValue(v);
       const actual=rows.filter(e=>has(e.actual)).length;
       const forecast=rows.filter(e=>has(e.forecast)||has(e.te_forecast)).length;
       const previous=rows.filter(e=>has(e.previous)).length;
@@ -1793,13 +1804,19 @@
     }
 
     function showCalendarCoverageNotice(data){
+      warning.classList.remove("show");
+      warning.textContent="";
       const coverage=calendarValueCoverage(allEvents);
+      if(data?.data_quality){
+        const q=data.data_quality;
+        warning.title=`Feed quality: ${q.actual??0} Actual, ${q.forecast??0} Forecast, ${q.previous??0} Previous values; ${q.archived_restored_count??0} restored from saved releases.`;
+      }else warning.removeAttribute("title");
       if(!coverage.total)return;
       const past=(allEvents||[]).filter(e=>{
         const dt=parseProviderDate(e.date);
         return dt&&dt.getTime()<Date.now();
       });
-      const pastActual=past.filter(e=>e.actual!==null&&e.actual!==undefined&&String(e.actual).trim()!=="").length;
+      const pastActual=past.filter(e=>numericReleaseValue(e.actual)).length;
       if(past.length>=3&&pastActual===0){
         warning.textContent=`Source data limitation: ${past.length} past economic releases currently have no Actual values in this feed. Forecasts supplied: ${coverage.forecast}/${coverage.total}; previous values: ${coverage.previous}/${coverage.total}. History charts are archival and do not establish the original release value.`;
         warning.classList.add("show");
@@ -1838,8 +1855,9 @@
     }
 
     function actualClass(e){
-      const a=parseFloat(String(e.actual).replace(/[^0-9.-]/g,""));
-      const f=parseFloat(String(e.forecast).replace(/[^0-9.-]/g,""));
+      if(!numericReleaseValue(e.actual)||!numericReleaseValue(e.forecast)) return "";
+      const parse=v=>Number(String(v).replace(/,/g,"").replace(/\s*(%|k|m|b|bps|bp|points?|jobs?|barrels?|million|billion|thousand)\s*$/i,"").trim());
+      const a=parse(e.actual),f=parse(e.forecast);
       if(!Number.isFinite(a)||!Number.isFinite(f)||a===f) return "";
       return a>f?"actual-up":"actual-down";
     }
@@ -3005,7 +3023,7 @@
        * The normal auto-refresh loop will refresh it shortly.
        */
       if(!manual && showedCached && cachedAgeMs<60000){
-        setStatus("live","Live data");
+        setStatus("live","Recently cached");
         lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
         return;
       }
@@ -3423,6 +3441,15 @@
 
     document.getElementById("last-30").addEventListener("click",()=>loadPreset(-30,0));
     document.getElementById("next-30").addEventListener("click",()=>loadPreset(0,30));
+
+    for(const id of ["custom-from","custom-to"]){
+      document.getElementById(id).addEventListener("keydown",event=>{
+        if(event.key==="Enter"){
+          event.preventDefault();
+          document.getElementById("custom-go").click();
+        }
+      });
+    }
 
     document.getElementById("custom-go").addEventListener("click",async()=>{
       const from=document.getElementById("custom-from").value;
