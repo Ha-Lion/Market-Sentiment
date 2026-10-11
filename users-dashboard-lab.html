@@ -698,14 +698,58 @@ function v56SlotSelect(type,asset){
  return `<div class="stack" id="v56Slots">${slots.map((label,i)=>`<label class="row chip"><span style="flex:0 0 100px">Position ${i+1}</span><select class="v56-slot" data-slot="${i}" style="flex:1;min-width:0;background:var(--inputbg);color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:8px" aria-label="${safe(type)} position ${i+1}"><option value="">Not assigned</option>${choices.map(n=>`<option value="${safe(n)}" ${label===n?'selected':''}>${safe(n)}</option>`).join('')}</select></label>`).join('')}</div>`;
 }
 function v56ReadSlots(count){const slots=Array(count).fill(null);const seen=new Set();for(const el of body.querySelectorAll('.v56-slot')){const name=el.value;if(!name)continue;if(seen.has(name)){alert('An indicator can be assigned only once.');el.focus();return null}seen.add(name);slots[Number(el.dataset.slot)]=name}return slots}
+
+// V62: Technical values derived only from actual dated close-price observations.
+// No synthetic candles, no assumed high/low/volume, no guessed fundamentals.
+function v62Prices(asset){
+ const entry=v36Asset(asset), history=entry?.technical?.daily_history;
+ if(!Array.isArray(history))return [];
+ const seen=new Map();
+ for(const item of history){
+  if(!item||typeof item.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(item.date))continue;
+  const ms=Date.parse(item.date+'T12:00:00Z');
+  if(!Number.isFinite(ms)||ms>Date.now()+86400000||!Number.isFinite(item.close)||item.close<=0)continue;
+  seen.set(item.date,{date:item.date,close:item.close});
+ }
+ const rows=[...seen.values()].sort((a,b)=>a.date.localeCompare(b.date));
+ if(!rows.length||Date.now()-Date.parse(rows.at(-1).date+'T12:00:00Z')>7*86400000)return [];
+ return rows;
+}
+function v62Ema(prices,period){
+ if(prices.length<period+10)return null;
+ let ema=prices.slice(0,period).reduce((s,n)=>s+n,0)/period;
+ const factor=2/(period+1);
+ for(let i=period;i<prices.length;i++)ema=prices[i]*factor+ema*(1-factor);
+ return ema;
+}
+function v62Derived(asset,indicator){
+ const rows=v62Prices(asset),p=rows.map(x=>x.close),n=p.length;
+ if(n<2)return null;
+ const mean=x=>x.reduce((a,b)=>a+b,0)/x.length;
+ let value=null;
+ if(indicator==='SMA (20)'&&n>=20)value=mean(p.slice(-20));
+ if(indicator==='EMA (50)'&&n>=60)value=v62Ema(p,50);
+ if(indicator==='Momentum'&&n>=11)value=p.at(-1)-p.at(-11);
+ if(indicator==='ROC'&&n>=13&&p.at(-13)>0)value=100*(p.at(-1)/p.at(-13)-1);
+ if(indicator==='MACD'&&n>=36){const e12=v62Ema(p,12),e26=v62Ema(p,26);if(e12!==null&&e26!==null)value=e12-e26;}
+ if(indicator==='Bollinger Bands'&&n>=20){
+  const tail=p.slice(-20),mid=mean(tail),sd=Math.sqrt(mean(tail.map(x=>(x-mid)**2)));
+  // Show the 20-day upper and lower price bands as a range, not a fictitious single score.
+  if(Number.isFinite(sd))return {value:(mid-2*sd).toFixed(2)+' – '+(mid+2*sd).toFixed(2),source:'Calculated from daily close prices'};
+ }
+ if(!Number.isFinite(value))return null;
+ return {value:Number(value.toFixed(2)),source:'Calculated from daily close prices'};
+}
+
 function v38Coverage(name){
  const imported=snapshotAsset(name);
  const choice=v56TechSlots(name).filter(Boolean);
  const fundamentals=v56FundSlots(name).filter(Boolean);
  const technical=choice.map(label=>{
   const live=v41Valid(label,v36Technical(name,label));
+  const derived=live===null?v62Derived(name,label):null;
   const local=v41Record(label,imported.technical?.[label]);
-  return {name:label,value:live!==null?live:local,source:live!==null?'Website feed':local!==null?'Imported snapshot':'Unavailable'};
+  return {name:label,value:live!==null?live:derived!==null?derived.value:local,source:live!==null?'Website feed':derived!==null?derived.source:local!==null?'Imported snapshot':'Unavailable'};
  });
  const fundamental=fundamentals.map(label=>{
   const local=v41Record(label,imported.fundamentals?.[label],168);
@@ -746,8 +790,8 @@ function v47FilterNetworks(panel){
 function tileContent(t){let a=state.watch.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="muted">${state.watch.filter(Boolean).length} / 15 assets selected · select an asset to view its analysis</div><div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':'' }</button>`}).join('')}</div>`;
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Latest available reading':imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const v=live!==null?live:imported;const status=live!==null?'Latest available reading':imported!==null?'Saved reading': 'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
-case'technical':{const slots=v56TechSlots(a),found=v38Coverage(a).technical;return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators</div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
-case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
+case'technical':{const slots=v56TechSlots(a),found=v38Coverage(a).technical;return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
+case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row" data-v46-network-row="${safe(name.toLowerCase())}"><div class="row"><strong>${safe(name)}</strong><button class="ctrl" data-social="${safe(name)}">${tiles.some(x=>x.type==='social-service'&&x.socialProvider===name&&!x.closed)?'View tile':'Open tile'}</button></div></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p><button class="tile-link" data-open="social">Connections & privacy <span>›</span></button>`;
