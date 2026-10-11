@@ -674,10 +674,42 @@ const V48_NEWS_PREF_KEY='psd-news-search-preferences-v48';
 let v42SearchState={keyword:'',asset:'',source:'',order:'newest',favorites:false};
 try{const v=JSON.parse(localStorage.getItem(V48_NEWS_PREF_KEY)||'null');if(v&&typeof v==='object')v42SearchState={keyword:String(v.keyword||'').slice(0,160),asset:typeof v.asset==='string'?v.asset:'',source:typeof v.source==='string'?v.source:'',order:v.order==='oldest'?'oldest':'newest',favorites:v.favorites===true}}catch{}
 function v48SaveNewsPreferences(){try{localStorage.setItem(V48_NEWS_PREF_KEY,JSON.stringify(v42SearchState))}catch{}}
+// V51: Preserve bookmarked article metadata when recent website feeds rotate.
+// Browser-only, bounded reading list: no credentials, article bodies or tracking data.
+const V51_SAVED_KEY='psd-dashboard-saved-articles-v51';
+let v51Saved={};
+try{
+ const old=JSON.parse(localStorage.getItem(V51_SAVED_KEY)||'{}');
+ if(old&&typeof old==='object'&&!Array.isArray(old))for(const [id,h] of Object.entries(old).slice(0,300)){
+  const verified=v51Sanitize(h);if(verified&&id===verified.id)v51Saved[id]=verified;
+ }
+}catch{}
+function v51Sanitize(h){
+ if(!h||typeof h!=='object'||typeof h.id!=='string'||!h.id.startsWith('real-'))return null;
+ let u;try{u=new URL(h.url);if(!['http:','https:'].includes(u.protocol)||u.username||u.password)return null}catch{return null}
+ if(h.id!=='real-'+u.href)return null;
+ const time=Number(h.time);
+ if(!Number.isFinite(time)||time<=0||time>Date.now()+3600000)return null;
+ return {id:h.id,url:u.href,title:String(h.title||'').slice(0,450),description:String(h.description||'').slice(0,700),source:String(h.source||'Unknown source').slice(0,100),time};
+}
+function v51SaveList(){
+ try{
+  const values=Object.values(v51Saved).sort((a,b)=>b.time-a.time).slice(0,250);
+  v51Saved=Object.fromEntries(values.map(x=>[x.id,x]));
+  localStorage.setItem(V51_SAVED_KEY,JSON.stringify(v51Saved));
+ }catch(e){console.warn('Unable to save bookmarked articles',e)}
+}
+function v51NewsItems(onlySaved){
+ if(!onlySaved)return v31Headlines;
+ const combined=new Map();
+ for(const h of Object.values(v51Saved))if(state.star[h.id])combined.set(h.id,h);
+ for(const h of v31Headlines)if(state.star[h.id])combined.set(h.id,h);
+ return [...combined.values()];
+}
 let v43Page=0;
 const v43PageSize=15;
 function v42SearchPane(){
- const sources=[...new Set(v31Headlines.map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
+ const sources=[...new Set([...v31Headlines,...Object.values(v51Saved)].map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
  open('Search News & Articles',`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button></div></div></div><div id="v42Results" aria-live="polite"></div>`);
  const search=()=>{v42SearchState={keyword:$('#v42Keyword').value.trim(),asset:$('#v42Asset').value,source:$('#v42Source').value,order:$('#v42Order').value,favorites:$('#v43Favorites').checked};v43Page=0;v48SaveNewsPreferences();v42RenderResults();};
  $('#v42Submit').onclick=search;
@@ -692,15 +724,25 @@ function v42RenderResults(){
  const out=$('#v42Results');if(!out)return;
  const {keyword,asset,source,order,favorites}=v42SearchState;
  const q=keyword.toLocaleLowerCase().trim();
- const items=v31Headlines.filter(h=>(!q||(h.title+' '+h.description+' '+h.source).toLocaleLowerCase().includes(q))&&(!source||h.source===source)&&(!asset||v31MatchesAsset(h,asset))&&(!favorites||!!state.star[h.id])).sort((a,b)=>order==='oldest'?a.time-b.time:b.time-a.time);
+ const items=v51NewsItems(favorites).filter(h=>(!q||(h.title+' '+h.description+' '+h.source).toLocaleLowerCase().includes(q))&&(!source||h.source===source)&&(!asset||v31MatchesAsset(h,asset))&&(!favorites||!!state.star[h.id])).sort((a,b)=>order==='oldest'?a.time-b.time:b.time-a.time);
  const pages=Math.max(1,Math.ceil(items.length/v43PageSize));v43Page=Math.max(0,Math.min(v43Page,pages-1));
  const visible=items.slice(v43Page*v43PageSize,(v43Page+1)*v43PageSize);
  const cards=visible.map(h=>`<article class="v42-result"><div class="v43-cardtop"><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}</span><button type="button" class="v43-save" data-v43-save="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove saved article':'Save article'}" title="${state.star[h.id]?'Remove saved article':'Save article'}">${state.star[h.id]?'★':'☆'}</button></div><div class="v42-headline">${safe(h.title)}</div>${h.description?`<p>${safe(h.description)}</p>`:''}<a href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" class="v42-articlelink" data-v43-open="${safe(h.id)}">Read article ↗</a></article>`).join('');
- out.innerHTML=`<div class="v42-resultsheading"><strong>${items.length} ${items.length===1?'article':'articles'}</strong><span class="muted">${favorites?'Saved articles':'Recent headlines'}</span></div>${items.length?cards:'<div class="v42-empty">No articles found. Try another keyword or change your filters.</div>'}${items.length>v43PageSize?`<nav class="v43-pages" aria-label="News search pages"><button class="btn" data-v43-page="prev" ${v43Page===0?'disabled':''}>← Previous</button><span>Page ${v43Page+1} of ${pages}</span><button class="btn" data-v43-page="next" ${v43Page===pages-1?'disabled':''}>Next →</button></nav>`:''}<p class="v42-footnote">Searches recent dashboard news. Full website archive search is not yet connected.</p>`;
+ out.innerHTML=`<div class="v42-resultsheading"><strong>${items.length} ${items.length===1?'article':'articles'}</strong><span class="muted">${favorites?'Your saved articles':'Recent headlines'}</span></div>${items.length?cards:'<div class="v42-empty">No articles found. Try another keyword or change your filters.</div>'}${items.length>v43PageSize?`<nav class="v43-pages" aria-label="News search pages"><button class="btn" data-v43-page="prev" ${v43Page===0?'disabled':''}>← Previous</button><span>Page ${v43Page+1} of ${pages}</span><button class="btn" data-v43-page="next" ${v43Page===pages-1?'disabled':''}>Next →</button></nav>`:''}<p class="v42-footnote">Recent news updates automatically. Saved article links remain available in this browser. Full archive search is not yet connected.</p>`;
 }
 modal.addEventListener('click',e=>{
  const saved=e.target.closest('[data-v43-save]');
- if(saved){const id=saved.dataset.v43Save;state.star[id]=state.star[id]?false:Date.now();persist();v42RenderResults();return}
+ if(saved){
+   const id=saved.dataset.v43Save;
+   if(state.star[id]){delete state.star[id];delete v51Saved[id]}
+   else{
+    const article=v31Headlines.find(x=>x.id===id)||v51Saved[id];
+    const sanitized=v51Sanitize(article);
+    if(!sanitized)return;
+    state.star[id]=Date.now();v51Saved[id]=sanitized;
+   }
+   v51SaveList();persist();v42RenderResults();return
+  }
  const page=e.target.closest('[data-v43-page]');
  if(page){v43Page+=page.dataset.v43Page==='next'?1:-1;v42RenderResults();$('#v42Results')?.scrollIntoView({block:'nearest',behavior:'smooth'});return}
  const article=e.target.closest('[data-v43-open]');
