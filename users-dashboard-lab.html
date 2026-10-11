@@ -191,6 +191,14 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v46-network-label{display:grid;gap:6px;font-size:12px;color:var(--mute);margin-bottom:12px}
 .v46-network-search{width:100%;min-height:37px;background:var(--inputbg);color:var(--txt);border:1px solid var(--btnborder);border-radius:8px;padding:8px 11px}
 .social-row[hidden],.v46-no-networks[hidden]{display:none!important}
+
+/* V54: Excel 9.3 publisher checklist, name and logo. */
+.v54-source-option{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--statbg);font-size:12px;cursor:pointer;min-width:0}
+.v54-source-option input{width:16px;height:16px;flex:none;accent-color:var(--blue)}
+.v54-source-option>span:last-child{overflow-wrap:anywhere}
+.v54-source-logo{position:relative;width:26px;height:26px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:5px;background:var(--panel);overflow:hidden}
+.v54-source-logo img{position:absolute;inset:3px;width:18px;height:18px;object-fit:contain;z-index:1}
+.v54-logo-fallback{font-size:10px;font-weight:700;color:var(--mute)}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
@@ -399,11 +407,20 @@ let v32Query='',v32Source='',v32UnreadOnly=false;
 let v33FavoritesOnly=false,v33Sort='newest';
 // V34: publisher preferences reflect publishers actually available in the PSI feed.
 // An absent preference means all sources (avoids accidentally hiding articles in old layouts).
-function v34AvailableSources(){return [...new Set(v31Visible().map(h=>h.source))].sort((a,b)=>a.localeCompare(b))}
+function v34AvailableSources(){return [...new Set(v31Headlines.map(h=>h.source).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function v34SourceEnabled(source){return !Array.isArray(state.newsFeedSources)||state.newsFeedSources.includes(source)}
+// Excel 9.3: full publisher name and logo beside each unlimited source checkbox.
+// Source icons are loaded only from validated publication URLs; fallback initials when unavailable.
+function v54PublisherLogo(source){
+ const article=v31Headlines.find(h=>h.source===source&&h.url);
+ let icon='';
+ if(article){try{const u=new URL(article.url);if(u.protocol==='https:')icon=u.origin+'/favicon.ico'}catch{}}
+ const initials=String(source||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
+ return (icon?`<img src="${safe(icon)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`:'')+`<span class="v54-logo-fallback" aria-hidden="true">${safe(initials)}</span>`;
+}
 function v34SourceSettings(){
  const available=v34AvailableSources();
- open('Watchlist News Sources',`<p class="notice">Choose which publishers appear in your watchlist news. These options reflect sources currently available in the website PSI headline feed.</p><p class="muted">${available.length} available publishers. Newly appearing publishers are included automatically when all are selected.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" data-v34-all="1">Select all</button><button class="btn" data-v34-none="1">Clear selection</button><button class="btn" data-v34-back="1">Back to News</button></div><div class="grid2">${available.map(src=>`<label class="field" style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-v34-source="${safe(src)}" ${v34SourceEnabled(src)?'checked':''}><span>${safe(src)}</span></label>`).join('')||'<p>No sources available for your selected watchlist assets.</p>'}</div>`);
+ open('Watchlist News Sources',`<p class="notice">Choose which publishers appear in your watchlist news. These options reflect sources currently available in the website PSI headline feed.</p><p class="muted">${available.length} available publishers. Newly appearing publishers are included automatically when all are selected.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" data-v34-all="1">Select all</button><button class="btn" data-v34-none="1">Clear selection</button><button class="btn" data-v34-back="1">Back to News</button></div><div class="grid2">${available.map(src=>`<label class="v54-source-option"><input type="checkbox" data-v34-source="${safe(src)}" ${v34SourceEnabled(src)?'checked':''}><span class="v54-source-logo">${v54PublisherLogo(src)}</span><span>${safe(src)}</span></label>`).join('')||'<p>No publishers currently available from the news feed.</p>'}</div>`);
 }
 
 function v31NewsPane(){
