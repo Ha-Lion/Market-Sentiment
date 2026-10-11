@@ -708,11 +708,56 @@ function v51NewsItems(onlySaved){
 }
 let v43Page=0;
 const v43PageSize=15;
+// V52: refresh genuine headline data without leaving the dashboard or erasing saved searches.
+let v52Refreshing=false;
+async function v52RefreshNews(){
+ if(v52Refreshing)return;
+ const button=document.getElementById('v52RefreshNews');
+ const message=document.getElementById('v52RefreshMessage');
+ v52Refreshing=true;
+ if(button){button.disabled=true;button.textContent='Refreshing…';}
+ if(message)message.textContent='Checking for newer articles…';
+ try{
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),12000);
+  let response;
+  try{response=await fetch('dashboard_live.json',{cache:'no-store',credentials:'omit',mode:'same-origin',signal:controller.signal});}
+  finally{clearTimeout(timeout);}
+  if(!response.ok)throw Error('News is temporarily unavailable');
+  const feed=await response.json();
+  if(!feed||!Array.isArray(feed.psi_headlines))throw Error('News is temporarily unavailable');
+  // Commit only after validating the feed structure. Bookmarks are stored separately.
+  const before=v31Headlines.length;
+  v31LoadHeadlines(feed);
+  const msg=document.getElementById('v52RefreshMessage');
+  if(msg)msg.textContent=v31Headlines.length?`News updated · ${v31Headlines.length} recent articles`:'No recent articles are available right now.';
+  const existingSource=document.getElementById('v42Source');
+  if(existingSource){
+   const sources=[...new Set([...v31Headlines,...Object.values(v51Saved)].map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
+   const selected=existingSource.value;
+   existingSource.replaceChildren(new Option('All sources',''),...sources.map(x=>new Option(x,x)));
+   existingSource.value=sources.includes(selected)?selected:'';
+   if(selected&&!sources.includes(selected)){v42SearchState.source='';v48SaveNewsPreferences();}
+  }
+  v43Page=0;
+  v42RenderResults();
+  if(typeof render==='function')render();
+ }catch(e){
+  const msg=document.getElementById('v52RefreshMessage');
+  if(msg)msg.textContent='Could not refresh news. Showing previously loaded articles.';
+  console.warn('News refresh unavailable',e);
+ }finally{
+  v52Refreshing=false;
+  const current=document.getElementById('v52RefreshNews');
+  if(current){current.disabled=false;current.textContent='Refresh news';}
+ }
+}
 function v42SearchPane(){
  const sources=[...new Set([...v31Headlines,...Object.values(v51Saved)].map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
- open('Search News & Articles',`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button></div></div></div><div id="v42Results" aria-live="polite"></div>`);
+ open('Search News & Articles',`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v42Results" aria-live="polite"></div>`);
  const search=()=>{v42SearchState={keyword:$('#v42Keyword').value.trim(),asset:$('#v42Asset').value,source:$('#v42Source').value,order:$('#v42Order').value,favorites:$('#v43Favorites').checked};v43Page=0;v48SaveNewsPreferences();v42RenderResults();};
  $('#v42Submit').onclick=search;
+ $('#v52RefreshNews').onclick=v52RefreshNews;
  // Keep search accessible: users can press / while this dialog is open.
  $('#v42Keyword').setAttribute('aria-label','Search news headlines');
  $('#v42Clear').onclick=()=>{v42SearchState={keyword:'',asset:'',source:'',order:'newest',favorites:false};v43Page=0;v48SaveNewsPreferences();v42SearchPane();};
