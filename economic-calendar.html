@@ -802,13 +802,14 @@
           <input id="custom-from" type="date" aria-label="From date">
           <span>to</span>
           <input id="custom-to" type="date" aria-label="To date">
-          <button id="custom-go" class="ec-action ec-date-go" type="button" title="Load custom date range">📅</button>
+          <button id="custom-go" class="ec-action ec-date-go" type="button" title="Apply selected From and To dates" aria-label="Go to selected date range">Go</button>
           <button id="last-30" class="ec-action ec-date-go" type="button" title="Last 30 days">−30d</button>
           <button id="next-30" class="ec-action ec-date-go" type="button" title="Next 30 days">+30d</button>
         </div>
         <button class="ec-tab" data-range="yesterday">Yesterday</button>
         <button class="ec-tab" data-range="today">Today</button>
         <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
+        <button class="ec-tab" data-range="lastweek">Last Week</button>
         <button class="ec-tab active" data-range="week">This Week</button>
         <button class="ec-tab" data-range="next">Next Week</button>
         <span class="ec-date-label" id="range-label">—</span>
@@ -1558,7 +1559,7 @@
     function startOfWeek(d){
       const x = new Date(d);
       const day = x.getDay();
-      const diff = day === 0 ? -6 : 1-day;
+      const diff = -day; // Sunday through Saturday for previous, current, and next week.
       return addDays(x,diff);
     }
 
