@@ -424,6 +424,13 @@ function v31Visible(){
  // Excel §7.F: bookmarked watchlist headlines remain available for one month,
  // even after the live seven-day headline feed rotates them out.
  const combined=new Map(v57RecentHeadlines().map(h=>[h.id,h]));
+ // V66 / Excel §7: use the existing website news cache to fill gaps in
+ // the seven-day watchlist, without expanding the retention window.
+ if(v63ArchiveLoaded){
+  for(const h of v63Archive){
+   if(h.time<=now && now-h.time<7*86400000 && !combined.has(h.id))combined.set(h.id,h);
+  }
+ }
  if(typeof v51Saved==='object')for(const h of Object.values(v51Saved)){
    if(h && state.star[h.id] && !combined.has(h.id))combined.set(h.id,h);
  }
@@ -442,7 +449,7 @@ function v31LoadHeadlines(feed){
   if(!Number.isFinite(time)||time>now+3600000||now-time>7*86400000)continue;
   const id='real-'+url.href; if(seen.has(id))continue;seen.add(id);
   v31Headlines.push({id,title:row.title.slice(0,450),description:String(row.description||'').slice(0,700),source:String(row.source||'Unknown source').slice(0,100),url:url.href,time});
-  if(v31Headlines.length>=500)break;
+  if(v31Headlines.length>=3000)break;
  }
  v31Headlines.sort((a,b)=>b.time-a.time);
  v57RememberHeadlines(v31Headlines);
@@ -467,6 +474,18 @@ function v34SourceSettings(){
  open('Watchlist News Sources',`<p class="notice">Choose which publishers appear in your watchlist news. These options reflect sources currently available in the website PSI headline feed.</p><p class="muted">${available.length} available publishers · ${available.filter(v34SourceEnabled).length} selected. Newly appearing publishers are included automatically when all are selected.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" data-v34-all="1">Select all</button><button class="btn" data-v34-none="1">Clear selection</button><button class="btn" data-v34-back="1">Back to News</button></div><p class="muted v65-source-selection" aria-live="polite">${available.filter(v34SourceEnabled).length} of ${available.length} publishers selected</p><div class="grid2">${available.map(src=>`<label class="v54-source-option"><input type="checkbox" data-v34-source="${safe(src)}" ${v34SourceEnabled(src)?'checked':''}><span class="v54-source-logo">${v54PublisherLogo(src)}</span><span>${safe(src)}</span></label>`).join('')||'<p>No publishers currently available from the news feed.</p>'}</div>`);
 }
 
+// V66: The watchlist and the website search use the same verified article cache.
+// This is not an external archive endpoint; fallback is the existing PSI feed.
+function v66OpenWatchNews(){
+ v31NewsPane();
+ if(v63ArchiveLoaded || v63ArchiveLoading)return;
+ v63LoadArchive().then(()=>{
+  if(v63ArchiveLoaded && modal.classList.contains('open') &&
+     document.getElementById('modalTitle')?.textContent==='Latest News & Articles · Watchlist'){
+    v31NewsPane();
+  }
+ });
+}
 function v31NewsPane(){
  const all=v31Visible().filter(h=>v34SourceEnabled(h.source));
  const sources=[...new Set(all.map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
@@ -474,7 +493,7 @@ function v31NewsPane(){
  const q=v32Query.toLocaleLowerCase().trim();
  const items=all.filter(h=>v34SourceEnabled(h.source)&&(!q||[h.title,h.source].join(' ').toLocaleLowerCase().includes(q))&&(!v32Source||h.source===v32Source)&&(!v32UnreadOnly||!v31ReadFlag(h.id))&&(!v33FavoritesOnly||!!state.star[h.id])).sort((a,b)=>v33Sort==='oldest'?a.time-b.time:b.time-a.time);
  open('Latest News & Articles · Watchlist',
- `<p class="notice">Watchlist headlines from the PSI feed · ${all.length} available · ${v31Unread()} unread. Search results: ${items.length}.</p>`+
+ `<p class="notice">Watchlist headlines · ${all.length} available · ${v31Unread()} unread. Search results: ${items.length}.</p>`+
  `<div style="display:flex;justify-content:flex-end;margin:8px 0"><button class="btn" data-v34-manage="1">Manage News Sources</button></div><div class="v32filters"><label>Search headlines<input id="v32Search" type="search" placeholder="Keyword or publisher" value="${safe(v32Query)}"></label><label>Source<select id="v32Source"><option value="">All sources</option>${sources.map(src=>`<option value="${safe(src)}" ${src===v32Source?'selected':''}>${safe(src)}</option>`).join('')}</select></label><label class="v32check"><input id="v32Unread" type="checkbox" ${v32UnreadOnly?'checked':''}> Unread only</label><label class="v32check"><input id="v33Favorites" type="checkbox" ${v33FavoritesOnly?'checked':''}> Favorites only</label><label>Order<select id="v33Sort"><option value="newest" ${v33Sort==='newest'?'selected':''}>Newest first</option><option value="oldest" ${v33Sort==='oldest'?'selected':''}>Oldest first</option></select></label></div>`+
  (items.map(h=>`<article class="news ${v31ReadFlag(h.id)?'':'unread'}"><div class="news-head"><button class="star" data-v31-star="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove favorite':'Add favorite'}">${state.star[h.id]?'★':'☆'}</button><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleString()}</span></div><div class="headline">${safe(h.title)}</div><a class="btn" href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" data-v31-open="${safe(h.id)}">Open article ↗</a></article>`).join('')||'<p class="notice">No articles match these filters.</p>'));
 }
@@ -856,7 +875,7 @@ function v57Trim(){
   if(item && now-item.time>=0 && now-item.time<7*86400000)valid.push(item);
  }
  valid.sort((a,b)=>b.time-a.time);
- v57Recent=Object.fromEntries(valid.slice(0,1000).map(h=>[h.id,h]));
+ v57Recent=Object.fromEntries(valid.slice(0,3000).map(h=>[h.id,h]));
 }
 function v57RecentHeadlines(){
  const out=new Map(Object.entries(v57Recent));
@@ -871,7 +890,7 @@ function v57RememberHeadlines(rows){
 try{
  const saved=JSON.parse(localStorage.getItem(V57_RECENT_KEY)||'{}');
  if(saved && typeof saved==='object' && !Array.isArray(saved)){
-  for(const [id,h] of Object.entries(saved).slice(0,1200)){
+  for(const [id,h] of Object.entries(saved).slice(0,3200)){
    const item=v51Sanitize(h);if(item && item.id===id)v57Recent[id]=item;
   }
  }
@@ -1030,7 +1049,7 @@ if(name==='fundamental'){
  $('#saveFund').onclick=()=>{const slots=v56ReadSlots(6);if(!slots)return;state.fundSlotsByAsset??={};state.fundSlotsByAsset[a]=slots;state.fund[a]=slots.filter(Boolean);shut();render()};return;
 }
 if(name==='sources'){v34SourceSettings();return}
-if(name==='news'){v31NewsPane();return;let items=visibleNews().sort((a,b)=>b.time-a.time);open('Latest News & Articles · Watchlist',`<div class="row"><span class="muted">Newest first · Demo records · ${unreadCount()} unread</span><span class="pill">Unread 7 days · Read 48 hours · Favorites 30 days</span></div>${items.map(n=>{let read=!!state.read[n.id],star=!!state.star[n.id];return `<article class="news ${read?'':'unread'}"><div class="news-head"><button class="star" title="Toggle favorite" data-star="${n.id}">${star?'★':'☆'}</button><span class="muted">${safe(n.asset)} · ${new Date(n.time).toLocaleString()}</span></div><div class="headline">${safe(n.title)}</div><p>Demonstration article, not a fetched story. Opening marks it read; external stories will open in a separate tab when connected.</p><button class="btn" data-read="${n.id}">${read?'Open details again':'Open & mark read'} ↗</button></article>`}).join('')||'<p>No retained demo articles.</p>'}`);return}
+if(name==='news'){v66OpenWatchNews();return;let items=visibleNews().sort((a,b)=>b.time-a.time);open('Latest News & Articles · Watchlist',`<div class="row"><span class="muted">Newest first · Demo records · ${unreadCount()} unread</span><span class="pill">Unread 7 days · Read 48 hours · Favorites 30 days</span></div>${items.map(n=>{let read=!!state.read[n.id],star=!!state.star[n.id];return `<article class="news ${read?'':'unread'}"><div class="news-head"><button class="star" title="Toggle favorite" data-star="${n.id}">${star?'★':'☆'}</button><span class="muted">${safe(n.asset)} · ${new Date(n.time).toLocaleString()}</span></div><div class="headline">${safe(n.title)}</div><p>Demonstration article, not a fetched story. Opening marks it read; external stories will open in a separate tab when connected.</p><button class="btn" data-read="${n.id}">${read?'Open details again':'Open & mark read'} ↗</button></article>`}).join('')||'<p>No retained demo articles.</p>'}`);return}
 if(name==='search'){v42SearchPane();return;}
 if(name==='social'){open('Social & Market Networks',`<p class="notice">Choose a network to create a separate, adjustable panel within your dashboard. Sign-in will be available only for services that authorize secure integration.</p><div class="config-grid">${SOCIAL.map(([name])=>`<button class="tile-link" data-social="${safe(name)}">${safe(name)} <span>Open tile ›</span></button>`).join('')}</div><div class="section">Your privacy</div><p class="notice">We do not ask for or store passwords for any social network. Each service controls its own account security, content permissions and available integrations.</p>`);return}
 if(name==='account'){
