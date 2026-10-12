@@ -880,6 +880,21 @@ function v47FilterNetworks(panel){
 }
 let v69ShowAllWatch=false; // Display-only catalog toggle, without changing saved watchlist slots.
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
+case'regionpsi':{
+ const region=['global','us','euro'].includes(t.psiRegion)?t.psiRegion:'global';
+ const period=['daily','weekly','monthly'].includes(t.psiPeriod)?t.psiPeriod:'daily';
+ let v=null,provenance='Data unavailable';
+ if(period==='daily'){
+  const record=regionalLiveValue(region);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[region]):null;
+  v=record?record.value:imported;provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';
+ }else{
+  const days=period==='weekly'?7:30,required=period==='weekly'?5:20;
+  const now=Date.now(),byDate=new Map();
+  for(const row of v26History){const ms=Date.parse(row.date);const val=row[region];if(!Number.isFinite(ms)||ms<now-days*86400000||ms>now+86400000||!Number.isFinite(val)||val<0||val>100)continue;byDate.set(new Date(ms).toISOString().slice(0,10),val)}
+  if(byDate.size>=required){v=Array.from(byDate.values()).reduce((a,b)=>a+b,0)/byDate.size;provenance=`${period==='weekly'?'7-day':'30-day'} historical average (${byDate.size} days)`;}
+ }
+ return `<div class="muted">${safe(v72AnalysisTitle('regionpsi',period,region))}</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(region)}`;
+}
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?'Average of '+historical.count+' saved daily readings · last '+new Date(historical.last).toLocaleDateString():'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
 case'technical':{const slots=v56TechSlots(a),coverage=v38Coverage(a),found=coverage.technical,verdict=v67TechnicalVerdict(a,coverage);return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="v67-verdict"><strong>Technical verdict: ${safe(verdict.label)}</strong><span class="muted">${verdict.label==='Not available'?'Insufficient verified indicators':verdict.count+' verified signals · '+verdict.up+' bullish / '+verdict.down+' bearish'}</span></div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
@@ -1206,6 +1221,7 @@ function editWatchSlot(slot){
 }
 const V28_TILE_TYPES=[
  ['psi','Asset PSI · Daily / Weekly / Monthly'],
+ ['regionpsi','Regional PSI · U.S. / Europe / Global · Daily / Weekly / Monthly'],
  ['technical','Technical Indicators'],
  ['fundamental','Fundamental Drivers'],
  ['chart','PSI Trend Chart'],
@@ -1216,6 +1232,7 @@ const V28_TILE_TYPES=[
 ];
 const V29_TILE_HELP={
  psi:'Daily, weekly or monthly sentiment for the active watchlist asset. Missing evidence stays blank.',
+ regionpsi:'Daily, weekly or monthly regional sentiment for U.S., Europe, or Global. Not tied to the selected asset.',
  technical:'Up to 10 user-chosen technical indicators; live calculation depends on connected source data.',
  fundamental:'Up to 6 asset-relevant fundamentals, with customizable choices.',
  chart:'Historical sentiment trend for the selected asset when valid time-stamped samples exist.',
@@ -1224,14 +1241,16 @@ const V29_TILE_HELP={
  search:'Search news and articles using filters; the existing demo search is not a live index.',
  social:'Links to external social and market services. This tile does not change with asset selection.'
 };
-const V28_TYPE_TITLES={psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',social:'Social & Market Networks'};
-function v72AnalysisTitle(type,period){
+const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',social:'Social & Market Networks'};
+function v72AnalysisTitle(type,period,region){
+ if(type==='regionpsi'){const where=({us:'U.S.',euro:'Europe',global:'Global'})[region]||'Global';const when=({daily:'Daily',weekly:'Weekly',monthly:'Monthly'})[period]||'Daily';return `${where} ${when} PSI`;}
  if(type==='psi')return ({daily:'Daily PSI',weekly:'Weekly PSI',monthly:'Monthly PSI'})[period]||'Daily PSI';
  return V28_TYPE_TITLES[type]||'Choose Analysis';
 }
 function v69OfficialTitle(t){
  const fixedName=blueprint.find(row=>row[0]===t.id)?.[1];
  if(t.type==='watch'||t.type==='fixed')return fixedName||t.officialName||t.title;
+ if(t.type==='regionpsi')return v72AnalysisTitle('regionpsi',t.psiPeriod||'daily',t.psiRegion||'global');
  if(t.type==='psi')return v72AnalysisTitle('psi',t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily'));
  return v72AnalysisTitle(t.type,t.psiPeriod);
 }
@@ -1240,7 +1259,7 @@ function tileSettings(t){
  const fixed=t.type==='fixed';
  const original=v69OfficialTitle(t);
  const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${label}</option>`).join('');
- const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis<select id="tileType">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${t.type==='psi'?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label>`;
+ const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis<select id="tileType">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
  open(`Tile Settings · ${original}`,`${typeField}<label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
@@ -1256,6 +1275,7 @@ function tileSettings(t){
  const titleInput=$('#tileTitle');
  const officialInput=$('#tileOfficialName');
  const periodSelect=$('#psiPeriod');
+ const regionSelect=$('#psiRegion');if(regionSelect)regionSelect.value=t.psiRegion||'global';
  if(periodSelect)periodSelect.value=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
  // A user-specified display name remains independent of the automatic official name.
  let userEdited=Boolean(t.displayNameCustomized);
@@ -1264,21 +1284,24 @@ function tileSettings(t){
  titleInput.addEventListener('input',()=>{userEdited=true});
  const updateNaming=()=>{
   const chosenType=typeSelect?.value||t.type;
-  const newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily');
+  const newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily',regionSelect?.value||'global');
   officialInput.value=newName;
   if(!userEdited)titleInput.value=newName;
   const hint=$('#tileTypeHelp');if(hint)hint.textContent=V29_TILE_HELP[chosenType]||'Select the analysis for this tile.';
-  const periodField=$('#psiPeriodField');if(periodField)periodField.style.display=chosenType==='psi'?'':'none';
+  const periodField=$('#psiPeriodField');if(periodField)periodField.style.display=['psi','regionpsi'].includes(chosenType)?'':'none';
+  const regionField=$('#psiRegionField');if(regionField)regionField.style.display=chosenType==='regionpsi'?'':'none';
  };
  typeSelect?.addEventListener('change',updateNaming);
  periodSelect?.addEventListener('change',updateNaming);
+ regionSelect?.addEventListener('change',updateNaming);
  updateNaming();
  saveButton.onclick=()=>{
   const newWatch=isWatch?v70CollectWatchlist():null;
   if(isWatch&&!newWatch)return;
   const newType=typeSelect?.value;
   if(newType&&newType!=='custom')t.type=newType;
-  if(t.type==='psi')t.psiPeriod=periodSelect?.value||'daily';
+  if(['psi','regionpsi'].includes(t.type))t.psiPeriod=periodSelect?.value||'daily';
+  if(t.type==='regionpsi')t.psiRegion=regionSelect?.value||'global';
   t.officialName=officialInput.value;
   const entered=titleInput.value.trim();
   t.title=entered||t.officialName;
