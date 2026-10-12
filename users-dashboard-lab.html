@@ -242,6 +242,9 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v75-mini{margin-top:13px;border-top:1px solid var(--line);padding-top:8px}
 .v75-mini svg{display:block;width:100%;height:67px}
 .v75-mini select{background:var(--inputbg);color:var(--txt);border:1px solid var(--line);border-radius:5px;font-size:11px}
+
+/* V76: independent indicator tiles and accurately scaled inline charts */
+.v76-indicator{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:10px;margin:10px 0}.v76-chart{display:block;width:100%;max-height:160px;min-height:100px;margin-top:8px}.v76-dates{font-size:10px}.v76-top{gap:12px;flex-wrap:wrap}.v76-top select{background:var(--inputbg);color:var(--txt);border:1px solid var(--line);border-radius:5px;padding:3px}.v76-checkboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:6px}.v76-check{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px;font-size:12px}.v76-check input{accent-color:var(--gold)}.v76-criteria{border-top:1px solid var(--line);padding:11px 0;margin-top:9px}.v76-criteria strong{display:block;margin-bottom:10px}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
@@ -926,22 +929,43 @@ function v75Calculate(prices,name,params={}){
  // Stochastic, ADX, ATR, CCI, Williams %R, Ichimoku, SAR and OBV need high/low/volume.
  return null;
 }
-function v75TechnicalMini(t,asset){
- const name=TECH.includes(t.focusIndicator)?t.focusIndicator:'RSI (14)';
+// V76: per-tile indicator choices; do not inherit unrelated workspace selections.
+function v76Selected(t){
+ const arr=Array.isArray(t.selectedIndicators)?t.selectedIndicators:[t.focusIndicator||'RSI (14)'];
+ return [...new Set(arr.filter(n=>TECH.includes(n)))].slice(0,10);
+}
+function v76Params(t,name){return (t.indicatorSettings&&t.indicatorSettings[name])||t.indicatorParams||{};}
+function v76IndicatorChart(t,asset,name){
  const frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
- const rows=v75History(asset,frame),params=t.indicatorParams||{};
- const points=[];
+ const rows=v75History(asset,frame),params=v76Params(t,name),points=[];
  for(let i=1;i<=rows.length;i++){
-  const val=v75Calculate(rows.slice(0,i).map(r=>r.close),name,params);
-  const y=typeof val==='number'?val:val&&typeof val.mid==='number'?val.mid:null;
-  if(Number.isFinite(y))points.push({date:rows[i-1].date,value:y});
+  const r=v75Calculate(rows.slice(0,i).map(x=>x.close),name,params);
+  const v=typeof r==='number'?r:r&&typeof r.mid==='number'?r.mid:null;
+  if(Number.isFinite(v))points.push({date:rows[i-1].date,value:v});
  }
- const controls=`<div class="row"><span class="muted">${safe(name)} trend</span><select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></div>`;
- if(points.length<2)return controls+'<div class="muted" style="padding:12px 0">Indicator unavailable — insufficient verified price history or required price fields.</div>';
- const recent=points.slice(-40),min=Math.min(...recent.map(v=>v.value)),max=Math.max(...recent.map(v=>v.value));
- const dx=Math.max(max-min,Math.abs(max)*.001,0.001);
- const xy=recent.map((v,i)=>`${(i*280/(recent.length-1)).toFixed(1)},${(58-(v.value-min)/dx*49).toFixed(1)}`).join(' ');
- return controls+`<div class="muted">Latest: ${Number(recent.at(-1).value.toFixed(2))}</div><svg viewBox="0 0 280 68" role="img" aria-label="${safe(name)}, ${safe(frame)} trend: ${recent.length} verified readings"><polyline fill="none" stroke="#69a8ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${xy}"/></svg><span class="muted">${safe(recent[0].date)} – ${safe(recent.at(-1).date)} · ${recent.length} readings</span>`;
+ if(points.length<2)return '<div class="muted">Chart unavailable — insufficient verified history or missing required price data.</div>';
+ const recent=points.slice(-40),values=recent.map(p=>p.value);
+ let low=Math.min(...values),high=Math.max(...values);
+ // RSI is a 0–100 bounded oscillator; show its actual fixed reference scale.
+ if(name==='RSI (14)'){low=0;high=100}
+ else{const pad=Math.max((high-low)*.10,Math.abs(high)*.002,.0001);low-=pad;high+=pad}
+ const width=360,height=116,left=48,right=8,top=8,bottom=18,plotW=width-left-right,plotH=height-top-bottom;
+ const y=v=>top+(high-v)/(high-low)*plotH;
+ const x=i=>left+i*plotW/(recent.length-1);
+ const ticks=Array.from({length:5},(_,i)=>high-(high-low)*i/4);
+ const lines=ticks.map(v=>`<line x1="${left}" x2="${width-right}" y1="${y(v).toFixed(2)}" y2="${y(v).toFixed(2)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${left-5}" y="${(y(v)+3).toFixed(2)}" font-size="9" text-anchor="end" fill="var(--mute)">${safe(Number(v.toFixed(Math.abs(v)<1?3:2)).toLocaleString())}</text>`).join('');
+ const xy=recent.map((p,i)=>`${x(i).toFixed(2)},${y(p.value).toFixed(2)}`).join(' ');
+ return `<svg class="v76-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safe(name)} ${safe(frame)} trend, numeric axis"><g>${lines}</g><polyline fill="none" stroke="#69a8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${xy}"/></svg><div class="muted v76-dates">${safe(recent[0].date)} – ${safe(recent.at(-1).date)} · ${recent.length} readings</div>`;
+}
+function v76TechnicalContent(t,a){
+ const selected=v76Selected(t),frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
+ const rows=v75History(a,frame),prices=rows.map(r=>r.close);
+ return `<div class="row v76-top"><span class="muted">${safe(a)} · ${selected.length} selected indicator${selected.length===1?'':'s'}</span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
+ (selected.length?selected.map(name=>{
+  const value=v75Calculate(prices,name,v76Params(t,name));
+  const shown=typeof value==='number'?Number(value.toFixed(3)).toLocaleString():value&&typeof value.mid==='number'?`${value.low.toFixed(2)} – ${value.high.toFixed(2)}`:'—';
+  return `<section class="v76-indicator"><div class="row"><strong>${safe(name)}</strong><strong>${safe(shown)}</strong></div>${v76IndicatorChart(t,a,name)}</section>`;
+ }).join(''):'<p class="muted">Choose indicators in Tile Settings.</p>');
 }
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'regionpsi':{
@@ -961,7 +985,7 @@ case'regionpsi':{
 }
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?'Average of '+historical.count+' saved daily readings · last '+new Date(historical.last).toLocaleDateString():'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
-case'technical':{const slots=v56TechSlots(a),coverage=v38Coverage(a),found=coverage.technical,verdict=v67TechnicalVerdict(a,coverage);return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="v67-verdict"><strong>Technical verdict: ${safe(verdict.label)}</strong><span class="muted">${verdict.label==='Not available'?'Insufficient verified indicators':verdict.count+' verified signals · '+verdict.up+' bullish / '+verdict.down+' bearish'}</span></div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><div class="v75-mini">${v75TechnicalMini(t,a)}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
+case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
@@ -1329,32 +1353,33 @@ function tileSettings(t){
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
  const modalActions=document.querySelector('.v58-modal-actions');modalActions?.insertBefore(saveButton,$('#closeModal'));
  const configType=t.type;
- // V75: configure the main indicator directly in this tile's settings.
- const v75Block=document.createElement('div');v75Block.id='v75TechConfig';v75Block.className='v75-tech-config';
- body.appendChild(v75Block);
+ // V76: checkboxes and individual criteria belong to this tile, not to the workspace-wide legacy selector.
+ const v75Block=document.createElement('div');v75Block.id='v75TechConfig';v75Block.className='v75-tech-config';body.appendChild(v75Block);
+ const v76Draft={selected:v76Selected(t),settings:JSON.parse(JSON.stringify(t.indicatorSettings||{})),frame:t.indicatorFrame||'daily'};
  const v75Paint=()=>{
-  const show=(document.querySelector('#tileType')?.value||t.type)==='technical';
-  v75Block.hidden=!show;if(!show)return;
-  const current=v75Block.querySelector('#v75Indicator')?.value||t.focusIndicator||'RSI (14)';
-  const opts={...(t.indicatorParams||{})};
-  const period=Number(v75Block.querySelector('#v75Period')?.value||opts.period||(current==='SMA (20)'||current==='Bollinger Bands'?20:current==='EMA (50)'?50:14));
-  const fast=Number(v75Block.querySelector('#v75Fast')?.value||opts.fast||12);
-  const slow=Number(v75Block.querySelector('#v75Slow')?.value||opts.slow||26);
-  const sigma=Number(v75Block.querySelector('#v75Sigma')?.value||opts.sigma||2);
-  const frame=v75Block.querySelector('#v75Frame')?.value||t.indicatorFrame||'daily';
-  v75Block.innerHTML=`<div class="section">Technical indicator</div><label class="field">Indicator<select id="v75Indicator">${TECH.map(n=>`<option value="${safe(n)}" ${n===current?'selected':''}>${safe(n)}</option>`).join('')}</select></label><div id="v75Criteria"></div><label class="field">Trend timeframe<select id="v75Frame"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Charts use verified closing prices. Indicators requiring high, low or volume show unavailable until those fields are connected.</p>`;
-  const detailed=()=>{const key=v75Block.querySelector('#v75Indicator').value;
-   let html='';if(['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC'].includes(key))html+=`<label class="field">Lookback periods (2–200)<input id="v75Period" type="number" min="2" max="200" step="1" value="${period}"></label>`;
-   if(key==='MACD')html+=`<div class="two"><label class="field">Fast EMA (2–100)<input id="v75Fast" type="number" min="2" max="100" value="${fast}"></label><label class="field">Slow EMA (3–200)<input id="v75Slow" type="number" min="3" max="200" value="${slow}"></label></div>`;
-   if(key==='Bollinger Bands')html+=`<label class="field">Standard deviations (0.5–4)<input id="v75Sigma" type="number" min="0.5" max="4" step="0.5" value="${sigma}"></label>`;
-   if(!['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC','MACD'].includes(key))html+='<p class="notice">This indicator requires verified market fields not currently supplied by the dashboard.</p>';
-   v75Block.querySelector('#v75Criteria').innerHTML=html;
+  const shown=(document.querySelector('#tileType')?.value||t.type)==='technical';v75Block.hidden=!shown;if(!shown)return;
+  v75Block.innerHTML=`<div class="section">Technical indicators (choose up to 10)</div><div class="v76-checkboxes">${TECH.map(n=>`<label class="v76-check"><input type="checkbox" data-v76-indicator="${safe(n)}" ${v76Draft.selected.includes(n)?'checked':''}> ${safe(n)}</label>`).join('')}</div><div id="v76Individual"></div><label class="field">Chart timeframe<select id="v75Frame"><option value="daily" ${v76Draft.frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${v76Draft.frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${v76Draft.frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Charts use verified price history; indicators requiring unavailable fields remain blank.</p>`;
+  const settingsArea=v75Block.querySelector('#v76Individual');
+  const paintSettings=()=>{
+   settingsArea.innerHTML=v76Draft.selected.map(n=>{
+    const p=v76Draft.settings[n]||{};
+    const period=['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC'].includes(n)?`<label class="field">Lookback periods (2–200)<input type="number" data-v76-setting="period" min="2" max="200" value="${Number(p.period)||(n==='SMA (20)'||n==='Bollinger Bands'?20:n==='EMA (50)'?50:14)}"></label>`:'';
+    const macd=n==='MACD'?`<div class="two"><label class="field">Fast EMA<input type="number" data-v76-setting="fast" min="2" max="100" value="${Number(p.fast)||12}"></label><label class="field">Slow EMA<input type="number" data-v76-setting="slow" min="3" max="200" value="${Number(p.slow)||26}"></label></div>`:'';
+    const sigma=n==='Bollinger Bands'?`<label class="field">Standard deviations<input type="number" data-v76-setting="sigma" min="0.5" max="4" step="0.5" value="${Number(p.sigma)||2}"></label>`:'';
+    return `<div class="v76-criteria" data-v76-name="${safe(n)}"><strong>${safe(n)}</strong>${period}${macd}${sigma}${period||macd||sigma?'':'<p class="muted">Uses default settings; requires supported market data.</p>'}</div>`;
+   }).join('');
   };
-  detailed();v75Block.querySelector('#v75Indicator').addEventListener('change',detailed);
+  v75Block.querySelectorAll('[data-v76-indicator]').forEach(input=>input.addEventListener('change',()=>{
+   const name=input.dataset.v76Indicator;
+   if(input.checked){if(v76Draft.selected.length>=10){input.checked=false;alert('Select up to 10 indicators per tile.');return}v76Draft.selected.push(name)}
+   else v76Draft.selected=v76Draft.selected.filter(n=>n!==name);
+   paintSettings();
+  }));
+  v75Block.querySelector('#v75Frame').addEventListener('change',e=>{v76Draft.frame=e.target.value});
+  paintSettings();
  };
- v75Paint();
- document.querySelector('#tileType')?.addEventListener('change',v75Paint);
- if(['technical','fundamental'].includes(configType)){
+ v75Paint();document.querySelector('#tileType')?.addEventListener('change',v75Paint);
+ if(configType==='fundamental'){
   const go=document.createElement('button');go.className='btn';go.id='configureSelectedAnalysis';
   go.textContent=configType==='technical'?'Configure Technical Indicators':'Configure Fundamental Drivers';
   go.title='Configure indicators for the asset selected in My Watchlist';footer.prepend(go);
@@ -1392,13 +1417,20 @@ function tileSettings(t){
   if(['psi','regionpsi'].includes(t.type))t.psiPeriod=periodSelect?.value||'daily';
   if(t.type==='regionpsi')t.psiRegion=regionSelect?.value||'global';
   if(t.type==='technical'){
-   const indicator=body.querySelector('#v75Indicator')?.value||t.focusIndicator||'RSI (14)';
-   const param=(id,fallback)=>Number(body.querySelector(id)?.value??fallback);
-   const period=param('#v75Period',14),fast=param('#v75Fast',12),slow=param('#v75Slow',26),sigma=param('#v75Sigma',2);
-   if(!Number.isInteger(period)||period<2||period>200||!Number.isInteger(fast)||fast<2||fast>100||!Number.isInteger(slow)||slow<=fast||slow>200||!Number.isFinite(sigma)||sigma<.5||sigma>4){alert('Check indicator periods and parameters. Slow EMA must exceed fast EMA.');return;}
-   t.focusIndicator=TECH.includes(indicator)?indicator:'RSI (14)';
-   t.indicatorParams={period,fast,slow,sigma};
-   t.indicatorFrame=['daily','weekly','monthly'].includes(body.querySelector('#v75Frame')?.value)?body.querySelector('#v75Frame').value:'daily';
+   const nextSettings={...v76Draft.settings};let invalid=false;
+   v75Block.querySelectorAll('[data-v76-name]').forEach(group=>{
+    const name=group.dataset.v76Name,p={...(nextSettings[name]||{})};
+    group.querySelectorAll('[data-v76-setting]').forEach(el=>{p[el.dataset.v76Setting]=Number(el.value)});
+    if(p.period!==undefined&&(!Number.isInteger(p.period)||p.period<2||p.period>200))invalid=true;
+    if(p.fast!==undefined&&(!Number.isInteger(p.fast)||p.fast<2||p.fast>100))invalid=true;
+    if(p.slow!==undefined&&(!Number.isInteger(p.slow)||p.slow<3||p.slow>200))invalid=true;
+    if(name==='MACD'&&(p.slow||26)<=(p.fast||12))invalid=true;
+    if(p.sigma!==undefined&&(!Number.isFinite(p.sigma)||p.sigma<.5||p.sigma>4))invalid=true;
+    nextSettings[name]=p;
+   });
+   if(invalid){alert('Please correct the indicator settings before saving.');return}
+   t.selectedIndicators=[...v76Draft.selected];t.focusIndicator=t.selectedIndicators[0]||'';
+   t.indicatorSettings=nextSettings;t.indicatorFrame=v76Draft.frame;
   }
   t.officialName=officialInput.value;
   const entered=titleInput.value.trim();
