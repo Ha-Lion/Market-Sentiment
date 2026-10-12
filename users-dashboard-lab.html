@@ -796,11 +796,12 @@ function v77MarketRows(asset){
   if(!r||!v77DateValid(r.date)||typeof r.close!=='number'||!Number.isFinite(r.close)||r.close<=0)return [];
   if(seen.has(r.date)){if(Math.abs(seen.get(r.date)-r.close)>1e-7)return [];continue;}
   seen.set(r.date,r.close);
+  const open=typeof r.open==='number'&&Number.isFinite(r.open)?r.open:null;
   const high=typeof r.high==='number'&&Number.isFinite(r.high)?r.high:null;
   const low=typeof r.low==='number'&&Number.isFinite(r.low)?r.low:null;
   const volume=typeof r.volume==='number'&&Number.isFinite(r.volume)?r.volume:null;
-  if((high!==null&&high<r.close)||(low!==null&&low>r.close)||(high!==null&&low!==null&&high<low)||(volume!==null&&volume<0))return [];
-  rows.push({date:r.date,close:r.close,high,low,volume});
+  if((open!==null&&open<=0)||(high!==null&&high<Math.max(r.close,open??r.close))||(low!==null&&low>Math.min(r.close,open??r.close))||(high!==null&&low!==null&&high<low)||(volume!==null&&(!Number.isInteger(volume)||volume<0)))return [];
+  rows.push({date:r.date,open,close:r.close,high,low,volume});
  }
  rows.sort((a,b)=>a.date.localeCompare(b.date));
  if(!rows.length||Date.now()-Date.parse(rows.at(-1).date+'T12:00:00Z')>7*86400000)return [];
@@ -930,16 +931,31 @@ function v47FilterNetworks(panel){
 }
 let v69ShowAllWatch=false; // Display-only catalog toggle, without changing saved watchlist slots.
 // V75: validated close-only technical series and small trend chart.
+// V78: aggregate actual daily candles into calendar weeks/months without fabricating missing OHLCV.
+// Closing price is the last valid trading day's close; OHLCV is available only when every
+// source candle in the period contains the required values.
 function v75History(asset,frame){
  const rows=v62Prices(asset);
  if(frame==='daily')return rows;
+ if(frame!=='weekly'&&frame!=='monthly')return [];
  const bins=new Map();
- for(const r of rows){const d=new Date(r.date+'T12:00:00Z');let key;
+ for(const r of rows){
+  const d=new Date(r.date+'T12:00:00Z');let key;
   if(frame==='monthly')key=r.date.slice(0,7);
   else{const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);key=d.toISOString().slice(0,10);}
-  bins.set(key,r);
+  if(!bins.has(key))bins.set(key,[]);
+  bins.get(key).push(r);
  }
- return [...bins.values()].sort((a,b)=>a.date.localeCompare(b.date));
+ return [...bins.values()].map(group=>{
+  const first=group[0],last=group.at(-1);
+  const hasRange=group.every(r=>Number.isFinite(r.high)&&Number.isFinite(r.low));
+  const hasVolume=group.every(r=>Number.isFinite(r.volume));
+  const hasOpen=Number.isFinite(first.open);
+  return {date:last.date,open:hasOpen?first.open:null,close:last.close,
+   high:hasRange?Math.max(...group.map(r=>r.high)):null,
+   low:hasRange?Math.min(...group.map(r=>r.low)):null,
+   volume:hasVolume?group.reduce((sum,r)=>sum+r.volume,0):null};
+ });
 }
 function v75Calculate(prices,name,params={}){
  const n=prices.length,p=Number(params.period||(name==='SMA (20)'||name==='Bollinger Bands'?20:name==='EMA (50)'?50:14)),fast=Number(params.fast||12),slow=Number(params.slow||26),sigma=Number(params.sigma||2);
@@ -1054,7 +1070,7 @@ function v76IndicatorChart(t,asset,name){
 function v76TechnicalContent(t,a){
  const selected=v76Selected(t),frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
  const rows=v75History(a,frame),prices=rows.map(r=>r.close);
- const market=v77MarketFeed?.[a];const dataInfo=rows.length?`Source: ${safe(market?.data_source||market?.source||'Market feed')} · ${safe(market?.symbol||a)} · closing prices through ${safe(rows.at(-1).date)} · ${safe(frame)}. Source accuracy not independently confirmed.`:`Market price history unavailable${v77MarketStatus?' — '+safe(v77MarketStatus):''}`;
+ const market=v77MarketFeed?.[a];const dataInfo=rows.length?`Source: ${safe(market?.data_source||market?.source||'Market feed')} · ${safe(market?.symbol||a)} · prices through ${safe(rows.at(-1).date)} · ${safe(frame)}${frame==='daily'?'':' (aggregated from daily candles)'}. Independent price verification pending.`:`Market price history unavailable${v77MarketStatus?' — '+safe(v77MarketStatus):''}`;
  return `<div class="row v76-top"><span class="muted">${safe(a)} · ${selected.length} indicator${selected.length===1?'':'s'}</span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
  (selected.length?selected.map(name=>{
   const value=v77AnyIndicator(rows,name,v76Params(t,name));
