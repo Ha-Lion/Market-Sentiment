@@ -799,6 +799,20 @@
   .ec-page #ec-data-health[data-quality="good"]::before{background:#16803a}
   .ec-page #ec-data-health[data-quality="unavailable"]::before{background:#858a94}
 </style>
+
+<style id="ec-v11-combined-date-search">
+  .ec-filters{display:grid;grid-template-columns:minmax(275px,1.35fr) minmax(210px,1.5fr) repeat(3,minmax(120px,.78fr)) auto auto;gap:7px;align-items:center}
+  .ec-filters .ec-filter-dates{display:flex;gap:5px;align-items:center;min-width:0;padding:0;border:0}
+  .ec-filter-dates input[type=date]{width:calc(50% - 14px);min-width:0;flex:1 1 0;box-sizing:border-box;padding:7px 5px;font-size:10px}
+  .ec-filter-dates span{font-size:10px;white-space:nowrap}
+  .ec-filters #search{min-width:0;grid-column:auto}
+  .ec-filters #custom-go{white-space:nowrap;min-width:42px}
+  .ec-filters .ec-pending-go{outline:2px solid #b8860b;outline-offset:1px}
+  .ec-search-dates-note{padding:5px 12px;font-size:11px;color:#795300;background:#fff6df;border-bottom:1px solid #d6b55f}
+  .ec-search-dates-note[hidden]{display:none!important}
+  @media(max-width:1300px){.ec-filters{grid-template-columns:minmax(240px,1.4fr) minmax(200px,1.5fr) repeat(2,minmax(130px,1fr)) auto auto}.ec-filters #category{grid-column:3/5}}
+  @media(max-width:850px){.ec-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.ec-filters .ec-filter-dates,.ec-filters #search{grid-column:1/-1}.ec-filters #category{grid-column:auto}}
+</style>
 </head>
 <body>
   <div id="site-header"></div>
@@ -824,14 +838,8 @@
 
     <section class="ec-shell">
       <div class="ec-toolbar" aria-label="Calendar range">
-        <div class="ec-date-picker">
-          <input id="custom-from" type="date" aria-label="From date">
-          <span>to</span>
-          <input id="custom-to" type="date" aria-label="To date">
-          <button id="custom-go" class="ec-action ec-date-go" type="button" title="Apply selected From and To dates" aria-label="Go to selected date range">Go</button>
-          <button id="last-30" class="ec-action ec-date-go" type="button" title="Last 30 days">−30d</button>
-          <button id="next-30" class="ec-action ec-date-go" type="button" title="Next 30 days">+30d</button>
-        </div>
+        <button id="last-30" class="ec-action ec-date-go" type="button" title="Last 30 days">−30d</button>
+        <button id="next-30" class="ec-action ec-date-go" type="button" title="Next 30 days">+30d</button>
         <button class="ec-tab" data-range="yesterday">Yesterday</button>
         <button class="ec-tab" data-range="today">Today</button>
         <button class="ec-tab" data-range="tomorrow">Tomorrow</button>
@@ -984,7 +992,12 @@
 
       <div id="provider-warning" class="ec-warning"></div>
 
-      <div class="ec-filters">
+      <div class="ec-filters" aria-label="Combined dates and economic event search">
+        <div class="ec-date-picker ec-filter-dates">
+          <input id="custom-from" type="date" aria-label="Search start date" required>
+          <span>to</span>
+          <input id="custom-to" type="date" aria-label="Search end date" required>
+        </div>
         <input id="search" class="ec-input" type="search" placeholder="Search CPI, Fed, payrolls, GDP, oil…">
         <select id="country" class="ec-select"><option value="">All selected countries</option></select>
         <select id="impact" class="ec-select">
@@ -993,7 +1006,10 @@
         </select>
         <select id="category" class="ec-select"><option value="">All classifications</option></select>
         <button id="clear-filters" class="ec-settings-button ec-clear" type="button">Clear</button>
+        <button id="custom-go" class="ec-action ec-date-go" type="button" title="Apply date range and search filters" aria-label="Go: search selected dates and filters">Go</button>
       </div>
+
+      <div id="ec-search-dates-note" class="ec-search-dates-note" role="status" aria-live="polite" hidden>Choose both dates, then press Go to apply search filters.</div>
 
       <div class="ec-summary">
         <div class="ec-stat"><span>Events shown</span><strong id="stat-events">—</strong></div>
@@ -1613,6 +1629,12 @@
 
     function displayRangeLabel(){
       const r=getRange(currentRange);
+      // Date search fields always reflect the active calendar range.
+      // Do not overwrite dates the user is currently typing into.
+      if(!document.querySelector(".ec-filter-dates:focus-within")){
+        document.getElementById("custom-from").value=r.start;
+        document.getElementById("custom-to").value=r.end;
+      }
       const fmt=s=>new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric"}).format(new Date(s+"T12:00:00"));
       document.getElementById("range-label").textContent = r.start===r.end ? fmt(r.start) : `${fmt(r.start)} – ${fmt(r.end)}`;
     }
@@ -3508,6 +3530,8 @@
       }
       customRange={start:from,end:to};
       currentRange="custom";
+      document.getElementById("ec-search-dates-note").hidden=true;
+      document.getElementById("custom-go").classList.remove("ec-pending-go");
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
       await loadFeed();
     });
@@ -3524,13 +3548,30 @@
       }
 
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",x===btn));
+      document.getElementById("ec-search-dates-note").hidden=true;
+      document.getElementById("custom-go").classList.remove("ec-pending-go");
       await loadFeed();
     }));
 
-    search.addEventListener("input",render);
+    function onCombinedFilterEdit(){
+      // Search filters must be applied against an explicit start/end range.
+      // Keep editing responsive without launching a network request per keystroke.
+      const note=document.getElementById("ec-search-dates-note");
+      const haveFilter=Boolean(search.value.trim()||countryFilter.value||impactFilter.value||categoryFilter.value);
+      const datesReady=Boolean(document.getElementById("custom-from").value&&document.getElementById("custom-to").value);
+      if(haveFilter && (currentRange!=="custom" || !datesReady)){
+        note.hidden=false;
+        document.getElementById("custom-go").classList.add("ec-pending-go");
+      }else{
+        note.hidden=true;
+        document.getElementById("custom-go").classList.remove("ec-pending-go");
+      }
+      if(currentRange==="custom")render();
+    }
+    search.addEventListener("input",onCombinedFilterEdit);
     [countryFilter,impactFilter,categoryFilter].forEach(x=>{
-      x.addEventListener("change",render);
-      x.addEventListener("input",render);
+      x.addEventListener("change",onCombinedFilterEdit);
+      x.addEventListener("input",onCombinedFilterEdit);
     });
 
 
@@ -3540,7 +3581,9 @@
     document.getElementById("share-view").addEventListener("click",shareCurrentView);
 
     document.getElementById("clear-filters").addEventListener("click",()=>{
-      search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false; render();
+      search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false;
+      document.getElementById("ec-search-dates-note").hidden=true;
+      document.getElementById("custom-go").classList.remove("ec-pending-go"); render();
     });
 
 
