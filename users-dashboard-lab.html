@@ -233,6 +233,15 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v70-watch-toggle .btn{min-height:19px;padding:1px 7px;font-size:10px;line-height:15px;border-radius:5px}
 /* V70: the single tile Save is located in the modal header. */
 #modal:has(#v70SaveTile) .dialog-footer:empty{display:none}
+
+/* V75: on lock, collapse secondary controls; unlocking restores them. */
+.tile.locked .bar .ctrl:not([data-command="lock"]){display:none!important}
+.tile.locked .bar .ctrl[data-command="lock"]{margin-left:auto}
+.v75-tech-config{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.v75-tech-config .field{margin-bottom:9px}
+.v75-mini{margin-top:13px;border-top:1px solid var(--line);padding-top:8px}
+.v75-mini svg{display:block;width:100%;height:67px}
+.v75-mini select{background:var(--inputbg);color:var(--txt);border:1px solid var(--line);border-radius:5px;font-size:11px}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
@@ -879,6 +888,61 @@ function v47FilterNetworks(panel){
  const count=panel.querySelector("[data-v47-result-count]");if(count)count.textContent=term?found+" network"+(found===1?"":"s")+" found":"";
 }
 let v69ShowAllWatch=false; // Display-only catalog toggle, without changing saved watchlist slots.
+// V75: validated close-only technical series and small trend chart.
+function v75History(asset,frame){
+ const rows=v62Prices(asset);
+ if(frame==='daily')return rows;
+ const bins=new Map();
+ for(const r of rows){const d=new Date(r.date+'T12:00:00Z');let key;
+  if(frame==='monthly')key=r.date.slice(0,7);
+  else{const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);key=d.toISOString().slice(0,10);}
+  bins.set(key,r);
+ }
+ return [...bins.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
+function v75Calculate(prices,name,params={}){
+ const n=prices.length,p=Number(params.period||(name==='SMA (20)'||name==='Bollinger Bands'?20:name==='EMA (50)'?50:14)),fast=Number(params.fast||12),slow=Number(params.slow||26),sigma=Number(params.sigma||2);
+ if(!Number.isInteger(p)||p<2||p>200||!Number.isInteger(fast)||!Number.isInteger(slow)||slow<=fast)return null;
+ const avg=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
+ const ema=(arr,k)=>{if(arr.length<k)return null;let e=avg(arr.slice(0,k));const a=2/(k+1);for(let j=k;j<arr.length;j++)e=a*arr[j]+(1-a)*e;return e};
+ if(name==='SMA (20)')return n>=p?avg(prices.slice(-p)):null;
+ if(name==='EMA (50)')return ema(prices,p);
+ if(name==='Momentum')return n>p?prices.at(-1)-prices.at(-1-p):null;
+ if(name==='ROC')return n>p&&prices.at(-1-p)>0?100*(prices.at(-1)/prices.at(-1-p)-1):null;
+ if(name==='MACD')return n>=slow?ema(prices,fast)-ema(prices,slow):null;
+ if(name==='Bollinger Bands'){
+  if(n<p||!Number.isFinite(sigma)||sigma<.5||sigma>4)return null;
+  const tail=prices.slice(-p),mid=avg(tail),sd=Math.sqrt(avg(tail.map(v=>(v-mid)**2)));
+  return {low:mid-sigma*sd,mid,high:mid+sigma*sd};
+ }
+ if(name==='RSI (14)'){
+  if(n<=p)return null;
+  let up=0,dn=0;
+  for(let i=1;i<=p;i++){const ch=prices[i]-prices[i-1];up+=Math.max(ch,0);dn+=Math.max(-ch,0)}
+  up/=p;dn/=p;
+  for(let i=p+1;i<n;i++){const ch=prices[i]-prices[i-1];up=(up*(p-1)+Math.max(ch,0))/p;dn=(dn*(p-1)+Math.max(-ch,0))/p}
+  return dn===0?(up===0?50:100):100-100/(1+up/dn);
+ }
+ // Stochastic, ADX, ATR, CCI, Williams %R, Ichimoku, SAR and OBV need high/low/volume.
+ return null;
+}
+function v75TechnicalMini(t,asset){
+ const name=TECH.includes(t.focusIndicator)?t.focusIndicator:'RSI (14)';
+ const frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
+ const rows=v75History(asset,frame),params=t.indicatorParams||{};
+ const points=[];
+ for(let i=1;i<=rows.length;i++){
+  const val=v75Calculate(rows.slice(0,i).map(r=>r.close),name,params);
+  const y=typeof val==='number'?val:val&&typeof val.mid==='number'?val.mid:null;
+  if(Number.isFinite(y))points.push({date:rows[i-1].date,value:y});
+ }
+ const controls=`<div class="row"><span class="muted">${safe(name)} trend</span><select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></div>`;
+ if(points.length<2)return controls+'<div class="muted" style="padding:12px 0">Indicator unavailable — insufficient verified price history or required price fields.</div>';
+ const recent=points.slice(-40),min=Math.min(...recent.map(v=>v.value)),max=Math.max(...recent.map(v=>v.value));
+ const dx=Math.max(max-min,Math.abs(max)*.001,0.001);
+ const xy=recent.map((v,i)=>`${(i*280/(recent.length-1)).toFixed(1)},${(58-(v.value-min)/dx*49).toFixed(1)}`).join(' ');
+ return controls+`<div class="muted">Latest: ${Number(recent.at(-1).value.toFixed(2))}</div><svg viewBox="0 0 280 68" role="img" aria-label="${safe(name)}, ${safe(frame)} trend: ${recent.length} verified readings"><polyline fill="none" stroke="#69a8ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${xy}"/></svg><span class="muted">${safe(recent[0].date)} – ${safe(recent.at(-1).date)} · ${recent.length} readings</span>`;
+}
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'regionpsi':{
  const region=['global','us','euro'].includes(t.psiRegion)?t.psiRegion:'global';
@@ -897,7 +961,7 @@ case'regionpsi':{
 }
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?'Average of '+historical.count+' saved daily readings · last '+new Date(historical.last).toLocaleDateString():'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
-case'technical':{const slots=v56TechSlots(a),coverage=v38Coverage(a),found=coverage.technical,verdict=v67TechnicalVerdict(a,coverage);return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="v67-verdict"><strong>Technical verdict: ${safe(verdict.label)}</strong><span class="muted">${verdict.label==='Not available'?'Insufficient verified indicators':verdict.count+' verified signals · '+verdict.up+' bullish / '+verdict.down+' bearish'}</span></div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
+case'technical':{const slots=v56TechSlots(a),coverage=v38Coverage(a),found=coverage.technical,verdict=v67TechnicalVerdict(a,coverage);return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="v67-verdict"><strong>Technical verdict: ${safe(verdict.label)}</strong><span class="muted">${verdict.label==='Not available'?'Insufficient verified indicators':verdict.count+' verified signals · '+verdict.up+' bullish / '+verdict.down+' bearish'}</span></div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><div class="v75-mini">${v75TechnicalMini(t,a)}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
 case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
@@ -1265,6 +1329,31 @@ function tileSettings(t){
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
  const modalActions=document.querySelector('.v58-modal-actions');modalActions?.insertBefore(saveButton,$('#closeModal'));
  const configType=t.type;
+ // V75: configure the main indicator directly in this tile's settings.
+ const v75Block=document.createElement('div');v75Block.id='v75TechConfig';v75Block.className='v75-tech-config';
+ body.appendChild(v75Block);
+ const v75Paint=()=>{
+  const show=(document.querySelector('#tileType')?.value||t.type)==='technical';
+  v75Block.hidden=!show;if(!show)return;
+  const current=v75Block.querySelector('#v75Indicator')?.value||t.focusIndicator||'RSI (14)';
+  const opts={...(t.indicatorParams||{})};
+  const period=Number(v75Block.querySelector('#v75Period')?.value||opts.period||(current==='SMA (20)'||current==='Bollinger Bands'?20:current==='EMA (50)'?50:14));
+  const fast=Number(v75Block.querySelector('#v75Fast')?.value||opts.fast||12);
+  const slow=Number(v75Block.querySelector('#v75Slow')?.value||opts.slow||26);
+  const sigma=Number(v75Block.querySelector('#v75Sigma')?.value||opts.sigma||2);
+  const frame=v75Block.querySelector('#v75Frame')?.value||t.indicatorFrame||'daily';
+  v75Block.innerHTML=`<div class="section">Technical indicator</div><label class="field">Indicator<select id="v75Indicator">${TECH.map(n=>`<option value="${safe(n)}" ${n===current?'selected':''}>${safe(n)}</option>`).join('')}</select></label><div id="v75Criteria"></div><label class="field">Trend timeframe<select id="v75Frame"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Charts use verified closing prices. Indicators requiring high, low or volume show unavailable until those fields are connected.</p>`;
+  const detailed=()=>{const key=v75Block.querySelector('#v75Indicator').value;
+   let html='';if(['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC'].includes(key))html+=`<label class="field">Lookback periods (2–200)<input id="v75Period" type="number" min="2" max="200" step="1" value="${period}"></label>`;
+   if(key==='MACD')html+=`<div class="two"><label class="field">Fast EMA (2–100)<input id="v75Fast" type="number" min="2" max="100" value="${fast}"></label><label class="field">Slow EMA (3–200)<input id="v75Slow" type="number" min="3" max="200" value="${slow}"></label></div>`;
+   if(key==='Bollinger Bands')html+=`<label class="field">Standard deviations (0.5–4)<input id="v75Sigma" type="number" min="0.5" max="4" step="0.5" value="${sigma}"></label>`;
+   if(!['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC','MACD'].includes(key))html+='<p class="notice">This indicator requires verified market fields not currently supplied by the dashboard.</p>';
+   v75Block.querySelector('#v75Criteria').innerHTML=html;
+  };
+  detailed();v75Block.querySelector('#v75Indicator').addEventListener('change',detailed);
+ };
+ v75Paint();
+ document.querySelector('#tileType')?.addEventListener('change',v75Paint);
  if(['technical','fundamental'].includes(configType)){
   const go=document.createElement('button');go.className='btn';go.id='configureSelectedAnalysis';
   go.textContent=configType==='technical'?'Configure Technical Indicators':'Configure Fundamental Drivers';
@@ -1302,6 +1391,15 @@ function tileSettings(t){
   if(newType&&newType!=='custom')t.type=newType;
   if(['psi','regionpsi'].includes(t.type))t.psiPeriod=periodSelect?.value||'daily';
   if(t.type==='regionpsi')t.psiRegion=regionSelect?.value||'global';
+  if(t.type==='technical'){
+   const indicator=body.querySelector('#v75Indicator')?.value||t.focusIndicator||'RSI (14)';
+   const param=(id,fallback)=>Number(body.querySelector(id)?.value??fallback);
+   const period=param('#v75Period',14),fast=param('#v75Fast',12),slow=param('#v75Slow',26),sigma=param('#v75Sigma',2);
+   if(!Number.isInteger(period)||period<2||period>200||!Number.isInteger(fast)||fast<2||fast>100||!Number.isInteger(slow)||slow<=fast||slow>200||!Number.isFinite(sigma)||sigma<.5||sigma>4){alert('Check indicator periods and parameters. Slow EMA must exceed fast EMA.');return;}
+   t.focusIndicator=TECH.includes(indicator)?indicator:'RSI (14)';
+   t.indicatorParams={period,fast,slow,sigma};
+   t.indicatorFrame=['daily','weekly','monthly'].includes(body.querySelector('#v75Frame')?.value)?body.querySelector('#v75Frame').value:'daily';
+  }
   t.officialName=officialInput.value;
   const entered=titleInput.value.trim();
   t.title=entered||t.officialName;
@@ -1313,6 +1411,7 @@ function tileSettings(t){
 }
 
 board.addEventListener('input',e=>{const input=e.target.closest('[data-v46-network-search]');if(!input)return;const panel=input.closest('.tile');if(!panel)return;v47NetworkFilter=input.value;v47FilterNetworks(panel)});
+board.addEventListener('change',e=>{const sel=e.target.closest('[data-v75-frame]');if(!sel)return;const t=tiles.find(t=>t.id===sel.closest('.tile')?.dataset.id);if(t){t.indicatorFrame=['daily','weekly','monthly'].includes(sel.value)?sel.value:'daily';render();}});
 board.addEventListener('change',e=>{const select=e.target.closest('[data-v39-range]');if(!select)return;state.historyDays=[0,7,30,90,365].includes(Number(select.value))?Number(select.value):0;render()});
 board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v39-export')){v39ExportHistory();return}if(b.hasAttribute('data-v69-all')){v69ShowAllWatch=!v69ShowAllWatch;render();return}if(b.hasAttribute('data-catalog-asset')){const asset=b.dataset.catalogAsset;if(ASSETS.includes(asset)){state.selected=asset;render();}return}if(b.hasAttribute('data-watch-slot')){const asset=state.watch[Number(b.dataset.watchSlot)];if(asset){state.selected=asset;render()}return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.v45Terms){v45ManageConsent(b.dataset.v45Terms);return}if(b.hasAttribute('data-v44-return')){if(t&&t.type==='social-service'){t.closed=true;const main=tiles.find(x=>x.id==='social');if(main)main.closed=false;render();main&&board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'})}return}if(b.dataset.social){const s=SOCIAL.find(x=>x[0]===b.dataset.social);if(s){const accepted=state.consent?.['network:'+s[0]];if(accepted&&accepted.version==='v64-draft')v44OpenNetwork(s[0]);else consent(s[0],s[1])}return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':if(t.type==='social-service'){t.closed=true;t.min=false;t.maxed=false;const main=tiles.find(x=>x.id==='social');if(main){main.closed=false;main.min=false;setTimeout(()=>board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'}),0)}}else{t.min=!t.min;t.maxed=false}break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
 board.addEventListener('keydown',e=>{
