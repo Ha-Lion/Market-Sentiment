@@ -514,14 +514,14 @@ function v26SafeHistory(value){
   for(const r of value.records){
     if(!r || typeof r.date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date))continue;
     const t=Date.parse(r.date+'T12:00:00Z');
-    if(!Number.isFinite(t) || t>Date.now()+86400000 || t<Date.now()-366*86400000)continue;
+    if(!Number.isFinite(t) || t>Date.now()+86400000 || t<Date.now()-731*86400000)continue;
     const record={date:r.date};
     for(const [field,key] of [['global','global_psi'],['us','us_psi'],['europe','europe_psi']]){
       const n=r[key];record[field]=(typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=100)?n:null;
     }
     unique.set(r.date,record);
   }
-  return [...unique.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-90);
+  return [...unique.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-730);
 }
 function v26Trend(region){
   const pts=v26History.filter(x=>x[region]!==null).slice(-14);
@@ -905,7 +905,7 @@ async function v52RefreshNews(){
   if(msg)msg.textContent=v31Headlines.length?`News updated · ${v31Headlines.length} recent articles`:'No recent articles are available right now.';
   const existingSource=document.getElementById('v42Source');
   if(existingSource){
-   const sources=[...new Set([...v31Headlines,...Object.values(v51Saved)].map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
+   const sources=[...new Set(v63AvailableNews().map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
    const selected=existingSource.value;
    existingSource.replaceChildren(new Option('All sources',''),...sources.map(x=>new Option(x,x)));
    existingSource.value=sources.includes(selected)?selected:'';
@@ -924,10 +924,44 @@ async function v52RefreshNews(){
   if(current){current.disabled=false;current.textContent='Refresh news';}
  }
 }
+// V63 — Excel §6: search the website's actual 60-day news cache.
+// Read-only and same-origin; no fabricated articles or off-site scraping.
+let v63Archive=[],v63ArchiveLoaded=false,v63ArchiveLoading=false,v63ArchiveError='';
+function v63ConvertArticle(row){
+ if(!row||typeof row.title!=='string'||typeof row.link!=='string')return null;
+ let url;try{url=new URL(row.link);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)return null}catch{return null}
+ const time=Date.parse(row.published_utc||row.published||'');
+ if(!Number.isFinite(time)||time>Date.now()+3600000||time<Date.now()-90*86400000)return null;
+ return {id:'real-'+url.href,url:url.href,title:row.title.slice(0,450),description:String(row.description||'').slice(0,700),source:String(row.canonical_source||row.source||'Unknown source').slice(0,100),time};
+}
+function v63AvailableNews(){
+ const map=new Map();
+ for(const h of v63Archive)map.set(h.id,h);
+ for(const h of v31Headlines)map.set(h.id,h);
+ for(const h of Object.values(v51Saved))if(state.star[h.id])map.set(h.id,h);
+ return [...map.values()];
+}
+async function v63LoadArchive(){
+ if(v63ArchiveLoaded||v63ArchiveLoading)return;
+ v63ArchiveLoading=true;v63ArchiveError='';
+ const status=document.getElementById('v63ArchiveStatus');if(status)status.textContent='Loading website articles…';
+ try{
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),25000);
+  let response;try{response=await fetch('news_cache.json',{cache:'no-store',credentials:'omit',mode:'same-origin',signal:controller.signal})}finally{clearTimeout(timer)}
+  if(!response.ok)throw Error('News archive unavailable');
+  const data=await response.json();if(!data||!Array.isArray(data.articles))throw Error('News archive unavailable');
+  const articles=new Map();
+  for(const row of data.articles.slice(0,15000)){const item=v63ConvertArticle(row);if(item)articles.set(item.id,item)}
+  v63Archive=[...articles.values()];v63ArchiveLoaded=true;
+  const select=document.getElementById('v42Source');
+  if(select){const original=select.value;const sources=[...new Set(v63AvailableNews().map(h=>h.source))].sort((a,b)=>a.localeCompare(b));select.replaceChildren(new Option('All sources',''),...sources.map(a=>new Option(a,a)));select.value=sources.includes(original)?original:'';}
+ }catch(e){v63ArchiveError='Older articles are temporarily unavailable; recent news is still searchable.';console.warn('V63 website news cache unavailable',e)}
+ finally{v63ArchiveLoading=false;const msg=document.getElementById('v63ArchiveStatus');if(msg)msg.textContent=v63ArchiveLoaded?`${v63Archive.length.toLocaleString()} website articles available to search`:v63ArchiveError;v42RenderResults()}
+}
 function v42SearchPane(){
  const markets=[...new Set(ASSETS.map(v59Group))].sort((a,b)=>a.localeCompare(b));
- const sources=[...new Set([...v31Headlines,...Object.values(v51Saved)].map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
- open('Search News & Articles',`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Market<select id="v61Market"><option value="">All markets</option>${markets.map(a=>`<option value="${safe(a)}" ${v42SearchState.market===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v42Results" aria-live="polite"></div>`);
+ const sources=[...new Set(v63AvailableNews().map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
+ open('Search News & Articles',`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Market<select id="v61Market"><option value="">All markets</option>${markets.map(a=>`<option value="${safe(a)}" ${v42SearchState.market===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v63ArchiveStatus" class="muted" role="status" aria-live="polite" style="padding:2px 0 8px"></div><div id="v42Results" aria-live="polite"></div>`);
  const search=()=>{v42SearchState={keyword:$('#v42Keyword').value.trim(),market:$('#v61Market').value,asset:$('#v42Asset').value,source:$('#v42Source').value,order:$('#v42Order').value,favorites:$('#v43Favorites').checked};v43Page=0;v48SaveNewsPreferences();v42RenderResults();};
  $('#v42Submit').onclick=search;
  $('#v52RefreshNews').onclick=v52RefreshNews;
@@ -937,16 +971,17 @@ function v42SearchPane(){
  $('#v42Keyword').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();search();}};
  for(const id of ['v61Market','v42Asset','v42Source','v42Order','v43Favorites'])$('#'+id).onchange=search;
  v42RenderResults();
+ v63LoadArchive();
 }
 function v42RenderResults(){
  const out=$('#v42Results');if(!out)return;
  const {keyword,market,asset,source,order,favorites}=v42SearchState;
  const q=keyword.toLocaleLowerCase().trim();
- const items=v51NewsItems(favorites).filter(h=>(!q||(h.title+' '+h.description+' '+h.source).toLocaleLowerCase().includes(q))&&(!source||h.source===source)&&(!market||ASSETS.some(a=>v59Group(a)===market&&v31MatchesAsset(h,a)))&&(!asset||v31MatchesAsset(h,asset))&&(!favorites||!!state.star[h.id])).sort((a,b)=>order==='oldest'?a.time-b.time:b.time-a.time);
+ const items=(favorites?v51NewsItems(true):v63AvailableNews()).filter(h=>(!q||(h.title+' '+h.description+' '+h.source).toLocaleLowerCase().includes(q))&&(!source||h.source===source)&&(!market||ASSETS.some(a=>v59Group(a)===market&&v31MatchesAsset(h,a)))&&(!asset||v31MatchesAsset(h,asset))&&(!favorites||!!state.star[h.id])).sort((a,b)=>order==='oldest'?a.time-b.time:b.time-a.time);
  const pages=Math.max(1,Math.ceil(items.length/v43PageSize));v43Page=Math.max(0,Math.min(v43Page,pages-1));
  const visible=items.slice(v43Page*v43PageSize,(v43Page+1)*v43PageSize);
  const cards=visible.map(h=>`<article class="v42-result"><div class="v43-cardtop"><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}</span><button type="button" class="v43-save" data-v43-save="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove saved article':'Save article'}" title="${state.star[h.id]?'Remove saved article':'Save article'}">${state.star[h.id]?'★':'☆'}</button></div><div class="v42-headline">${safe(h.title)}</div>${h.description?`<p>${safe(h.description)}</p>`:''}<a href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" class="v42-articlelink" data-v43-open="${safe(h.id)}">Read article ↗</a></article>`).join('');
- out.innerHTML=`<div class="v42-resultsheading"><strong>${items.length} ${items.length===1?'article':'articles'}</strong><span class="muted">${favorites?'Your saved articles':'Recent headlines'}</span></div>${items.length?cards:'<div class="v42-empty">No articles found. Try another keyword or change your filters.</div>'}${items.length>v43PageSize?`<nav class="v43-pages" aria-label="News search pages"><button class="btn" data-v43-page="prev" ${v43Page===0?'disabled':''}>← Previous</button><span>Page ${v43Page+1} of ${pages}</span><button class="btn" data-v43-page="next" ${v43Page===pages-1?'disabled':''}>Next →</button></nav>`:''}<p class="v42-footnote">Searches recent headlines and your saved articles. Full website archive search is not yet connected.</p>`;
+ out.innerHTML=`<div class="v42-resultsheading"><strong>${items.length} ${items.length===1?'article':'articles'}</strong><span class="muted">${favorites?'Your saved articles':v63ArchiveLoaded?'Website news cache':'Recent headlines'}</span></div>${items.length?cards:'<div class="v42-empty">No articles found. Try another keyword or change your filters.</div>'}${items.length>v43PageSize?`<nav class="v43-pages" aria-label="News search pages"><button class="btn" data-v43-page="prev" ${v43Page===0?'disabled':''}>← Previous</button><span>Page ${v43Page+1} of ${pages}</span><button class="btn" data-v43-page="next" ${v43Page===pages-1?'disabled':''}>Next →</button></nav>`:''}<p class="v42-footnote">Searches available website news (up to 60 days) and saved articles. Older archives depend on website availability.</p>`;
 }
 modal.addEventListener('click',e=>{
  const saved=e.target.closest('[data-v43-save]');
