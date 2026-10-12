@@ -322,6 +322,32 @@
 </style>
 
   
+  <style id="ec-v13-settings-streamline">
+    /* Remove unneeded markets tile, preserve all underlying calendar behaviors. */
+    .ec-settings-grid{grid-template-columns:minmax(0,1fr) minmax(270px,.36fr)!important;gap:10px!important;align-items:start;}
+    .ec-settings-preferences{grid-column:1/-1!important;grid-row:1!important;}
+    .ec-settings-countries{grid-column:1!important;grid-row:2!important;}
+    .ec-settings-alerts{grid-column:2!important;grid-row:2!important;}
+    .ec-settings-panel{padding:10px!important;}
+    .ec-settings-group{padding:10px!important;}
+    .ec-settings-group h3{margin-bottom:7px!important;}
+    .ec-settings-preferences .ec-pref-section{padding-bottom:7px!important;margin-bottom:7px!important;}
+    .ec-settings-preferences .ec-checks{grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:5px 8px!important;}
+    .ec-settings-countries .ec-checks{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px 8px!important;}
+    .ec-settings-alerts .ec-contact-grid{display:grid!important;gap:6px!important;}
+    .ec-settings-alerts .ec-contact-grid>div,.ec-settings-alerts .ec-contact-grid>label{min-width:0;}
+    .ec-settings-alerts .ec-checks{display:flex!important;flex-wrap:wrap;gap:8px!important;}
+    @media(max-width:950px){
+      .ec-settings-grid{grid-template-columns:1fr!important;}
+      .ec-settings-preferences,.ec-settings-countries,.ec-settings-alerts{grid-column:1!important;grid-row:auto!important;}
+      .ec-settings-preferences .ec-checks{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+      .ec-settings-countries .ec-checks{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+    }
+    @media(max-width:560px){
+      .ec-settings-preferences .ec-checks,.ec-settings-countries .ec-checks{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+    }
+  </style>
+
 <style id="ec-v27-intelligence">
   .ec-market-tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .ec-tool-btn{border:1px solid var(--ec-border);background:var(--ec-card);color:var(--ec-text);border-radius:8px;padding:7px 9px;font:inherit;font-size:10px;font-weight:800;cursor:pointer}
@@ -856,7 +882,7 @@
 
         <span class="ec-toolbar-spacer"></span>
         <label class="ec-view-toggle" title="Optional: hide events that have already been released"><input id="upcoming-only" type="checkbox"> Upcoming only</label>
-        <label class="ec-view-toggle" title="Show only events related to markets selected in Settings"><input id="my-markets-only" type="checkbox"> My Markets only</label>
+        <label class="ec-view-toggle" hidden style="display:none!important"><input id="my-markets-only" type="checkbox"> My Markets only</label>
         <button id="refresh-btn" class="ec-action" type="button">↻ Refresh</button>
         <button id="export-csv" class="ec-tool-btn" type="button" title="Export visible events to CSV">CSV</button>
         <button id="export-ics" class="ec-tool-btn" type="button" title="Export visible events to calendar file">ICS</button>
@@ -907,25 +933,7 @@
             </div>
 
             <div class="ec-settings-group ec-settings-preferences">
-              <h3>Markets / Watchlist, Impact & Event Classification</h3>
-
-              <div class="ec-pref-section">
-                <div class="ec-pref-title">Markets / Watchlist</div>
-                <div class="ec-my-markets">
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="SPY"> SPY</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="USD"> USD</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Treasuries"> Treasuries</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Gold"> Gold</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="EUR"> EUR</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="GBP"> GBP</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="JPY"> JPY</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="WTI"> WTI</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Brent"> Brent</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="Copper"> Copper</label>
-                  <label class="ec-check"><input type="checkbox" name="saved-market" value="BTC"> BTC</label>
-                </div>
-                <div id="watchlist-link-note" class="ec-reminder-note">Logged-in members automatically use their existing Watchlist. Manual selections are used as fallback.</div>
-              </div>
+              <h3>Impact & Event Classification</h3>
 
               <div class="ec-pref-section">
                 <div class="ec-pref-title">Impact</div>
@@ -948,6 +956,10 @@
                   <label class="ec-check"><input type="checkbox" name="saved-category" value="Trade" checked> Trade</label>
                   <label class="ec-check"><input type="checkbox" name="saved-category" value="Government" checked> Government / Fiscal</label>
                   <label class="ec-check"><input type="checkbox" name="saved-category" value="Consumer" checked> Consumer</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Holiday" checked> Holidays / Market Closures</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Auction" checked> Bond Auctions / Debt</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Speech" checked> Speeches / Meetings</label>
+                  <label class="ec-check"><input type="checkbox" name="saved-category" value="Markets" checked> Market / Financial Events</label>
                   <label class="ec-check"><input type="checkbox" name="saved-category" value="Other" checked> Other</label>
                 </div>
               </div>
@@ -1238,7 +1250,7 @@
 
     const DEFAULT_SETTINGS = {
       countries:["US","EU","GB","JP","CA"],
-      categories:["Inflation","Labor","Central Bank","Growth","Energy","Housing","Trade","Government","Consumer","Other"],
+      categories:["Inflation","Labor","Central Bank","Growth","Energy","Housing","Trade","Government","Consumer","Holiday","Auction","Speech","Markets","Other"],
       impacts:["high","medium","low"],
       timezone:"America/New_York",
       reminder_email:false,
@@ -1640,6 +1652,10 @@
 
     function classifyEvent(e){
       const s = `${e.category||""} ${e.event||""}`.toLowerCase();
+      if(/holiday|thanksgiving|sport day|market closed|bank holiday|public holiday|national day/.test(s)) return "Holiday";
+      if(/auction|t-bill|treasury bill|bond sale|gilt sale|bund|btf\b|bubill/.test(s)) return "Auction";
+      if(/speaks|speech|meeting minutes|meetings|testimony|press conference|symposium/.test(s)) return "Speech";
+      if(/stock market open|trading hours|exchange hours|market hours/.test(s)) return "Markets";
       if(/cpi|pce|inflation|price index|ppi|consumer price|producer price/.test(s)) return "Inflation";
       if(/employment|unemployment|payroll|job|jolts|claims|wage|earnings/.test(s)) return "Labor";
       if(/central bank|interest rate|rate decision|fed|fomc|ecb|boe|boj|rba|rbnz|snb|monetary/.test(s)) return "Central Bank";
@@ -1726,7 +1742,12 @@
       const s=v&&typeof v==="object"?v:{};
       return {
         countries:Array.isArray(s.countries)&&s.countries.length?s.countries:[...DEFAULT_SETTINGS.countries],
-        categories:Array.isArray(s.categories)&&s.categories.length?s.categories:[...DEFAULT_SETTINGS.categories],
+        categories:(()=>{
+          const existing=Array.isArray(s.categories)&&s.categories.length?s.categories:[...DEFAULT_SETTINGS.categories];
+          const oldDefaults=["Inflation","Labor","Central Bank","Growth","Energy","Housing","Trade","Government","Consumer","Other"];
+          return oldDefaults.every(c=>existing.includes(c))
+            ? [...new Set([...existing,"Holiday","Auction","Speech","Markets"])] : existing;
+        })(),
         impacts:Array.isArray(s.impacts)&&s.impacts.length?s.impacts:[...DEFAULT_SETTINGS.impacts],
         timezone:typeof s.timezone==="string"&&s.timezone?s.timezone:DEFAULT_SETTINGS.timezone,
         reminder_email:Boolean(s.reminder_email),
@@ -3720,7 +3741,7 @@
         reminder_sms:wantsSms,
         reminder_desktop:document.getElementById("default-desktop-reminder").checked,
         reminder_minutes:Number(document.getElementById("default-reminder-minutes").value||30),
-        my_markets:selectedValues("saved-market")
+        my_markets:[...settings.my_markets]
       };
       if(!next.countries.length||!next.categories.length||!next.impacts.length){
         status.textContent="Keep at least one option in each group.";
