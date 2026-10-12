@@ -827,7 +827,6 @@
       </div>
       <div class="ec-status-wrap">
         <span id="feed-status" class="ec-badge loading">Loading live data</span>
-        <span id="ec-data-health" class="ec-badge ec-health-monitor" role="status" aria-live="polite" title="Source data completeness is checked separately from feed connectivity">Data coverage: checking</span>
         <span id="countdown-badge" class="ec-badge">Next event: —</span>
       </div>
     </header>
@@ -1873,10 +1872,7 @@
         return dt&&dt.getTime()<Date.now();
       });
       const pastActual=past.filter(e=>numericReleaseValue(e.actual)).length;
-      if(past.length>=3&&pastActual===0){
-        warning.textContent=`Source data limitation: ${past.length} past economic releases currently have no Actual values in this feed. Forecasts supplied: ${coverage.forecast}/${coverage.total}; previous values: ${coverage.previous}/${coverage.total}. History charts are archival and do not establish the original release value.`;
-        warning.classList.add("show");
-      }else if(data?.provider_error){
+      if(data?.provider_error){
         warning.textContent="Economic calendar provider reported incomplete data: "+String(data.provider_error).slice(0,180);
         warning.classList.add("show");
       }
@@ -2764,8 +2760,7 @@
         Classification: ${esc(classifyEvent(e))}
         ${e.currency?` · Currency: ${esc(e.currency)}`:""}
         ${e.unit?` · Unit: ${esc(e.unit)}`:""}
-        ${sourceUrl?`<br><a href="${esc(sourceUrl)}" target="_blank" rel="noopener">Open source</a>`:""}
-        ${currentUser?`<br><a href="watchlist.html">Open My Watchlist</a>`:""}`;
+        `;
     }
 
     async function openEventModal(e){
