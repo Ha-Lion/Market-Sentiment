@@ -431,7 +431,7 @@ function v31Visible(){
    (state.star[h.id] ? now-Number(state.star[h.id])<30*86400000 :
     v31ReadFlag(h.id) ? now-Number(state.read[h.id])<48*3600000 : now-h.time<7*86400000));
 }
-function v31Unread(){return v31Visible().filter(h=>!v31ReadFlag(h.id)).length}
+function v31Unread(){return v31Visible().filter(h=>v34SourceEnabled(h.source)&&!v31ReadFlag(h.id)).length}
 function v31LoadHeadlines(feed){
  const input=Array.isArray(feed?.psi_headlines)?feed.psi_headlines:[];
  const now=Date.now(),seen=new Set();v31Headlines=[];
@@ -451,12 +451,12 @@ let v32Query='',v32Source='',v32UnreadOnly=false;
 let v33FavoritesOnly=false,v33Sort='newest';
 // V34: publisher preferences reflect publishers actually available in the PSI feed.
 // An absent preference means all sources (avoids accidentally hiding articles in old layouts).
-function v34AvailableSources(){return [...new Set(v57RecentHeadlines().map(h=>h.source).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
+function v34AvailableSources(){return [...new Set([...v57RecentHeadlines(),...v63AvailableNews()].map(h=>h.source).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function v34SourceEnabled(source){return !Array.isArray(state.newsFeedSources)||state.newsFeedSources.includes(source)}
 // Excel 9.3: full publisher name and logo beside each unlimited source checkbox.
 // Source icons are loaded only from validated publication URLs; fallback initials when unavailable.
 function v54PublisherLogo(source){
- const article=v57RecentHeadlines().find(h=>h.source===source&&h.url);
+ const article=v63AvailableNews().find(h=>h.source===source&&h.url)||v57RecentHeadlines().find(h=>h.source===source&&h.url);
  let icon='';
  if(article){try{const u=new URL(article.url);if(u.protocol==='https:')icon=u.origin+'/favicon.ico'}catch{}}
  const initials=String(source||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
@@ -464,12 +464,12 @@ function v54PublisherLogo(source){
 }
 function v34SourceSettings(){
  const available=v34AvailableSources();
- open('Watchlist News Sources',`<p class="notice">Choose which publishers appear in your watchlist news. These options reflect sources currently available in the website PSI headline feed.</p><p class="muted">${available.length} available publishers. Newly appearing publishers are included automatically when all are selected.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" data-v34-all="1">Select all</button><button class="btn" data-v34-none="1">Clear selection</button><button class="btn" data-v34-back="1">Back to News</button></div><div class="grid2">${available.map(src=>`<label class="v54-source-option"><input type="checkbox" data-v34-source="${safe(src)}" ${v34SourceEnabled(src)?'checked':''}><span class="v54-source-logo">${v54PublisherLogo(src)}</span><span>${safe(src)}</span></label>`).join('')||'<p>No publishers currently available from the news feed.</p>'}</div>`);
+ open('Watchlist News Sources',`<p class="notice">Choose which publishers appear in your watchlist news. These options reflect sources currently available in the website PSI headline feed.</p><p class="muted">${available.length} available publishers · ${available.filter(v34SourceEnabled).length} selected. Newly appearing publishers are included automatically when all are selected.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" data-v34-all="1">Select all</button><button class="btn" data-v34-none="1">Clear selection</button><button class="btn" data-v34-back="1">Back to News</button></div><p class="muted v65-source-selection" aria-live="polite">${available.filter(v34SourceEnabled).length} of ${available.length} publishers selected</p><div class="grid2">${available.map(src=>`<label class="v54-source-option"><input type="checkbox" data-v34-source="${safe(src)}" ${v34SourceEnabled(src)?'checked':''}><span class="v54-source-logo">${v54PublisherLogo(src)}</span><span>${safe(src)}</span></label>`).join('')||'<p>No publishers currently available from the news feed.</p>'}</div>`);
 }
 
 function v31NewsPane(){
- const all=v31Visible();
- const sources=[...new Set(all.filter(h=>v34SourceEnabled(h.source)).map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
+ const all=v31Visible().filter(h=>v34SourceEnabled(h.source));
+ const sources=[...new Set(all.map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
  if(v32Source&&(!sources.includes(v32Source)||!v34SourceEnabled(v32Source)))v32Source='';
  const q=v32Query.toLocaleLowerCase().trim();
  const items=all.filter(h=>v34SourceEnabled(h.source)&&(!q||[h.title,h.source].join(' ').toLocaleLowerCase().includes(q))&&(!v32Source||h.source===v32Source)&&(!v32UnreadOnly||!v31ReadFlag(h.id))&&(!v33FavoritesOnly||!!state.star[h.id])).sort((a,b)=>v33Sort==='oldest'?a.time-b.time:b.time-a.time);
@@ -483,14 +483,14 @@ function v32Refresh(){v31NewsPane()}
 modal.addEventListener('click',e=>{
  if(e.target.closest('[data-v34-manage]')){v34SourceSettings();return}
  if(e.target.closest('[data-v34-back]')){v31NewsPane();return}
- if(e.target.closest('[data-v34-all]')){state.newsFeedSources=null;persist();v34SourceSettings();return}
- if(e.target.closest('[data-v34-none]')){state.newsFeedSources=[];persist();v34SourceSettings();return}
+ if(e.target.closest('[data-v34-all]')){state.newsFeedSources=null;persist();render();v34SourceSettings();return}
+ if(e.target.closest('[data-v34-none]')){state.newsFeedSources=[];persist();render();v34SourceSettings();return}
 });
 modal.addEventListener('change',e=>{
  const cb=e.target.closest('[data-v34-source]');if(!cb)return;
  const all=v34AvailableSources();const chosen=new Set(Array.isArray(state.newsFeedSources)?state.newsFeedSources:all);
  if(cb.checked)chosen.add(cb.dataset.v34Source);else chosen.delete(cb.dataset.v34Source);
- state.newsFeedSources=chosen.size===all.length?null:[...chosen];persist();
+ state.newsFeedSources=chosen.size===all.length?null:[...chosen];persist();render();const note=body.querySelector('.v65-source-selection');if(note)note.textContent=chosen.size+' of '+all.length+' publishers selected';
 });
 modal.addEventListener('change',e=>{
  if(e.target.id==='v32Source'){v32Source=e.target.value;v32Refresh()}
