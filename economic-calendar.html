@@ -784,8 +784,8 @@
     @media(min-width:1200px){
       .ec-table th,.ec-table td{padding-left:16px;padding-right:16px;}
       .ec-table th:nth-child(4),.ec-table td:nth-child(4){width:28%;}
-      .ec-table th:nth-child(8),.ec-table td:nth-child(8){width:110px;}
-      .ec-table th:nth-child(9),.ec-table td:nth-child(9){width:17%;}
+      .ec-table th:nth-child(5),.ec-table td:nth-child(5){width:110px;}
+      .ec-table th:nth-child(5),.ec-table td:nth-child(5){width:17%;}
       .ec-table th:nth-child(10),.ec-table td:nth-child(10){width:176px;}
     }
     @media(max-width:1100px){
@@ -1020,7 +1020,7 @@
           <thead>
             <tr>
               <th>Time</th><th>Country</th><th>Impact</th><th>Event</th>
-              <th>Actual</th><th>Revised</th><th>Forecast</th><th>Previous</th><th>12M History</th><th>Relevant Assets</th><th>Actions</th>
+              <th>12M History</th><th>Previous</th><th>Forecast</th><th>Actual</th><th>Revised</th><th>Relevant Assets</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="calendar-body">
@@ -1921,11 +1921,11 @@
               <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(eventUIKey(e))}">i</button>
               <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
             </td>
+            <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
+            <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
+            <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,e.unit)}</td>
             <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,e.unit)}</td>
             <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,e.unit)}</td>
-            <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,e.unit)}</td>
-            <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
-            <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
@@ -3990,7 +3990,7 @@
 
     function exportVisibleCSV(){
       const rows=visibleEvents();
-      const lines=[["Time","Country","Impact","Event","Actual","Revised","Forecast","Previous","Classification","Relevant Assets"]];
+      const lines=[["Time","Country","Impact","Event","12M History","Previous","Forecast","Actual","Revised","Classification","Relevant Assets"]];
       rows.forEach(e=>{
         const d=parseProviderDate(e.date);
         const c=displayCountry(e);
@@ -3999,10 +3999,11 @@
           c.name,
           impactFromImportance(e.importance),
           e.event||e.category||"",
+          "", // 12M History is a visual chart; no scalar value to export
+          e.previous??"",
+          e.forecast??e.te_forecast??"",
           e.actual??"",
           e.revised??"",
-          e.forecast??e.te_forecast??"",
-          e.previous??"",
           classifyEvent(e),
           relevantAssets(e).join(" | ")
         ]);
