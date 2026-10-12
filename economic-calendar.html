@@ -481,6 +481,27 @@
   }
 </style>
 
+
+<style id="ec-v15-chart-and-settings-audit">
+  /* Keep original Save action programmatically reachable, not duplicated below Countries. */
+  #settings-panel #settings-save[hidden],
+  #settings-panel #settings-reset[hidden]{display:none!important;}
+  #settings-panel .ec-settings-actions{min-height:0;margin-top:0;padding:0;}
+  #settings-panel .ec-save-status{margin-left:auto;}
+  .ec-history-heading{font-size:12px;font-weight:850;margin:0 0 8px;color:var(--ec-text);}
+  .ec-modal .ec-hist-value,
+  .ec-modal .ec-hist-label{
+    color:#fff!important;
+    opacity:1!important;
+    font-size:11px!important;
+    font-weight:900!important;
+    letter-spacing:0!important;
+    text-shadow:0 1px 2px #081020, 0 0 4px #081020;
+  }
+  .ec-modal .ec-hist-value{background:rgba(5,14,31,.82);border-radius:3px;padding:2px 3px;z-index:2;}
+  .ec-modal .ec-hist-label{background:rgba(5,14,31,.90);border-radius:3px;padding:2px 3px;z-index:2;}
+  .ec-modal .ec-hist-col{min-width:72px;flex-basis:72px;}
+</style>
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
   <style>
     :root{
@@ -958,8 +979,8 @@
 
           <div class="ec-settings-actions">
             <span id="settings-save-status" class="ec-save-status"></span>
-            <button id="settings-reset" class="ec-settings-button" type="button">Reset</button>
-            <button id="settings-save" class="ec-tab active" type="button">Save Now</button>
+            <button id="settings-reset" class="ec-settings-button" type="button" hidden aria-hidden="true" tabindex="-1">Reset</button>
+            <button id="settings-save" class="ec-tab active" type="button" hidden aria-hidden="true" tabindex="-1">Save Now</button>
           </div>
         </fieldset>
       </div>
@@ -1039,12 +1060,7 @@
           </section>
 
           <section class="ec-detail-section">
-            <div class="ec-chart-controls">
-              <button class="ec-chart-toggle active" data-chart-series="history" type="button">History</button>
-              <button class="ec-chart-toggle" data-chart-series="actual" type="button">Actual</button>
-              <button class="ec-chart-toggle" data-chart-series="forecast" type="button">Forecast</button>
-              <button class="ec-chart-toggle" data-chart-series="previous" type="button">Previous</button>
-            </div>
+            <h3 class="ec-history-heading">Historical observations</h3>
             <div class="ec-big-chart-wrap ec-histogram-wrap">
               <div id="event-big-chart" class="ec-histogram" aria-label="12-month historical histogram"></div>
               <div id="event-chart-callout" class="ec-chart-callout" hidden></div>
@@ -3955,13 +3971,7 @@
       if(ev.key==="Escape" && document.getElementById("event-modal-backdrop").classList.contains("open")) closeEventModal();
     });
 
-    document.querySelectorAll(".ec-chart-toggle").forEach(btn=>btn.addEventListener("click",()=>{
-      activeChartSeries=btn.dataset.chartSeries;
-      document.querySelectorAll(".ec-chart-toggle").forEach(x=>x.classList.toggle("active",x===btn));
-      if(!activeModalEvent)return;
-      const hist=historyCache.get(historyKey(activeModalEvent));
-      drawCanvasLine(document.getElementById("event-big-chart"),hist?.history||[],activeChartSeries);
-    }));
+
 
 
 
