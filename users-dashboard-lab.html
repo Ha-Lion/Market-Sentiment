@@ -477,21 +477,13 @@ const v81Views=new Map();
 function v81Key(a,kind){return kind+'|'+a+'|'+v79Period+'|'+(state.historyDays||0)}
 function v81View(key,points){let v=v81Views.get(key);const first=points[0].time,last=points.at(-1).time;if(!v)return {start:first,end:last,lo:0,hi:100};return {start:Math.max(first,Math.min(last-1,v.start)),end:Math.max(first+1,Math.min(last,v.end)),lo:v.lo,hi:v.hi};}
 function plot(a,kind){
- const all=v79RangePoints(a).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)&&p.value>=0&&p.value<=100).sort((x,y)=>x.time-y.time);
- if(all.length<2)return `<div class="notice">Not enough ${safe(v79Period)} PSI history for ${safe(a)}.</div>`;
- const key=v81Key(a,kind),v=v81View(key,all),points=all.filter(p=>p.time>=v.start&&p.time<=v.end);
- const W=1000,H=360,L=64,R=64,T=20,B=48,PW=W-L-R,PH=H-T-B;
- const x=t=>L+(t-v.start)/(v.end-v.start)*PW,y=n=>T+(v.hi-n)/(v.hi-v.lo)*PH;
- const gridY=Array.from({length:9},(_,i)=>{let val=v.lo+(v.hi-v.lo)*i/8;return `<line x1="${L}" y1="${y(val)}" x2="${W-R}" y2="${y(val)}" class="v80-grid"/><text x="${W-R+9}" y="${y(val)+4}" class="v80-axis">${Number(val.toFixed(1))}</text>`}).join('');
- const gridX=Array.from({length:9},(_,i)=>{let t=v.start+(v.end-v.start)*i/8,xx=x(t);return `<line x1="${xx}" y1="${T}" x2="${xx}" y2="${H-B}" class="v80-grid"/><text x="${xx}" y="${H-13}" text-anchor="middle" class="v80-axis">${safe(new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'}))}</text>`}).join('');
- let path='',area='';if(points.length){path=points.map((p,i)=>`${i?'L':'M'}${x(p.time).toFixed(2)} ${y(p.value).toFixed(2)}`).join(' ');area=path+` L${x(points.at(-1).time).toFixed(2)} ${H-B} L${x(points[0].time).toFixed(2)} ${H-B} Z`;}
- return `<div class="v80-chart v82-chart" data-v80-chart data-v81-key="${safe(key)}" data-v80-points="${safe(JSON.stringify(points.map(p=>[p.time,p.value])))}" data-v81-start="${v.start}" data-v81-end="${v.end}" data-v81-lo="${v.lo}" data-v81-hi="${v.hi}" tabindex="0" role="group" aria-label="${safe(a)} PSI chart: mouse wheel zooms dates, drag plot to pan, drag axes to scale, double click to reset, shift wheel zooms PSI scale.">
- <svg class="v80-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"><defs><linearGradient id="psi-area-${safe(kind)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#57cbbd" stop-opacity=".30"/><stop offset="1" stop-color="#57cbbd" stop-opacity=".02"/></linearGradient><clipPath id="v81clip-${safe(kind)}"><rect x="${L}" y="${T}" width="${PW}" height="${PH}"/></clipPath></defs>
- ${gridY}${gridX}${v.lo<=50&&v.hi>=50?`<line x1="${L}" x2="${W-R}" y1="${y(50)}" y2="${y(50)}" stroke="#43cdb9" stroke-dasharray="5 6"/>`:''}
- <g clip-path="url(#v81clip-${safe(kind)})"><path d="${area}" fill="url(#psi-area-${safe(kind)})"/><path d="${path}" fill="none" stroke="#54d4c4" stroke-width="2.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></g>
- <line data-v80-cross-x x1="0" y1="${T}" x2="0" y2="${H-B}" class="v80-cross" visibility="hidden"/><line data-v80-cross-y x1="${L}" y1="0" x2="${W-R}" y2="0" class="v80-cross" visibility="hidden"/><circle data-v80-dot r="5" cx="0" cy="0" fill="#f7cd78" stroke="#08182c" stroke-width="2" visibility="hidden"/>
- <rect data-psi-x-axis x="64" y="312" width="872" height="48" fill="transparent"/><rect data-psi-y-axis x="936" y="20" width="64" height="292" fill="transparent"/>
- </svg><div class="v80-tooltip" data-v80-tooltip hidden></div></div>`;
+ const points=v79RangePoints(a).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)&&p.value>=0&&p.value<=100).sort((x,y)=>x.time-y.time);
+ if(points.length<2)return `<div class="notice">Not enough ${safe(v79Period)} PSI history for ${safe(a)}.</div>`;
+ // TradingView Lightweight Charts: same interaction engine as the Interactive Dashboard.
+ const rows=points.map(p=>({time:new Date(p.time).toISOString().slice(0,10),value:+p.value.toFixed(4)}));
+ // Deduplicate by UTC day: Lightweight Charts requires strictly increasing times.
+ const daily=[...new Map(rows.map(p=>[p.time,p])).values()].sort((x,y)=>x.time.localeCompare(y.time));
+ return `<div class="v84-chart" data-v84-chart data-v84-series="${safe(JSON.stringify(daily))}" role="group" aria-label="${safe(a)} PSI history; scroll wheel to zoom, drag plot to pan, drag date or value axis to rescale" tabindex="0"></div>`;
 }
 function v81Commit(chart,op,delta=0){const key=chart.dataset.v81Key,all=key.split('|'),asset=all[1],kind=all[0];const data=v79RangePoints(asset).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)).sort((a,b)=>a.time-b.time);if(data.length<2)return;const first=data[0].time,last=data.at(-1).time;let v=v81View(key,data),span=v.end-v.start,mid=(v.start+v.end)/2,ys=v.hi-v.lo,ym=(v.hi+v.lo)/2;
  if(op==='reset'){v={start:first,end:last,lo:0,hi:100}};
@@ -1947,4 +1939,46 @@ document.addEventListener('keydown',e=>{
 
 })();
 </script><button aria-label="Back to top" class="back-top" id="v17BackTop" title="Return to dashboard header" type="button">↑ Top</button>
-<script>(function(){const b=document.getElementById('v17BackTop');if(!b)return;function sync(){b.classList.toggle('visible',window.scrollY>550)}window.addEventListener('scroll',sync,{passive:true});b.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));sync()})();</script></body></html>
+<script>(function(){const b=document.getElementById('v17BackTop');if(!b)return;function sync(){b.classList.toggle('visible',window.scrollY>550)}window.addEventListener('scroll',sync,{passive:true});b.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));sync()})();</script><style id="v84-native-chart-style">
+.v84-chart{position:relative;flex:1 1 auto;min-height:185px;height:100%;width:100%;overflow:hidden;touch-action:none}
+.v84-chart table,.v84-chart canvas{max-width:none}
+</style>
+<script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script id="v84-native-chart-init">(function(){
+'use strict';
+const instances=new Map();
+function init(el){
+ if(el.dataset.v84Ready==='1'||!window.LightweightCharts)return;
+ const LW=window.LightweightCharts;
+ let data;try{data=JSON.parse(el.dataset.v84Series||'[]')}catch{return}
+ if(!Array.isArray(data)||data.length<2)return;
+ const width=Math.max(180,el.clientWidth),height=Math.max(185,el.clientHeight);
+ const chart=LW.createChart(el,{
+  width,height,autoSize:true,
+  layout:{background:{type:LW.ColorType.Solid,color:'#16273f'},textColor:'#b7c8dc',fontSize:12},
+  grid:{vertLines:{color:'rgba(140,166,197,.17)'},horzLines:{color:'rgba(140,166,197,.17)'}},
+  crosshair:{mode:LW.CrosshairMode.Normal,vertLine:{color:'#d9b66c',width:1,style:LW.LineStyle.Dashed,labelBackgroundColor:'#304761'},horzLine:{color:'#d9b66c',width:1,style:LW.LineStyle.Dashed,labelBackgroundColor:'#304761'}},
+  rightPriceScale:{visible:true,borderColor:'#546581',autoScale:true,scaleMargins:{top:.10,bottom:.10}},
+  leftPriceScale:{visible:false},
+  timeScale:{visible:true,borderColor:'#546581',timeVisible:false,rightOffset:2,barSpacing:12,minBarSpacing:1,fixLeftEdge:false,fixRightEdge:false},
+  handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
+  handleScale:{axisPressedMouseMove:{time:true,price:true},axisDoubleClickReset:true,mouseWheel:true,pinch:true},
+  localization:{priceFormatter:v=>Number(v).toFixed(1)}
+ });
+ const line=chart.addSeries(LW.AreaSeries,{lineColor:'#5bd0c3',topColor:'rgba(82,208,194,.30)',bottomColor:'rgba(82,208,194,.02)',lineWidth:2,priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true,priceFormat:{type:'price',precision:1,minMove:.1}});
+ line.setData(data);
+ const baseline=chart.addSeries(LW.LineSeries,{color:'rgba(110,216,205,.55)',lineStyle:LW.LineStyle.Dashed,lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
+ baseline.setData(data.map(p=>({time:p.time,value:50})));
+ chart.timeScale().fitContent();
+ el.dataset.v84Ready='1';instances.set(el,chart);
+}
+function refresh(){
+ document.querySelectorAll('[data-v84-chart]:not([data-v84-ready])').forEach(init);
+ for(const [el,chart] of instances)if(!el.isConnected){try{chart.remove()}catch(e){}instances.delete(el)}
+}
+const observer=new MutationObserver(()=>refresh());
+function start(){observer.observe(document.body,{childList:true,subtree:true});refresh();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.addEventListener('resize',refresh,{passive:true});
+window.addEventListener('pageshow',refresh);
+})();</script></body></html>
