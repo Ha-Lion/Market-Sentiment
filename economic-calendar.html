@@ -489,30 +489,17 @@
   #settings-panel .ec-settings-actions{min-height:0;margin-top:0;padding:0;}
   #settings-panel .ec-save-status{margin-left:auto;}
   .ec-history-heading{font-size:12px;font-weight:850;margin:0 0 8px;color:var(--ec-text);}
-  /* V16: clear, understated chart labels; no badges or heavy typography. */
   .ec-modal .ec-hist-value,
   .ec-modal .ec-hist-label{
     color:#fff!important;
-    background:transparent!important;
-    border:0!important;
-    border-radius:0!important;
-    box-shadow:none!important;
     opacity:1!important;
-    padding:0!important;
-    font-family:Arial,Helvetica,sans-serif!important;
-    font-size:10px!important;
-    font-weight:400!important;
+    font-size:11px!important;
+    font-weight:900!important;
     letter-spacing:0!important;
-    line-height:1.2!important;
-    text-shadow:none!important;
-    font-variant-numeric:tabular-nums;
-    z-index:2;
+    text-shadow:0 1px 2px #081020, 0 0 4px #081020;
   }
-  /* White type on dark panels; readable dark type on light panels. */
-  body:not(.dark-mode):not([data-theme="dark"]) .ec-modal .ec-hist-value,
-  body:not(.dark-mode):not([data-theme="dark"]) .ec-modal .ec-hist-label{
-    color:#26364d!important;
-  }
+  .ec-modal .ec-hist-value{background:rgba(5,14,31,.82);border-radius:3px;padding:2px 3px;z-index:2;}
+  .ec-modal .ec-hist-label{background:rgba(5,14,31,.90);border-radius:3px;padding:2px 3px;z-index:2;}
   .ec-modal .ec-hist-col{min-width:72px;flex-basis:72px;}
 </style>
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
@@ -1033,11 +1020,11 @@
           <thead>
             <tr>
               <th>Time</th><th>Country</th><th>Impact</th><th>Event</th>
-              <th>Actual</th><th>Forecast</th><th>Previous</th><th>12M History</th><th>Relevant Assets</th><th>Actions</th>
+              <th>Actual</th><th>Revised</th><th>Forecast</th><th>Previous</th><th>12M History</th><th>Relevant Assets</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="calendar-body">
-            <tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>
+            <tr><td colspan="11" class="ec-loading">Loading economic calendar…</td></tr>
           </tbody>
         </table>
       </div>
@@ -1908,7 +1895,7 @@
       document.getElementById("stat-next-name").textContent=next?next.event:"No upcoming event in view";
 
       if(!rows.length){
-        body.innerHTML='<tr><td colspan="10" class="ec-empty">No events match your current settings and filters.</td></tr>';
+        body.innerHTML='<tr><td colspan="11" class="ec-empty">No events match your current settings and filters.</td></tr>';
         updateCountdown();
         return;
       }
@@ -1919,7 +1906,7 @@
         const d=parseProviderDate(e.date);
         const dk=dayKey(d);
         if(dk!==lastDay){
-          html+=`<tr class="ec-day-row"><td colspan="10">${esc(dayLabel(d))}</td></tr>`;
+          html+=`<tr class="ec-day-row"><td colspan="11">${esc(dayLabel(d))}</td></tr>`;
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
@@ -1935,6 +1922,7 @@
               <small>${esc(classifyEvent(e))}${e.reference?` · ${esc(e.reference)}`:""}</small>
             </td>
             <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,e.unit)}</td>
+            <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,e.unit)}</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,e.unit)}</td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
@@ -3069,7 +3057,7 @@
       warning.classList.remove("show");
 
       if(!showedCached){
-        body.innerHTML='<tr><td colspan="10" class="ec-loading">Loading economic calendar…</td></tr>';
+        body.innerHTML='<tr><td colspan="11" class="ec-loading">Loading economic calendar…</td></tr>';
       }
 
       try{
@@ -3122,7 +3110,7 @@
         setStatus("error","Feed unavailable");
         warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
         warning.classList.add("show");
-        body.innerHTML=`<tr><td colspan="10" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
+        body.innerHTML=`<tr><td colspan="11" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
         document.getElementById("stat-events").textContent="—";
         document.getElementById("stat-high").textContent="—";
         document.getElementById("stat-next").textContent="—";
@@ -4002,7 +3990,7 @@
 
     function exportVisibleCSV(){
       const rows=visibleEvents();
-      const lines=[["Time","Country","Impact","Event","Actual","Forecast","Previous","Classification","Relevant Assets"]];
+      const lines=[["Time","Country","Impact","Event","Actual","Revised","Forecast","Previous","Classification","Relevant Assets"]];
       rows.forEach(e=>{
         const d=parseProviderDate(e.date);
         const c=displayCountry(e);
@@ -4011,9 +3999,10 @@
           c.name,
           impactFromImportance(e.importance),
           e.event||e.category||"",
-          e.actual||"",
-          e.forecast||e.te_forecast||"",
-          e.previous||"",
+          e.actual??"",
+          e.revised??"",
+          e.forecast??e.te_forecast??"",
+          e.previous??"",
           classifyEvent(e),
           relevantAssets(e).join(" | ")
         ]);
