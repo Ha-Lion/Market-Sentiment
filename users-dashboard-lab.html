@@ -245,6 +245,21 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 
 /* V76: independent indicator tiles and accurately scaled inline charts */
 .v76-indicator{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:10px;margin:10px 0}.v76-chart{display:block;width:100%;max-height:160px;min-height:100px;margin-top:8px}.v76-dates{font-size:10px}.v76-top{gap:12px;flex-wrap:wrap}.v76-top select{background:var(--inputbg);color:var(--txt);border:1px solid var(--line);border-radius:5px;padding:3px}.v76-checkboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:6px}.v76-check{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px;font-size:12px}.v76-check input{accent-color:var(--gold)}.v76-criteria{border-top:1px solid var(--line);padding:11px 0;margin-top:9px}.v76-criteria strong{display:block;margin-bottom:10px}
+
+/* V77 compact configuration and denser, multi-line trend charts */
+.v77-tile-names{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.v77-tile-names .field{min-width:0;margin-bottom:5px}
+.v75-tech-config{margin-top:6px;padding-top:6px}
+.v75-tech-config .section{margin:9px 0 7px}
+.v76-checkboxes{gap:4px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.v76-check{padding:5px 7px}
+.v76-criteria{margin-top:5px;padding:6px 0}
+.v76-criteria strong{margin-bottom:5px}
+.v76-criteria .field{margin-bottom:5px}
+.v76-chart{max-height:180px;min-height:110px}
+.v77-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;margin-top:3px}
+.v77-data-note{font-size:10px;margin-top:6px}
+@media(max-width:650px){.v77-tile-names{grid-template-columns:1fr}}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
@@ -767,20 +782,43 @@ function v56ReadSlots(count){const slots=Array(count).fill(null);const seen=new 
 
 // V62: Technical values derived only from actual dated close-price observations.
 // No synthetic candles, no assumed high/low/volume, no guessed fundamentals.
-function v62Prices(asset){
- const entry=v36Asset(asset), history=entry?.technical?.daily_history;
- if(!Array.isArray(history))return [];
- const seen=new Map();
- for(const item of history){
-  if(!item||typeof item.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(item.date))continue;
-  const ms=Date.parse(item.date+'T12:00:00Z');
-  if(!Number.isFinite(ms)||ms>Date.now()+86400000||!Number.isFinite(item.close)||item.close<=0)continue;
-  seen.set(item.date,{date:item.date,close:item.close});
+// V77 audited market-price source. The compact PSI snapshot intentionally omits daily_history.
+let v77MarketFeed=null,v77MarketUpdated=null,v77MarketStatus='Loading market history';
+function v77DateValid(value){
+ if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+ const d=new Date(value+'T12:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value&&d.getTime()<=Date.now()+86400000;
+}
+function v77MarketRows(asset){
+ const item=v77MarketFeed?.[asset];if(!item||item.data_kind!=='market_price'||!Array.isArray(item.daily_history))return [];
+ // Reject duplicate dates with different closing prices, nonpositive prices and out-of-order history.
+ const rows=[],seen=new Map();
+ for(const r of item.daily_history){
+  if(!r||!v77DateValid(r.date)||typeof r.close!=='number'||!Number.isFinite(r.close)||r.close<=0)return [];
+  if(seen.has(r.date)){if(Math.abs(seen.get(r.date)-r.close)>1e-7)return [];continue;}
+  seen.set(r.date,r.close);
+  const high=typeof r.high==='number'&&Number.isFinite(r.high)?r.high:null;
+  const low=typeof r.low==='number'&&Number.isFinite(r.low)?r.low:null;
+  const volume=typeof r.volume==='number'&&Number.isFinite(r.volume)?r.volume:null;
+  if((high!==null&&high<r.close)||(low!==null&&low>r.close)||(high!==null&&low!==null&&high<low)||(volume!==null&&volume<0))return [];
+  rows.push({date:r.date,close:r.close,high,low,volume});
  }
- const rows=[...seen.values()].sort((a,b)=>a.date.localeCompare(b.date));
+ rows.sort((a,b)=>a.date.localeCompare(b.date));
  if(!rows.length||Date.now()-Date.parse(rows.at(-1).date+'T12:00:00Z')>7*86400000)return [];
  return rows;
 }
+function v62Prices(asset){return v77MarketRows(asset)}
+async function v77LoadMarketHistory(){
+ try{
+  const r=await fetch('technical_data.json',{cache:'no-store',credentials:'omit'});
+  if(!r.ok)throw Error('Market history HTTP '+r.status);
+  const json=await r.json();const stamp=parseWebsiteTime(json.updated_utc);
+  if(!json.technical||typeof json.technical!=='object'||!ageOK(stamp,48))throw Error('Market history is outdated or malformed');
+  v77MarketFeed=json.technical;v77MarketUpdated=stamp;v77MarketStatus='';
+ }catch(e){v77MarketFeed=null;v77MarketUpdated=null;v77MarketStatus=String(e.message||e);}
+ if(typeof render==='function')render();
+}
+window.addEventListener('load',v77LoadMarketHistory);
+setInterval(v77LoadMarketHistory,300000);
 function v62Ema(prices,period){
  if(prices.length<period+10)return null;
  let ema=prices.slice(0,period).reduce((s,n)=>s+n,0)/period;
@@ -905,7 +943,7 @@ function v75History(asset,frame){
 }
 function v75Calculate(prices,name,params={}){
  const n=prices.length,p=Number(params.period||(name==='SMA (20)'||name==='Bollinger Bands'?20:name==='EMA (50)'?50:14)),fast=Number(params.fast||12),slow=Number(params.slow||26),sigma=Number(params.sigma||2);
- if(!Number.isInteger(p)||p<2||p>200||!Number.isInteger(fast)||!Number.isInteger(slow)||slow<=fast)return null;
+ if(!Array.isArray(prices)||!prices.every(v=>typeof v==='number'&&Number.isFinite(v)&&v>0)||!Number.isInteger(p)||p<2||p>200||!Number.isInteger(fast)||fast<2||!Number.isInteger(slow)||slow<=fast)return null;
  const avg=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
  const ema=(arr,k)=>{if(arr.length<k)return null;let e=avg(arr.slice(0,k));const a=2/(k+1);for(let j=k;j<arr.length;j++)e=a*arr[j]+(1-a)*e;return e};
  if(name==='SMA (20)')return n>=p?avg(prices.slice(-p)):null;
@@ -929,43 +967,100 @@ function v75Calculate(prices,name,params={}){
  // Stochastic, ADX, ATR, CCI, Williams %R, Ichimoku, SAR and OBV need high/low/volume.
  return null;
 }
+
+function v77CandleIndicator(rows,name,params={}){
+ const period=Number(params.period||14);
+ if(!Number.isInteger(period)||period<2||period>200||rows.length<period+1)return null;
+ const tail=rows.slice(-period),last=rows.at(-1);
+ if(!tail.every(r=>Number.isFinite(r.high)&&Number.isFinite(r.low)&&Number.isFinite(r.close)))return null;
+ const max=Math.max(...tail.map(r=>r.high)),min=Math.min(...tail.map(r=>r.low));
+ if(name==='Stochastic')return max>min?100*(last.close-min)/(max-min):null;
+ if(name==='Williams %R')return max>min?-100*(max-last.close)/(max-min):null;
+ if(name==='CCI'){
+  const tp=tail.map(r=>(r.high+r.low+r.close)/3),mean=tp.reduce((a,b)=>a+b,0)/period;
+  const mad=tp.reduce((a,v)=>a+Math.abs(v-mean),0)/period;
+  return mad>0?(tp.at(-1)-mean)/(.015*mad):null;
+ }
+ if(name==='ATR'||name==='ADX'){
+  const candles=rows.slice(-(Math.max(period*3,period+1)));
+  if(!candles.every(r=>Number.isFinite(r.high)&&Number.isFinite(r.low)))return null;
+  const trs=[],pdm=[],mdm=[];
+  for(let i=1;i<candles.length;i++){
+   const c=candles[i],prev=candles[i-1];
+   trs.push(Math.max(c.high-c.low,Math.abs(c.high-prev.close),Math.abs(c.low-prev.close)));
+   const up=c.high-prev.high,down=prev.low-c.low;
+   pdm.push(up>down&&up>0?up:0);mdm.push(down>up&&down>0?down:0);
+  }
+  if(trs.length<period)return null;
+  const smooth=series=>{let v=series.slice(0,period).reduce((a,b)=>a+b,0);const result=[v];for(let i=period;i<series.length;i++){v=v-v/period+series[i];result.push(v)}return result};
+  const st=smooth(trs);if(name==='ATR')return st.at(-1)/period;
+  const sp=smooth(pdm),sm=smooth(mdm),dx=[];
+  for(let i=0;i<st.length;i++){
+   if(st[i]===0){dx.push(0);continue}
+   const plus=100*sp[i]/st[i],minus=100*sm[i]/st[i];
+   dx.push(plus+minus===0?0:100*Math.abs(plus-minus)/(plus+minus));
+  }
+  if(dx.length<period)return null;
+  let adx=dx.slice(0,period).reduce((a,b)=>a+b,0)/period;
+  for(let i=period;i<dx.length;i++)adx=(adx*(period-1)+dx[i])/period;
+  return adx;
+ }
+ return null;
+}
+function v77AnyIndicator(rows,name,params){
+ if(['Stochastic','Williams %R','CCI','ATR','ADX'].includes(name))return v77CandleIndicator(rows,name,params);
+ return v75Calculate(rows.map(x=>x.close),name,params);
+}
 // V76: per-tile indicator choices; do not inherit unrelated workspace selections.
 function v76Selected(t){
  const arr=Array.isArray(t.selectedIndicators)?t.selectedIndicators:[t.focusIndicator||'RSI (14)'];
  return [...new Set(arr.filter(n=>TECH.includes(n)))].slice(0,10);
 }
 function v76Params(t,name){return (t.indicatorSettings&&t.indicatorSettings[name])||t.indicatorParams||{};}
+// V77: series computed solely from validated closing-price history.
+function v77Series(asset,frame,name,params){
+ const rows=v75History(asset,frame),result=[];
+ for(let i=1;i<=rows.length;i++){
+  const value=v77AnyIndicator(rows.slice(0,i),name,params);
+  if(typeof value==='number'&&Number.isFinite(value))result.push({date:rows[i-1].date,value});
+  else if(name==='Bollinger Bands'&&value&&['low','mid','high'].every(k=>Number.isFinite(value[k])))result.push({date:rows[i-1].date,...value});
+ }
+ return result.slice(-40);
+}
 function v76IndicatorChart(t,asset,name){
  const frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
- const rows=v75History(asset,frame),params=v76Params(t,name),points=[];
- for(let i=1;i<=rows.length;i++){
-  const r=v75Calculate(rows.slice(0,i).map(x=>x.close),name,params);
-  const v=typeof r==='number'?r:r&&typeof r.mid==='number'?r.mid:null;
-  if(Number.isFinite(v))points.push({date:rows[i-1].date,value:v});
- }
- if(points.length<2)return '<div class="muted">Chart unavailable — insufficient verified history or missing required price data.</div>';
- const recent=points.slice(-40),values=recent.map(p=>p.value);
- let low=Math.min(...values),high=Math.max(...values);
- // RSI is a 0–100 bounded oscillator; show its actual fixed reference scale.
- if(name==='RSI (14)'){low=0;high=100}
- else{const pad=Math.max((high-low)*.10,Math.abs(high)*.002,.0001);low-=pad;high+=pad}
- const width=360,height=116,left=48,right=8,top=8,bottom=18,plotW=width-left-right,plotH=height-top-bottom;
- const y=v=>top+(high-v)/(high-low)*plotH;
- const x=i=>left+i*plotW/(recent.length-1);
- const ticks=Array.from({length:5},(_,i)=>high-(high-low)*i/4);
- const lines=ticks.map(v=>`<line x1="${left}" x2="${width-right}" y1="${y(v).toFixed(2)}" y2="${y(v).toFixed(2)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="${left-5}" y="${(y(v)+3).toFixed(2)}" font-size="9" text-anchor="end" fill="var(--mute)">${safe(Number(v.toFixed(Math.abs(v)<1?3:2)).toLocaleString())}</text>`).join('');
- const xy=recent.map((p,i)=>`${x(i).toFixed(2)},${y(p.value).toFixed(2)}`).join(' ');
- return `<svg class="v76-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safe(name)} ${safe(frame)} trend, numeric axis"><g>${lines}</g><polyline fill="none" stroke="#69a8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${xy}"/></svg><div class="muted v76-dates">${safe(recent[0].date)} – ${safe(recent.at(-1).date)} · ${recent.length} readings</div>`;
+ const points=v77Series(asset,frame,name,v76Params(t,name));
+ if(points.length<2)return '<div class="muted">Trend unavailable — insufficient validated history or missing OHLCV fields.</div>';
+ const bands=name==='Bollinger Bands';
+ const keys=bands?['high','mid','low']:['value'];
+ const values=points.flatMap(p=>keys.map(k=>p[k]));
+ let lo=Math.min(...values),hi=Math.max(...values);
+ if(name==='RSI (14)'||name==='Stochastic'||name==='ADX'){lo=0;hi=100}
+ else if(name==='Williams %R'){lo=-100;hi=0}
+ else{const pad=Math.max((hi-lo)*.07,Math.abs(hi)*.002,0.0001);lo-=pad;hi+=pad}
+ const width=380,height=150,left=60,right=9,top=9,bottom=23,plotW=width-left-right,plotH=height-top-bottom;
+ const y=v=>top+(hi-v)/(hi-lo)*plotH,x=i=>left+i*plotW/(points.length-1);
+ const fmt=v=>Number(v.toFixed(Math.abs(v)<1?4:2)).toLocaleString();
+ const horizontal=Array.from({length:9},(_,i)=>{
+  const v=hi-(hi-lo)*i/8;
+  return `<line x1="${left}" x2="${width-right}" y1="${y(v).toFixed(2)}" y2="${y(v).toFixed(2)}" stroke="var(--line)" stroke-opacity=".7" stroke-dasharray="2 3"/><text x="${left-5}" y="${(y(v)+3).toFixed(2)}" font-size="9" text-anchor="end" fill="var(--mute)">${safe(fmt(v))}</text>`;
+ }).join('');
+ const vertical=Array.from({length:9},(_,i)=>{const xx=left+i*plotW/8;return `<line x1="${xx.toFixed(2)}" x2="${xx.toFixed(2)}" y1="${top}" y2="${height-bottom}" stroke="var(--line)" stroke-opacity=".45" stroke-dasharray="2 3"/>`}).join('');
+ const palette={high:'#eabf6c',mid:'#69a8ff',low:'#54d8ba',value:'#69a8ff'};
+ const curves=keys.map(k=>`<polyline fill="none" stroke="${palette[k]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${points.map((p,i)=>`${x(i).toFixed(2)},${y(p[k]).toFixed(2)}`).join(' ')}"/>`).join('');
+ const legend=bands?`<div class="v77-legend"><span style="color:${palette.high}">● Upper</span><span style="color:${palette.mid}">● Middle</span><span style="color:${palette.low}">● Lower</span></div>`:'';
+ return `<svg class="v76-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safe(name)} ${safe(frame)} trend chart with labeled value axis">${vertical}${horizontal}${curves}</svg>${legend}<div class="muted v76-dates">${safe(points[0].date)} – ${safe(points.at(-1).date)} · ${points.length} readings</div>`;
 }
 function v76TechnicalContent(t,a){
  const selected=v76Selected(t),frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
  const rows=v75History(a,frame),prices=rows.map(r=>r.close);
- return `<div class="row v76-top"><span class="muted">${safe(a)} · ${selected.length} selected indicator${selected.length===1?'':'s'}</span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
+ const market=v77MarketFeed?.[a];const dataInfo=rows.length?`Source: ${safe(market?.data_source||market?.source||'Market feed')} · ${safe(market?.symbol||a)} · closing prices through ${safe(rows.at(-1).date)} · ${safe(frame)}. Source accuracy not independently confirmed.`:`Market price history unavailable${v77MarketStatus?' — '+safe(v77MarketStatus):''}`;
+ return `<div class="row v76-top"><span class="muted">${safe(a)} · ${selected.length} indicator${selected.length===1?'':'s'}</span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
  (selected.length?selected.map(name=>{
-  const value=v75Calculate(prices,name,v76Params(t,name));
-  const shown=typeof value==='number'?Number(value.toFixed(3)).toLocaleString():value&&typeof value.mid==='number'?`${value.low.toFixed(2)} – ${value.high.toFixed(2)}`:'—';
+  const value=v77AnyIndicator(rows,name,v76Params(t,name));
+  const shown=typeof value==='number'&&Number.isFinite(value)?Number(value.toFixed(3)).toLocaleString():value&&typeof value.mid==='number'?`${value.low.toFixed(2)} – ${value.high.toFixed(2)}`:'—';
   return `<section class="v76-indicator"><div class="row"><strong>${safe(name)}</strong><strong>${safe(shown)}</strong></div>${v76IndicatorChart(t,a,name)}</section>`;
- }).join(''):'<p class="muted">Choose indicators in Tile Settings.</p>');
+ }).join(''):'<p class="muted">Choose indicators in Tile Settings.</p>')+`<div class="muted v77-data-note" title="Indicators derived from the website market history. Independent external validation is still required.">${dataInfo}</div>`;
 }
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'regionpsi':{
@@ -1348,7 +1443,7 @@ function tileSettings(t){
  const original=v69OfficialTitle(t);
  const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${label}</option>`).join('');
  const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis<select id="tileType">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
- open(`Tile Settings · ${original}`,`${typeField}<label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
+ open(`Tile Settings · ${original}`,`${typeField}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
  const modalActions=document.querySelector('.v58-modal-actions');modalActions?.insertBefore(saveButton,$('#closeModal'));
@@ -1358,15 +1453,15 @@ function tileSettings(t){
  const v76Draft={selected:v76Selected(t),settings:JSON.parse(JSON.stringify(t.indicatorSettings||{})),frame:t.indicatorFrame||'daily'};
  const v75Paint=()=>{
   const shown=(document.querySelector('#tileType')?.value||t.type)==='technical';v75Block.hidden=!shown;if(!shown)return;
-  v75Block.innerHTML=`<div class="section">Technical indicators (choose up to 10)</div><div class="v76-checkboxes">${TECH.map(n=>`<label class="v76-check"><input type="checkbox" data-v76-indicator="${safe(n)}" ${v76Draft.selected.includes(n)?'checked':''}> ${safe(n)}</label>`).join('')}</div><div id="v76Individual"></div><label class="field">Chart timeframe<select id="v75Frame"><option value="daily" ${v76Draft.frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${v76Draft.frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${v76Draft.frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Charts use verified price history; indicators requiring unavailable fields remain blank.</p>`;
+  v75Block.innerHTML=`<div class="section">Technical indicators (choose up to 10)</div><div class="v76-checkboxes">${TECH.map(n=>`<label class="v76-check"><input type="checkbox" data-v76-indicator="${safe(n)}" ${v76Draft.selected.includes(n)?'checked':''}> ${safe(n)}</label>`).join('')}</div><div id="v76Individual"></div><label class="field">Chart timeframe<select id="v75Frame"><option value="daily" ${v76Draft.frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${v76Draft.frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${v76Draft.frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Calculations use validated price history. Indicators requiring missing high, low or volume fields remain unavailable until verified market data is connected.</p>`;
   const settingsArea=v75Block.querySelector('#v76Individual');
   const paintSettings=()=>{
    settingsArea.innerHTML=v76Draft.selected.map(n=>{
     const p=v76Draft.settings[n]||{};
-    const period=['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC'].includes(n)?`<label class="field">Lookback periods (2–200)<input type="number" data-v76-setting="period" min="2" max="200" value="${Number(p.period)||(n==='SMA (20)'||n==='Bollinger Bands'?20:n==='EMA (50)'?50:14)}"></label>`:'';
+    const period=['RSI (14)','SMA (20)','EMA (50)','Bollinger Bands','Momentum','ROC','Stochastic','ADX','ATR','CCI','Williams %R','Ichimoku Cloud','Parabolic SAR','OBV'].includes(n)?`<label class="field">Lookback periods (2–200)<input type="number" data-v76-setting="period" min="2" max="200" value="${Number(p.period)||(n==='SMA (20)'||n==='Bollinger Bands'?20:n==='EMA (50)'?50:14)}"></label>`:'';
     const macd=n==='MACD'?`<div class="two"><label class="field">Fast EMA<input type="number" data-v76-setting="fast" min="2" max="100" value="${Number(p.fast)||12}"></label><label class="field">Slow EMA<input type="number" data-v76-setting="slow" min="3" max="200" value="${Number(p.slow)||26}"></label></div>`:'';
     const sigma=n==='Bollinger Bands'?`<label class="field">Standard deviations<input type="number" data-v76-setting="sigma" min="0.5" max="4" step="0.5" value="${Number(p.sigma)||2}"></label>`:'';
-    return `<div class="v76-criteria" data-v76-name="${safe(n)}"><strong>${safe(n)}</strong>${period}${macd}${sigma}${period||macd||sigma?'':'<p class="muted">Uses default settings; requires supported market data.</p>'}</div>`;
+    return `<div class="v76-criteria" data-v76-name="${safe(n)}"><strong>${safe(n)}</strong>${period}${macd}${sigma}${period||macd||sigma?'':'<p class="muted">Requires verified market data.</p>'}</div>`;
    }).join('');
   };
   v75Block.querySelectorAll('[data-v76-indicator]').forEach(input=>input.addEventListener('change',()=>{
