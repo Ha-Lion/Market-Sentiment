@@ -276,7 +276,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v80-cross{stroke:#e7c680;stroke-width:1;stroke-dasharray:5 4;vector-effect:non-scaling-stroke}
 .v80-tooltip{position:absolute;z-index:4;pointer-events:none;background:var(--panel2,#1a2d46);border:1px solid var(--gold,#dbb46a);border-radius:6px;padding:7px 9px;font-size:12px;color:var(--txt,#fff);white-space:nowrap;box-shadow:0 4px 12px #0005}
 .v80-chart:focus-visible{outline:2px solid var(--gold,#dbb46a)}
-</style><style id="v81-style">.v81-tools{display:flex;gap:4px;justify-content:flex-end;align-items:center;flex-wrap:wrap;padding:2px 0 4px}.v81-tools button{background:var(--btnbg,#243b55);border:1px solid var(--line,#50657d);border-radius:4px;color:var(--txt,#fff);padding:2px 6px;font-size:11px;cursor:pointer}.v81-tools button:hover{filter:brightness(1.3)}.v81-tools .muted{margin-left:5px;font-size:11px}.v80-chart{min-height:130px}</style><style id="v82-chart-style">.v81-tools{display:none!important}.v82-chart{cursor:crosshair;touch-action:pan-y;user-select:none}.v82-chart.v82-dragging{cursor:grabbing!important}.v82-chart .v80-svg{overflow:visible}</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
+</style><style id="v81-style">.v80-chart{min-height:130px}</style><style id="v82-chart-style">.v82-chart{cursor:grab;touch-action:none;user-select:none}.v82-chart [data-psi-y-axis]{cursor:ns-resize;pointer-events:all}.v82-chart [data-psi-x-axis]{cursor:ew-resize;pointer-events:all}.v82-chart.v82-dragging{cursor:grabbing!important}.v82-chart .v80-svg{overflow:visible}</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
 <script>
@@ -490,6 +490,7 @@ function plot(a,kind){
  ${gridY}${gridX}${v.lo<=50&&v.hi>=50?`<line x1="${L}" x2="${W-R}" y1="${y(50)}" y2="${y(50)}" stroke="#43cdb9" stroke-dasharray="5 6"/>`:''}
  <g clip-path="url(#v81clip-${safe(kind)})"><path d="${area}" fill="url(#psi-area-${safe(kind)})"/><path d="${path}" fill="none" stroke="#54d4c4" stroke-width="2.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></g>
  <line data-v80-cross-x x1="0" y1="${T}" x2="0" y2="${H-B}" class="v80-cross" visibility="hidden"/><line data-v80-cross-y x1="${L}" y1="0" x2="${W-R}" y2="0" class="v80-cross" visibility="hidden"/><circle data-v80-dot r="5" cx="0" cy="0" fill="#f7cd78" stroke="#08182c" stroke-width="2" visibility="hidden"/>
+ <rect data-psi-x-axis x="64" y="312" width="872" height="48" fill="transparent"/><rect data-psi-y-axis x="936" y="20" width="64" height="292" fill="transparent"/>
  </svg><div class="v80-tooltip" data-v80-tooltip hidden></div></div>`;
 }
 function v81Commit(chart,op,delta=0){const key=chart.dataset.v81Key,all=key.split('|'),asset=all[1],kind=all[0];const data=v79RangePoints(asset).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)).sort((a,b)=>a.time-b.time);if(data.length<2)return;const first=data[0].time,last=data.at(-1).time;let v=v81View(key,data),span=v.end-v.start,mid=(v.start+v.end)/2,ys=v.hi-v.lo,ym=(v.hi+v.lo)/2;
@@ -528,41 +529,53 @@ function v82Zoom(chart,zone,delta,event){
  }
  v81Views.set(k,v);const space=chart.closest('.v80-chart-space');if(space)space.innerHTML=plot(asset,kind);
 }
-function v82DragCommit(d,event){
- const {chart,zone,x,y,start,end,lo,hi}=d;if(!chart.isConnected)return;
- const rect=chart.querySelector('svg')?.getBoundingClientRect();if(!rect)return;
- const key=chart.dataset.v81Key,parts=key.split('|'),asset=parts[1],kind=parts[0];
- const data=v79RangePoints(asset).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)).sort((a,b)=>a.time-b.time);if(data.length<2)return;
- const first=data[0].time,last=data.at(-1).time,v={start,end,lo,hi};
- const dx=(event.clientX-x)/rect.width*1000,dy=(event.clientY-y)/rect.height*360;
- if(zone==='plot'){
-   const shift=-dx/872*(end-start);const span=end-start;
-   v.start=Math.max(first,Math.min(last-span,start+shift));v.end=v.start+span;
- }else if(zone==='x'){
-   const span=Math.max(Math.min(86400000,last-first),Math.min(last-first,(end-start)*Math.exp(dx/400)));
-   const center=(start+end)/2;v.start=Math.max(first,Math.min(last-span,center-span/2));v.end=v.start+span;
- }else{
-   const span=Math.max(5,Math.min(100,(hi-lo)*Math.exp(dy/140)));
-   const mid=(hi+lo)/2;v.lo=Math.max(0,Math.min(100-span,mid-span/2));v.hi=v.lo+span;
- }
- v81Views.set(key,v);const space=chart.closest('.v80-chart-space');if(space)space.innerHTML=plot(asset,kind);
-}
 document.addEventListener('wheel',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;
  e.preventDefault();e.stopPropagation();v82Zoom(chart,e.shiftKey?'y':v82Zone(chart,e),e.deltaY,e);
 },{passive:false,capture:true});
 let v82Drag=null;
-document.addEventListener('pointerdown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||e.button!==0)return;
- const zone=v82Zone(chart,e);v82Drag={chart,zone,x:e.clientX,y:e.clientY,start:Number(chart.dataset.v81Start),end:Number(chart.dataset.v81End),lo:Number(chart.dataset.v81Lo),hi:Number(chart.dataset.v81Hi),pointerId:e.pointerId};
- chart.classList.add('v82-dragging');e.stopPropagation();
+function v83Preview(d,e){
+ const space=d.space;if(!space?.isConnected)return;
+ const values=v79RangePoints(d.asset).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)).sort((a,b)=>a.time-b.time);
+ if(values.length<2)return;
+ const first=values[0].time,last=values.at(-1).time;
+ const dx=(e.clientX-d.x)/d.width*1000,dy=(e.clientY-d.y)/d.height*360;
+ const span0=d.end-d.start,yr0=d.hi-d.lo;
+ const next={start:d.start,end:d.end,lo:d.lo,hi:d.hi};
+ if(d.zone==='plot'){
+   const shift=-dx/872*span0;
+   next.start=Math.max(first,Math.min(last-span0,d.start+shift));next.end=next.start+span0;
+ }else if(d.zone==='x'){
+   const span=Math.max(Math.min(86400000,last-first),Math.min(last-first,span0*Math.exp(dx/160)));
+   const middle=(d.start+d.end)/2;
+   next.start=Math.max(first,Math.min(last-span,middle-span/2));next.end=next.start+span;
+ }else{
+   const span=Math.max(2,Math.min(100,yr0*Math.exp(dy/75)));
+   const middle=(d.lo+d.hi)/2;
+   next.lo=Math.max(0,Math.min(100-span,middle-span/2));next.hi=next.lo+span;
+ }
+ v81Views.set(d.key,next);
+ space.innerHTML=plot(d.asset,d.kind);
+ const visible=space.querySelector('[data-v80-chart]');if(visible)visible.classList.add('v82-dragging');
+}
+document.addEventListener('pointerdown',e=>{
+ const chart=e.target.closest('[data-v80-chart]');if(!chart||e.button!==0)return;
+ const rect=chart.querySelector('svg')?.getBoundingClientRect(),space=chart.closest('.v80-chart-space');
+ if(!rect||!space)return;
+ const zone=e.target.closest('[data-psi-x-axis]')?'x':e.target.closest('[data-psi-y-axis]')?'y':v82Zone(chart,e);
+ const [kind,asset]=chart.dataset.v81Key.split('|');
+ v82Drag={space,key:chart.dataset.v81Key,kind,asset,zone,x:e.clientX,y:e.clientY,width:rect.width,height:rect.height,start:Number(chart.dataset.v81Start),end:Number(chart.dataset.v81End),lo:Number(chart.dataset.v81Lo),hi:Number(chart.dataset.v81Hi),pointerId:e.pointerId};
+ e.preventDefault();e.stopPropagation();chart.classList.add('v82-dragging');
 },true);
-document.addEventListener('pointerup',e=>{if(!v82Drag||e.pointerId!==v82Drag.pointerId)return;
- const drag=v82Drag;v82Drag=null;drag.chart.classList.remove('v82-dragging');
- if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)v82DragCommit(drag,e);
+document.addEventListener('pointermove',e=>{
+ if(!v82Drag||e.pointerId!==v82Drag.pointerId)return;
+ e.preventDefault();e.stopPropagation();v83Preview(v82Drag,e);
 },true);
-document.addEventListener('pointercancel',()=>{if(v82Drag?.chart)v82Drag.chart.classList.remove('v82-dragging');v82Drag=null;},true);
-document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;
- e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');
+document.addEventListener('pointerup',e=>{
+ if(!v82Drag||e.pointerId!==v82Drag.pointerId)return;
+ v83Preview(v82Drag,e);v82Drag=null;e.preventDefault();e.stopPropagation();
 },true);
+document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
+document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
 document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
 document.addEventListener('pointerleave',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80ClearChart(chart)},true);
 document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
