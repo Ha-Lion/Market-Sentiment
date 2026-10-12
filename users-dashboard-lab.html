@@ -221,7 +221,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 
 /* V60: five workspace tabs */
 .workspace-presets{max-width:100%;gap:5px}.workspace-presets .preset{max-width:150px}@media(max-width:720px){.workspace-presets{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}.workspace-presets .preset{flex:0 0 auto;max-width:150px}}
-</style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
+.v67-verdict{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:9px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--statbg)}.v67-verdict strong{font-size:12px}.v67-verdict .muted{font-size:11px}</style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
  const light=r.classList.contains('light')||b?.classList.contains('light')||r.dataset.theme==='light'||b?.dataset.theme==='light'||r.getAttribute('data-bs-theme')==='light';
@@ -746,6 +746,14 @@ function v62Derived(asset,indicator){
  if(n<2)return null;
  const mean=x=>x.reduce((a,b)=>a+b,0)/x.length;
  let value=null;
+ // Wilder 14-period RSI using daily close data only.
+ if(indicator==='RSI (14)'&&n>=15){
+  let gain=0,loss=0;
+  for(let i=1;i<=14;i++){const d=p[i]-p[i-1];gain+=Math.max(0,d);loss+=Math.max(0,-d);}
+  gain/=14;loss/=14;
+  for(let i=15;i<n;i++){const d=p[i]-p[i-1];gain=(gain*13+Math.max(0,d))/14;loss=(loss*13+Math.max(0,-d))/14;}
+  value=loss===0?(gain===0?50:100):100-100/(1+gain/loss);
+ }
  if(indicator==='SMA (20)'&&n>=20)value=mean(p.slice(-20));
  if(indicator==='EMA (50)'&&n>=60)value=v62Ema(p,50);
  if(indicator==='Momentum'&&n>=11)value=p.at(-1)-p.at(-11);
@@ -777,9 +785,38 @@ function v38Coverage(name){
  return {name,technical,fundamental,psi:v36PSI(name,'daily'),updated:v36Updated};
 }
 
+// V67 — Excel layout: technical verdict uses verified technical evidence only.
+// Do not treat imported test snapshots or missing market prices as live signals.
+function v67TechnicalVerdict(asset, coverage){
+ const data=coverage||v38Coverage(asset);
+ const readings=data.technical.filter(x=>x.value!==null && x.source!=='Imported snapshot');
+ const prices=v62Prices(asset);
+ const close=prices.length?prices[prices.length-1].close:null;
+ const signals=[];
+ for(const x of readings){
+  const v=typeof x.value==='number'?x.value:NaN;
+  if(!Number.isFinite(v))continue;
+  let sign=null;
+  switch(x.name){
+   case 'RSI (14)': if(v>55)sign=1;else if(v<45)sign=-1;else sign=0;break;
+   case 'MACD': case 'Momentum': case 'ROC': sign=v>0?1:v<0?-1:0;break;
+   case 'SMA (20)': case 'EMA (50)':
+    if(Number.isFinite(close) && v>0){const delta=(close-v)/v;sign=delta>0.005?1:delta< -0.005?-1:0;}
+    break;
+  }
+  if(sign!==null)signals.push({name:x.name,sign});
+ }
+ // Two valid signals are required, and strong disagreement is shown as neutral.
+ if(signals.length<2)return {label:'Not available',count:signals.length,up:0,down:0};
+ const up=signals.filter(x=>x.sign>0).length,down=signals.filter(x=>x.sign<0).length;
+ const label=up>=2 && up>down?'Bullish':down>=2 && down>up?'Bearish':'Neutral';
+ return {label,count:signals.length,up,down};
+}
 function v38ExportCSV(){
  const names=state.watch.filter(Boolean),rows=[['Asset','Category','Indicator','Value','Provenance','Website feed timestamp']];
  for(const name of names){const d=v38Coverage(name);
+  const verdict=v67TechnicalVerdict(name,d);
+  rows.push([name,'Technical verdict','Bullish / Bearish / Neutral',verdict.label,'Verified indicator consensus','']);
   rows.push([name,'PSI','Daily PSI',d.psi??'',d.psi!==null?'Verified website feed':'Unavailable',d.updated||'']);
   for(const kind of ['technical','fundamental'])for(const item of d[kind])
    rows.push([name,kind,item.name,item.value??'',item.source,item.source==='Website feed'?d.updated||'':'']);
@@ -809,7 +846,7 @@ function v47FilterNetworks(panel){
 function tileContent(t){let a=state.watch.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="muted">${state.watch.filter(Boolean).length} / 15 assets selected · select an asset to view its analysis</div><div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':'' }</button>`}).join('')}</div>`;
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Latest available reading':imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const v=live!==null?live:imported;const status=live!==null?'Latest available reading':imported!==null?'Saved reading': 'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
-case'technical':{const slots=v56TechSlots(a),found=v38Coverage(a).technical;return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
+case'technical':{const slots=v56TechSlots(a),coverage=v38Coverage(a),found=coverage.technical,verdict=v67TechnicalVerdict(a,coverage);return `<div class="muted">${safe(a)} · ${slots.filter(Boolean).length} / 10 indicators · ${found.filter(x=>x.value!==null).length} available</div><div class="v67-verdict"><strong>Technical verdict: ${safe(verdict.label)}</strong><span class="muted">${verdict.label==='Not available'?'Insufficient verified indicators':verdict.count+' verified signals · '+verdict.up+' bullish / '+verdict.down+' bearish'}</span></div><div class="grid2" style="margin-top:10px">${slots.map((label,i)=>{const x=found.find(o=>o.name===label);return `<div class="stat" title="${safe(x?.source==='Unavailable'?'No verified reading available':x?.source||'Unassigned position')}"><div class="muted">${i+1}. ${label?safe(label):'Not assigned'}</div><div class="big">${!label?'—':x?.value===null||x?.value===undefined?'—':showPoint(x.value)}</div></div>`}).join('')}</div><button class="tile-link" data-open="technical">Configure technical indicators <span>↗</span></button>`;}
 case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
