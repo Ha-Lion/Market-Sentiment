@@ -1,32 +1,32 @@
 {
   "schema": "PSD_ENGINE_HEALTH_V1",
-  "updated_utc": "2026-10-12T01:27:12Z",
+  "updated_utc": "2026-10-13T03:05:26Z",
   "overall_status": "degraded",
   "workflow": {
     "name": "V2 Production Publish",
     "conclusion": "success",
-    "run_id": "38185332582",
-    "run_number": "242",
-    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/38185332582",
-    "started_at": "2026-10-11T23:43:10Z",
-    "completed_at": "2026-10-11T23:48:41Z",
-    "runtime_seconds": 331,
+    "run_id": "38319985137",
+    "run_number": "245",
+    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/38319985137",
+    "started_at": "2026-10-12T23:02:08Z",
+    "completed_at": "2026-10-12T23:07:28Z",
+    "runtime_seconds": 320,
     "monitor_trigger": "schedule"
   },
   "ai_workflow": {
     "name": "V2 AI analysis",
     "conclusion": "success",
-    "run_id": "38184189515",
-    "run_number": "46",
-    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/38184189515",
-    "started_at": "2026-10-11T23:24:56Z",
-    "completed_at": "2026-10-11T23:29:02Z"
+    "run_id": "38333738656",
+    "run_number": "48",
+    "run_url": "https://github.com/Ha-Lion/Market-Sentiment-Engine-V2/actions/runs/38333738656",
+    "started_at": "2026-10-13T01:46:36Z",
+    "completed_at": "2026-10-13T01:50:46Z"
   },
   "components": {
     "workflow": {
       "status": "healthy",
       "summary": "Production workflow completed",
-      "run_age_hours": 1.64,
+      "run_age_hours": 3.97,
       "jobs": {
         "claim-production-hour": "success",
         "scrape": "success",
@@ -35,16 +35,16 @@
     },
     "core_data": {
       "status": "degraded",
-      "summary": "Updated 2026-10-11 07:44:08 PM NY Time",
-      "age_hours": 1.72,
-      "fresh_headlines_for_psi": 239,
-      "headline_psi_score": 51,
-      "psi_headlines_used": 239,
-      "assets_with_prior_fallback_psi": 16,
+      "summary": "Updated 2026-10-12 07:03:01 PM NY Time",
+      "age_hours": 4.04,
+      "fresh_headlines_for_psi": 442,
+      "headline_psi_score": 53,
+      "psi_headlines_used": 442,
+      "assets_with_prior_fallback_psi": 6,
       "prior_fallback_reason_counts": {
-        "outside_48h_window": 16
+        "outside_48h_window": 6
       },
-      "prior_fallback_expected_count": 16,
+      "prior_fallback_expected_count": 6,
       "prior_fallback_actionable_count": 0,
       "collection_health": {
         "source_entries_working": 74,
@@ -77,23 +77,33 @@
       "unavailable_payloads": []
     },
     "ai": {
-      "status": "healthy",
-      "summary": "healthy • groq • openai/gpt-oss-120b",
-      "workflow_age_hours": 1.97,
-      "status_reported": "healthy",
+      "status": "degraded",
+      "summary": "degraded • groq • openai/gpt-oss-120b",
+      "workflow_age_hours": 1.24,
+      "status_reported": "degraded",
       "active_provider": "groq",
       "active_model": "openai/gpt-oss-120b",
-      "fallback_used": false,
+      "fallback_used": true,
       "events_generated": 5,
       "events_reused": 0,
       "events_failed": 0,
       "market_pulse_ai_status": "generated",
       "market_pulse_ai_last_good_preserved": false,
-      "status_age_hours": 1.97
+      "status_age_hours": 1.25
     }
   },
-  "active_alerts": [],
-  "active_alert_count": 0,
+  "active_alerts": [
+    {
+      "component": "core_data",
+      "code": "collection_degraded",
+      "severity": "degraded",
+      "message": "News collection degraded: 1 configured source failure(s).",
+      "consecutive_runs": 2,
+      "first_seen_utc": "2026-10-12T01:27:12Z",
+      "last_seen_utc": "2026-10-13T03:05:26Z"
+    }
+  ],
+  "active_alert_count": 1,
   "recent_issues": [
     {
       "key": "core_data:collection_degraded",
@@ -103,12 +113,42 @@
       "message": "News collection degraded: 1 configured source failure(s).",
       "status": "active",
       "first_seen_utc": "2026-10-12T01:27:12Z",
-      "last_seen_utc": "2026-10-12T01:27:12Z",
+      "last_seen_utc": "2026-10-13T03:05:26Z",
+      "recovered_utc": null,
+      "consecutive_runs": 2,
+      "notify_after": 2,
+      "first_run_id": "38185332582",
+      "last_run_id": "38319985137"
+    },
+    {
+      "key": "ai:ai_degraded",
+      "component": "ai",
+      "code": "ai_degraded",
+      "severity": "degraded",
+      "message": "AI gateway completed in degraded mode.",
+      "status": "active",
+      "first_seen_utc": "2026-10-13T03:05:26Z",
+      "last_seen_utc": "2026-10-13T03:05:26Z",
       "recovered_utc": null,
       "consecutive_runs": 1,
       "notify_after": 2,
-      "first_run_id": "38185332582",
-      "last_run_id": "38185332582"
+      "first_run_id": "38319985137",
+      "last_run_id": "38319985137"
+    },
+    {
+      "key": "ai:ai_provider_fallback",
+      "component": "ai",
+      "code": "ai_provider_fallback",
+      "severity": "degraded",
+      "message": "AI completed using a fallback provider.",
+      "status": "active",
+      "first_seen_utc": "2026-10-13T03:05:26Z",
+      "last_seen_utc": "2026-10-13T03:05:26Z",
+      "recovered_utc": null,
+      "consecutive_runs": 1,
+      "notify_after": 2,
+      "first_run_id": "38319985137",
+      "last_run_id": "38319985137"
     },
     {
       "key": "core_data:collection_degraded",
@@ -214,36 +254,6 @@
       "notify_after": 1,
       "first_run_id": "37243062670",
       "last_run_id": "37243062670"
-    },
-    {
-      "key": "core_data:collection_degraded",
-      "component": "core_data",
-      "code": "collection_degraded",
-      "severity": "degraded",
-      "message": "News collection degraded: 1 configured source failure(s).",
-      "status": "recovered",
-      "first_seen_utc": "2026-10-01T01:22:53Z",
-      "last_seen_utc": "2026-10-01T01:22:53Z",
-      "recovered_utc": "2026-10-02T01:44:24Z",
-      "consecutive_runs": 1,
-      "notify_after": 2,
-      "first_run_id": "36793541448",
-      "last_run_id": "36793541448"
-    },
-    {
-      "key": "ai:ai_degraded",
-      "component": "ai",
-      "code": "ai_degraded",
-      "severity": "degraded",
-      "message": "AI gateway completed in degraded mode.",
-      "status": "recovered",
-      "first_seen_utc": "2026-09-29T02:07:35Z",
-      "last_seen_utc": "2026-09-29T02:07:35Z",
-      "recovered_utc": "2026-09-30T01:23:05Z",
-      "consecutive_runs": 1,
-      "notify_after": 2,
-      "first_run_id": "36510700338",
-      "last_run_id": "36510700338"
     }
   ]
 }
