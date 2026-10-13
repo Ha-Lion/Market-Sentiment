@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Preferences | Public Sentiment Dash</title>
-  <meta name="description" content="Manage your Public Sentiment Dash preferences, watchlist, password, notifications, and account controls.">
+  <meta name="description" content="Manage your Public Sentiment Dash preferences, watchlist, authenticator security, password, notifications, and account controls.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="site.css">
@@ -16,8 +16,8 @@
 
     /* Compact Account Preferences layout */
     main.page.account-page{
-      width:min(1220px,calc(100% - 28px));
-      max-width:1220px;
+      width:min(1560px,calc(100% - 36px));
+      max-width:1560px;
       margin:0 auto;
       padding:12px 0 28px;
       min-height:calc(100vh - 180px);
@@ -32,12 +32,12 @@
     main.account-page .account-grid{
       max-width:none;
       width:100%;
-      gap:10px;
-      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      grid-template-columns:repeat(3,minmax(0,1fr));
     }
 
     main.account-page .account-card{
-      padding:15px 18px!important;
+      padding:15px 17px!important;
       border-radius:14px;
     }
 
@@ -118,7 +118,7 @@
     main.account-page .watchlist-list{
       margin:9px 0 0;
       gap:5px;
-      max-height:190px;
+      max-height:175px;
       overflow:auto;
     }
 
@@ -198,9 +198,30 @@
     body:not(.dark-mode) .psd-shared-header .social-pill.linkedin{color:#061522!important;background:#fff!important;border-color:#8da8bd!important}
     body.dark-mode .psd-shared-header .social-pill.linkedin{color:#fff!important}
 
+    /* Wide, compact layout: key account sections across the top; watchlist gets room. */
+    main.account-page #watchlist{grid-column:span 2;grid-row:span 2}
+    main.account-page #security-mfa{grid-column:span 2}
+    main.account-page #security-mfa .mfa-setup-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+    main.account-page .mfa-setup-grid[hidden],main.account-page .mfa-qr-box[hidden],main.account-page [hidden]{display:none!important}
+    main.account-page .mfa-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+    main.account-page .mfa-actions .psd-button{width:auto}
+    main.account-page .mfa-qr-box{background:#fff;border:1px solid #9db0c2;border-radius:10px;max-width:178px;padding:8px;margin:8px 0}
+    main.account-page .mfa-qr-box img{display:block;max-width:100%;width:160px;height:auto}
+    main.account-page .mfa-secret{overflow-wrap:anywhere;user-select:all;font:12px ui-monospace,monospace;padding:8px;border:1px solid var(--line);border-radius:8px}
+    main.account-page .mfa-inline{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+    main.account-page .mfa-inline .psd-field{flex:1 1 180px}
+    main.account-page .mfa-info{font-size:12px;line-height:1.5;color:var(--muted);margin:6px 0}
+    main.account-page #mfa-status{margin-top:8px;min-height:16px;font-size:12px}
+    @media(max-width:1100px){
+      main.account-page .account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      main.account-page #watchlist,main.account-page #security-mfa{grid-column:span 2}
+      main.account-page #watchlist{grid-row:auto}
+    }
     @media(max-width:780px){
-      main.page.account-page{width:min(100% - 16px,1220px);padding-top:8px}
+      main.page.account-page{width:min(100% - 16px,1560px);padding-top:8px}
       main.account-page .account-grid{grid-template-columns:1fr}
+      main.account-page #watchlist,main.account-page #security-mfa{grid-column:auto}
+      main.account-page #security-mfa .mfa-setup-grid{grid-template-columns:1fr}
       main.account-page .account-card h1{font-size:28px}
     }
   </style>
@@ -275,6 +296,28 @@
         <p class="psd-help">Choose from the tracked-instrument menu. Your saved list appears on the private My Watchlist page.</p>
       </section>
 
+      <section class="panel account-card" id="security-mfa">
+        <h2>Account Security · Google Authenticator</h2>
+        <p class="mfa-info">Set up once for your Public Sentiment Dash account. The same authenticator app can verify future social-network connections; no separate enrollment per network is required.</p>
+        <p id="mfa-status" class="psd-status" role="status" aria-live="polite">Checking authenticator status…</p>
+        <div class="mfa-actions"><button class="psd-button" id="mfa-enroll" type="button" disabled>Set Up Google Authenticator</button></div>
+        <div id="mfa-setup" class="mfa-setup-grid" hidden>
+          <div>
+            <p class="mfa-info"><strong>1.</strong> Install <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a> (or another compatible TOTP app) on your phone.</p>
+            <p class="mfa-info"><strong>2.</strong> In the app, choose <strong>Add account → Scan a QR code</strong> and scan the code shown here.</p>
+            <div class="mfa-qr-box"><img id="mfa-qr" alt="Authenticator enrollment QR code"></div>
+            <p class="mfa-info">Can't scan? Enter this setup key manually. Keep it private.</p>
+            <div id="mfa-secret" class="mfa-secret"></div>
+          </div>
+          <div>
+            <p class="mfa-info"><strong>3.</strong> Enter the current 6-digit code from your app to confirm enrollment.</p>
+            <div class="mfa-inline"><div class="psd-field"><label for="mfa-code">Six-digit code</label><input class="psd-input" id="mfa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"></div></div>
+            <div class="mfa-actions"><button class="psd-button" id="mfa-verify" type="button">Verify & Enable</button><button class="psd-button secondary" id="mfa-cancel" type="button">Cancel Setup</button></div>
+            <p class="mfa-info">Store recovery information securely. If you lose your authenticator, account recovery may require administrator support.</p>
+          </div>
+        </div>
+      </section>
+
       <section class="panel account-card notification-card" id="notifications">
         <div class="notification-title-row">
           <h2>Notifications</h2>
@@ -322,6 +365,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="supabase-client.js?v=12" defer></script>
   <script src="auth-account.js?v=12" defer></script>
+  <script src="account-mfa.js?v=1" defer></script>
   <script src="site-footer.js?v=1" defer></script>
   <script src="vote-widget.js" defer></script>
   <script src="mobile/ribbon.js?v=2"></script>
