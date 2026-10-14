@@ -280,6 +280,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 /* V94.6: standalone step-three authentication and embedded account preferences */
 .v944-auth{display:grid;gap:12px;font-size:12px}.v944-auth .v944-panel{border:1px solid var(--line);border-radius:9px;background:var(--statbg);padding:13px;line-height:1.55}.v944-auth .v944-panel strong{font-size:13px}.v944-auth p{margin:7px 0;color:var(--mute)}.v944-auth .v944-actions{display:flex;gap:8px;flex-wrap:wrap}.v944-frame{width:100%;height:min(65vh,670px);border:1px solid var(--line);border-radius:8px;background:white}.v944-guide{padding:10px;margin-bottom:9px;background:var(--statbg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.5}.v944-guide[hidden]{display:none!important}
 
+.v949-check{display:flex;align-items:center;gap:9px;font-size:12px;margin:9px 0}.v949-check input{accent-color:var(--blue);flex:none}
 /* V94.8: keep verification action left, secondary MFA controls together on the right. */
 .v948-right-actions{display:flex;gap:9px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin:10px 0}
 .v948-action-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}
@@ -1624,10 +1625,11 @@ function v946AuthorizeScreen(name){
  const label=v87NetworkLabel(name);
  const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
  const validEndpoint=typeof endpoint==='string'&&endpoint.startsWith('/')&&!endpoint.startsWith('//');
- open(label+' · Secure connection',`<div class="v945-auth"><div class="v944-panel"><strong>${safe(label)}</strong><p>Continue using ${safe(label)}’s secure authorization. Your social-media password is entered only with the provider, never into Public Sentiment Dash.</p><p class="notice">Your browser or the provider may offer to remember your username and password. PSD does not save them.</p></div><p id="v946Status" class="notice" role="status">${validEndpoint?'Ready to start provider authorization.':'Provider authorization is not configured yet. No social account has been connected.'}</p></div>`,`<button class="btn accent" id="v946Go" ${validEndpoint?'':'disabled'}>Connect ${safe(label)}</button>`);
- if(!validEndpoint)return;
+ open(label+' · Secure connection',`<div class="v945-auth"><div class="v944-panel"><strong>${safe(label)}</strong><p>Continue securely with ${safe(label)}. Your username and password will be entered on the provider's login page, not into PSD.</p><label class="v949-check"><input id="v949RememberUser" type="checkbox" checked> Let my browser offer to remember my username</label><label class="v949-check"><input id="v949RememberPass" type="checkbox"> Let my browser offer to save my password</label><p class="notice">These choices are guidance only. PSD cannot control browser or provider password-saving prompts. Do not enter social-network passwords into PSD.</p></div><p id="v946Status" class="notice" role="status">${validEndpoint?'Ready to request secure provider authorization.':'This network is not yet configured for secure sign-in. GO will explain what is required; no account will be falsely marked connected.'}</p></div>`,`<button class="btn accent" id="v946Go">GO · Connect ${safe(label)}</button>`);
  $('#v946Go').onclick=async()=>{
-   const btn=$('#v946Go'),msg=$('#v946Status');btn.disabled=true;msg.textContent='Starting secure provider authorization…';
+   const btn=$('#v946Go'),msg=$('#v946Status');
+   if(!validEndpoint){msg.textContent='Secure connection is not available yet for '+label+'. Provider authorization must be configured before GO can sign you in. PSD cannot log in using a social password directly.';msg.setAttribute('role','alert');return}
+   btn.disabled=true;msg.textContent='Starting secure provider authorization…';
    try{
      const client=v945Client();if(!client)throw Error('PSD sign-in is unavailable.');
      const session=await client.auth.getSession();if(session.error||!session.data?.session?.access_token)throw Error('Sign in to PSD first.');
@@ -1637,7 +1639,6 @@ function v946AuthorizeScreen(name){
      if(!json||typeof json.authorization_url!=='string')throw Error('Provider authorization URL is missing.');
      const url=new URL(json.authorization_url);
      if(url.protocol!=='https:')throw Error('Authorization must use HTTPS.');
-     // OAuth provider redirect may open outside PSD temporarily. Never treat it as connected until callback validation.
      window.location.assign(url.href);
    }catch(err){msg.textContent=String(err?.message||err);btn.disabled=false}
  };
@@ -1718,6 +1719,7 @@ function v94SocialTerms(name){
   `**Scope and acceptance.** These Social & Market Networks Terms govern your optional use of ${label} features made available through Public Sentiment Dash LLC ("PSD"). By selecting I Agree and electronically signing, you acknowledge reading this disclosure and authorize PSD to record your acknowledgement for this specific network and policy version. PSD and ${label} are separate entities; PSD is not affiliated with, endorsed by, or responsible for the operation of ${label} unless expressly stated otherwise.`,
   `**Eligibility and account protection.** You are responsible for ensuring that you have authority to connect and use your account, safeguarding your devices, complying with the provider's terms and applicable law, and promptly reporting suspected unauthorized use. PSD may restrict access when reasonably necessary to protect users, services, or legal compliance. PSD will not request or store your ${label} password; any supported connection should use the provider's authorized sign-in mechanism.`,
   `**Permissions and use of information.** If a supported connection is offered, the provider will show the permissions requested. Subject to those permissions and provider rules, PSD may receive account identifiers, profile details, permitted posts, engagement or market-related information necessary to provide the selected functionality. Access will be limited to the permissions you grant. Provider APIs, their scope, rate limits, approval requirements, and content licenses control what PSD may retrieve or show. No connection or access to private content is guaranteed.`,
+  `**Browser-managed credentials.** If a connected service requires a username or password, you enter it directly with that provider using its authorized sign-in screen. PSD does not request, collect, transmit, or store the social provider password. Your web browser or provider may offer to remember credentials according to its own settings; PSD checkboxes cannot guarantee or control that behavior. Only approve access on the genuine provider authorization screen.`,
   `**Data and privacy.** PSD's separately published Privacy Policy must explain what PSD collects, why it is processed, service providers, applicable retention and deletion rules, security measures, and user rights. The ${label} privacy policy independently controls that provider's handling of your information. Do not submit confidential information through social widgets unless authorized and necessary. PSD should not sell or repurpose connected-account data contrary to disclosed practices or provider restrictions.`,
   `**Content and intellectual property.** Social posts, trademarks, feeds, images, and other materials may be owned by their respective rights holders. You receive no ownership or redistribution rights merely by viewing them through PSD. You agree not to scrape, circumvent access restrictions, impersonate users, misuse APIs, or publish content in violation of applicable law or third-party rights. PSD may remove content or disable an integration if necessary to comply with rights, provider rules, or law.`,
   `**Availability and changes.** Social functionality depends on independent providers and may be delayed, modified, suspended, limited, or discontinued without notice when outside PSD's control. Connections may fail because of revoked consent, expired tokens, provider outages, policy changes, or unavailable permissions. PSD may update this integration and these terms; materially changed terms should be shown for renewed consent when required.`,
@@ -1729,7 +1731,7 @@ function v94SocialTerms(name){
   `**Draft status.** This document is a product-development draft, not an attorney-approved agreement or substitute for the PSD Privacy Policy, Terms of Service, provider-specific data terms, or any legally required notices. Review by qualified counsel and account-bound consent storage are required before production reliance.`
  ];
  const termsHtml=terms.map(part=>{const escaped=safe(part);return `<p>${escaped.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</p>`}).join('');
- if(existing?.version==='step2-v2'){
+ if(existing?.version==='step2-v3'){
    open(label+' · Terms & Conditions',`<div class="v44-terms v94-legal-document">${termsHtml}</div><div class="v94-sign-completed"><strong>Agreement signed (preview)</strong><div>${safe(existing.first)} ${safe(existing.last)}</div><div class="muted">${safe(existing.signedAt||'')}</div></div>`,`<button class="btn accent" id="v94DoneTerms">Close</button>`);
    $('#v94DoneTerms').onclick=()=>{shut();v944OpenAuthenticator(name)};
    return;
@@ -1748,7 +1750,7 @@ function v94SocialTerms(name){
   const f=first.value.trim(),l=last.value.trim();
   if(!f||!l||!agree.checked)return;
   const signedAt=new Date().toISOString();
-  const next=v94ReadSignatures();next[name]={first:f,last:l,signedAt,version:'step2-v2'};
+  const next=v94ReadSignatures();next[name]={first:f,last:l,signedAt,version:'step2-v3'};
   try{localStorage.setItem(PSD_SIGNED_TERMS_KEY,JSON.stringify(next))}catch(e){$('#v94SignStatus').textContent='Could not save signature in this browser. Please enable site storage.';return}
   const panel=body.querySelector('.v94-sign-form');
   if(panel){panel.innerHTML=`<div class="v94-sign-completed"><strong>Signed · ${safe(label)}</strong><div>${safe(f)} ${safe(l)}</div><div class="muted">${safe(signedAt)}</div></div>`;}
