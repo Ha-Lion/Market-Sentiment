@@ -633,7 +633,7 @@ document.addEventListener('pointerup',e=>{
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
 document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
 document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80ClearChart(chart)},true);
+document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?e.target.closest('[data-v80-chart]'):null;if(chart)v80ClearChart(chart)},true);
 document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
@@ -1311,7 +1311,12 @@ case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gol
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
+case'social-service':{
+ const name=t.socialProvider||'Network';
+ if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks.</p>';
+ const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;
+ return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><p class="notice" role="status">This tile is ready. Personal account connection is not available until an approved provider authorization service is configured. PSD does not request or store social passwords.</p><p class="muted">Use the tile’s standard controls to move, resize, lock, or close it.</p></div>`;
+}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
@@ -1679,32 +1684,10 @@ function v90Logo(name,large=false){
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
 function v946AuthorizeScreen(name){
- const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
- const label=v87NetworkLabel(name);
- const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
- const validEndpoint=typeof endpoint==='string'&&endpoint.startsWith('/')&&!endpoint.startsWith('//');
- open(label+' · Secure connection',`<div class="v945-auth"><div class="v944-panel"><strong>${safe(label)}</strong><p>Continue securely with ${safe(label)}. Your username and password will be entered on the provider's login page, not into PSD.</p><label class="v949-check"><input id="v949RememberUser" type="checkbox" checked> I may save my username in the provider/browser</label><label class="v949-check"><input id="v949RememberPass" type="checkbox"> I may save my password in the provider/browser</label><p class="notice">These choices are guidance only. PSD cannot control browser or provider password-saving prompts. Do not enter social-network passwords into PSD.</p></div><p id="v946Status" class="notice" role="status">${validEndpoint?'Ready to request secure provider authorization.':'Your network tile stays within PSD. Live login and personalized content require a provider-approved connection that is not configured yet.'}</p></div>`,`<button class="btn accent" id="v946Go">Check connection · ${safe(label)}</button>`);
- $('#v946Go').onclick=async()=>{
-   const btn=$('#v946Go'),msg=$('#v946Status');
-   if(!validEndpoint){
-     // Do not misrepresent an external website visit as an authenticated provider connection.
-     msg.textContent='Your '+label+' dashboard tile has been prepared, but live account connection requires an approved '+label+' OAuth/API integration. Provider authorization is not configured. No credentials have been collected.';
-     msg.setAttribute('role','status');
-     return;
-   }
-   btn.disabled=true;msg.textContent='Starting secure provider authorization…';
-   try{
-     const client=v945Client();if(!client)throw Error('PSD sign-in is unavailable.');
-     const session=await client.auth.getSession();if(session.error||!session.data?.session?.access_token)throw Error('Sign in to PSD first.');
-     const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.data.session.access_token},credentials:'same-origin',body:JSON.stringify({provider:name})});
-     if(!res.ok)throw Error('Provider authorization is not available ('+res.status+').');
-     const json=await res.json();
-     if(!json||typeof json.authorization_url!=='string')throw Error('Provider authorization URL is missing.');
-     const url=new URL(json.authorization_url);
-     if(url.protocol!=='https:')throw Error('Authorization must use HTTPS.');
-     window.location.assign(url.href);
-   }catch(err){msg.textContent=String(err?.message||err);btn.disabled=false}
- };
+ // After PSD verification, return to the prepared tile. Never show a fake connection step.
+ shut();
+ const tile=tiles.find(t=>t.type==='social-service'&&t.socialProvider===name);
+ if(tile){tile.closed=false;tile.min=false;render();saveState();}
 }
 // V94.6: account-verified entry and in-place Supabase MFA enrollment.
 function v945Client(){return window.psdSupabase?.auth?.mfa?window.psdSupabase:null}
