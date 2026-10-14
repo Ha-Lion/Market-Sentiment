@@ -633,7 +633,7 @@ document.addEventListener('pointerup',e=>{
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
 document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
 document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80ClearChart(chart)},true);
+document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?e.target.closest('[data-v80-chart]'):null;if(chart)v80ClearChart(chart)},true);
 document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
@@ -1679,6 +1679,7 @@ function v90Logo(name,large=false){
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
 function v946AuthorizeScreen(name){
+ if(SOCIAL.some(([n])=>n===name)){shut();v44OpenNetwork(name);return}
  const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
  const label=v87NetworkLabel(name);
  const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
@@ -1872,13 +1873,13 @@ async function v9428Connect(host){
   const token=String(Date.now())+Math.random().toString(36);host.dataset.v9428Request=token;
   const link=document.createElement('a');link.className='twitter-timeline';link.href='https://twitter.com/'+raw;link.textContent='Posts by @'+raw;out.append(link);
   try{
-   if(!window.twttr?.widgets?.load){await new Promise((resolve,reject)=>{let script=document.querySelector('script[data-v9428-xscript]');if(script){if(window.twttr?.widgets)resolve();else{script.addEventListener('load',resolve,{once:true});script.addEventListener('error',reject,{once:true});}}else{script=document.createElement('script');script.dataset.v9428Xscript='1';script.src='https://platform.twitter.com/widgets.js';script.async=true;script.onload=resolve;script.onerror=reject;document.head.append(script)}})}
+   if(!window.twttr?.widgets?.load){await Promise.race([new Promise((resolve,reject)=>{let script=document.querySelector('script[data-v9428-xscript]');if(script){if(window.twttr?.widgets)resolve();else{script.addEventListener('load',resolve,{once:true});script.addEventListener('error',reject,{once:true});}}else{script=document.createElement('script');script.dataset.v9428Xscript='1';script.src='https://platform.twitter.com/widgets.js';script.async=true;script.onload=resolve;script.onerror=reject;document.head.append(script)}}),new Promise((_,reject)=>setTimeout(()=>reject(Error('X widget script timed out')),12000))])}
    if(host.dataset.v9428Request!==token)return;
    if(!window.twttr?.widgets?.createTimeline)throw Error('X widget API unavailable');
    out.replaceChildren();
    const result=await Promise.race([window.twttr.widgets.createTimeline({sourceType:'profile',screenName:raw},out,{height:450,theme:'dark'}),new Promise(resolve=>setTimeout(()=>resolve(null),15000))]);
    if(host.dataset.v9428Request!==token)return;
-   v9428Msg(host,result?'Public timeline loaded. Some actions may open X.':'X did not render this public timeline. X may be rate-limiting widget requests (HTTP 429).');
+   if(!result){out.replaceChildren();v9428Msg(host,'X declined the public widget request. Your browser previously reported HTTP 429 (rate limit). No login is needed for public widgets; retrying repeatedly will not fix this.');}else{v9428Msg(host,'Public timeline loaded. Some actions may open X.');}
   }catch(e){if(host.dataset.v9428Request===token)v9428Msg(host,'X widget unavailable: '+String(e.message||e))}
   return;
  }
@@ -1905,6 +1906,7 @@ function v86StartNetwork(name){
  // This is a dashboard container, NOT proof of provider authorization.
  if(!SOCIAL.some(([provider])=>provider===name))return;
  v44OpenNetwork(name);
+ v945RequireLogin(name);
 }
 // V44: Keep users inside PSD. Third-party auth is not simulated and credentials are never collected.
 function v44OpenNetwork(name){
@@ -2107,7 +2109,7 @@ board.addEventListener('keydown',e=>{
  t.y=Math.max(0,Math.min(100000,t.y+offsets[e.key][1]));render();
  [...board.querySelectorAll('.tile')].find(el=>el.dataset.id===t.id)?.querySelector('.bar')?.focus();
 });
-board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=(e.target instanceof Element?e.target.closest('.tile'):null);if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=nextTileZ());el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{t.x=Math.max(0,ox+dx);t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
+board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=nextTileZ());el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{t.x=Math.max(0,ox+dx);t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
 modal.addEventListener('click',e=>{
  const star=e.target.closest('[data-v31-star]');
  if(star){
