@@ -2264,19 +2264,26 @@ window.addEventListener('pageshow',refresh);
 .psd-x-target iframe{max-width:100%!important}
 </style>
 <script>
-/* X official public widget pilot. No OAuth claims or X password handling. */
+/* Official X public widget test: timeout and actionable diagnostics; no passwords. */
 (function(){
  let loader=null;
+ const timed=(p,ms,label)=>Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label)),ms))]);
  function loadX(){
   if(window.twttr?.widgets?.createTimeline)return Promise.resolve(window.twttr);
   if(loader)return loader;
   loader=new Promise((resolve,reject)=>{
-   const old=document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
-   const script=old||document.createElement('script');
-   const timeout=setTimeout(()=>reject(Error('X widget service did not respond. Check browser privacy settings or network blocking.')),12000);
-   const poll=setInterval(()=>{if(window.twttr?.widgets?.createTimeline){clearTimeout(timeout);clearInterval(poll);resolve(window.twttr)}},120);
-   script.addEventListener('error',()=>{clearTimeout(timeout);clearInterval(poll);reject(Error('X widget service was blocked by the browser.'))},{once:true});
-   if(!old){script.async=true;script.src='https://platform.twitter.com/widgets.js';document.head.appendChild(script)}
+   const url='https://platform.x.com/widgets.js';
+   const existing=Array.from(document.scripts).find(s=>/platform\.(x|twitter)\.com\/widgets\.js/.test(s.src));
+   const script=existing||document.createElement('script');
+   let finished=false;
+   const clean=()=>{clearTimeout(timeout);clearInterval(poll);window.removeEventListener('securitypolicyviolation',csp)};
+   const fail=(message)=>{if(finished)return;finished=true;clean();loader=null;reject(Error(message))};
+   const csp=(e)=>{if(/platform\.(x|twitter)\.com/.test(e.blockedURI||''))fail('Website security policy blocked the X widget script ('+(e.violatedDirective||'CSP')+').')};
+   const timeout=setTimeout(()=>fail('The X widget script timed out. Check Chrome extensions, privacy blocking, or the website Content Security Policy.'),10000);
+   const poll=setInterval(()=>{if(window.twttr?.widgets?.createTimeline&&!finished){finished=true;clean();resolve(window.twttr)}},150);
+   window.addEventListener('securitypolicyviolation',csp);
+   script.addEventListener('error',()=>fail('The browser could not load the X widget script. Check the Network/Console tab for platform.x.com.'),{once:true});
+   if(!existing){script.async=true;script.src=url;document.head.appendChild(script)}
   });
   return loader;
  }
@@ -2287,16 +2294,18 @@ window.addEventListener('pageshow',refresh);
   e.preventDefault();e.stopImmediatePropagation();
   const box=e.target.closest('.psd-x-widget');if(!box)return;
   const field=box.querySelector('.psd-x-handle'),target=box.querySelector('.psd-x-target'),msg=box.querySelector('.psd-x-message');
-  if(exit){target.replaceChildren();msg.textContent='Timeline cleared. This does not log out of X.';return}
+  if(exit){box.dataset.request=String((+box.dataset.request||0)+1);target.replaceChildren();msg.textContent='Timeline cleared.';return}
   const username=field.value.trim().replace(/^@/,'');
-  if(!/^[A-Za-z0-9_]{1,15}$/.test(username)){msg.textContent='Enter a valid public X username (1–15 letters, numbers or underscores).';return}
+  if(!/^[A-Za-z0-9_]{1,15}$/.test(username)){msg.textContent='Enter a valid public X username.';return}
+  const request=String((+box.dataset.request||0)+1);box.dataset.request=request;
   target.replaceChildren();msg.textContent='Loading public posts from @'+username+'…';connect.disabled=true;
   try{
    const x=await loadX();
-   if(!document.contains(target))return;
-   const el=await x.widgets.createTimeline({sourceType:'profile',screenName:username},target,{theme:document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light',chrome:'noheader',height:500,dnt:true});
-   msg.textContent=el?'Showing public posts from @'+username+'. Some post interactions may open X.':'X did not provide an embeddable timeline for @'+username+'. Try another public account.';
-  }catch(err){msg.textContent=err.message||'Unable to load X widget.'}
+   if(!target.isConnected||box.dataset.request!==request)return;
+   const el=await timed(Promise.resolve(x.widgets.createTimeline({sourceType:'profile',screenName:username},target,{theme:'dark',height:490,dnt:true})),12000,'X loaded its script, but did not render the timeline within 12 seconds. The profile may be private, X may block the embed, or browser privacy settings may interfere.');
+   if(box.dataset.request!==request)return;
+   msg.textContent=el?'Public posts from @'+username+' are shown below.':'X returned no timeline. Test with a known public account such as NASA.';
+  }catch(err){if(box.dataset.request===request)msg.textContent='Could not display X posts: '+(err?.message||'Unknown embed error')}
   finally{connect.disabled=false}
  },true);
 })();
