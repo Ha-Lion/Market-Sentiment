@@ -1881,7 +1881,7 @@
       const raw=String(v).trim();
       if(/^(published|released|previous edition)$/i.test(raw))return "N/A";
       // Strip well-known descriptive unit prose, but never change the original stored value.
-      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|percent(?:age)?(?:\s+(?:MoM|YoY))?|bps?|jobs\/week(?:\s+4.week moving average)?|high auction yield.*|k|m|b|index points?|points?))?$/i);
+      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|percent(?:age)?(?:\s+(?:MoM|YoY|high auction yield.*))?|bps?|jobs\/week(?:\s+4.week moving average)?|high auction yield.*|k|m|b|index points?|points?))?$/i);
       if(!match)return esc(raw);
       const n=Number(match[1].replace(/,/g,""));
       if(!Number.isFinite(n))return "—";
@@ -2138,7 +2138,7 @@
       };
     }
 
-    function drawCanvasLine(host,history,series="history"){
+    function drawCanvasLine(host,history,series="history",eventContext=null){
       if(!host) return;
 
       try{
@@ -2154,7 +2154,7 @@
             forecast:row.forecast,
             previous:row.previous,
             revised:row.revised,
-            unit:row.unit||""
+            unit:row.unit|| (eventContext?calendarDisplayUnit(eventContext):"")
           };
         }).filter(row=>row.date && row.value!==null);
 
@@ -2789,7 +2789,7 @@
         document.querySelectorAll(".ec-chart-toggle").forEach(b=>
           b.classList.toggle("active",b.dataset.chartSeries==="history")
         );
-        drawCanvasLine(chart,hist?.history||[],"history");
+        drawCanvasLine(chart,hist?.history||[],"history",e);
         updateEventAnalytics(e,hist?.history||[]);
         if(hist?.mode==="configured"){
           const monthly=usableHistoryMonths(hist.history||[]);
