@@ -1288,7 +1288,7 @@ case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div clas
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':{const name=t.socialProvider||'Network';if(name==='X')return v9413XTimelineContent(t);if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
+case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';if(name==='X'){const handle=localStorage.getItem('psd-x-public-handle-v9413')||'';return `<div class="v44-service"><div class="row"><strong>X.com</strong><span class="chip">Public timeline</span></div><p class="muted">View posts from a public X profile in this tile. A personal signed-in X home feed is not supported without an approved X API connection.</p><label class="field">Public X username (without @)<input data-psd-x-handle maxlength="15" placeholder="e.g. NASA" value="${safe(handle)}"></label><button class="btn accent" data-psd-x-load="1">Show timeline</button><p class="notice" data-psd-x-error></p><div data-psd-x-timeline style="min-height:180px;margin-top:12px"></div></div>`;}return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><p class="notice">The complete ${safe(label)} website cannot be guaranteed inside a dashboard tile. An approved provider integration is required.</p><button class="btn" data-external="${safe(url)}">Open official website ↗</button></div>`;}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return `<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
@@ -1297,20 +1297,7 @@ function fitBoardHeight(){
   const minViewport=Math.max(600,window.innerHeight-board.getBoundingClientRect().top-35);
   board.style.minHeight=Math.max(minViewport,Math.ceil(maxBottom*scale+100))+'px';
 }
-// Minimal provider-supported X timeline enhancement. This is a public embed,
-// NOT an authenticated X home feed and does not alter the PSD login flow.
-function v9413XTimelineContent(t){
- const handle=(localStorage.getItem('psd-x-public-handle')||'').trim();
- const cleaned=/^[A-Za-z0-9_]{1,15}$/.test(handle)?handle:'';
- return `<div class="v44-service"><div class="row"><strong>X.com</strong><span class="chip">Public timeline</span></div><p class="notice">X blocks its full signed-in website inside dashboards. An official public profile timeline can appear here instead; your private home feed requires an authorized X API integration.</p><label class="field">Public X account handle<input type="text" maxlength="16" autocomplete="off" data-x-handle placeholder="e.g. Bloomberg" value="${safe(cleaned)}"></label><button class="btn" data-x-show="1">Display public timeline</button><div class="psd-x-timeline-host" style="margin-top:12px;min-height:190px;overflow:auto">${cleaned?`<a class="twitter-timeline" data-theme="dark" data-height="500" href="https://twitter.com/${cleaned}">Posts by @${cleaned}</a>`:'<p class="notice">Enter a public X handle to display posts from that account.</p>'}</div></div>`;
-}
-function v9413LoadXTimeline(){
- if(!board.querySelector('.psd-x-timeline-host .twitter-timeline'))return;
- if(window.twttr?.widgets?.load){window.twttr.widgets.load(board);return}
- if(document.querySelector('script[data-psd-x-widget]'))return;
- const s=document.createElement('script');s.async=true;s.src='https://platform.twitter.com/widgets.js';s.setAttribute('data-psd-x-widget','1');document.head.appendChild(s);
-}
-function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span><button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});fitBoardHeight();persist();v9413LoadXTimeline()}
+function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span><button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});fitBoardHeight();persist();v9413LoadXWidget()}
 function open(title,html,buttons=''){ modal.classList.remove('v35-search-modal');$('#modalTitle').textContent=title;body.innerHTML=html;footer.innerHTML=buttons;const save=$('#v58SaveWatch');if(save){save.hidden=true;save.onclick=null;}document.getElementById('v70SaveTile')?.remove(); modal.classList.add('open')};function shut(){modal.classList.remove('open')};$('#closeModal').onclick=shut;modal.addEventListener('click',e=>{if(e.target===modal)shut()});document.addEventListener('keydown',e=>{if(e.key==='Escape')shut()});
 // V43: Focused archive-style search interface for genuine recent dashboard headlines.
 const V48_NEWS_PREF_KEY='psd-news-search-preferences-v48';
@@ -1644,34 +1631,44 @@ function v90Logo(name,large=false){
 // V94.6 · Step 4: Provider-hosted OAuth, never social username/password collection.
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
+// After successful PSD MFA, do not display a fake connection dialog.
+// X's full website cannot be framed; offer its supported public timeline instead.
 function v946AuthorizeScreen(name){
- const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
- const label=v87NetworkLabel(name);
- const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
- const validEndpoint=typeof endpoint==='string'&&endpoint.startsWith('/')&&!endpoint.startsWith('//');
- open(label+' · Secure connection',`<div class="v945-auth"><div class="v944-panel"><strong>${safe(label)}</strong><p>Continue securely with ${safe(label)}. Your username and password will be entered on the provider's login page, not into PSD.</p><label class="v949-check"><input id="v949RememberUser" type="checkbox" checked> I may save my username in the provider/browser</label><label class="v949-check"><input id="v949RememberPass" type="checkbox"> I may save my password in the provider/browser</label><p class="notice">These choices are guidance only. PSD cannot control browser or provider password-saving prompts. Do not enter social-network passwords into PSD.</p></div><p id="v946Status" class="notice" role="status">${validEndpoint?'Ready to request secure provider authorization.':'Your network tile stays within PSD. Live login and personalized content require a provider-approved connection that is not configured yet.'}</p></div>`,`<button class="btn accent" id="v946Go">Check connection · ${safe(label)}</button>`);
- $('#v946Go').onclick=async()=>{
-   const btn=$('#v946Go'),msg=$('#v946Status');
-   if(!validEndpoint){
-     // Do not misrepresent an external website visit as an authenticated provider connection.
-     msg.textContent='Your '+label+' dashboard tile has been prepared, but live account connection requires an approved '+label+' OAuth/API integration. Provider authorization is not configured. No credentials have been collected.';
-     msg.setAttribute('role','status');
-     return;
-   }
-   btn.disabled=true;msg.textContent='Starting secure provider authorization…';
-   try{
-     const client=v945Client();if(!client)throw Error('PSD sign-in is unavailable.');
-     const session=await client.auth.getSession();if(session.error||!session.data?.session?.access_token)throw Error('Sign in to PSD first.');
-     const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.data.session.access_token},credentials:'same-origin',body:JSON.stringify({provider:name})});
-     if(!res.ok)throw Error('Provider authorization is not available ('+res.status+').');
-     const json=await res.json();
-     if(!json||typeof json.authorization_url!=='string')throw Error('Provider authorization URL is missing.');
-     const url=new URL(json.authorization_url);
-     if(url.protocol!=='https:')throw Error('Authorization must use HTTPS.');
-     window.location.assign(url.href);
-   }catch(err){msg.textContent=String(err?.message||err);btn.disabled=false}
- };
+ shut();
+ const tile=tiles.find(t=>t.type==='social-service'&&t.socialProvider===name);
+ if(tile){tile.closed=false;tile.min=false;render();}
+ if(name==='X') v9413LoadXWidget();
 }
+function v9413LoadXWidget(){
+ const slots=[...document.querySelectorAll('[data-psd-x-timeline]')];
+ if(!slots.length)return;
+ const handle=localStorage.getItem('psd-x-public-handle-v9413')||'';
+ slots.forEach(slot=>{
+  slot.replaceChildren();
+  if(!/^[a-zA-Z0-9_]{1,15}$/.test(handle))return;
+  const a=document.createElement('a');a.className='twitter-timeline';
+  a.href='https://twitter.com/'+handle;
+  a.dataset.height='450'; a.textContent='Posts by @'+handle;slot.appendChild(a);
+ });
+ if(!handle)return;
+ if(window.twttr?.widgets?.load){window.twttr.widgets.load();return;}
+ if(document.getElementById('psd-x-widgets-script'))return;
+ const sc=document.createElement('script');sc.id='psd-x-widgets-script';
+ sc.src='https://platform.twitter.com/widgets.js';sc.async=true;
+ sc.onerror=()=>{document.querySelectorAll('[data-psd-x-error]').forEach(e=>e.textContent='The X widget could not load. Check tracking protection or network restrictions.')};
+ document.head.appendChild(sc);
+}
+board.addEventListener('click', e=>{
+ const btn=e.target.closest('[data-psd-x-load]');if(!btn)return;
+ e.preventDefault();e.stopPropagation();
+ const tile=btn.closest('.tile');const input=tile?.querySelector('[data-psd-x-handle]');
+ const handle=(input?.value||'').trim().replace(/^@/,'');
+ const error=tile?.querySelector('[data-psd-x-error]');
+ if(!/^[a-zA-Z0-9_]{1,15}$/.test(handle)){if(error)error.textContent='Enter a valid public X username (1–15 letters, numbers or underscores).';return;}
+ localStorage.setItem('psd-x-public-handle-v9413',handle);
+ if(error)error.textContent='Loading public timeline…';
+ v9413LoadXWidget();
+},true);
 // V94.6: account-verified entry and in-place Supabase MFA enrollment.
 function v945Client(){return window.psdSupabase?.auth?.mfa?window.psdSupabase:null}
 async function v945RequireLogin(name){
@@ -1969,7 +1966,7 @@ function tileSettings(t){
 board.addEventListener('input',e=>{const input=e.target.closest('[data-v46-network-search]');if(!input)return;const panel=input.closest('.tile');if(!panel)return;v47NetworkFilter=input.value;v47FilterNetworks(panel)});
 board.addEventListener('change',e=>{const sel=e.target.closest('[data-v75-frame]');if(!sel)return;const t=tiles.find(t=>t.id===sel.closest('.tile')?.dataset.id);if(t){t.indicatorFrame=['daily','weekly','monthly'].includes(sel.value)?sel.value:'daily';render();}});
 board.addEventListener('change',e=>{const s=e.target.closest('[data-v79-period]');if(!s)return;v79Period=['daily','weekly','monthly'].includes(s.value)?s.value:'daily';render();}); board.addEventListener('change',e=>{const select=e.target.closest('[data-v39-range]');if(!select)return;state.historyDays=[0,7,30,90,365].includes(Number(select.value))?Number(select.value):0;render()});
-board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v39-export')){v39ExportHistory();return}if(b.hasAttribute('data-v69-all')){v69ShowAllWatch=!v69ShowAllWatch;render();return}if(b.hasAttribute('data-catalog-asset')){const asset=b.dataset.catalogAsset;if(ASSETS.includes(asset)){state.selected=asset;render();}return}if(b.hasAttribute('data-watch-slot')){const asset=state.watch[Number(b.dataset.watchSlot)];if(asset){state.selected=asset;render()}return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.v45Terms){v45ManageConsent(b.dataset.v45Terms);return}if(b.hasAttribute('data-v44-return')){if(t&&t.type==='social-service'){t.closed=true;const main=tiles.find(x=>x.id==='social');if(main)main.closed=false;render();main&&board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'})}return}if(b.hasAttribute('data-x-show')){const input=b.closest('.tile')?.querySelector('[data-x-handle]');const handle=(input?.value||'').trim().replace(/^@/,'');if(!/^[A-Za-z0-9_]{1,15}$/.test(handle)){alert('Enter a valid public X handle (1–15 letters, numbers, or underscores).');return}localStorage.setItem('psd-x-public-handle',handle);render();return}if(b.dataset.social){v86StartNetwork(b.dataset.social);return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':if(t.type==='social-service'){t.closed=true;t.min=false;t.maxed=false;const main=tiles.find(x=>x.id==='social');if(main){main.closed=false;main.min=false;setTimeout(()=>board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'}),0)}}else{t.min=!t.min;t.maxed=false}break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
+board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v39-export')){v39ExportHistory();return}if(b.hasAttribute('data-v69-all')){v69ShowAllWatch=!v69ShowAllWatch;render();return}if(b.hasAttribute('data-catalog-asset')){const asset=b.dataset.catalogAsset;if(ASSETS.includes(asset)){state.selected=asset;render();}return}if(b.hasAttribute('data-watch-slot')){const asset=state.watch[Number(b.dataset.watchSlot)];if(asset){state.selected=asset;render()}return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.v45Terms){v45ManageConsent(b.dataset.v45Terms);return}if(b.hasAttribute('data-v44-return')){if(t&&t.type==='social-service'){t.closed=true;const main=tiles.find(x=>x.id==='social');if(main)main.closed=false;render();main&&board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'})}return}if(b.dataset.social){v86StartNetwork(b.dataset.social);return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':if(t.type==='social-service'){t.closed=true;t.min=false;t.maxed=false;const main=tiles.find(x=>x.id==='social');if(main){main.closed=false;main.min=false;setTimeout(()=>board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'}),0)}}else{t.min=!t.min;t.maxed=false}break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
 board.addEventListener('keydown',e=>{
  const grip=e.target.closest('.handle');if(!grip)return;
  const t=tiles.find(x=>x.id===grip.closest('.tile')?.dataset.id);
