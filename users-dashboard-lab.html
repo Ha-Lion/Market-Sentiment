@@ -277,7 +277,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v90-provider-logo.v90-large:has(img[src^="data:image/webp"]){width:70px;min-width:70px;height:52px;border-radius:8px}
 .v90-provider-logo img{object-fit:contain}
 
-/* V94.5: standalone step-three authentication and embedded account preferences */
+/* V94.6: standalone step-three authentication and embedded account preferences */
 .v944-auth{display:grid;gap:12px;font-size:12px}.v944-auth .v944-panel{border:1px solid var(--line);border-radius:9px;background:var(--statbg);padding:13px;line-height:1.55}.v944-auth .v944-panel strong{font-size:13px}.v944-auth p{margin:7px 0;color:var(--mute)}.v944-auth .v944-actions{display:flex;gap:8px;flex-wrap:wrap}.v944-frame{width:100%;height:min(65vh,670px);border:1px solid var(--line);border-radius:8px;background:white}.v944-guide{padding:10px;margin-bottom:9px;background:var(--statbg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.5}.v944-guide[hidden]{display:none!important}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
@@ -1610,7 +1610,33 @@ function v90Logo(name,large=false){
  const src=V91_UPLOADED_LOGOS[name];if(!src)return '';
  return `<span class="${cl}" title="${safe(v87NetworkLabel(name))}"><img src="${src}" alt=""></span>`;
 }
-// V94.5: account-verified entry and in-place Supabase MFA enrollment.
+// V94.6 · Step 4: Provider-hosted OAuth, never social username/password collection.
+// Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
+// For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
+function v946AuthorizeScreen(name){
+ const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
+ const label=v87NetworkLabel(name);
+ const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
+ const validEndpoint=typeof endpoint==='string'&&endpoint.startsWith('/')&&!endpoint.startsWith('//');
+ open(label+' · Secure connection',`<div class="v945-auth"><div class="v944-panel"><strong>${safe(label)}</strong><p>Continue using ${safe(label)}’s secure authorization. Your social-media password is entered only with the provider, never into Public Sentiment Dash.</p><p class="notice">Your browser or the provider may offer to remember your username and password. PSD does not save them.</p></div><p id="v946Status" class="notice" role="status">${validEndpoint?'Ready to start provider authorization.':'Provider authorization is not configured yet. No social account has been connected.'}</p></div>`,`<button class="btn accent" id="v946Go" ${validEndpoint?'':'disabled'}>Connect ${safe(label)}</button>`);
+ if(!validEndpoint)return;
+ $('#v946Go').onclick=async()=>{
+   const btn=$('#v946Go'),msg=$('#v946Status');btn.disabled=true;msg.textContent='Starting secure provider authorization…';
+   try{
+     const client=v945Client();if(!client)throw Error('PSD sign-in is unavailable.');
+     const session=await client.auth.getSession();if(session.error||!session.data?.session?.access_token)throw Error('Sign in to PSD first.');
+     const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.data.session.access_token},credentials:'same-origin',body:JSON.stringify({provider:name})});
+     if(!res.ok)throw Error('Provider authorization is not available ('+res.status+').');
+     const json=await res.json();
+     if(!json||typeof json.authorization_url!=='string')throw Error('Provider authorization URL is missing.');
+     const url=new URL(json.authorization_url);
+     if(url.protocol!=='https:')throw Error('Authorization must use HTTPS.');
+     // OAuth provider redirect may open outside PSD temporarily. Never treat it as connected until callback validation.
+     window.location.assign(url.href);
+   }catch(err){msg.textContent=String(err?.message||err);btn.disabled=false}
+ };
+}
+// V94.6: account-verified entry and in-place Supabase MFA enrollment.
 function v945Client(){return window.psdSupabase?.auth?.mfa?window.psdSupabase:null}
 async function v945RequireLogin(name){
  const label=v87NetworkLabel(name),client=v945Client();
@@ -1628,12 +1654,30 @@ async function v944OpenAuthenticator(name){
  if(!client){open(label+' · Google Authenticator',`<p class="notice">Supabase authentication is unavailable. Open the deployed PSD dashboard and retry.</p>`);return}
  open(label+' · Google Authenticator',`<div class="v945-auth"><p>Google Authenticator is set up once per PSD account.</p><p id="v945Status" role="status">Checking authenticator status…</p><div id="v945Learn" hidden><p>Install Google Authenticator on your phone. Click Generate My QR, scan the code using the app's + button, then enter the 6-digit code below to activate it.</p></div><button class="btn" id="v945LearnButton">Learn about Google Authenticator</button><div id="v945Enroll" hidden><button class="btn accent" id="v945Generate">Generate My Setup QR</button><div id="v945Setup" hidden><img id="v945Qr" alt="Your private authenticator enrollment QR" style="width:200px;max-width:100%;background:#fff;padding:8px;border-radius:8px;display:block;margin:12px 0"><p class="notice">Manual setup key: <code id="v945Secret"></code></p><label class="field">Six-digit code<input id="v945Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><button class="btn accent" id="v945Verify">Verify & Activate</button></div></div></div>`,`<button class="btn" id="v945Close">Close</button>`);
  const status=$('#v945Status'),enroll=$('#v945Enroll');let factor=null,busy=false;
+ const appendVerify=verifiedFactor=>{
+   const box=document.createElement('div');box.className='v944-panel';box.innerHTML='<label class="field">Six-digit code from Google Authenticator<input id="v946FreshCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><p id="v946VerifyStatus" class="notice" role="status">Enter a current code to continue securely.</p><button class="btn accent" id="v946VerifyFresh">Verify & Continue</button>';
+   status.after(box);
+   $('#v946VerifyFresh').onclick=async()=>{
+     const code=$('#v946FreshCode').value.trim(),msg=$('#v946VerifyStatus'),btn=$('#v946VerifyFresh');
+     if(!/^\d{6}$/.test(code)){msg.textContent='Enter a six-digit code.';return}
+     btn.disabled=true;
+     try{
+       const result=await client.auth.mfa.challengeAndVerify({factorId:verifiedFactor.id,code});
+       if(result.error)throw result.error;
+       // Require elevated authenticator assurance, not merely code-shaped input.
+       const assurance=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+       if(assurance.error||assurance.data?.currentLevel!=='aal2')throw Error('Secure verification was not completed.');
+       v946AuthorizeScreen(name);
+     }catch(e){msg.textContent='Verification failed: '+String(e.message||e);btn.disabled=false}
+   };
+ };
+
  $('#v945Close').onclick=shut;
  $('#v945LearnButton').onclick=()=>{$('#v945Learn').hidden=!$('#v945Learn').hidden};
  try{
    const u=await client.auth.getUser();if(u.error||!u.data?.user){status.textContent='PSD sign-in is required. Please sign in and retry.';return}
    const list=await client.auth.mfa.listFactors();if(list.error)throw list.error;
-   if((list.data?.totp||[]).some(x=>x.status==='verified')){status.textContent='Google Authenticator is already active for this account. No new QR code is needed.';return}
+   const verified=(list.data?.totp||[]).find(x=>x.status==='verified');if(verified){status.textContent='Google Authenticator is active. Enter a current code to continue.';appendVerify(verified);return}
    status.textContent='Not activated. Generate a QR code to enroll your PSD account.';enroll.hidden=false;
  }catch(e){status.textContent='Could not check MFA: '+String(e.message||e);return}
  $('#v945Generate').onclick=async()=>{
@@ -1647,7 +1691,7 @@ async function v944OpenAuthenticator(name){
    const code=$('#v945Code').value.trim();if(!factor||!/^\d{6}$/.test(code)){status.textContent='Enter a six-digit code after generating your QR.';return}
    if(busy)return;busy=true;
    try{const c=await client.auth.mfa.challenge({factorId:factor});if(c.error)throw c.error;const v=await client.auth.mfa.verify({factorId:factor,challengeId:c.data.id,code});if(v.error)throw v.error;
-     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;
+     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;v946AuthorizeScreen(name);
    }catch(e){status.textContent='Verification failed: '+String(e.message||e)}finally{busy=false}
  };
 }
