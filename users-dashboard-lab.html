@@ -1878,6 +1878,15 @@ async function v9428Connect(host){
    iframe.src='https://www.facebook.com/plugins/page.php?href='+encodeURIComponent('https://www.facebook.com/'+raw)+'&tabs=timeline&width=500&height=490&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false';out.append(iframe);
    v9428Msg(host,'Loading public Page widget. Facebook may decline to show some Pages.');return;
   }
+  // V94.31: Avoid repeated widget requests after an X syndication rate limit.
+  const throttleKey='psd-x-widget-cooldown-v9431';
+  let until=0;
+  try{until=Number(sessionStorage.getItem(throttleKey)||0)}catch{}
+  if(until>Date.now()){
+   const minutes=Math.ceil((until-Date.now())/60000);
+   v9428Msg(host,`X is temporarily limiting public widget requests (HTTP 429). Please try again in about ${minutes} minute${minutes===1?'':'s'}. This is an X restriction, not a login issue.`);
+   return;
+  }
   v9428Msg(host,'Loading public X timeline…');
   const token=String(Date.now())+Math.random().toString(36);host.dataset.v9428Request=token;
   const link=document.createElement('a');link.className='twitter-timeline';link.href='https://twitter.com/'+raw;link.textContent='Posts by @'+raw;out.append(link);
@@ -1888,7 +1897,11 @@ async function v9428Connect(host){
    out.replaceChildren();
    const result=await Promise.race([window.twttr.widgets.createTimeline({sourceType:'profile',screenName:raw},out,{height:450,theme:'dark'}),new Promise(resolve=>setTimeout(()=>resolve(null),15000))]);
    if(host.dataset.v9428Request!==token)return;
-   if(!result){out.replaceChildren();v9428Msg(host,'X declined the public widget request. Your browser previously reported HTTP 429 (rate limit). No login is needed for public widgets; retrying repeatedly will not fix this.');}else{v9428Msg(host,'Public timeline loaded. Some actions may open X.');}
+   if(!result){
+     out.replaceChildren();
+     try{sessionStorage.setItem(throttleKey,String(Date.now()+30*60*1000))}catch{}
+     v9428Msg(host,'X did not return a public timeline. The browser has reported HTTP 429 (rate limit). Wait at least 30 minutes before trying once more; there is no guaranteed reset time.');
+    }else{v9428Msg(host,'Public timeline loaded. Some actions may open X.');}
   }catch(e){if(host.dataset.v9428Request===token)v9428Msg(host,'X widget unavailable: '+String(e.message||e))}
   return;
  }
