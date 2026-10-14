@@ -318,12 +318,15 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v44-terms.v94-legal-document p{margin:0 0 4px!important;padding:0!important;font-size:inherit!important;line-height:inherit!important}
 .v44-terms.v94-legal-document strong{font-weight:700}
 .v94-sign-form{padding-top:8px!important}
-</style><style>
-.psd-x-widget{height:100%;display:flex;flex-direction:column;gap:9px;min-height:0}
-.psd-x-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
-.psd-x-handle{padding:9px 10px;flex:1 1 180px;min-width:120px;border:1px solid #858c99;border-radius:7px;background:transparent;color:inherit}
-.psd-x-target{flex:1 1 auto;min-height:210px;overflow:auto}
-.psd-x-target iframe{max-width:100%!important}
+</style><style id="v9421-news-css">
+.v9421-inline-news .v42-searchgrid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))!important}
+.v9421-inline-news .v42-searchbox{padding:10px!important;margin-bottom:10px}
+.v9421-inline-news .v42-result{cursor:grab}
+.v9421-inline-news .v42-result:active{cursor:grabbing}
+.v9421-favorites{min-height:100%;border:2px dashed rgba(222,175,78,.48);border-radius:10px;padding:10px;display:grid;align-content:start;gap:10px}
+.v9421-favorites .v42-result{cursor:default}
+.v9421-inline-news .v43-search-actions{flex-wrap:wrap;gap:8px}
+.v9421-inline-news .v42-resultsheading{gap:8px;flex-wrap:wrap}
 </style>
 </head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
@@ -1293,18 +1296,18 @@ case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id
 case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
-case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
+case'search':return `<div class="v9421-inline-news"></div>`;
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks.</p>';if(name==='X')return `<div class="psd-x-widget"><div class="row"><strong>X · Public Timeline</strong><span class="chip">Official widget</span></div><div class="psd-x-controls"><input class="psd-x-handle" aria-label="Public X username" placeholder="Public X username (e.g. NASA)" autocomplete="off" maxlength="40"><button class="btn accent" data-psd-x-connect="1">Connect to X.com</button><button class="btn" data-psd-x-exit="1">Exit</button></div><p class="psd-x-message muted" role="status">Connect displays public posts from the selected X account inside this tile. It does not sign you in to X.</p><div class="psd-x-target" style="min-height:240px;max-height:100%;overflow:auto"></div></div>`;const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">No embedded widget configured</span></div><p class="notice">This network needs its own officially supported embed. The rest of V94.13 is unchanged.</p><button class="btn" data-social="${safe(name)}">Connection steps</button></div>`}
+case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
-default:return `<div class="muted">Custom tile · configure using ⚙</div>`}}
+default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
   const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370);
   const maxBottom=tiles.filter(t=>!t.closed&&!t.maxed).reduce((v,t)=>Math.max(v,(Number(t.y)||0)+(t.min?39/scale:(Number(t.h)||0))),0);
   const minViewport=Math.max(600,window.innerHeight-board.getBoundingClientRect().top-35);
   board.style.minHeight=Math.max(minViewport,Math.ceil(maxBottom*scale+100))+'px';
 }
-function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span><button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});fitBoardHeight();persist()}
+function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span><button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});if(board.querySelector('.v9421-inline-news'))v42SearchPane(true);fitBoardHeight();persist()}
 function open(title,html,buttons=''){ modal.classList.remove('v35-search-modal');$('#modalTitle').textContent=title;body.innerHTML=html;footer.innerHTML=buttons;const save=$('#v58SaveWatch');if(save){save.hidden=true;save.onclick=null;}document.getElementById('v70SaveTile')?.remove(); modal.classList.add('open')};function shut(){modal.classList.remove('open')};$('#closeModal').onclick=shut;modal.addEventListener('click',e=>{if(e.target===modal)shut()});document.addEventListener('keydown',e=>{if(e.key==='Escape')shut()});
 // V43: Focused archive-style search interface for genuine recent dashboard headlines.
 const V48_NEWS_PREF_KEY='psd-news-search-preferences-v48';
@@ -1458,16 +1461,40 @@ async function v63LoadArchive(){
  }catch(e){v63ArchiveError='Older articles are temporarily unavailable; recent news is still searchable.';console.warn('V63 website news cache unavailable',e)}
  finally{v63ArchiveLoading=false;const msg=document.getElementById('v63ArchiveStatus');if(msg)msg.textContent=v63ArchiveLoaded?`${v63Archive.length.toLocaleString()} website articles available to search`:v63ArchiveError;v42RenderResults()}
 }
-function v42SearchPane(){
+// V94.21: News search directly in the existing tile; favorites use the existing saved-article store.
+function v9421IsFavorites(t){return t?.type==='custom'&&/favou?rites?\s*(news|articles)|my\s+saved\s+(news|articles)/i.test(t.title||'')}
+function v9421MountSearch(html){const el=board.querySelector('.v9421-inline-news');if(el)el.innerHTML=html}
+function v9421FindArticle(id){return v63AvailableNews().find(h=>String(h.id)===String(id))||v31Headlines.find(h=>String(h.id)===String(id))||v51Saved[id]}
+function v9421SaveArticle(id,saveIt=true){
+ if(!saveIt){delete state.star[id];delete v51Saved[id]}
+ else{const sanitized=v51Sanitize(v9421FindArticle(id));if(!sanitized)return false;state.star[id]=Date.now();v51Saved[id]=sanitized}
+ v51SaveList();persist();return true
+}
+function v9421FavoritesHtml(){
+ const articles=Object.keys(state.star||{}).filter(id=>state.star[id]).map(id=>v51Saved[id]||v9421FindArticle(id)).filter(Boolean).sort((a,b)=>(Number(state.star[b.id])||0)-(Number(state.star[a.id])||0));
+ return `<div class="v9421-favorites" data-v9421-dropzone="1"><div class="muted">Drag articles from News & Article Search here, or click ☆ beside an article.</div><strong>${articles.length} saved article${articles.length===1?'':'s'}</strong>${articles.map(h=>`<article class="v42-result"><div class="v43-cardtop"><span class="muted">${safe(h.source||'News')} · ${new Date(h.time||Date.now()).toLocaleDateString()}</span><button type="button" class="v43-save" data-v9421-remove="${safe(h.id)}" title="Remove from favorites">★</button></div><div class="v42-headline">${safe(h.title)}</div><a href="${safe(h.url)}" class="v42-articlelink" target="_blank" rel="noopener noreferrer">Read article ↗</a></article>`).join('')||'<p class="notice">Your saved articles will appear here.</p>'}</div>`
+}
+function v9421RefreshFavorites(){for(const t of tiles.filter(v9421IsFavorites)){const el=board.querySelector(`.tile[data-id="${CSS.escape(t.id)}"] .content`);if(el)el.innerHTML=v9421FavoritesHtml()}}
+board.addEventListener('dragstart',e=>{const a=e.target.closest('[data-v9421-drag]');if(!a)return;e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain',a.dataset.v9421Drag);});
+board.addEventListener('dragover',e=>{if(e.target.closest('[data-v9421-dropzone]')){e.preventDefault();e.dataTransfer.dropEffect='copy'}});
+board.addEventListener('drop',e=>{if(!e.target.closest('[data-v9421-dropzone]'))return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(id&&v9421SaveArticle(id)){v9421RefreshFavorites();v42RenderResults()}});
+board.addEventListener('click',e=>{
+ const save=e.target.closest('[data-v43-save]');const remove=e.target.closest('[data-v9421-remove]');const pg=e.target.closest('[data-v43-page]');const opened=e.target.closest('[data-v43-open]');
+ if(save){e.preventDefault();const id=save.dataset.v43Save;v9421SaveArticle(id,!state.star[id]);v42RenderResults();v9421RefreshFavorites();return}
+ if(remove){e.preventDefault();v9421SaveArticle(remove.dataset.v9421Remove,false);v9421RefreshFavorites();v42RenderResults();return}
+ if(pg){e.preventDefault();v43Page+=pg.dataset.v43Page==='next'?1:-1;v42RenderResults();return}
+ if(opened){state.read[opened.dataset.v43Open]=Date.now();persist()}
+});
+function v42SearchPane(inTile=false){
  const markets=[...new Set(ASSETS.map(v59Group))].sort((a,b)=>a.localeCompare(b));
  const sources=[...new Set(v63AvailableNews().map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
- open('Search News & Articles',`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Market<select id="v61Market"><option value="">All markets</option>${markets.map(a=>`<option value="${safe(a)}" ${v42SearchState.market===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v63ArchiveStatus" class="muted" role="status" aria-live="polite" style="padding:2px 0 8px"></div><div id="v42Results" aria-live="polite"></div>`);
+ (inTile?v9421MountSearch:html=>open('Search News & Articles',html))(`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Market<select id="v61Market"><option value="">All markets</option>${markets.map(a=>`<option value="${safe(a)}" ${v42SearchState.market===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v63ArchiveStatus" class="muted" role="status" aria-live="polite" style="padding:2px 0 8px"></div><div id="v42Results" aria-live="polite"></div>`);
  const search=()=>{v42SearchState={keyword:$('#v42Keyword').value.trim(),market:$('#v61Market').value,asset:$('#v42Asset').value,source:$('#v42Source').value,order:$('#v42Order').value,favorites:$('#v43Favorites').checked};v43Page=0;v48SaveNewsPreferences();v42RenderResults();};
  $('#v42Submit').onclick=search;
  $('#v52RefreshNews').onclick=v52RefreshNews;
  // Keep search accessible: users can press / while this dialog is open.
  $('#v42Keyword').setAttribute('aria-label','Search news headlines');
- $('#v42Clear').onclick=()=>{v42SearchState={keyword:'',market:'',asset:'',source:'',order:'newest',favorites:false};v43Page=0;v48SaveNewsPreferences();v42SearchPane();};
+ $('#v42Clear').onclick=()=>{v42SearchState={keyword:'',market:'',asset:'',source:'',order:'newest',favorites:false};v43Page=0;v48SaveNewsPreferences();v42SearchPane(inTile);};
  $('#v42Keyword').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();search();}};
  for(const id of ['v61Market','v42Asset','v42Source','v42Order','v43Favorites'])$('#'+id).onchange=search;
  v42RenderResults();
@@ -1480,7 +1507,7 @@ function v42RenderResults(){
  const items=(favorites?v51NewsItems(true):v63AvailableNews()).filter(h=>(!q||(h.title+' '+h.description+' '+h.source).toLocaleLowerCase().includes(q))&&(!source||h.source===source)&&(!market||ASSETS.some(a=>v59Group(a)===market&&v31MatchesAsset(h,a)))&&(!asset||v31MatchesAsset(h,asset))&&(!favorites||!!state.star[h.id])).sort((a,b)=>order==='oldest'?a.time-b.time:b.time-a.time);
  const pages=Math.max(1,Math.ceil(items.length/v43PageSize));v43Page=Math.max(0,Math.min(v43Page,pages-1));
  const visible=items.slice(v43Page*v43PageSize,(v43Page+1)*v43PageSize);
- const cards=visible.map(h=>`<article class="v42-result"><div class="v43-cardtop"><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}</span><button type="button" class="v43-save" data-v43-save="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove saved article':'Save article'}" title="${state.star[h.id]?'Remove saved article':'Save article'}">${state.star[h.id]?'★':'☆'}</button></div><div class="v42-headline">${safe(h.title)}</div>${h.description?`<p>${safe(h.description)}</p>`:''}<a href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" class="v42-articlelink" data-v43-open="${safe(h.id)}">Read article ↗</a></article>`).join('');
+ const cards=visible.map(h=>`<article class="v42-result" draggable="true" data-v9421-drag="${safe(h.id)}" title="Drag to My Favorite News"><div class="v43-cardtop"><span class="muted">${safe(h.source)} · ${new Date(h.time).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})}</span><button type="button" class="v43-save" data-v43-save="${safe(h.id)}" aria-label="${state.star[h.id]?'Remove saved article':'Save article'}" title="${state.star[h.id]?'Remove saved article':'Save article'}">${state.star[h.id]?'★':'☆'}</button></div><div class="v42-headline">${safe(h.title)}</div>${h.description?`<p>${safe(h.description)}</p>`:''}<a href="${safe(h.url)}" target="_blank" rel="noopener noreferrer" class="v42-articlelink" data-v43-open="${safe(h.id)}">Read article ↗</a></article>`).join('');
  out.innerHTML=`<div class="v42-resultsheading"><strong>${items.length} ${items.length===1?'article':'articles'}</strong><span class="muted">${favorites?'Your saved articles':v63ArchiveLoaded?'Website news cache':'Recent headlines'}</span></div>${items.length?cards:'<div class="v42-empty">No articles found. Try another keyword or change your filters.</div>'}${items.length>v43PageSize?`<nav class="v43-pages" aria-label="News search pages"><button class="btn" data-v43-page="prev" ${v43Page===0?'disabled':''}>← Previous</button><span>Page ${v43Page+1} of ${pages}</span><button class="btn" data-v43-page="next" ${v43Page===pages-1?'disabled':''}>Next →</button></nav>`:''}<p class="v42-footnote">Searches available website news (up to 60 days) and saved articles. Older archives depend on website availability.</p>`;
 }
 modal.addEventListener('click',e=>{
@@ -1639,7 +1666,6 @@ function v90Logo(name,large=false){
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
 function v946AuthorizeScreen(name){
- if(name==='X'){shut();return;} // Public X widget lives directly in the verified tile, no extra dialog.
  const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
  const label=v87NetworkLabel(name);
  const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
@@ -2263,51 +2289,4 @@ window.addEventListener('resize',refresh,{passive:true});
 window.addEventListener('pageshow',refresh);
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
-<script>
-/* Official X public widget test: timeout and actionable diagnostics; no passwords. */
-(function(){
- let loader=null;
- const timed=(p,ms,label)=>Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label)),ms))]);
- function loadX(){
-  if(window.twttr?.widgets?.createTimeline)return Promise.resolve(window.twttr);
-  if(loader)return loader;
-  loader=new Promise((resolve,reject)=>{
-   const url='https://platform.x.com/widgets.js';
-   const existing=Array.from(document.scripts).find(s=>/platform\.(x|twitter)\.com\/widgets\.js/.test(s.src));
-   const script=existing||document.createElement('script');
-   let finished=false;
-   const clean=()=>{clearTimeout(timeout);clearInterval(poll);window.removeEventListener('securitypolicyviolation',csp)};
-   const fail=(message)=>{if(finished)return;finished=true;clean();loader=null;reject(Error(message))};
-   const csp=(e)=>{if(/platform\.(x|twitter)\.com/.test(e.blockedURI||''))fail('Website security policy blocked the X widget script ('+(e.violatedDirective||'CSP')+').')};
-   const timeout=setTimeout(()=>fail('The X widget script timed out. Check Chrome extensions, privacy blocking, or the website Content Security Policy.'),10000);
-   const poll=setInterval(()=>{if(window.twttr?.widgets?.createTimeline&&!finished){finished=true;clean();resolve(window.twttr)}},150);
-   window.addEventListener('securitypolicyviolation',csp);
-   script.addEventListener('error',()=>fail('The browser could not load the X widget script. Check the Network/Console tab for platform.x.com.'),{once:true});
-   if(!existing){script.async=true;script.src=url;document.head.appendChild(script)}
-  });
-  return loader;
- }
- document.addEventListener('click',async(e)=>{
-  const connect=e.target.closest('[data-psd-x-connect]');
-  const exit=e.target.closest('[data-psd-x-exit]');
-  if(!connect&&!exit)return;
-  e.preventDefault();e.stopImmediatePropagation();
-  const box=e.target.closest('.psd-x-widget');if(!box)return;
-  const field=box.querySelector('.psd-x-handle'),target=box.querySelector('.psd-x-target'),msg=box.querySelector('.psd-x-message');
-  if(exit){box.dataset.request=String((+box.dataset.request||0)+1);target.replaceChildren();msg.textContent='Timeline cleared.';return}
-  const username=field.value.trim().replace(/^@/,'');
-  if(!/^[A-Za-z0-9_]{1,15}$/.test(username)){msg.textContent='Enter a valid public X username.';return}
-  const request=String((+box.dataset.request||0)+1);box.dataset.request=request;
-  target.replaceChildren();msg.textContent='Loading public posts from @'+username+'…';connect.disabled=true;
-  try{
-   const x=await loadX();
-   if(!target.isConnected||box.dataset.request!==request)return;
-   const el=await timed(Promise.resolve(x.widgets.createTimeline({sourceType:'profile',screenName:username},target,{theme:'dark',height:490,dnt:true})),12000,'X loaded its script, but did not render the timeline within 12 seconds. The profile may be private, X may block the embed, or browser privacy settings may interfere.');
-   if(box.dataset.request!==request)return;
-   msg.textContent=el?'Public posts from @'+username+' are shown below.':'X returned no timeline. Test with a known public account such as NASA.';
-  }catch(err){if(box.dataset.request===request)msg.textContent='Could not display X posts: '+(err?.message||'Unknown embed error')}
-  finally{connect.disabled=false}
- },true);
-})();
-</script>
 </body></html>
