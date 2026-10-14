@@ -1683,6 +1683,13 @@ async function v944OpenAuthenticator(name){
    const box=document.createElement('div');box.className='v944-panel';box.innerHTML='<label class="field">Six-digit code from Google Authenticator<input id="v946FreshCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><p id="v946VerifyStatus" class="notice" role="status">Enter a current code to continue securely.</p><div class="v948-action-row"><button class="btn accent" id="v946VerifyFresh">Verify & Continue</button></div>';
    status.after(box);
    const rightActions=$('#v948Actions');if(rightActions)box.querySelector('.v948-action-row').append(rightActions);
+   // Enter from the six-digit code field runs the same verification as the button.
+   $('#v946FreshCode').addEventListener('keydown',e=>{
+     if(e.key==='Enter'){
+       e.preventDefault();
+       if(!e.repeat && !$('#v946VerifyFresh').disabled)$('#v946VerifyFresh').click();
+     }
+   });
    $('#v946VerifyFresh').onclick=async()=>{
      const code=$('#v946FreshCode').value.trim(),msg=$('#v946VerifyStatus'),btn=$('#v946VerifyFresh');
      if(!/^\d{6}$/.test(code)){msg.textContent='Enter a six-digit code.';return}
@@ -1750,7 +1757,7 @@ function v94SocialTerms(name){
  ];
  const termsHtml=terms.map(part=>{const escaped=safe(part);return `<p>${escaped.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</p>`}).join('');
  if(existing?.version==='step2-v3'){
-   open(label+' · Terms & Conditions',`<div class="v44-terms v94-legal-document">${termsHtml}</div><div class="v94-sign-completed"><strong>Agreement signed (preview)</strong><div>${safe(existing.first)} ${safe(existing.last)}</div><div class="muted">${safe(existing.signedAt||'')}</div></div>`,`<button class="btn accent" id="v94DoneTerms">Close</button>`);
+   open(label+' · Terms & Conditions',`<div class="v44-terms v94-legal-document">${termsHtml}</div><div class="v94-sign-completed"><strong>Agreement signed (preview)</strong><div>${safe(existing.first)} ${safe(existing.last)}</div><div class="muted">${safe(existing.signedAt||'')}</div></div>`,`<button class="btn accent" id="v94DoneTerms">Next</button>`);
    $('#v94DoneTerms').onclick=()=>{shut();v944OpenAuthenticator(name)};
    return;
  }
