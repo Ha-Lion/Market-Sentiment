@@ -1868,10 +1868,21 @@
     }
 
     function formatValue(v,unit){
-      if(v===null||v===undefined||v==="") return "—";
-      let s=String(v);
-      if(unit && !/[a-z%]$/i.test(s) && !["","Points","Index Points"].includes(unit)) s+=unit==="%"?"%":` ${unit}`;
-      return esc(s);
+      if(v===null||v===undefined||String(v).trim()==="") return "—";
+      const raw=String(v).trim();
+      if(/^(published|released|previous edition)$/i.test(raw)) return "N/A";
+      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|bps|bp|k|m|b))?$/i);
+      if(!match) return esc(raw);
+      const n=Number(match[1].replace(/,/g,""));
+      if(!Number.isFinite(n))return "—";
+      const formatted=n.toLocaleString("en-US",{maximumFractionDigits:3});
+      const suffix=(match[2]||"").toLowerCase();
+      const hint=String(unit||"").trim().toLowerCase();
+      if(suffix==="%")return esc(formatted+"%");
+      if(suffix)return esc(formatted+" "+suffix);
+      if(["%","percent","percentage","pct"].includes(hint))return esc(formatted+"%");
+      if(!hint||["points","index points","index"].includes(hint))return esc(formatted);
+      return esc(formatted+" "+unit);
     }
 
     function actualClass(e){
