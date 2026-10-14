@@ -1889,7 +1889,7 @@
       const value=n.toLocaleString("en-US",{maximumFractionDigits:3});
       const suffix=String(match[2]||"").toLowerCase();
       const hint=String(unit||"").toLowerCase().trim();
-      if(suffix==="%"||suffix.startsWith("percent")||suffix.startsWith("high auction yield")||["%","percent","percentage","pct"].includes(hint))return esc(value+"%");
+      if(suffix==="%"||suffix.startsWith("percent")||suffix.startsWith("high auction yield")||(["%","percent","percentage","pct"].includes(hint)||/^percent(?:age)?\s+(?:mom|yoy)$/.test(hint)))return esc(value+"%");
       if(suffix.startsWith("jobs/week"))return esc(value);
       if(/^(bps?|k|m|b)$/.test(suffix))return esc(value+" "+suffix);
       if(!hint||["points","index points","index"].includes(hint)||/index points?/.test(suffix))return esc(value);
