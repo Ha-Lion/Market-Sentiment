@@ -276,6 +276,9 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v90-provider-logo:has(img[src^="data:image/webp"]){background:#fff}
 .v90-provider-logo.v90-large:has(img[src^="data:image/webp"]){width:70px;min-width:70px;height:52px;border-radius:8px}
 .v90-provider-logo img{object-fit:contain}
+
+/* V94.4: standalone step-three authentication and embedded account preferences */
+.v944-auth{display:grid;gap:12px;font-size:12px}.v944-auth .v944-panel{border:1px solid var(--line);border-radius:9px;background:var(--statbg);padding:13px;line-height:1.55}.v944-auth .v944-panel strong{font-size:13px}.v944-auth p{margin:7px 0;color:var(--mute)}.v944-auth .v944-actions{display:flex;gap:8px;flex-wrap:wrap}.v944-frame{width:100%;height:min(65vh,670px);border:1px solid var(--line);border-radius:8px;background:white}.v944-guide{padding:10px;margin-bottom:9px;background:var(--statbg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.5}.v944-guide[hidden]{display:none!important}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
  const dark=r.classList.contains('dark')||b?.classList.contains('dark')||r.dataset.theme==='dark'||b?.dataset.theme==='dark'||r.getAttribute('data-bs-theme')==='dark';
@@ -1607,6 +1610,30 @@ function v90Logo(name,large=false){
  const src=V91_UPLOADED_LOGOS[name];if(!src)return '';
  return `<span class="${cl}" title="${safe(v87NetworkLabel(name))}"><img src="${src}" alt=""></span>`;
 }
+// V94.4 — Step 3 only. The embedded Preferences page owns MFA enrollment and verification.
+function v944OpenAuthenticator(name){
+ if(!SOCIAL.some(([n])=>n===name))return;
+ const label=v87NetworkLabel(name);
+ open(label+' · Google Authenticator',`<div class="v944-auth"><div class="v944-panel"><strong>Google Authenticator</strong><p>Set up Google Authenticator once for your Public Sentiment Dash account. If you already activated it, no new QR code is required.</p><p id="v944AuthMessage" role="status">Open Account Preferences to learn about authentication or complete enrollment and verification.</p><div class="v944-actions"><button class="btn accent" id="v944Preferences">Open Account Preferences</button></div></div></div>`,`<button class="btn" id="v944CloseAuth">Close</button>`);
+ $('#v944Preferences').onclick=()=>v944OpenPreferences(name);
+ $('#v944CloseAuth').onclick=shut;
+}
+function v944OpenPreferences(name){
+ const label=v87NetworkLabel(name);
+ // Absolute URL lets this standalone lab preview find the real Preferences page.
+ // When hosted on PSD it resolves to the same origin for the existing authenticated session.
+ const url='https://publicsentimentdash.com/account.html';
+ open(label+' · Account Preferences',`<div class="v944-actions" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn" id="v944Learn">Learn about Google Authenticator</button><button class="btn" id="v944AccountSection">Go to QR setup</button></div><div id="v944Guide" class="v944-guide" hidden>Install Google Authenticator on your phone. On the Preferences page below, select <strong>Generate My Setup QR</strong> if your account is not yet enrolled. In Google Authenticator select <strong>Add code → Scan QR code</strong>, scan the QR, then enter the app's six-digit code in Preferences to activate it. If already enabled, you do not need to enroll again.</div><iframe id="v944AccountFrame" class="v944-frame" title="Public Sentiment Dash Account Preferences and Google Authenticator setup" loading="eager" src="${url}"></iframe><p class="notice" id="v944FrameNote">Complete enrollment and verification in the Preferences window, then click Close Preferences. If this frame cannot load, open the Preferences page separately in PSD.</p>`,`<button class="btn accent" id="v944ClosePreferences">Close Preferences</button>`);
+ $('#v944Learn').onclick=()=>{$('#v944Guide').hidden=!$('#v944Guide').hidden};
+ $('#v944AccountSection').onclick=()=>{
+   try{const frame=$('#v944AccountFrame');const doc=frame.contentDocument;const part=doc?.getElementById('security-mfa');if(part){part.scrollIntoView({block:'start',behavior:'smooth'});return}}catch(e){}
+   $('#v944FrameNote').textContent='Find Account Security · Google Authenticator in the Preferences page below.';
+ };
+ $('#v944ClosePreferences').onclick=()=>{
+   v944OpenAuthenticator(name);
+   const el=$('#v944AuthMessage');if(el)el.textContent='Preferences closed. If you completed activation, your authenticator is ready for future verification. Live session verification is not yet connected in this dashboard lab.';
+ };
+}
 // Step 2 ONLY — unified social-network entry, intentionally no login flow.
 const PSD_SIGNED_TERMS_KEY='psd-social-step2-consent-v94-2';
 function v94ReadSignatures(){try{const v=JSON.parse(localStorage.getItem(PSD_SIGNED_TERMS_KEY)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch{return {}}}
@@ -1632,7 +1659,7 @@ function v94SocialTerms(name){
  const termsHtml=terms.map(part=>{const escaped=safe(part);return `<p>${escaped.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</p>`}).join('');
  if(existing?.version==='step2-v2'){
    open(label+' · Terms & Conditions',`<div class="v44-terms v94-legal-document">${termsHtml}</div><div class="v94-sign-completed"><strong>Agreement signed (preview)</strong><div>${safe(existing.first)} ${safe(existing.last)}</div><div class="muted">${safe(existing.signedAt||'')}</div></div>`,`<button class="btn accent" id="v94DoneTerms">Close</button>`);
-   $('#v94DoneTerms').onclick=shut;
+   $('#v94DoneTerms').onclick=()=>{shut();v944OpenAuthenticator(name)};
    return;
  }
  open(label+' · Terms & Conditions',`<div class="v44-terms v94-legal-document">${termsHtml}</div>
@@ -1654,7 +1681,7 @@ function v94SocialTerms(name){
   const panel=body.querySelector('.v94-sign-form');
   if(panel){panel.innerHTML=`<div class="v94-sign-completed"><strong>Signed · ${safe(label)}</strong><div>${safe(f)} ${safe(l)}</div><div class="muted">${safe(signedAt)}</div></div>`;}
   confirm.disabled=true;confirm.textContent='Signed';
-  window.setTimeout(()=>shut(),650);
+  window.setTimeout(()=>{shut();v944OpenAuthenticator(name)},650);
  };
 }
 function v86StartNetwork(name){v94SocialTerms(name)}
