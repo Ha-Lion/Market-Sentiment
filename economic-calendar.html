@@ -1857,7 +1857,7 @@
     function previousReleaseDisplay(e){
       const v=e?.previous;
       if(v===null||v===undefined||String(v).trim()==="")return "—";
-      return numericReleaseValue(v)?formatValue(v,e.unit):"—";
+      return numericReleaseValue(v)?formatValue(v,calendarDisplayUnit(e)):"—";
     }
     function previousReleaseLabel(e){
       const v=e?.previous;
@@ -1867,11 +1867,31 @@
       return economicValueLabel(v,"Previous");
     }
 
+    function calendarDisplayUnit(e){
+      const existing=String(e?.unit??"").trim();
+      if(existing)return existing;
+      const name=String(e?.event??e?.category??"").trim();
+      if(/\b(?:PMI|purchase index|refinance index|mortgage market composite index)\b/i.test(name))return "Index Points";
+      if(/\b(?:YoY|MoM|year over year|month over month|inflation rate|unemployment rate|mortgage rate|interest rate|PPI|consumer price index percentage change)\b/i.test(name))return "%";
+      return "";
+    }
+
     function formatValue(v,unit){
-      if(v===null||v===undefined||v==="") return "—";
-      let s=String(v);
-      if(unit && !/[a-z%]$/i.test(s) && !["","Points","Index Points"].includes(unit)) s+=unit==="%"?"%":` ${unit}`;
-      return esc(s);
+      if(v===null||v===undefined||String(v).trim()==="") return "—";
+      const raw=String(v).trim();
+      if(/^(published|released|previous edition)$/i.test(raw)) return "N/A";
+      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|bps|bp|k|m|b))?$/i);
+      if(!match) return esc(raw);
+      const n=Number(match[1].replace(/,/g,""));
+      if(!Number.isFinite(n))return "—";
+      const formatted=n.toLocaleString("en-US",{maximumFractionDigits:3});
+      const suffix=(match[2]||"").toLowerCase();
+      const hint=String(unit||"").trim().toLowerCase();
+      if(suffix==="%")return esc(formatted+"%");
+      if(suffix)return esc(formatted+" "+suffix);
+      if(["%","percent","percentage","pct"].includes(hint))return esc(formatted+"%");
+      if(!hint||["points","index points","index"].includes(hint))return esc(formatted);
+      return esc(formatted+" "+unit);
     }
 
     function actualClass(e){
@@ -1923,9 +1943,9 @@
             </td>
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
-            <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,e.unit)}</td>
-            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,e.unit)}</td>
-            <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,e.unit)}</td>
+            <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</td>
+            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,calendarDisplayUnit(e))}</td>
+            <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,calendarDisplayUnit(e))}</td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
@@ -2688,10 +2708,10 @@
       document.getElementById("event-market-reaction").textContent="Loading market reaction…";
 
       document.getElementById("event-modal-kpis").innerHTML=`
-        <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
-        <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast??e.te_forecast,e.unit)}</strong></div>
-        <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,e.unit)}</strong></div>
-        ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,e.unit)}</strong></div>`:""}
+        <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,calendarDisplayUnit(e))}</strong></div>
+        <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</strong></div>
+        <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,calendarDisplayUnit(e))}</strong></div>
+        ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,calendarDisplayUnit(e))}</strong></div>`:""}
         <div class="ec-kpi"><span>Impact</span><strong>${esc(impactFromImportance(e.importance))}</strong></div>`;
 
       const classification=classifyEvent(e);
@@ -4000,10 +4020,10 @@
           impactFromImportance(e.importance),
           e.event||e.category||"",
           "", // 12M History is a visual chart; no scalar value to export
-          e.previous??"",
-          e.forecast??e.te_forecast??"",
-          e.actual??"",
-          e.revised??"",
+          previousReleaseDisplay(e),
+          formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e)),
+          formatValue(e.actual,calendarDisplayUnit(e)),
+          formatValue(e.revised,calendarDisplayUnit(e)),
           classifyEvent(e),
           relevantAssets(e).join(" | ")
         ]);
