@@ -1652,8 +1652,8 @@ function v945QrData(qr){
 async function v944OpenAuthenticator(name){
  const client=v945Client(),label=v87NetworkLabel(name);
  if(!client){open(label+' · Google Authenticator',`<p class="notice">Supabase authentication is unavailable. Open the deployed PSD dashboard and retry.</p>`);return}
- open(label+' · Google Authenticator',`<div class="v945-auth"><p>Google Authenticator is set up once per PSD account.</p><p id="v945Status" role="status">Checking authenticator status…</p><div id="v945Learn" hidden><p>Install Google Authenticator on your phone. Click Generate My QR, scan the code using the app's + button, then enter the 6-digit code below to activate it.</p></div><button class="btn" id="v945LearnButton">Learn about Google Authenticator</button><div id="v945Enroll" hidden><button class="btn accent" id="v945Generate">Generate My Setup QR</button><div id="v945Setup" hidden><img id="v945Qr" alt="Your private authenticator enrollment QR" style="width:200px;max-width:100%;background:#fff;padding:8px;border-radius:8px;display:block;margin:12px 0"><p class="notice">Manual setup key: <code id="v945Secret"></code></p><label class="field">Six-digit code<input id="v945Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><button class="btn accent" id="v945Verify">Verify & Activate</button></div></div></div>`,`<button class="btn" id="v945Close">Close</button>`);
- const status=$('#v945Status'),enroll=$('#v945Enroll');let factor=null,busy=false;
+ open(label+' · Google Authenticator',`<div class="v945-auth"><p>Google Authenticator is linked to your PSD account.</p><p id="v945Status" role="status">Checking authenticator status…</p><div id="v945Learn" hidden><p>New account: click Generate My Setup QR, scan it in the Google Authenticator app, and enter the six-digit code. Already enrolled: use your current code. If you lost your device, use secure account recovery; an existing enrollment cannot be reset with a public QR button.</p></div><button class="btn" id="v945LearnButton">Learn about Google Authenticator</button><div id="v945Enroll"><button class="btn accent" id="v945Generate">Generate My Setup QR</button><p id="v947RecoveryHelp" class="notice" hidden></p><div id="v945Setup" hidden><img id="v945Qr" alt="Your private authenticator enrollment QR" style="width:200px;max-width:100%;background:#fff;padding:8px;border-radius:8px;display:block;margin:12px 0"><p class="notice">Manual setup key: <code id="v945Secret"></code></p><label class="field">Six-digit code<input id="v945Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><button class="btn accent" id="v945Verify">Verify & Activate</button></div></div></div>`,`<button class="btn" id="v945Close">Close</button>`);
+ const status=$('#v945Status'),enroll=$('#v945Enroll'),generate=$('#v945Generate'),recoverHelp=$('#v947RecoveryHelp');let factor=null,busy=false,hasVerified=false;
  const appendVerify=verifiedFactor=>{
    const box=document.createElement('div');box.className='v944-panel';box.innerHTML='<label class="field">Six-digit code from Google Authenticator<input id="v946FreshCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><p id="v946VerifyStatus" class="notice" role="status">Enter a current code to continue securely.</p><button class="btn accent" id="v946VerifyFresh">Verify & Continue</button>';
    status.after(box);
@@ -1677,10 +1677,14 @@ async function v944OpenAuthenticator(name){
  try{
    const u=await client.auth.getUser();if(u.error||!u.data?.user){status.textContent='PSD sign-in is required. Please sign in and retry.';return}
    const list=await client.auth.mfa.listFactors();if(list.error)throw list.error;
-   const verified=(list.data?.totp||[]).find(x=>x.status==='verified');if(verified){status.textContent='Google Authenticator is active. Enter a current code to continue.';appendVerify(verified);return}
-   status.textContent='Not activated. Generate a QR code to enroll your PSD account.';enroll.hidden=false;
+   const verified=(list.data?.totp||[]).find(x=>x.status==='verified');if(verified){hasVerified=true;generate.textContent='Replace / Recover Authenticator';status.textContent='Google Authenticator is active. Enter a current code to continue.';appendVerify(verified)}else{status.textContent='Not activated. Generate a QR code to enroll your PSD account.';enroll.hidden=false;}
  }catch(e){status.textContent='Could not check MFA: '+String(e.message||e);return}
  $('#v945Generate').onclick=async()=>{
+   if(hasVerified){
+     recoverHelp.hidden=false;
+     recoverHelp.textContent='Your existing authenticator is already active. To add or replace a phone, use a verified account recovery or re-enrollment procedure. A replacement QR cannot be issued here without secure re-verification. If you still have your old phone, use its current six-digit code to continue.';
+     return;
+   }
    if(busy)return;busy=true;status.textContent='Generating secure QR…';
    try{const r=await client.auth.mfa.enroll({factorType:'totp',friendlyName:'PSD Authenticator'});if(r.error)throw r.error;
      factor=r.data.id;$('#v945Qr').src=v945QrData(r.data.totp?.qr_code);$('#v945Secret').textContent=r.data.totp?.secret||'';
