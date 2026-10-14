@@ -1869,10 +1869,11 @@
 
     function calendarDisplayUnit(e){
       const existing=String(e?.unit??"").trim();
+      if(/^(%|percent(?:age)?(?:\s+(?:mom|yoy))?|pct)$/i.test(existing))return "%";
       if(existing)return existing;
       const name=String(e?.event??e?.category??"").trim();
       if(/\b(?:PMI|purchase index|refinance index|mortgage market composite index)\b/i.test(name))return "Index Points";
-      if(/\b(?:YoY|MoM|year over year|month over month|inflation rate|unemployment rate|mortgage rate|interest rate|PPI|consumer price index percentage change)\b/i.test(name))return "%";
+      if(/\b(?:YoY|MoM|year over year|month over month|m\/m|y\/y|inflation rate|unemployment rate|mortgage rate|interest rate|PPI|consumer price index percentage change)\b/i.test(name))return "%";
       return "";
     }
 
