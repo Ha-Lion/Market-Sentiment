@@ -277,7 +277,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v90-provider-logo.v90-large:has(img[src^="data:image/webp"]){width:70px;min-width:70px;height:52px;border-radius:8px}
 .v90-provider-logo img{object-fit:contain}
 
-/* V94.4: standalone step-three authentication and embedded account preferences */
+/* V94.5: standalone step-three authentication and embedded account preferences */
 .v944-auth{display:grid;gap:12px;font-size:12px}.v944-auth .v944-panel{border:1px solid var(--line);border-radius:9px;background:var(--statbg);padding:13px;line-height:1.55}.v944-auth .v944-panel strong{font-size:13px}.v944-auth p{margin:7px 0;color:var(--mute)}.v944-auth .v944-actions{display:flex;gap:8px;flex-wrap:wrap}.v944-frame{width:100%;height:min(65vh,670px);border:1px solid var(--line);border-radius:8px;background:white}.v944-guide{padding:10px;margin-bottom:9px;background:var(--statbg);border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.5}.v944-guide[hidden]{display:none!important}
 </style><script>/* V9 follows the host page or operating-system theme; no independent dashboard switch. */
 (function(){function sync(){const r=document.documentElement,b=document.body;
@@ -1610,28 +1610,45 @@ function v90Logo(name,large=false){
  const src=V91_UPLOADED_LOGOS[name];if(!src)return '';
  return `<span class="${cl}" title="${safe(v87NetworkLabel(name))}"><img src="${src}" alt=""></span>`;
 }
-// V94.4 — Step 3 only. The embedded Preferences page owns MFA enrollment and verification.
-function v944OpenAuthenticator(name){
- if(!SOCIAL.some(([n])=>n===name))return;
- const label=v87NetworkLabel(name);
- open(label+' · Google Authenticator',`<div class="v944-auth"><div class="v944-panel"><strong>Google Authenticator</strong><p>Set up Google Authenticator once for your Public Sentiment Dash account. If you already activated it, no new QR code is required.</p><p id="v944AuthMessage" role="status">Open Account Preferences to learn about authentication or complete enrollment and verification.</p><div class="v944-actions"><button class="btn accent" id="v944Preferences">Open Account Preferences</button></div></div></div>`,`<button class="btn" id="v944CloseAuth">Close</button>`);
- $('#v944Preferences').onclick=()=>v944OpenPreferences(name);
- $('#v944CloseAuth').onclick=shut;
+// V94.5: account-verified entry and in-place Supabase MFA enrollment.
+function v945Client(){return window.psdSupabase?.auth?.mfa?window.psdSupabase:null}
+async function v945RequireLogin(name){
+ const label=v87NetworkLabel(name),client=v945Client();
+ if(!client){open(label+' · Sign-in required',`<p class="notice">Account verification is unavailable. Open this page from your published PSD website and ensure Supabase has loaded.</p><button class="btn" id="v945Retry">Retry</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name);return}
+ try{const {data,error}=await client.auth.getUser();if(error||!data?.user){open(label+' · Sign in first',`<p class="notice">Please sign in to your Public Sentiment Dash account before connecting ${safe(label)}.</p><a class="btn" href="account.html">Sign in to PSD</a><button class="btn" id="v945Retry">Check again</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name);return}v94SocialTerms(name)}catch(e){open(label+' · Sign-in check failed',`<p class="notice">Unable to verify your PSD session. Please retry when connected.</p><button class="btn" id="v945Retry">Retry</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name)}
 }
-function v944OpenPreferences(name){
- const label=v87NetworkLabel(name);
- // Absolute URL lets this standalone lab preview find the real Preferences page.
- // When hosted on PSD it resolves to the same origin for the existing authenticated session.
- const url='https://publicsentimentdash.com/account.html';
- open(label+' · Account Preferences',`<div class="v944-actions" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn" id="v944Learn">Learn about Google Authenticator</button><button class="btn" id="v944AccountSection">Go to QR setup</button></div><div id="v944Guide" class="v944-guide" hidden>Install Google Authenticator on your phone. On the Preferences page below, select <strong>Generate My Setup QR</strong> if your account is not yet enrolled. In Google Authenticator select <strong>Add code → Scan QR code</strong>, scan the QR, then enter the app's six-digit code in Preferences to activate it. If already enabled, you do not need to enroll again.</div><iframe id="v944AccountFrame" class="v944-frame" title="Public Sentiment Dash Account Preferences and Google Authenticator setup" loading="eager" src="${url}"></iframe><p class="notice" id="v944FrameNote">Complete enrollment and verification in the Preferences window, then click Close Preferences. If this frame cannot load, open the Preferences page separately in PSD.</p>`,`<button class="btn accent" id="v944ClosePreferences">Close Preferences</button>`);
- $('#v944Learn').onclick=()=>{$('#v944Guide').hidden=!$('#v944Guide').hidden};
- $('#v944AccountSection').onclick=()=>{
-   try{const frame=$('#v944AccountFrame');const doc=frame.contentDocument;const part=doc?.getElementById('security-mfa');if(part){part.scrollIntoView({block:'start',behavior:'smooth'});return}}catch(e){}
-   $('#v944FrameNote').textContent='Find Account Security · Google Authenticator in the Preferences page below.';
+function v945QrData(qr){
+ if(typeof qr!=='string')throw Error('No QR code was returned.');const v=qr.trim();
+ if(/^data:image\/(?:svg\+xml|png|jpeg|webp)(?:;[^,]*)?,/i.test(v))return v;
+ if(/^<svg\b/i.test(v)||/^<\?xml\b[\s\S]*?<svg\b/i.test(v))return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(v);
+ throw Error('Unsupported QR format.');
+}
+async function v944OpenAuthenticator(name){
+ const client=v945Client(),label=v87NetworkLabel(name);
+ if(!client){open(label+' · Google Authenticator',`<p class="notice">Supabase authentication is unavailable. Open the deployed PSD dashboard and retry.</p>`);return}
+ open(label+' · Google Authenticator',`<div class="v945-auth"><p>Google Authenticator is set up once per PSD account.</p><p id="v945Status" role="status">Checking authenticator status…</p><div id="v945Learn" hidden><p>Install Google Authenticator on your phone. Click Generate My QR, scan the code using the app's + button, then enter the 6-digit code below to activate it.</p></div><button class="btn" id="v945LearnButton">Learn about Google Authenticator</button><div id="v945Enroll" hidden><button class="btn accent" id="v945Generate">Generate My Setup QR</button><div id="v945Setup" hidden><img id="v945Qr" alt="Your private authenticator enrollment QR" style="width:200px;max-width:100%;background:#fff;padding:8px;border-radius:8px;display:block;margin:12px 0"><p class="notice">Manual setup key: <code id="v945Secret"></code></p><label class="field">Six-digit code<input id="v945Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></label><button class="btn accent" id="v945Verify">Verify & Activate</button></div></div></div>`,`<button class="btn" id="v945Close">Close</button>`);
+ const status=$('#v945Status'),enroll=$('#v945Enroll');let factor=null,busy=false;
+ $('#v945Close').onclick=shut;
+ $('#v945LearnButton').onclick=()=>{$('#v945Learn').hidden=!$('#v945Learn').hidden};
+ try{
+   const u=await client.auth.getUser();if(u.error||!u.data?.user){status.textContent='PSD sign-in is required. Please sign in and retry.';return}
+   const list=await client.auth.mfa.listFactors();if(list.error)throw list.error;
+   if((list.data?.totp||[]).some(x=>x.status==='verified')){status.textContent='Google Authenticator is already active for this account. No new QR code is needed.';return}
+   status.textContent='Not activated. Generate a QR code to enroll your PSD account.';enroll.hidden=false;
+ }catch(e){status.textContent='Could not check MFA: '+String(e.message||e);return}
+ $('#v945Generate').onclick=async()=>{
+   if(busy)return;busy=true;status.textContent='Generating secure QR…';
+   try{const r=await client.auth.mfa.enroll({factorType:'totp',friendlyName:'PSD Authenticator'});if(r.error)throw r.error;
+     factor=r.data.id;$('#v945Qr').src=v945QrData(r.data.totp?.qr_code);$('#v945Secret').textContent=r.data.totp?.secret||'';
+     $('#v945Setup').hidden=false;status.textContent='Scan QR and enter the code from your app.';
+   }catch(e){status.textContent='Could not generate QR: '+String(e.message||e)}finally{busy=false}
  };
- $('#v944ClosePreferences').onclick=()=>{
-   v944OpenAuthenticator(name);
-   const el=$('#v944AuthMessage');if(el)el.textContent='Preferences closed. If you completed activation, your authenticator is ready for future verification. Live session verification is not yet connected in this dashboard lab.';
+ $('#v945Verify').onclick=async()=>{
+   const code=$('#v945Code').value.trim();if(!factor||!/^\d{6}$/.test(code)){status.textContent='Enter a six-digit code after generating your QR.';return}
+   if(busy)return;busy=true;
+   try{const c=await client.auth.mfa.challenge({factorId:factor});if(c.error)throw c.error;const v=await client.auth.mfa.verify({factorId:factor,challengeId:c.data.id,code});if(v.error)throw v.error;
+     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;
+   }catch(e){status.textContent='Verification failed: '+String(e.message||e)}finally{busy=false}
  };
 }
 // Step 2 ONLY — unified social-network entry, intentionally no login flow.
@@ -1684,7 +1701,7 @@ function v94SocialTerms(name){
   window.setTimeout(()=>{shut();v944OpenAuthenticator(name)},650);
  };
 }
-function v86StartNetwork(name){v94SocialTerms(name)}
+function v86StartNetwork(name){v945RequireLogin(name)}
 // V44: Keep users inside PSD. Third-party auth is not simulated and credentials are never collected.
 function v44OpenNetwork(name){
  const supported=SOCIAL.some(([n])=>n===name);if(!supported)return;
@@ -2142,4 +2159,6 @@ function start(){observer.observe(document.body,{childList:true,subtree:true});r
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.addEventListener('resize',refresh,{passive:true});
 window.addEventListener('pageshow',refresh);
-})();</script></body></html>
+})();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="supabase-client.js?v=12" defer></script>
+</body></html>
