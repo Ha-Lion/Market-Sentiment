@@ -845,7 +845,7 @@ async function v25RefreshWebsiteData(){
 }
 // Initial load is deferred until the V24 dashboard has fully initialized.
 window.addEventListener('load',()=>{v25RefreshWebsiteData().catch(e=>console.warn('V25 feed load',e));});
-setInterval(()=>{v25RefreshWebsiteData().catch(e=>console.warn('V25 refresh',e));},300000);
+setInterval(()=>{if(document.visibilityState==='hidden')return;v25RefreshWebsiteData().catch(e=>console.warn('V25 refresh',e));},300000);
 
 // V36: read-only market feed; never writes to production endpoints.
 let v36Feed=null, v36Updated=null, v36LastFetch=0;
@@ -888,7 +888,7 @@ async function v36Refresh(){
  }catch(err){v36Feed=null;v36Updated=null;v37FeedError=String(err?.message||err);v37UpdateBadge();if(typeof render==='function')render();console.warn('V37 instrument feed unavailable',err);}
 }
 window.addEventListener('load',()=>v36Refresh());
-setInterval(v36Refresh,300000);
+setInterval(()=>{if(document.visibilityState!=='hidden')v36Refresh()},300000);
 
 // V37 — read-only data-integrity diagnostics, explicit freshness, and manual refresh.
 function v37Status(){
@@ -1006,7 +1006,7 @@ async function v77LoadMarketHistory(){
  if(typeof render==='function')render();
 }
 window.addEventListener('load',v77LoadMarketHistory);
-setInterval(v77LoadMarketHistory,300000);
+setInterval(()=>{if(document.visibilityState!=='hidden')v77LoadMarketHistory()},300000);
 function v62Ema(prices,period){
  if(prices.length<period+10)return null;
  let ema=prices.slice(0,period).reduce((s,n)=>s+n,0)/period;
@@ -2146,8 +2146,16 @@ $('#undoArrange').onclick=()=>{if(!previousArrangement)return;for(const old of p
 const boardObserver=new MutationObserver(()=>{if(!board.dataset.v8RefreshPending){board.dataset.v8RefreshPending='1';queueMicrotask(()=>{delete board.dataset.v8RefreshPending;refreshV8Status()})}});
 boardObserver.observe(board,{childList:true});
 // Re-evaluate imported timestamps while this tab remains open, including after tab focus.
-setInterval(()=>{if(snap){render();refreshV8Status()}},60000);
+setInterval(()=>{if(document.visibilityState!=='hidden'&&snap){render();refreshV8Status()}},60000);
 window.addEventListener('focus',()=>{if(snap){render();refreshV8Status()}});
+// V94.12: refresh read-only data only when returning to a visible dashboard tab.
+let v9412LastResume=0;
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState!=='visible'||Date.now()-v9412LastResume<5000)return;
+ v9412LastResume=Date.now();
+ Promise.resolve(v25RefreshWebsiteData()).catch(e=>console.warn('V94.12 refresh',e));
+ v36Refresh();v77LoadMarketHistory();
+});
 applyAppearance();
 render();
 refreshV8Status();
