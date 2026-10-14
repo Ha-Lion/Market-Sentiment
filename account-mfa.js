@@ -1,4 +1,4 @@
-/* Public Sentiment Dash · account MFA enrollment · v1
+/* Public Sentiment Dash · account MFA enrollment · v5
  * Uses authenticated Supabase MFA API; never records successful enrollment locally.
  */
 (function () {
@@ -37,11 +37,11 @@
         pendingFactor=res.data.id;
         const qr=res.data.totp.qr_code;
         // Supabase supplies the QR as an image data URI; never use untrusted remote image URLs.
-        if(!/^data:image\/(svg\+xml|png|jpeg);base64,/i.test(qr))throw new Error('Unexpected QR format returned by server.');
+        if(!/^data:image\/(?:svg\+xml|png|jpeg)(?:;charset=[^;,]+)?(?:;base64)?,/i.test(qr))throw new Error('Unexpected QR format returned by server.');
         $('mfa-qr').src=qr;
         $('mfa-secret').textContent=res.data.totp.secret||'Manual setup key unavailable';
         $('mfa-setup').hidden=false;
-        status('Scan the QR code, then enter the six-digit code to enable authentication.');
+        status('Your personal QR is ready. Scan it with Google Authenticator, then verify the 6-digit code below.');
       }catch(e){status('Could not start setup: '+errorMessage(e),true);clearSetup();}
       finally{setBusy(false);}
     });
@@ -63,7 +63,7 @@
     $('mfa-cancel').addEventListener('click',async()=>{
       if(busy)return;
       const id=pendingFactor;clearSetup();
-      if(id){setBusy(true);try{await client.auth.mfa.unenroll({factorId:id});}catch(e){}finally{setBusy(false);}}
+      if(id){setBusy(true);try{const res=await client.auth.mfa.unenroll({factorId:id});if(res.error)throw res.error;}catch(e){status('Setup could not be fully cancelled: '+errorMessage(e),true);return;}finally{setBusy(false);}}
       status('Setup cancelled. No authenticator was verified.');
     });
   }
