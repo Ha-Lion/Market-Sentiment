@@ -1,4 +1,4 @@
-/* Public Sentiment Dash · account MFA enrollment · v6
+/* Public Sentiment Dash · account MFA enrollment · v7
  * Uses authenticated Supabase MFA API; never records successful enrollment locally.
  */
 (function () {
@@ -24,10 +24,17 @@
       const factors=await client.auth.mfa.listFactors();
       if(factors.error)throw factors.error;
       const verified=(factors.data?.totp||[]).some(f=>f.status==='verified');
-      if(verified){status('Google Authenticator is enabled for this PSD account.');$('mfa-enroll').hidden=true;return;}
+      if(verified){status('Google Authenticator is enabled for this PSD account.');$('mfa-enroll').hidden=true;const recovery=$('mfa-recovery');if(recovery)recovery.hidden=false;return;}
       status('Not configured. Select Set Up Google Authenticator to register your account.');
       $('mfa-enroll').disabled=false;
     }catch(e){status('Unable to check authenticator status: '+errorMessage(e),true);}
+    const recovery=$('mfa-recovery');
+    if(recovery)recovery.addEventListener('click',()=>{
+      const info=$('mfa-recovery-info');
+      if(!info)return;
+      info.hidden=false;
+      info.textContent='Lost your phone? If you still have your old authenticator or its securely backed-up account, transfer or restore it first. Otherwise, contact PSD account support for identity-verified MFA recovery. Generating a new QR without verifying account ownership would put your account at risk.';
+    });
     $('mfa-enroll').addEventListener('click',async()=>{
       if(busy)return;setBusy(true);status('Creating secure authenticator setup…');
       try{
