@@ -1288,7 +1288,7 @@ case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div clas
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="muted">Search the website's News & Articles collection</div><button class="tile-link" data-open="search">Search news & articles <span>↗</span></button>`;
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':{const name=t.socialProvider||'Network';if(!SOCIAL.some(([p])=>p===name))return '<p class="notice">Network unavailable.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const verified=!!window.PSD_SOCIAL_VERIFIED?.[name];const launched=!!(window.PSD_SOCIAL_WINDOWS?.[name]&&!window.PSD_SOCIAL_WINDOWS[name].closed);return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">${verified?(launched?'Window open':'Ready'):'PSD verification required'}</span></div><div class="v45-actions"><button class="btn accent" data-psd-companion-connect="${safe(name)}" ${verified?'':'disabled'}>Connect</button><button class="btn" data-psd-companion-exit="${safe(name)}">Exit</button></div><p class="muted" role="status">${verified?'Connect opens the official site in a separate managed browser window. Your provider login stays with that provider.':'Complete the existing PSD login, Terms and Google Authenticator steps first.'}</p></div>`}
+case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks.</p>';if(name==='X')return `<div class="psd-x-widget"><div class="row"><strong>X · Public Timeline</strong><span class="chip">Official widget</span></div><div class="psd-x-controls"><input class="psd-x-handle" aria-label="Public X username" placeholder="Public X username (e.g. NASA)" autocomplete="off" maxlength="40"><button class="btn accent" data-psd-x-connect="1">Connect</button><button class="btn" data-psd-x-exit="1">Exit</button></div><p class="psd-x-message muted" role="status">Connect displays public posts from the selected X account inside this tile. It does not sign you in to X.</p><div class="psd-x-target" style="min-height:240px;max-height:100%;overflow:auto"></div></div>`;const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">No embedded widget configured</span></div><p class="notice">This network needs its own officially supported embed. The rest of V94.13 is unchanged.</p><button class="btn" data-social="${safe(name)}">Connection steps</button></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return `<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
@@ -1631,36 +1631,33 @@ function v90Logo(name,large=false){
 // V94.6 · Step 4: Provider-hosted OAuth, never social username/password collection.
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
-// V94.17 companion browser window approach: no API or blocked iframe.
-// PSD verification authorizes the Connect UI, not a provider account session.
-window.PSD_SOCIAL_VERIFIED=window.PSD_SOCIAL_VERIFIED||Object.create(null);
-window.PSD_SOCIAL_WINDOWS=window.PSD_SOCIAL_WINDOWS||Object.create(null);
 function v946AuthorizeScreen(name){
- if(!SOCIAL.some(([n])=>n===name))return;
- window.PSD_SOCIAL_VERIFIED[name]=true;
- shut();render();
-}
-function psdCompanionConnect(name){
- const provider=SOCIAL.find(([n])=>n===name);
- if(!provider||!window.PSD_SOCIAL_VERIFIED?.[name])return;
- // Opening directly in a user-click handler keeps browser popup blockers compatible.
- const current=window.PSD_SOCIAL_WINDOWS[name];
- if(current&&!current.closed){current.focus();return;}
- const slug=name.toLowerCase().replace(/[^a-z0-9]/g,'');
- const w=window.open(provider[1],'psd_network_'+slug,'popup=yes,width=900,height=720,resizable=yes,scrollbars=yes');
- if(!w){alert('Your browser blocked the social window. Allow popups for this dashboard and click Connect again.');return;}
- window.PSD_SOCIAL_WINDOWS[name]=w;
- render();
-}
-function psdCompanionExit(name){
- const w=window.PSD_SOCIAL_WINDOWS?.[name];
- if(w&&!w.closed){try{w.close()}catch(_){}}
- delete window.PSD_SOCIAL_WINDOWS[name];
- delete window.PSD_SOCIAL_VERIFIED[name];
- const t=tiles.find(x=>x.type==='social-service'&&x.socialProvider===name);
- if(t)t.closed=true;
- render();
- // Closing a window cannot sign the user out of the provider's own website.
+ const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
+ const label=v87NetworkLabel(name);
+ const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
+ const validEndpoint=typeof endpoint==='string'&&endpoint.startsWith('/')&&!endpoint.startsWith('//');
+ open(label+' · Secure connection',`<div class="v945-auth"><div class="v944-panel"><strong>${safe(label)}</strong><p>Continue securely with ${safe(label)}. Your username and password will be entered on the provider's login page, not into PSD.</p><label class="v949-check"><input id="v949RememberUser" type="checkbox" checked> I may save my username in the provider/browser</label><label class="v949-check"><input id="v949RememberPass" type="checkbox"> I may save my password in the provider/browser</label><p class="notice">These choices are guidance only. PSD cannot control browser or provider password-saving prompts. Do not enter social-network passwords into PSD.</p></div><p id="v946Status" class="notice" role="status">${validEndpoint?'Ready to request secure provider authorization.':'Your network tile stays within PSD. Live login and personalized content require a provider-approved connection that is not configured yet.'}</p></div>`,`<button class="btn accent" id="v946Go">Check connection · ${safe(label)}</button>`);
+ $('#v946Go').onclick=async()=>{
+   const btn=$('#v946Go'),msg=$('#v946Status');
+   if(!validEndpoint){
+     // Do not misrepresent an external website visit as an authenticated provider connection.
+     msg.textContent='Your '+label+' dashboard tile has been prepared, but live account connection requires an approved '+label+' OAuth/API integration. Provider authorization is not configured. No credentials have been collected.';
+     msg.setAttribute('role','status');
+     return;
+   }
+   btn.disabled=true;msg.textContent='Starting secure provider authorization…';
+   try{
+     const client=v945Client();if(!client)throw Error('PSD sign-in is unavailable.');
+     const session=await client.auth.getSession();if(session.error||!session.data?.session?.access_token)throw Error('Sign in to PSD first.');
+     const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.data.session.access_token},credentials:'same-origin',body:JSON.stringify({provider:name})});
+     if(!res.ok)throw Error('Provider authorization is not available ('+res.status+').');
+     const json=await res.json();
+     if(!json||typeof json.authorization_url!=='string')throw Error('Provider authorization URL is missing.');
+     const url=new URL(json.authorization_url);
+     if(url.protocol!=='https:')throw Error('Authorization must use HTTPS.');
+     window.location.assign(url.href);
+   }catch(err){msg.textContent=String(err?.message||err);btn.disabled=false}
+ };
 }
 // V94.6: account-verified entry and in-place Supabase MFA enrollment.
 function v945Client(){return window.psdSupabase?.auth?.mfa?window.psdSupabase:null}
@@ -1959,7 +1956,7 @@ function tileSettings(t){
 board.addEventListener('input',e=>{const input=e.target.closest('[data-v46-network-search]');if(!input)return;const panel=input.closest('.tile');if(!panel)return;v47NetworkFilter=input.value;v47FilterNetworks(panel)});
 board.addEventListener('change',e=>{const sel=e.target.closest('[data-v75-frame]');if(!sel)return;const t=tiles.find(t=>t.id===sel.closest('.tile')?.dataset.id);if(t){t.indicatorFrame=['daily','weekly','monthly'].includes(sel.value)?sel.value:'daily';render();}});
 board.addEventListener('change',e=>{const s=e.target.closest('[data-v79-period]');if(!s)return;v79Period=['daily','weekly','monthly'].includes(s.value)?s.value:'daily';render();}); board.addEventListener('change',e=>{const select=e.target.closest('[data-v39-range]');if(!select)return;state.historyDays=[0,7,30,90,365].includes(Number(select.value))?Number(select.value):0;render()});
-board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v39-export')){v39ExportHistory();return}if(b.hasAttribute('data-v69-all')){v69ShowAllWatch=!v69ShowAllWatch;render();return}if(b.hasAttribute('data-catalog-asset')){const asset=b.dataset.catalogAsset;if(ASSETS.includes(asset)){state.selected=asset;render();}return}if(b.hasAttribute('data-watch-slot')){const asset=state.watch[Number(b.dataset.watchSlot)];if(asset){state.selected=asset;render()}return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.v45Terms){v45ManageConsent(b.dataset.v45Terms);return}if(b.hasAttribute('data-v44-return')){if(t&&t.type==='social-service'){t.closed=true;const main=tiles.find(x=>x.id==='social');if(main)main.closed=false;render();main&&board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'})}return}if(b.dataset.psdCompanionConnect){psdCompanionConnect(b.dataset.psdCompanionConnect);return}if(b.dataset.psdCompanionExit){psdCompanionExit(b.dataset.psdCompanionExit);return}if(b.dataset.social){v86StartNetwork(b.dataset.social);return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':if(t.type==='social-service'){t.closed=true;t.min=false;t.maxed=false;const main=tiles.find(x=>x.id==='social');if(main){main.closed=false;main.min=false;setTimeout(()=>board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'}),0)}}else{t.min=!t.min;t.maxed=false}break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
+board.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v39-export')){v39ExportHistory();return}if(b.hasAttribute('data-v69-all')){v69ShowAllWatch=!v69ShowAllWatch;render();return}if(b.hasAttribute('data-catalog-asset')){const asset=b.dataset.catalogAsset;if(ASSETS.includes(asset)){state.selected=asset;render();}return}if(b.hasAttribute('data-watch-slot')){const asset=state.watch[Number(b.dataset.watchSlot)];if(asset){state.selected=asset;render()}return}let t=tiles.find(x=>x.id===b.closest('.tile')?.dataset.id);if(b.dataset.asset){state.selected=b.dataset.asset;render();return}if(b.hasAttribute('data-asset'))return;if(b.dataset.open){pane(b.dataset.open);return}if(b.dataset.v45Terms){v45ManageConsent(b.dataset.v45Terms);return}if(b.hasAttribute('data-v44-return')){if(t&&t.type==='social-service'){t.closed=true;const main=tiles.find(x=>x.id==='social');if(main)main.closed=false;render();main&&board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'})}return}if(b.dataset.social){v86StartNetwork(b.dataset.social);return}if(b.dataset.external){window.open(b.dataset.external,'_blank','noopener,noreferrer');return}if(!t)return;switch(b.dataset.command){case'lock':t.locked=!t.locked;break;case'config':tileSettings(t);return;case'min':if(t.type==='social-service'){t.closed=true;t.min=false;t.maxed=false;const main=tiles.find(x=>x.id==='social');if(main){main.closed=false;main.min=false;setTimeout(()=>board.querySelector('[data-id="social"]')?.scrollIntoView({behavior:'smooth',block:'nearest'}),0)}}else{t.min=!t.min;t.maxed=false}break;case'max':t.maxed=!t.maxed;t.min=false;break;case'close':t.closed=true;break}render()});
 board.addEventListener('keydown',e=>{
  const grip=e.target.closest('.handle');if(!grip)return;
  const t=tiles.find(x=>x.id===grip.closest('.tile')?.dataset.id);
@@ -2258,4 +2255,50 @@ window.addEventListener('resize',refresh,{passive:true});
 window.addEventListener('pageshow',refresh);
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
+
+<style>
+.psd-x-widget{height:100%;display:flex;flex-direction:column;gap:9px;min-height:0}
+.psd-x-controls{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.psd-x-handle{padding:9px 10px;flex:1 1 180px;min-width:120px;border:1px solid #858c99;border-radius:7px;background:transparent;color:inherit}
+.psd-x-target{flex:1 1 auto;min-height:210px;overflow:auto}
+.psd-x-target iframe{max-width:100%!important}
+</style>
+<script>
+/* X official public widget pilot. No OAuth claims or X password handling. */
+(function(){
+ let loader=null;
+ function loadX(){
+  if(window.twttr?.widgets?.createTimeline)return Promise.resolve(window.twttr);
+  if(loader)return loader;
+  loader=new Promise((resolve,reject)=>{
+   const old=document.querySelector('script[src="https://platform.twitter.com/widgets.js"]');
+   const script=old||document.createElement('script');
+   const timeout=setTimeout(()=>reject(Error('X widget service did not respond. Check browser privacy settings or network blocking.')),12000);
+   const poll=setInterval(()=>{if(window.twttr?.widgets?.createTimeline){clearTimeout(timeout);clearInterval(poll);resolve(window.twttr)}},120);
+   script.addEventListener('error',()=>{clearTimeout(timeout);clearInterval(poll);reject(Error('X widget service was blocked by the browser.'))},{once:true});
+   if(!old){script.async=true;script.src='https://platform.twitter.com/widgets.js';document.head.appendChild(script)}
+  });
+  return loader;
+ }
+ document.addEventListener('click',async(e)=>{
+  const connect=e.target.closest('[data-psd-x-connect]');
+  const exit=e.target.closest('[data-psd-x-exit]');
+  if(!connect&&!exit)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  const box=e.target.closest('.psd-x-widget');if(!box)return;
+  const field=box.querySelector('.psd-x-handle'),target=box.querySelector('.psd-x-target'),msg=box.querySelector('.psd-x-message');
+  if(exit){target.replaceChildren();msg.textContent='Timeline cleared. This does not log out of X.';return}
+  const username=field.value.trim().replace(/^@/,'');
+  if(!/^[A-Za-z0-9_]{1,15}$/.test(username)){msg.textContent='Enter a valid public X username (1–15 letters, numbers or underscores).';return}
+  target.replaceChildren();msg.textContent='Loading public posts from @'+username+'…';connect.disabled=true;
+  try{
+   const x=await loadX();
+   if(!document.contains(target))return;
+   const el=await x.widgets.createTimeline({sourceType:'profile',screenName:username},target,{theme:document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light',chrome:'noheader',height:500,dnt:true});
+   msg.textContent=el?'Showing public posts from @'+username+'. Some post interactions may open X.':'X did not provide an embeddable timeline for @'+username+'. Try another public account.';
+  }catch(err){msg.textContent=err.message||'Unable to load X widget.'}
+  finally{connect.disabled=false}
+ },true);
+})();
+</script>
 </body></html>
