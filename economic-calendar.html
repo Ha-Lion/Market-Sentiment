@@ -1857,7 +1857,7 @@
     function previousReleaseDisplay(e){
       const v=e?.previous;
       if(v===null||v===undefined||String(v).trim()==="")return "—";
-      return numericReleaseValue(v)?formatValue(v,e.unit):"—";
+      return numericReleaseValue(v)?formatValue(v,calendarDisplayUnit(e)):"—";
     }
     function previousReleaseLabel(e){
       const v=e?.previous;
@@ -1865,6 +1865,15 @@
         return ` title="${esc("Previous release not supplied as a numeric observation. Provider commentary: "+String(v).slice(0,240))}"`;
       }
       return economicValueLabel(v,"Previous");
+    }
+
+    function calendarDisplayUnit(e){
+      const existing=String(e?.unit??"").trim();
+      if(existing)return existing;
+      const name=String(e?.event??e?.category??"").trim();
+      if(/\b(?:PMI|purchase index|refinance index|mortgage market composite index)\b/i.test(name))return "Index Points";
+      if(/\b(?:YoY|MoM|year over year|month over month|inflation rate|unemployment rate|mortgage rate|interest rate|PPI|consumer price index percentage change)\b/i.test(name))return "%";
+      return "";
     }
 
     function formatValue(v,unit){
@@ -1934,9 +1943,9 @@
             </td>
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
-            <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,e.unit)}</td>
-            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,e.unit)}</td>
-            <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,e.unit)}</td>
+            <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</td>
+            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,calendarDisplayUnit(e))}</td>
+            <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,calendarDisplayUnit(e))}</td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
@@ -2699,10 +2708,10 @@
       document.getElementById("event-market-reaction").textContent="Loading market reaction…";
 
       document.getElementById("event-modal-kpis").innerHTML=`
-        <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,e.unit)}</strong></div>
-        <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast??e.te_forecast,e.unit)}</strong></div>
-        <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,e.unit)}</strong></div>
-        ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,e.unit)}</strong></div>`:""}
+        <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,calendarDisplayUnit(e))}</strong></div>
+        <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</strong></div>
+        <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,calendarDisplayUnit(e))}</strong></div>
+        ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,calendarDisplayUnit(e))}</strong></div>`:""}
         <div class="ec-kpi"><span>Impact</span><strong>${esc(impactFromImportance(e.importance))}</strong></div>`;
 
       const classification=classifyEvent(e);
@@ -4012,9 +4021,9 @@
           e.event||e.category||"",
           "", // 12M History is a visual chart; no scalar value to export
           previousReleaseDisplay(e),
-          formatValue(e.forecast??e.te_forecast,e.unit),
-          formatValue(e.actual,e.unit),
-          formatValue(e.revised,e.unit),
+          formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e)),
+          formatValue(e.actual,calendarDisplayUnit(e)),
+          formatValue(e.revised,calendarDisplayUnit(e)),
           classifyEvent(e),
           relevantAssets(e).join(" | ")
         ]);
