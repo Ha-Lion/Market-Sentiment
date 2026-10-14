@@ -1862,7 +1862,7 @@ const V28_TILE_TYPES=[
  ['history','Historical Performance Chart'],
  ['news','Latest News & Articles (Watchlist)'],
  ['search','Search News & Articles'],
- ['favorites','    ↳ My Favorite News'],
+ ['favorites','My Favorite News'],
  ['social','Social & Market Networks']
 ];
 const V29_TILE_HELP={
@@ -1894,8 +1894,8 @@ function tileSettings(t){
  const isWatch=t.type==='watch';
  const fixed=t.type==='fixed';
  const original=v69OfficialTitle(t);
- const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${label}</option>`).join('');
- const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis<select id="tileType">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
+ const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${(t.type===type||(type==='search'&&t.type==='favorites'))?'selected':''}>${label}</option>`).join('');
+ const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis<select id="tileType">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><label class="field" id="newsContentField" style="${['search','favorites'].includes(t.type)?'':'display:none'}">Search News & Articles · Select content<select id="newsContent"><option value="search" ${t.type==='favorites'?'':'selected'}>News Search</option><option value="favorites" ${t.type==='favorites'?'selected':''}>My Favorite News</option></select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
  open(`Tile Settings · ${original}`,`${typeField}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
@@ -1945,7 +1945,9 @@ function tileSettings(t){
  if(t.title!==formerDefault && t.title!=='Custom Workspace' && t.title!=='Choose Analysis')userEdited=true;
  titleInput.addEventListener('input',()=>{userEdited=true});
  const updateNaming=()=>{
-  const chosenType=typeSelect?.value||t.type;
+  const parentType=typeSelect?.value||t.type;
+  const newsField=$('#newsContentField');if(newsField)newsField.style.display=parentType==='search'?'':'none';
+  const chosenType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
   const newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily',regionSelect?.value||'global');
   officialInput.value=newName;
   if(!userEdited)titleInput.value=newName;
@@ -1954,13 +1956,15 @@ function tileSettings(t){
   const regionField=$('#psiRegionField');if(regionField)regionField.style.display=chosenType==='regionpsi'?'':'none';
  };
  typeSelect?.addEventListener('change',updateNaming);
+ $('#newsContent')?.addEventListener('change',updateNaming);
  periodSelect?.addEventListener('change',updateNaming);
  regionSelect?.addEventListener('change',updateNaming);
  updateNaming();
  saveButton.onclick=()=>{
   const newWatch=isWatch?v70CollectWatchlist():null;
   if(isWatch&&!newWatch)return;
-  const newType=typeSelect?.value;
+  const parentType=typeSelect?.value;
+  const newType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
   if(newType&&newType!=='custom')t.type=newType;
   if(['psi','regionpsi'].includes(t.type))t.psiPeriod=periodSelect?.value||'daily';
   if(t.type==='regionpsi')t.psiRegion=regionSelect?.value||'global';
