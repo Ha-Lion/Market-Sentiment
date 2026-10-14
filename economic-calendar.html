@@ -1877,21 +1877,22 @@
     }
 
     function formatValue(v,unit){
-      if(v===null||v===undefined||String(v).trim()==="") return "—";
+      if(v===null||v===undefined||String(v).trim()==="")return "—";
       const raw=String(v).trim();
-      if(/^(published|released|previous edition)$/i.test(raw)) return "N/A";
-      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|bps|bp|k|m|b))?$/i);
-      if(!match) return esc(raw);
+      if(/^(published|released|previous edition)$/i.test(raw))return "N/A";
+      // Strip well-known descriptive unit prose, but never change the original stored value.
+      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|percent(?:age)?(?:\s+(?:MoM|YoY))?|bps?|jobs\/week(?:\s+4.week moving average)?|high auction yield.*|k|m|b|index points?|points?))?$/i);
+      if(!match)return esc(raw);
       const n=Number(match[1].replace(/,/g,""));
       if(!Number.isFinite(n))return "—";
-      const formatted=n.toLocaleString("en-US",{maximumFractionDigits:3});
-      const suffix=(match[2]||"").toLowerCase();
-      const hint=String(unit||"").trim().toLowerCase();
-      if(suffix==="%")return esc(formatted+"%");
-      if(suffix)return esc(formatted+" "+suffix);
-      if(["%","percent","percentage","pct"].includes(hint))return esc(formatted+"%");
-      if(!hint||["points","index points","index"].includes(hint))return esc(formatted);
-      return esc(formatted+" "+unit);
+      const value=n.toLocaleString("en-US",{maximumFractionDigits:3});
+      const suffix=String(match[2]||"").toLowerCase();
+      const hint=String(unit||"").toLowerCase().trim();
+      if(suffix==="%"||suffix.startsWith("percent")||suffix.startsWith("high auction yield")||["%","percent","percentage","pct"].includes(hint))return esc(value+"%");
+      if(suffix.startsWith("jobs/week"))return esc(value);
+      if(/^(bps?|k|m|b)$/.test(suffix))return esc(value+" "+suffix);
+      if(!hint||["points","index points","index"].includes(hint)||/index points?/.test(suffix))return esc(value);
+      return esc(value+" "+unit);
     }
 
     function actualClass(e){
@@ -2187,8 +2188,8 @@
 
           return `<button class="ec-hist-col" type="button"
             data-hist-index="${i}"
-            aria-label="${esc(dateLabel)} ${esc(String(r.value))}">
-            <span class="ec-hist-value" style="--bar-h:${pct}%">${esc(String(Number(r.value.toFixed ? r.value.toFixed(3) : r.value)))}</span>
+            aria-label="${esc(dateLabel)} ${formatValue(r.value,r.unit)}">
+            <span class="ec-hist-value" style="--bar-h:${pct}%">${formatValue(r.value,r.unit)}</span>
             <span class="ec-hist-bar" style="height:${pct}%"></span>
             <span class="ec-hist-label">${esc(dateLabel)}</span>
           </button>`;
@@ -2204,7 +2205,7 @@
 
             callout.innerHTML=`
               <strong>${new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(r.date)}</strong>
-              ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${esc(String(r.value))}${r.unit?` ${esc(r.unit)}`:""}</b><br>
+              ${esc((r.chosenSeries||series).charAt(0).toUpperCase()+(r.chosenSeries||series).slice(1))}: <b>${formatValue(r.value,r.unit)}</b><br>
               Actual: ${formatValue(r.actual,r.unit)} · Forecast: ${formatValue(r.forecast,r.unit)} · Previous: ${formatValue(r.previous,r.unit)}${r.revised!==undefined&&r.revised!==null&&r.revised!==""?` · Revised: ${formatValue(r.revised,r.unit)}`:""}
             `;
 
