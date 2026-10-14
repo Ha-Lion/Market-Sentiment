@@ -1297,6 +1297,7 @@ case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="v9421-inline-news"></div>`;
+case'favorites':return v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
 case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
@@ -1462,7 +1463,7 @@ async function v63LoadArchive(){
  finally{v63ArchiveLoading=false;const msg=document.getElementById('v63ArchiveStatus');if(msg)msg.textContent=v63ArchiveLoaded?`${v63Archive.length.toLocaleString()} website articles available to search`:v63ArchiveError;v42RenderResults()}
 }
 // V94.21: News search directly in the existing tile; favorites use the existing saved-article store.
-function v9421IsFavorites(t){return t?.type==='custom'&&/favou?rites?\s*(news|articles)|my\s+saved\s+(news|articles)/i.test(t.title||'')}
+function v9421IsFavorites(t){return t?.type==='favorites'||(t?.type==='custom'&&/favou?rites?\s*(news|articles)|my\s+saved\s+(news|articles)/i.test(t.title||''))}
 function v9421MountSearch(html){const el=board.querySelector('.v9421-inline-news');if(el)el.innerHTML=html}
 function v9421FindArticle(id){return v63AvailableNews().find(h=>String(h.id)===String(id))||v31Headlines.find(h=>String(h.id)===String(id))||v51Saved[id]}
 function v9421SaveArticle(id,saveIt=true){
@@ -1861,6 +1862,7 @@ const V28_TILE_TYPES=[
  ['history','Historical Performance Chart'],
  ['news','Latest News & Articles (Watchlist)'],
  ['search','Search News & Articles'],
+ ['favorites','My Favorite News'],
  ['social','Social & Market Networks']
 ];
 const V29_TILE_HELP={
@@ -1871,10 +1873,11 @@ const V29_TILE_HELP={
  chart:'Historical sentiment trend for the selected asset when valid time-stamped samples exist.',
  history:'Historical market performance for the selected asset when supported observations exist.',
  news:'Unread articles and favorites associated with selected watchlist assets.',
- search:'Search news and articles using filters; the existing demo search is not a live index.',
+ search:'Search news and articles using filters.',
+ favorites:'Drag articles from Search News & Articles into this tile, or save them using the star.',
  social:'Links to external social and market services. This tile does not change with asset selection.'
 };
-const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',social:'Social & Market Networks'};
+const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',favorites:'My Favorite News',social:'Social & Market Networks'};
 function v72AnalysisTitle(type,period,region){
  if(type==='regionpsi'){const where=({us:'U.S.',euro:'Europe',global:'Global'})[region]||'Global';const when=({daily:'Daily',weekly:'Weekly',monthly:'Monthly'})[period]||'Daily';return `${where} ${when} PSI`;}
  if(type==='psi')return ({daily:'Daily PSI',weekly:'Weekly PSI',monthly:'Monthly PSI'})[period]||'Daily PSI';
