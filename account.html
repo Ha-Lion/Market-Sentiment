@@ -228,8 +228,8 @@
     main.account-page #security-mfa .mfa-setup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
     main.account-page .mfa-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
     main.account-page .mfa-actions .psd-button{width:auto!important}
-    main.account-page .mfa-qr-box{background:#fff;border:1px solid #9db0c2;border-radius:9px;max-width:154px;padding:6px;margin:6px 0}
-    main.account-page .mfa-qr-box img{display:block;max-width:100%;width:140px;height:auto}
+    main.account-page .mfa-qr-box{background:#fff;border:1px solid #9db0c2;border-radius:9px;max-width:234px;padding:10px;margin:8px 0}
+    main.account-page .mfa-qr-box img{display:block;max-width:100%;width:210px;height:auto}
     main.account-page .mfa-secret{overflow-wrap:anywhere;user-select:all;font:11px ui-monospace,monospace;padding:6px;border:1px solid var(--line);border-radius:8px}
     main.account-page .mfa-inline{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
     main.account-page .mfa-inline .psd-field{flex:1 1 130px}
@@ -248,6 +248,40 @@
       main.account-page #security-mfa,main.account-page #notifications,
       main.account-page #password-card,main.account-page #delete-account-card{grid-column:span 12}
       main.account-page #security-mfa .mfa-setup-grid{grid-template-columns:1fr}
+      main.account-page #security-mfa .mfa-app-install{grid-template-columns:1fr;justify-items:start}
+    }
+
+    /* V3: independently stacked columns; content determines card size. */
+    main.page.account-page{width:calc(100% - 24px);max-width:none; padding-top:8px}
+    main.account-page .account-card.full{padding:9px 15px!important;margin-bottom:9px!important}
+    main.account-page .account-card.full .page-chip{display:inline-block;padding:3px 8px}
+    main.account-page .account-card.full h1{font-size:25px;margin:1px 0 0}
+    main.account-page .account-card.full .account-email{margin:3px 0}
+    main.account-page .account-card.full .psd-status{margin-top:2px}
+    main.account-page .account-grid.v3-masonry{display:grid;grid-template-columns:minmax(240px,0.85fr) minmax(320px,1.15fr) minmax(310px,1fr);gap:10px;align-items:start}
+    main.account-page .account-grid.v3-masonry .account-column{min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:10px}
+    main.account-page .account-grid.v3-masonry .account-column>.account-card{width:100%;max-width:none;margin:0!important;grid-column:auto!important;grid-row:auto!important;align-self:auto!important;height:auto!important;min-height:0!important}
+    main.account-page .account-card{padding:12px 14px!important}
+    main.account-page .psd-select,main.account-page .psd-input{max-width:100%}
+    main.account-page #preferences .psd-select{max-width:320px}
+    main.account-page #password-card .psd-input{max-width:360px}
+    main.account-page .watchlist-list{max-height:145px}
+    main.account-page #security-mfa .mfa-info{margin:5px 0}
+
+    main.account-page #security-mfa .mfa-app-install{display:block;padding:8px 10px;margin:6px 0 8px;background:rgba(212,162,40,.08);border:1px solid rgba(169,114,0,.28);border-radius:10px}
+    main.account-page #security-mfa .mfa-app-install img{display:block;width:82px;height:82px;border-radius:8px;background:#fff;padding:4px;border:1px solid #9db0c2}
+    main.account-page #security-mfa .mfa-app-install .mfa-install-title{font-size:12px;font-weight:800;line-height:1.25;margin:0 0 3px;color:var(--text)}
+    main.account-page #security-mfa .mfa-app-install .mfa-install-copy{font-size:10.5px;line-height:1.35;color:var(--muted);margin:0}
+    main.account-page #security-mfa .mfa-install-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    main.account-page #security-mfa .mfa-install-links a{font-size:10.5px;padding:5px 9px;min-height:auto;text-decoration:none}
+    @media (max-width:1050px){
+      main.account-page .account-grid.v3-masonry{grid-template-columns:repeat(2,minmax(0,1fr))}
+      main.account-page .account-grid.v3-masonry .account-column:last-child{grid-column:span 2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+    }
+    @media (max-width:680px){
+      main.page.account-page{width:calc(100% - 16px)}
+      main.account-page .account-grid.v3-masonry{grid-template-columns:minmax(0,1fr)}
+      main.account-page .account-grid.v3-masonry .account-column:last-child{grid-column:auto;display:flex}
     }
   </style>
   <link rel="stylesheet" href="mobile/ribbon.css?v=1" media="(max-width:768px)">
@@ -281,7 +315,8 @@
       </form>
     </div>
 
-    <div class="account-grid">
+    <div class="account-grid v3-masonry">
+      <div class="account-column" data-column="1">
       <section class="panel account-card" id="preferences">
         <h2>Dashboard Preferences</h2>
         <form id="preferences-form" class="psd-form">
@@ -302,47 +337,6 @@
           <p class="psd-help">Choose the default timeframe and card density used for your personalized dashboard.</p>
         </form>
       </section>
-
-      <section class="panel account-card" id="watchlist">
-        <h2>My Watchlist</h2>
-        <form id="watchlist-form" class="psd-form">
-          <div class="psd-field">
-            <label for="watchlist-instrument">Add an instrument</label>
-            <select class="psd-select" id="watchlist-instrument" required>
-              <option value="">Loading tracked instruments…</option>
-            </select>
-          </div>
-          <button class="psd-button" type="submit">Add to Watchlist</button>
-        </form>
-        <ul class="watchlist-list" id="watchlist-list"></ul>
-        <div class="watchlist-card-actions">
-          <a class="psd-button watchlist-open-link" href="watchlist.html">Open My Watchlist Page</a>
-        </div>
-        <p class="psd-help">Choose from the tracked-instrument menu. Your saved list appears on the private My Watchlist page.</p>
-      </section>
-
-      <section class="panel account-card" id="security-mfa">
-        <h2>Account Security · Google Authenticator</h2>
-        <p class="mfa-info">Set up once for your Public Sentiment Dash account. The same authenticator app can verify future social-network connections; no separate enrollment per network is required.</p>
-        <p id="mfa-status" class="psd-status" role="status" aria-live="polite">Checking authenticator status…</p>
-        <div class="mfa-actions"><button class="psd-button" id="mfa-enroll" type="button" disabled>Set Up Google Authenticator</button></div>
-        <div id="mfa-setup" class="mfa-setup-grid" hidden>
-          <div>
-            <p class="mfa-info"><strong>1.</strong> Install <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a> (or another compatible TOTP app) on your phone.</p>
-            <p class="mfa-info"><strong>2.</strong> In the app, choose <strong>Add account → Scan a QR code</strong> and scan the code shown here.</p>
-            <div class="mfa-qr-box"><img id="mfa-qr" alt="Authenticator enrollment QR code"></div>
-            <p class="mfa-info">Can't scan? Enter this setup key manually. Keep it private.</p>
-            <div id="mfa-secret" class="mfa-secret"></div>
-          </div>
-          <div>
-            <p class="mfa-info"><strong>3.</strong> Enter the current 6-digit code from your app to confirm enrollment.</p>
-            <div class="mfa-inline"><div class="psd-field"><label for="mfa-code">Six-digit code</label><input class="psd-input" id="mfa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"></div></div>
-            <div class="mfa-actions"><button class="psd-button" id="mfa-verify" type="button">Verify & Enable</button><button class="psd-button secondary" id="mfa-cancel" type="button">Cancel Setup</button></div>
-            <p class="mfa-info">Store recovery information securely. If you lose your authenticator, account recovery may require administrator support.</p>
-          </div>
-        </div>
-      </section>
-
       <section class="panel account-card notification-card" id="notifications">
         <div class="notification-title-row">
           <h2>Notifications</h2>
@@ -361,7 +355,25 @@
           Notifications are coming soon. Alert rules, frequency limits, duplicate protection, quiet hours and delivery options are still being finalized.
         </p>
       </section>
-
+      </div>
+      <div class="account-column" data-column="2">
+      <section class="panel account-card" id="watchlist">
+        <h2>My Watchlist</h2>
+        <form id="watchlist-form" class="psd-form">
+          <div class="psd-field">
+            <label for="watchlist-instrument">Add an instrument</label>
+            <select class="psd-select" id="watchlist-instrument" required>
+              <option value="">Loading tracked instruments…</option>
+            </select>
+          </div>
+          <button class="psd-button" type="submit">Add to Watchlist</button>
+        </form>
+        <ul class="watchlist-list" id="watchlist-list"></ul>
+        <div class="watchlist-card-actions">
+          <a class="psd-button watchlist-open-link" href="watchlist.html">Open My Watchlist Page</a>
+        </div>
+        <p class="psd-help">Choose from the tracked-instrument menu. Your saved list appears on the private My Watchlist page.</p>
+      </section>
       <section class="panel account-card" id="password-card">
         <h2>Password</h2>
         <form id="password-form" class="psd-form">
@@ -372,7 +384,39 @@
           <button class="psd-button" type="submit">Change Password</button>
         </form>
       </section>
-
+      </div>
+      <div class="account-column" data-column="3">
+      <section class="panel account-card" id="security-mfa">
+        <h2>Account Security · Google Authenticator</h2>
+        <p class="mfa-info">Set up once for your Public Sentiment Dash account. The same authenticator app can verify future social-network connections; no separate enrollment per network is required.</p>
+        <div class="mfa-app-install mfa-downloads">
+          <div>
+            <p class="mfa-install-title">First, install Google Authenticator on your phone</p>
+            <div class="mfa-install-links">
+              <a class="psd-button secondary" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener noreferrer">Android · Google Play</a>
+              <a class="psd-button secondary" href="https://apps.apple.com/us/app/google-authenticator/id388497605" target="_blank" rel="noopener noreferrer">iPhone · App Store</a>
+            </div>
+            <p class="mfa-install-copy">Then select <strong>Generate My Setup QR</strong> below. Scan the unique QR with the app and enter its six-digit code to finish.</p>
+          </div>
+        </div>
+        <p id="mfa-status" class="psd-status" role="status" aria-live="polite">Checking authenticator status…</p>
+        <div class="mfa-actions"><button class="psd-button" id="mfa-enroll" type="button" disabled>Generate My Setup QR</button></div>
+        <div id="mfa-setup" class="mfa-setup-grid" hidden>
+          <div>
+            <p class="mfa-info"><strong>1.</strong> Install <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a> (or another compatible TOTP app) on your phone.</p>
+            <p class="mfa-info"><strong>2.</strong> Open Google Authenticator on your phone, tap <strong>+</strong> and choose <strong>Scan a QR code</strong>. Scan the personal QR shown here. Your PSD account will be added to the app.</p>
+            <div class="mfa-qr-box"><img id="mfa-qr" alt="Unique QR code for adding your Public Sentiment Dash account to Google Authenticator"></div>
+            <p class="mfa-info">Can't scan? Enter this setup key manually. Keep it private.</p>
+            <div id="mfa-secret" class="mfa-secret"></div>
+          </div>
+          <div>
+            <p class="mfa-info"><strong>3.</strong> Enter the new six-digit code from the app and select <strong>Verify & Enable</strong>. Scanning alone does not finish activation.</p>
+            <div class="mfa-inline"><div class="psd-field"><label for="mfa-code">Six-digit code</label><input class="psd-input" id="mfa-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"></div></div>
+            <div class="mfa-actions"><button class="psd-button" id="mfa-verify" type="button">Verify & Enable</button><button class="psd-button secondary" id="mfa-cancel" type="button">Cancel Setup</button></div>
+            <p class="mfa-info">Store recovery information securely. If you lose your authenticator, account recovery may require administrator support.</p>
+          </div>
+        </div>
+      </section>
       <section class="panel account-card danger-zone" id="delete-account-card">
         <h2>Delete Account</h2>
         <p class="psd-help">Request deletion of your account and personalized data. A seven-day cancellation period is provided.</p>
@@ -382,6 +426,7 @@
         </div>
         <p id="deletion-status" class="psd-help"></p>
       </section>
+      </div>
     </div>
   </main>
 
@@ -390,7 +435,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="supabase-client.js?v=12" defer></script>
   <script src="auth-account.js?v=12" defer></script>
-  <script src="account-mfa.js?v=1" defer></script>
+  <script src="account-mfa.js?v=5" defer></script>
   <script src="site-footer.js?v=1" defer></script>
   <script src="vote-widget.js" defer></script>
   <script src="mobile/ribbon.js?v=2"></script>
