@@ -1,4 +1,4 @@
-/* Public Sentiment Dash · account MFA enrollment · v5
+/* Public Sentiment Dash · account MFA enrollment · v6
  * Uses authenticated Supabase MFA API; never records successful enrollment locally.
  */
 (function () {
@@ -36,9 +36,19 @@
         if(!res.data?.id || !res.data?.totp?.qr_code)throw new Error('Supabase did not return a valid QR code.');
         pendingFactor=res.data.id;
         const qr=res.data.totp.qr_code;
-        // Supabase supplies the QR as an image data URI; never use untrusted remote image URLs.
-        if(!/^data:image\/(?:svg\+xml|png|jpeg)(?:;charset=[^;,]+)?(?:;base64)?,/i.test(qr))throw new Error('Unexpected QR format returned by server.');
-        $('mfa-qr').src=qr;
+        // Supabase may return a base64 data URI, URL-encoded SVG URI, or raw SVG markup.
+        // Display only an image supplied by the authenticated MFA enrollment API.
+        let qrImage;
+        if(typeof qr!=='string')throw new Error('The enrollment QR was missing.');
+        const value=qr.trim();
+        if(/^data:image\/(?:svg\+xml|png|jpeg|webp)(?:;[^,]*)?,/i.test(value)){
+          qrImage=value;
+        }else if(/^<\?xml\b[\s\S]*?<svg\b/i.test(value) || /^<svg\b/i.test(value)){
+          qrImage='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(value);
+        }else{
+          throw new Error('The authenticator QR could not be displayed. Please retry.');
+        }
+        $('mfa-qr').src=qrImage;
         $('mfa-secret').textContent=res.data.totp.secret||'Manual setup key unavailable';
         $('mfa-setup').hidden=false;
         status('Your personal QR is ready. Scan it with Google Authenticator, then verify the 6-digit code below.');
