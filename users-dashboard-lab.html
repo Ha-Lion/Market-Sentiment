@@ -633,7 +633,7 @@ document.addEventListener('pointerup',e=>{
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
 document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
 document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?e.target.closest('[data-v80-chart]'):null;if(chart)v80ClearChart(chart)},true);
+document.addEventListener('pointerleave',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80ClearChart(chart)},true);
 document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
@@ -1311,7 +1311,7 @@ case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gol
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':return v9428WidgetTile(t);
+case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
@@ -1679,7 +1679,6 @@ function v90Logo(name,large=false){
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
 function v946AuthorizeScreen(name){
- if(SOCIAL.some(([n])=>n===name)){shut();v44OpenNetwork(name);return}
  const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
  const label=v87NetworkLabel(name);
  const endpoint=window.PSD_SOCIAL_OAUTH_START_ENDPOINT;
@@ -1829,101 +1828,6 @@ function v94SocialTerms(name){
   window.setTimeout(()=>{shut();v944OpenAuthenticator(name)},650);
  };
 }
-// V94.30: Preserve each social widget's public search input across tile redraws.
-const v9430WidgetInputs = new Map();
-board.addEventListener('input',e=>{
-  const field=e.target instanceof Element && e.target.matches('[data-v9428-input]') ? e.target : null;
-  if(!field)return;
-  const tile=field.closest('.tile');if(tile)v9430WidgetInputs.set(tile.dataset.id,field.value);
-},true);
-// V94.28: zero-paid-API public provider widgets. No social credentials collected.
-function v9428WidgetTile(t){
- const n=t.socialProvider||'X';
- const label=v87NetworkLabel(n);
- const note={
-  X:'Public X profile timeline only. X may reject widgets (HTTP 429).',
-  Facebook:'Public Facebook Page only (when Meta permits embedding).',
-  Instagram:'Public Instagram post only; provide the URL of an individual post.',
-  Reddit:'Public Reddit post only; provide the URL of an individual post.',
-  Stocktwits:'No supported free full-feed widget is available here.',
-  TradingView:'Official free interactive TradingView chart.',
-  'Bloomberg (News)':'Bloomberg does not provide a free full-news widget for this dashboard.'
- }[n]||'Public content only.';
- const hint={X:'Public username, e.g. NASA',Facebook:'Public Page name, e.g. NASA',Instagram:'Public post URL (instagram.com/p/...)',Reddit:'Public post URL (reddit.com/r/.../comments/...)',TradingView:'Ticker symbol, e.g. NASDAQ:AAPL'}[n];
- const supported=!!hint;
- const remembered=v9430WidgetInputs.get(t.id);
- const initialInput=remembered!==undefined?remembered:(n==='TradingView'?'NASDAQ:AAPL':'');
- return `<section class="v9428-widget" data-v9428-widget="${safe(n)}"><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap"><strong>${safe(label)}</strong><span class="chip">Public widget</span></div><p class="muted" style="margin:8px 0">${safe(note)}</p>${supported?`<div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><input aria-label="${safe(hint)}" data-v9428-input placeholder="${safe(hint)}" value="${safe(initialInput)}" style="flex:1;min-width:180px"><button class="btn accent" data-v9428-connect>Connect</button><button class="btn" data-v9428-exit>Exit</button></div><div data-v9428-status class="notice" role="status" style="margin:10px 0"></div><div data-v9428-out style="min-height:180px"></div>`:`<p class="notice">There is currently no approved free interactive feed for this provider. The tile and its standard controls remain available.</p>`}</section>`;
-}
-function v9428Msg(host,msg){const st=host.querySelector('[data-v9428-status]');if(st)st.textContent=msg}
-function v9428Clear(host){const out=host.querySelector('[data-v9428-out]');if(out)out.replaceChildren();v9428Msg(host,'Widget cleared.');}
-function v9428InputUrl(raw,domain){try{const u=new URL(raw);if(u.protocol!=='https:'||!(u.hostname===domain||u.hostname==='www.'+domain))return null;return u}catch{return null}}
-async function v9428Connect(host){
- const provider=host.dataset.v9428Widget,raw=host.querySelector('[data-v9428-input]').value.trim();const tileId=host.closest('.tile')?.dataset.id;if(tileId)v9430WidgetInputs.set(tileId,raw);
- const out=host.querySelector('[data-v9428-out]');out.replaceChildren();
- if(!raw){v9428Msg(host,'Enter a public username, post URL, or symbol first.');return}
- if(provider==='TradingView'){
-  if(!/^[A-Za-z0-9:_./-]{1,45}$/.test(raw)){v9428Msg(host,'Enter a valid market symbol.');return}
-  const wrap=document.createElement('div');wrap.className='tradingview-widget-container';wrap.style.cssText='height:440px;width:100%;';
-  const widget=document.createElement('div');widget.className='tradingview-widget-container__widget';widget.style.cssText='height:100%;width:100%';wrap.append(widget);out.append(wrap);
-  const script=document.createElement('script');script.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';script.async=true;
-  script.textContent=JSON.stringify({autosize:true,symbol:raw,interval:'D',timezone:'Etc/UTC',theme:'dark',style:'1',locale:'en',allow_symbol_change:true,calendar:false,support_host:'https://www.tradingview.com'});
-  script.onerror=()=>v9428Msg(host,'TradingView widget blocked or unavailable. Check browser extensions and website security policy.');
-  wrap.append(script);v9428Msg(host,'Loading TradingView chart…');return;
- }
- if(provider==='X'||provider==='Facebook'){
-  if(!/^[A-Za-z0-9_.-]{1,60}$/.test(raw)){v9428Msg(host,'Enter a public account name, without @ or a URL.');return}
-  if(provider==='Facebook'){
-   const iframe=document.createElement('iframe');iframe.title='Public Facebook Page';iframe.loading='lazy';iframe.style.cssText='width:100%;height:490px;border:0;';
-   iframe.src='https://www.facebook.com/plugins/page.php?href='+encodeURIComponent('https://www.facebook.com/'+raw)+'&tabs=timeline&width=500&height=490&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false';out.append(iframe);
-   v9428Msg(host,'Loading public Page widget. Facebook may decline to show some Pages.');return;
-  }
-  // V94.31: Avoid repeated widget requests after an X syndication rate limit.
-  const throttleKey='psd-x-widget-cooldown-v9431';
-  let until=0;
-  try{until=Number(sessionStorage.getItem(throttleKey)||0)}catch{}
-  if(until>Date.now()){
-   const minutes=Math.ceil((until-Date.now())/60000);
-   v9428Msg(host,`X is temporarily limiting public widget requests (HTTP 429). Please try again in about ${minutes} minute${minutes===1?'':'s'}. This is an X restriction, not a login issue.`);
-   return;
-  }
-  v9428Msg(host,'Loading public X timeline…');
-  const token=String(Date.now())+Math.random().toString(36);host.dataset.v9428Request=token;
-  const link=document.createElement('a');link.className='twitter-timeline';link.href='https://twitter.com/'+raw;link.textContent='Posts by @'+raw;out.append(link);
-  try{
-   if(!window.twttr?.widgets?.load){await Promise.race([new Promise((resolve,reject)=>{let script=document.querySelector('script[data-v9428-xscript]');if(script){if(window.twttr?.widgets)resolve();else{script.addEventListener('load',resolve,{once:true});script.addEventListener('error',reject,{once:true});}}else{script=document.createElement('script');script.dataset.v9428Xscript='1';script.src='https://platform.twitter.com/widgets.js';script.async=true;script.onload=resolve;script.onerror=reject;document.head.append(script)}}),new Promise((_,reject)=>setTimeout(()=>reject(Error('X widget script timed out')),12000))])}
-   if(host.dataset.v9428Request!==token)return;
-   if(!window.twttr?.widgets?.createTimeline)throw Error('X widget API unavailable');
-   out.replaceChildren();
-   const result=await Promise.race([window.twttr.widgets.createTimeline({sourceType:'profile',screenName:raw},out,{height:450,theme:'dark'}),new Promise(resolve=>setTimeout(()=>resolve(null),15000))]);
-   if(host.dataset.v9428Request!==token)return;
-   if(!result){
-     out.replaceChildren();
-     try{sessionStorage.setItem(throttleKey,String(Date.now()+30*60*1000))}catch{}
-     v9428Msg(host,'X did not return a public timeline. The browser has reported HTTP 429 (rate limit). Wait at least 30 minutes before trying once more; there is no guaranteed reset time.');
-    }else{v9428Msg(host,'Public timeline loaded. Some actions may open X.');}
-  }catch(e){if(host.dataset.v9428Request===token)v9428Msg(host,'X widget unavailable: '+String(e.message||e))}
-  return;
- }
- if(provider==='Instagram'){
-  const u=v9428InputUrl(raw,'instagram.com');if(!u||!/^\/(p|reel|tv)\/[A-Za-z0-9_-]+\/?$/.test(u.pathname)){v9428Msg(host,'Enter a public Instagram post or reel URL.');return}
-  const f=document.createElement('iframe');f.loading='lazy';f.title='Public Instagram post';f.style.cssText='border:0;width:100%;height:600px;background:white;';f.src='https://www.instagram.com'+u.pathname.replace(/\/$/,'')+'/embed/';out.append(f);
-  v9428Msg(host,'Loading public Instagram post. Instagram may block embedding or require login.');return;
- }
- if(provider==='Reddit'){
-  const u=v9428InputUrl(raw,'reddit.com');if(!u||!/^\/r\/[^/]+\/comments\/[^/]+\//.test(u.pathname)){v9428Msg(host,'Enter a public Reddit post URL.');return}
-  const f=document.createElement('iframe');f.loading='lazy';f.title='Public Reddit post';f.style.cssText='border:0;width:100%;height:490px;';f.src='https://www.reddit.com'+u.pathname.replace(/\/$/,'')+'/embed/';out.append(f);
-  v9428Msg(host,'Loading public Reddit post. Reddit may restrict embedding.');return;
- }
-}
-// Only the five publicly embeddable providers above offer a Connect button.
-board.addEventListener('click',e=>{
- const b=e.target instanceof Element?e.target.closest('[data-v9428-connect],[data-v9428-exit]'):null;
- if(!b)return;const host=b.closest('[data-v9428-widget]');if(!host)return;
- e.preventDefault();e.stopPropagation();
- if(b.hasAttribute('data-v9428-exit')){host.dataset.v9428Request='cancelled';v9428Clear(host)}else v9428Connect(host);
-},true);
-
 function v86StartNetwork(name){
  // V94.13: each chosen provider owns an independent, persisted dashboard tile.
  // This is a dashboard container, NOT proof of provider authorization.
