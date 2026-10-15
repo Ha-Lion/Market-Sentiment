@@ -586,7 +586,7 @@ function v82Zoom(chart,zone,delta,event){
  }
  v81Views.set(k,v);const space=chart.closest('.v80-chart-space');if(space)space.innerHTML=plot(asset,kind);
 }
-document.addEventListener('wheel',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart)return;
+document.addEventListener('wheel',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;
  e.preventDefault();e.stopPropagation();v82Zoom(chart,e.shiftKey?'y':v82Zone(chart,e),e.deltaY,e);
 },{passive:false,capture:true});
 let v82Drag=null;
@@ -615,7 +615,7 @@ function v83Preview(d,e){
  const visible=space.querySelector('[data-v80-chart]');if(visible)visible.classList.add('v82-dragging');
 }
 document.addEventListener('pointerdown',e=>{
- const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart||e.button!==0)return;
+ const chart=e.target.closest('[data-v80-chart]');if(!chart||e.button!==0)return;
  const rect=chart.querySelector('svg')?.getBoundingClientRect(),space=chart.closest('.v80-chart-space');
  if(!rect||!space)return;
  const zone=e.target.closest('[data-psi-x-axis]')?'x':e.target.closest('[data-psi-y-axis]')?'y':v82Zone(chart,e);
@@ -632,10 +632,10 @@ document.addEventListener('pointerup',e=>{
  v83Preview(v82Drag,e);v82Drag=null;e.preventDefault();e.stopPropagation();
 },true);
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
-document.addEventListener('dblclick',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
-document.addEventListener('pointermove',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null):null;if(chart)v80ClearChart(chart)},true);
-document.addEventListener('keydown',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
+document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
+document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
+document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?e.target.closest('[data-v80-chart]'):null;if(chart)v80ClearChart(chart)},true);
+document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
 // A recent publication is not a substitute for evidence verification in the engine.
@@ -1311,7 +1311,7 @@ case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div clas
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v9421FavoritesHtml();
-case'social':if(window.psdXLocalVerified)return psdXVerifiedTile();return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
+case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
 
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
@@ -1746,7 +1746,7 @@ async function v944OpenAuthenticator(name){
        // Require elevated authenticator assurance, not merely code-shaped input.
        const assurance=await client.auth.mfa.getAuthenticatorAssuranceLevel();
        if(assurance.error||assurance.data?.currentLevel!=='aal2')throw Error('Secure verification was not completed.');
-       if(name==='X')psdXAfterVerified();else v946AuthorizeScreen(name);
+       if(name==='X')psdXAfterMfa();else v946AuthorizeScreen(name);
      }catch(e){msg.textContent='Verification failed: '+String(e.message||e);btn.disabled=false}
    };
  };
@@ -1774,7 +1774,7 @@ async function v944OpenAuthenticator(name){
    const code=$('#v945Code').value.trim();if(!factor||!/^\d{6}$/.test(code)){status.textContent='Enter a six-digit code after generating your QR.';return}
    if(busy)return;busy=true;
    try{const c=await client.auth.mfa.challenge({factorId:factor});if(c.error)throw c.error;const v=await client.auth.mfa.verify({factorId:factor,challengeId:c.data.id,code});if(v.error)throw v.error;
-     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;if(name==='X')psdXAfterVerified();else v946AuthorizeScreen(name);
+     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;if(name==='X')psdXAfterMfa();else v946AuthorizeScreen(name);
    }catch(e){status.textContent='Verification failed: '+String(e.message||e)}finally{busy=false}
  };
 }
@@ -2298,25 +2298,55 @@ window.addEventListener('resize',refresh,{passive:true});
 window.addEventListener('pageshow',refresh);
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
+
 <script>
-// X browser pilot: no authentication shortcuts. Open only on MFA success.
-window.psdXLocalVerified=false;
-function psdXVerifiedTile(){
- const local=location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
- return `<div class="psd-x-browser-pilot"><div class="row"><strong>X.com · Remote Browser</strong><button type="button" class="btn" data-psd-x-exit="1">Exit browser</button></div>${local?
- `<p class="notice">LOCAL TEST ONLY. This is one shared browser on your computer. Do not sign in to social accounts here.</p><iframe title="Local browser pilot" src="https://localhost:3001" loading="lazy" referrerpolicy="no-referrer" style="display:block;width:100%;height:480px;border:1px solid var(--line);border-radius:8px;background:#111"></iframe>`:
- `<p class="notice">PSD verification completed. A secure, individually isolated remote-browser server is not yet configured for this website. No session has been opened.</p>`}</div>`;
-}
-function psdXAfterVerified(){
- window.psdXLocalVerified=true;
- const modal=document.querySelector('.modal.open');
- if(modal)modal.classList.remove('open');
- render();
-}
-document.addEventListener('click',function(e){
- const hit=e.target instanceof Element&&e.target.closest('[data-psd-x-exit]');
- if(!hit)return;
- e.preventDefault();e.stopImmediatePropagation();
- window.psdXLocalVerified=false;render();
-},true);
-</script></body></html>
+/* X remote-browser pilot. The approved network/Terms/MFA flow remains unchanged.
+   Only the existing social tile's content is swapped AFTER verified MFA. */
+(function(){
+ 'use strict';
+ const originalTileContent=tileContent;
+ let pilotActive=false;
+ function selectedSocialTile(){
+   const active=tiles.find(t=>t.type==='social'&&!t.closed);
+   if(!active)return null;
+   return Array.from(board.querySelectorAll('.tile')).find(el=>el.dataset.id===String(active.id))||null;
+ }
+ function restoreList(){
+   pilotActive=false;
+   const el=selectedSocialTile();
+   const t=tiles.find(t=>t.type==='social'&&!t.closed);
+   if(el&&t){const content=el.querySelector('.content');if(content)content.innerHTML=originalTileContent(t);}
+ }
+ window.psdXAfterMfa=function(){
+   shut();
+   const el=selectedSocialTile();
+   if(!el){open('X.com · Tile unavailable','<p class="notice">Open the Social & Market Networks tile and try again. Authentication has completed; no new tile was created.</p>');return;}
+   const content=el.querySelector('.content');
+   if(!content)return;
+   pilotActive=true;
+   const local=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+   content.innerHTML=`<div class="stack" data-psd-x-pilot>
+     <div class="row"><strong>X.com · Remote browser test</strong><button type="button" class="btn" data-psd-x-return>Exit</button></div>
+     ${local?
+       '<p class="notice">Local pilot only. Shared browser; do not enter social passwords.</p><iframe title="Local browser" src="https://localhost:3001" loading="lazy" style="width:100%;height:460px;border:1px solid var(--line);border-radius:8px" referrerpolicy="no-referrer"></iframe>':
+       '<p class="notice">PSD authentication succeeded. The remote browser is installed only on your computer, not on a secure server for this website. No browser session was opened.</p>'}
+   </div>`;
+ };
+ board.addEventListener('click',function(e){
+   const exit=e.target instanceof Element?e.target.closest('[data-psd-x-return]'):null;
+   if(!exit)return;
+   e.preventDefault();e.stopImmediatePropagation();restoreList();
+ },true);
+ // Keep pilot view if the existing dashboard redraws because a tile is moved/resized.
+ const originalRender=render;
+ render=function(){originalRender();if(pilotActive){
+   const el=selectedSocialTile();const c=el?.querySelector('.content');
+   if(c&&!c.querySelector('[data-psd-x-pilot]')){
+     // Avoid claiming a new MFA event. Maintain local view only for this verified pilot.
+     const local=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+     c.innerHTML=`<div class="stack" data-psd-x-pilot><div class="row"><strong>X.com · Remote browser test</strong><button type="button" class="btn" data-psd-x-return>Exit</button></div>${local?'<iframe title="Local browser" src="https://localhost:3001" style="width:100%;height:460px;border:1px solid var(--line);border-radius:8px"></iframe>':'<p class="notice">No secure remote-browser server configured.</p>'}</div>`;
+   }
+ }};
+})();
+</script>
+</body></html>
