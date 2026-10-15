@@ -586,7 +586,7 @@ function v82Zoom(chart,zone,delta,event){
  }
  v81Views.set(k,v);const space=chart.closest('.v80-chart-space');if(space)space.innerHTML=plot(asset,kind);
 }
-document.addEventListener('wheel',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;
+document.addEventListener('wheel',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart)return;
  e.preventDefault();e.stopPropagation();v82Zoom(chart,e.shiftKey?'y':v82Zone(chart,e),e.deltaY,e);
 },{passive:false,capture:true});
 let v82Drag=null;
@@ -615,7 +615,7 @@ function v83Preview(d,e){
  const visible=space.querySelector('[data-v80-chart]');if(visible)visible.classList.add('v82-dragging');
 }
 document.addEventListener('pointerdown',e=>{
- const chart=e.target.closest('[data-v80-chart]');if(!chart||e.button!==0)return;
+ const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart||e.button!==0)return;
  const rect=chart.querySelector('svg')?.getBoundingClientRect(),space=chart.closest('.v80-chart-space');
  if(!rect||!space)return;
  const zone=e.target.closest('[data-psi-x-axis]')?'x':e.target.closest('[data-psi-y-axis]')?'y':v82Zone(chart,e);
@@ -632,10 +632,10 @@ document.addEventListener('pointerup',e=>{
  v83Preview(v82Drag,e);v82Drag=null;e.preventDefault();e.stopPropagation();
 },true);
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
-document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
-document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?e.target.closest('[data-v80-chart]'):null;if(chart)v80ClearChart(chart)},true);
-document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
+document.addEventListener('dblclick',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
+document.addEventListener('pointermove',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(chart)v80FocusChart(chart,e.clientX)});
+document.addEventListener('pointerleave',e=>{const chart=e.target instanceof Element?(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null):null;if(chart)v80ClearChart(chart)},true);
+document.addEventListener('keydown',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
 // A recent publication is not a substitute for evidence verification in the engine.
@@ -1311,10 +1311,11 @@ case'fundamental':{const funds=v56FundSlots(a).filter(Boolean);return `<div clas
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v9421FavoritesHtml();
-case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
+case'social':if(psdXLocalBrowserActive)return psdXBrowserHtml();return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
 
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
+document.addEventListener('click',function(event){const b=event.target instanceof Element?event.target.closest('[data-psd-x-exit]'):null;if(!b)return;event.preventDefault();event.stopImmediatePropagation();psdXLeaveBrowser();},true);
 function fitBoardHeight(){
   const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370);
   const maxBottom=tiles.filter(t=>!t.closed&&!t.maxed).reduce((v,t)=>Math.max(v,(Number(t.y)||0)+(t.min?39/scale:(Number(t.h)||0))),0);
@@ -1679,6 +1680,31 @@ function v90Logo(name,large=false){
 // V94.6 · Step 4: Provider-hosted OAuth, never social username/password collection.
 // Deployment must configure a trusted SAME-ORIGIN backend endpoint that initiates OAuth with PKCE/state.
 // For example, configure window.PSD_SOCIAL_OAUTH_START_ENDPOINT before dashboard initialization.
+let psdXLocalBrowserActive=false;
+function psdXAfterVerification(name){
+ if(name!=='X')return v946AuthorizeScreen(name);
+ if(!['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol!=='file:'){
+   open('X.com · Local browser test', '<p class="notice">PSD verification succeeded. The shared mini-browser is a LOCAL TEST ONLY and cannot be safely displayed on this public website. Open this test file locally with Docker running; do not publish a shared browser.</p>');
+   return;
+ }
+ psdXLocalBrowserActive=true;
+ shut();
+ const selection=tiles.find(t=>t.type==='social');
+ if(selection){selection.closed=false;selection.min=false;}
+ render();
+}
+function psdXLeaveBrowser(){
+ psdXLocalBrowserActive=false;
+ render();
+}
+function psdXBrowserHtml(){
+ return `<div class="psd-x-local-browser" style="display:flex;flex-direction:column;gap:6px;height:100%;min-height:220px">
+ <div class="row" style="flex:none"><strong>X.com</strong><button class="btn" type="button" data-psd-x-exit>Exit browser</button></div>
+ <iframe title="Local remote browser — X.com" src="https://localhost:3001/" referrerpolicy="no-referrer" style="width:100%;flex:1;min-height:180px;border:1px solid var(--line);border-radius:7px;background:#0b1422"></iframe>
+ <p class="notice" style="flex:none;margin:0">Local test only. Shared browser session. Exit closes the tile view, not your X account session.</p>
+ </div>`;
+}
+
 function v946AuthorizeScreen(name){
  const entry=SOCIAL.find(([n])=>n===name);if(!entry)return;
  const label=v87NetworkLabel(name);
@@ -1711,7 +1737,7 @@ function v946AuthorizeScreen(name){
 function v945Client(){return window.psdSupabase?.auth?.mfa?window.psdSupabase:null}
 async function v945RequireLogin(name){
  const label=v87NetworkLabel(name),client=v945Client();
- if(!client){open(label+' · Sign-in required',`<p class="notice">Account verification is unavailable. Open this page from your published PSD website and ensure Supabase has loaded.</p><button class="btn" id="v945Retry">Retry</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name);return}
+ if(!client){open(label+' · Sign-in required',`<p class="notice">Account verification is unavailable. Open this page from your published PSD website and ensure Supabase has loaded. Do not publish the shared local mini-browser.</p><button class="btn" id="v945Retry">Retry</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name);return}
  try{const {data,error}=await client.auth.getUser();if(error||!data?.user){open(label+' · Sign in first',`<p class="notice">Please sign in to your Public Sentiment Dash account before connecting ${safe(label)}.</p><a class="btn" href="account.html">Sign in to PSD</a><button class="btn" id="v945Retry">Check again</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name);return}v94SocialTerms(name)}catch(e){open(label+' · Sign-in check failed',`<p class="notice">Unable to verify your PSD session. Please retry when connected.</p><button class="btn" id="v945Retry">Retry</button>`);$('#v945Retry').onclick=()=>v945RequireLogin(name)}
 }
 function v945QrData(qr){
@@ -1746,7 +1772,7 @@ async function v944OpenAuthenticator(name){
        // Require elevated authenticator assurance, not merely code-shaped input.
        const assurance=await client.auth.mfa.getAuthenticatorAssuranceLevel();
        if(assurance.error||assurance.data?.currentLevel!=='aal2')throw Error('Secure verification was not completed.');
-       v946AuthorizeScreen(name);
+       psdXAfterVerification(name);
      }catch(e){msg.textContent='Verification failed: '+String(e.message||e);btn.disabled=false}
    };
  };
@@ -1774,7 +1800,7 @@ async function v944OpenAuthenticator(name){
    const code=$('#v945Code').value.trim();if(!factor||!/^\d{6}$/.test(code)){status.textContent='Enter a six-digit code after generating your QR.';return}
    if(busy)return;busy=true;
    try{const c=await client.auth.mfa.challenge({factorId:factor});if(c.error)throw c.error;const v=await client.auth.mfa.verify({factorId:factor,challengeId:c.data.id,code});if(v.error)throw v.error;
-     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;v946AuthorizeScreen(name);
+     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;psdXAfterVerification(name);
    }catch(e){status.textContent='Verification failed: '+String(e.message||e)}finally{busy=false}
  };
 }
