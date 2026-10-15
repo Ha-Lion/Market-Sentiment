@@ -2332,9 +2332,17 @@ window.addEventListener('pageshow',refresh);
     frame.src=url;
     frame.style.cssText='width:100%;height:100%;min-height:360px;border:0;display:block';
     frame.referrerPolicy='no-referrer';
+    // Chrome 142+: explicitly declare that this locally hosted browser may request
+    // local-network access from a public HTTPS dashboard. User permission may still be required.
+    frame.setAttribute('allow','local-network-access');
+    frame.setAttribute('fetchpriority','high');
     // This is not a proof of remote browser availability; frame load events may fire on blocked navigation.
     holder.appendChild(frame);
-    status.textContent='Local browser connection started automatically. If blank, open https://localhost:3001 directly and trust your own local test certificate. Browsers may restrict public websites accessing localhost.';
+    status.textContent='Opening the browser running on this computer…';
+    // Iframe load does not guarantee the remote webtop loaded: Chromium also fires load
+    // for certificate/permission failures. Show honest troubleshooting after a short delay.
+    frame.addEventListener('load',()=>{status.textContent='Browser frame requested. If it remains blank, Chrome is blocking the public-site → localhost connection. Check DevTools Console for the exact block.'},{once:true});
+    frame.addEventListener('error',()=>{status.textContent='Local browser could not be opened. Check Docker and Chrome local-network permission.'},{once:true});
   }
   function scan(){
     document.querySelectorAll('.tile').forEach(tile=>{
