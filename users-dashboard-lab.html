@@ -340,11 +340,6 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v9421-inline-news .v42-resultsheading{margin:5px 0 6px}
 .v9421-inline-news .v42-result{margin:6px 0}
 </style>
-<script>
-// OWNER-ONLY: Set after deploying authenticated, user-isolated remote sessions.
-// Never point this at a shared browser session.
-window.PSD_REMOTE_BROWSER_URL = "";
-</script>
 </head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
@@ -590,7 +585,7 @@ function v82Zoom(chart,zone,delta,event){
  }
  v81Views.set(k,v);const space=chart.closest('.v80-chart-space');if(space)space.innerHTML=plot(asset,kind);
 }
-document.addEventListener('wheel',e=>{const chart=(e.target instanceof Element ? e.target.closest('[data-v80-chart]') : null);if(!chart)return;
+document.addEventListener('wheel',e=>{const chart=e.target instanceof Element?e.target.closest('[data-v80-chart]'):null;if(!chart)return;
  e.preventDefault();e.stopPropagation();v82Zoom(chart,e.shiftKey?'y':v82Zone(chart,e),e.deltaY,e);
 },{passive:false,capture:true});
 let v82Drag=null;
@@ -619,7 +614,7 @@ function v83Preview(d,e){
  const visible=space.querySelector('[data-v80-chart]');if(visible)visible.classList.add('v82-dragging');
 }
 document.addEventListener('pointerdown',e=>{
- const chart=(e.target instanceof Element ? e.target.closest('[data-v80-chart]') : null);if(!chart||e.button!==0)return;
+ const chart=e.target.closest('[data-v80-chart]');if(!chart||e.button!==0)return;
  const rect=chart.querySelector('svg')?.getBoundingClientRect(),space=chart.closest('.v80-chart-space');
  if(!rect||!space)return;
  const zone=e.target.closest('[data-psi-x-axis]')?'x':e.target.closest('[data-psi-y-axis]')?'y':v82Zone(chart,e);
@@ -636,10 +631,10 @@ document.addEventListener('pointerup',e=>{
  v83Preview(v82Drag,e);v82Drag=null;e.preventDefault();e.stopPropagation();
 },true);
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
-document.addEventListener('dblclick',e=>{const chart=(e.target instanceof Element ? e.target.closest('[data-v80-chart]') : null);if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
-document.addEventListener('pointermove',e=>{const chart=(e.target instanceof Element ? e.target.closest('[data-v80-chart]') : null);if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=(e.target instanceof Element ? e.target.closest('[data-v80-chart]') : null);if(chart)v80ClearChart(chart)},true);
-document.addEventListener('keydown',e=>{const chart=(e.target instanceof Element ? e.target.closest('[data-v80-chart]') : null);if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
+document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
+document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
+document.addEventListener('pointerleave',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80ClearChart(chart)},true);
+document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
 // A recent publication is not a substitute for evidence verification in the engine.
@@ -1292,6 +1287,22 @@ function v76TechnicalContent(t,a){
   return `<section class="v76-indicator"><div class="row"><strong>${safe(name)}</strong><strong>${safe(shown)}</strong></div>${v76IndicatorChart(t,a,name)}</section>`;
  }).join(''):'<p class="muted">Choose indicators in Tile Settings.</p>')+`<div class="muted v77-data-note" title="Indicators derived from the website market history. Independent external validation is still required.">${dataInfo}</div>`;
 }
+
+// V94.36 LOCAL PILOT: never serve a shared localhost session to real website visitors.
+window.__psdRemoteActive=null;
+document.addEventListener('click',function(e){
+ const target=e.target instanceof Element?e.target:null;if(!target)return;
+ const connect=target.closest('[data-v9436-connect]');
+ const exit=target.closest('[data-v9436-exit]');
+ if(!connect&&!exit)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ const provider=(connect||exit).getAttribute(connect?'data-v9436-connect':'data-v9436-exit');
+ const local=location.protocol==='file:'||['localhost','127.0.0.1'].includes(location.hostname);
+ if(connect&&!local){alert('This pilot works only on your local computer. Public deployment requires individually isolated, HTTPS-protected browser sessions.');return}
+ window.__psdRemoteActive=connect?provider:null;
+ render();
+},true);
+
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'regionpsi':{
  const region=['global','us','euro'].includes(t.psiRegion)?t.psiRegion:'global';
@@ -1316,7 +1327,12 @@ case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gol
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':{const name=t.socialProvider||'Network';if(name==='X'){const active=!!window.psdRemoteBrowserVerified;const url=String(window.PSD_REMOTE_BROWSER_URL||'');const safeUrl=/^https:\/\/[^\s]+$/i.test(url)&&!url.includes('@')?url:'';return `<div class="v44-service" style="height:100%;display:flex;flex-direction:column;gap:10px"><div class="row"><strong>X.com · Remote Browser Pilot</strong><span class="chip">${active?'PSD verified':'Verification required'}</span></div>${!active?'<p class="notice">Finish the existing PSD sign-in, Terms and Google Authenticator verification to start this private-browser test.</p><button class="btn accent" data-social="X">Verify & Continue</button>':safeUrl?`<div style="display:flex;gap:8px"><button class="btn accent" data-remote-connect="1">Connect browser</button><button class="btn" data-remote-exit="1">Exit</button></div><div data-remote-view style="flex:1;min-height:250px;border:1px solid #40546a;border-radius:8px;overflow:hidden"><p class="notice">Click Connect browser to open the secured remote Chromium session inside this tile.</p></div>`:'<p class="notice">Remote-browser server is not connected yet. This pilot requires an authenticated, isolated browser server deployed by the website owner; ordinary HTML cannot provide one.</p><button class="btn" disabled>Connect browser — server required</button>'}</div>`;}if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
+case'social-service':{
+ const name=t.socialProvider||'Network',label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;
+ const localPilot=location.protocol==='file:'||['localhost','127.0.0.1'].includes(location.hostname);
+ const active=window.__psdRemoteActive===name;
+ return `<div class="v9436-browser-pane" style="display:flex;flex-direction:column;min-height:100%;gap:9px"><div class="row"><strong>${safe(label)} · Remote Browser Pilot</strong><span class="chip">${active?'Local session':'Test only'}</span></div><div class="row"><button class="btn accent" type="button" data-v9436-connect="${safe(name)}">Connect</button><button class="btn" type="button" data-v9436-exit="${safe(name)}">Exit</button></div>${!localPilot?`<p class="notice" role="status">This is a LOCAL-ONLY prototype. The browser running on your Windows PC cannot securely serve other website visitors. No shared browser is exposed here. The PSD login and verification steps remain required.</p>`:active?`<p class="muted">Shared local test browser · navigate to ${safe(label)} within Chromium. Other provider tiles use this same browser session, NOT independent user logins.</p><div style="flex:1;min-height:280px;position:relative;border:1px solid #4a6082;border-radius:8px;overflow:hidden"><iframe title="Local remote Chromium browser" src="https://localhost:3001" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#151b29" allow="clipboard-read; clipboard-write"></iframe></div><p class="muted">If blank, visit https://localhost:3001 directly once and accept its local self-signed certificate. Exit only hides the browser; it does not sign out of social accounts.</p>`:`<p class="notice">Click Connect to display the browser running on this PC. This local demonstration bypasses PSD account verification ONLY when opened as a local test file; do not use it to evaluate authentication.</p>`}</div>`;
+}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
@@ -1750,7 +1766,7 @@ async function v944OpenAuthenticator(name){
        // Require elevated authenticator assurance, not merely code-shaped input.
        const assurance=await client.auth.mfa.getAuthenticatorAssuranceLevel();
        if(assurance.error||assurance.data?.currentLevel!=='aal2')throw Error('Secure verification was not completed.');
-       if(name==='X'){window.psdRemoteBrowserVerified=true;shut();render()}else v946AuthorizeScreen(name);
+       if(location.protocol==='file:'||['localhost','127.0.0.1'].includes(location.hostname)){shut();render()}else{shut();render()}
      }catch(e){msg.textContent='Verification failed: '+String(e.message||e);btn.disabled=false}
    };
  };
@@ -1778,7 +1794,7 @@ async function v944OpenAuthenticator(name){
    const code=$('#v945Code').value.trim();if(!factor||!/^\d{6}$/.test(code)){status.textContent='Enter a six-digit code after generating your QR.';return}
    if(busy)return;busy=true;
    try{const c=await client.auth.mfa.challenge({factorId:factor});if(c.error)throw c.error;const v=await client.auth.mfa.verify({factorId:factor,challengeId:c.data.id,code});if(v.error)throw v.error;
-     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;v946AuthorizeScreen(name);
+     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;if(location.protocol==='file:'||['localhost','127.0.0.1'].includes(location.hostname)){shut();render()}else{shut();render()}
    }catch(e){status.textContent='Verification failed: '+String(e.message||e)}finally{busy=false}
  };
 }
@@ -2313,15 +2329,4 @@ window.addEventListener('resize',refresh,{passive:true});
 window.addEventListener('pageshow',refresh);
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
-<script>
-document.addEventListener('click',function(event){
-const button=event.target instanceof Element?event.target.closest('[data-remote-connect],[data-remote-exit]'):null;
-if(!button)return;event.preventDefault();event.stopImmediatePropagation();
-const box=button.closest('.tile')?.querySelector('[data-remote-view]');if(!box)return;
-if(button.hasAttribute('data-remote-exit')){box.replaceChildren();box.textContent='Remote view closed. This does not sign out of the social website.';return;}
-const raw=window.PSD_REMOTE_BROWSER_URL||'';let parsed;try{parsed=new URL(raw)}catch{}
-if(!parsed||parsed.protocol!=='https:'||parsed.username||parsed.password){box.textContent='Remote session URL is not configured securely.';return;}
-const frame=document.createElement('iframe');frame.title='Private remote browser';frame.src=parsed.href;frame.style.cssText='display:block;width:100%;height:100%;min-height:250px;border:0';frame.setAttribute('allow','clipboard-read; clipboard-write');box.replaceChildren(frame);
-},true);
-</script>
 </body></html>
