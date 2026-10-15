@@ -1291,7 +1291,7 @@ function v76TechnicalContent(t,a){
 function tileContent(t){
  if(t.type==='psd-x-after-mfa'){
    // Explicit same-machine local experiment. Never issue a shared browser session to website users.
-   return `<div class="stack" style="height:100%;min-height:0;gap:9px"><div class="row"><strong>X.com · Local Docker browser test</strong><span class="chip">Local test only</span></div><div class="row" style="justify-content:flex-start"><button class="btn accent" data-psd-x-local-connect="1">Connect Local Browser</button><button class="btn" data-psd-x-local-exit="1">Exit Browser</button></div><p class="notice" id="psd-x-local-status">After PSD verification, click Connect to view the Docker browser running on this computer. The connection is not available to other users. Do not enter social account credentials in this shared pilot.</p><div id="psd-x-local-frame" style="display:none;flex:1;min-height:250px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#172438"></div></div>`;
+   return `<div class="stack" style="height:100%;min-height:0;gap:9px"><div class="row"><strong>X.com · Local Docker browser test</strong><span class="chip">Local test only</span></div><div class="row" style="justify-content:flex-start"><button class="btn" data-psd-x-local-exit="1">Exit Browser</button></div><p class="notice" id="psd-x-local-status">Loading the local Docker browser automatically. This is a single-user test; do not enter social account credentials in this shared pilot.</p><div id="psd-x-local-frame" style="display:none;flex:1;min-height:250px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#172438"></div></div>`;
  }
 let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'regionpsi':{
@@ -2316,27 +2316,44 @@ window.addEventListener('pageshow',refresh);
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
 <script>
-// Local Docker browser pilot: opt-in only. No change to legal / sign-in / MFA callbacks.
-document.addEventListener('click',function(event){
-  const target=event.target;
-  if(!(target instanceof Element))return;
-  const connect=target.closest('[data-psd-x-local-connect]');
-  const exit=target.closest('[data-psd-x-local-exit]');
-  if(!connect&&!exit)return;
-  event.preventDefault();event.stopImmediatePropagation();
-  const tile=target.closest('.tile');
-  if(!tile)return;
-  const holder=tile.querySelector('#psd-x-local-frame');
-  const status=tile.querySelector('#psd-x-local-status');
-  if(!holder||!status)return;
-  if(exit){holder.replaceChildren();holder.style.display='none';status.textContent='Local browser view closed. PSD verification is unchanged.';return;}
-  holder.replaceChildren();holder.style.display='block';
-  const frame=document.createElement('iframe');
-  frame.title='Local Docker remote browser (private pilot)';
-  frame.src='https://localhost:3001/';
-  frame.style.cssText='width:100%;height:100%;min-height:360px;border:0;display:block';
-  frame.referrerPolicy='no-referrer';
-  holder.appendChild(frame);
-  status.textContent='Connecting to Docker on THIS computer (https://localhost:3001). If blank, first open that URL directly and accept its local certificate. Chrome may block access from a public HTTPS page to a private localhost service.';
-},true);
+// X browser pilot: mount automatically after the existing verified tile is created.
+// All PSD legal, sign-in and MFA handlers above are unchanged.
+(function(){
+  const url='https://localhost:3001/';
+  function mount(tile){
+    if(tile.dataset.psdXLocalMounted==='1')return;
+    const holder=tile.querySelector('#psd-x-local-frame');
+    const status=tile.querySelector('#psd-x-local-status');
+    if(!holder||!status)return;
+    tile.dataset.psdXLocalMounted='1';
+    holder.replaceChildren();holder.style.display='block';
+    const frame=document.createElement('iframe');
+    frame.title='Local Docker remote browser (private pilot)';
+    frame.src=url;
+    frame.style.cssText='width:100%;height:100%;min-height:360px;border:0;display:block';
+    frame.referrerPolicy='no-referrer';
+    // This is not a proof of remote browser availability; frame load events may fire on blocked navigation.
+    holder.appendChild(frame);
+    status.textContent='Local browser connection started automatically. If blank, open https://localhost:3001 directly and trust your own local test certificate. Browsers may restrict public websites accessing localhost.';
+  }
+  function scan(){
+    document.querySelectorAll('.tile').forEach(tile=>{
+      if(tile.querySelector('#psd-x-local-frame'))mount(tile);
+    });
+  }
+  const observer=new MutationObserver(scan);
+  function start(){observer.observe(document.body,{subtree:true,childList:true});scan();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  document.addEventListener('click',event=>{
+    const button=event.target instanceof Element?event.target.closest('[data-psd-x-local-exit]'):null;
+    if(!button)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    const tile=button.closest('.tile');if(!tile)return;
+    const holder=tile.querySelector('#psd-x-local-frame');
+    const status=tile.querySelector('#psd-x-local-status');
+    if(holder){holder.replaceChildren();holder.style.display='none';}
+    if(status)status.textContent='Local browser view closed. PSD verification is unchanged.';
+    tile.dataset.psdXLocalMounted='1';
+  },true);
+})();
 </script></body></html>
