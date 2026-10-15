@@ -1291,7 +1291,7 @@ function v76TechnicalContent(t,a){
 function tileContent(t){
  if(t.type==='psd-x-after-mfa'){
    // Explicit same-machine local experiment. Never issue a shared browser session to website users.
-   return `<div class="stack" style="height:100%;min-height:0;gap:9px"><div class="row"><strong>X.com · Local Docker browser test</strong><span class="chip">Local test only</span></div><div class="row" style="justify-content:flex-start"><button class="btn" data-psd-x-local-exit="1">Exit Browser</button></div><p class="notice" id="psd-x-local-status">Loading the local Docker browser automatically. This is a single-user test; do not enter social account credentials in this shared pilot.</p><div id="psd-x-local-frame" style="display:none;flex:1;min-height:250px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#172438"></div></div>`;
+   return `<div class="stack" style="height:100%;min-height:0;gap:9px"><div class="row"><strong>X.com · Private browser test</strong><span class="chip">Private test only</span></div><div class="row" style="justify-content:flex-start"><button class="btn" data-psd-x-local-exit="1">Exit Browser</button></div><p class="notice" id="psd-x-local-status">Opening the protected browser automatically. Sign in to Cloudflare Access in a separate browser tab first if prompted. This is a single shared browser pilot, not a multiuser service.</p><div id="psd-x-local-frame" style="display:none;flex:1;min-height:250px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#172438"></div></div>`;
  }
 let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','fundamental','chart','history'].includes(t.type))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'regionpsi':{
@@ -2319,7 +2319,7 @@ window.addEventListener('pageshow',refresh);
 // X browser pilot: mount automatically after the existing verified tile is created.
 // All PSD legal, sign-in and MFA handlers above are unchanged.
 (function(){
-  const url='https://localhost:3001/';
+  const url='https://browser-test.publicsentimentdash.com/';
   function mount(tile){
     if(tile.dataset.psdXLocalMounted==='1')return;
     const holder=tile.querySelector('#psd-x-local-frame');
@@ -2328,17 +2328,14 @@ window.addEventListener('pageshow',refresh);
     tile.dataset.psdXLocalMounted='1';
     holder.replaceChildren();holder.style.display='block';
     const frame=document.createElement('iframe');
-    frame.title='Local Docker remote browser (private pilot)';
+    frame.title='Cloudflare-protected remote browser (private pilot)';
     frame.src=url;
     frame.style.cssText='width:100%;height:100%;min-height:360px;border:0;display:block';
     frame.referrerPolicy='no-referrer';
-    // Chrome 142+: explicitly declare that this locally hosted browser may request
-    // local-network access from a public HTTPS dashboard. User permission may still be required.
-    frame.setAttribute('allow','local-network-access');
     frame.setAttribute('fetchpriority','high');
     // This is not a proof of remote browser availability; frame load events may fire on blocked navigation.
     holder.appendChild(frame);
-    status.textContent='Opening the browser running on this computer…';
+    status.textContent='Connecting to the protected Cloudflare browser endpoint…';
     // Iframe load does not guarantee the remote webtop loaded: Chromium also fires load
     // for certificate/permission failures. Show honest troubleshooting after a short delay.
     frame.addEventListener('load',()=>{status.textContent='Browser frame requested. If it remains blank, Chrome is blocking the public-site → localhost connection. Check DevTools Console for the exact block.'},{once:true});
@@ -2360,7 +2357,7 @@ window.addEventListener('pageshow',refresh);
     const holder=tile.querySelector('#psd-x-local-frame');
     const status=tile.querySelector('#psd-x-local-status');
     if(holder){holder.replaceChildren();holder.style.display='none';}
-    if(status)status.textContent='Local browser view closed. PSD verification is unchanged.';
+    if(status)status.textContent='Protected browser view closed. PSD verification is unchanged.';
     tile.dataset.psdXLocalMounted='1';
   },true);
 })();
