@@ -409,7 +409,15 @@ try{const raw=JSON.parse(localStorage.getItem(PRESETS_KEY)||'null');if(raw&&Arra
 if(!profiles)profiles=Array.from({length:5},(_,i)=>({name:'Workspace '+(i+1),data:i===0?captureWorkspace():freshWorkspace()}));
 function storePresets(){try{profiles[activePreset].data=captureWorkspace();localStorage.setItem(PRESETS_KEY,JSON.stringify({active:activePreset,slots:profiles}))}catch(e){console.warn('Unable to save workspace',e)}}
 function showPresetButtons(){document.querySelectorAll('[data-preset]').forEach(b=>{const i=Number(b.dataset.preset);b.textContent=profiles[i].name;b.classList.toggle('active',i===activePreset);b.setAttribute('aria-pressed',String(i===activePreset));b.title=profiles[i].name+' — click to switch, double-click to rename'})}
-function switchPreset(n){previousArrangement=null;document.getElementById('undoArrange').disabled=true;if(!Number.isInteger(n)||n<0||n>=profiles.length||n===activePreset)return;storePresets();activePreset=n;restoreWorkspace(profiles[n].data);storePresets();showPresetButtons();render();refreshV8Status();applyWatermark();window.scrollTo({top:0,behavior:'instant'})}
+function switchPreset(n){previousArrangement=null;document.getElementById('undoArrange').disabled=true;if(!Number.isInteger(n)||n<0||n>=profiles.length||n===activePreset)return;storePresets();activePreset=n;restoreWorkspace(profiles[n].data);storePresets();showPresetButtons();
+document.addEventListener('click',event=>{
+ const b=event.target instanceof Element?event.target.closest('[data-v9433-reload]'):null;
+ if(!b)return;
+ event.preventDefault();event.stopImmediatePropagation();
+ const frame=b.closest('.tile')?.querySelector('.v9433-frame iframe');
+ if(frame)frame.src='https://x.com/?psd_test='+Date.now();
+},true);
+render();refreshV8Status();applyWatermark();window.scrollTo({top:0,behavior:'instant'})}
 function renamePreset(n){if(!Number.isInteger(n)||n<0||n>=profiles.length)return;const name=prompt('Name for this workspace (up to 26 characters):',profiles[n].name);if(name===null)return;const clean=name.trim().replace(/[<>]/g,'').slice(0,26);if(!clean){alert('Please enter a workspace name.');return}profiles[n].name=clean;storePresets();showPresetButtons();if(modal.classList.contains('open')&&document.getElementById('modalTitle').textContent==='Dashboard Settings')settingsMenu()}
 document.getElementById('workspacePresets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(b)switchPreset(Number(b.dataset.preset))});
 document.getElementById('workspacePresets').addEventListener('dblclick',e=>{const b=e.target.closest('[data-preset]');if(b)renamePreset(Number(b.dataset.preset))});
@@ -585,7 +593,7 @@ function v82Zoom(chart,zone,delta,event){
  }
  v81Views.set(k,v);const space=chart.closest('.v80-chart-space');if(space)space.innerHTML=plot(asset,kind);
 }
-document.addEventListener('wheel',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;
+document.addEventListener('wheel',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart)return;
  e.preventDefault();e.stopPropagation();v82Zoom(chart,e.shiftKey?'y':v82Zone(chart,e),e.deltaY,e);
 },{passive:false,capture:true});
 let v82Drag=null;
@@ -614,7 +622,7 @@ function v83Preview(d,e){
  const visible=space.querySelector('[data-v80-chart]');if(visible)visible.classList.add('v82-dragging');
 }
 document.addEventListener('pointerdown',e=>{
- const chart=e.target.closest('[data-v80-chart]');if(!chart||e.button!==0)return;
+ const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart||e.button!==0)return;
  const rect=chart.querySelector('svg')?.getBoundingClientRect(),space=chart.closest('.v80-chart-space');
  if(!rect||!space)return;
  const zone=e.target.closest('[data-psi-x-axis]')?'x':e.target.closest('[data-psi-y-axis]')?'y':v82Zone(chart,e);
@@ -631,10 +639,10 @@ document.addEventListener('pointerup',e=>{
  v83Preview(v82Drag,e);v82Drag=null;e.preventDefault();e.stopPropagation();
 },true);
 document.addEventListener('pointercancel',()=>{v82Drag=null;},true);
-document.addEventListener('dblclick',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
-document.addEventListener('pointermove',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80FocusChart(chart,e.clientX)});
-document.addEventListener('pointerleave',e=>{const chart=e.target.closest('[data-v80-chart]');if(chart)v80ClearChart(chart)},true);
-document.addEventListener('keydown',e=>{const chart=e.target.closest('[data-v80-chart]');if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
+document.addEventListener('dblclick',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart)return;e.preventDefault();e.stopPropagation();v81Commit(chart,'reset');},true);
+document.addEventListener('pointermove',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(chart)v80FocusChart(chart,e.clientX)});
+document.addEventListener('pointerleave',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(chart)v80ClearChart(chart)},true);
+document.addEventListener('keydown',e=>{const chart=(e.target instanceof Element?e.target.closest('[data-v80-chart]'):null);if(!chart||!['ArrowLeft','ArrowRight','Escape'].includes(e.key))return;if(e.key==='Escape'){v80ClearChart(chart);return;}e.preventDefault();let data;try{data=JSON.parse(chart.dataset.v80Points||'[]')}catch{return}if(!data.length)return;const old=chart.dataset.v80Index==null?data.length-1:Number(chart.dataset.v80Index);v80FocusChart(chart,0,old+(e.key==='ArrowRight'?1:-1))});
 
 // V25 read-only website adapter. No user credentials, no repository writes.
 // A recent publication is not a substitute for evidence verification in the engine.
@@ -1311,7 +1319,7 @@ case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gol
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
-case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
+case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';if(name==='X')return `<div class="v44-service v9433-x"><div class="row"><strong>X.com · Homepage test</strong><span class="chip">Public website</span></div><p class="muted">Testing whether X permits its homepage to display inside this tile. No X account login or API connection is involved.</p><div class="v9433-frame" style="height:420px;min-height:220px;border:1px solid #40546a;border-radius:8px;overflow:hidden;background:#111827"><iframe title="X.com homepage test" src="https://x.com/" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;border:0;background:white"></iframe></div><p class="muted">If the frame is blank or shows an error, X is blocking embedding. This browser restriction cannot be fixed by a PSD HTML change.</p><button class="btn" data-v9433-reload="1">Reload homepage</button></div>`;const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
 function fitBoardHeight(){
@@ -1745,7 +1753,7 @@ async function v944OpenAuthenticator(name){
        // Require elevated authenticator assurance, not merely code-shaped input.
        const assurance=await client.auth.mfa.getAuthenticatorAssuranceLevel();
        if(assurance.error||assurance.data?.currentLevel!=='aal2')throw Error('Secure verification was not completed.');
-       v946AuthorizeScreen(name);
+       if(name==='X'){close();render()}else v946AuthorizeScreen(name);
      }catch(e){msg.textContent='Verification failed: '+String(e.message||e);btn.disabled=false}
    };
  };
@@ -1773,7 +1781,7 @@ async function v944OpenAuthenticator(name){
    const code=$('#v945Code').value.trim();if(!factor||!/^\d{6}$/.test(code)){status.textContent='Enter a six-digit code after generating your QR.';return}
    if(busy)return;busy=true;
    try{const c=await client.auth.mfa.challenge({factorId:factor});if(c.error)throw c.error;const v=await client.auth.mfa.verify({factorId:factor,challengeId:c.data.id,code});if(v.error)throw v.error;
-     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;v946AuthorizeScreen(name);
+     status.textContent='Google Authenticator activated successfully.';enroll.hidden=true;if(name==='X'){close();render()}else v946AuthorizeScreen(name);
    }catch(e){status.textContent='Verification failed: '+String(e.message||e)}finally{busy=false}
  };
 }
