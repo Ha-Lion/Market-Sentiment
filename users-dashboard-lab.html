@@ -362,7 +362,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 </style>
 <style id="v98-favorite-source-slots">
 .v98-slots{display:grid;gap:5px;margin-top:10px}.v98-slot{display:flex;align-items:center;gap:10px}.v98-slot span{width:22px;font-size:12px;color:#9bb5d5}.v98-slot select{flex:1;min-width:0;padding:8px;border-radius:6px;background:#13253f;color:#f1f6ff;border:1px solid #4a6382}
-</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
+</style><style id="v99-indicator-tree">.v99-country-selected{font-size:12px;color:#a9c7ed;padding:6px 10px}</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
 <script>
@@ -2026,8 +2026,12 @@ function tileSettings(t){
     <button type="button" class="v96-item" data-v96-type="country">Country Selector (separate tile)</button>
     <button type="button" class="v96-node" id="v97Countries" aria-expanded="false"><span class="v96-chevron">▸</span> Choose Country</button>
     <div id="v97CountriesChildren" class="v96-children" hidden>${V97_COUNTRIES.map(([code,name])=>`<button type="button" class="v96-item" data-v97-country-choice="${code}">${safe(name)}</button>`).join('')}</div>
-    <button type="button" class="v96-item" data-v97-all="1">Top 10 Economic Indicators</button>
-    ${V97_TOP.map((name,i)=>`<button type="button" class="v96-item" data-v97-fund="${i}">${safe(name)}</button>`).join('')}
+    <div class="v99-country-selected" id="v99CountrySelected">Selected country: ${safe(v97CountryName())}</div>
+    <button type="button" class="v96-node" id="v99Indicators" aria-expanded="false"><span class="v96-chevron">▸</span> Indicators</button>
+    <div class="v96-children" id="v99IndicatorsChildren" hidden>
+      <button type="button" class="v96-item" data-v97-all="1">All Top 10 Indicators</button>
+      ${V97_TOP.map((name,i)=>`<button type="button" class="v96-item" data-v97-fund="${i}">${safe(name)}</button>`).join('')}
+    </div>
    </div>
    ${options}
   </div>
@@ -2077,6 +2081,7 @@ function tileSettings(t){
   toggle('#v97Regional','#v97RegionalChildren');
   toggle('#v97Fundamental','#v97FundChildren');
   toggle('#v97Countries','#v97CountriesChildren');
+  toggle('#v99Indicators','#v99IndicatorsChildren');
   toggle('#v98Favorites','#v98FavoritesChildren');
   toggle('#v98SourcesButton','#v98SourcesChildren');
   v96Panel.querySelector('[data-v98-watch]')?.addEventListener('click',()=>{
@@ -2100,7 +2105,16 @@ function tileSettings(t){
    selectAnalysis('regionpsi',b.dataset.v97Period);
    const r=document.querySelector('#psiRegion');if(r){r.value=b.dataset.v97For;r.dispatchEvent(new Event('change',{bubbles:true}))}
   });
-  v96Panel.querySelectorAll('[data-v97-country-choice]').forEach(b=>b.onclick=()=>{v97LoadCountry(b.dataset.v97CountryChoice);selectAnalysis('fundamental')});
+  v96Panel.querySelectorAll('[data-v97-country-choice]').forEach(b=>b.onclick=()=>{
+   const code=b.dataset.v97CountryChoice;
+   v97LoadCountry(code);
+   const label=document.querySelector('#v99CountrySelected');if(label)label.textContent='Selected country: '+v97CountryName();
+   const countryList=document.querySelector('#v97CountriesChildren');if(countryList)countryList.hidden=true;
+   document.querySelector('#v97Countries')?.setAttribute('aria-expanded','false');
+   const indicators=document.querySelector('#v99IndicatorsChildren');if(indicators)indicators.hidden=false;
+   document.querySelector('#v99Indicators')?.setAttribute('aria-expanded','true');
+   v96Panel.hidden=false;v96Button.setAttribute('aria-expanded','true');
+  });
   v96Panel.querySelector('[data-v97-all]')?.addEventListener('click',()=>{v97ChosenIndicators=[...V97_TOP];selectAnalysis('fundamental')});
   v96Panel.querySelectorAll('[data-v97-fund]').forEach(b=>b.onclick=()=>{
    selectAnalysis('fundamental');
