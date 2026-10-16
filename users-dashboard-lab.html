@@ -525,19 +525,21 @@ function v79RangePoints(asset){
 // Aggregates only explicit, timestamped saved PSI readings and requires calendar-day coverage.
 function v68HistoricalPSI(asset,period){
  const days=period==='weekly'?7:period==='monthly'?30:null;
- const minimum=period==='weekly'?5:20;
  if(!days)return null;
+ // Use verified published feed history when available; fall back to timestamped imports.
+ // Deduplicate by calendar day so repeat scraper runs cannot inflate the average.
  const byDay=new Map(),now=Date.now();
- for(const p of v39Points(asset)){
-  if(p.time<now-days*86400000||p.time>now+300000)continue;
+ for(const p of v79DailyPoints(asset)){
+  if(!Number.isFinite(p.time)||!Number.isFinite(p.value)||p.value<0||p.value>100||p.time<now-days*86400000||p.time>now+300000)continue;
   const day=new Date(p.time).toISOString().slice(0,10);
   const previous=byDay.get(day);
   if(!previous||p.time>previous.time)byDay.set(day,p);
  }
  const values=[...byDay.values()].sort((a,b)=>a.time-b.time);
- if(values.length<minimum||now-values.at(-1).time>72*3600000)return null;
+ const minimum=period==='weekly'?2:4;
+ if(values.length<minimum)return {value:null,count:values.length,days,required:minimum};
  const result=values.reduce((sum,p)=>sum+p.value,0)/values.length;
- return {value:Math.round(result*100)/100,count:values.length,days,last:values.at(-1).time};
+ return {value:Math.round(result*100)/100,count:values.length,days,last:values.at(-1).time,source:values.every(p=>p.source==='feed')?'published':'historical',partial:values.length<days};
 }
 function v39RangePoints(asset){
  const all=v39Points(asset),days=Number(state.historyDays)||0;
@@ -1385,7 +1387,7 @@ case'regionpsi':{
  return `<div class="muted">${safe(v72AnalysisTitle('regionpsi',period,region))}</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(region)}`;
 }
 case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
-case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?'Average of '+historical.count+' saved daily readings · last '+new Date(historical.last).toLocaleDateString():'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
+case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?.value!==null&&historical?.value!==undefined?('Average of '+historical.count+' '+(historical.source==='published'?'published':'saved')+' daily readings · '+(historical.partial?'partial period · ':'')+'last '+new Date(historical.last).toLocaleDateString()):historical?('Insufficient '+period+' history: '+historical.count+' of '+historical.required+' distinct daily readings available'):'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
 case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{if(t.v97Calendar===true)return v97FundamentalContent(t);const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{
