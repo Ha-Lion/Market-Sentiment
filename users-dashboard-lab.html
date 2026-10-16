@@ -353,6 +353,13 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v95-indicators{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:5px;padding:4px 8px 9px;font-size:11px;color:var(--mute)}
 .v95-indicators span{padding:3px 0}
 </style>
+<style id="v96-nested-picker">
+.v96-menu{position:relative;margin-top:5px}.v96-picker{width:100%;min-height:40px;border:1px solid #7797bd;background:#102138;color:#fff;border-radius:7px;text-align:left;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.v96-panel{position:relative;max-height:340px;overflow:auto;border:1px solid #526987;border-radius:6px;background:#101e32;margin-top:2px;padding:4px;z-index:5}
+.v96-panel[hidden],.v96-children[hidden]{display:none!important}
+.v96-node,.v96-item{font:inherit;text-align:left;cursor:pointer;display:block;width:100%;background:transparent;border:0;color:#f1f6ff;padding:7px 10px;border-radius:3px}
+.v96-node:hover,.v96-item:hover{background:#345985}.v96-children{padding-left:19px}.v96-chevron{display:inline-block;width:15px;font-size:12px}.v96-node[aria-expanded="true"] .v96-chevron{transform:rotate(90deg)}
+</style>
 </head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
@@ -1920,21 +1927,32 @@ function tileSettings(t){
  const fixed=t.type==='fixed';
  const original=v69OfficialTitle(t);
  const hasWatchlist=tiles.some(x=>x.type==='watch'&&!x.closed);
- const watchDependent=new Set(['technical','news']);
- const choices=V28_TILE_TYPES.filter(([type])=>!watchDependent.has(type)||hasWatchlist||t.type===type)
-  .map(([type,label])=>`<option value="${type}" ${watchDependent.has(type)?'hidden aria-hidden="true"':''} ${(t.type===type||(type==='search'&&t.type==='favorites'))?'selected':''}>${label}</option>`).join('');
- const v95Tree=(!isWatch&&!fixed&&hasWatchlist)?`<div class="v95-tree" aria-label="Watchlist-dependent analyses">
- <button type="button" class="v95-node" id="v95WatchExpand" aria-expanded="${['technical','news'].includes(t.type)}"><span class="v95-arrow">▸</span> My Watchlist</button>
- <div id="v95WatchChildren" ${['technical','news'].includes(t.type)?'':'hidden'}>
-  <button type="button" class="v95-node" id="v95TechnicalExpand" aria-expanded="${t.type==='technical'}"><span class="v95-arrow">▸</span> Technical Indicators</button>
-  <div id="v95TechChildren" ${t.type==='technical'?'':'hidden'}><button type="button" class="v95-leaf" data-v95-type="technical">Select Technical Indicators tile</button>
-    <div class="v95-indicators">${TECH.map(n=>`<span>${safe(n)}</span>`).join('')}</div>
+ const options=V28_TILE_TYPES.filter(([type])=>!['technical','news','psi'].includes(type))
+  .map(([type,label])=>`<button type="button" class="v96-item" data-v96-type="${type}">${safe(label)}</button>`).join('');
+ const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${safe(label)}</option>`).join('');
+ const expanded=['technical','news','psi'].includes(t.type);
+ const v96Dropdown=(!isWatch&&!fixed)?`<div class="v96-menu">
+  <button type="button" id="v96MenuButton" class="v96-picker" aria-expanded="false">${safe(original)} <span>⌄</span></button>
+  <div class="v96-panel" id="v96Panel" hidden>
+   <button type="button" class="v96-node" id="v96Watch" aria-expanded="${expanded}"><span class="v96-chevron">▸</span> My Watchlist</button>
+   <div id="v96WatchChildren" class="v96-children" ${expanded?'':'hidden'}>
+    <button type="button" class="v96-node" id="v96Technical" aria-expanded="${t.type==='technical'}"><span class="v96-chevron">▸</span> Technical Indicators</button>
+    <div id="v96TechnicalChildren" class="v96-children" ${t.type==='technical'?'':'hidden'}>
+      ${TECH.map(n=>`<button type="button" class="v96-item" data-v96-indicator="${safe(n)}">${safe(n)}</button>`).join('')}
+    </div>
+    <button type="button" class="v96-item" data-v96-type="news">Latest News</button>
+    <button type="button" class="v96-node" id="v96PSI" aria-expanded="${t.type==='psi'}"><span class="v96-chevron">▸</span> PSI</button>
+    <div id="v96PSIChildren" class="v96-children" ${t.type==='psi'?'':'hidden'}>
+      <button type="button" class="v96-item" data-v96-period="daily">Daily (default)</button>
+      <button type="button" class="v96-item" data-v96-period="weekly">Weekly</button>
+      <button type="button" class="v96-item" data-v96-period="monthly">Monthly</button>
+    </div>
+   </div>
+   ${options}
   </div>
-  <button type="button" class="v95-leaf" data-v95-type="news">Latest News & Articles (Watchlist)</button>
- </div></div>`:'';
-
- const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis<select id="tileType">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><label class="field" id="newsContentField" style="${['search','favorites'].includes(t.type)?'':'display:none'}">Search News & Articles · Select content<select id="newsContent"><option value="search" ${t.type==='favorites'?'':'selected'}>News Search</option><option value="favorites" ${t.type==='favorites'?'selected':''}>My Favorite News</option></select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
- open(`Tile Settings · ${original}`,`${typeField}${v95Tree}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
+  </div>`:'';
+ const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis${v96Dropdown}<select id="tileType" hidden aria-hidden="true">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><label class="field" id="newsContentField" style="${['search','favorites'].includes(t.type)?'':'display:none'}">Search News & Articles · Select content<select id="newsContent"><option value="search" ${t.type==='favorites'?'':'selected'}>News Search</option><option value="favorites" ${t.type==='favorites'?'selected':''}>My Favorite News</option></select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
+ open(`Tile Settings · ${original}`,`${typeField}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
  const modalActions=document.querySelector('.v58-modal-actions');modalActions?.insertBefore(saveButton,$('#closeModal'));
@@ -1965,22 +1983,34 @@ function tileSettings(t){
   paintSettings();
  };
  v75Paint();document.querySelector('#tileType')?.addEventListener('change',v75Paint);
- const v95Toggle=(id,childId)=>{const b=document.querySelector(id),child=document.querySelector(childId);if(!b||!child)return;
-  b.addEventListener('click',()=>{const next=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(next));child.hidden=!next;});
- };
- v95Toggle('#v95WatchExpand','#v95WatchChildren');
- v95Toggle('#v95TechnicalExpand','#v95TechChildren');
- document.querySelectorAll('[data-v95-type]').forEach(btn=>btn.addEventListener('click',()=>{
-  if(!tiles.some(x=>x.type==='watch'&&!x.closed)){alert('Activate My Watchlist tile in this workspace first.');return}
-  const selector=document.querySelector('#tileType');if(!selector)return;
-  selector.value=btn.dataset.v95Type;
-  selector.dispatchEvent(new Event('change',{bubbles:true}));
-  if(btn.dataset.v95Type==='technical'){
-   const b=document.querySelector('#v95TechnicalExpand'),child=document.querySelector('#v95TechChildren');
-   if(b&&child){b.setAttribute('aria-expanded','true');child.hidden=false}
-  }
- }));
-
+ const v96Panel=document.querySelector('#v96Panel'),v96Button=document.querySelector('#v96MenuButton');
+ if(v96Panel&&v96Button){
+  v96Button.onclick=()=>{v96Panel.hidden=!v96Panel.hidden;v96Button.setAttribute('aria-expanded',String(!v96Panel.hidden))};
+  const toggle=(trigger,child)=>{const btn=document.querySelector(trigger),target=document.querySelector(child);
+   btn?.addEventListener('click',()=>{const on=btn.getAttribute('aria-expanded')!=='true';btn.setAttribute('aria-expanded',String(on));if(target)target.hidden=!on;});
+  };
+  toggle('#v96Watch','#v96WatchChildren');
+  toggle('#v96Technical','#v96TechnicalChildren');
+  toggle('#v96PSI','#v96PSIChildren');
+  const selectAnalysis=(type,period)=>{
+   if(['technical','news','psi'].includes(type)&&!tiles.some(x=>x.type==='watch'&&!x.closed)){
+    alert('Activate My Watchlist tile in this workspace first.');return;
+   }
+   const select=document.querySelector('#tileType');
+   if(!select)return;
+   select.value=type;select.dispatchEvent(new Event('change',{bubbles:true}));
+   if(period){const ps=document.querySelector('#psiPeriod');if(ps){ps.value=period;ps.dispatchEvent(new Event('change',{bubbles:true}))}}
+   v96Button.firstChild.textContent=type==='psi'?`PSI · ${(period||'daily')[0].toUpperCase()+(period||'daily').slice(1)} `:(V28_TILE_TYPES.find(x=>x[0]===type)?.[1]||type)+' ';
+   v96Panel.hidden=true;v96Button.setAttribute('aria-expanded','false');
+  };
+  v96Panel.querySelectorAll('[data-v96-type]').forEach(el=>el.onclick=()=>selectAnalysis(el.dataset.v96Type));
+  v96Panel.querySelectorAll('[data-v96-period]').forEach(el=>el.onclick=()=>selectAnalysis('psi',el.dataset.v96Period));
+  v96Panel.querySelectorAll('[data-v96-indicator]').forEach(el=>el.onclick=()=>{
+   selectAnalysis('technical');
+   const ind=el.dataset.v96Indicator;
+   if(!v76Draft.selected.includes(ind)&&v76Draft.selected.length<10){v76Draft.selected.push(ind);v75Paint()}
+  });
+ }
  if(configType==='fundamental'){
   const go=document.createElement('button');go.className='btn';go.id='configureSelectedAnalysis';
   go.textContent=configType==='technical'?'Configure Technical Indicators':'Configure Fundamental Drivers';
