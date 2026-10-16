@@ -1892,6 +1892,7 @@
     }
     function previousReleaseDisplay(e){
       const v=e?.previous;
+      if(e?.numeric_comparison_available===false || /^not applicable$/i.test(String(v??"").trim()))return "N/A";
       if(v===null||v===undefined||String(v).trim()==="")return "—";
       return numericReleaseValue(v)?formatValue(v,calendarDisplayUnit(e)):"—";
     }
@@ -1916,7 +1917,8 @@
     function formatValue(v,unit){
       if(v===null||v===undefined||String(v).trim()==="")return "—";
       const raw=String(v).trim();
-      if(/^(published|released|previous edition)$/i.test(raw))return "N/A";
+      if(/^(published|released)$/i.test(raw))return esc(raw);
+      if(/^previous edition$/i.test(raw))return "N/A";
       // Strip well-known descriptive unit prose, but never change the original stored value.
       const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|percent(?:age)?(?:\s+(?:MoM|YoY|high auction yield.*))?|bps?|jobs\/week(?:\s+4.week moving average)?|high auction yield.*|k|m|b|index points?|points?))?$/i);
       if(!match)return esc(raw);
