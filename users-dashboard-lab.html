@@ -362,7 +362,7 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 </style>
 <style id="v98-favorite-source-slots">
 .v98-slots{display:grid;gap:5px;margin-top:10px}.v98-slot{display:flex;align-items:center;gap:10px}.v98-slot span{width:22px;font-size:12px;color:#9bb5d5}.v98-slot select{flex:1;min-width:0;padding:8px;border-radius:6px;background:#13253f;color:#f1f6ff;border:1px solid #4a6382}
-</style><style id="v99-indicator-tree">.v99-country-selected{font-size:12px;color:#a9c7ed;padding:6px 10px}</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
+</style><style id="v99-indicator-tree">.v99-country-selected{font-size:12px;color:#a9c7ed;padding:6px 10px}</style><style>.vA1-outlet-article{padding:9px 5px;border-bottom:1px solid #41516c;display:flex;flex-direction:column;gap:5px}.vA1-outlet-article a{color:#c7dcff;overflow-wrap:anywhere}</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
 <script>
@@ -1367,7 +1367,24 @@ function v98SlotsHtml(){
  const options=v98Sources();
  return `<div class="muted">My 15 favorite news websites · select a source for each slot. Sources come from the existing news feed.</div>
  <div class="v98-slots">${Array.from({length:15},(_,i)=>`<label class="v98-slot"><span>${i+1}.</span><select data-v98-slot="${i}" aria-label="Favorite news website slot ${i+1}"><option value="">Empty slot ${i+1}</option>${[...new Set([...options,...(v98FavoriteSlots[i]?[v98FavoriteSlots[i]]:[])])].map(src=>`<option value="${safe(src)}" ${v98FavoriteSlots[i]===src?'selected':''}>${safe(src)}</option>`).join('')}</select></label>`).join('')}</div>
- <div class="muted" style="margin-top:9px">Your starred articles remain saved separately below.</div>`;
+ <div class="muted" style="margin-top:9px">Select a news outlet to update the companion news tile.</div>`;
+}
+let vA1PendingSource='';
+function vA1OutletHtml(t){
+ const source=String(t.favoriteSource||'').trim();
+ if(!source)return '<p class="muted">Choose a news outlet in the News tile to see its latest articles here.</p>';
+ const matches=v63AvailableNews().filter(a=>String(a.source||'').trim().toLowerCase()===source.toLowerCase()).sort((a,b)=>String(b.date||b.published_at||'').localeCompare(String(a.date||a.published_at||'')));
+ return `<div class="muted">${safe(source)} · ${matches.length} news & articles</div>${matches.length?matches.slice(0,35).map(a=>`<article class="vA1-outlet-article"><a href="${safe(a.url||'#')}" target="_blank" rel="noopener noreferrer">${safe(a.title||a.headline||'Article')}</a><span class="muted">${safe(String(a.date||a.published_at||''))}</span></article>`).join(''):'<p class="muted">No news from this outlet in the currently loaded feed.</p>'}`;
+}
+function vA1Companion(favoriteTile,source){
+ let news=tiles.find(t=>t.type==='favorite-outlet'&&t.parentFavoritesId===favoriteTile.id);
+ if(!news){news={id:'favorite-outlet-'+Date.now(),type:'favorite-outlet',parentFavoritesId:favoriteTile.id,x:Math.min(950,(favoriteTile.x||20)+(favoriteTile.w||360)+18),y:favoriteTile.y||18,w:490,h:340,z:nextTileZ(),locked:false,min:false,maxed:false,closed:false};tiles.push(news)}
+ news.closed=false;news.favoriteSource=source||news.favoriteSource||'';news.title=news.favoriteSource||'News Outlet';news.officialName=news.title;return news;
+}
+function vA1UpdateCompanion(source){
+ const favoriteTile=tiles.find(t=>t.type==='favorites'&&!t.closed);
+ if(!favoriteTile)return;
+ vA1Companion(favoriteTile,source);render();
 }
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','chart','history'].includes(t.type)||(!a&&t.type==='fundamental'&&!t.v97Calendar))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'country':return v97CountryContent();
@@ -1399,7 +1416,9 @@ case'news':{
  `<button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`
  }
 case'search':return `<div class="v9421-inline-news"></div>`;
-case'favorites':return v98SlotsHtml()+v9421FavoritesHtml();
+case'favorites':return v98SlotsHtml();
+case'saved-articles':return v9421FavoritesHtml();
+case'favorite-outlet':return vA1OutletHtml(t);
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
 case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
@@ -1577,7 +1596,7 @@ function v9421FavoritesHtml(){
  const articles=Object.keys(state.star||{}).filter(id=>state.star[id]).map(id=>v51Saved[id]||v9421FindArticle(id)).filter(Boolean).sort((a,b)=>(Number(state.star[b.id])||0)-(Number(state.star[a.id])||0));
  return `<div class="v9421-favorites" data-v9421-dropzone="1"><div class="muted">Drag articles from News & Article Search here, or click ☆ beside an article.</div><strong>${articles.length} saved article${articles.length===1?'':'s'}</strong>${articles.map(h=>`<article class="v42-result"><div class="v43-cardtop"><span class="muted">${safe(h.source||'News')} · ${new Date(h.time||Date.now()).toLocaleDateString()}</span><button type="button" class="v43-save" data-v9421-remove="${safe(h.id)}" title="Remove from favorites">★</button></div><div class="v42-headline">${safe(h.title)}</div><a href="${safe(h.url)}" class="v42-articlelink" target="_blank" rel="noopener noreferrer">Read article ↗</a></article>`).join('')||'<p class="notice">Your saved articles will appear here.</p>'}</div>`
 }
-function v9421RefreshFavorites(){for(const t of tiles.filter(v9421IsFavorites)){const el=board.querySelector(`.tile[data-id="${CSS.escape(t.id)}"] .content`);if(el)el.innerHTML=v9421FavoritesHtml()}}
+function v9421RefreshFavorites(){for(const t of tiles.filter(t=>t.type==='saved-articles')){const el=board.querySelector(`.tile[data-id="${CSS.escape(t.id)}"] .content`);if(el)el.innerHTML=v9421FavoritesHtml()}}
 board.addEventListener('dragstart',e=>{const a=e.target.closest('[data-v9421-drag]');if(!a)return;e.dataTransfer.effectAllowed='copy';e.dataTransfer.setData('text/plain',a.dataset.v9421Drag);});
 board.addEventListener('dragover',e=>{if(e.target.closest('[data-v9421-dropzone]')){e.preventDefault();e.dataTransfer.dropEffect='copy'}});
 board.addEventListener('drop',e=>{if(!e.target.closest('[data-v9421-dropzone]'))return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(id&&v9421SaveArticle(id)){v9421RefreshFavorites();v42RenderResults()}});
@@ -1966,6 +1985,7 @@ const V28_TILE_TYPES=[
  ['news','Latest News & Articles (Watchlist)'],
  ['search','Search News & Articles'],
  ['favorites','My Favorite News'],
+ ['saved-articles','Saved Articles'],
  ['social','Social & Market Networks']
 ];
 const V29_TILE_HELP={
@@ -1980,7 +2000,7 @@ const V29_TILE_HELP={
  favorites:'Drag articles from Search News & Articles into this tile, or save them using the star.',
  social:'Links to external social and market services. This tile does not change with asset selection.'
 };
-const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',favorites:'My Favorite News',social:'Social & Market Networks'};
+const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',favorites:'My Favorite News','saved-articles':'Saved Articles','favorite-outlet':'News Outlet',social:'Social & Market Networks'};
 function v72AnalysisTitle(type,period,region){
  if(type==='regionpsi'){const where=({us:'U.S.',euro:'Europe',global:'Global'})[region]||'Global';const when=({daily:'Daily',weekly:'Weekly',monthly:'Monthly'})[period]||'Daily';return `${where} ${when} PSI`;}
  if(type==='psi')return ({daily:'Daily PSI',weekly:'Weekly PSI',monthly:'Monthly PSI'})[period]||'Daily PSI';
@@ -1989,6 +2009,7 @@ function v72AnalysisTitle(type,period,region){
 function v69OfficialTitle(t){
  const fixedName=blueprint.find(row=>row[0]===t.id)?.[1];
  if(t.type==='watch'||t.type==='fixed')return fixedName||t.officialName||t.title;
+ if(t.type==='favorite-outlet')return t.favoriteSource||t.title||'News Outlet';
  if(t.type==='regionpsi')return v72AnalysisTitle('regionpsi',t.psiPeriod||'daily',t.psiRegion||'global');
  if(t.type==='psi')return v72AnalysisTitle('psi',t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily'));
  return v72AnalysisTitle(t.type,t.psiPeriod);
@@ -1998,10 +2019,10 @@ function tileSettings(t){
  const fixed=t.type==='fixed';
  const original=v69OfficialTitle(t);
  const hasWatchlist=tiles.some(x=>x.type==='watch'&&!x.closed);
- const options=V28_TILE_TYPES.filter(([type])=>!['technical','news','psi','regionpsi','fundamental','country','favorites'].includes(type))
+ const options=V28_TILE_TYPES.filter(([type])=>!['technical','news','psi','regionpsi','fundamental','country','favorites','saved-articles'].includes(type))
   .map(([type,label])=>`<button type="button" class="v96-item" data-v96-type="${type}">${safe(label)}</button>`).join('');
  const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${safe(label)}</option>`).join('');
- const expanded=['custom','technical','news','psi'].includes(t.type);
+ const expanded=['custom','technical','news','psi','favorites','saved-articles'].includes(t.type);
  const v96Dropdown=(!isWatch&&!fixed)?`<div class="v96-menu">
   <button type="button" id="v96MenuButton" class="v96-picker" aria-expanded="false">${safe(original)} <span>⌄</span></button>
   <div class="v96-panel" id="v96Panel" hidden>
@@ -2021,8 +2042,9 @@ function tileSettings(t){
     </div>
    </div>
    <button type="button" class="v96-node" id="v98Favorites" aria-expanded="${t.type==='favorites'}"><span class="v96-chevron">▸</span> My Favorite News</button>
-   <div id="v98FavoritesChildren" class="v96-children" ${t.type==='favorites'?'':'hidden'}>
-      <button type="button" class="v96-item" data-v96-type="favorites">My Favorite News</button>
+   <div id="v98FavoritesChildren" class="v96-children" ${['favorites','saved-articles'].includes(t.type)?'':'hidden'}>
+      <button type="button" class="v96-item" data-v96-type="favorites">News</button>
+      <button type="button" class="v96-item" data-v96-type="saved-articles">Saved Articles</button>
       <button type="button" class="v96-node" id="v98SourcesButton" aria-expanded="false"><span class="v96-chevron">▸</span> News Sources</button>
       <div class="v96-children" id="v98SourcesChildren" hidden>${v98Sources().map(src=>`<button type="button" class="v96-item" data-v98-source="${safe(src)}">${safe(src)}</button>`).join('')||'<span class="muted">No news sources available yet</span>'}</div>
    </div>
@@ -2101,7 +2123,7 @@ function tileSettings(t){
    }else alert('My Watchlist tile is not present in this workspace.');
   });
   v96Panel.querySelectorAll('[data-v98-source]').forEach(btn=>btn.onclick=()=>{
-   const source=btn.dataset.v98Source;
+   const source=btn.dataset.v98Source;vA1PendingSource=source;
    selectAnalysis('favorites');
    updateNaming();
    const slot=v98FavoriteSlots.indexOf(''),i=slot<0?0:slot;
@@ -2220,6 +2242,7 @@ function tileSettings(t){
   t.displayNameCustomized=Boolean(userEdited&&entered&&entered!==t.officialName);
   if(isWatch){state.watch=newWatch;normalizeWatchSelection(state)}
   t.z=nextTileZ();
+  if(t.type==='favorites')vA1Companion(t,vA1PendingSource||v98FavoriteSlots.find(Boolean)||'');
   shut();render();refreshV8Status();
  };
 }
@@ -2229,7 +2252,7 @@ board.addEventListener('change',e=>{
  const slot=e.target.closest('[data-v98-slot]');
  if(slot){const i=Number(slot.dataset.v98Slot),source=slot.value;
   if(source&&v98FavoriteSlots.some((x,j)=>j!==i&&x===source)){alert('This website is already in another favorite slot.');render();return}
-  v98FavoriteSlots[i]=source;try{localStorage.setItem(V98_FAV_KEY,JSON.stringify(v98FavoriteSlots))}catch(e){}render();
+  v98FavoriteSlots[i]=source;try{localStorage.setItem(V98_FAV_KEY,JSON.stringify(v98FavoriteSlots))}catch(e){}vA1UpdateCompanion(source);render();
  }
 });
 board.addEventListener('click',e=>{if(e.target.closest('[data-v97-refresh]'))v97LoadCountry(v97Country)});
