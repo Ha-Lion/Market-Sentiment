@@ -1313,19 +1313,22 @@ function v76TechnicalContent(t,a){
 }
 
 const V97_COUNTRIES=[['US','United States'],['GB','United Kingdom'],['EU','Euro Area'],['JP','Japan'],['CN','China'],['DE','Germany'],['IN','India'],['CA','Canada'],['AU','Australia'],['CH','Switzerland']];
+const A3_COUNTRIES=[...V97_COUNTRIES,...[['FR','France'],['IT','Italy'],['ES','Spain'],['BR','Brazil'],['KR','South Korea'],['MX','Mexico'],['NZ','New Zealand'],['SE','Sweden'],['NO','Norway'],['SG','Singapore'],['ZA','South Africa'],['TR','Turkey'],['ID','Indonesia'],['SA','Saudi Arabia'],['RU','Russia']]];
+function a3CountrySlots(t){const slots=Array.isArray(t.countrySlots)?t.countrySlots:V97_COUNTRIES.map(x=>x[0]);return Array.from({length:15},(_,i)=>A3_COUNTRIES.some(c=>c[0]===slots[i])?slots[i]:'')}
+function a3CountriesTile(t){const slots=a3CountrySlots(t);return `<div class="muted">Choose a country to update calendar-linked Fundamental Drivers. Configure up to 15 countries in tile settings.</div><div class="stack" style="margin-top:10px">${slots.map((code,i)=>`<button type="button" class="side-item ${code===v97Country?'selected':''} ${code?'':'muted'}" data-a3-country="${safe(code)}" ${code?'':'disabled'}>${code?safe(A3_COUNTRIES.find(c=>c[0]===code)?.[1]||code):'Empty slot '+(i+1)} <span class="num">${code?'›':''}</span></button>`).join('')}</div><p class="muted">${safe(v97Status)}</p>`}
 const V97_TOP=['Interest Rate','Inflation / CPI','GDP','Employment','Unemployment','Manufacturing PMI','Services PMI','Retail Sales','Industrial Production','Trade Balance'];
 const V97_FEED='https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed';
 let v97Country='US',v97Events=[],v97Status='Choose a country to load calendar releases.',v97Request=0;
 const v97Store='psd-v97-country';
 try{const saved=localStorage.getItem(v97Store);if(V97_COUNTRIES.some(c=>c[0]===saved))v97Country=saved}catch(e){}
-function v97CountryName(){return V97_COUNTRIES.find(c=>c[0]===v97Country)?.[1]||v97Country}
+function v97CountryName(){return A3_COUNTRIES.find(c=>c[0]===v97Country)?.[1]||v97Country}
 function v97Match(e,term){
  const name=String(e.event||e.category||'').toLowerCase();
  const terms={'Interest Rate':['rate decision','interest rate','policy rate','bank rate'],'Inflation / CPI':['inflation','consumer price','cpi'],'GDP':['gdp','gross domestic product'],'Employment':['employment','nonfarm payroll','payroll','jobless claims'],'Unemployment':['unemployment'],'Manufacturing PMI':['manufacturing pmi'],'Services PMI':['services pmi','service pmi'],'Retail Sales':['retail sales'],'Industrial Production':['industrial production'],'Trade Balance':['trade balance','balance of trade']};
  return (terms[term]||[term.toLowerCase()]).some(w=>name.includes(w));
 }
 async function v97LoadCountry(country){
- if(!V97_COUNTRIES.some(c=>c[0]===country))return;
+ if(!A3_COUNTRIES.some(c=>c[0]===country))return;
  v97Country=country;try{localStorage.setItem(v97Store,country)}catch(e){}
  const req=++v97Request;v97Events=[];v97Status='Loading economic calendar…';render();
  const today=new Date(),start=new Date(today.getTime()-45*864e5).toISOString().slice(0,10),end=new Date(today.getTime()+14*864e5).toISOString().slice(0,10);
@@ -1370,7 +1373,7 @@ function v98SlotsHtml(){
  <div class="muted" style="margin-top:9px">Your starred articles remain saved separately below.</div>`;
 }
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','chart','history'].includes(t.type)||(!a&&t.type==='fundamental'&&!t.v97Calendar))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
-case'country':return v97CountryContent();
+case'country':return a3CountriesTile(t);
 case'regionpsi':{
  const region=['global','us','euro'].includes(t.psiRegion)?t.psiRegion:'global';
  const period=['daily','weekly','monthly'].includes(t.psiPeriod)?t.psiPeriod:'daily';
@@ -2026,10 +2029,7 @@ function tileSettings(t){
    </div>
    <button type="button" class="v96-node" id="v97Fundamental" aria-expanded="false"><span class="v96-chevron">▸</span> Fundamental Drivers</button>
    <div id="v97FundChildren" class="v96-children" hidden>
-    <button type="button" class="v96-item" data-v96-type="country">Country Selector (separate tile)</button>
-    <button type="button" class="v96-node" id="v97Countries" aria-expanded="false"><span class="v96-chevron">▸</span> Choose Country</button>
-    <div id="v97CountriesChildren" class="v96-children" hidden>${V97_COUNTRIES.map(([code,name])=>`<button type="button" class="v96-item" data-v97-country-choice="${code}">${safe(name)}</button>`).join('')}</div>
-    <div class="v99-country-selected" id="v99CountrySelected">Selected country: ${safe(v97CountryName())}</div>
+    <button type="button" class="v96-item" data-v96-type="country">Countries</button>
     <button type="button" class="v96-node" id="v99Indicators" aria-expanded="false"><span class="v96-chevron">▸</span> Indicators</button>
     <div class="v96-children" id="v99IndicatorsChildren" hidden>
       <button type="button" class="v96-item" data-v97-all="1">All Top 10 Indicators</button>
@@ -2047,6 +2047,17 @@ function tileSettings(t){
  const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis${v96Dropdown}<select id="tileType" hidden aria-hidden="true">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><label class="field" id="newsContentField" style="${['search'].includes(t.type)?'':'display:none'}">Search News & Articles · Select content<select id="newsContent"><option value="search" ${t.type==='favorites'?'':'selected'}>News Search</option><option value="favorites" ${t.type==='favorites'?'selected':''}>Saved Articles</option></select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
  open(`Tile Settings · ${original}`,`${typeField}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
+ const a3CountryEdit=document.createElement('div');a3CountryEdit.id='a3CountryEdit';body.appendChild(a3CountryEdit);
+ const a3Draft=a3CountrySlots(t);
+ function a3RenderEditor(){const isCountry=(document.querySelector('#tileType')?.value||t.type)==='country';a3CountryEdit.hidden=!isCountry;
+  if(!isCountry)return;
+  a3CountryEdit.innerHTML=`<div class="section">Countries · Assign up to 15</div><p class="muted">Like My Watchlist, each position can hold one country. Empty positions stay available.</p><div class="a3-country-grid">${a3Draft.map((value,i)=>`<label class="field">Slot ${i+1}<select data-a3-country-slot="${i}"><option value="">Empty</option>${A3_COUNTRIES.map(([code,name])=>`<option value="${code}" ${code===value?'selected':''}>${safe(name)}</option>`).join('')}</select></label>`).join('')}</div>`;
+  a3CountryEdit.querySelectorAll('[data-a3-country-slot]').forEach(sel=>sel.addEventListener('change',()=>{const index=Number(sel.dataset.a3CountrySlot),code=sel.value;
+   if(code&&a3Draft.some((v,i)=>i!==index&&v===code)){alert('That country already occupies another slot.');sel.value=a3Draft[index];return}a3Draft[index]=code;
+  }));
+ }
+ a3RenderEditor();document.querySelector('#tileType')?.addEventListener('change',a3RenderEditor);
+
  const saveButton=document.createElement('button');saveButton.className='btn accent';saveButton.id='v70SaveTile';saveButton.textContent='Save';
  const modalActions=document.querySelector('.v58-modal-actions');modalActions?.insertBefore(saveButton,$('#closeModal'));
  const configType=t.type;
@@ -2088,7 +2099,6 @@ function tileSettings(t){
   toggle('#v96PSI','#v96PSIChildren');
   toggle('#v97Regional','#v97RegionalChildren');
   toggle('#v97Fundamental','#v97FundChildren');
-  toggle('#v97Countries','#v97CountriesChildren');
   toggle('#v99Indicators','#v99IndicatorsChildren');
   toggle('#a2Search','#a2SearchChildren');
   v96Panel.querySelector('[data-v98-watch]')?.addEventListener('click',()=>{
@@ -2186,6 +2196,7 @@ function tileSettings(t){
   }
   if(newType&&newType!=='custom')t.type=newType;
   if(t.type==='fundamental'){t.v97Calendar=true;t.v97Indicators=[...v97ChosenIndicators]}
+  if(t.type==='country')t.countrySlots=[...a3Draft];
   if(['psi','regionpsi'].includes(t.type))t.psiPeriod=periodSelect?.value||'daily';
   if(t.type==='regionpsi')t.psiRegion=regionSelect?.value||'global';
   if(t.type==='technical'){
@@ -2215,6 +2226,7 @@ function tileSettings(t){
  };
 }
 
+board.addEventListener('click',e=>{const btn=e.target.closest('[data-a3-country]');if(btn?.dataset.a3Country)v97LoadCountry(btn.dataset.a3Country)});
 board.addEventListener('change',e=>{
  const country=e.target.closest('[data-v97-country]');if(country)v97LoadCountry(country.value);
  const slot=e.target.closest('[data-v98-slot]');
