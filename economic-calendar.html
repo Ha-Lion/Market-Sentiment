@@ -1571,7 +1571,7 @@
     let releaseWatchBusy = false;
     let countdownTimer = null;
     const historyCache = new Map();
-    const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v1";
+    const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v2-uk-values";
     const HISTORY_CACHE_PREFIX = "psd-economic-history-v11:";
     const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
@@ -3101,7 +3101,7 @@
        * has fresh data. Do not immediately hit the upstream provider again.
        * The normal auto-refresh loop will refresh it shortly.
        */
-      if(!manual && showedCached && cachedAgeMs<60000){
+      if(!manual && showedCached && cachedAgeMs<60000 && !settings.countries.includes("GB")){
         setStatus("live","Recently cached");
         lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
         return;
