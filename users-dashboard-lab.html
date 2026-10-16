@@ -1388,7 +1388,14 @@ case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.gen
 case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?'Average of '+historical.count+' saved daily readings · last '+new Date(historical.last).toLocaleDateString():'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
 case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{if(t.v97Calendar===true)return v97FundamentalContent(t);const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
-case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
+case'news':{
+ const all=a?v31Visible().filter(h=>v34SourceEnabled(h.source)&&v31MatchesAsset(h,a)):[];
+ const unread=all.filter(h=>!v31ReadFlag(h.id)).length;
+ return `<div class="row v76-top"><span class="muted">${a?safe(a):'Select an asset in My Watchlist'} · ${all.length} news & articles · ${unread} unread</span></div>`+
+ `<div class="metric" style="color:var(--gold)">${all.length}</div><div class="muted">Related news & articles for ${a?safe(a):'your selected asset'}</div>`+
+ (all.length?`<div class="stack" style="margin-top:10px">${all.slice(0,12).map(h=>`<a class="tile-link" href="${safe(h.url)}" target="_blank" rel="noopener noreferrer"><strong>${safe(h.title)}</strong><span class="muted">${safe(h.source||'')} · ${new Date(h.time).toLocaleDateString()}</span></a>`).join('')}</div>`:'<p class="muted">No matching recent news in the connected feed.</p>')+
+ `<button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`
+ }
 case'search':return `<div class="v9421-inline-news"></div>`;
 case'favorites':return v98SlotsHtml()+v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
@@ -1996,9 +2003,9 @@ function tileSettings(t){
  const v96Dropdown=(!isWatch&&!fixed)?`<div class="v96-menu">
   <button type="button" id="v96MenuButton" class="v96-picker" aria-expanded="false">${safe(original)} <span>⌄</span></button>
   <div class="v96-panel" id="v96Panel" hidden>
-   <button type="button" class="v96-item" data-v98-watch="1">Watchlist</button>
    <button type="button" class="v96-node" id="v96Watch" aria-expanded="${expanded}"><span class="v96-chevron">▸</span> My Watchlist</button>
    <div id="v96WatchChildren" class="v96-children" ${expanded?'':'hidden'}>
+    <button type="button" class="v96-item" data-v98-watch="1">Watchlist</button>
     <button type="button" class="v96-node" id="v96Technical" aria-expanded="${t.type==='technical'}"><span class="v96-chevron">▸</span> Technical Indicators</button>
     <div id="v96TechnicalChildren" class="v96-children" ${t.type==='technical'?'':'hidden'}>
       ${TECH.map(n=>`<button type="button" class="v96-item" data-v96-indicator="${safe(n)}">${safe(n)}</button>`).join('')}
