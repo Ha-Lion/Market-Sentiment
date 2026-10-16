@@ -360,7 +360,9 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v96-node,.v96-item{font:inherit;text-align:left;cursor:pointer;display:block;width:100%;background:transparent;border:0;color:#f1f6ff;padding:7px 10px;border-radius:3px}
 .v96-node:hover,.v96-item:hover{background:#345985}.v96-children{padding-left:19px}.v96-chevron{display:inline-block;width:15px;font-size:12px}.v96-node[aria-expanded="true"] .v96-chevron{transform:rotate(90deg)}
 </style>
-</head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
+<style id="v98-favorite-source-slots">
+.v98-slots{display:grid;gap:5px;margin-top:10px}.v98-slot{display:flex;align-items:center;gap:10px}.v98-slot span{width:22px;font-size:12px;color:#9bb5d5}.v98-slot select{flex:1;min-width:0;padding:8px;border-radius:6px;background:#13253f;color:#f1f6ff;border:1px solid #4a6382}
+</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
 <script>
@@ -1354,6 +1356,17 @@ function v97FundamentalContent(t){
  }
  return html+`<p class="muted">Values shown only when returned by the calendar feed. Select another country in the Country tile.</p>`;
 }
+
+const V98_FAV_KEY='psd-favorite-news-sources-v98';
+let v98FavoriteSlots=Array(15).fill('');
+try{const saved=JSON.parse(localStorage.getItem(V98_FAV_KEY)||'null');if(Array.isArray(saved))v98FavoriteSlots=Array.from({length:15},(_,i)=>typeof saved[i]==='string'?saved[i]:'')}catch(e){}
+function v98Sources(){return [...new Set(v63AvailableNews().map(h=>String(h.source||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
+function v98SlotsHtml(){
+ const options=v98Sources();
+ return `<div class="muted">My 15 favorite news websites · select a source for each slot. Sources come from the existing news feed.</div>
+ <div class="v98-slots">${Array.from({length:15},(_,i)=>`<label class="v98-slot"><span>${i+1}.</span><select data-v98-slot="${i}" aria-label="Favorite news website slot ${i+1}"><option value="">Empty slot ${i+1}</option>${[...new Set([...options,...(v98FavoriteSlots[i]?[v98FavoriteSlots[i]]:[])])].map(src=>`<option value="${safe(src)}" ${v98FavoriteSlots[i]===src?'selected':''}>${safe(src)}</option>`).join('')}</select></label>`).join('')}</div>
+ <div class="muted" style="margin-top:9px">Your starred articles remain saved separately below.</div>`;
+}
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','chart','history'].includes(t.type)||(!a&&t.type==='fundamental'&&!t.v97Calendar))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'country':return v97CountryContent();
 case'regionpsi':{
@@ -1377,7 +1390,7 @@ case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{if(t.v97Calendar===true)return v97FundamentalContent(t);const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{let n=v31Unread();return `<div class="metric" style="color:var(--gold)">${n}</div><div class="muted">Unread PSI headlines for your watchlist</div><button class="tile-link" data-open="news">Open latest news & articles <span>↗</span></button>`}
 case'search':return `<div class="v9421-inline-news"></div>`;
-case'favorites':return v9421FavoritesHtml();
+case'favorites':return v98SlotsHtml()+v9421FavoritesHtml();
 case'social':return `<label class="v46-network-label">Find a network <input class="v46-network-search" data-v46-network-search type="search" placeholder="Search networks" autocomplete="off" aria-label="Find a network"></label><p class="v47-network-result" data-v47-result-count aria-live="polite"></p><div class="social">${SOCIAL.map(([name])=>`<div class="social-row v9410-network-button" data-v46-network-row="${safe(name.toLowerCase())}"><button type="button" class="v9410-network-hit" data-social="${safe(name)}" aria-label="Create ${safe(v87NetworkLabel(name))} tile and set up connection"><span class="v9410-network-name">${v90Logo(name)}<strong>${safe(v87NetworkLabel(name))}</strong></span><span class="v9410-open-label">Open tile <span aria-hidden="true">›</span></span></button></div>`).join('')}</div><p class="notice v46-no-networks" hidden>No matching networks.</p>`;
 case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
@@ -1976,7 +1989,7 @@ function tileSettings(t){
  const fixed=t.type==='fixed';
  const original=v69OfficialTitle(t);
  const hasWatchlist=tiles.some(x=>x.type==='watch'&&!x.closed);
- const options=V28_TILE_TYPES.filter(([type])=>!['technical','news','psi','regionpsi','fundamental','country'].includes(type))
+ const options=V28_TILE_TYPES.filter(([type])=>!['technical','news','psi','regionpsi','fundamental','country','favorites'].includes(type))
   .map(([type,label])=>`<button type="button" class="v96-item" data-v96-type="${type}">${safe(label)}</button>`).join('');
  const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${safe(label)}</option>`).join('');
  const expanded=['technical','news','psi','regionpsi','fundamental','country'].includes(t.type);
@@ -1996,6 +2009,13 @@ function tileSettings(t){
       <button type="button" class="v96-item" data-v96-period="weekly">Weekly</button>
       <button type="button" class="v96-item" data-v96-period="monthly">Monthly</button>
     </div>
+   </div>
+   <button type="button" class="v96-item" data-v98-watch="1">Watchlist · Open My Watchlist tile</button>
+   <button type="button" class="v96-node" id="v98Favorites" aria-expanded="${t.type==='favorites'}"><span class="v96-chevron">▸</span> My Favorite News</button>
+   <div id="v98FavoritesChildren" class="v96-children" ${t.type==='favorites'?'':'hidden'}>
+      <button type="button" class="v96-item" data-v96-type="favorites">My Favorite News (15 slots)</button>
+      <button type="button" class="v96-node" id="v98SourcesButton" aria-expanded="false"><span class="v96-chevron">▸</span> Scraped News Websites</button>
+      <div class="v96-children" id="v98SourcesChildren" hidden>${v98Sources().map(src=>`<button type="button" class="v96-item" data-v98-source="${safe(src)}">${safe(src)}</button>`).join('')||'<span class="muted">No news sources available yet</span>'}</div>
    </div>
    <button type="button" class="v96-node" id="v97Regional" aria-expanded="${t.type==='regionpsi'}"><span class="v96-chevron">▸</span> Regional PSI</button>
    <div id="v97RegionalChildren" class="v96-children" ${t.type==='regionpsi'?'':'hidden'}>
@@ -2057,6 +2077,21 @@ function tileSettings(t){
   toggle('#v97Regional','#v97RegionalChildren');
   toggle('#v97Fundamental','#v97FundChildren');
   toggle('#v97Countries','#v97CountriesChildren');
+  toggle('#v98Favorites','#v98FavoritesChildren');
+  toggle('#v98SourcesButton','#v98SourcesChildren');
+  v96Panel.querySelector('[data-v98-watch]')?.addEventListener('click',()=>{
+   const existing=tiles.find(x=>x.type==='watch');
+   if(existing){
+    existing.closed=false;existing.min=false;existing.z=Math.max(1,...tiles.map(x=>x.z||0))+1;
+    shut();render();
+   }else alert('My Watchlist tile is not present in this workspace.');
+  });
+  v96Panel.querySelectorAll('[data-v98-source]').forEach(btn=>btn.onclick=()=>{
+   const source=btn.dataset.v98Source;
+   selectAnalysis('favorites');
+   const slot=v98FavoriteSlots.indexOf(''),i=slot<0?0:slot;
+   v98FavoriteSlots[i]=source;try{localStorage.setItem(V98_FAV_KEY,JSON.stringify(v98FavoriteSlots))}catch(e){}
+  });
   v96Panel.querySelectorAll('[data-v97-region]').forEach(b=>b.onclick=()=>{
    const x=v96Panel.querySelector(`[data-v97-region-period="${b.dataset.v97Region}"]`);
    if(x){x.hidden=!x.hidden;b.setAttribute('aria-expanded',String(!x.hidden))}
@@ -2162,7 +2197,14 @@ function tileSettings(t){
  };
 }
 
-board.addEventListener('change',e=>{const s=e.target.closest('[data-v97-country]');if(s)v97LoadCountry(s.value)});
+board.addEventListener('change',e=>{
+ const country=e.target.closest('[data-v97-country]');if(country)v97LoadCountry(country.value);
+ const slot=e.target.closest('[data-v98-slot]');
+ if(slot){const i=Number(slot.dataset.v98Slot),source=slot.value;
+  if(source&&v98FavoriteSlots.some((x,j)=>j!==i&&x===source)){alert('This website is already in another favorite slot.');render();return}
+  v98FavoriteSlots[i]=source;try{localStorage.setItem(V98_FAV_KEY,JSON.stringify(v98FavoriteSlots))}catch(e){}render();
+ }
+});
 board.addEventListener('click',e=>{if(e.target.closest('[data-v97-refresh]'))v97LoadCountry(v97Country)});
 setTimeout(()=>v97LoadCountry(v97Country),0);
 board.addEventListener('input',e=>{const input=e.target.closest('[data-v46-network-search]');if(!input)return;const panel=input.closest('.tile');if(!panel)return;v47NetworkFilter=input.value;v47FilterNetworks(panel)});
