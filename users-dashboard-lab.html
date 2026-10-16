@@ -1992,13 +1992,13 @@ function tileSettings(t){
  const options=V28_TILE_TYPES.filter(([type])=>!['technical','news','psi','regionpsi','fundamental','country','favorites'].includes(type))
   .map(([type,label])=>`<button type="button" class="v96-item" data-v96-type="${type}">${safe(label)}</button>`).join('');
  const choices=V28_TILE_TYPES.map(([type,label])=>`<option value="${type}" ${t.type===type?'selected':''}>${safe(label)}</option>`).join('');
- const expanded=['technical','news','psi','regionpsi','fundamental','country'].includes(t.type);
+ const expanded=['custom','technical','news','psi'].includes(t.type);
  const v96Dropdown=(!isWatch&&!fixed)?`<div class="v96-menu">
   <button type="button" id="v96MenuButton" class="v96-picker" aria-expanded="false">${safe(original)} <span>⌄</span></button>
   <div class="v96-panel" id="v96Panel" hidden>
+   <button type="button" class="v96-item" data-v98-watch="1">Watchlist</button>
    <button type="button" class="v96-node" id="v96Watch" aria-expanded="${expanded}"><span class="v96-chevron">▸</span> My Watchlist</button>
    <div id="v96WatchChildren" class="v96-children" ${expanded?'':'hidden'}>
-    <button type="button" class="v96-item" data-v98-watch="1">Watchlist</button>
     <button type="button" class="v96-node" id="v96Technical" aria-expanded="${t.type==='technical'}"><span class="v96-chevron">▸</span> Technical Indicators</button>
     <div id="v96TechnicalChildren" class="v96-children" ${t.type==='technical'?'':'hidden'}>
       ${TECH.map(n=>`<button type="button" class="v96-item" data-v96-indicator="${safe(n)}">${safe(n)}</button>`).join('')}
@@ -2094,6 +2094,7 @@ function tileSettings(t){
   v96Panel.querySelectorAll('[data-v98-source]').forEach(btn=>btn.onclick=()=>{
    const source=btn.dataset.v98Source;
    selectAnalysis('favorites');
+   updateNaming();
    const slot=v98FavoriteSlots.indexOf(''),i=slot<0?0:slot;
    v98FavoriteSlots[i]=source;try{localStorage.setItem(V98_FAV_KEY,JSON.stringify(v98FavoriteSlots))}catch(e){}
   });
@@ -2115,10 +2116,10 @@ function tileSettings(t){
    document.querySelector('#v99Indicators')?.setAttribute('aria-expanded','true');
    v96Panel.hidden=false;v96Button.setAttribute('aria-expanded','true');
   });
-  v96Panel.querySelector('[data-v97-all]')?.addEventListener('click',()=>{v97ChosenIndicators=[...V97_TOP];selectAnalysis('fundamental')});
+  v96Panel.querySelector('[data-v97-all]')?.addEventListener('click',()=>{v97ChosenIndicators=[...V97_TOP];selectAnalysis('fundamental');updateNaming()});
   v96Panel.querySelectorAll('[data-v97-fund]').forEach(b=>b.onclick=()=>{
    selectAnalysis('fundamental');
-   v97ChosenIndicators=[V97_TOP[Number(b.dataset.v97Fund)]];
+   v97ChosenIndicators=[V97_TOP[Number(b.dataset.v97Fund)]];updateNaming();
   });
 
   const selectAnalysis=(type,period)=>{
@@ -2129,7 +2130,7 @@ function tileSettings(t){
    if(!select)return;
    select.value=type;select.dispatchEvent(new Event('change',{bubbles:true}));
    if(period){const ps=document.querySelector('#psiPeriod');if(ps){ps.value=period;ps.dispatchEvent(new Event('change',{bubbles:true}))}}
-   v96Button.firstChild.textContent=type==='psi'?`PSI · ${(period||'daily')[0].toUpperCase()+(period||'daily').slice(1)} `:(V28_TILE_TYPES.find(x=>x[0]===type)?.[1]||type)+' ';
+   v96Button.firstChild.textContent=(type==='psi'?`PSI · ${(period||'daily')[0].toUpperCase()+(period||'daily').slice(1)}`:(V28_TILE_TYPES.find(x=>x[0]===type)?.[1]||type))+' ';
    v96Panel.hidden=true;v96Button.setAttribute('aria-expanded','false');
   };
   v96Panel.querySelectorAll('[data-v96-type]').forEach(el=>el.onclick=()=>selectAnalysis(el.dataset.v96Type));
@@ -2137,7 +2138,7 @@ function tileSettings(t){
   v96Panel.querySelectorAll('[data-v96-indicator]').forEach(el=>el.onclick=()=>{
    selectAnalysis('technical');
    const ind=el.dataset.v96Indicator;
-   v76Draft.selected=[ind];v75Paint();
+   v76Draft.selected=[ind];v75Paint();updateNaming();
   });
  }
  if(configType==='fundamental'){
@@ -2154,14 +2155,16 @@ function tileSettings(t){
  if(periodSelect)periodSelect.value=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
  // A user-specified display name remains independent of the automatic official name.
  let userEdited=Boolean(t.displayNameCustomized);
- const formerDefault=t.officialName||original;
- if(t.title!==formerDefault && t.title!=='Custom Workspace' && t.title!=='Choose Analysis')userEdited=true;
+ // Only an explicit user edit counts as a custom title. Legacy titles can be stale after a type change.
  titleInput.addEventListener('input',()=>{userEdited=true});
  const updateNaming=()=>{
   const parentType=typeSelect?.value||t.type;
   const newsField=$('#newsContentField');if(newsField)newsField.style.display=parentType==='search'?'':'none';
   const chosenType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
-  const newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily',regionSelect?.value||'global');
+  let newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily',regionSelect?.value||'global');
+  if(chosenType==='technical'&&v76Draft.selected.length===1)newName=v76Draft.selected[0];
+  if(chosenType==='fundamental'&&v97ChosenIndicators.length===1)newName=v97ChosenIndicators[0];
+  if(chosenType==='country')newName='Country Selector';
   officialInput.value=newName;
   if(!userEdited)titleInput.value=newName;
   const hint=$('#tileTypeHelp');if(hint)hint.textContent=V29_TILE_HELP[chosenType]||'Select the analysis for this tile.';
@@ -2201,6 +2204,7 @@ function tileSettings(t){
    t.selectedIndicators=[...v76Draft.selected];t.focusIndicator=t.selectedIndicators[0]||'';
    t.indicatorSettings=nextSettings;t.indicatorFrame=v76Draft.frame;
   }
+  updateNaming();
   t.officialName=officialInput.value;
   const entered=titleInput.value.trim();
   t.title=entered||t.officialName;
