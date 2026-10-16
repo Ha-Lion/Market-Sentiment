@@ -1998,6 +1998,7 @@ function tileSettings(t){
   <div class="v96-panel" id="v96Panel" hidden>
    <button type="button" class="v96-node" id="v96Watch" aria-expanded="${expanded}"><span class="v96-chevron">▸</span> My Watchlist</button>
    <div id="v96WatchChildren" class="v96-children" ${expanded?'':'hidden'}>
+    <button type="button" class="v96-item" data-v98-watch="1">Watchlist</button>
     <button type="button" class="v96-node" id="v96Technical" aria-expanded="${t.type==='technical'}"><span class="v96-chevron">▸</span> Technical Indicators</button>
     <div id="v96TechnicalChildren" class="v96-children" ${t.type==='technical'?'':'hidden'}>
       ${TECH.map(n=>`<button type="button" class="v96-item" data-v96-indicator="${safe(n)}">${safe(n)}</button>`).join('')}
@@ -2010,11 +2011,10 @@ function tileSettings(t){
       <button type="button" class="v96-item" data-v96-period="monthly">Monthly</button>
     </div>
    </div>
-   <button type="button" class="v96-item" data-v98-watch="1">Watchlist · Open My Watchlist tile</button>
    <button type="button" class="v96-node" id="v98Favorites" aria-expanded="${t.type==='favorites'}"><span class="v96-chevron">▸</span> My Favorite News</button>
    <div id="v98FavoritesChildren" class="v96-children" ${t.type==='favorites'?'':'hidden'}>
-      <button type="button" class="v96-item" data-v96-type="favorites">My Favorite News (15 slots)</button>
-      <button type="button" class="v96-node" id="v98SourcesButton" aria-expanded="false"><span class="v96-chevron">▸</span> Scraped News Websites</button>
+      <button type="button" class="v96-item" data-v96-type="favorites">My Favorite News</button>
+      <button type="button" class="v96-node" id="v98SourcesButton" aria-expanded="false"><span class="v96-chevron">▸</span> News Sources</button>
       <div class="v96-children" id="v98SourcesChildren" hidden>${v98Sources().map(src=>`<button type="button" class="v96-item" data-v98-source="${safe(src)}">${safe(src)}</button>`).join('')||'<span class="muted">No news sources available yet</span>'}</div>
    </div>
    <button type="button" class="v96-node" id="v97Regional" aria-expanded="${t.type==='regionpsi'}"><span class="v96-chevron">▸</span> Regional PSI</button>
@@ -2047,7 +2047,7 @@ function tileSettings(t){
  let v97ChosenIndicators=Array.isArray(t.v97Indicators)?[...t.v97Indicators]:[...V97_TOP];
  const v76Draft={selected:v76Selected(t),settings:JSON.parse(JSON.stringify(t.indicatorSettings||{})),frame:t.indicatorFrame||'daily'};
  const v75Paint=()=>{
-  const shown=(document.querySelector('#tileType')?.value||t.type)==='technical';v75Block.hidden=!shown;if(!shown)return;
+  const shown=false;v75Block.hidden=true;if(!shown)return;
   v75Block.innerHTML=`<div class="section">Technical indicators (choose up to 10)</div><div class="v76-checkboxes">${TECH.map(n=>`<label class="v76-check"><input type="checkbox" data-v76-indicator="${safe(n)}" ${v76Draft.selected.includes(n)?'checked':''}> ${safe(n)}</label>`).join('')}</div><div id="v76Individual"></div><label class="field">Chart timeframe<select id="v75Frame"><option value="daily" ${v76Draft.frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${v76Draft.frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${v76Draft.frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Calculations use validated price history. Indicators requiring missing high, low or volume fields remain unavailable until verified market data is connected.</p>`;
   const settingsArea=v75Block.querySelector('#v76Individual');
   const paintSettings=()=>{
@@ -2137,7 +2137,7 @@ function tileSettings(t){
   v96Panel.querySelectorAll('[data-v96-indicator]').forEach(el=>el.onclick=()=>{
    selectAnalysis('technical');
    const ind=el.dataset.v96Indicator;
-   if(!v76Draft.selected.includes(ind)&&v76Draft.selected.length<10){v76Draft.selected.push(ind);v75Paint()}
+   v76Draft.selected=[ind];v75Paint();
   });
  }
  if(configType==='fundamental'){
