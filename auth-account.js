@@ -445,7 +445,7 @@
         resendAfter = Date.now() + 60000;
         showPanel("verify-panel");
         document.getElementById("verify-code").focus();
-        setStatus(status, "Check your email for a verification code. Registration is pending until verification.", "success");
+        setStatus(status, "Check your inbox and Spam/Junk folder for an 8-digit code. Use the same email address you registered with.", "success");
       } catch (error) {
         setStatus(status, error.message || "Could not send your code. Please try again.", "error");
       } finally {
@@ -466,7 +466,7 @@
         const result = await client.auth.verifyOtp({
           email: document.getElementById("verify-email").value.trim().toLowerCase(),
           token: token,
-          type: "email"
+          type: "signup"
         });
         if (result.error) throw result.error;
         if (!result.data || !result.data.session || !result.data.user || !result.data.user.email_confirmed_at) {
@@ -477,7 +477,7 @@
         setStatus(status, "Email verified. Registration complete.", "success");
         window.location.replace(postLoginDestination());
       } catch (error) {
-        setStatus(status, error.message || "Code invalid or expired. Try again or resend the code.", "error");
+        setStatus(status, (error && /expired|invalid/i.test(error.message || "")) ? "The code is invalid or expired. Check that the email matches the registration address, then request a new code if needed." : (error.message || "Code invalid or expired. Try again or resend the code."), "error");
       } finally {
         setBusy(verifyForm, false);
       }
@@ -485,7 +485,7 @@
 
     document.getElementById("resend-code").addEventListener("click", async function () {
       if (Date.now() < resendAfter) {
-        setStatus(status, "Please wait " + Math.ceil((resendAfter - Date.now()) / 1000) + " seconds before requesting another code.");
+        setStatus(status, "For security, please wait " + Math.ceil((resendAfter - Date.now()) / 1000) + " seconds before requesting another code.");
         return;
       }
       const emailInput = document.getElementById("verify-email");
@@ -496,7 +496,7 @@
         if (result.error) throw result.error;
         resendAfter = Date.now() + 60000;
         document.getElementById("verify-code").value = "";
-        setStatus(status, "If registration is pending for this email, a new code has been sent. Use the newest code.", "success");
+        setStatus(status, "If this email has an unverified registration, a new code has been requested. Check your inbox and Spam/Junk folder. Use the newest code.", "success");
       } catch (error) {
         setStatus(status, error.message || "Could not resend the code.", "error");
       } finally {
