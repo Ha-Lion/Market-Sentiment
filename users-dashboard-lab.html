@@ -462,6 +462,23 @@ html[data-psd-theme="dark"] .modal .dialog :is(.v96-node,.v96-item):focus-visibl
 .top .workspace-presets .preset:active{cursor:grabbing}
 @media(max-width:850px){.top .workspace-presets{width:auto;max-width:100%;flex-wrap:nowrap}}
 </style>
+
+<style id="a21-button-board-obv-fixes">
+/* A21: unify action buttons with a beveled 3D look while preserving workspace chevrons. */
+:root{--a21-btn-top:#ffffff;--a21-btn-bottom:#e8eef6;--a21-btn-border:#b6c5d6;--a21-btn-shadow:#a7b7c866;--a21-btn-text:#000;--a21-btn-hover-top:#fffdf8;--a21-btn-hover-bottom:#f2e6ca;--a21-btn-hover-border:#c9a253;--a21-btn-active-top:#d7b065;--a21-btn-active-bottom:#b98728;--a21-btn-active-text:#fff;--a21-btn-active-border:#9f7120}
+html[data-psd-theme="dark"]{--a21-btn-top:#203a5b;--a21-btn-bottom:#152b44;--a21-btn-border:#55708f;--a21-btn-shadow:#00000066;--a21-btn-text:#fff;--a21-btn-hover-top:#29476d;--a21-btn-hover-bottom:#1a3250;--a21-btn-hover-border:#d3aa5a;--a21-btn-active-top:#d1a44f;--a21-btn-active-bottom:#a97a25;--a21-btn-active-text:#091423;--a21-btn-active-border:#e0bc78}
+.btn{background:linear-gradient(180deg,var(--a21-btn-top),var(--a21-btn-bottom))!important;color:var(--a21-btn-text)!important;border:1px solid var(--a21-btn-border)!important;border-radius:10px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 2px 0 rgba(255,255,255,.35),0 4px 10px var(--a21-btn-shadow)!important;transition:transform .14s ease,background .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}
+.btn:hover{background:linear-gradient(180deg,var(--a21-btn-hover-top),var(--a21-btn-hover-bottom))!important;border-color:var(--a21-btn-hover-border)!important;transform:translateY(-1px)}
+.btn:active,.btn.a21-click-flash{background:linear-gradient(180deg,var(--a21-btn-active-top),var(--a21-btn-active-bottom))!important;color:var(--a21-btn-active-text)!important;border-color:var(--a21-btn-active-border)!important;box-shadow:inset 0 2px 6px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.14)!important;transform:translateY(1px)}
+.btn.accent{background:linear-gradient(180deg,var(--a21-btn-top),var(--a21-btn-bottom))!important;color:var(--a21-btn-text)!important;border-color:var(--a21-btn-border)!important}
+.ctrl{background:linear-gradient(180deg,var(--a21-btn-top),var(--a21-btn-bottom));color:var(--a21-btn-text);border:1px solid var(--a21-btn-border);border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 1px 3px rgba(0,0,0,.12)}
+.ctrl:hover{background:linear-gradient(180deg,var(--a21-btn-hover-top),var(--a21-btn-hover-bottom));border-color:var(--a21-btn-hover-border);color:var(--a21-btn-text)}
+.ctrl:active{background:linear-gradient(180deg,var(--a21-btn-active-top),var(--a21-btn-active-bottom));color:var(--a21-btn-active-text);border-color:var(--a21-btn-active-border);transform:translateY(1px)}
+.top .workspace-presets .preset{box-shadow:inset 0 1px 0 rgba(255,255,255,.78),0 2px 6px rgba(0,0,0,.10)!important}
+.top .workspace-presets .preset:hover:not(.active){background:linear-gradient(180deg,var(--a21-btn-hover-top),var(--a21-btn-hover-bottom))!important;border-color:var(--a21-btn-hover-border)!important}
+.top .workspace-presets .preset.active{box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 2px 8px rgba(0,0,0,.16)!important}
+.board{overflow:hidden}
+</style>
 </head><body>
 <div id="site-header"></div>
 <script src="site-nav.js?v=20"></script>
@@ -1345,6 +1362,16 @@ function v75Calculate(prices,name,params={}){
 }
 
 function v77CandleIndicator(rows,name,params={}){
+ if(name==='OBV'){
+  if(rows.length<2||!rows.every(r=>Number.isFinite(r.close)&&Number.isFinite(r.volume)))return null;
+  let obv=0;
+  for(let i=1;i<rows.length;i++){
+   const prev=rows[i-1],curr=rows[i];
+   if(curr.close>prev.close)obv+=curr.volume;
+   else if(curr.close<prev.close)obv-=curr.volume;
+  }
+  return obv;
+ }
  const period=Number(params.period||14);
  if(!Number.isInteger(period)||period<2||period>200||rows.length<period+1)return null;
  const tail=rows.slice(-period),last=rows.at(-1);
@@ -1384,7 +1411,7 @@ function v77CandleIndicator(rows,name,params={}){
  return null;
 }
 function v77AnyIndicator(rows,name,params){
- if(['Stochastic','Williams %R','CCI','ATR','ADX'].includes(name))return v77CandleIndicator(rows,name,params);
+ if(['Stochastic','Williams %R','CCI','ATR','ADX','OBV'].includes(name))return v77CandleIndicator(rows,name,params);
  return v75Calculate(rows.map(x=>x.close),name,params);
 }
 // V76: per-tile indicator choices; do not inherit unrelated workspace selections.
@@ -2475,11 +2502,12 @@ board.addEventListener('keydown',e=>{
  const step=e.shiftKey?50:10;
  const offsets={ArrowUp:[0,-step],ArrowDown:[0,step],ArrowLeft:[-step,0],ArrowRight:[step,0]};
  if(!offsets[e.key])return;
- e.preventDefault();t.x=Math.max(0,Math.min(1370-t.w,t.x+offsets[e.key][0]));
+ const baseWidth=1370,maxX=Math.max(0,baseWidth-(Number(t.w)||0));
+ e.preventDefault();t.x=Math.max(0,Math.min(maxX,t.x+offsets[e.key][0]));
  t.y=Math.max(0,Math.min(100000,t.y+offsets[e.key][1]));render();
  [...board.querySelectorAll('.tile')].find(el=>el.dataset.id===t.id)?.querySelector('.bar')?.focus();
 });
-board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=nextTileZ());el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{t.x=Math.max(0,ox+dx);t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
+board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const baseWidth=1370,scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/baseWidth),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=nextTileZ());el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){const maxW=Math.max(145,Math.min(1250,baseWidth-(Number(t.x)||0)));t.w=Math.max(145,Math.min(maxW,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{const maxX=Math.max(0,baseWidth-(Number(t.w)||0));t.x=Math.max(0,Math.min(maxX,ox+dx));t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
 modal.addEventListener('click',e=>{
  const star=e.target.closest('[data-v31-star]');
  if(star){
@@ -2752,10 +2780,7 @@ window.addEventListener('pageshow',refresh);
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
 <script src="mobile/ribbon.js?v=2" defer></script>
-<script id="a18-add-tile-feedback-script">
-(function(){const btn=document.getElementById('addTile');if(!btn)return;
-let flashTimeout;
-btn.addEventListener('click',()=>{btn.classList.add('a18-click-flash');clearTimeout(flashTimeout);flashTimeout=setTimeout(()=>btn.classList.remove('a18-click-flash'),650)});
-})();
+<script id="a21-button-feedback-script">
+(function(){document.addEventListener('click',e=>{const btn=e.target.closest('.btn');if(!btn)return;btn.classList.add('a21-click-flash');clearTimeout(btn._a21flash);btn._a21flash=setTimeout(()=>btn.classList.remove('a21-click-flash'),700);});})();
 </script>
 </body></html>
