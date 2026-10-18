@@ -50,7 +50,12 @@
       return;
     }
 
-    const user=session.user;
+    const userResult=await client.auth.getUser();
+    if(userResult.error||!userResult.data.user){status("Could not verify account status. Please sign in again.","error");return;}
+    const user=userResult.data.user;
+    const verifiedBadge=document.getElementById("primary-email-verified");
+    verifiedBadge.textContent=user.email_confirmed_at ? "✓ Email verified" : "Email not verified";
+    verifiedBadge.className="psd-status "+(user.email_confirmed_at ? "success" : "error");
     const form=document.getElementById("my-account-form");
     const first=document.getElementById("first-name");
     const last=document.getElementById("last-name");
@@ -61,6 +66,12 @@
     const avatarPreview=document.getElementById("avatar-preview");
     const avatarPlaceholder=document.getElementById("avatar-placeholder");
     const avatarRemove=document.getElementById("avatar-remove");
+
+    primary.addEventListener("input",function(){
+      const matches=primary.value.trim().toLowerCase()===String(user.email||"").toLowerCase();
+      verifiedBadge.textContent=matches && user.email_confirmed_at ? "✓ Email verified" : "Email not verified";
+      verifiedBadge.className="psd-status "+(matches && user.email_confirmed_at ? "success" : "error");
+    });
 
     let currentAvatarUrl="";
 
