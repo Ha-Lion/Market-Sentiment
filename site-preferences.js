@@ -255,7 +255,7 @@
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=11", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=18-signup-code", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
