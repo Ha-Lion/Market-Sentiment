@@ -450,17 +450,17 @@ html[data-psd-theme="dark"] .modal .dialog :is(.v96-node,.v96-item):focus-visibl
 #addTile:hover{background:var(--panel2);border-color:var(--gold)}
 #addTile.a18-click-flash{background:var(--accentbg)!important;color:#fff!important;border-color:var(--accentbg)!important}
 </style>
-<style id="a19-workspace-chevron">
-/* A19: shape and sortable presentation only; workspace data stays indexed as before. */
-#workspacePresets{display:flex;align-items:stretch;gap:0!important;isolation:isolate;padding-left:2px;flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:thin}
-#workspacePresets .preset{position:relative;flex:0 0 auto;max-width:none!important;min-width:126px;min-height:37px;margin-left:-11px;padding:8px 22px 8px 25px;border:0!important;border-radius:0!important;background:var(--btnbg)!important;color:var(--txt)!important;clip-path:polygon(0 0,calc(100% - 17px) 0,100% 50%,calc(100% - 17px) 100%,0 100%,17px 50%);box-shadow:none!important;white-space:nowrap;overflow:visible;text-overflow:clip;cursor:grab;transition:background-color .16s ease,filter .16s ease}
-#workspacePresets .preset:first-child{margin-left:0;clip-path:polygon(0 0,calc(100% - 17px) 0,100% 50%,calc(100% - 17px) 100%,0 100%,0 50%)}
-#workspacePresets .preset.active{background:var(--gold)!important;color:var(--bg)!important;font-weight:800;z-index:2}
-#workspacePresets .preset:hover:not(.active){background:var(--panel2)!important;filter:brightness(1.07)}
-#workspacePresets .preset.a19-dragging{opacity:.38;cursor:grabbing}
-#workspacePresets .preset.a19-drop-target{outline:2px solid var(--gold);outline-offset:-3px;filter:brightness(1.12)}
-#workspacePresets .preset:focus-visible{outline:2px solid var(--focus);outline-offset:-3px}
-@media(max-width:850px){#workspacePresets .preset{min-width:115px;padding:8px 22px}}
+<style id="a19-rebuild-workspace-chevron">
+/* Chevron tabs: presentation only; the data-preset index remains the workspace identity. */
+.top .workspace-presets{display:flex;align-items:center;gap:0;flex-wrap:nowrap;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;padding:2px 8px 3px 0;scrollbar-width:thin}
+.top .workspace-presets .preset{position:relative;flex:0 0 auto;max-width:155px;min-width:98px;margin:0 -7px 0 0;padding:9px 17px 9px 24px;border:0!important;border-radius:0!important;clip-path:polygon(0 0,calc(100% - 15px) 0,100% 50%,calc(100% - 15px) 100%,0 100%,15px 50%);background:var(--btnbg)!important;color:var(--txt)!important;box-shadow:none!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s ease;cursor:grab;user-select:none}
+.top .workspace-presets .preset:first-child{padding-left:14px;clip-path:polygon(0 0,calc(100% - 15px) 0,100% 50%,calc(100% - 15px) 100%,0 100%,15px 50%)}
+.top .workspace-presets .preset.active{background:var(--gold)!important;color:var(--bg)!important;font-weight:750}
+.top .workspace-presets .preset:hover:not(.active){background:var(--panel2)!important}
+.top .workspace-presets .preset.a19-over{background:var(--blue)!important;color:#fff!important}
+.top .workspace-presets .preset:focus-visible{outline:0;filter:drop-shadow(0 0 3px var(--focus))}
+.top .workspace-presets .preset:active{cursor:grabbing}
+@media(max-width:850px){.top .workspace-presets{width:auto;max-width:100%;flex-wrap:nowrap}}
 </style>
 </head><body>
 <div id="site-header"></div>
@@ -540,21 +540,28 @@ function renamePreset(n){if(!Number.isInteger(n)||n<0||n>=profiles.length)return
 document.getElementById('workspacePresets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(b)switchPreset(Number(b.dataset.preset))});
 document.getElementById('workspacePresets').addEventListener('dblclick',e=>{const b=e.target.closest('[data-preset]');if(b)renamePreset(Number(b.dataset.preset))});
 showPresetButtons();
-/* A19 workspace visual order is independent of profile slot identities. */
-(function setupA19WorkspaceOrder(){
- const host=document.getElementById('workspacePresets');if(!host)return;
- const key='psd-a19-workspace-visual-order';
- const normalize=a=>Array.isArray(a)&&a.length===profiles.length&&new Set(a).size===profiles.length&&a.every(n=>Number.isInteger(n)&&n>=0&&n<profiles.length)?a:null;
- let order=null;try{order=normalize(JSON.parse(localStorage.getItem(key)||'null'))}catch(e){}
- order=order||profiles.map((_,i)=>i);
- function arrange(){for(const id of order){const item=host.querySelector('[data-preset="'+id+'"]');if(item)host.appendChild(item)}
-  host.querySelectorAll('[data-preset]').forEach(b=>{b.draggable=true;b.setAttribute('aria-label',b.textContent+'; drag to rearrange');});}
- arrange();let dragging=null,blockClick=false;
- host.addEventListener('dragstart',e=>{const b=e.target.closest('[data-preset]');if(!b)return;dragging=Number(b.dataset.preset);b.classList.add('a19-dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(dragging));});
- host.addEventListener('dragover',e=>{const b=e.target.closest('[data-preset]');if(dragging===null||!b)return;e.preventDefault();e.dataTransfer.dropEffect='move';host.querySelectorAll('.a19-drop-target').forEach(n=>n.classList.remove('a19-drop-target'));if(Number(b.dataset.preset)!==dragging)b.classList.add('a19-drop-target');});
- host.addEventListener('drop',e=>{const b=e.target.closest('[data-preset]');if(dragging===null||!b)return;e.preventDefault();const target=Number(b.dataset.preset);if(target!==dragging){const next=order.filter(n=>n!==dragging);next.splice(next.indexOf(target),0,dragging);order=next;try{localStorage.setItem(key,JSON.stringify(order))}catch(err){}arrange();blockClick=true;}host.querySelectorAll('.a19-drop-target').forEach(n=>n.classList.remove('a19-drop-target'));});
- host.addEventListener('dragend',()=>{dragging=null;host.querySelectorAll('.a19-dragging,.a19-drop-target').forEach(n=>n.classList.remove('a19-dragging','a19-drop-target'));});
- host.addEventListener('click',e=>{if(blockClick){e.stopImmediatePropagation();e.preventDefault();blockClick=false;}},true);
+// Workspace tab display order is independent of saved workspace IDs and content.
+(function a19WorkspaceOrder(){
+ const container=document.getElementById('workspacePresets');
+ const key='psd-workspace-tab-order-a19-fixed';
+ const ids=Array.from(container.querySelectorAll('[data-preset]'),b=>b.dataset.preset);
+ let order=ids.slice();
+ try {const stored=JSON.parse(localStorage.getItem(key)||'null');if(Array.isArray(stored)&&stored.length===ids.length&&new Set(stored).size===ids.length&&stored.every(id=>ids.includes(String(id))))order=stored.map(String)}catch(e){}
+ function paint(){const buttons=new Map(Array.from(container.querySelectorAll('[data-preset]'),b=>[b.dataset.preset,b]));order.forEach(id=>container.appendChild(buttons.get(id)))}
+ paint();
+ let dragged=null,justDropped=false;
+ container.querySelectorAll('[data-preset]').forEach(b=>{
+  b.draggable=true;
+  b.addEventListener('dragstart',e=>{dragged=b.dataset.preset;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragged)});
+  b.addEventListener('dragover',e=>{if(dragged===null)return;e.preventDefault();e.dataTransfer.dropEffect='move';b.classList.add('a19-over')});
+  b.addEventListener('dragleave',()=>b.classList.remove('a19-over'));
+  b.addEventListener('drop',e=>{if(dragged===null)return;e.preventDefault();e.stopPropagation();const target=b.dataset.preset;
+   if(dragged!==target){const from=order.indexOf(dragged),to=order.indexOf(target);if(from!==-1&&to!==-1){order.splice(from,1);order.splice(to,0,dragged);paint();try{localStorage.setItem(key,JSON.stringify(order))}catch(e){}}}
+   justDropped=true;dragged=null;container.querySelectorAll('.a19-over').forEach(el=>el.classList.remove('a19-over'));
+  });
+  b.addEventListener('dragend',()=>{dragged=null;container.querySelectorAll('.a19-over').forEach(el=>el.classList.remove('a19-over'))});
+ });
+ container.addEventListener('click',e=>{if(justDropped){e.stopImmediatePropagation();e.preventDefault();justDropped=false}},true);
 })();
 const board=document.getElementById('board'),modal=document.getElementById('modal'),body=document.getElementById('modalBody'),footer=document.getElementById('modalFooter');const $=s=>document.querySelector(s);const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify({...state,tiles}));storePresets()}catch{}};
 // Snapshot format: {schema:1, generatedAt:ISO, instruments:{"EUR/USD":{psi:{daily:{value:55,evidenceAt:ISO},weekly:{...},monthly:{...}},technical:{"RSI (14)":{value:48,asOf:ISO}},fundamentals:{"Interest Rates":{value:"4.5%",asOf:ISO}}}},regions:{us:{value:...,evidenceAt:ISO},global:{...},euro:{...}}}.
