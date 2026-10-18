@@ -456,8 +456,8 @@
     verifyForm.addEventListener("submit", async function (event) {
       event.preventDefault();
       const token = document.getElementById("verify-code").value.trim();
-      if (!/^[0-9]{6}$/.test(token)) {
-        setStatus(status, "Enter the six-digit code from your email.", "error");
+      if (!/^[0-9]{8}$/.test(token)) {
+        setStatus(status, "Enter the eight-digit code from your email.", "error");
         return;
       }
       setBusy(verifyForm, true);
