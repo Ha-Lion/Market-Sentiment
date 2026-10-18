@@ -327,6 +327,16 @@
       usernameInput.value = normalizeUsername(usernameInput.value);
     });
 
+    if (new URLSearchParams(window.location.search).get("signup") === "1") showPanel("signup-panel");
+    document.getElementById("resume-verification").addEventListener("click", function () {
+      showPanel("verify-panel");
+      setStatus(status, "Enter the email used during registration and its verification code.");
+    });
+    document.getElementById("verify-back").addEventListener("click", function () {
+      showPanel("signup-panel");
+      setStatus(status, "");
+    });
+
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const recoveryRequested =
@@ -396,50 +406,102 @@
     });
 
     const signupForm = document.getElementById("signup-form");
+    const verifyForm = document.getElementById("verify-form");
+    let resendAfter = 0;
+
     signupForm.addEventListener("submit", async function (event) {
       event.preventDefault();
+      const firstName = document.getElementById("signup-first-name").value.trim();
+      const lastName = document.getElementById("signup-last-name").value.trim();
+      if (!firstName || !lastName || firstName.length > 80 || lastName.length > 80) {
+        setStatus(status, "Please enter your first and last name.", "error");
+        return;
+      }
       setBusy(signupForm, true);
-      setStatus(status, "Creating your account…");
-
-      const username = normalizeUsername(
-        document.getElementById("signup-username").value
-      );
-      const email = document.getElementById("signup-email").value.trim();
-      const password = document.getElementById("signup-password").value;
-
-      const availability = await client.rpc("ms_username_available", {
-        p_username: username
-      });
-
-      if (availability.error || availability.data !== true) {
-        setBusy(signupForm, false);
-        setStatus(status, "That username is unavailable. Please choose another.", "error");
-        return;
-      }
-
-      const result = await client.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            username: username,
-            display_name: username
-          },
-          emailRedirectTo: redirectUrl(
-            "auth.html?confirmed=1" +
-            (requestedReturnPage() ? "&next=" + encodeURIComponent(requestedReturnPage()) : "")
-          )
+      setStatus(status, "Sending your verification code…");
+      try {
+        const username = normalizeUsername(document.getElementById("signup-username").value);
+        const email = document.getElementById("signup-email").value.trim().toLowerCase();
+        const availability = await client.rpc("ms_username_available", { p_username: username });
+        if (availability.error || availability.data !== true) {
+          throw new Error("That username is unavailable. Please choose another.");
         }
-      });
+        const result = await client.auth.signUp({
+          email: email,
+          password: document.getElementById("signup-password").value,
+          options: {
+            data: { username: username, display_name: username, first_name: firstName, last_name: lastName },
+            emailRedirectTo: redirectUrl("auth.html?confirmed=1")
+          }
+        });
+        if (result.error) throw result.error;
+        document.getElementById("signup-password").value = "";
+        if (result.data && result.data.session) {
+          await client.auth.signOut();
+          throw new Error("Email verification is not enabled. Please contact support to complete registration.");
+        }
+        document.getElementById("verify-email").value = email;
+        document.getElementById("verify-code").value = "";
+        resendAfter = Date.now() + 60000;
+        showPanel("verify-panel");
+        document.getElementById("verify-code").focus();
+        setStatus(status, "Check your email for a verification code. Registration is pending until verification.", "success");
+      } catch (error) {
+        setStatus(status, error.message || "Could not send your code. Please try again.", "error");
+      } finally {
+        setBusy(signupForm, false);
+      }
+    });
 
-      setBusy(signupForm, false);
-      if (result.error) {
-        setStatus(status, result.error.message, "error");
+    verifyForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const token = document.getElementById("verify-code").value.trim();
+      if (!/^[0-9]{6}$/.test(token)) {
+        setStatus(status, "Enter the six-digit code from your email.", "error");
         return;
       }
+      setBusy(verifyForm, true);
+      setStatus(status, "Verifying your email…");
+      try {
+        const result = await client.auth.verifyOtp({
+          email: document.getElementById("verify-email").value.trim().toLowerCase(),
+          token: token,
+          type: "email"
+        });
+        if (result.error) throw result.error;
+        if (!result.data || !result.data.session || !result.data.user || !result.data.user.email_confirmed_at) {
+          throw new Error("Verification did not complete. Please try again.");
+        }
+        verifyForm.reset();
+        signupForm.reset();
+        setStatus(status, "Email verified. Registration complete.", "success");
+        window.location.replace(postLoginDestination());
+      } catch (error) {
+        setStatus(status, error.message || "Code invalid or expired. Try again or resend the code.", "error");
+      } finally {
+        setBusy(verifyForm, false);
+      }
+    });
 
-      signupForm.reset();
-      setStatus(status, "Account created. Check your email to confirm it.", "success");
+    document.getElementById("resend-code").addEventListener("click", async function () {
+      if (Date.now() < resendAfter) {
+        setStatus(status, "Please wait " + Math.ceil((resendAfter - Date.now()) / 1000) + " seconds before requesting another code.");
+        return;
+      }
+      const emailInput = document.getElementById("verify-email");
+      if (!emailInput.reportValidity()) return;
+      setBusy(verifyForm, true);
+      try {
+        const result = await client.auth.resend({ type: "signup", email: emailInput.value.trim().toLowerCase() });
+        if (result.error) throw result.error;
+        resendAfter = Date.now() + 60000;
+        document.getElementById("verify-code").value = "";
+        setStatus(status, "If registration is pending for this email, a new code has been sent. Use the newest code.", "success");
+      } catch (error) {
+        setStatus(status, error.message || "Could not resend the code.", "error");
+      } finally {
+        setBusy(verifyForm, false);
+      }
     });
 
     document.getElementById("reset-request-form").addEventListener("submit", async function (event) {
@@ -497,7 +559,12 @@
       return;
     }
 
-    const user = session.user;
+    const userResult = await client.auth.getUser();
+    if (userResult.error || !userResult.data.user) throw new Error("Could not verify your account status. Please sign in again.");
+    const user = userResult.data.user;
+    const emailBadge = document.getElementById("account-email-verified");
+    emailBadge.textContent = user.email_confirmed_at ? "✓ Email verified" : "Email not verified";
+    emailBadge.className = "psd-status " + (user.email_confirmed_at ? "success" : "error");
     document.getElementById("account-email").textContent =
       user.email || "Signed-in user";
 
