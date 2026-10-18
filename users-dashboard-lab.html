@@ -371,7 +371,36 @@ html[data-psd-theme="light"] .board::before{mix-blend-mode:multiply;opacity:.20}
 .v105-date{font-size:10px;line-height:1.3;font-weight:500;overflow-wrap:normal;color:inherit}
 html.light .v105-country,body.light .v105-country,html[data-theme="light"] .v105-country,body[data-theme="light"] .v105-country,html.light .v105-cell,body.light .v105-cell,html[data-theme="light"] .v105-cell,body[data-theme="light"] .v105-cell{color:#000}
 html.light .v105-cell,body.light .v105-cell,html[data-theme="light"] .v105-cell,body[data-theme="light"] .v105-cell{background:rgba(220,230,241,.45);border-color:#64748b}
-</style></head><body><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
+</style><link rel="stylesheet" href="https://publicsentimentdash.com/site-theme.css" id="psd-official-ribbon-css">
+<style id="psd-a11-ribbon-layout">
+/* The shared website ribbon precedes the existing dashboard controls. */
+#site-header{position:relative;z-index:600}
+#site-header .psd-shared-header{position:relative;max-width:none}
+body > header.top{position:relative;z-index:90}
+/* Protect dashboard toolbar brand from generic site brand rules. */
+body > header.top .brand{display:block}
+</style></head><body><div id="site-header"></div>
+<script src="https://publicsentimentdash.com/site-nav.js"></script>
+<script src="https://publicsentimentdash.com/site-theme.js" defer></script>
+<script>
+/* Resolve official ribbon destinations for locally opened HTML test files. */
+(function(){
+  if(location.protocol!=='file:')return;
+  function patch(){
+    const mount=document.querySelector('#site-header .psd-shared-header');
+    if(!mount)return;
+    mount.querySelectorAll('a[href]').forEach(a=>{
+      const href=a.getAttribute('href');
+      if(href && !/^(?:https?:|mailto:|tel:|#|\/)/i.test(href))a.href='https://publicsentimentdash.com/'+href.replace(/^\.\//,'');
+    });
+    mount.querySelectorAll('img[src]').forEach(img=>{
+      const src=img.getAttribute('src');
+      if(src && !/^(?:https?:|data:|\/)/i.test(src))img.src='https://publicsentimentdash.com/'+src.replace(/^\.\//,'');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch,{once:true});else patch();
+})();
+</script><header class="top"><div><div class="brand">Public Sentiment Dash <b>· User's Dashboard</b></div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn accent" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Recover missing default tiles in this workspace">↺ Restore Tiles</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
 <script>
@@ -1366,7 +1395,7 @@ let a10Control={target:'fundamental',date:''};
 try{const x=JSON.parse(localStorage.getItem(A10_DATE_KEY)||'null');if(x&&['fundamental','regionpsi'].includes(x.target)&&(/^\d{4}-\d{2}-\d{2}$/.test(x.date)||x.date===''))a10Control=x}catch(e){}
 function a10Save(){try{localStorage.setItem(A10_DATE_KEY,JSON.stringify(a10Control))}catch(e){}}
 function a10AsOf(target){return a10Control.target===target?a10Control.date:''}
-function a10DateTile(){return `<label class="field">As-of date<input type="date" data-a10-date value="${safe(a10Control.date)}"></label><button type="button" class="btn" data-a10-today>Use Latest</button><p class="muted">${a10Control.date?'Showing available observations as of '+safe(a10Control.date):'Latest available readings'}. Only ${a10Control.target==='regionpsi'?'Regional PSI':'Fundamental Drivers'} tiles are affected.</p>`}
+function a10DateTile(){return `<label class="field">Connect to category<select data-a10-target><option value="fundamental" ${a10Control.target==='fundamental'?'selected':''}>Fundamental Drivers</option><option value="regionpsi" ${a10Control.target==='regionpsi'?'selected':''}>Regional PSI</option></select></label><label class="field">As-of date<input type="date" data-a10-date value="${safe(a10Control.date)}"></label><button type="button" class="btn" data-a10-today>Use Latest</button><p class="muted">${a10Control.date?'Showing available observations as of '+safe(a10Control.date):'Latest available readings'}. Only ${a10Control.target==='regionpsi'?'Regional PSI':'Fundamental Drivers'} tiles are affected.</p>`}
 function v97FundamentalContent(t){
  const selected=Array.isArray(t.v97Indicators)&&t.v97Indicators.length?t.v97Indicators:V97_TOP;
  const date=e=>String(e?.scheduled_at||e?.date||e?.datetime||e?.release_date||e?.time||'').slice(0,10);
@@ -2085,8 +2114,7 @@ function tileSettings(t){
   </div>
   </div>`:'';
  const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis${v96Dropdown}<select id="tileType" hidden aria-hidden="true">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><label class="field" id="newsContentField" style="${['search'].includes(t.type)?'':'display:none'}">Search News & Articles · Select content<select id="newsContent"><option value="search" ${t.type==='favorites'?'':'selected'}>News Search</option><option value="favorites" ${t.type==='favorites'?'selected':''}>Saved Articles</option></select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
- const a11DateSettings=`<label class="field" id="a11DateTargetField" style="${t.type==='datecontrol'?'':'display:none'}">Connect to category<select id="a11DateTarget"><option value="">Choose category</option><option value="fundamental" ${a10Control.target==='fundamental'?'selected':''}>Fundamental Drivers</option><option value="regionpsi" ${a10Control.target==='regionpsi'?'selected':''}>Regional PSI</option></select></label>`;
- open(`Tile Settings · ${original}`,`${typeField}${a11DateSettings}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
+ open(`Tile Settings · ${original}`,`${typeField}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
  const a3CountryEdit=document.createElement('div');a3CountryEdit.id='a3CountryEdit';body.appendChild(a3CountryEdit);
  const a3Draft=a3CountrySlots(t);
@@ -2210,7 +2238,6 @@ function tileSettings(t){
  titleInput.addEventListener('input',()=>{userEdited=true});
  const updateNaming=()=>{
   const parentType=typeSelect?.value||t.type;
-  const a11TargetField=$('#a11DateTargetField');if(a11TargetField)a11TargetField.style.display=parentType==='datecontrol'?'':'none';
   const newsField=$('#newsContentField');if(newsField)newsField.style.display=parentType==='search'?'':'none';
   const chosenType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
   let newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily',regionSelect?.value||'global');
@@ -2235,11 +2262,6 @@ function tileSettings(t){
   const newType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
   if(['news','technical'].includes(newType)&&!tiles.some(x=>x.type==='watch'&&!x.closed)){
    alert('Activate My Watchlist tile in this workspace first.');return;
-  }
-  if(newType==='datecontrol'){
-   const selected=$('#a11DateTarget')?.value;
-   if(!['fundamental','regionpsi'].includes(selected)){alert('Choose a category to connect the Date Selector.');return;}
-   if(a10Control.target!==selected){a10Control.target=selected;a10Save();}
   }
   if(newType&&newType!=='custom')t.type=newType;
   if(t.type==='fundamental'){t.v97Calendar=true;t.v97Indicators=[...v97ChosenIndicators]}
@@ -2275,6 +2297,8 @@ function tileSettings(t){
 
 board.addEventListener('click',e=>{const btn=e.target.closest('[data-a3-country]');if(btn?.dataset.a3Country)v97LoadCountry(btn.dataset.a3Country)});
 board.addEventListener('change',e=>{
+ const target=e.target.closest('[data-a10-target]');
+ if(target){a10Control.target=target.value;a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render();return}
  const date=e.target.closest('[data-a10-date]');
  if(date){a10Control.date=date.value;a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render();return}
 });
