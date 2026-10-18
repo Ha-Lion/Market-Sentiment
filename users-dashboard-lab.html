@@ -1316,7 +1316,7 @@ const V97_COUNTRIES=[['US','United States'],['GB','United Kingdom'],['CA','Canad
 const A3_COUNTRIES=[...V97_COUNTRIES];
 function a3CountrySlots(t){const slots=Array.isArray(t.countrySlots)?t.countrySlots:V97_COUNTRIES.map(x=>x[0]);return Array.from({length:15},(_,i)=>A3_COUNTRIES.some(c=>c[0]===slots[i])?slots[i]:'')}
 function a3CountriesTile(t){const slots=a3CountrySlots(t);return `<div class="muted">Choose a country to update calendar-linked Fundamental Drivers. Configure up to 15 countries in tile settings.</div><div class="stack" style="margin-top:10px">${slots.map((code,i)=>`<button type="button" class="side-item ${code===v97Country?'selected':''} ${code?'':'muted'}" data-a3-country="${safe(code)}" ${code?'':'disabled'}>${code?safe(A3_COUNTRIES.find(c=>c[0]===code)?.[1]||code):'Empty slot '+(i+1)} <span class="num">${code?'›':''}</span></button>`).join('')}</div><p class="muted">${safe(v97Status)}</p>`}
-const V97_TOP=['Interest Rate','Inflation / CPI','GDP','Employment','Unemployment','Manufacturing PMI','Services PMI','Retail Sales','Industrial Production','Trade Balance'];
+const V97_TOP=['Interest Rate','Inflation / CPI','GDP','Employment','Unemployment','Manufacturing PMI','Services PMI','Retail Sales','Industrial Production','Trade Balance','Producer Price Index / PPI','Consumer Confidence','Housing Starts','Wage Growth','Central Bank Balance Sheet'];
 const V97_FEED='https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed';
 let v97Country='US',v97Events=[],v97Status='Choose a country to load calendar releases.',v97Request=0;
 const v97Store='psd-v97-country';
@@ -1324,7 +1324,7 @@ try{const saved=localStorage.getItem(v97Store);if(V97_COUNTRIES.some(c=>c[0]===s
 function v97CountryName(){return A3_COUNTRIES.find(c=>c[0]===v97Country)?.[1]||v97Country}
 function v97Match(e,term){
  const name=String(e.event||e.category||'').toLowerCase();
- const terms={'Interest Rate':['rate decision','interest rate','policy rate','bank rate'],'Inflation / CPI':['inflation','consumer price','cpi'],'GDP':['gdp','gross domestic product'],'Employment':['employment','nonfarm payroll','payroll','jobless claims'],'Unemployment':['unemployment'],'Manufacturing PMI':['manufacturing pmi'],'Services PMI':['services pmi','service pmi'],'Retail Sales':['retail sales'],'Industrial Production':['industrial production'],'Trade Balance':['trade balance','balance of trade']};
+ const terms={'Interest Rate':['rate decision','interest rate','policy rate','bank rate'],'Inflation / CPI':['inflation','consumer price','cpi'],'GDP':['gdp','gross domestic product'],'Employment':['employment','nonfarm payroll','payroll','jobless claims'],'Unemployment':['unemployment'],'Manufacturing PMI':['manufacturing pmi'],'Services PMI':['services pmi','service pmi'],'Retail Sales':['retail sales'],'Industrial Production':['industrial production'],'Trade Balance':['trade balance','balance of trade'],'Producer Price Index / PPI':['producer price','ppi'],'Consumer Confidence':['consumer confidence','consumer sentiment'],'Housing Starts':['housing starts','residential construction starts'],'Wage Growth':['wage growth','average hourly earnings','earnings growth'],'Central Bank Balance Sheet':['central bank balance sheet','fed balance sheet','total assets']};
  return (terms[term]||[term.toLowerCase()]).some(w=>name.includes(w));
 }
 async function v97LoadCountry(country){
@@ -1337,7 +1337,8 @@ async function v97LoadCountry(country){
   if(!response.ok)throw new Error('Calendar API returned '+response.status);
   const data=await response.json();
   if(req!==v97Request)return;
-  v97Events=(Array.isArray(data.events)?data.events:[]).filter(e=>{
+  const rows=Array.isArray(data)?data:Array.isArray(data.events)?data.events:Array.isArray(data.data?.events)?data.data.events:[];
+  v97Events=rows.filter(e=>{
    let c=String(e.country_code||e.countryCode||'').toUpperCase();
    return c===country||(country==='GB'&&c==='UK')||(country==='EU'&&['EA','EMU'].includes(c))||(!c&&String(e.country||'').toLowerCase()===v97CountryName().toLowerCase());
   });
@@ -1353,13 +1354,19 @@ function v97CountryContent(){
 function v97FundamentalContent(t){
  const selected=Array.isArray(t.v97Indicators)&&t.v97Indicators.length?t.v97Indicators:V97_TOP;
  let html=`<div class="muted">${safe(v97CountryName())} · Economic Calendar · ${safe(v97Status)}</div>`;
+ const date=e=>String(e.scheduled_at||e.date||e.datetime||e.release_date||e.time||'').slice(0,10);
+ const available=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
+ const show=v=>available(v)?safe(String(v)):'Unavailable';
  for(const n of selected){
-  const matches=v97Events.filter(e=>v97Match(e,n)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-  const e=matches[0];
-  const value=x=>x===undefined||x===null||String(x).trim()===''?'—':safe(String(x));
-  html+=`<div class="row chip" style="align-items:center"><span>${safe(n)}</span><span class="muted">${e?`Actual ${value(e.actual)} · Previous ${value(e.previous)}`:'—'}</span></div>`;
+  const matches=v97Events.filter(e=>v97Match(e,n)).sort((a,b)=>date(b).localeCompare(date(a)));
+  const latest=matches.find(e=>available(e.actual));
+  const prior=latest?matches.find(e=>date(e)<date(latest)&&available(e.actual)):null;
+  const last=latest||matches[0];
+  const previousValue=latest&&available(latest.previous)?latest.previous:prior?.actual;
+  const previousDate=prior?date(prior):'';
+  html+=`<div class="row chip" style="align-items:center;gap:10px;flex-wrap:wrap"><strong>${safe(n)}</strong><span class="muted">Current: ${show(latest?.actual)}${latest&&date(latest)?' ('+safe(date(latest))+')':''} · Previous: ${show(previousValue)}${previousDate?' ('+safe(previousDate)+')':''}</span></div>`;
  }
- return html+`<p class="muted">Values shown only when returned by the calendar feed. Select another country in the Country tile.</p>`;
+ return html+`<p class="muted">Source: Economic Calendar feed. Unavailable means no verified matching reading was returned for the chosen country and indicator; previous dates are shown only when an earlier dated observation exists.</p>`;
 }
 
 const V98_FAV_KEY='psd-favorite-news-sources-v98';
@@ -2032,7 +2039,7 @@ function tileSettings(t){
     <button type="button" class="v96-item" data-v96-type="country">Countries</button>
     <button type="button" class="v96-node" id="v99Indicators" aria-expanded="false"><span class="v96-chevron">▸</span> Indicators</button>
     <div class="v96-children" id="v99IndicatorsChildren" hidden>
-      <button type="button" class="v96-item" data-v97-all="1">All Top 10 Indicators</button>
+
       ${V97_TOP.map((name,i)=>`<button type="button" class="v96-item" data-v97-fund="${i}">${safe(name)}</button>`).join('')}
     </div>
    </div>
