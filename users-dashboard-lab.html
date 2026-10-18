@@ -1333,14 +1333,14 @@ try{const saved=localStorage.getItem(v97Store);if(V97_COUNTRIES.some(c=>c[0]===s
 function v97CountryName(){return A3_COUNTRIES.find(c=>c[0]===v97Country)?.[1]||v97Country}
 function v97Match(e,term){
  const name=String(e.event||e.category||'').toLowerCase();
- const terms={'Interest Rate':['rate decision','interest rate','policy rate','bank rate'],'Inflation / CPI':['inflation','consumer price','cpi'],'GDP':['gdp','gross domestic product'],'Employment':['employment','nonfarm payroll','payroll','jobless claims'],'Unemployment':['unemployment'],'Manufacturing PMI':['manufacturing pmi'],'Services PMI':['services pmi','service pmi'],'Retail Sales':['retail sales'],'Industrial Production':['industrial production'],'Trade Balance':['trade balance','balance of trade'],'Producer Price Index / PPI':['producer price','ppi'],'Consumer Confidence':['consumer confidence','consumer sentiment'],'Housing Starts':['housing starts','residential construction starts'],'Wage Growth':['wage growth','average hourly earnings','earnings growth'],'Central Bank Balance Sheet':['central bank balance sheet','fed balance sheet','total assets']};
+ const terms={'Interest Rate':['fomc','rate decision','interest rate','policy rate','bank rate','cash rate'],'Inflation / CPI':['inflation','consumer price','cpi'],'GDP':['gdp','gross domestic product'],'Employment':['employment','nonfarm payroll','payroll','jobless claims'],'Unemployment':['unemployment'],'Manufacturing PMI':['manufacturing pmi'],'Services PMI':['services pmi','service pmi'],'Retail Sales':['retail sales'],'Industrial Production':['industrial production'],'Trade Balance':['trade balance','balance of trade'],'Producer Price Index / PPI':['producer price','ppi'],'Consumer Confidence':['consumer confidence','consumer sentiment'],'Housing Starts':['housing starts','residential construction starts'],'Wage Growth':['wage growth','average hourly earnings','earnings growth'],'Central Bank Balance Sheet':['central bank balance sheet','fed balance sheet','total assets']};
  return (terms[term]||[term.toLowerCase()]).some(w=>name.includes(w));
 }
 async function v97LoadCountry(country){
  if(!A3_COUNTRIES.some(c=>c[0]===country))return;
  v97Country=country;try{localStorage.setItem(v97Store,country)}catch(e){}
  const req=++v97Request;v97Events=[];v97Status='Loading economic calendar…';render();
- const today=new Date(),start=new Date(today.getTime()-45*864e5).toISOString().slice(0,10),end=new Date(today.getTime()+14*864e5).toISOString().slice(0,10);
+ const today=new Date(),start=new Date(today.getTime()-365*864e5).toISOString().slice(0,10),end=new Date(today.getTime()+14*864e5).toISOString().slice(0,10);
  try{
   const response=await fetch(V97_FEED,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start,end,countries:[country]}),cache:'no-store'});
   if(!response.ok)throw new Error('Calendar API returned '+response.status);
@@ -1351,7 +1351,7 @@ async function v97LoadCountry(country){
    let c=String(e.country_code||e.countryCode||'').toUpperCase();
    return c===country||(country==='GB'&&c==='UK')||(country==='EU'&&['EA','EMU'].includes(c))||(!c&&String(e.country||'').toLowerCase()===v97CountryName().toLowerCase());
   });
-  v97Status=v97Events.length?`${v97Events.length} calendar events (past 45 / next 14 days)`:'No calendar events returned for this country/date window.';
+  v97Status=v97Events.length?`${v97Events.length} calendar events (past 365 / next 14 days)`:'No calendar events returned for this country/date window.';
  }catch(err){if(req!==v97Request)return;v97Status='Calendar unavailable: '+err.message}
  render();
 }
@@ -1381,7 +1381,7 @@ function v97FundamentalContent(t){
    <div class="v105-cell"><div class="v105-label">Actual</div><div class="v105-value">${show(latest?.actual)}</div><div class="v105-date">${latest&&date(latest)?safe(date(latest)):'Date unavailable'}</div></div>
   </div>`;
  }
- return html+`<p class="muted">Source: Economic Calendar feed. Unavailable means no verified matching reading was returned for the chosen country and indicator; previous dates are shown only when an earlier dated observation exists.</p>`;
+ return html+`<p class="muted">Source: Economic Calendar feed (365-day lookup). Blank values mean the feed did not return a matching reading; historical database access is not connected. Previous dates appear only when a prior dated release is present.</p>`;
 }
 
 const V98_FAV_KEY='psd-favorite-news-sources-v98';
