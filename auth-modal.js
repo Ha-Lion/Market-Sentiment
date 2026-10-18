@@ -187,29 +187,8 @@
         </section>
 
         <section id="psd-modal-signup" class="auth-panel" hidden>
-          <form id="psd-modal-signup-form" class="psd-form">
-            <div class="psd-field">
-              <label for="psd-modal-signup-Email">Email</label>
-              <input class="psd-input" id="psd-modal-signup-Email" name="new-Email" type="text" autocomplete="Email" minlength="3" maxlength="30" pattern="[a-z0-9_]{3,30}" required>
-              <span class="psd-help">Use 3–30 lowercase letters, numbers, or underscores.</span>
-            </div>
-            <div class="psd-field">
-              <label for="psd-modal-signup-email">Email</label>
-              <input class="psd-input" id="psd-modal-signup-email" name="email" type="email" autocomplete="email" required>
-            </div>
-            <div class="psd-field">
-              <label for="psd-modal-signup-password">Password</label>
-              <div class="psd-password-wrap">
-                <input class="psd-input" id="psd-modal-signup-password" name="new-password" type="password" autocomplete="new-password" minlength="8" required>
-                <button class="psd-password-toggle" type="button" data-password-target="psd-modal-signup-password" aria-label="Show password" title="Show password">👁</button>
-              </div>
-            </div>
-            <label class="checkbox-row">
-              <input id="psd-modal-signup-agree" type="checkbox" required>
-              <span>I agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</span>
-            </label>
-            <button class="psd-button" type="submit">Create Free Account</button>
-          </form>
+          <p>Enter your name and verify your email once to create your free account.</p>
+          <a class="psd-button" href="auth.html?signup=1">Continue Registration</a>
         </section>
 
         <section id="psd-modal-reset" class="auth-panel" hidden>
@@ -263,11 +242,6 @@
 
     bindPasswordToggles();
 
-    const EmailInput = overlay.querySelector("#psd-modal-signup-Email");
-    EmailInput.addEventListener("input", function () {
-      EmailInput.value = normalizeEmail(EmailInput.value);
-    });
-
     const signInForm = overlay.querySelector("#psd-modal-signin-form");
     signInForm.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -292,50 +266,6 @@
 
       close();
       showRememberToast(remember);
-    });
-
-    const signUpForm = overlay.querySelector("#psd-modal-signup-form");
-    signUpForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      setBusy(signUpForm, true);
-      setStatus("Creating your account…");
-
-      const Email = normalizeEmail(
-        overlay.querySelector("#psd-modal-signup-Email").value
-      );
-      const email = overlay.querySelector("#psd-modal-signup-email").value.trim();
-      const password = overlay.querySelector("#psd-modal-signup-password").value;
-
-      const availability = await client.rpc("ms_Email_available", {
-        p_Email: Email
-      });
-
-      if (availability.error || availability.data !== true) {
-        setBusy(signUpForm, false);
-        setStatus("That Email is unavailable. Please choose another.", "error");
-        return;
-      }
-
-      const result = await client.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            Email: Email,
-            display_name: Email
-          },
-          emailRedirectTo: redirectUrl("auth.html?confirmed=1")
-        }
-      });
-
-      setBusy(signUpForm, false);
-      if (result.error) {
-        setStatus(result.error.message, "error");
-        return;
-      }
-
-      signUpForm.reset();
-      setStatus("Account created. Check your email to confirm it.", "success");
     });
 
     const resetForm = overlay.querySelector("#psd-modal-reset-form");
