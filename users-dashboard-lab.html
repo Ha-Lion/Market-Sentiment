@@ -1340,7 +1340,7 @@ async function v97LoadCountry(country){
  if(!A3_COUNTRIES.some(c=>c[0]===country))return;
  v97Country=country;try{localStorage.setItem(v97Store,country)}catch(e){}
  const req=++v97Request;v97Events=[];v97Status='Loading economic calendar…';render();
- const today=new Date(),start=new Date(today.getTime()-45*864e5).toISOString().slice(0,10),end=new Date(today.getTime()+14*864e5).toISOString().slice(0,10);
+ const today=new Date((a10AsOf('fundamental')||new Date().toISOString().slice(0,10))+'T12:00:00Z'),start=new Date(today.getTime()-45*864e5).toISOString().slice(0,10),end=new Date(today.getTime()+14*864e5).toISOString().slice(0,10);
  try{
   const response=await fetch(V97_FEED,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start,end,countries:[country]}),cache:'no-store'});
   if(!response.ok)throw new Error('Calendar API returned '+response.status);
@@ -1360,6 +1360,13 @@ function v97CountryContent(){
  <label class="field" style="margin-top:10px">Country<select data-v97-country>${V97_COUNTRIES.map(([code,name])=>`<option value="${code}" ${code===v97Country?'selected':''}>${safe(name)}</option>`).join('')}</select></label>
  <p class="muted" aria-live="polite">${safe(v97Status)}</p><button class="tile-link" data-v97-refresh="1">Refresh Calendar <span>↻</span></button>`;
 }
+// A10: Date selector affects only the chosen analysis category.
+const A10_DATE_KEY='psd-a10-date-selector';
+let a10Control={target:'fundamental',date:''};
+try{const x=JSON.parse(localStorage.getItem(A10_DATE_KEY)||'null');if(x&&['fundamental','regionpsi'].includes(x.target)&&(/^\d{4}-\d{2}-\d{2}$/.test(x.date)||x.date===''))a10Control=x}catch(e){}
+function a10Save(){try{localStorage.setItem(A10_DATE_KEY,JSON.stringify(a10Control))}catch(e){}}
+function a10AsOf(target){return a10Control.target===target?a10Control.date:''}
+function a10DateTile(){return `<label class="field">Connect to category<select data-a10-target><option value="fundamental" ${a10Control.target==='fundamental'?'selected':''}>Fundamental Drivers</option><option value="regionpsi" ${a10Control.target==='regionpsi'?'selected':''}>Regional PSI</option></select></label><label class="field">As-of date<input type="date" data-a10-date value="${safe(a10Control.date)}"></label><button type="button" class="btn" data-a10-today>Use Latest</button><p class="muted">${a10Control.date?'Showing available observations as of '+safe(a10Control.date):'Latest available readings'}. Only ${a10Control.target==='regionpsi'?'Regional PSI':'Fundamental Drivers'} tiles are affected.</p>`}
 function v97FundamentalContent(t){
  const selected=Array.isArray(t.v97Indicators)&&t.v97Indicators.length?t.v97Indicators:V97_TOP;
  const date=e=>String(e?.scheduled_at||e?.date||e?.datetime||e?.release_date||e?.time||'').slice(0,10);
@@ -1368,10 +1375,11 @@ function v97FundamentalContent(t){
  // One data row per selected indicator; do not repeat the indicator's tile title.
  let html=`<div class="v105-country">${safe(v97CountryName())}</div>`;
  for(const n of selected){
-  const matches=v97Events.filter(e=>v97Match(e,n)).sort((a,b)=>date(b).localeCompare(date(a)));
+  const asOf=a10AsOf('fundamental');
+  const matches=v97Events.filter(e=>v97Match(e,n)&&(!asOf||date(e)<=asOf)).sort((a,b)=>date(b).localeCompare(date(a)));
   const latest=matches.find(e=>available(e.actual));
   const prior=latest?matches.find(e=>date(e)<date(latest)&&available(e.actual)):null;
-  const upcoming=matches.find(e=>date(e)>new Date().toISOString().slice(0,10)&&available(e.forecast));
+  const upcoming=asOf?null:matches.find(e=>date(e)>new Date().toISOString().slice(0,10)&&available(e.forecast));
   const forecastSource=latest&&available(latest.forecast)?latest:upcoming||matches.find(e=>available(e.forecast));
   const previousValue=latest&&available(latest.previous)?latest.previous:prior?.actual;
   const previousDate=prior?date(prior):'';
@@ -1396,11 +1404,19 @@ function v98SlotsHtml(){
 }
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','chart','history'].includes(t.type)||(!a&&t.type==='fundamental'&&!t.v97Calendar))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'country':return a3CountriesTile(t);
+case'datecontrol':return a10DateTile();
 case'regionpsi':{
  const region=['global','us','euro'].includes(t.psiRegion)?t.psiRegion:'global';
  const period=['daily','weekly','monthly'].includes(t.psiPeriod)?t.psiPeriod:'daily';
  let v=null,provenance='Data unavailable';
- if(period==='daily'){
+ const asOf=a10AsOf('regionpsi');
+ if(asOf){
+  const end=Date.parse(asOf+'T23:59:59Z'),days=period==='weekly'?7:period==='monthly'?30:1;
+  const readings=new Map();
+  for(const row of v26History){const ms=Date.parse(row.date),value=row[region];if(Number.isFinite(ms)&&ms<=end&&ms>end-days*86400000&&Number.isFinite(value)&&value>=0&&value<=100)readings.set(new Date(ms).toISOString().slice(0,10),value)}
+  if(readings.size){v=Array.from(readings.values()).reduce((a,b)=>a+b,0)/readings.size;provenance='Historical '+period+' PSI as of '+asOf+' ('+readings.size+' readings)'}
+  else provenance='Historical PSI unavailable for '+asOf;
+ }else if(period==='daily'){
   const record=regionalLiveValue(region);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[region]):null;
   v=record?record.value:imported;provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';
  }else{
@@ -1986,6 +2002,7 @@ const V28_TILE_TYPES=[
  ['technical','Technical Indicators'],
  ['fundamental','Fundamental Drivers'],
  ['country','Country Selector · Economic Calendar'],
+ ['datecontrol','Date Selector'],
  ['chart','PSI Trend Chart'],
  ['history','Historical Performance Chart'],
  ['news','Latest News & Articles (Watchlist)'],
@@ -2003,9 +2020,10 @@ const V29_TILE_HELP={
  news:'Unread articles and favorites associated with selected watchlist assets.',
  search:'Search news and articles using filters.',
  favorites:'Drag articles from Search News & Articles into this tile, or save them using the star.',
+ datecontrol:'Select an as-of date for Regional PSI or Fundamental Drivers tiles.',
  social:'Links to external social and market services. This tile does not change with asset selection.'
 };
-const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',favorites:'Saved Articles',social:'Social & Market Networks'};
+const V28_TYPE_TITLES={regionpsi:'Global Daily PSI',psi:'Daily PSI',technical:'Technical Indicators',fundamental:'Fundamental Drivers',chart:'PSI Trend',history:'Historical Performance',news:'Latest News & Articles',search:'News & Article Search',favorites:'Saved Articles',datecontrol:'Date Selector',social:'Social & Market Networks'};
 function v72AnalysisTitle(type,period,region){
  if(type==='regionpsi'){const where=({us:'U.S.',euro:'Europe',global:'Global'})[region]||'Global';const when=({daily:'Daily',weekly:'Weekly',monthly:'Monthly'})[period]||'Daily';return `${where} ${when} PSI`;}
  if(type==='psi')return ({daily:'Daily PSI',weekly:'Weekly PSI',monthly:'Monthly PSI'})[period]||'Daily PSI';
@@ -2249,6 +2267,13 @@ function tileSettings(t){
 }
 
 board.addEventListener('click',e=>{const btn=e.target.closest('[data-a3-country]');if(btn?.dataset.a3Country)v97LoadCountry(btn.dataset.a3Country)});
+board.addEventListener('change',e=>{
+ const target=e.target.closest('[data-a10-target]');
+ if(target){a10Control.target=target.value;a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render();return}
+ const date=e.target.closest('[data-a10-date]');
+ if(date){a10Control.date=date.value;a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render();return}
+});
+board.addEventListener('click',e=>{if(e.target.closest('[data-a10-today]')){a10Control.date='';a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render()}});
 board.addEventListener('change',e=>{
  const country=e.target.closest('[data-v97-country]');if(country)v97LoadCountry(country.value);
  const slot=e.target.closest('[data-v98-slot]');
