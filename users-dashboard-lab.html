@@ -1366,7 +1366,7 @@ let a10Control={target:'fundamental',date:''};
 try{const x=JSON.parse(localStorage.getItem(A10_DATE_KEY)||'null');if(x&&['fundamental','regionpsi'].includes(x.target)&&(/^\d{4}-\d{2}-\d{2}$/.test(x.date)||x.date===''))a10Control=x}catch(e){}
 function a10Save(){try{localStorage.setItem(A10_DATE_KEY,JSON.stringify(a10Control))}catch(e){}}
 function a10AsOf(target){return a10Control.target===target?a10Control.date:''}
-function a10DateTile(){return `<label class="field">Connect to category<select data-a10-target><option value="fundamental" ${a10Control.target==='fundamental'?'selected':''}>Fundamental Drivers</option><option value="regionpsi" ${a10Control.target==='regionpsi'?'selected':''}>Regional PSI</option></select></label><label class="field">As-of date<input type="date" data-a10-date value="${safe(a10Control.date)}"></label><button type="button" class="btn" data-a10-today>Use Latest</button><p class="muted">${a10Control.date?'Showing available observations as of '+safe(a10Control.date):'Latest available readings'}. Only ${a10Control.target==='regionpsi'?'Regional PSI':'Fundamental Drivers'} tiles are affected.</p>`}
+function a10DateTile(){return `<label class="field">As-of date<input type="date" data-a10-date value="${safe(a10Control.date)}"></label><button type="button" class="btn" data-a10-today>Use Latest</button><p class="muted">${a10Control.date?'Showing available observations as of '+safe(a10Control.date):'Latest available readings'}. Only ${a10Control.target==='regionpsi'?'Regional PSI':'Fundamental Drivers'} tiles are affected.</p>`}
 function v97FundamentalContent(t){
  const selected=Array.isArray(t.v97Indicators)&&t.v97Indicators.length?t.v97Indicators:V97_TOP;
  const date=e=>String(e?.scheduled_at||e?.date||e?.datetime||e?.release_date||e?.time||'').slice(0,10);
@@ -2085,7 +2085,8 @@ function tileSettings(t){
   </div>
   </div>`:'';
  const typeField=isWatch?'<p class="notice">Manage and assign up to 15 watchlist assets below.</p>':fixed?'<p class="notice">This regional PSI tile follows its fixed region.</p>':`<label class="field">Tile content / analysis${v96Dropdown}<select id="tileType" hidden aria-hidden="true">${t.type==='custom'?'<option value="custom">Choose an analysis...</option>':''}${choices}</select></label><label class="field" id="newsContentField" style="${['search'].includes(t.type)?'':'display:none'}">Search News & Articles · Select content<select id="newsContent"><option value="search" ${t.type==='favorites'?'':'selected'}>News Search</option><option value="favorites" ${t.type==='favorites'?'selected':''}>Saved Articles</option></select></label><p id="tileTypeHelp" class="muted" aria-live="polite"></p><label class="field" id="psiPeriodField" style="${['psi','regionpsi'].includes(t.type)?'':'display:none'}">PSI period<select id="psiPeriod"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label><label class="field" id="psiRegionField" style="${t.type==='regionpsi'?'':'display:none'}">PSI region<select id="psiRegion"><option value="global">Global</option><option value="us">U.S.</option><option value="euro">Europe</option></select></label>`;
- open(`Tile Settings · ${original}`,`${typeField}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
+ const a11DateSettings=`<label class="field" id="a11DateTargetField" style="${t.type==='datecontrol'?'':'display:none'}">Connect to category<select id="a11DateTarget"><option value="">Choose category</option><option value="fundamental" ${a10Control.target==='fundamental'?'selected':''}>Fundamental Drivers</option><option value="regionpsi" ${a10Control.target==='regionpsi'?'selected':''}>Regional PSI</option></select></label>`;
+ open(`Tile Settings · ${original}`,`${typeField}${a11DateSettings}<div class="v77-tile-names"><label class="field">Official tile name<input id="tileOfficialName" value="${safe(original)}" readonly aria-readonly="true" tabindex="-1"></label><label class="field">Display name<input id="tileTitle" maxlength="60" value="${safe(t.title)}"></label></div>${isWatch?'<div class="section">Manage Watchlist Assets</div><div id="v69AssetEditor"></div>':''}`,'');
  if(isWatch)v69AssetEditor(true);
  const a3CountryEdit=document.createElement('div');a3CountryEdit.id='a3CountryEdit';body.appendChild(a3CountryEdit);
  const a3Draft=a3CountrySlots(t);
@@ -2209,6 +2210,7 @@ function tileSettings(t){
  titleInput.addEventListener('input',()=>{userEdited=true});
  const updateNaming=()=>{
   const parentType=typeSelect?.value||t.type;
+  const a11TargetField=$('#a11DateTargetField');if(a11TargetField)a11TargetField.style.display=parentType==='datecontrol'?'':'none';
   const newsField=$('#newsContentField');if(newsField)newsField.style.display=parentType==='search'?'':'none';
   const chosenType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
   let newName=(isWatch||fixed)?original:v72AnalysisTitle(chosenType,periodSelect?.value||'daily',regionSelect?.value||'global');
@@ -2233,6 +2235,11 @@ function tileSettings(t){
   const newType=parentType==='search'?($('#newsContent')?.value||'search'):parentType;
   if(['news','technical'].includes(newType)&&!tiles.some(x=>x.type==='watch'&&!x.closed)){
    alert('Activate My Watchlist tile in this workspace first.');return;
+  }
+  if(newType==='datecontrol'){
+   const selected=$('#a11DateTarget')?.value;
+   if(!['fundamental','regionpsi'].includes(selected)){alert('Choose a category to connect the Date Selector.');return;}
+   if(a10Control.target!==selected){a10Control.target=selected;a10Save();}
   }
   if(newType&&newType!=='custom')t.type=newType;
   if(t.type==='fundamental'){t.v97Calendar=true;t.v97Indicators=[...v97ChosenIndicators]}
@@ -2268,8 +2275,6 @@ function tileSettings(t){
 
 board.addEventListener('click',e=>{const btn=e.target.closest('[data-a3-country]');if(btn?.dataset.a3Country)v97LoadCountry(btn.dataset.a3Country)});
 board.addEventListener('change',e=>{
- const target=e.target.closest('[data-a10-target]');
- if(target){a10Control.target=target.value;a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render();return}
  const date=e.target.closest('[data-a10-date]');
  if(date){a10Control.date=date.value;a10Save();if(a10Control.target==='fundamental')v97LoadCountry(v97Country);else render();return}
 });
