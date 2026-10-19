@@ -1384,6 +1384,16 @@ function v77CandleIndicator(rows,name,params={}){
  return null;
 }
 function v77AnyIndicator(rows,name,params){
+ if(name==='OBV'){
+  // OBV requires verified price and volume; never manufacture missing volume.
+  if(rows.length<2||!rows.every(r=>Number.isFinite(r.close)&&r.close>0&&Number.isFinite(r.volume)&&r.volume>=0))return null;
+  let total=0;
+  for(let i=1;i<rows.length;i++){
+   if(rows[i].close>rows[i-1].close)total+=rows[i].volume;
+   else if(rows[i].close<rows[i-1].close)total-=rows[i].volume;
+  }
+  return Number.isFinite(total)?total:null;
+ }
  if(['Stochastic','Williams %R','CCI','ATR','ADX'].includes(name))return v77CandleIndicator(rows,name,params);
  return v75Calculate(rows.map(x=>x.close),name,params);
 }
