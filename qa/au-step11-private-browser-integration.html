@@ -17,7 +17,7 @@ small{color:#435467}.scroll{overflow-x:auto}a{color:#13569b}.error{color:#a30000
 <div><button id="refresh" type="button">Refresh now</button> <button id="disconnect" type="button">Simulate disconnection</button> <button id="reconnect" type="button">Reconnect and catch up</button></div>
 <p id="status" role="status">Connecting to public-safe Supabase preview…</p>
 <p><small id="version"></small></p>
-<p id="qa-result" role="status" style="font-weight:700;margin:12px 0"></p><div class="scroll"><table><thead><tr><th>Australian event</th><th>Status</th><th>Reference period</th><th>Actual</th><th>Previous</th><th>Unit</th><th>Release time (UTC)</th><th>Publisher</th></tr></thead><tbody id="events"></tbody></table></div>
+<div class="scroll"><table><thead><tr><th>Australian event</th><th>Status</th><th>Reference period</th><th>Actual</th><th>Previous</th><th>Unit</th><th>Release time (UTC)</th><th>Publisher</th></tr></thead><tbody id="events"></tbody></table></div>
 <p><small id="details"></small></p>
 <script>
 (()=>{"use strict";
@@ -55,34 +55,6 @@ async function load(reason){
     const changed=payload.version!==lastVersion;
     lastEvents=payload.events;lastVersion=payload.version;lastFetchedAt=new Date().toISOString();
     render();status("Connected to Supabase public-safe QA preview · "+(changed?"version refreshed":"version unchanged")+" · "+reason);
-    // Isolated rendering fixtures: never inserted into the public AU feed or staging.
-    const fixtureRow=document.createElement("tr");
-    const zeroCell=td(fixtureRow,0);
-    const previousCell=td(fixtureRow,1.2);
-    const revisionLabel="Revised fixture"+(true?" · revised":"");
-    const dateRendered=formatUtc("2026-09-02T01:30:00Z");
-    const hostile=document.createElement("td");hostile.textContent="<"+"script>untrusted<"+"/script>";
-    const fixtureChecks=[
-      ["Numeric zero visible",zeroCell.textContent==="0"],
-      ["Publisher Previous independent",previousCell.textContent==="1.2"],
-      ["Revision badge rendered",revisionLabel.includes("revised")],
-      ["Reference release time formatted",dateRendered.includes("UTC")],
-      ["HTML escaped",hostile.querySelector("script")===null],
-      ["Scheduled versus document distinct",lastEvents.some(e=>e.status==="scheduled")&&lastEvents.some(e=>e.status==="document_source_verified")]
-    ];
-    const checks=[
-      ["Supabase connection",lastEvents.length===42],
-      ["Nonproduction protection",payload.production===false&&payload.can_publish===false],
-      ["All document names",lastEvents.every(x=>!String(x.name||"").startsWith("au_onboard_"))],
-      ["Publisher URLs",lastEvents.every(x=>String(x.source_url||"").startsWith("https://"))],
-      ["Safe source statuses",lastEvents.every(x=>x.status==="scheduled"||x.status==="document_source_verified")],
-      ["No unapproved values",lastEvents.every(x=>x.actual==null&&x.previous==null)],
-      ["Version received",typeof lastVersion==="string"&&lastVersion.length>0],
-      ["Reconnect refetch",reason!=="reconnect/catch-up"||lastFetchedAt.length>0]
-    ];
-    checks.push(...fixtureChecks);
-    const passing=checks.filter(x=>x[1]).length;
-    $("qa-result").textContent="Automatic QA: "+passing+"/"+checks.length+" PASS"+(passing===checks.length?"":" — "+checks.filter(x=>!x[1]).map(x=>x[0]).join(", "));
   }catch(err){status("Live preview unavailable: "+String(err?.message||err),true)}
   finally{busy=false}
 }
