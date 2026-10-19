@@ -21,7 +21,7 @@ small{color:#435467}.scroll{overflow-x:auto}a{color:#13569b}.error{color:#a30000
 <p><small id="details"></small></p>
 <script>
 (()=>{"use strict";
-const endpoint="https://fupexuonvzakoguucglk.supabase.co/rest/v1/rpc/econ_au_step11_public_qa_feed_v1";
+const endpoint="https://fupexuonvzakoguucglk.supabase.co/rest/v1/rpc/econ_au_step11_public_qa_feed_v2";
 const $=id=>document.getElementById(id);
 let online=true, lastVersion="", lastEvents=[],lastFetchedAt="",busy=false;
 function status(message,isError=false){$("status").textContent=message;$("status").className=isError?"error":"";}
@@ -49,7 +49,7 @@ async function load(reason){
     const resp=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json","apikey":key,"authorization":"Bearer "+key},body:"{}",cache:"no-store"});
     if(!resp.ok)throw new Error("HTTP "+resp.status+" from private preview");
     const payload=await resp.json();
-    if(payload.schema!=="econ-au-public-qa-v1"||payload.production!==false||payload.can_publish!==false||!Array.isArray(payload.events)||typeof payload.version!=="string")throw new Error("Preview safety schema mismatch");
+    if(payload.schema!=="econ-au-public-qa-v2"||payload.production!==false||payload.can_publish!==false||!Array.isArray(payload.events)||typeof payload.version!=="string")throw new Error("Preview safety schema mismatch");
     if(payload.events.some(e=>e.status==="source_review_pending"))throw new Error("Unverified event appeared in preview");
     const changed=payload.version!==lastVersion;
     lastEvents=payload.events;lastVersion=payload.version;lastFetchedAt=new Date().toISOString();
