@@ -462,29 +462,6 @@ html[data-psd-theme="dark"] .modal .dialog :is(.v96-node,.v96-item):focus-visibl
 .top .workspace-presets .preset:active{cursor:grabbing}
 @media(max-width:850px){.top .workspace-presets{width:auto;max-width:100%;flex-wrap:nowrap}}
 </style>
-<style id="a22-3d-buttons-and-theme">
-/* Consistent, raised buttons in both themes. Workspace tabs keep their connected-arrow outlines. */
-:root{--a22-top:#fff;--a22-bottom:#d9e2ee;--a22-border:#859ab4;--a22-ink:#000;--a22-deep:#7d94b0;--a22-hover:#ffe9b1}
-html[data-psd-theme="dark"]{--a22-top:#344f70;--a22-bottom:#182b44;--a22-border:#6a89af;--a22-ink:#fff;--a22-deep:#071321;--a22-hover:#534025}
-.top .buttons > .btn,.dialog .btn,.tile .ctrl,.modal .ctrl{
- color:var(--a22-ink)!important;
- background:linear-gradient(180deg,var(--a22-top) 0%,var(--a22-bottom) 100%)!important;
- border:1px solid var(--a22-border)!important;
- border-radius:8px!important;
- box-shadow:inset 0 1.5px 0 #ffffffa6,inset 0 -1px 0 #566e8b55,0 3px 0 var(--a22-deep),0 5px 9px #00000038!important;
- transition:transform .12s ease,filter .12s ease,box-shadow .12s ease!important;
-}
-.top .buttons > .btn:hover,.dialog .btn:hover,.tile .ctrl:hover,.modal .ctrl:hover{filter:brightness(1.07) sepia(.08);transform:translateY(-2px);box-shadow:inset 0 1px 0 #ffffffca,0 5px 0 var(--a22-deep),0 8px 12px #00000040!important}
-.top .buttons > .btn:active,.top .buttons > .btn.a18-click-flash,.dialog .btn:active,.tile .ctrl:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #00000040,0 1px 0 var(--a22-deep)!important;background:linear-gradient(180deg,var(--a22-bottom),var(--a22-top))!important;color:var(--a22-ink)!important}
-/* The five workspace tabs retain their chevrons and use the same bevel/shadow colors. */
-.top .workspace-presets .preset{background:linear-gradient(180deg,var(--a22-top),var(--a22-bottom))!important;color:var(--a22-ink)!important;filter:drop-shadow(0px 2px 1px #00000030)}
-.top .workspace-presets .preset.active{background:linear-gradient(180deg,#c99c45,#845e18)!important;color:#fff!important;filter:drop-shadow(0px 2px 2px #00000060)}
-.top .workspace-presets .preset:hover:not(.active){background:linear-gradient(180deg,var(--a22-hover),var(--a22-bottom))!important}
-/* Network cards should use the same page theme, not the dark preset in light mode. */
-html[data-psd-theme="light"] .tile .social-row,html[data-psd-theme="light"] .tile .social-row button{background:#f5f8fc!important;color:#000!important;border-color:#b5c7da!important}
-html[data-psd-theme="light"] .tile .social-row :is(strong,span,p){color:#000!important}
-html[data-psd-theme="dark"] .tile .social-row{background:#1d324e!important;color:#fff!important}
-</style>
 </head><body>
 <div id="site-header"></div>
 <script src="site-nav.js?v=20"></script>
@@ -1452,15 +1429,13 @@ function v76IndicatorChart(t,asset,name){
 }
 function v76TechnicalContent(t,a){
  const selected=v76Selected(t),frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
- const rows=v75History(a,frame),prices=rows.map(r=>r.close);
- const hideInnerName=selected.length===1;
- const market=v77MarketFeed?.[a];const dataInfo=rows.length?`Source: ${safe(market?.data_source||market?.source||'Market feed')} · ${safe(market?.symbol||a)} · prices through ${safe(rows.at(-1).date)} · ${safe(frame)}${frame==='daily'?'':' (aggregated from daily candles)'}. Independent price verification pending.`:`Market price history unavailable${v77MarketStatus?' — '+safe(v77MarketStatus):''}`;
- return `<div class="row v76-top"><span class="muted">${safe(a)} · ${selected.length} indicator${selected.length===1?'':'s'}</span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
+ const rows=v75History(a,frame);
+ return `<div class="row v76-top"><span></span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
  (selected.length?selected.map(name=>{
   const value=v77AnyIndicator(rows,name,v76Params(t,name));
   const shown=typeof value==='number'&&Number.isFinite(value)?Number(value.toFixed(3)).toLocaleString():value&&typeof value.mid==='number'?`${value.low.toFixed(2)} – ${value.high.toFixed(2)}`:'—';
-  return `<section class="v76-indicator"><div class="row">${hideInnerName?'<span></span>':`<strong>${safe(name)}</strong>`}<strong>${safe(shown)}</strong></div>${v76IndicatorChart(t,a,name)}</section>`;
- }).join(''):'<p class="muted">Choose indicators in Tile Settings.</p>')+`<div class="muted v77-data-note" title="Indicators derived from the website market history. Independent external validation is still required.">${dataInfo}</div>`;
+  return `<section class="v76-indicator"><div class="row"><strong>${safe(name)}</strong><strong>${safe(shown)}</strong></div>${v76IndicatorChart(t,a,name)}</section>`;
+ }).join(''):'<p class="muted">Choose indicators in Tile Settings.</p>');
 }
 
 const V97_COUNTRIES=[['US','United States'],['GB','United Kingdom'],['CA','Canada'],['AU','Australia'],['NZ','New Zealand'],['JP','Japan'],['CN','China'],['CH','Switzerland (CHF)'],['EU','Euro Area']];
@@ -1567,10 +1542,10 @@ case'regionpsi':{
   for(const row of v26History){const ms=Date.parse(row.date);const val=row[region];if(!Number.isFinite(ms)||ms<now-days*86400000||ms>now+86400000||!Number.isFinite(val)||val<0||val>100)continue;byDate.set(new Date(ms).toISOString().slice(0,10),val)}
   if(byDate.size>=required){v=Array.from(byDate.values()).reduce((a,b)=>a+b,0)/byDate.size;provenance=`${period==='weekly'?'7-day':'30-day'} historical average (${byDate.size} days)`;}
  }
- return `<div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(region)}`;
+ return `<div class="muted">${safe(v72AnalysisTitle('regionpsi',period,region))}</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(region)}`;
 }
-case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
-case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?.value!==null&&historical?.value!==undefined?('Average of '+historical.count+' '+(historical.source==='published'?'published':'saved')+' daily readings · '+(historical.partial?'partial period · ':'')+'last '+new Date(historical.last).toLocaleDateString()):historical?('Insufficient '+period+' history: '+historical.count+' of '+historical.required+' distinct daily readings available'):'Data unavailable';return `<div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
+case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="muted">Regional sentiment</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(provenance)}</div>${v26Trend(t.id)}`;}
+case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?.value!==null&&historical?.value!==undefined?('Average of '+historical.count+' '+(historical.source==='published'?'published':'saved')+' daily readings · '+(historical.partial?'partial period · ':'')+'last '+new Date(historical.last).toLocaleDateString()):historical?('Insufficient '+period+' history: '+historical.count+' of '+historical.required+' distinct daily readings available'):'Data unavailable';return `<div class="muted">${safe(a)} · ${safe(period)} PSI</div><div class="metric">${showPoint(v)}</div><div class="fake">${safe(status)}</div>`;}
 case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{if(t.v97Calendar===true)return v97FundamentalContent(t);const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{
@@ -1587,8 +1562,10 @@ case'social':return `<label class="v46-network-label">Find a network <input clas
 case'social-service':{const name=t.socialProvider||'Network';if(name==='LinkedIn')return '<p class="notice">LinkedIn was removed from Social & Market Networks. You can close this old tile.</p>';const label=typeof v87NetworkLabel==='function'?v87NetworkLabel(name):name;const consentVersion=state.consent?.['network:'+name]?.version;const agreed=false;const meta=V87_NETWORKS?.[name]||['Network content','Provider authorization required'];const url=SOCIAL.find(x=>x[0]===name)?.[1]||'';return `<div class="v44-service"><div class="row"><strong>${safe(label)}</strong><span class="chip">Not connected</span></div><div class="v44-state"><strong>${safe(meta[0])}</strong><p>${safe(meta[1])}</p><p>No social password, access token or authenticated social session is stored in this dashboard preview. Live personalized feeds require provider-approved integration. Your tile layout is saved; PSD never handles your social password.</p></div><div class="v45-actions"><button class="btn" data-social="${safe(name)}">Connection steps</button><button class="btn" data-external="${safe(url)}">Official website ↗</button><button class="btn" data-v45-terms="${safe(name)}">Read terms</button><button class="btn" data-v44-return="1">Back to networks</button></div><p class="muted">Move, resize, lock, maximize, or minimize this independent network tile. An external link is optional; it does not establish a PSD connection.</p></div>`}
 case'chart':case'history':return `<div class="row"><span class="muted">${safe(a)} · PSI history</span><span class="chip gold">PSI</span></div>${v39HistoryControls(a)}<div class="v80-chart-space">${plot(a,t.type)}</div><div class="row"><span class="muted">Historical PSI readings · not a market-price chart</span></div>`;
 default:return v9421IsFavorites(t)?v9421FavoritesHtml():`<div class="muted">Custom tile · configure using ⚙</div>`}}
+function boardScale(){return Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370)}
+function boardLogicalWidth(){return Math.max(0,(board.clientWidth-24)/boardScale())}
 function fitBoardHeight(){
-  const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370);
+  const scale=boardScale();
   const maxBottom=tiles.filter(t=>!t.closed&&!t.maxed).reduce((v,t)=>Math.max(v,(Number(t.y)||0)+(t.min?39/scale:(Number(t.h)||0))),0);
   const minViewport=Math.max(600,window.innerHeight-board.getBoundingClientRect().top-35);
   board.style.minHeight=Math.max(minViewport,Math.ceil(maxBottom*scale+100))+'px';
@@ -1634,7 +1611,7 @@ document.addEventListener('click',e=>{
  if(!e.target.closest?.('#a16GlossaryPopover'))a16Dismiss();
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')a16Dismiss()});
-function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span>${a16Glossary(t)}<button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});if(board.querySelector('.v9421-inline-news'))v42SearchPane(true);fitBoardHeight();persist()}
+function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=boardScale();board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span>${a16Glossary(t)}<button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});if(board.querySelector('.v9421-inline-news'))v42SearchPane(true);fitBoardHeight();persist()}
 function open(title,html,buttons=''){ modal.classList.remove('v35-search-modal');$('#modalTitle').textContent=title;body.innerHTML=html;footer.innerHTML=buttons;const save=$('#v58SaveWatch');if(save){save.hidden=true;save.onclick=null;}document.getElementById('v70SaveTile')?.remove(); modal.classList.add('open')};function shut(){modal.classList.remove('open')};$('#closeModal').onclick=shut;modal.addEventListener('click',e=>{if(e.target===modal)shut()});document.addEventListener('keydown',e=>{if(e.key==='Escape')shut()});
 // V43: Focused archive-style search interface for genuine recent dashboard headlines.
 const V48_NEWS_PREF_KEY='psd-news-search-preferences-v48';
@@ -2498,13 +2475,12 @@ board.addEventListener('keydown',e=>{
  const step=e.shiftKey?50:10;
  const offsets={ArrowUp:[0,-step],ArrowDown:[0,step],ArrowLeft:[-step,0],ArrowRight:[step,0]};
  if(!offsets[e.key])return;
- const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370);
- const maxX=Math.max(0,(board.clientWidth-24)/scale-t.w);
- e.preventDefault();t.x=Math.max(0,Math.min(maxX,t.x+offsets[e.key][0]));
+ e.preventDefault();const maxX=Math.max(0,boardLogicalWidth()-t.w-2);
+ t.x=Math.max(0,Math.min(maxX,t.x+offsets[e.key][0]));
  t.y=Math.max(0,Math.min(100000,t.y+offsets[e.key][1]));render();
  [...board.querySelectorAll('.tile')].find(el=>el.dataset.id===t.id)?.querySelector('.bar')?.focus();
 });
-board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=Math.min(1,(Math.max(1200,board.clientWidth)-24)/1370),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=nextTileZ());el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,(board.clientWidth-24)/scale-t.x,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';fitBoardHeight()}else{t.x=Math.max(0,Math.min(Math.max(0,(board.clientWidth-24)/scale-t.w),ox+dx));t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
+board.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select,a'))return;const el=e.target.closest('.tile');if(!el)return;const t=tiles.find(x=>x.id===el.dataset.id);if(!t||t.locked||t.maxed)return;const handle=e.target.closest('.handle'),bar=e.target.closest('.bar');if(!handle&&!bar)return;e.preventDefault();const scale=boardScale(),sx=e.clientX,sy=e.clientY,ox=t.x,oy=t.y,ow=t.w,oh=t.h;el.style.zIndex=String(t.z=nextTileZ());el.setPointerCapture(e.pointerId);let id=e.pointerId;const move=ev=>{if(ev.pointerId!==id)return;let dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;if(handle){t.w=Math.max(145,Math.min(1250,ow+dx));t.h=Math.max(80,Math.min(3000,oh+dy));const maxX=Math.max(0,boardLogicalWidth()-t.w-2);t.x=Math.max(0,Math.min(maxX,t.x));el.style.width=t.w*scale+'px';el.style.height=t.h*scale+'px';el.style.left=t.x*scale+'px';fitBoardHeight()}else{const maxX=Math.max(0,boardLogicalWidth()-t.w-2);t.x=Math.max(0,Math.min(maxX,ox+dx));t.y=Math.max(0,Math.min(100000,oy+dy));fitBoardHeight();el.style.left=t.x*scale+'px';el.style.top=t.y*scale+'px'}};const done=ev=>{if(ev.pointerId!==id)return;el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',done);el.removeEventListener('pointercancel',done);fitBoardHeight();persist()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done)});
 modal.addEventListener('click',e=>{
  const star=e.target.closest('[data-v31-star]');
  if(star){
@@ -2746,11 +2722,10 @@ function init(el){
  let data;try{data=JSON.parse(el.dataset.v84Series||'[]')}catch{return}
  if(!Array.isArray(data)||data.length<2)return;
  const width=Math.max(180,el.clientWidth),height=Math.max(185,el.clientHeight);
- const dark=document.documentElement.getAttribute('data-psd-theme')==='dark';
  const chart=LW.createChart(el,{
   width,height,autoSize:true,
-  layout:{background:{type:LW.ColorType.Solid,color:dark?'#16273f':'#f7fafe'},textColor:dark?'#f1f6ff':'#111111',fontSize:12},
-  grid:{vertLines:{color:dark?'rgba(140,166,197,.17)':'rgba(75,103,136,.14)'},horzLines:{color:dark?'rgba(140,166,197,.17)':'rgba(75,103,136,.14)'}},
+  layout:{background:{type:LW.ColorType.Solid,color:'#16273f'},textColor:'#b7c8dc',fontSize:12},
+  grid:{vertLines:{color:'rgba(140,166,197,.17)'},horzLines:{color:'rgba(140,166,197,.17)'}},
   crosshair:{mode:LW.CrosshairMode.Normal,vertLine:{color:'#d9b66c',width:1,style:LW.LineStyle.Dashed,labelBackgroundColor:'#304761'},horzLine:{color:'#d9b66c',width:1,style:LW.LineStyle.Dashed,labelBackgroundColor:'#304761'}},
   rightPriceScale:{visible:true,borderColor:'#546581',autoScale:true,scaleMargins:{top:.10,bottom:.10}},
   leftPriceScale:{visible:false},
@@ -2775,13 +2750,6 @@ function start(){observer.observe(document.body,{childList:true,subtree:true});r
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 window.addEventListener('resize',refresh,{passive:true});
 window.addEventListener('pageshow',refresh);
-function applyDashboardChartTheme(){
- const dark=document.documentElement.getAttribute('data-psd-theme')==='dark';
- for(const [el,chart] of instances){if(!el.isConnected)continue;
-  chart.applyOptions({layout:{background:{type:'solid',color:dark?'#16273f':'#f7fafe'},textColor:dark?'#f1f6ff':'#111111'},grid:{vertLines:{color:dark?'rgba(140,166,197,.17)':'rgba(75,103,136,.14)'},horzLines:{color:dark?'rgba(140,166,197,.17)':'rgba(75,103,136,.14)'}}});
- }
-}
-new MutationObserver(applyDashboardChartTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-psd-theme']});
 })();</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="supabase-client.js?v=12" defer></script>
 <script src="mobile/ribbon.js?v=2" defer></script>
