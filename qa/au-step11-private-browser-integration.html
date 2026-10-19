@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Australian Calendar | Step 11 Private Integration QA</title>
+<style>
+body{font:15px/1.5 system-ui,sans-serif;max-width:1120px;margin:30px auto;padding:0 16px;color:#132d40;background:#f4f7fb}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}h1{font-size:23px}p{margin:8px 0 14px}
+button{padding:9px 13px;border:1px solid #426084;border-radius:8px;background:white;cursor:pointer}
+.banner{background:#fff2d6;padding:12px;border-left:4px solid #9d610a}
+table{border-collapse:collapse;width:100%;background:white}th,td{padding:10px;border-bottom:1px solid #d7deea;text-align:left;vertical-align:top}th{background:#dbe8f7}
+small{color:#435467}.scroll{overflow-x:auto}a{color:#13569b}.error{color:#a30000}#status{font-weight:600}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-client.js?v=12"></script></head>
+<body>
+<header><h1>Australia Economic Calendar · Step 11</h1><strong>Private QA — NOT LIVE</strong></header>
+<p class="banner">Authenticated preview only. No production activation, no blocked releases, no changes to US/UK calendars. This page reads the real private Supabase preview feed.</p>
+<div><button id="refresh" type="button">Refresh now</button> <button id="disconnect" type="button">Simulate disconnection</button> <button id="reconnect" type="button">Reconnect and catch up</button></div>
+<p id="status" role="status">Waiting for sign-in…</p>
+<p><small id="version"></small></p>
+<div class="scroll"><table><thead><tr><th>Australian event</th><th>Status</th><th>Reference period</th><th>Actual</th><th>Previous</th><th>Unit</th><th>Release time (UTC)</th><th>Publisher</th></tr></thead><tbody id="events"></tbody></table></div>
+<p><small id="details"></small></p>
+<script>
+(()=>{"use strict";
+const endpoint="https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed-vnext-preview";
+const $=id=>document.getElementById(id);
+let online=true, lastVersion="", lastEvents=[],lastFetchedAt="",busy=false;
+function status(message,isError=false){$("status").textContent=message;$("status").className=isError?"error":"";}
+function td(tr,txt){const x=document.createElement("td");x.textContent=txt===null||txt===undefined?"—":String(txt);tr.append(x);return x;}
+function render(){
+  const root=$("events");root.replaceChildren();
+  for(const e of lastEvents){
+    const tr=document.createElement("tr");
+    td(tr,e.name||e.indicator_id);
+    td(tr,(e.status||"unknown")+(e.revised?" · revised":""));
+    td(tr,e.reference_period);td(tr,e.actual);td(tr,e.previous);td(tr,e.unit);td(tr,e.official_release_at||e.scheduled_at);
+    const c=td(tr,null);if(/^https:\/\//.test(e.source_url||"")){const a=document.createElement("a");a.href=e.source_url;a.textContent="Official source";a.rel="noopener noreferrer";a.target="_blank";c.textContent="";c.append(a);}
+    root.append(tr);
+  }
+  $("version").textContent="Supabase feed version: "+(lastVersion||"not received")+" · records "+lastEvents.length;
+  $("details").textContent=lastFetchedAt?"Latest successful fetch: "+lastFetchedAt+" · Browser reconnect re-fetches the authoritative feed.":"";
+}
+async function load(reason){
+  if(!online){status("Simulated offline — retained last verified version");return;}
+  if(busy)return;
+  busy=true;
+  try{
+    const client=window.psdSupabase;if(!client)throw new Error("Website Supabase client unavailable");
+    const {data,error}=await client.auth.getSession();if(error)throw error;
+    if(!data?.session?.access_token){status("Please sign in to your website account before opening this private QA page.",true);return;}
+    const resp=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json","apikey":window.PSDSupabaseConfig.anonKey,"authorization":"Bearer "+data.session.access_token},body:JSON.stringify({action:"au_step11_private_preview"}),cache:"no-store"});
+    if(!resp.ok)throw new Error("HTTP "+resp.status+" from private preview");
+    const payload=await resp.json();
+    if(payload.schema!=="econ-au-step11-browser-preview-v1"||payload.production!==false||payload.can_publish!==false||!Array.isArray(payload.events)||typeof payload.version!=="string")throw new Error("Preview safety schema mismatch");
+    if(payload.events.some(e=>e.status==="source_review_pending"))throw new Error("Unverified event appeared in preview");
+    const changed=payload.version!==lastVersion;
+    lastEvents=payload.events;lastVersion=payload.version;lastFetchedAt=new Date().toISOString();
+    render();status("Connected to authenticated Supabase preview · "+(changed?"version refreshed":"version unchanged")+" · "+reason);
+  }catch(err){status("Live preview unavailable: "+String(err?.message||err),true)}
+  finally{busy=false}
+}
+$("refresh").onclick=()=>load("manual refresh");
+$("disconnect").onclick=()=>{online=false;status("Simulated offline — feed preserved");};
+$("reconnect").onclick=()=>{online=true;load("reconnect/catch-up");};
+window.addEventListener("online",()=>{online=true;load("network restoration")});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)load("visibility catch-up")});
+setInterval(()=>{if(!document.hidden)load("scheduled version check")},30000);
+render();load("initial load");
+})();
+</script></body></html>
