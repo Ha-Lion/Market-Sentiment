@@ -51,6 +51,12 @@ html[data-psd-theme="dark"] .modal .dialog :is(.v96-node,.v96-item):focus-visibl
 
 <style id="a34-psi-footer-chevron-bevel">.a34-psi-footer{font-size:10px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:var(--txt);}header.top .workspace-presets .preset{background:linear-gradient(180deg,#ffe7aa 0%,#d5a24f 40%,#ab771f 100%)!important;filter:drop-shadow(0 3px 1px rgba(94,61,17,.42)) drop-shadow(0 1px 3px rgba(75,49,17,.24))!important;transform:translateY(-1px);transition:transform .15s,filter .15s!important;}header.top .workspace-presets .preset::before{inset:2px!important;background:linear-gradient(180deg,#fff 0%,#fffbef 34%,#e8d4a8 100%)!important;filter:none!important;}header.top .workspace-presets .preset.active::before{background:linear-gradient(180deg,#c79b4a,#8b601e)!important;}header.top .workspace-presets .preset:hover{transform:translateY(-3px)!important;filter:drop-shadow(0 5px 2px rgba(94,61,17,.45))!important;}header.top .workspace-presets .preset:active{transform:translateY(2px)!important;filter:drop-shadow(0 1px 1px rgba(75,49,17,.4))!important;}html[data-psd-theme="dark"] header.top .workspace-presets .preset::before{background:linear-gradient(180deg,#344963,#1c304d 65%,#14243d)!important;}html[data-psd-theme="dark"] header.top .workspace-presets .preset{color:#fff!important;}</style>
 <style id="a35-psi-layout-grid-contrast">:root{--a35-tech-grid:#9eafc4;}html[data-psd-theme="dark"]{--a35-tech-grid:#657c99;}.a35-psi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}.a35-psi-top .metric{flex:none;margin:4px 0 6px;}.a35-psi-counts{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:10px;line-height:1.2;font-weight:650;color:var(--txt);white-space:nowrap;}.a35-psi-dates{font-size:10px;white-space:normal;overflow:visible;text-overflow:clip;margin-top:2px;color:var(--txt);}</style>
+<style id="a42-maximize-safe-offset">
+/* Keep maximized tile controls below the fixed workspace toolbar. */
+:root{--a42-sticky-top:72px}
+.board .tile.maxed{top:calc(var(--a42-sticky-top) + 8px)!important;left:12px!important;right:12px!important;bottom:12px!important;width:calc(100vw - 24px)!important;height:calc(100dvh - var(--a42-sticky-top) - 20px)!important;z-index:1000!important}
+.board .tile.maxed>.bar{position:sticky!important;top:0!important;z-index:2!important;flex-shrink:0!important}
+</style>
 </head><body>
 <div id="site-header"></div>
 <script src="site-nav.js?v=20"></script>
@@ -1257,25 +1263,29 @@ function a39CountBreakdown(entry){
  if(!entry||typeof entry!=='object')return null;
  const direct=[entry,entry.sentiment_counts,entry.classification_counts,entry.sentiment_breakdown,
    entry.classifications,entry.headline_sentiment_counts,entry.counts,entry.sentiment];
- const names=[['bullish','bull','positive','bullish_count','bull_count','positive_count','bullish_headline_count'],
-   ['bearish','bear','negative','bearish_count','bear_count','negative_count','bearish_headline_count'],
-   ['neutral','mixed','neutral_mixed','neutral_count','mixed_count','neutral_mixed_count','neutral_headline_count']];
+ const pick=(obj,keys)=>{for(const k of keys){if(Number.isSafeInteger(obj[k])&&obj[k]>=0)return obj[k];}return null;};
  for(const obj of direct){
   if(!obj||typeof obj!=='object'||Array.isArray(obj))continue;
-  const vals=names.map(keys=>{for(const key of keys){const v=obj[key];if(Number.isSafeInteger(v)&&v>=0)return v;}return null;});
-  if(vals.every(v=>v!==null)){
-   const total=entry.headline_count??entry.total_headlines??entry.total_count??obj.total??obj.headlines;
-   if(total!==undefined&&total!==null&&Number.isFinite(Number(total))&&vals.reduce((a,b)=>a+b,0)!==Number(total))continue;
-   return vals;
-  }
+  const bull=pick(obj,['bullish_count','bull_count','bullish','bull','positive_count','positive']);
+  const bear=pick(obj,['bearish_count','bear_count','bearish','bear','negative_count','negative']);
+  const neutral=pick(obj,['neutral_count','neutral']);
+  const mixed=pick(obj,['mixed_count','mixed']);
+  const combined=pick(obj,['neutral_mixed_count','neutral_or_mixed_count','neutral_mixed']);
+  if(bull===null||bear===null)continue;
+  const neutralTotal=neutral!==null&&mixed!==null?neutral+mixed:(combined!==null?combined:(mixed===null?neutral:null));
+  if(neutralTotal===null)continue;
+  const vals=[bull,bear,neutralTotal];
+  const total=entry.headline_count??entry.count??entry.total_headlines??entry.total_count??obj.total??obj.headlines;
+  if(total!==undefined&&total!==null&&Number.isFinite(Number(total))&&vals.reduce((a,b)=>a+b,0)!==Number(total))continue;
+  return vals;
  }
- // Only classify an entire headline array when it truly contains the full set and explicit labels.
+ // Limited sample arrays must not be presented as complete headline classifications.
  const rows=entry.headlines||entry.top_headlines;
- const count=entry.headline_count??entry.total_headlines??entry.total_count;
- if(!Array.isArray(rows)||rows.length===0||!Number.isSafeInteger(count)||rows.length!==count)return null;
+ const count=entry.headline_count??entry.count??entry.total_headlines??entry.total_count;
+ if(!Array.isArray(rows)||!Number.isSafeInteger(count)||rows.length!==count)return null;
  const vals=[0,0,0];
  for(const row of rows){
-  const label=String(row?.classification??row?.sentiment_label??row?.sentiment_class??row?.sentiment??'').toLowerCase().trim();
+  const label=String(row?.classification??row?.sentiment_label??row?.sentiment_class??row?.vote??row?.sentiment??'').toLowerCase().trim();
   if(['bullish','bull','positive'].includes(label))vals[0]++;
   else if(['bearish','bear','negative'].includes(label))vals[1]++;
   else if(['neutral','mixed','neutral/mixed','neutral_mixed'].includes(label))vals[2]++;
@@ -2500,6 +2510,25 @@ window.addEventListener('pageshow',refresh);
 (function(){const btn=document.getElementById('addTile');if(!btn)return;
 let flashTimeout;
 btn.addEventListener('click',()=>{btn.classList.add('a18-click-flash');clearTimeout(flashTimeout);flashTimeout=setTimeout(()=>btn.classList.remove('a18-click-flash'),650)});
+})();
+</script>
+<script id="a42-maximize-keyboard-recovery">
+(()=>{
+  const refreshTop=()=>{
+    const bar=document.querySelector('header.top');
+    if(bar)document.documentElement.style.setProperty('--a42-sticky-top',Math.max(0,Math.ceil(bar.getBoundingClientRect().height))+'px');
+  };
+  window.addEventListener('load',refreshTop);
+  window.addEventListener('resize',refreshTop);
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    const maximized=document.querySelector('#board .tile.maxed');
+    if(!maximized)return;
+    const restore=maximized.querySelector('[data-command="max"]');
+    if(!restore)return;
+    e.preventDefault();e.stopImmediatePropagation();restore.click();
+  },true);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshTop,{once:true});else refreshTop();
 })();
 </script>
 </body></html>
