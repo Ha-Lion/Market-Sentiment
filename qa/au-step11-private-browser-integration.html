@@ -25,6 +25,7 @@ const endpoint="https://fupexuonvzakoguucglk.supabase.co/rest/v1/rpc/econ_au_ste
 const $=id=>document.getElementById(id);
 let online=true, lastVersion="", lastEvents=[],lastFetchedAt="",busy=false;
 function status(message,isError=false){$("status").textContent=message;$("status").className=isError?"error":"";}
+function formatUtc(value){if(!value)return null;const d=new Date(value);return Number.isFinite(d.getTime())?new Intl.DateTimeFormat("en-US",{timeZone:"UTC",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true}).format(d)+" UTC":String(value);}
 function td(tr,txt){const x=document.createElement("td");x.textContent=txt===null||txt===undefined?"—":String(txt);tr.append(x);return x;}
 function render(){
   const root=$("events");root.replaceChildren();
@@ -32,7 +33,7 @@ function render(){
     const tr=document.createElement("tr");
     td(tr,e.name||e.indicator_id);
     td(tr,(e.status||"unknown")+(e.revised?" · revised":""));
-    td(tr,e.reference_period);td(tr,e.actual);td(tr,e.previous);td(tr,e.unit);td(tr,e.official_release_at||e.scheduled_at);
+    td(tr,e.reference_period);td(tr,e.actual);td(tr,e.previous);td(tr,e.unit);td(tr,formatUtc(e.official_release_at||e.scheduled_at));
     const c=td(tr,null);if(/^https:\/\//.test(e.source_url||"")){const a=document.createElement("a");a.href=e.source_url;a.textContent="Official source";a.rel="noopener noreferrer";a.target="_blank";c.textContent="";c.append(a);}
     root.append(tr);
   }
