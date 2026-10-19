@@ -1297,21 +1297,32 @@ function a39CountBreakdown(entry){
  }
  return vals;
 }
+// A46: counts are read directly from the same published engine snapshots.
+// Never derive classification counts from PSI scores or chart points.
+function a46PublishedCounts(entry){
+ if(!entry||typeof entry!=='object')return null;
+ const keys=['bullish_count','bearish_count','neutral_count','mixed_count'];
+ if(!keys.every(k=>Number.isSafeInteger(entry[k])&&entry[k]>=0))return null;
+ // Display Neutral and Mixed together, consistent with the three-column UI.
+ const b=entry.bullish_count,r=entry.bearish_count,n=entry.neutral_count+entry.mixed_count;
+ const count=entry.headline_count??entry.count;
+ if(Number.isSafeInteger(count)&&count!==b+r+n)return null;
+ return [b,r,n];
+}
 function a39CountForTile(t,asset){
  if(t.type==='psi'){
   const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
   const live=v36Asset(asset);
-  if(period==='daily')return a39CountBreakdown(live);
-  // Period-specific counts must come from period-specific classified aggregates.
+  if(period==='daily')return a46PublishedCounts(live);
+  // Do not copy daily classified counts into weekly/monthly PSI.
   const bucket=live?.periods?.[period]||live?.sentiment_periods?.[period]||live?.psi_periods?.[period];
-  return a39CountBreakdown(bucket);
+  return a46PublishedCounts(bucket);
  }
  const region=t.type==='fixed'?t.id:t.psiRegion||'global';
  const key=region==='euro'?'europe':region;
  const period=t.type==='fixed'?'daily':t.psiPeriod||'daily';
- const data=v25RegionalFeed?.[key];
- if(!data)return null;
- return a39CountBreakdown(period==='daily'?data:(data.periods?.[period]||data.sentiment_periods?.[period]));
+ const regionEntry=v25RegionalFeed?.[key];
+ return a46PublishedCounts(period==='daily'?regionEntry:(regionEntry?.periods?.[period]));
 }
 function a34PsiFooter(el,t){
  if(!['psi','fixed','regionpsi'].includes(t.type))return;
@@ -1338,7 +1349,7 @@ function a34PsiFooter(el,t){
   for(const [i,label] of ['Bull','Bear','Neutral'].entries()){
    const line=document.createElement('span');line.textContent=label+' '+(vals?vals[i]:'—');summary.appendChild(line);
   }
-  summary.title=vals?'Classified headline totals from the published sentiment feed':'No matching complete classified-headline breakdown is available in the published feed';
+  summary.title=vals?'Directly published classified headlines (Neutral includes Mixed)':'Matching published classified counts are not available for this PSI period or region';
   const top=document.createElement('div');top.className='a35-psi-top';
   metric.parentNode.insertBefore(top,metric);top.appendChild(metric);top.appendChild(summary);
  }
