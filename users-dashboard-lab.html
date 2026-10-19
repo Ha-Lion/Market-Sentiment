@@ -518,6 +518,21 @@ html[data-psd-theme="dark"] header.top .workspace-presets .preset{color:#fff!imp
 html[data-psd-theme="dark"] header.top .workspace-presets .preset::before{background:linear-gradient(180deg,#304969,#182c48)}
 html[data-psd-theme="dark"] header.top .workspace-presets .preset.active::before{background:linear-gradient(180deg,#ae8033,#75501b)}
 </style>
+
+<style id="a34-psi-footer-chevron-bevel">
+.a34-psi-footer{font-size:10px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:var(--txt)}
+header.top .workspace-presets .preset{
+ background:linear-gradient(180deg,#ffe7aa 0%,#d5a24f 40%,#ab771f 100%)!important;
+ filter:drop-shadow(0 3px 1px rgba(94,61,17,.42)) drop-shadow(0 1px 3px rgba(75,49,17,.24))!important;
+ transform:translateY(-1px);transition:transform .15s,filter .15s!important;
+}
+header.top .workspace-presets .preset::before{inset:2px!important;background:linear-gradient(180deg,#fff 0%,#fffbef 34%,#e8d4a8 100%)!important;filter:none!important}
+header.top .workspace-presets .preset.active::before{background:linear-gradient(180deg,#c79b4a,#8b601e)!important}
+header.top .workspace-presets .preset:hover{transform:translateY(-3px)!important;filter:drop-shadow(0 5px 2px rgba(94,61,17,.45))!important}
+header.top .workspace-presets .preset:active{transform:translateY(2px)!important;filter:drop-shadow(0 1px 1px rgba(75,49,17,.4))!important}
+html[data-psd-theme="dark"] header.top .workspace-presets .preset::before{background:linear-gradient(180deg,#344963,#1c304d 65%,#14243d)!important}
+html[data-psd-theme="dark"] header.top .workspace-presets .preset{color:#fff!important}
+</style>
 </head><body>
 <div id="site-header"></div>
 <script src="site-nav.js?v=20"></script>
@@ -1718,7 +1733,38 @@ function a31CleanupPsiTile(el,t){
  }
 }
 
-function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span>${a16Glossary(t)}<button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el);a31CleanupPsiTile(el,t)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});if(board.querySelector('.v9421-inline-news'))v42SearchPane(true);fitBoardHeight();persist()}
+function a34PsiFooter(el,t){
+ if(!['psi','fixed','regionpsi'].includes(t.type))return;
+ const box=el.querySelector('.content');if(!box)return;
+ const trend=box.querySelector('.v26-regional-trend');if(!trend)return;
+ let series=[],asset=ASSETS.includes(state.selected)?state.selected:'';
+ if(t.type==='psi'){
+  const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
+  const days=period==='monthly'?30:period==='weekly'?7:14,now=Date.now(),latestByDay=new Map();
+  for(const r of v79DailyPoints(asset)){
+   if(!Number.isFinite(r.time)||!Number.isFinite(r.value)||r.time<now-days*86400000||r.time>now+300000)continue;
+   const day=new Date(r.time).toISOString().slice(0,10);
+   if(!latestByDay.has(day)||latestByDay.get(day).time<r.time)latestByDay.set(day,r);
+  }
+  series=[...latestByDay.values()].sort((a,b)=>a.time-b.time).slice(-30).map(r=>({date:new Date(r.time).toISOString().slice(0,10)}));
+ }else{
+  const region=t.type==='fixed'?t.id:(t.psiRegion||'global');const key=region==='euro'?'europe':region;
+  series=v26History.filter(r=>Number.isFinite(r[key])).slice(-14);
+ }
+ if(!series.length)return;
+ const first=series[0].date,last=series.at(-1).date;
+ const dateLine=first===last?first:first+' – '+last;
+ // Counts are displayed only if a connected verified record actually has these fields.
+ const entry=t.type==='psi'?v36Asset(asset):null;
+ function count(keys){for(const k of keys){const n=entry?.[k];if(Number.isInteger(n)&&n>=0)return String(n)}return '—'}
+ const bulls=count(['bullish_count','bull_count','bullish_headline_count']);
+ const bears=count(['bearish_count','bear_count','bearish_headline_count']);
+ const neutrals=count(['neutral_count','neutral_mixed_count','neutral_headline_count']);
+ const footer=document.createElement('div');footer.className='a34-psi-footer';
+ footer.textContent=`Bull ${bulls} · Bear ${bears} · Neutral ${neutrals} · ${dateLine} · ${series.length} readings`;
+ trend.appendChild(footer);
+}
+function render(){normalizeWatchSelection(state);let width=Math.max(1200,board.clientWidth);let scale=Math.min(1,(width-24)/1370);board.innerHTML='';for(const t of tiles.filter(t=>!t.closed)){const el=document.createElement('section');el.className='tile'+(t.min?' min':'')+(t.maxed?' maxed':'')+(t.locked?' locked':'');el.dataset.id=t.id;Object.assign(el.style,{left:t.x*scale+'px',top:t.y*scale+'px',width:t.w*scale+'px',height:(t.min?39:t.h*scale)+'px',zIndex:t.maxed?1000:String(t.z||1)});el.innerHTML=`<div class="bar ${t.locked||t.maxed?'':'move'}" tabindex="0" aria-label="${safe(t.title)} tile controls. Arrow keys move unlocked tiles, Shift for larger steps"><i class="dot"></i><span class="name" title="${safe(t.title)}">${safe(t.title)}</span>${a16Glossary(t)}<button class="ctrl" data-command="lock" title="${t.locked?'Unlock':'Lock'}" aria-label="${t.locked?'Unlock':'Lock'} ${safe(t.title)}">${t.locked?'🔒':'🔓'}</button><button class="ctrl" data-command="config" title="Tile settings" aria-label="Settings for ${safe(t.title)}">⚙</button><button class="ctrl" data-command="min" title="${t.min?'Expand':'Minimize'}" aria-label="${t.min?'Expand':'Minimize'} ${safe(t.title)}">${t.min?'▣':'−'}</button><button class="ctrl" data-command="max" title="${t.maxed?'Restore':'Maximize'}" aria-label="${t.maxed?'Restore':'Maximize'} ${safe(t.title)}">${t.maxed?'❐':'□'}</button><button class="ctrl" data-command="close" title="Close tile" aria-label="Close ${safe(t.title)}">×</button></div><div class="content">${tileContent(t)}</div>${!t.locked&&!t.min&&!t.maxed?'<div class="handle" tabindex="0" role="slider" aria-label="Resize tile using arrow keys" title="Drag to resize · Arrow keys resize · Shift for larger steps"></div>':''}`;board.append(el);a31CleanupPsiTile(el,t);a34PsiFooter(el,t)}board.querySelectorAll(".tile").forEach(el=>{if(el.querySelector("[data-v46-network-search]"))v47FilterNetworks(el)});if(board.querySelector('.v9421-inline-news'))v42SearchPane(true);fitBoardHeight();persist()}
 function open(title,html,buttons=''){ modal.classList.remove('v35-search-modal');$('#modalTitle').textContent=title;body.innerHTML=html;footer.innerHTML=buttons;const save=$('#v58SaveWatch');if(save){save.hidden=true;save.onclick=null;}document.getElementById('v70SaveTile')?.remove(); modal.classList.add('open')};function shut(){modal.classList.remove('open')};$('#closeModal').onclick=shut;modal.addEventListener('click',e=>{if(e.target===modal)shut()});document.addEventListener('keydown',e=>{if(e.key==='Escape')shut()});
 // V43: Focused archive-style search interface for genuine recent dashboard headlines.
 const V48_NEWS_PREF_KEY='psd-news-search-preferences-v48';
