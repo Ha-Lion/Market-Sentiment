@@ -18,7 +18,7 @@ small{color:#435467}.scroll{overflow-x:auto}a{color:#13569b}.error{color:#a30000
 <p id="status" role="status">Connecting to public-safe Supabase preview…</p>
 <p><small id="version"></small></p>
 <div class="scroll"><table><thead><tr><th>Australian event</th><th>Status</th><th>Reference period</th><th>Actual</th><th>Previous</th><th>Unit</th><th>Release time (UTC)</th><th>Publisher</th></tr></thead><tbody id="events"></tbody></table></div>
-<p><small id="details"></small></p>
+<p><small id="details"></small></p><p id="qa-result" role="status"></p>
 <script>
 (()=>{"use strict";
 const endpoint="https://fupexuonvzakoguucglk.supabase.co/rest/v1/rpc/econ_au_step11_public_qa_feed_v2";
@@ -55,6 +55,18 @@ async function load(reason){
     const changed=payload.version!==lastVersion;
     lastEvents=payload.events;lastVersion=payload.version;lastFetchedAt=new Date().toISOString();
     render();status("Connected to Supabase public-safe QA preview · "+(changed?"version refreshed":"version unchanged")+" · "+reason);
+    const checks=[
+      ["Supabase connection",lastEvents.length===42],
+      ["Nonproduction protection",payload.production===false&&payload.can_publish===false],
+      ["All document names",lastEvents.every(x=>!/^au_onboard_\\d+$/.test(x.name||""))],
+      ["Publisher URLs",lastEvents.every(x=>/^https:\\/\\//.test(x.source_url||""))],
+      ["Safe source statuses",lastEvents.every(x=>x.status==="scheduled"||x.status==="document_source_verified")],
+      ["No unapproved values",lastEvents.every(x=>x.actual==null&&x.previous==null)],
+      ["Version received",typeof lastVersion==="string"&&lastVersion.length>0],
+      ["Reconnect refetch",reason!=="reconnect/catch-up"||lastFetchedAt.length>0]
+    ];
+    const passing=checks.filter(x=>x[1]).length;
+    $("qa-result").textContent="Automatic QA: "+passing+"/"+checks.length+" PASS"+(passing===checks.length?"":" — "+checks.filter(x=>!x[1]).map(x=>x[0]).join(", "));
   }catch(err){status("Live preview unavailable: "+String(err?.message||err),true)}
   finally{busy=false}
 }
