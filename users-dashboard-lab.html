@@ -222,9 +222,7 @@ function v79SetHistory(payload){
  v79FeedHistory=new Map([...m].map(([asset,dates])=>[asset,[...dates.values()].sort((a,b)=>a.time-b.time)]));
 }
 function v79DailyPoints(asset){
- const recordKeys=Object.fromEntries([...v79FeedHistory.keys()].map(k=>[k,true]));
- const key=a50EngineKey(asset,recordKeys);
- const live=(key&&v79FeedHistory.get(key))||[];
+ const live=v79FeedHistory.get(asset)||[];
  if(live.length)return live;
  return v39Points(asset).map(p=>({...p,source:'imported'}));
 }
@@ -641,27 +639,22 @@ setInterval(()=>{if(document.visibilityState==='hidden')return;v25RefreshWebsite
 // V36: read-only market feed; never writes to production endpoints.
 let v36Feed=null, v36Updated=null, v36LastFetch=0;
 let v37FeedError='Not checked';
-// A50: Resolve published engine instrument keys as category-page-core.js does.
-// This changes ONLY lookup, never PSI or sentiment classifications.
-function a50Norm(value){return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
-function a50EngineKey(name,instruments){
- if(!name||!instruments)return null;
+// A51: match instrument keys as the published category pages do, without deriving PSI.
+function a51Key(value){return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ' ).trim()}
+function a51InstrumentKey(name, instruments){
+ if(typeof name!=='string'||!instruments)return null;
  if(Object.prototype.hasOwnProperty.call(instruments,name))return name;
- const wanted=a50Norm(name);
- const keys=Object.keys(instruments);
- const exact=keys.find(k=>a50Norm(k)===wanted);
- if(exact)return exact;
- // A watchlist's shortened name can correspond to engine "Name / SYMBOL".
- const prefix=keys.filter(k=>a50Norm(k.split(' / ')[0])===wanted);
- if(prefix.length===1)return prefix[0];
- // Match a unique exchange symbol only; never pick an ambiguous partial match.
- const code=keys.filter(k=>a50Norm(k.split(' / ').at(-1))===wanted);
- return code.length===1?code[0]:null;
+ const candidates=[name];
+ for(const candidate of candidates){if(Object.prototype.hasOwnProperty.call(instruments,candidate))return candidate}
+ const wanted=new Set(candidates.map(a51Key));
+ const matches=Object.keys(instruments).filter(k=>wanted.has(a51Key(k)));
+ return matches.length===1?matches[0]:null;
 }
 function v36Asset(name){
  if(!name||!v36Feed||!ageOK(v36Updated,48))return null;
- const key=a50EngineKey(name,v36Feed);
- return key&&typeof v36Feed[key]==='object'?v36Feed[key]:null;
+ const key=a51InstrumentKey(name,v36Feed);
+ const obj=key?v36Feed[key]:null;
+ return obj&&typeof obj==='object'?obj:null;
 }
 function v36Evidence(entry){
  if(!entry||entry.psi_status!=='fresh_headlines'||!Number.isFinite(entry.headline_count)||entry.headline_count<1)return false;
@@ -703,7 +696,7 @@ function v37Status(){
  const age=v36Updated?(Date.now()-Date.parse(v36Updated))/3600000:Infinity;
  const selected=state.watch.includes(state.selected)?state.selected:null;
  const entry=selected?v36Asset(selected):null;
- return {age,selected,entry,valid:selected?!!(entry&&v36Evidence(entry)):false};
+ return {age,selected,entry,valid:selected?!!(entry&&Number.isFinite(entry.psi)):false};
 }
 function v37UpdateBadge(){
  const b=document.getElementById('v37FeedStatus');if(!b)return;
@@ -718,7 +711,7 @@ function v37OpenDiagnostics(){
  const d=v37Status(), names=state.watch.filter(Boolean);
  const stamp=v36Updated?new Date(v36Updated).toLocaleString():'Unavailable';
  const rows=names.map(name=>{
-  const entry=v36Asset(name),valid=!!(entry&&v36Evidence(entry));
+  const entry=v36Asset(name),valid=!!(entry&&Number.isFinite(entry.psi));
   const count=Number.isFinite(entry?.headline_count)?entry.headline_count:'—';
   const readings=entry?.technical?.daily||{};
   const actual=Object.values(readings).filter(v=>typeof v==='number'&&Number.isFinite(v)).length;
@@ -1282,39 +1275,14 @@ function a31CleanupPsiTile(el,t){
 
 // A39: Read the classified headline breakdown from published records only.
 // Headline totals are not the same as sentiment category totals; never substitute one for the other.
+// A49: exact classification-count contract used by the AI Assets category page.
+// The engine supplies all four values; the three-label UI groups Mixed under Neutral.
 function a39CountBreakdown(entry){
  if(!entry||typeof entry!=='object')return null;
- const direct=[entry,entry.sentiment_counts,entry.classification_counts,entry.sentiment_breakdown,
-   entry.classifications,entry.headline_sentiment_counts,entry.counts,entry.sentiment];
- const pick=(obj,keys)=>{for(const k of keys){if(Number.isSafeInteger(obj[k])&&obj[k]>=0)return obj[k];}return null;};
- for(const obj of direct){
-  if(!obj||typeof obj!=='object'||Array.isArray(obj))continue;
-  const bull=pick(obj,['bullish_count','bull_count','bullish','bull','positive_count','positive']);
-  const bear=pick(obj,['bearish_count','bear_count','bearish','bear','negative_count','negative']);
-  const neutral=pick(obj,['neutral_count','neutral']);
-  const mixed=pick(obj,['mixed_count','mixed']);
-  const combined=pick(obj,['neutral_mixed_count','neutral_or_mixed_count','neutral_mixed']);
-  if(bull===null||bear===null)continue;
-  const neutralTotal=neutral!==null&&mixed!==null?neutral+mixed:(combined!==null?combined:(mixed===null?neutral:null));
-  if(neutralTotal===null)continue;
-  const vals=[bull,bear,neutralTotal];
-  const total=entry.headline_count??entry.count??entry.total_headlines??entry.total_count??obj.total??obj.headlines;
-  if(total!==undefined&&total!==null&&Number.isFinite(Number(total))&&vals.reduce((a,b)=>a+b,0)!==Number(total))continue;
-  return vals;
- }
- // Limited sample arrays must not be presented as complete headline classifications.
- const rows=entry.headlines||entry.top_headlines;
- const count=entry.headline_count??entry.count??entry.total_headlines??entry.total_count;
- if(!Array.isArray(rows)||!Number.isSafeInteger(count)||rows.length!==count)return null;
- const vals=[0,0,0];
- for(const row of rows){
-  const label=String(row?.classification??row?.sentiment_label??row?.sentiment_class??row?.vote??row?.sentiment??'').toLowerCase().trim();
-  if(['bullish','bull','positive'].includes(label))vals[0]++;
-  else if(['bearish','bear','negative'].includes(label))vals[1]++;
-  else if(['neutral','mixed','neutral/mixed','neutral_mixed'].includes(label))vals[2]++;
-  else return null;
- }
- return vals;
+ const keys=['bullish_count','bearish_count','neutral_count','mixed_count'];
+ // Read the same four published fields as ai-assets.html; avoid defaulting missing data to zero.
+ if(!keys.every(k=>Number.isSafeInteger(Number(entry[k]))&&Number(entry[k])>=0&&entry[k]!==null&&entry[k]!==''&&entry[k]!==undefined))return null;
+ return [Number(entry.bullish_count),Number(entry.bearish_count),Number(entry.neutral_count)+Number(entry.mixed_count)];
 }
 function a39CountForTile(t,asset){
  if(t.type==='psi'){
