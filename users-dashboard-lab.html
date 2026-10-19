@@ -1297,23 +1297,13 @@ function a39CountBreakdown(entry){
  }
  return vals;
 }
+// Only Daily Asset PSI displays engine-published sentiment counts.
+// Weekly, Monthly and regional/global tiles never query or display them.
 function a39CountForTile(t,asset){
- // Asset PSI: only Daily has an engine-published matching headline breakdown.
- if(t.type==='psi'){
-  const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
-  if(period!=='daily')return null;
-  return a39CountBreakdown(v36Asset(asset));
- }
- // Regional/global PSI: use exact classified totals published by the engine.
- // Do not synthesize counts from headline lists, charts, or daily asset values.
- const region=t.type==='fixed'?t.id:(t.psiRegion||'global');
- const key=region==='euro'?'europe':region;
- const period=t.type==='fixed'?'daily':(t.psiPeriod||'daily');
- const record=v25RegionalFeed?.[key];
- if(!record)return null;
- const published=period==='daily'?record:(record.periods?.[period]||record.sentiment_periods?.[period]);
- if(!published)return null;
- return a39CountBreakdown(published);
+ if(t.type!=='psi')return null;
+ const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
+ if(period!=='daily')return null;
+ return a39CountBreakdown(v36Asset(asset));
 }
 function a34PsiFooter(el,t){
  if(!['psi','fixed','regionpsi'].includes(t.type))return;
@@ -1334,7 +1324,7 @@ function a34PsiFooter(el,t){
   series=v26History.filter(r=>Number.isFinite(r[key])).slice(-14);
  }
  const assetPeriod=t.type==='psi'?(t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily')):null;
- const showCounts=t.type!=='psi'||assetPeriod==='daily';
+ const showCounts=t.type==='psi'&&assetPeriod==='daily';
  const vals=showCounts?a39CountForTile(t,asset):null;
  const metric=box.querySelector('.metric');
  if(metric&&showCounts){
