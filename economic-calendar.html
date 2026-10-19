@@ -1955,34 +1955,12 @@
       return /^[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:\s*(?:%(?:\s*(?:MoM|YoY|QoQ))?|k|m|b|bps|bp|points?|jobs?|barrels?|million|billion|thousand))?$/i.test(value);
     }
     function previousReleaseDisplay(e){
-      const fallback=auPreviousFallback(e);
-      if(fallback)return fallback.value===null?"N/A":formatValue(fallback.value,fallback.unit);
       const v=e?.previous;
       if(e?.numeric_comparison_available===false || /^not applicable$/i.test(String(v??"").trim()))return "N/A";
       if(v===null||v===undefined||String(v).trim()==="")return "—";
       return numericReleaseValue(v)?formatValue(v,calendarDisplayUnit(e)):"—";
     }
-    // AU display safeguard: applies only to exact historic releases when upstream Previous is blank.
-    // Stored publisher Previous always wins. This changes no US/UK data or forecast.
-    function auPreviousFallback(e){
-      const raw=e?.previous;
-      if(raw!==null&&raw!==undefined&&String(raw).trim()!=="")return null;
-      if(String(e?.country_code||"").toUpperCase()!=="AU")return null;
-      const title=String(e?.event||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
-      const when=String(e?.date||"").slice(0,10);
-      const actual=String(e?.actual??"").toLowerCase();
-      if(title==="gdp yoy"&&when==="2026-09-02"&&/2\.1/.test(actual))return {value:"2.5",unit:"%",provenance:"ABS prior quarter historical GDP YoY (not first-release certified)"};
-      if(title==="gdp qoq"&&when==="2026-09-02"&&/0\.4/.test(actual))return {value:"0.3",unit:"%",provenance:"ABS prior quarter historical GDP QoQ (not first-release certified)"};
-      if(title==="unemployment rate"&&when==="2026-10-15"&&/4\.7/.test(actual))return {value:"4.7",unit:"%",provenance:"ABS September 2026 labour force report, prior month revised reading"};
-      if(title==="rba rate decision"&&when==="2026-08-12"&&/4\.35/.test(actual))return {value:"4.35",unit:"%",provenance:"RBA preceding June 2026 cash-rate decision"};
-      if(title==="rba rate decision"&&when==="2026-09-30"&&(!actual||actual===""||/4\.6/.test(actual)))return {value:"4.35",unit:"%",provenance:"RBA preceding August 2026 cash-rate decision"};
-      if(title==="australia cpi"&&when==="2026-08-26")return {value:"3.8",unit:"%",provenance:"ABS June 2026 all-groups CPI YoY; August entry represents July publication"};
-      if(title==="australia labour force"&&when==="2026-09-23")return {value:null,unit:"",provenance:"N/A — generic release does not define a single numeric measure"};
-      return null;
-    }
     function previousReleaseLabel(e){
-      const fallback=auPreviousFallback(e);
-      if(fallback)return ` title="${esc(fallback.provenance)}"`;
       const v=e?.previous;
       if(v!==null&&v!==undefined&&String(v).trim()!==""&&!numericReleaseValue(v)){
         return ` title="${esc("Previous release not supplied as a numeric observation. Provider commentary: "+String(v).slice(0,240))}"`;
