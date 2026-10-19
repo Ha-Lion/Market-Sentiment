@@ -683,7 +683,7 @@ function v39ExportHistory(){
 }
 function v39HistoryControls(asset){
  const days=Number(state.historyDays)||0,points=v79RangePoints(asset);
- return `<div class="v39-history-controls"><label>PSI interval <select data-v79-period aria-label="PSI chart interval">${[['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']].map(([key,label])=>`<option value="${key}" ${v79Period===key?'selected':''}>${label}</option>`).join('')}</select></label><label>Range <select data-v39-range aria-label="Historical chart time range">${[[0,'All'],[7,'7 days'],[30,'30 days'],[90,'90 days'],[365,'1 year']].map(([n,label])=>`<option value="${n}" ${days===n?'selected':''}>${label}</option>`).join('')}</select></label><span class="muted">${points.length} ${points.length===1?'reading':'readings'}</span><button type="button" class="ctrl" data-v39-export title="Export history for watchlist assets">Export ↓</button></div>`;
+ return `<div class="v39-history-controls"><label>Range <select data-v39-range aria-label="Historical chart time range">${[[0,'All'],[7,'7 days'],[30,'30 days'],[90,'90 days'],[365,'1 year']].map(([n,label])=>`<option value="${n}" ${days===n?'selected':''}>${label}</option>`).join('')}</select></label><span class="muted">${points.length} ${points.length===1?'reading':'readings'}</span><button type="button" class="ctrl" data-v39-export title="Export history for watchlist assets">Export ↓</button></div>`;
 }
 // V80: responsive PSI chart. Drawn from the same validated v79 historical readings.
 function v80Date(ms){return new Date(ms).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'2-digit'});}
@@ -1430,7 +1430,7 @@ function v76IndicatorChart(t,asset,name){
 function v76TechnicalContent(t,a){
  const selected=v76Selected(t),frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
  const rows=v75History(a,frame);
- return `<div class="row v76-top"><span></span><label class="muted">Trend <select data-v75-frame aria-label="Indicator trend timeframe"><option value="daily" ${frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${frame==='monthly'?'selected':''}>Monthly</option></select></label></div>`+
+ return 
  (selected.length?selected.map(name=>{
   const value=v77AnyIndicator(rows,name,v76Params(t,name));
   const shown=typeof value==='number'&&Number.isFinite(value)?Number(value.toFixed(3)).toLocaleString():value&&typeof value.mid==='number'?`${value.low.toFixed(2)} – ${value.high.toFixed(2)}`:'—';
@@ -2264,9 +2264,18 @@ function tileSettings(t){
  const v75Block=document.createElement('div');v75Block.id='v75TechConfig';v75Block.className='v75-tech-config';body.appendChild(v75Block);
  let v97ChosenIndicators=Array.isArray(t.v97Indicators)?[...t.v97Indicators]:[...V97_TOP];
  const v76Draft={selected:v76Selected(t),settings:JSON.parse(JSON.stringify(t.indicatorSettings||{})),frame:t.indicatorFrame||'daily'};
+ // A26: chart intervals are configured here, not within tiles.
+ const a26FrameField=document.createElement('label');
+ a26FrameField.className='field';a26FrameField.id='a26FrameField';
+ a26FrameField.innerHTML=`Chart timeframe<select id="a26Frame">${[['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']].map(([k,n])=>`<option value="${k}" ${((t.type==='technical'?t.indicatorFrame:v79Period)||'daily')===k?'selected':''}>${n}</option>`).join('')}</select>`;
+ body.insertBefore(a26FrameField,body.querySelector('.v77-tile-names'));
+ const a26ShowFrame=()=>{const type=document.querySelector('#tileType')?.value||t.type;a26FrameField.hidden=!['technical','chart','history'].includes(type)};
+ a26ShowFrame();document.querySelector('#tileType')?.addEventListener('change',a26ShowFrame);
+
+ document.querySelector('#a26Frame')?.addEventListener('change',e=>{v76Draft.frame=e.target.value});
  const v75Paint=()=>{
   const shown=false;v75Block.hidden=true;if(!shown)return;
-  v75Block.innerHTML=`<div class="section">Technical indicators (choose up to 10)</div><div class="v76-checkboxes">${TECH.map(n=>`<label class="v76-check"><input type="checkbox" data-v76-indicator="${safe(n)}" ${v76Draft.selected.includes(n)?'checked':''}> ${safe(n)}</label>`).join('')}</div><div id="v76Individual"></div><label class="field">Chart timeframe<select id="v75Frame"><option value="daily" ${v76Draft.frame==='daily'?'selected':''}>Daily</option><option value="weekly" ${v76Draft.frame==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${v76Draft.frame==='monthly'?'selected':''}>Monthly</option></select></label><p class="notice">Calculations use validated price history. Indicators requiring missing high, low or volume fields remain unavailable until verified market data is connected.</p>`;
+  v75Block.innerHTML=`<div class="section">Technical indicators (choose up to 10)</div><div class="v76-checkboxes">${TECH.map(n=>`<label class="v76-check"><input type="checkbox" data-v76-indicator="${safe(n)}" ${v76Draft.selected.includes(n)?'checked':''}> ${safe(n)}</label>`).join('')}</div><div id="v76Individual"></div><p class="notice">Calculations use validated price history. Indicators requiring missing high, low or volume fields remain unavailable until verified market data is connected.</p>`;
   const settingsArea=v75Block.querySelector('#v76Individual');
   const paintSettings=()=>{
    settingsArea.innerHTML=v76Draft.selected.map(n=>{
@@ -2283,7 +2292,6 @@ function tileSettings(t){
    else v76Draft.selected=v76Draft.selected.filter(n=>n!==name);
    paintSettings();
   }));
-  v75Block.querySelector('#v75Frame').addEventListener('change',e=>{v76Draft.frame=e.target.value});
   paintSettings();
  };
  v75Paint();document.querySelector('#tileType')?.addEventListener('change',v75Paint);
@@ -2402,6 +2410,8 @@ function tileSettings(t){
   if(newType&&newType!=='custom')t.type=newType;
   if(t.type==='fundamental'){t.v97Calendar=true;t.v97Indicators=[...v97ChosenIndicators]}
   if(t.type==='country')t.countrySlots=[...a3Draft];
+  if(['chart','history'].includes(t.type)){v79Period=$('#a26Frame')?.value||'daily';}
+
   if(['psi','regionpsi'].includes(t.type))t.psiPeriod=periodSelect?.value||'daily';
   if(t.type==='regionpsi')t.psiRegion=regionSelect?.value||'global';
   if(t.type==='technical'){
@@ -2418,7 +2428,7 @@ function tileSettings(t){
    });
    if(invalid){alert('Please correct the indicator settings before saving.');return}
    t.selectedIndicators=[...v76Draft.selected];t.focusIndicator=t.selectedIndicators[0]||'';
-   t.indicatorSettings=nextSettings;t.indicatorFrame=v76Draft.frame;
+   t.indicatorSettings=nextSettings;t.indicatorFrame=$('#a26Frame')?.value||v76Draft.frame;
   }
   updateNaming();
   t.officialName=officialInput.value;
