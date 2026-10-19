@@ -1378,6 +1378,7 @@
     let currentRange = "week";
     let customRange = null;
     const VIEW_STATE_KEY = "psd-economic-calendar-view-state-v1";
+    let pendingRestoredFilters = null;
     function persistCalendarView(){
       try{localStorage.setItem(VIEW_STATE_KEY,JSON.stringify({range:currentRange,custom:customRange,search:search.value,country:countryFilter.value,impact:impactFilter.value,category:categoryFilter.value,upcoming:upcomingOnly}));}catch(_err){}
     }
@@ -1388,7 +1389,8 @@
         if(["yesterday","today","tomorrow","lastweek","week","next","custom"].includes(saved.range))currentRange=saved.range;
         if(saved.custom&&/^\d{4}-\d{2}-\d{2}$/.test(saved.custom.start)&&/^\d{4}-\d{2}-\d{2}$/.test(saved.custom.end)&&saved.custom.start<=saved.custom.end)customRange={start:saved.custom.start,end:saved.custom.end};
         if(currentRange==="custom"&&!customRange)currentRange="week";
-        search.value=String(saved.search||"");countryFilter.value=String(saved.country||"");impactFilter.value=String(saved.impact||"");categoryFilter.value=String(saved.category||"");
+        search.value=String(saved.search||"");impactFilter.value=String(saved.impact||"");
+        pendingRestoredFilters={country:String(saved.country||""),category:String(saved.category||"")};
         upcomingOnly=Boolean(saved.upcoming);
         const box=document.getElementById("upcoming-only");if(box)box.checked=upcomingOnly;
       }catch(_err){}
@@ -1895,8 +1897,9 @@
     }
 
     function rebuildQuickFilters(){
-      const oldCountry=countryFilter.value;
-      const oldCategory=categoryFilter.value;
+      const oldCountry=pendingRestoredFilters?.country||countryFilter.value;
+      const oldCategory=pendingRestoredFilters?.category||categoryFilter.value;
+      pendingRestoredFilters=null;
 
       countryFilter.innerHTML='<option value="">All selected countries</option>'+
         settings.countries.map(c=>`<option value="${c}">${esc(c)} · ${esc(countryName(c))}</option>`).join("");
@@ -4250,9 +4253,9 @@
     const sharedCategory=sharedParams.get("category");
     const sharedQ=sharedParams.get("q");
 
-    if(sharedCountry) countryFilter.value=sharedCountry;
+    if(sharedCountry){pendingRestoredFilters={...(pendingRestoredFilters||{}),country:sharedCountry};}
     if(sharedImpact) impactFilter.value=sharedImpact;
-    if(sharedCategory) categoryFilter.value=sharedCategory;
+    if(sharedCategory){pendingRestoredFilters={...(pendingRestoredFilters||{}),category:sharedCategory};}
     if(sharedQ) search.value=sharedQ;
     const sharedRange=sharedParams.get("range");
     if(sharedRange&&["week","today","yesterday","tomorrow","lastweek","next"].includes(sharedRange)){
