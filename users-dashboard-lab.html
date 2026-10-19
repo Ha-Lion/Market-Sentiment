@@ -227,9 +227,19 @@ function v79DailyPoints(asset){
  return v39Points(asset).map(p=>({...p,source:'imported'}));
 }
 function v79ChartPoints(asset){
- // Historical chart plots published daily observations; no PSI aggregation in the browser.
- if(v79Period!=='daily')return [];
- return v79DailyPoints(asset);
+ const src=v79DailyPoints(asset);
+ if(v79Period==='daily')return src;
+ const bins=new Map();
+ for(const p of src){
+  const d=new Date(p.time);
+  let key;
+  if(v79Period==='monthly')key=d.toISOString().slice(0,7);
+  else {const monday=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay()+6)%7));key=monday.toISOString().slice(0,10);}
+  if(!bins.has(key))bins.set(key,[]);
+  bins.get(key).push(p);
+ }
+ const minimum=v79Period==='weekly'?3:10;
+ return [...bins.values()].filter(xs=>xs.length>=minimum).map(xs=>({time:xs.at(-1).time,value:xs.reduce((a,p)=>a+p.value,0)/xs.length,source:xs[0].source,days:xs.length})).sort((a,b)=>a.time-b.time);
 }
 function v79RangePoints(asset){
  const all=v79ChartPoints(asset),days=Number(state.historyDays)||0;
@@ -239,7 +249,24 @@ function v79RangePoints(asset){
 }
 // V68 — Excel §4: historical weekly/monthly asset PSI, never a substitute for a live reading.
 // Aggregates only explicit, timestamped saved PSI readings and requires calendar-day coverage.
-
+function v68HistoricalPSI(asset,period){
+ const days=period==='weekly'?7:period==='monthly'?30:null;
+ if(!days)return null;
+ // Use verified published feed history when available; fall back to timestamped imports.
+ // Deduplicate by calendar day so repeat scraper runs cannot inflate the average.
+ const byDay=new Map(),now=Date.now();
+ for(const p of v79DailyPoints(asset)){
+  if(!Number.isFinite(p.time)||!Number.isFinite(p.value)||p.value<0||p.value>100||p.time<now-days*86400000||p.time>now+300000)continue;
+  const day=new Date(p.time).toISOString().slice(0,10);
+  const previous=byDay.get(day);
+  if(!previous||p.time>previous.time)byDay.set(day,p);
+ }
+ const values=[...byDay.values()].sort((a,b)=>a.time-b.time);
+ const minimum=period==='weekly'?2:4;
+ if(values.length<minimum)return {value:null,count:values.length,days,required:minimum};
+ const result=values.reduce((sum,p)=>sum+p.value,0)/values.length;
+ return {value:Math.round(result*100)/100,count:values.length,days,last:values.at(-1).time,source:values.every(p=>p.source==='feed')?'published':'historical',partial:values.length<days};
+}
 function v39RangePoints(asset){
  const all=v39Points(asset),days=Number(state.historyDays)||0;
  if(!days)return all;
@@ -1117,41 +1144,33 @@ function v98SlotsHtml(){
  <div class="v98-slots">${Array.from({length:15},(_,i)=>`<label class="v98-slot"><span>${i+1}.</span><select data-v98-slot="${i}" aria-label="Favorite news website slot ${i+1}"><option value="">Empty slot ${i+1}</option>${[...new Set([...options,...(v98FavoriteSlots[i]?[v98FavoriteSlots[i]]:[])])].map(src=>`<option value="${safe(src)}" ${v98FavoriteSlots[i]===src?'selected':''}>${safe(src)}</option>`).join('')}</select></label>`).join('')}</div>
  <div class="muted" style="margin-top:9px">Your starred articles remain saved separately below.</div>`;
 }
-function a47PublishedPsiValue(entry){
- const value=entry&&typeof entry==='object'?(Number.isFinite(entry.psi)?entry.psi:entry.score):null;
- return Number.isFinite(value)&&value>=0&&value<=100?value:null;
-}
-function a47AssetPsi(asset,period){
- const entry=a48PeriodRecord(v36Asset(asset),period);
- return a47PublishedPsiValue(entry);
-}
-function a47RegionalPsi(region,period,asOf=''){
- const key=region==='euro'?'europe':region;
- if(asOf){
-  if(period!=='daily')return null;
-  const row=v26History.find(r=>r.date===asOf);
-  const value=row?.[key];return Number.isFinite(value)&&value>=0&&value<=100?value:null;
- }
- return a47PublishedPsiValue(a48PeriodRecord(v25RegionalFeed?.[key],period));
-}
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','chart','history'].includes(t.type)||(!a&&t.type==='fundamental'&&!t.v97Calendar))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'country':return a3CountriesTile(t);
 case'datecontrol':return a10DateTile();
 case'regionpsi':{
  const region=['global','us','euro'].includes(t.psiRegion)?t.psiRegion:'global';
  const period=['daily','weekly','monthly'].includes(t.psiPeriod)?t.psiPeriod:'daily';
- const asOf=a10AsOf('regionpsi');const v=a47RegionalPsi(region,period,asOf);
- return `<div class="metric" title="${v===null?'Published PSI unavailable':'Engine-published PSI'}">${showPoint(v)}</div>${v26Trend(region)}`;
+ let v=null,provenance='Data unavailable';
+ const asOf=a10AsOf('regionpsi');
+ if(asOf){
+  const end=Date.parse(asOf+'T23:59:59Z'),days=period==='weekly'?7:period==='monthly'?30:1;
+  const readings=new Map();
+  for(const row of v26History){const ms=Date.parse(row.date),value=row[region];if(Number.isFinite(ms)&&ms<=end&&ms>end-days*86400000&&Number.isFinite(value)&&value>=0&&value<=100)readings.set(new Date(ms).toISOString().slice(0,10),value)}
+  if(readings.size){v=Array.from(readings.values()).reduce((a,b)=>a+b,0)/readings.size;provenance='Historical '+period+' PSI as of '+asOf+' ('+readings.size+' readings)'}
+  else provenance='Historical PSI unavailable for '+asOf;
+ }else if(period==='daily'){
+  const record=regionalLiveValue(region);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[region]):null;
+  v=record?record.value:imported;provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';
+ }else{
+  const days=period==='weekly'?7:30,required=period==='weekly'?5:20;
+  const now=Date.now(),byDate=new Map();
+  for(const row of v26History){const ms=Date.parse(row.date);const val=row[region];if(!Number.isFinite(ms)||ms<now-days*86400000||ms>now+86400000||!Number.isFinite(val)||val<0||val>100)continue;byDate.set(new Date(ms).toISOString().slice(0,10),val)}
+  if(byDate.size>=required){v=Array.from(byDate.values()).reduce((a,b)=>a+b,0)/byDate.size;provenance=`${period==='weekly'?'7-day':'30-day'} historical average (${byDate.size} days)`;}
+ }
+ return `<div class="metric" title="${safe(provenance)}">${showPoint(v)}</div>${v26Trend(region)}`;
 }
-case'fixed':{
- const v=a47RegionalPsi(t.id,'daily');
- return `<div class="metric" title="${v===null?'Published PSI unavailable':'Engine-published PSI'}">${showPoint(v)}</div>${v26Trend(t.id)}`;
-}
-case'psi':{
- const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
- const v=a47AssetPsi(a,period);
- return `<div class="metric" title="${v===null?'Published PSI unavailable':'Engine-published PSI'}">${showPoint(v)}</div>${a29AssetPsiTrend(a,period)}`;
-}
+case'fixed':{const record=regionalLiveValue(t.id);const imported=ageOK(snap?.generatedAt,48)?psiValue(snap?.regions?.[t.id]):null;const v=record?record.value:imported;const provenance=record?'Updated '+record.updatedAt:imported!==null?'Saved reading':'Data unavailable';return `<div class="metric" title="${safe(provenance)}">${showPoint(v)}</div>${v26Trend(t.id)}`;}
+case'psi':{const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');const live=v36PSI(a,period);const imported=psiValue(snapshotAsset(a).psi?.[period]);const historical=live===null&&imported===null?v68HistoricalPSI(a,period):null;const v=live!==null?live:imported!==null?imported:historical?.value??null;const status=live!==null?'Latest available reading':imported!==null?'Saved reading':historical?.value!==null&&historical?.value!==undefined?('Average of '+historical.count+' '+(historical.source==='published'?'published':'saved')+' daily readings · '+(historical.partial?'partial period · ':'')+'last '+new Date(historical.last).toLocaleDateString()):historical?('Insufficient '+period+' history: '+historical.count+' of '+historical.required+' distinct daily readings available'):'Data unavailable';return `<div class="metric" title="${safe(status)}">${showPoint(v)}</div>${a29AssetPsiTrend(a,period)}`;}
 case'technical':return v76TechnicalContent(t,a);
 case'fundamental':{if(t.v97Calendar===true)return v97FundamentalContent(t);const funds=v56FundSlots(a).filter(Boolean);return `<div class="muted">${safe(a)} · ${funds.length} selected market drivers · ${v38Coverage(a).fundamental.filter(x=>x.value!==null).length} available</div><div class="stack" style="margin-top:8px">${v38Coverage(a).fundamental.map(x=>`<div class="row chip" title="${safe(x.source==='Unavailable'?'No verified reading available':x.source)}"><span>${safe(x.name)}</span><span class="muted">${x.value===null?'—':showPoint(x.value)}</span></div>`).join('')}</div><button class="tile-link" data-open="fundamental">Customize fundamental drivers <span>↗</span></button>`}
 case'news':{
@@ -1244,27 +1263,29 @@ function a31CleanupPsiTile(el,t){
 
 // A39: Read the classified headline breakdown from published records only.
 // Headline totals are not the same as sentiment category totals; never substitute one for the other.
-// A48: direct published engine values only. No headline reclassification, sampling, or PSI calculation.
-function a48PublishedCounts(record){
- if(!record||typeof record!=='object')return null;
+// A49: exact classification-count contract used by the AI Assets category page.
+// The engine supplies all four values; the three-label UI groups Mixed under Neutral.
+function a39CountBreakdown(entry){
+ if(!entry||typeof entry!=='object')return null;
  const keys=['bullish_count','bearish_count','neutral_count','mixed_count'];
- if(!keys.every(k=>Number.isSafeInteger(record[k])&&record[k]>=0))return null;
- // Three-label display maps the engine's fourth Mixed category into Neutral.
- return [record.bullish_count,record.bearish_count,record.neutral_count+record.mixed_count];
+ if(!keys.every(k=>Number.isSafeInteger(entry[k])&&entry[k]>=0))return null;
+ return [entry.bullish_count,entry.bearish_count,entry.neutral_count+entry.mixed_count];
 }
-function a48PeriodRecord(record,period){
- if(period==='daily')return record||null;
- return record?.periods?.[period]||record?.psi_periods?.[period]||record?.sentiment_periods?.[period]||null;
-}
-function a48CountsForTile(tile,asset){
- if(tile.type==='psi'){
-  const period=tile.psiPeriod||(['daily','weekly','monthly'].includes(tile.id)?tile.id:'daily');
-  return a48PublishedCounts(a48PeriodRecord(v36Asset(asset),period));
+function a39CountForTile(t,asset){
+ if(t.type==='psi'){
+  const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
+  const live=v36Asset(asset);
+  if(period==='daily')return a39CountBreakdown(live);
+  // Period-specific counts must come from period-specific classified aggregates.
+  const bucket=live?.periods?.[period]||live?.sentiment_periods?.[period]||live?.psi_periods?.[period];
+  return a39CountBreakdown(bucket);
  }
- const region=tile.type==='fixed'?tile.id:tile.psiRegion||'global';
+ const region=t.type==='fixed'?t.id:t.psiRegion||'global';
  const key=region==='euro'?'europe':region;
- const period=tile.type==='fixed'?'daily':tile.psiPeriod||'daily';
- return a48PublishedCounts(a48PeriodRecord(v25RegionalFeed?.[key],period));
+ const period=t.type==='fixed'?'daily':t.psiPeriod||'daily';
+ const data=v25RegionalFeed?.[key];
+ if(!data)return null;
+ return a39CountBreakdown(period==='daily'?data:(data.periods?.[period]||data.sentiment_periods?.[period]));
 }
 function a34PsiFooter(el,t){
  if(!['psi','fixed','regionpsi'].includes(t.type))return;
@@ -1284,14 +1305,14 @@ function a34PsiFooter(el,t){
   const region=t.type==='fixed'?t.id:(t.psiRegion||'global');const key=region==='euro'?'europe':region;
   series=v26History.filter(r=>Number.isFinite(r[key])).slice(-14);
  }
- const vals=a48CountsForTile(t,asset);
+ const vals=a39CountForTile(t,asset);
  const metric=box.querySelector('.metric');
  if(metric){
   const summary=document.createElement('div');summary.className='a35-psi-counts';
   for(const [i,label] of ['Bull','Bear','Neutral'].entries()){
    const line=document.createElement('span');line.textContent=label+' '+(vals?vals[i]:'—');summary.appendChild(line);
   }
-  summary.title=vals?'Directly published classified headlines (Neutral includes Mixed)':'Matching published classified counts are not available for this PSI period or region';
+  summary.title=vals?'Classified headline totals from the published sentiment feed':'No matching complete classified-headline breakdown is available in the published feed';
   const top=document.createElement('div');top.className='a35-psi-top';
   metric.parentNode.insertBefore(top,metric);top.appendChild(metric);top.appendChild(summary);
  }
