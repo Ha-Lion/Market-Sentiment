@@ -1907,14 +1907,17 @@
         .sort((a,b)=>(parseProviderDate(a.date)?.getTime()||0)-(parseProviderDate(b.date)?.getTime()||0));
     }
 
-    function economicValueLabel(value,field){
+    function economicValueLabel(value,field,event){
+      const provenance=field==="Previous"?event?.previous_provenance:field==="Actual"?event?.actual_provenance:null;
+      const historical=String(event?.release_verification_status||"")==="historical_vintage_not_verified_first_release";
+      const note=historical&&field==="Actual"?"Historical value, not verified as first-release Actual.":provenance?"Source provenance: "+String(provenance).slice(0,140):"";
       if(value===null||value===undefined||String(value).trim()===""){
         const suffix=field==="Actual"?"The official release value has not been captured by this calendar feed.":
           field==="Forecast"?"The feed has not supplied a consensus forecast.":
           "The feed has not supplied a previous value.";
         return ` title="${esc(suffix)}" aria-label="${esc(field+': not available')}"`;
       }
-      return ` title="${esc(field+': supplied by calendar data source')}"`;
+      return ` title="${esc(note||field+': supplied by calendar data source')}"`;
     }
 
     function calendarValueCoverage(events){
@@ -1934,6 +1937,11 @@
         const q=data.data_quality;
         warning.title=`Feed quality: ${q.actual??0} Actual, ${q.forecast??0} Forecast, ${q.previous??0} Previous values; ${q.archived_restored_count??0} restored from saved releases.`;
       }else warning.removeAttribute("title");
+      if(data?.mode==="provider-empty"||data?.provider_error){
+        warning.textContent=data?.provider_error?"Calendar provider has incomplete data: "+String(data.provider_error).slice(0,180):"Provider coverage is limited; available official events remain visible.";
+        warning.classList.add("show");
+        return;
+      }
       if(!coverage.total)return;
       const past=(allEvents||[]).filter(e=>{
         const dt=parseProviderDate(e.date);
@@ -1965,13 +1973,14 @@
       if(v!==null&&v!==undefined&&String(v).trim()!==""&&!numericReleaseValue(v)){
         return ` title="${esc("Previous release not supplied as a numeric observation. Provider commentary: "+String(v).slice(0,240))}"`;
       }
-      return economicValueLabel(v,"Previous");
+      return economicValueLabel(v,"Previous",e);
     }
 
     function calendarDisplayUnit(e){
       const existing=String(e?.unit??"").trim();
       if(/^(%|percent(?:age)?(?:\s+(?:mom|yoy))?|pct)$/i.test(existing))return "%";
       if(existing)return existing;
+      if(e?.official_event_id||e?.official_indicator_id)return ""; // Supabase official unit is authoritative
       const name=String(e?.event??e?.category??"").trim();
       if(/\b(?:PMI|purchase index|refinance index|mortgage market composite index)\b/i.test(name))return "Index Points";
       if(/\b(?:YoY|MoM|year over year|month over month|m\/m|y\/y|inflation rate|unemployment rate|mortgage rate|interest rate|PPI|consumer price index percentage change)\b/i.test(name))return "%";
@@ -2048,8 +2057,8 @@
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</td>
-            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual")}>${formatValue(e.actual,calendarDisplayUnit(e))}</td>
-            <td class="value"${economicValueLabel(e.revised,"Revised")}>${formatValue(e.revised,calendarDisplayUnit(e))}</td>
+            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual",e)}>${formatValue(e.actual,calendarDisplayUnit(e))}</td>
+            <td class="value"${economicValueLabel(e.revised,"Revised",e)}>${formatValue(e.revised,calendarDisplayUnit(e))}</td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
               <div class="ec-event-actions">
@@ -3024,6 +3033,7 @@
       }
 
       if(weekPreloadPromise && !force) return weekPreloadPromise;
+      if(!force){const recent=getWeekCache(range);if(recent&&recent.age_ms<60000)return recent;}
 
       weekPreloadPromise=(async()=>{
         try{
@@ -3079,8 +3089,9 @@
         if(!cached?.data?.events || !cached.range) return null;
         const sameRange=cached.range.start===range.start && cached.range.end===range.end;
         const sameCountries=JSON.stringify(cached.countries||[])===JSON.stringify([...settings.countries].sort());
-        if(!sameRange||!sameCountries) return null;
+        if(!sameRange||!sameCountries||!Number.isFinite(Number(cached.saved_at))) return null;
         cached.age_ms=Math.max(0,Date.now()-Number(cached.saved_at||0));
+        if(cached.age_ms>15*60*1000)return null;
         return cached;
       }catch(_err){
         return null;
@@ -3166,7 +3177,7 @@
        * The normal auto-refresh loop will refresh it shortly.
        */
       if(!manual && showedCached && cachedAgeMs<60000 && !settings.countries.includes("GB")){
-        setStatus("live","Recently cached");
+        setStatus("loading","Cached data (<1 min)");
         lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
         return;
       }
