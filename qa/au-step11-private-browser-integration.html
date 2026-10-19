@@ -12,16 +12,16 @@ small{color:#435467}.scroll{overflow-x:auto}a{color:#13569b}.error{color:#a30000
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-client.js?v=12"></script></head>
 <body>
-<header><h1>Australia Economic Calendar · Step 11</h1><strong>Private QA — NOT LIVE</strong></header>
-<p class="banner">Authenticated preview only. No production activation, no blocked releases, no changes to US/UK calendars. This page reads the real private Supabase preview feed.</p>
+<header><h1>Australia Economic Calendar · Step 11</h1><strong>Public-safe QA — NOT LIVE</strong></header>
+<p class="banner">No sign-in required for this restricted QA preview. No production activation or unverified numeric values. Existing US/UK calendars and website authentication are unchanged.</p>
 <div><button id="refresh" type="button">Refresh now</button> <button id="disconnect" type="button">Simulate disconnection</button> <button id="reconnect" type="button">Reconnect and catch up</button></div>
-<p id="status" role="status">Waiting for sign-in…</p>
+<p id="status" role="status">Connecting to public-safe Supabase preview…</p>
 <p><small id="version"></small></p>
 <div class="scroll"><table><thead><tr><th>Australian event</th><th>Status</th><th>Reference period</th><th>Actual</th><th>Previous</th><th>Unit</th><th>Release time (UTC)</th><th>Publisher</th></tr></thead><tbody id="events"></tbody></table></div>
 <p><small id="details"></small></p>
 <script>
 (()=>{"use strict";
-const endpoint="https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-feed-vnext-preview";
+const endpoint="https://fupexuonvzakoguucglk.supabase.co/rest/v1/rpc/econ_au_step11_public_qa_feed_v1";
 const $=id=>document.getElementById(id);
 let online=true, lastVersion="", lastEvents=[],lastFetchedAt="",busy=false;
 function status(message,isError=false){$("status").textContent=message;$("status").className=isError?"error":"";}
@@ -44,17 +44,16 @@ async function load(reason){
   if(busy)return;
   busy=true;
   try{
-    const client=window.psdSupabase;if(!client)throw new Error("Website Supabase client unavailable");
-    const {data,error}=await client.auth.getSession();if(error)throw error;
-    if(!data?.session?.access_token){status("Please sign in to your website account before opening this private QA page.",true);return;}
-    const resp=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json","apikey":window.PSDSupabaseConfig.anonKey,"authorization":"Bearer "+data.session.access_token},body:JSON.stringify({action:"au_step11_private_preview"}),cache:"no-store"});
+    const key=window.PSDSupabaseConfig?.anonKey;
+    if(!key)throw new Error("Website Supabase configuration unavailable");
+    const resp=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json","apikey":key,"authorization":"Bearer "+key},body:"{}",cache:"no-store"});
     if(!resp.ok)throw new Error("HTTP "+resp.status+" from private preview");
     const payload=await resp.json();
-    if(payload.schema!=="econ-au-step11-browser-preview-v1"||payload.production!==false||payload.can_publish!==false||!Array.isArray(payload.events)||typeof payload.version!=="string")throw new Error("Preview safety schema mismatch");
+    if(payload.schema!=="econ-au-public-qa-v1"||payload.production!==false||payload.can_publish!==false||!Array.isArray(payload.events)||typeof payload.version!=="string")throw new Error("Preview safety schema mismatch");
     if(payload.events.some(e=>e.status==="source_review_pending"))throw new Error("Unverified event appeared in preview");
     const changed=payload.version!==lastVersion;
     lastEvents=payload.events;lastVersion=payload.version;lastFetchedAt=new Date().toISOString();
-    render();status("Connected to authenticated Supabase preview · "+(changed?"version refreshed":"version unchanged")+" · "+reason);
+    render();status("Connected to Supabase public-safe QA preview · "+(changed?"version refreshed":"version unchanged")+" · "+reason);
   }catch(err){status("Live preview unavailable: "+String(err?.message||err),true)}
   finally{busy=false}
 }
