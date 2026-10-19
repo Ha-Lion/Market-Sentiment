@@ -1377,6 +1377,22 @@
 
     let currentRange = "week";
     let customRange = null;
+    const VIEW_STATE_KEY = "psd-economic-calendar-view-state-v1";
+    function persistCalendarView(){
+      try{localStorage.setItem(VIEW_STATE_KEY,JSON.stringify({range:currentRange,custom:customRange,search:search.value,country:countryFilter.value,impact:impactFilter.value,category:categoryFilter.value,upcoming:upcomingOnly}));}catch(_err){}
+    }
+    function restoreCalendarView(){
+      try{
+        const saved=JSON.parse(localStorage.getItem(VIEW_STATE_KEY)||"null");
+        if(!saved||typeof saved!=="object")return;
+        if(["yesterday","today","tomorrow","lastweek","week","next","custom"].includes(saved.range))currentRange=saved.range;
+        if(saved.custom&&/^\d{4}-\d{2}-\d{2}$/.test(saved.custom.start)&&/^\d{4}-\d{2}-\d{2}$/.test(saved.custom.end)&&saved.custom.start<=saved.custom.end)customRange={start:saved.custom.start,end:saved.custom.end};
+        if(currentRange==="custom"&&!customRange)currentRange="week";
+        search.value=String(saved.search||"");countryFilter.value=String(saved.country||"");impactFilter.value=String(saved.impact||"");categoryFilter.value=String(saved.category||"");
+        upcomingOnly=Boolean(saved.upcoming);
+        const box=document.getElementById("upcoming-only");if(box)box.checked=upcomingOnly;
+      }catch(_err){}
+    }
     let upcomingOnly = false;
     let currentUser = null;
 
@@ -3131,6 +3147,14 @@
       );
     }
 
+    function eventContentSignature(events){
+      return JSON.stringify((events||[]).map(e=>[e.id,e.official_event_id,e.date,e.event,e.country_code,e.importance,e.category,e.reference,e.previous,e.forecast,e.te_forecast,e.actual,e.revised,e.unit,e.source_url,e.release_verification_status]));
+    }
+    function renderChangedEvents(previousSignature){
+      if(eventContentSignature(allEvents)!==previousSignature)render();
+      else updateCountdown();
+    }
+
     async function loadFeed(manual=false){
       const r=getRange(currentRange);
       displayRangeLabel();
@@ -3191,7 +3215,7 @@
       );
       warning.classList.remove("show");
 
-      if(!showedCached){
+      if(!showedCached && !allEvents.length){
         body.innerHTML='<tr><td colspan="11" class="ec-loading">Loading economic calendar…</td></tr>';
       }
 
@@ -3199,6 +3223,7 @@
         const data=await fetchFeedRange(r,activeController.signal,manual);
         lastFetchAt=new Date();
 
+        const previousSignature=eventContentSignature(allEvents);
         allEvents=Array.isArray(data.events)?data.events:[];
         ensureEventUIKeys();
 
@@ -3227,13 +3252,13 @@
           console.warn("Calendar provider note:",data.provider_error);
         }
 
-        render();
+        renderChangedEvents(previousSignature);
         showCalendarCoverageNotice(data);
       }catch(err){
         if(err.name==="AbortError") return;
         console.error("Economic calendar load failed",err);
 
-        if(showedCached && allEvents.length){
+        if(allEvents.length){
           setStatus("loading","Cached data");
           warning.textContent="Live refresh is temporarily unavailable. Showing the most recently cached calendar.";
           warning.classList.add("show");
@@ -3259,6 +3284,7 @@
         const data=await fetchFeedRange(todayRange,undefined);
         if(currentRange!=="week") return;
 
+        const previousSignature=eventContentSignature(allEvents);
         allEvents=mergeEventUpdates(allEvents,Array.isArray(data.events)?data.events:[]);
         ensureEventUIKeys();
         lastFetchAt=new Date();
@@ -3285,7 +3311,7 @@
         saveWeekCache(weekData,weekRange);
 
         setStatus("live","Live data");
-        render();
+        renderChangedEvents(previousSignature);
       }catch(err){
         console.warn("30-second live-value refresh failed",err);
       }
@@ -3352,6 +3378,7 @@
         const updates=Array.isArray(data.events)?data.events:[];
         if(!updates.length) return;
 
+        const previousSignature=eventContentSignature(allEvents);
         allEvents=mergeEventUpdates(allEvents,updates);
         ensureEventUIKeys();
         lastFetchAt=new Date();
@@ -3382,7 +3409,7 @@
         setStatus("live","Live data");
         document.getElementById("provider-name").textContent=
           data.source||"FinanceCalendar";
-        render();
+        renderChangedEvents(previousSignature);
       }catch(err){
         console.warn("Official release fast refresh failed",err);
       }finally{
@@ -3515,6 +3542,7 @@
       customRange={start:localISODate(from),end:localISODate(to)};
       currentRange="custom";
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+      persistCalendarView();
       await loadFeed();
     }
 
@@ -3551,6 +3579,7 @@
       document.getElementById("ec-search-dates-note").hidden=true;
       document.getElementById("custom-go").classList.remove("ec-pending-go");
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+      persistCalendarView();
       await loadFeed();
     });
 
@@ -3566,6 +3595,7 @@
       }
 
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",x===btn));
+      persistCalendarView();
       document.getElementById("ec-search-dates-note").hidden=true;
       document.getElementById("custom-go").classList.remove("ec-pending-go");
       await loadFeed();
@@ -3584,6 +3614,7 @@
         note.hidden=true;
         document.getElementById("custom-go").classList.remove("ec-pending-go");
       }
+      persistCalendarView();
       if(currentRange==="custom")render();
     }
     search.addEventListener("input",onCombinedFilterEdit);
@@ -3600,7 +3631,7 @@
     document.getElementById("clear-filters").addEventListener("click",()=>{
       search.value=""; countryFilter.value=""; impactFilter.value=""; categoryFilter.value=""; upcomingOnly=false; document.getElementById("upcoming-only").checked=false;
       document.getElementById("ec-search-dates-note").hidden=true;
-      document.getElementById("custom-go").classList.remove("ec-pending-go"); render();
+      document.getElementById("custom-go").classList.remove("ec-pending-go"); persistCalendarView(); render();
     });
 
 
@@ -4208,6 +4239,8 @@
      * Supabase authentication/profile calls.
      */
     restoreCalendarSettingsCache();
+    restoreCalendarView();
+    document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",currentRange!=="custom"&&x.dataset.range===currentRange));
     displayRangeLabel();
     applySettingsControls();
 
@@ -4221,6 +4254,12 @@
     if(sharedImpact) impactFilter.value=sharedImpact;
     if(sharedCategory) categoryFilter.value=sharedCategory;
     if(sharedQ) search.value=sharedQ;
+    const sharedRange=sharedParams.get("range");
+    if(sharedRange&&["week","today","yesterday","tomorrow","lastweek","next"].includes(sharedRange)){
+      currentRange=sharedRange;customRange=null;
+      document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",x.dataset.range===currentRange));
+      displayRangeLabel();
+    }
     startupFeedPromise=loadFeed(false).catch(err=>{
       console.warn("Initial calendar load failed",err);
     });
