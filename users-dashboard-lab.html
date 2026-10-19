@@ -1257,11 +1257,14 @@ function a39CountBreakdown(entry){
  return [Number(entry.bullish_count),Number(entry.bearish_count),Number(entry.neutral_count)+Number(entry.mixed_count)];
 }
 function a39CountForTile(t,asset){
+ // Read authoritative classifications only. Never infer votes from a PSI score,
+ // chart observations, or a non-matching time period.
  if(t.type==='psi'){
   const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
   const live=v36Asset(asset);
   if(period==='daily')return a39CountBreakdown(live);
-  // Period-specific counts must come from period-specific classified aggregates.
+  // No period-specific classified counts exist in the current public engine contract.
+  // Read one only if the engine subsequently publishes it explicitly.
   const bucket=live?.periods?.[period]||live?.sentiment_periods?.[period]||live?.psi_periods?.[period];
   return a39CountBreakdown(bucket);
  }
@@ -1270,6 +1273,8 @@ function a39CountForTile(t,asset){
  const period=t.type==='fixed'?'daily':t.psiPeriod||'daily';
  const data=v25RegionalFeed?.[key];
  if(!data)return null;
+ // Regional counts are published by make_region_pulse, from exactly the
+ // selected headlines used for each published regional PSI score.
  return a39CountBreakdown(period==='daily'?data:(data.periods?.[period]||data.sentiment_periods?.[period]));
 }
 function a34PsiFooter(el,t){
