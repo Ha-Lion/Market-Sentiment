@@ -51,13 +51,11 @@ html[data-psd-theme="dark"] .modal .dialog :is(.v96-node,.v96-item):focus-visibl
 
 <style id="a34-psi-footer-chevron-bevel">.a34-psi-footer{font-size:10px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;color:var(--txt);}header.top .workspace-presets .preset{background:linear-gradient(180deg,#ffe7aa 0%,#d5a24f 40%,#ab771f 100%)!important;filter:drop-shadow(0 3px 1px rgba(94,61,17,.42)) drop-shadow(0 1px 3px rgba(75,49,17,.24))!important;transform:translateY(-1px);transition:transform .15s,filter .15s!important;}header.top .workspace-presets .preset::before{inset:2px!important;background:linear-gradient(180deg,#fff 0%,#fffbef 34%,#e8d4a8 100%)!important;filter:none!important;}header.top .workspace-presets .preset.active::before{background:linear-gradient(180deg,#c79b4a,#8b601e)!important;}header.top .workspace-presets .preset:hover{transform:translateY(-3px)!important;filter:drop-shadow(0 5px 2px rgba(94,61,17,.45))!important;}header.top .workspace-presets .preset:active{transform:translateY(2px)!important;filter:drop-shadow(0 1px 1px rgba(75,49,17,.4))!important;}html[data-psd-theme="dark"] header.top .workspace-presets .preset::before{background:linear-gradient(180deg,#344963,#1c304d 65%,#14243d)!important;}html[data-psd-theme="dark"] header.top .workspace-presets .preset{color:#fff!important;}</style>
 <style id="a35-psi-layout-grid-contrast">:root{--a35-tech-grid:#9eafc4;}html[data-psd-theme="dark"]{--a35-tech-grid:#657c99;}.a35-psi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}.a35-psi-top .metric{flex:none;margin:4px 0 6px;}.a35-psi-counts{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:10px;line-height:1.2;font-weight:650;color:var(--txt);white-space:nowrap;}.a35-psi-dates{font-size:10px;white-space:normal;overflow:visible;text-overflow:clip;margin-top:2px;color:var(--txt);}</style>
-<style id="a42-maximize-safe-offset">
-/* Keep maximized tile controls below the fixed workspace toolbar. */
-:root{--a42-sticky-top:72px}
-.board .tile.maxed{top:calc(var(--a42-sticky-top) + 8px)!important;left:12px!important;right:12px!important;bottom:12px!important;width:calc(100vw - 24px)!important;height:calc(100dvh - var(--a42-sticky-top) - 20px)!important;z-index:1000!important}
-.board .tile.maxed>.bar{position:sticky!important;top:0!important;z-index:2!important;flex-shrink:0!important}
-</style>
-</head><body>
+<style id="a43-recovery-style">
+#a43-recovery{position:fixed!important;right:14px!important;top:14px!important;z-index:2147483647!important;display:none;align-items:center;gap:8px;background:#fff8e5!important;color:#171717!important;border:3px solid #a47820!important;border-radius:9px!important;padding:10px 16px!important;font:bold 14px Arial,sans-serif!important;box-shadow:0 4px 0 #795b27,0 6px 18px #0008!important;cursor:pointer!important;pointer-events:auto!important}
+#a43-recovery.a43-show{display:flex!important}
+.tile.maxed{z-index:2000!important;top:max(64px, var(--a43-safe-top, 64px))!important;left:12px!important;right:12px!important;bottom:12px!important;width:calc(100vw - 24px)!important;height:auto!important;max-height:none!important}
+</style></head><body>
 <div id="site-header"></div>
 <script src="site-nav.js?v=20"></script>
 <script src="site-theme.js?v=20" defer></script>
@@ -2512,23 +2510,15 @@ let flashTimeout;
 btn.addEventListener('click',()=>{btn.classList.add('a18-click-flash');clearTimeout(flashTimeout);flashTimeout=setTimeout(()=>btn.classList.remove('a18-click-flash'),650)});
 })();
 </script>
-<script id="a42-maximize-keyboard-recovery">
-(()=>{
-  const refreshTop=()=>{
-    const bar=document.querySelector('header.top');
-    if(bar)document.documentElement.style.setProperty('--a42-sticky-top',Math.max(0,Math.ceil(bar.getBoundingClientRect().height))+'px');
-  };
-  window.addEventListener('load',refreshTop);
-  window.addEventListener('resize',refreshTop);
-  document.addEventListener('keydown',e=>{
-    if(e.key!=='Escape')return;
-    const maximized=document.querySelector('#board .tile.maxed');
-    if(!maximized)return;
-    const restore=maximized.querySelector('[data-command="max"]');
-    if(!restore)return;
-    e.preventDefault();e.stopImmediatePropagation();restore.click();
-  },true);
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshTop,{once:true});else refreshTop();
+<script id="a43-independent-recovery">
+(function(){'use strict';
+ const btn=document.createElement('button');btn.id='a43-recovery';btn.type='button';btn.textContent='↙ Restore Expanded Tile';btn.setAttribute('aria-label','Restore expanded dashboard tile');document.body.appendChild(btn);
+ function active(){return document.querySelector('#board .tile.maxed')}
+ function sync(){btn.classList.toggle('a43-show',!!active());const header=document.querySelector('.top');if(header){const r=header.getBoundingClientRect();const safe=Math.max(64,Math.min(innerHeight-100,r.bottom+8));document.documentElement.style.setProperty('--a43-safe-top',safe+'px')}}
+ function restore(){const tile=active();if(!tile)return;const inTile=tile.querySelector('[data-command="max"]');if(inTile){inTile.click();}else{const title=tile.getAttribute('data-id');try{const key='psd-users-dashboard-lab-v15';const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&Array.isArray(saved.tiles)){for(const t of saved.tiles)if(t.id===title)t.maxed=false;localStorage.setItem(key,JSON.stringify(saved));location.reload();}}catch(e){console.warn('Recovery unavailable',e)}}sync()}
+ btn.addEventListener('click',restore);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active()){e.preventDefault();e.stopImmediatePropagation();restore()}},true);
+ const board=document.getElementById('board');if(board)new MutationObserver(sync).observe(board,{childList:true,subtree:false});
+ window.addEventListener('resize',sync,{passive:true});window.addEventListener('scroll',sync,{passive:true});sync();
 })();
-</script>
-</body></html>
+</script></body></html>
