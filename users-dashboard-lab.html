@@ -623,7 +623,7 @@ function v36Evidence(entry){
 }
 function v36PSI(name,period){
  if(period!=='daily')return null; // daily snapshot must not be presented as weekly/monthly
- const e=v36Asset(name);return e&&v36Evidence(e)&&Number.isFinite(e.psi)&&e.psi>=0&&e.psi<=100?e.psi:null;
+ const e=v36Asset(name);return e&&Number.isFinite(e.psi)&&e.psi>=0&&e.psi<=100?e.psi:null;
 }
 function v36Technical(name,key){
  const e=v36Asset(name);const d=e?.technical?.daily;
@@ -1122,22 +1122,17 @@ function a47PublishedPsiValue(entry){
  return Number.isFinite(value)&&value>=0&&value<=100?value:null;
 }
 function a47AssetPsi(asset,period){
- const entry=v36Asset(asset);
- if(period==='daily')return v36PSI(asset,'daily');
- const bucket=entry?.periods?.[period]||entry?.psi_periods?.[period]||entry?.sentiment_periods?.[period];
- return a47PublishedPsiValue(bucket);
+ const entry=a48PeriodRecord(v36Asset(asset),period);
+ return a47PublishedPsiValue(entry);
 }
 function a47RegionalPsi(region,period,asOf=''){
  const key=region==='euro'?'europe':region;
  if(asOf){
-  // Historical dated observations supplied by the engine; exact-date only, never averaged.
   if(period!=='daily')return null;
   const row=v26History.find(r=>r.date===asOf);
   const value=row?.[key];return Number.isFinite(value)&&value>=0&&value<=100?value:null;
  }
- const entry=v25RegionalFeed?.[key];
- if(period==='daily')return a47PublishedPsiValue(entry);
- return a47PublishedPsiValue(entry?.periods?.[period]||entry?.psi_periods?.[period]);
+ return a47PublishedPsiValue(a48PeriodRecord(v25RegionalFeed?.[key],period));
 }
 function tileContent(t){let a=ASSETS.includes(state.selected)?state.selected:'';if(!a&&['psi','technical','chart','history'].includes(t.type)||(!a&&t.type==='fundamental'&&!t.v97Calendar))return `<div class="muted">Choose an asset</div><p class="notice">Select an asset from My Watchlist to see its analysis.</p>`;switch(t.type){case'watch':return `<div class="v70-watch-toggle"><button class="btn" data-v69-all="1" aria-pressed="${v69ShowAllWatch}">${v69ShowAllWatch?'My 15':'All'}</button></div>${v69ShowAllWatch?`<div class="stack" style="margin-top:10px">${v59GroupedAssets().map(({group,names})=>`<section class="v59-category"><div class="v59-category-title">${safe(group)}</div>${names.map(n=>{const i=state.watch.indexOf(n);return i>=0?`<button class="side-item ${n===a?'selected':''}" data-watch-slot="${i}">${safe(n)} <span class="num">✓</span></button>`:`<button type="button" class="side-item ${n===a?'selected':''}" data-catalog-asset="${safe(n)}" title="Analyze ${safe(n)}" aria-pressed="${n===a}">${safe(n)} <span class="num">›</span></button>`}).join('')}</section>`).join('')}</div>`:`<div class="stack" style="margin-top:10px">${Array.from({length:15},(_,i)=>{const v=state.watch[i];return `<button class="side-item ${v===a?'selected':''} ${v?'':'empty'}" data-watch-slot="${i}" ${v?'':'disabled aria-disabled="true"'}><span>${v?safe(v):'Empty slot '+(i+1)}</span>${v?'›':''}</button>`}).join('')}</div>`}`;
 case'country':return a3CountriesTile(t);
@@ -1249,66 +1244,27 @@ function a31CleanupPsiTile(el,t){
 
 // A39: Read the classified headline breakdown from published records only.
 // Headline totals are not the same as sentiment category totals; never substitute one for the other.
-function a39CountBreakdown(entry){
- if(!entry||typeof entry!=='object')return null;
- const direct=[entry,entry.sentiment_counts,entry.classification_counts,entry.sentiment_breakdown,
-   entry.classifications,entry.headline_sentiment_counts,entry.counts,entry.sentiment];
- const pick=(obj,keys)=>{for(const k of keys){if(Number.isSafeInteger(obj[k])&&obj[k]>=0)return obj[k];}return null;};
- for(const obj of direct){
-  if(!obj||typeof obj!=='object'||Array.isArray(obj))continue;
-  const bull=pick(obj,['bullish_count','bull_count','bullish','bull','positive_count','positive']);
-  const bear=pick(obj,['bearish_count','bear_count','bearish','bear','negative_count','negative']);
-  const neutral=pick(obj,['neutral_count','neutral']);
-  const mixed=pick(obj,['mixed_count','mixed']);
-  const combined=pick(obj,['neutral_mixed_count','neutral_or_mixed_count','neutral_mixed']);
-  if(bull===null||bear===null)continue;
-  const neutralTotal=neutral!==null&&mixed!==null?neutral+mixed:(combined!==null?combined:(mixed===null?neutral:null));
-  if(neutralTotal===null)continue;
-  const vals=[bull,bear,neutralTotal];
-  const total=entry.headline_count??entry.count??entry.total_headlines??entry.total_count??obj.total??obj.headlines;
-  if(total!==undefined&&total!==null&&Number.isFinite(Number(total))&&vals.reduce((a,b)=>a+b,0)!==Number(total))continue;
-  return vals;
- }
- // Limited sample arrays must not be presented as complete headline classifications.
- const rows=entry.headlines||entry.top_headlines;
- const count=entry.headline_count??entry.count??entry.total_headlines??entry.total_count;
- if(!Array.isArray(rows)||!Number.isSafeInteger(count)||rows.length!==count)return null;
- const vals=[0,0,0];
- for(const row of rows){
-  const label=String(row?.classification??row?.sentiment_label??row?.sentiment_class??row?.vote??row?.sentiment??'').toLowerCase().trim();
-  if(['bullish','bull','positive'].includes(label))vals[0]++;
-  else if(['bearish','bear','negative'].includes(label))vals[1]++;
-  else if(['neutral','mixed','neutral/mixed','neutral_mixed'].includes(label))vals[2]++;
-  else return null;
- }
- return vals;
-}
-// A46: counts are read directly from the same published engine snapshots.
-// Never derive classification counts from PSI scores or chart points.
-function a46PublishedCounts(entry){
- if(!entry||typeof entry!=='object')return null;
+// A48: direct published engine values only. No headline reclassification, sampling, or PSI calculation.
+function a48PublishedCounts(record){
+ if(!record||typeof record!=='object')return null;
  const keys=['bullish_count','bearish_count','neutral_count','mixed_count'];
- if(!keys.every(k=>Number.isSafeInteger(entry[k])&&entry[k]>=0))return null;
- // Display Neutral and Mixed together, consistent with the three-column UI.
- const b=entry.bullish_count,r=entry.bearish_count,n=entry.neutral_count+entry.mixed_count;
- const count=entry.headline_count??entry.count;
- if(Number.isSafeInteger(count)&&count!==b+r+n)return null;
- return [b,r,n];
+ if(!keys.every(k=>Number.isSafeInteger(record[k])&&record[k]>=0))return null;
+ // Three-label display maps the engine's fourth Mixed category into Neutral.
+ return [record.bullish_count,record.bearish_count,record.neutral_count+record.mixed_count];
 }
-function a39CountForTile(t,asset){
- if(t.type==='psi'){
-  const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
-  const live=v36Asset(asset);
-  if(period==='daily')return a46PublishedCounts(live);
-  // Do not copy daily classified counts into weekly/monthly PSI.
-  const bucket=live?.periods?.[period]||live?.sentiment_periods?.[period]||live?.psi_periods?.[period];
-  return a46PublishedCounts(bucket);
+function a48PeriodRecord(record,period){
+ if(period==='daily')return record||null;
+ return record?.periods?.[period]||record?.psi_periods?.[period]||record?.sentiment_periods?.[period]||null;
+}
+function a48CountsForTile(tile,asset){
+ if(tile.type==='psi'){
+  const period=tile.psiPeriod||(['daily','weekly','monthly'].includes(tile.id)?tile.id:'daily');
+  return a48PublishedCounts(a48PeriodRecord(v36Asset(asset),period));
  }
- const region=t.type==='fixed'?t.id:t.psiRegion||'global';
+ const region=tile.type==='fixed'?tile.id:tile.psiRegion||'global';
  const key=region==='euro'?'europe':region;
- const period=t.type==='fixed'?'daily':t.psiPeriod||'daily';
- const regionEntry=v25RegionalFeed?.[key];
- return a46PublishedCounts(period==='daily'?regionEntry:(regionEntry?.periods?.[period]));
+ const period=tile.type==='fixed'?'daily':tile.psiPeriod||'daily';
+ return a48PublishedCounts(a48PeriodRecord(v25RegionalFeed?.[key],period));
 }
 function a34PsiFooter(el,t){
  if(!['psi','fixed','regionpsi'].includes(t.type))return;
@@ -1328,7 +1284,7 @@ function a34PsiFooter(el,t){
   const region=t.type==='fixed'?t.id:(t.psiRegion||'global');const key=region==='euro'?'europe':region;
   series=v26History.filter(r=>Number.isFinite(r[key])).slice(-14);
  }
- const vals=a39CountForTile(t,asset);
+ const vals=a48CountsForTile(t,asset);
  const metric=box.querySelector('.metric');
  if(metric){
   const summary=document.createElement('div');summary.className='a35-psi-counts';
