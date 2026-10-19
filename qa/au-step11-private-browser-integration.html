@@ -58,8 +58,8 @@ async function load(reason){
     const checks=[
       ["Supabase connection",lastEvents.length===42],
       ["Nonproduction protection",payload.production===false&&payload.can_publish===false],
-      ["All document names",lastEvents.every(x=>!/^au_onboard_\\d+$/.test(x.name||""))],
-      ["Publisher URLs",lastEvents.every(x=>/^https:\\/\\//.test(x.source_url||""))],
+      ["All document names",lastEvents.every(x=>!String(x.name||"").startsWith("au_onboard_"))],
+      ["Publisher URLs",lastEvents.every(x=>String(x.source_url||"").startsWith("https://"))],
       ["Safe source statuses",lastEvents.every(x=>x.status==="scheduled"||x.status==="document_source_verified")],
       ["No unapproved values",lastEvents.every(x=>x.actual==null&&x.previous==null)],
       ["Version received",typeof lastVersion==="string"&&lastVersion.length>0],
