@@ -1297,37 +1297,23 @@ function a39CountBreakdown(entry){
  }
  return vals;
 }
-// A57: asset weekly/monthly counts are read ONLY from the engine-published
-// per-asset period records, never from daily PSI or client-side aggregation.
-function a57AssetPeriodCounts(asset,period){
- if(period!=='weekly'&&period!=='monthly')return null;
- if(!v36Feed||typeof v36Feed!=='object'||!asset)return null;
- const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
- const exact=Object.prototype.hasOwnProperty.call(v36Feed,asset)?asset:null;
- const matches=exact?[exact]:Object.keys(v36Feed).filter(key=>norm(key)===norm(asset));
- if(matches.length!==1)return null;
- const matching=matches[0];
- const entry=v36Feed[matching];
- if(!entry||typeof entry!=='object')return null;
- const bucket=entry.periods?.[period];
- if(!bucket||bucket.window_days!==(period==='weekly'?7:30))return null;
- const count=a39CountBreakdown(bucket);
- return count;
-}
 function a39CountForTile(t,asset){
+ // Asset PSI: only Daily has an engine-published matching headline breakdown.
  if(t.type==='psi'){
   const period=t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily');
-  if(period==='weekly'||period==='monthly')return a57AssetPeriodCounts(asset,period);
-  // Preserve the existing working Daily PSI path unchanged.
+  if(period!=='daily')return null;
   return a39CountBreakdown(v36Asset(asset));
  }
- // Regional PSI is intentionally untouched in A57.
- const region=t.type==='fixed'?t.id:t.psiRegion||'global';
+ // Regional/global PSI: use exact classified totals published by the engine.
+ // Do not synthesize counts from headline lists, charts, or daily asset values.
+ const region=t.type==='fixed'?t.id:(t.psiRegion||'global');
  const key=region==='euro'?'europe':region;
- const period=t.type==='fixed'?'daily':t.psiPeriod||'daily';
- const data=v25RegionalFeed?.[key];
- if(!data)return null;
- return a39CountBreakdown(period==='daily'?data:(data.periods?.[period]||data.sentiment_periods?.[period]));
+ const period=t.type==='fixed'?'daily':(t.psiPeriod||'daily');
+ const record=v25RegionalFeed?.[key];
+ if(!record)return null;
+ const published=period==='daily'?record:(record.periods?.[period]||record.sentiment_periods?.[period]);
+ if(!published)return null;
+ return a39CountBreakdown(published);
 }
 function a34PsiFooter(el,t){
  if(!['psi','fixed','regionpsi'].includes(t.type))return;
@@ -1347,9 +1333,11 @@ function a34PsiFooter(el,t){
   const region=t.type==='fixed'?t.id:(t.psiRegion||'global');const key=region==='euro'?'europe':region;
   series=v26History.filter(r=>Number.isFinite(r[key])).slice(-14);
  }
- const vals=a39CountForTile(t,asset);
+ const assetPeriod=t.type==='psi'?(t.psiPeriod||(['daily','weekly','monthly'].includes(t.id)?t.id:'daily')):null;
+ const showCounts=t.type!=='psi'||assetPeriod==='daily';
+ const vals=showCounts?a39CountForTile(t,asset):null;
  const metric=box.querySelector('.metric');
- if(metric){
+ if(metric&&showCounts){
   const summary=document.createElement('div');summary.className='a35-psi-counts';
   for(const [i,label] of ['Bull','Bear','Neutral'].entries()){
    const line=document.createElement('span');line.textContent=label+' '+(vals?vals[i]:'—');summary.appendChild(line);
