@@ -23,7 +23,7 @@
 <!-- A12: Official shared ribbon, matching Economic Calendar dependencies -->
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="site-theme.css?v=20">
+<link rel="stylesheet" href="site-theme.css?v=21">
 <link rel="stylesheet" href="mobile/ribbon.css?v=1">
 <style id="a12-ribbon-boundary">#site-header{position:relative;z-index:2100;isolation:isolate;width:100%;flex:none;}#site-header .row{justify-content:initial;}#site-header .brand{font-size:inherit;letter-spacing:normal;}#site-header .sub{font-size:inherit;margin-top:0;}#site-header .pill{border-radius:inherit;padding:initial;}#modal{z-index:4000;}</style>
 <style id="a13-dashboard-heading-compact">header.top{padding:9px 19px!important;min-height:0!important;gap:8px!important;}header.top .brand{color:#000!important;font-size:19px!important;font-weight:800!important;letter-spacing:-.35px!important;line-height:1.2!important;}header.top .sub{margin-top:2px!important;line-height:1.2!important;}@media (max-width:850px){header.top{padding:9px 12px!important;}}</style>
@@ -154,9 +154,9 @@ html[data-psd-theme="light"] .board::before{opacity:.34!important;}
 </style>
 <style id="a70-watermark-picker">
 /* Increase actual lettering contrast in the embedded PSD watermark in both themes. */
-.board::before{background-position:center center!important;background-size:min(84vw,1150px) auto!important;opacity:.96!important;}
-html[data-psd-theme="light"] .board::before{opacity:.96!important;mix-blend-mode:multiply!important;filter:brightness(.68) contrast(1.9) saturate(1.5)!important;}
-html[data-psd-theme="dark"] .board::before{opacity:.96!important;mix-blend-mode:screen!important;filter:brightness(1.6) contrast(1.8) saturate(1.3)!important;}
+.board::before{background-position:center center!important;background-size:min(84vw,1150px) auto!important;opacity:.89!important;}
+html[data-psd-theme="light"] .board::before{opacity:.89!important;mix-blend-mode:multiply!important;filter:brightness(.68) contrast(1.9) saturate(1.5)!important;}
+html[data-psd-theme="dark"] .board::before{opacity:.89!important;mix-blend-mode:screen!important;filter:brightness(1.6) contrast(1.8) saturate(1.3)!important;}
 @media(max-width:750px){.board::before{background-size:96vw auto!important;}}
 .dialog:has(#a69-layout-picker){width:min(520px,100%);}
 #a69-layout-picker .a69-layout-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);}
@@ -165,7 +165,7 @@ html[data-psd-theme="dark"] .board::before{opacity:.96!important;mix-blend-mode:
 </style>
 </head><body>
 <div id="site-header"></div>
-<script src="site-nav.js?v=20"></script>
+<script src="site-nav.js?v=21"></script>
 <script src="site-theme.js?v=20" defer></script>
 <header class="top"><div><div class="brand">User's Dashboard</div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Clear all tiles in this workspace and reset its name">↺ Clear Workspace</button><button class="btn" id="a69ChooseLayout" type="button" title="Save, use, and manage layouts">▤ Layouts</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
@@ -241,6 +241,57 @@ try{const raw=JSON.parse(localStorage.getItem(PRESETS_KEY)||'null');if(raw&&Arra
  restoreWorkspace(profiles[activePreset].data);
 }}catch{}
 if(!profiles)profiles=Array.from({length:5},(_,i)=>({name:'Workspace '+(i+1),data:i===0?captureWorkspace():freshWorkspace()}));
+// Production workspace recovery: copy the three APPROVED layout snapshots from the
+// original lab's same-origin browser storage. Read-only: never modify lab data.
+// There are no published layout snapshots in the repository; on a fresh browser
+// this does nothing rather than inventing incorrect 57/49/21-tile arrangements.
+const PSD_APPROVED_DEFAULT_SPECS=[
+ {name:'Fundamental (Default)',count:57},
+ {name:'My Watchlist (Default)',count:49},
+ {name:'News & Article Search (Default)',count:21}
+];
+const PSD_DEFAULT_IMPORT_KEY='psd-user-dashboard-production-v1-approved-defaults-imported';
+function psdReadApprovedLabDefaults(){
+ let saved=[],labSlots=[];
+ try{const raw=JSON.parse(localStorage.getItem('psd-dashboard-named-layouts-v1')||'[]');if(Array.isArray(raw))saved=raw.filter(r=>r&&typeof r.name==='string'&&Array.isArray(r.tiles));}catch(e){console.warn('Legacy named layouts unavailable',e);}
+ try{const raw=JSON.parse(localStorage.getItem('psd-users-dashboard-lab-v15-presets')||'null');if(Array.isArray(raw?.slots))labSlots=raw.slots.filter(p=>p?.data&&Array.isArray(p.data.tiles)).map(p=>({name:p.name,tiles:p.data.tiles}));}catch(e){console.warn('Legacy workspace presets unavailable',e);}
+ const sources=[...saved,...labSlots];const used=new Set();
+ return PSD_APPROVED_DEFAULT_SPECS.map(spec=>{
+  const normal=s=>String(s||'').trim().toLowerCase().replace(/\s*\(default\)\s*$/,'').replace(/\s+/g,' ');
+  let source=sources.find((r,i)=>!used.has(i)&&normal(r.name)===normal(spec.name)&&r.tiles.length===spec.count);
+  if(!source)source=sources.find((r,i)=>!used.has(i)&&r.tiles.length===spec.count);
+  if(!source)return null;
+  used.add(sources.indexOf(source));
+  const allowed=productionTiles(structuredClone(source.tiles));
+  if(!allowed.length)return null;
+  return {id:'original-lab-default-'+spec.count,name:spec.name,tiles:allowed,sourceCount:source.tiles.length};
+ });
+}
+const PSD_RECOVERED_LAB_DEFAULTS=psdReadApprovedLabDefaults();
+function psdIsUntouchedFactoryLayout(data){
+ const list=data?.tiles;
+ return Array.isArray(list)&&list.length===blueprint.length&&blueprint.every(([id,,type,x,y,w,h],i)=>{
+  const t=list[i];return t&&t.id===id&&t.type===type&&[t.x,t.y,t.w,t.h].every((v,j)=>Number(v)===[x,y,w,h][j])&&
+    !t.closed&&!t.min&&!t.maxed&&!t.locked;
+ });
+}
+(function psdRecoverWorkspaceDefaults(){
+ let imported=[];
+ try{const v=JSON.parse(localStorage.getItem(PSD_DEFAULT_IMPORT_KEY)||'[]');if(Array.isArray(v))imported=v;}catch{}
+ let changed=false;
+ PSD_RECOVERED_LAB_DEFAULTS.forEach((source,i)=>{
+  if(!source||imported.includes(i)||!profiles[i]||!psdIsUntouchedFactoryLayout(profiles[i].data))return;
+  profiles[i].data={...profiles[i].data,tiles:structuredClone(source.tiles)}; // Do not copy preferences or account/session data.
+  if(profiles[i].name==='Workspace '+(i+1))profiles[i].name=source.name;
+  imported.push(i);changed=true;
+ });
+ if(!changed)return;
+ restoreWorkspace(profiles[activePreset].data);
+ try{
+  localStorage.setItem(PRESETS_KEY,JSON.stringify({active:activePreset,slots:profiles}));
+  localStorage.setItem(PSD_DEFAULT_IMPORT_KEY,JSON.stringify(imported));
+ }catch(e){console.warn('Recovered defaults could not be persisted',e);}
+})();
 function storePresets(){try{profiles[activePreset].data=captureWorkspace();for(const p of profiles){if(p.data&&Array.isArray(p.data.tiles))p.data.tiles=productionTiles(p.data.tiles)}localStorage.setItem(PRESETS_KEY,JSON.stringify({active:activePreset,slots:profiles}))}catch(e){console.warn('Unable to save workspace',e)}}
 function showPresetButtons(){document.querySelectorAll('[data-preset]').forEach(b=>{const i=Number(b.dataset.preset);const label=profiles[i].name.replace(new RegExp('\\s+'+(i+1)+'$'),'').trim() || 'Workspace';b.replaceChildren();const nameSpan=document.createElement('span');nameSpan.className='a65-workspace-name';nameSpan.textContent=label;const numberSpan=document.createElement('span');numberSpan.className='a65-workspace-number';numberSpan.textContent=String(i+1);numberSpan.setAttribute('aria-hidden','true');b.append(nameSpan,numberSpan);b.setAttribute('aria-label',profiles[i].name+' — workspace '+(i+1));b.classList.toggle('active',i===activePreset);b.setAttribute('aria-pressed',String(i===activePreset));b.title=profiles[i].name+' — click to switch, double-click to rename'})}
 function switchPreset(n){previousArrangement=null;document.getElementById('undoArrange').disabled=true;if(!Number.isInteger(n)||n<0||n>=profiles.length||n===activePreset)return;storePresets();activePreset=n;restoreWorkspace(profiles[n].data);storePresets();showPresetButtons();render();refreshV8Status();applyWatermark();window.scrollTo({top:0,behavior:'instant'})}
@@ -1764,7 +1815,7 @@ const A68_LAYOUTS_KEY='psd-user-dashboard-production-v1-layouts';
 const A68_LAYOUTS_MAX=10;
 // Published site-wide templates live here once approved tile snapshots are provided.
 // Never copy browser-local personal layouts into this array without explicit approval.
-const PSD_STANDARD_LAYOUTS = [];
+const PSD_STANDARD_LAYOUTS = PSD_RECOVERED_LAB_DEFAULTS.filter(Boolean);
 function a68ReadLayouts(){
  try {
   const value=JSON.parse(localStorage.getItem(A68_LAYOUTS_KEY)||'[]');
@@ -1792,7 +1843,7 @@ function a71Manager(){
  <div class="row" style="justify-content:flex-end"><button class="btn secondary" type="button" data-a71-action="export-templates">Download My Layout Data</button></div>
  <div class="section">PSD Standard Layouts</div>
  <div class="stack">${PSD_STANDARD_LAYOUTS.length
- ? PSD_STANDARD_LAYOUTS.map(x=>`<div class="stat"><div class="row" style="flex-wrap:wrap"><div style="min-width:0;flex:1"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · Provided by PSD · Does not count toward your 10 layouts</div></div><button class="btn" data-a72-template="${safe(x.id)}" type="button">Use</button></div></div>`).join('')
+ ? PSD_STANDARD_LAYOUTS.map(x=>`<div class="stat"><div class="row" style="flex-wrap:wrap"><div style="min-width:0;flex:1"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · Recovered from original dashboard · Does not count toward your 10 layouts</div></div><button class="btn" data-a72-template="${safe(x.id)}" type="button">Use</button></div></div>`).join('')
  : '<p class="muted">Standard layouts will appear here when published by PSD.</p>'}</div>
  <div class="section">My saved layouts</div>
  <div class="stack">${records.map(x=>`<div class="stat"><div class="row" style="flex-wrap:wrap"><div style="min-width:0;flex:1"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · ${safe(new Date(x.savedAt).toLocaleString())}</div></div><div class="row" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-a71-action="load" data-a71-id="${safe(x.id)}">Use</button><button class="btn" data-a71-action="rename" data-a71-id="${safe(x.id)}">Rename</button><button class="btn secondary" data-a71-action="delete" data-a71-id="${safe(x.id)}">Delete</button></div></div></div>`).join('')||'<p class="muted">No saved layouts yet. Enter a name above and click Save Layout.</p>'}</div>
