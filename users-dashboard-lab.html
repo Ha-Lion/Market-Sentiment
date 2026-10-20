@@ -133,11 +133,22 @@ html[data-psd-theme="dark"] #v62ScreenedHeadlines{color:#fff!important;}
 html[data-psd-theme="light"] .board::before{opacity:.34!important;}
 @media(max-width:750px){.board::before{background-position:center center!important;background-size:85vw auto!important;}}
 </style>
+<style id="a69-watermark-picker">
+/* Override only watermark prominence and picker sizing; preserve artwork and colors. */
+.board::before{background-position:center center!important;background-size:min(74vw,980px) auto!important;opacity:.76!important;}
+html[data-psd-theme="light"] .board::before{opacity:.78!important;mix-blend-mode:multiply!important;}
+html[data-psd-theme="dark"] .board::before{opacity:.77!important;mix-blend-mode:normal!important;}
+@media(max-width:750px){.board::before{background-size:95vw auto!important;}}
+.dialog:has(#a69-layout-picker){width:min(520px,100%);}
+#a69-layout-picker .a69-layout-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);}
+#a69-layout-picker .a69-layout-option:last-child{border-bottom:0;}
+#a69-layout-picker .a69-layout-option .a69-layout-name{min-width:0;overflow-wrap:anywhere;}
+</style>
 </head><body>
 <div id="site-header"></div>
 <script src="site-nav.js?v=20"></script>
 <script src="site-theme.js?v=20" defer></script>
-<header class="top"><div><div class="brand">User's Dashboard</div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Clear all tiles in this workspace and reset its name">↺ Clear Workspace</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
+<header class="top"><div><div class="brand">User's Dashboard</div><div class="sub">Personal market workspace</div></div><div class="buttons"><button class="btn" id="settingsMain">⚙ Dashboard Settings</button><button class="btn" id="addTile">＋ Add Tile</button><button class="btn" id="restoreTiles" title="Clear all tiles in this workspace and reset its name">↺ Clear Workspace</button><button class="btn" id="a69ChooseLayout" type="button" title="Choose a saved layout for this workspace">▤ Saved Layouts</button><div aria-label="Saved workspaces" class="workspace-presets" id="workspacePresets" role="group"><button class="btn preset" data-preset="0" title="Switch workspace; double-click to rename">Workspace 1</button><button class="btn preset" data-preset="1" title="Switch workspace; double-click to rename">Workspace 2</button><button class="btn preset" data-preset="2" title="Switch workspace; double-click to rename">Workspace 3</button><button class="btn preset" data-preset="3" title="Switch workspace; double-click to rename">Workspace 4</button><button class="btn preset" data-preset="4" title="Switch workspace; double-click to rename">Workspace 5</button></div></div><div hidden="" id="labControls"><button id="v8Refresh">Recheck Data</button><button id="autoArrange">Arrange Tiles</button><button disabled="" id="undoArrange">Undo Arrange</button><button id="importData">Import Data Snapshot</button><input accept="application/json,.json" aria-label="Import market snapshot" id="dataFile" type="file"/><button id="clearData">Clear Snapshot</button><button id="dataHealth">Data Health</button><button id="templateData">Snapshot Template</button><button id="backup">Back Up Workspaces</button><button id="importLayout">Restore Backup</button><input accept="application/json,.json" aria-label="Import saved layout" id="importFile" type="file"/><button id="densityToggle">Compact spacing: Off</button><button id="restore">Restore Closed</button><button id="unlock">Unlock All</button><button id="reset">Reset Lab</button></div></header>
 <div aria-live="polite" class="v8-status" role="status"><label for="v8Asset">Active asset</label><select aria-label="Switch active watchlist asset" id="v8Asset"></select><span class="sr-only" id="v8Connection">Data status</span><span class="sr-only" id="v8PSI">PSI status</span></div><main aria-label="Dashboard workspace" class="board" id="board"></main>
 <div aria-labelledby="modalTitle" aria-modal="true" class="modal" id="modal" role="dialog"><div class="dialog"><div class="dialog-head"><h2 id="modalTitle"></h2><div class="v58-modal-actions"><button class="btn" id="closeModal">✕ Close</button></div></div><div class="dialog-body" id="modalBody"></div><div class="dialog-footer" id="modalFooter"></div></div></div>
 <script>
@@ -1754,6 +1765,12 @@ function a68SaveLayout(){
  const record={id:'layout-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name,savedAt:new Date().toISOString(),sourceWorkspace:activePreset+1,tiles:structuredClone(tiles)};
  if(a68WriteLayouts([...layouts,record]))a68ManageLayouts();
 }
+// Compact selection dialog uses the same saved layout records and restore action.
+function a69ChooseLayout(){
+ const records=a68ReadLayouts();
+ open('Choose Saved Layout',`<div id="a69-layout-picker"><p class="notice">Choose a saved layout for workspace ${activePreset+1}. Its tiles and tab name will be applied to this workspace only.</p>${records.length?records.map(x=>`<div class="a69-layout-option"><div class="a69-layout-name"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles</div></div><button class="btn" data-a68-action="load" data-a68-id="${safe(x.id)}">Choose</button></div>`).join(''):'<p class="muted">No layouts saved yet. Use Dashboard Settings to save your current layout.</p>'}</div>`);
+}
+document.getElementById('a69ChooseLayout').addEventListener('click',a69ChooseLayout);
 function a68ManageLayouts(){
  const records=a68ReadLayouts();
  open('Saved Layouts',`<p class="notice">Save up to 10 named tile layouts. Restore a snapshot into the current workspace (${activePreset+1}); other workspaces and settings are not changed. Saved layouts remain in this browser.</p><div class="row"><b>${records.length} / ${A68_LAYOUTS_MAX} saved</b><button class="btn accent" data-a68-action="save" ${records.length>=A68_LAYOUTS_MAX?'disabled':''}>+ Save Current Layout</button></div><div class="stack" style="margin-top:12px">${records.map(x=>`<div class="stat"><div class="row"><div style="min-width:0"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · Saved ${safe(new Date(x.savedAt).toLocaleString())} · From workspace ${Number(x.sourceWorkspace)||'?'}</div></div><div class="row" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-a68-action="load" data-a68-id="${safe(x.id)}">Restore</button><button class="btn" data-a68-action="rename" data-a68-id="${safe(x.id)}">Rename</button><button class="btn secondary" data-a68-action="delete" data-a68-id="${safe(x.id)}">Delete</button></div></div></div>`).join('')||'<p class="muted">No saved layouts yet.</p>'}</div>`);
@@ -1770,7 +1787,8 @@ document.getElementById('modalBody').addEventListener('click',event=>{
   if(!confirm('Restore "'+entry.name+'" into workspace '+(activePreset+1)+'?\n\nThis will replace ALL current tiles in this workspace. Other workspaces and saved layouts are not changed.'))return;
   tiles=structuredClone(entry.tiles);previousArrangement=null;
   const undo=document.getElementById('undoArrange');if(undo)undo.disabled=true;
-  storePresets();render();shut();return;
+  profiles[activePreset].name=entry.name.slice(0,26);
+  storePresets();showPresetButtons();render();shut();return;
  }
  if(action==='rename'){
   const answer=prompt('Rename this saved layout:',entry.name);if(answer===null)return;
