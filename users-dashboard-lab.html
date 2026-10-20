@@ -1727,7 +1727,63 @@ modal.addEventListener('click',e=>{
  const article=e.target.closest('[data-v43-open]');
  if(article){state.read[article.dataset.v43Open]=Date.now();persist();}
 });
-function settingsMenu(){open('Dashboard Settings',`<div class="grid2">${[['account','My Account & Subscription'],['assets','My Watchlist Assets'],['fundamental','Fundamental Drivers'],['sources','News & Article Sources'],['social','Social Media & Websites'],['authprefs','Account Preferences · Authenticator'],['notification','Notification Preferences'],['security','Privacy, Security & Terms']].map(([id,txt])=>`<button class="tile-link" data-open="${id}">${txt} <span>↗</span></button>`).join('')}</div><div class="section">Saved workspaces</div><div class="grid2">${profiles.map((p,i)=>`<button class="tile-link" data-v15-rename="${i}">Rename ${safe(p.name)} <span>✎</span></button>`).join('')}</div><div class="section">Workspace management</div><p class="muted">Copy your current dashboard to another workspace, or restore one workspace to its original layout. Other workspaces remain unchanged.</p><div class="grid2"><button class="tile-link" data-v20-action="copy">Copy Current Workspace <span>↗</span></button><button class="tile-link" data-v20-action="reset">Reset One Workspace <span>↗</span></button></div><div class="section">Workspace preferences</div><div class="grid2"><button class="tile-link" data-v9-action="restore">Restore Closed Tiles <span>↗</span></button><button class="tile-link" data-v9-action="unlock">Unlock All Tiles <span>↗</span></button><button class="tile-link" data-v9-action="autoArrange">Arrange Tiles <span>↗</span></button><button class="tile-link" data-v9-action="undoArrange">Undo Arrangement <span>↗</span></button><button class="tile-link" data-v9-action="densityToggle">Compact Spacing <span>↗</span></button><button class="tile-link" data-v9-action="backup">Export Layout <span>↗</span></button><button class="tile-link" data-v9-action="importLayout">Import Layout <span>↗</span></button></div>`)}
+function settingsMenu(){open('Dashboard Settings',`<div class="grid2">${[['account','My Account & Subscription'],['assets','My Watchlist Assets'],['fundamental','Fundamental Drivers'],['sources','News & Article Sources'],['social','Social Media & Websites'],['authprefs','Account Preferences · Authenticator'],['notification','Notification Preferences'],['security','Privacy, Security & Terms']].map(([id,txt])=>`<button class="tile-link" data-open="${id}">${txt} <span>↗</span></button>`).join('')}</div><div class="section">Saved workspaces</div><div class="grid2">${profiles.map((p,i)=>`<button class="tile-link" data-v15-rename="${i}">Rename ${safe(p.name)} <span>✎</span></button>`).join('')}</div><div class="section">Workspace management</div><p class="muted">Copy your current dashboard to another workspace, or restore one workspace to its original layout. Other workspaces remain unchanged.</p><div class="grid2"><button class="tile-link" data-v20-action="copy">Copy Current Workspace <span>↗</span></button><button class="tile-link" data-v20-action="reset">Reset One Workspace <span>↗</span></button></div><div class="section">Workspace preferences</div><div class="grid2"><button class="tile-link" data-v9-action="restore">Restore Closed Tiles <span>↗</span></button><button class="tile-link" data-v9-action="unlock">Unlock All Tiles <span>↗</span></button><button class="tile-link" data-v9-action="autoArrange">Arrange Tiles <span>↗</span></button><button class="tile-link" data-v9-action="undoArrange">Undo Arrangement <span>↗</span></button><button class="tile-link" data-v9-action="densityToggle">Compact Spacing <span>↗</span></button><button class="tile-link" data-a68-action="save">Save Current Layout <span>↗</span></button><button class="tile-link" data-a68-action="manage">Saved Layouts <span>↗</span></button></div>`)}
+// A68: Named layout snapshots, independent of the five workspace slots.
+// Only tile layouts are saved/restored; news, authentication and other workspace preferences are untouched.
+const A68_LAYOUTS_KEY='psd-dashboard-named-layouts-v1';
+const A68_LAYOUTS_MAX=10;
+function a68ReadLayouts(){
+ try {
+  const value=JSON.parse(localStorage.getItem(A68_LAYOUTS_KEY)||'[]');
+  return Array.isArray(value)?value.filter(x=>x&&typeof x.name==='string'&&Array.isArray(x.tiles)).slice(0,A68_LAYOUTS_MAX):[];
+ }catch(error){console.warn('Saved layouts could not be read',error);return []}
+}
+function a68WriteLayouts(records){
+ try {localStorage.setItem(A68_LAYOUTS_KEY,JSON.stringify(records));return true;}
+ catch(error){alert('Unable to save layout. Browser storage may be full or disabled. No saved layouts were changed.');return false;}
+}
+function a68SaveLayout(){
+ const layouts=a68ReadLayouts();
+ if(layouts.length>=A68_LAYOUTS_MAX){alert('Maximum of 10 saved layouts reached. Delete a saved layout before adding another.');a68ManageLayouts();return;}
+ const proposed=profiles[activePreset].name+' layout';
+ const answer=prompt('Name this layout (1–50 characters):',proposed);
+ if(answer===null)return;
+ const name=answer.trim().replace(/[<>]/g,'').slice(0,50);
+ if(!name){alert('Please enter a name for the layout.');return;}
+ if(layouts.some(x=>x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('A saved layout already uses that name. Choose a different name.');return;}
+ const record={id:'layout-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name,savedAt:new Date().toISOString(),sourceWorkspace:activePreset+1,tiles:structuredClone(tiles)};
+ if(a68WriteLayouts([...layouts,record]))a68ManageLayouts();
+}
+function a68ManageLayouts(){
+ const records=a68ReadLayouts();
+ open('Saved Layouts',`<p class="notice">Save up to 10 named tile layouts. Restore a snapshot into the current workspace (${activePreset+1}); other workspaces and settings are not changed. Saved layouts remain in this browser.</p><div class="row"><b>${records.length} / ${A68_LAYOUTS_MAX} saved</b><button class="btn accent" data-a68-action="save" ${records.length>=A68_LAYOUTS_MAX?'disabled':''}>+ Save Current Layout</button></div><div class="stack" style="margin-top:12px">${records.map(x=>`<div class="stat"><div class="row"><div style="min-width:0"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · Saved ${safe(new Date(x.savedAt).toLocaleString())} · From workspace ${Number(x.sourceWorkspace)||'?'}</div></div><div class="row" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-a68-action="load" data-a68-id="${safe(x.id)}">Restore</button><button class="btn" data-a68-action="rename" data-a68-id="${safe(x.id)}">Rename</button><button class="btn secondary" data-a68-action="delete" data-a68-id="${safe(x.id)}">Delete</button></div></div></div>`).join('')||'<p class="muted">No saved layouts yet.</p>'}</div>`);
+}
+document.getElementById('modalBody').addEventListener('click',event=>{
+ const button=event.target.closest('[data-a68-action]');if(!button||button.disabled)return;
+ const action=button.dataset.a68Action;
+ if(action==='save'){a68SaveLayout();return;}
+ if(action==='manage'){a68ManageLayouts();return;}
+ const records=a68ReadLayouts();const index=records.findIndex(x=>x.id===button.dataset.a68Id);
+ if(index<0){alert('This saved layout could not be found.');a68ManageLayouts();return;}
+ const entry=records[index];
+ if(action==='load'){
+  if(!confirm('Restore "'+entry.name+'" into workspace '+(activePreset+1)+'?\n\nThis will replace ALL current tiles in this workspace. Other workspaces and saved layouts are not changed.'))return;
+  tiles=structuredClone(entry.tiles);previousArrangement=null;
+  const undo=document.getElementById('undoArrange');if(undo)undo.disabled=true;
+  storePresets();render();shut();return;
+ }
+ if(action==='rename'){
+  const answer=prompt('Rename this saved layout:',entry.name);if(answer===null)return;
+  const name=answer.trim().replace(/[<>]/g,'').slice(0,50);
+  if(!name){alert('Please enter a name.');return;}
+  if(records.some((x,i)=>i!==index&&x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('A layout already uses that name.');return;}
+  records[index].name=name;if(a68WriteLayouts(records))a68ManageLayouts();return;
+ }
+ if(action==='delete'){
+  if(!confirm('Permanently delete saved layout "'+entry.name+'"?'))return;
+  records.splice(index,1);if(a68WriteLayouts(records))a68ManageLayouts();
+ }
+});
 function options(items,selected,cl='pick'){return `<div class="config-grid">${items.map(n=>`<label class="option"><input type="checkbox" class="${cl}" value="${safe(n)}" ${selected.includes(n)?'checked':''}><span>${safe(n)}</span></label>`).join('')}</div>`};function chosen(cl){return [...body.querySelectorAll('.'+cl+':checked')].map(x=>x.value)}
 
 function v69AssetEditor(inline=false){const v69EditorHtml=`<p class="notice">Add or remove assets here only. Assign a unique position (1–15); unassigned positions remain gray. Selecting an asset on the dashboard shows its relevant fundamentals.</p><div class="section"><span id="count">${state.watch.filter(Boolean).length}</span> / 15 selected</div><div class="v22-filter"><label class="field" for="assetFilter">Find an asset<input id="assetFilter" type="search" placeholder="Search by asset name" autocomplete="off"></label><label class="v22-check"><input type="checkbox" id="assetOnlySelected"> Show selected only</label><span id="assetMatches" aria-live="polite"></span></div><div class="stack" id="assetRows">${v59AssetRows()}</div>`; if(inline){document.getElementById('v69AssetEditor').innerHTML=v69EditorHtml;}else{open('My Watchlist · 15 Assets',v69EditorHtml,'');}const v22FilterAssets=()=>{const q=$('#assetFilter').value.trim().toLocaleLowerCase();const selectedOnly=$('#assetOnlySelected').checked;let visible=0;for(const section of $('#assetRows').querySelectorAll('.v59-category')){let count=0;for(const row of section.querySelectorAll('.v59-assetrow')){const c=row.querySelector('.assetcheck');const match=(!q||c.dataset.name.toLocaleLowerCase().includes(q))&&(!selectedOnly||c.checked);row.hidden=!match;if(match){visible++;count++}}section.hidden=count===0;const badge=section.querySelector('.v59-category-count');if(badge)badge.textContent=count+' assets'}$('#assetMatches').textContent=visible+' of '+ASSETS.length+' assets'};$('#assetFilter').addEventListener('input',v22FilterAssets);$('#assetOnlySelected').addEventListener('change',v22FilterAssets);v22FilterAssets();$('#assetRows').onchange=event=>{let checked=[...body.querySelectorAll('.assetcheck:checked')];if(checked.length>15){if(event.target.matches('.assetcheck'))event.target.checked=false;alert('Maximum 15 watchlist assets.');checked=[...body.querySelectorAll('.assetcheck:checked')]}if(event.target.matches('.assetpos')){
