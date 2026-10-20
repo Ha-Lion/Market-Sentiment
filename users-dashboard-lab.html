@@ -483,15 +483,52 @@ function v62UpdateScreenedHeadlines(feed){
  const count=Number(feed?.trust_layer?.relevant_headlines);
  if(!feed?.trust_layer || feed.trust_layer.relevant_headlines==null || !Number.isFinite(count) || count<0)return;
  v62ScreenedHeadlines=Math.floor(count);
+ v63RenderPublicNewsCounts();
+}
+// The public News & Articles page obtains archive metadata and the latest 100
+// from Supabase. Keep those public counts separate from this tile's local search cache.
+let v63PublicArchiveCount=null,v63PublicShowing=null,v63PublicCountPending=null;
+function v63RenderPublicNewsCounts(){
  const status=document.getElementById('v62ScreenedHeadlines');
- if(status)status.textContent=`Screened Headlines (Last 48 Hours): ${v62ScreenedHeadlines.toLocaleString()}`;
+ if(!status)return;
+ const archive=v63PublicArchiveCount===null?'Loading…':v63PublicArchiveCount.toLocaleString();
+ const showing=v63PublicShowing===null?'Loading…':v63PublicShowing.toLocaleString();
+ const screened=v62ScreenedHeadlines===null?'Loading…':v62ScreenedHeadlines.toLocaleString();
+ status.textContent=`News & Articles Archive: ${archive}. Showing latest ${showing}. Screened Headlines (Last 48 Hours): ${screened}.`;
 }
 async function v62LoadScreenedHeadlines(){
- if(v62ScreenedHeadlines!==null){v62UpdateScreenedHeadlines({trust_layer:{relevant_headlines:v62ScreenedHeadlines}});return;}
+ // Always fetch a fresh engine snapshot, including on manual Refresh news.
  try{
   const response=await fetch('dashboard_live.json',{cache:'no-store',credentials:'omit',mode:'same-origin'});
   if(response.ok)v62UpdateScreenedHeadlines(await response.json());
  }catch(error){console.warn('Screened headline count unavailable',error);}
+}
+async function v63LoadPublicNewsCounts(){
+ if(v63PublicCountPending)return v63PublicCountPending;
+ v63RenderPublicNewsCounts();
+ v63PublicCountPending=(async()=>{
+  // The Supabase client is loaded using defer; briefly wait for its initialization.
+  for(let attempt=0;attempt<25&&!window.psdSupabase?.functions?.invoke;attempt++)
+   await new Promise(resolve=>setTimeout(resolve,200));
+  if(!window.psdSupabase?.functions?.invoke||!window.psdSupabase?.rpc)
+   throw new Error('Public news Supabase client unavailable');
+  const [meta,latest]=await Promise.all([
+   window.psdSupabase.functions.invoke('market-archive-search-v2',{body:{action:'metadata'}}),
+   window.psdSupabase.rpc('get_market_news_latest100_v3_stage',{p_limit:100})
+  ]);
+  if(meta.error||!meta.data?.ok)throw meta.error||new Error('Public archive metadata unavailable');
+  if(latest.error||!Array.isArray(latest.data))throw latest.error||new Error('Public latest headlines unavailable');
+  const archive=Number(meta.data.data?.total_news_articles);
+  if(!Number.isFinite(archive)||archive<0)throw new Error('Invalid public archive count');
+  v63PublicArchiveCount=archive;
+  v63PublicShowing=latest.data.length;
+  v63RenderPublicNewsCounts();
+ })().catch(error=>{
+  console.warn('Public News & Articles counts unavailable',error);
+  const status=document.getElementById('v62ScreenedHeadlines');
+  if(status&&v63PublicArchiveCount===null)status.textContent=`Public News & Articles archive unavailable. Screened Headlines (Last 48 Hours): ${v62ScreenedHeadlines===null?'Unavailable':v62ScreenedHeadlines.toLocaleString()}.`;
+ }).finally(()=>{v63PublicCountPending=null;});
+ return v63PublicCountPending;
 }
 function v31LoadHeadlines(feed){
  const input=Array.isArray(feed?.psi_headlines)?feed.psi_headlines:[];
@@ -1499,6 +1536,7 @@ async function v52RefreshNews(){
   const before=v31Headlines.length;
   v31LoadHeadlines(feed);
   v62UpdateScreenedHeadlines(feed);
+  v63LoadPublicNewsCounts();
   const msg=document.getElementById('v52RefreshMessage');
   if(msg)msg.textContent=v31Headlines.length?`News updated · ${v31Headlines.length} recent articles`:'No recent articles are available right now.';
   const existingSource=document.getElementById('v42Source');
@@ -1556,6 +1594,14 @@ async function v63LoadArchive(){
  }catch(e){v63ArchiveError='Older articles are temporarily unavailable; recent news is still searchable.';console.warn('V63 website news cache unavailable',e)}
  finally{v63ArchiveLoading=false;const msg=document.getElementById('v63ArchiveStatus');if(msg)msg.textContent=v63ArchiveLoaded?`${v63Archive.length.toLocaleString()} website articles available to search`:v63ArchiveError;v42RenderResults()}
 }
+// Refresh the same public counters in the background while the tile is displayed.
+// Runs at most once per 15 minutes; manual Refresh news remains available.
+setInterval(()=>{
+ if(document.getElementById('v62ScreenedHeadlines')){
+  v62LoadScreenedHeadlines();
+  v63LoadPublicNewsCounts();
+ }
+},15*60*1000);
 // V94.21: News search directly in the existing tile; favorites use the existing saved-article store.
 function v9421IsFavorites(t){return t?.type==='favorites'||(t?.type==='custom'&&/favou?rites?\s*(news|articles)|my\s+saved\s+(news|articles)/i.test(t.title||''))}
 function v9421MountSearch(html){const el=board.querySelector('.v9421-inline-news');if(el)el.innerHTML=html}
@@ -1594,7 +1640,9 @@ function v42SearchPane(inTile=false){
  for(const id of ['v61Market','v42Asset','v42Source','v42Order','v43Favorites'])$('#'+id).onchange=search;
  v42RenderResults();
  v63LoadArchive();
+ v63RenderPublicNewsCounts();
  v62LoadScreenedHeadlines();
+ v63LoadPublicNewsCounts();
 }
 function v42RenderResults(){
  const out=$('#v42Results');if(!out)return;
