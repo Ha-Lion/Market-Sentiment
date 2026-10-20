@@ -133,12 +133,12 @@ html[data-psd-theme="dark"] #v62ScreenedHeadlines{color:#fff!important;}
 html[data-psd-theme="light"] .board::before{opacity:.34!important;}
 @media(max-width:750px){.board::before{background-position:center center!important;background-size:85vw auto!important;}}
 </style>
-<style id="a69-watermark-picker">
-/* Override only watermark prominence and picker sizing; preserve artwork and colors. */
-.board::before{background-position:center center!important;background-size:min(74vw,980px) auto!important;opacity:.76!important;}
-html[data-psd-theme="light"] .board::before{opacity:.78!important;mix-blend-mode:multiply!important;}
-html[data-psd-theme="dark"] .board::before{opacity:.77!important;mix-blend-mode:normal!important;}
-@media(max-width:750px){.board::before{background-size:95vw auto!important;}}
+<style id="a70-watermark-picker">
+/* Increase actual lettering contrast in the embedded PSD watermark in both themes. */
+.board::before{background-position:center center!important;background-size:min(84vw,1150px) auto!important;opacity:.96!important;}
+html[data-psd-theme="light"] .board::before{opacity:.96!important;mix-blend-mode:multiply!important;filter:brightness(.68) contrast(1.9) saturate(1.5)!important;}
+html[data-psd-theme="dark"] .board::before{opacity:.96!important;mix-blend-mode:screen!important;filter:brightness(1.6) contrast(1.8) saturate(1.3)!important;}
+@media(max-width:750px){.board::before{background-size:96vw auto!important;}}
 .dialog:has(#a69-layout-picker){width:min(520px,100%);}
 #a69-layout-picker .a69-layout-option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);}
 #a69-layout-picker .a69-layout-option:last-child{border-bottom:0;}
@@ -1751,55 +1751,79 @@ function a68ReadLayouts(){
 }
 function a68WriteLayouts(records){
  try {localStorage.setItem(A68_LAYOUTS_KEY,JSON.stringify(records));return true;}
- catch(error){alert('Unable to save layout. Browser storage may be full or disabled. No saved layouts were changed.');return false;}
+ catch(error){a71Message('Unable to save. Browser storage may be full or disabled.','error');return false;}
 }
-function a68SaveLayout(){
- const layouts=a68ReadLayouts();
- if(layouts.length>=A68_LAYOUTS_MAX){alert('Maximum of 10 saved layouts reached. Delete a saved layout before adding another.');a68ManageLayouts();return;}
- const proposed=profiles[activePreset].name+' layout';
- const answer=prompt('Name this layout (1–50 characters):',proposed);
- if(answer===null)return;
- const name=answer.trim().replace(/[<>]/g,'').slice(0,50);
- if(!name){alert('Please enter a name for the layout.');return;}
- if(layouts.some(x=>x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('A saved layout already uses that name. Choose a different name.');return;}
- const record={id:'layout-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name,savedAt:new Date().toISOString(),sourceWorkspace:activePreset+1,tiles:structuredClone(tiles)};
- if(a68WriteLayouts([...layouts,record]))a68ManageLayouts();
+function a71Message(message,kind='info'){
+ const target=document.getElementById('a71Status');
+ if(target){target.textContent=message;target.style.color=kind==='error'?'#b33424':'var(--txt)';}
 }
-// Compact selection dialog uses the same saved layout records and restore action.
-function a69ChooseLayout(){
+function a71CleanName(value){return String(value||'').trim().replace(/[<>]/g,'').slice(0,50);}
+function a71Manager(){
  const records=a68ReadLayouts();
- open('Choose Saved Layout',`<div id="a69-layout-picker"><p class="notice">Choose a saved layout for workspace ${activePreset+1}. Its tiles and tab name will be applied to this workspace only.</p>${records.length?records.map(x=>`<div class="a69-layout-option"><div class="a69-layout-name"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles</div></div><button class="btn" data-a68-action="load" data-a68-id="${safe(x.id)}">Choose</button></div>`).join(''):'<p class="muted">No layouts saved yet. Use Dashboard Settings to save your current layout.</p>'}</div>`);
+ open('Saved Layouts',`<div id="a71SavedLayoutManager">
+ <p class="notice">Save the current workspace or apply a saved layout. Up to 10 named layouts can be stored in this browser. Only the active workspace is changed when restoring.</p>
+ <div class="section">Save current workspace</div>
+ <div class="row" style="align-items:flex-end;flex-wrap:wrap;gap:10px">
+ <label class="field" style="flex:1;min-width:190px;margin:0">Layout name<input type="text" id="a71LayoutName" maxlength="50" placeholder="Enter layout name" value="${safe(profiles[activePreset].name+' layout')}"></label>
+ <button class="btn accent" type="button" data-a71-action="save" ${records.length>=A68_LAYOUTS_MAX?'disabled':''}>Save Layout</button></div>
+ <p class="muted" style="margin-top:8px">${records.length} of ${A68_LAYOUTS_MAX} layouts saved${records.length>=A68_LAYOUTS_MAX?' — delete one to save another':''}.</p>
+ <div class="section">My saved layouts</div>
+ <div class="stack">${records.map(x=>`<div class="stat"><div class="row" style="flex-wrap:wrap"><div style="min-width:0;flex:1"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · ${safe(new Date(x.savedAt).toLocaleString())}</div></div><div class="row" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-a71-action="load" data-a71-id="${safe(x.id)}">Use</button><button class="btn" data-a71-action="rename" data-a71-id="${safe(x.id)}">Rename</button><button class="btn secondary" data-a71-action="delete" data-a71-id="${safe(x.id)}">Delete</button></div></div></div>`).join('')||'<p class="muted">No saved layouts yet. Enter a name above and click Save Layout.</p>'}</div>
+ <p id="a71Status" role="status" aria-live="polite" class="notice" style="margin-top:12px"></p>
+ </div>`);
 }
+function a68SaveLayout(){a71Manager();}
+function a68ManageLayouts(){a71Manager();}
+function a69ChooseLayout(){a71Manager();}
 document.getElementById('a69ChooseLayout').addEventListener('click',a69ChooseLayout);
-function a68ManageLayouts(){
- const records=a68ReadLayouts();
- open('Saved Layouts',`<p class="notice">Save up to 10 named tile layouts. Restore a snapshot into the current workspace (${activePreset+1}); other workspaces and settings are not changed. Saved layouts remain in this browser.</p><div class="row"><b>${records.length} / ${A68_LAYOUTS_MAX} saved</b><button class="btn accent" data-a68-action="save" ${records.length>=A68_LAYOUTS_MAX?'disabled':''}>+ Save Current Layout</button></div><div class="stack" style="margin-top:12px">${records.map(x=>`<div class="stat"><div class="row"><div style="min-width:0"><strong>${safe(x.name)}</strong><div class="muted">${x.tiles.length} tiles · Saved ${safe(new Date(x.savedAt).toLocaleString())} · From workspace ${Number(x.sourceWorkspace)||'?'}</div></div><div class="row" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-a68-action="load" data-a68-id="${safe(x.id)}">Restore</button><button class="btn" data-a68-action="rename" data-a68-id="${safe(x.id)}">Rename</button><button class="btn secondary" data-a68-action="delete" data-a68-id="${safe(x.id)}">Delete</button></div></div></div>`).join('')||'<p class="muted">No saved layouts yet.</p>'}</div>`);
+function a71Ask(title,message,confirmLabel,onYes){
+ open(title,`<p class="notice">${safe(message)}</p><div class="row" style="justify-content:flex-end;flex-wrap:wrap"><button class="btn secondary" data-a71-action="cancel">Cancel</button><button class="btn accent" data-a71-action="confirm">${safe(confirmLabel)}</button></div>`);
+ a71Pending=onYes;
+}
+let a71Pending=null;
+function a71EditName(id){
+ const record=a68ReadLayouts().find(x=>x.id===id);
+ if(!record){a71Manager();return;}
+ open('Rename Saved Layout',`<label class="field">New layout name<input id="a71RenameName" type="text" maxlength="50" value="${safe(record.name)}"></label><p class="notice" id="a71Status" aria-live="polite"></p><div class="row" style="justify-content:flex-end"><button class="btn secondary" data-a71-action="cancel">Cancel</button><button class="btn accent" data-a71-action="rename-save" data-a71-id="${safe(id)}">Save Name</button></div>`);
 }
 document.getElementById('modalBody').addEventListener('click',event=>{
- const button=event.target.closest('[data-a68-action]');if(!button||button.disabled)return;
- const action=button.dataset.a68Action;
- if(action==='save'){a68SaveLayout();return;}
- if(action==='manage'){a68ManageLayouts();return;}
- const records=a68ReadLayouts();const index=records.findIndex(x=>x.id===button.dataset.a68Id);
- if(index<0){alert('This saved layout could not be found.');a68ManageLayouts();return;}
+ const button=event.target.closest('[data-a71-action],[data-a68-action]');if(!button||button.disabled)return;
+ const action=button.dataset.a71Action||button.dataset.a68Action;
+ if(action==='save'){
+  const records=a68ReadLayouts();
+  if(records.length>=A68_LAYOUTS_MAX){a71Message('Maximum of 10 saved layouts reached. Delete one before saving another.','error');return;}
+  const name=a71CleanName(document.getElementById('a71LayoutName')?.value);
+  if(!name){a71Message('Please enter a layout name.','error');return;}
+  if(records.some(x=>x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){a71Message('That name is already used. Choose another name.','error');return;}
+  const record={id:'layout-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name,savedAt:new Date().toISOString(),sourceWorkspace:activePreset+1,tiles:structuredClone(tiles)};
+  if(a68WriteLayouts([...records,record]))a71Manager();return;
+ }
+ if(action==='manage'){a71Manager();return;}
+ if(action==='cancel'){a71Pending=null;a71Manager();return;}
+ if(action==='confirm'){const fn=a71Pending;a71Pending=null;if(fn)fn();return;}
+ const records=a68ReadLayouts();const index=records.findIndex(x=>x.id===(button.dataset.a71Id||button.dataset.a68Id));
+ if(index<0){a71Manager();return;}
  const entry=records[index];
  if(action==='load'){
-  if(!confirm('Restore "'+entry.name+'" into workspace '+(activePreset+1)+'?\n\nThis will replace ALL current tiles in this workspace. Other workspaces and saved layouts are not changed.'))return;
-  tiles=structuredClone(entry.tiles);previousArrangement=null;
-  const undo=document.getElementById('undoArrange');if(undo)undo.disabled=true;
-  profiles[activePreset].name=entry.name.slice(0,26);
-  storePresets();showPresetButtons();render();shut();return;
+  a71Ask('Use Saved Layout','Replace all tiles in workspace '+(activePreset+1)+' with "'+entry.name+'"? Other workspaces and saved layouts will stay unchanged.','Use Layout',()=>{
+   tiles=structuredClone(entry.tiles);previousArrangement=null;
+   const undo=document.getElementById('undoArrange');if(undo)undo.disabled=true;
+   profiles[activePreset].name=entry.name.slice(0,26);
+   storePresets();showPresetButtons();render();shut();
+  });return;
  }
- if(action==='rename'){
-  const answer=prompt('Rename this saved layout:',entry.name);if(answer===null)return;
-  const name=answer.trim().replace(/[<>]/g,'').slice(0,50);
-  if(!name){alert('Please enter a name.');return;}
-  if(records.some((x,i)=>i!==index&&x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('A layout already uses that name.');return;}
-  records[index].name=name;if(a68WriteLayouts(records))a68ManageLayouts();return;
+ if(action==='rename'){a71EditName(entry.id);return;}
+ if(action==='rename-save'){
+  const name=a71CleanName(document.getElementById('a71RenameName')?.value);
+  if(!name){a71Message('Please enter a name.','error');return;}
+  if(records.some((x,i)=>i!==index&&x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){a71Message('That name is already used.','error');return;}
+  records[index].name=name;if(a68WriteLayouts(records))a71Manager();return;
  }
  if(action==='delete'){
-  if(!confirm('Permanently delete saved layout "'+entry.name+'"?'))return;
-  records.splice(index,1);if(a68WriteLayouts(records))a68ManageLayouts();
+  a71Ask('Delete Saved Layout','Permanently delete "'+entry.name+'"? This does not remove tiles from any workspace.','Delete Layout',()=>{
+   const latest=a68ReadLayouts().filter(x=>x.id!==entry.id);
+   if(a68WriteLayouts(latest))a71Manager();
+  });
  }
 });
 function options(items,selected,cl='pick'){return `<div class="config-grid">${items.map(n=>`<label class="option"><input type="checkbox" class="${cl}" value="${safe(n)}" ${selected.includes(n)?'checked':''}><span>${safe(n)}</span></label>`).join('')}</div>`};function chosen(cl){return [...body.querySelectorAll('.'+cl+':checked')].map(x=>x.value)}
