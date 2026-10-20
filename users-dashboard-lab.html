@@ -477,6 +477,22 @@ function v31Visible(){
     v31ReadFlag(h.id) ? now-Number(state.read[h.id])<48*3600000 : now-h.time<7*86400000));
 }
 function v31Unread(){return v31Visible().filter(h=>v34SourceEnabled(h.source)&&!v31ReadFlag(h.id)).length}
+// Live screened-headline counter from the same engine snapshot as the public News & Articles page.
+let v62ScreenedHeadlines=null;
+function v62UpdateScreenedHeadlines(feed){
+ const count=Number(feed?.trust_layer?.relevant_headlines);
+ if(!feed?.trust_layer || feed.trust_layer.relevant_headlines==null || !Number.isFinite(count) || count<0)return;
+ v62ScreenedHeadlines=Math.floor(count);
+ const status=document.getElementById('v62ScreenedHeadlines');
+ if(status)status.textContent=`Screened Headlines (Last 48 Hours): ${v62ScreenedHeadlines.toLocaleString()}`;
+}
+async function v62LoadScreenedHeadlines(){
+ if(v62ScreenedHeadlines!==null){v62UpdateScreenedHeadlines({trust_layer:{relevant_headlines:v62ScreenedHeadlines}});return;}
+ try{
+  const response=await fetch('dashboard_live.json',{cache:'no-store',credentials:'omit',mode:'same-origin'});
+  if(response.ok)v62UpdateScreenedHeadlines(await response.json());
+ }catch(error){console.warn('Screened headline count unavailable',error);}
+}
 function v31LoadHeadlines(feed){
  const input=Array.isArray(feed?.psi_headlines)?feed.psi_headlines:[];
  const now=Date.now(),seen=new Set();v31Headlines=[];
@@ -640,6 +656,7 @@ async function v25RefreshWebsiteData(){
   if(regional.status==='fulfilled'){
     const d=regional.value;
     v31LoadHeadlines(d);
+    v62UpdateScreenedHeadlines(d);
     const at=parseWebsiteTime(d?.updated_utc);
     if(at&&ageOK(at,48)&&d?.regional_pulse&&typeof d.regional_pulse==='object'){
       v25RegionalFeed=d.regional_pulse;
@@ -1481,6 +1498,7 @@ async function v52RefreshNews(){
   // Commit only after validating the feed structure. Bookmarks are stored separately.
   const before=v31Headlines.length;
   v31LoadHeadlines(feed);
+  v62UpdateScreenedHeadlines(feed);
   const msg=document.getElementById('v52RefreshMessage');
   if(msg)msg.textContent=v31Headlines.length?`News updated · ${v31Headlines.length} recent articles`:'No recent articles are available right now.';
   const existingSource=document.getElementById('v42Source');
@@ -1565,7 +1583,7 @@ board.addEventListener('click',e=>{
 function v42SearchPane(inTile=false){
  const markets=[...new Set(ASSETS.map(v59Group))].sort((a,b)=>a.localeCompare(b));
  const sources=[...new Set(v63AvailableNews().map(h=>h.source))].sort((a,b)=>a.localeCompare(b));
- (inTile?v9421MountSearch:html=>open('Search News & Articles',html))(`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Market<select id="v61Market"><option value="">All markets</option>${markets.map(a=>`<option value="${safe(a)}" ${v42SearchState.market===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v63ArchiveStatus" class="muted" role="status" aria-live="polite" style="padding:2px 0 8px"></div><div id="v42Results" aria-live="polite"></div>`);
+ (inTile?v9421MountSearch:html=>open('Search News & Articles',html))(`<div class="v42-searchbox"><div class="v42-searchgrid"><label class="field">Search news<input type="search" id="v42Keyword" placeholder="Search headlines or keywords" value="${safe(v42SearchState.keyword)}"></label><label class="field">Market<select id="v61Market"><option value="">All markets</option>${markets.map(a=>`<option value="${safe(a)}" ${v42SearchState.market===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Instrument<select id="v42Asset"><option value="">All instruments</option>${ASSETS.map(a=>`<option value="${safe(a)}" ${v42SearchState.asset===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Source<select id="v42Source"><option value="">All sources</option>${sources.map(a=>`<option value="${safe(a)}" ${v42SearchState.source===a?'selected':''}>${safe(a)}</option>`).join('')}</select></label><label class="field">Sort by<select id="v42Order"><option value="newest" ${v42SearchState.order==='newest'?'selected':''}>Newest</option><option value="oldest" ${v42SearchState.order==='oldest'?'selected':''}>Oldest</option></select></label></div><div class="v43-search-actions"><label class="v43-favorite-filter"><input type="checkbox" id="v43Favorites" ${v42SearchState.favorites?'checked':''}> Saved articles only</label><div class="v42-actions"><button class="btn accent" id="v42Submit">Search</button><button class="btn" id="v42Clear">Clear</button><button class="btn" id="v52RefreshNews" type="button">Refresh news</button></div></div></div><div id="v52RefreshMessage" class="muted" role="status" aria-live="polite" style="padding:2px 0 9px"></div><div id="v63ArchiveStatus" class="muted" role="status" aria-live="polite" style="padding:2px 0 8px"></div><div id="v62ScreenedHeadlines" class="muted" role="status" aria-live="polite" style="padding:2px 0 8px"></div><div id="v42Results" aria-live="polite"></div>`);
  const search=()=>{v42SearchState={keyword:$('#v42Keyword').value.trim(),market:$('#v61Market').value,asset:$('#v42Asset').value,source:$('#v42Source').value,order:$('#v42Order').value,favorites:$('#v43Favorites').checked};v43Page=0;v48SaveNewsPreferences();v42RenderResults();};
  $('#v42Submit').onclick=search;
  $('#v52RefreshNews').onclick=v52RefreshNews;
@@ -1576,6 +1594,7 @@ function v42SearchPane(inTile=false){
  for(const id of ['v61Market','v42Asset','v42Source','v42Order','v43Favorites'])$('#'+id).onchange=search;
  v42RenderResults();
  v63LoadArchive();
+ v62LoadScreenedHeadlines();
 }
 function v42RenderResults(){
  const out=$('#v42Results');if(!out)return;
