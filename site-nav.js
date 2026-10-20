@@ -856,7 +856,7 @@
           </div>
         </div>
         <div class="psd-ribbon-actions">
-          <a href="watchlist.html" id="psd-ribbon-watchlist-link"${cachedMemberUI() ? "" : " hidden"}>My Watchlist</a>
+          <a href="user-dashboard.html" id="psd-ribbon-watchlist-link" class="psd-nav-link psd-ai-feature-link psd-dashboard-beta-link" aria-label="My Dashboard - Beta"${cachedMemberUI() ? "" : " hidden"}>My Dashboard - <span class="psd-dashboard-beta-label">Beta</span></a>
         </div>
       </div>
     </nav>
