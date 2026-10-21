@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compact Watchlist — Lab v94.2.5 | Public Sentiment Dash</title>
+  <title>Compact Watchlist — Lab v94.2.6 | Public Sentiment Dash</title>
   <meta name="description" content="Private personalized watchlist for a Public Sentiment Dash member.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
@@ -89,9 +89,34 @@
     body.psd-single-popup .watchlist-modal{z-index:5000}
 
     body{overflow-x:hidden}
+    html,body{background:transparent!important;color:var(--theme-text)!important}
+    body.dark-mode .watchlist-card{color:#fff!important}
+    body:not(.dark-mode) .watchlist-card{color:#061522!important}
+    .watchlist-card{height:auto!important}
   </style>
 </head>
 <body>
+  <script>
+  (function(){
+    const query=new URLSearchParams(location.search);
+    if(!query.has('asset')||query.has('popup'))return;
+    function syncTheme(theme){
+      if(theme!=='dark'&&theme!=='light')return;
+      document.body.classList.toggle('dark-mode',theme==='dark');
+      document.body.classList.toggle('light-mode',theme==='light');
+      document.documentElement.dataset.theme=theme;
+      document.documentElement.dataset.psdTheme=theme;
+      document.documentElement.style.colorScheme=theme;
+    }
+    window.addEventListener('message',function(event){
+      if(event.origin!==location.origin||event.source!==window.parent)return;
+      if(event.data?.type==='psd-compact-theme-sync')syncTheme(event.data.theme);
+    });
+    document.addEventListener('DOMContentLoaded',function(){
+      window.parent.postMessage({type:'psd-compact-theme-request'},location.origin);
+    });
+  })();
+  </script>
   <script src="site-theme.js?v=20" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="supabase-client.js?v=6" defer></script>
