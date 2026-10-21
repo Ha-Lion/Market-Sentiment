@@ -2209,14 +2209,16 @@
     }
 
     function historyKey(e){
-      return String(e.series_id||e.eventId||`${normalizedCountryCode(e)}|${e.event||e.category}`);
+      const base=String(e.series_id||e.eventId||`${normalizedCountryCode(e)}|${e.event||e.category}`);
+      // AU historical source/period can differ across releases; don't reuse old sparse cached charts.
+      return normalizedCountryCode(e)==="AU" ? base+"|au-12m-v2|"+String(e.reference||e.date||"").slice(0,16) : base;
     }
 
     // Only assign official identifiers to unambiguous US event labels.
     // Unmatched releases retain the existing backend alias/repository fallback.
     function officialHistoryIndicator(e){
       // UK indicators must use their verified Supabase IDs, not ambiguous event-name aliases.
-      if(normalizedCountryCode(e)==="GB") return String(e.official_indicator_id||"");
+      if(normalizedCountryCode(e)==="GB" || normalizedCountryCode(e)==="AU") return String(e.official_indicator_id||"");
       if(normalizedCountryCode(e)!=="US") return "";
       const title=String(e.event||e.category||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
       if(/^(initial )?jobless claims$|^initial unemployment claims$|^weekly jobless claims$/.test(title)) return "us_initial_jobless_claims";
