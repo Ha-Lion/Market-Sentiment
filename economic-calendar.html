@@ -527,6 +527,21 @@
     .ec-badge.live:before{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.12);}
     .ec-badge.loading:before{background:#d97706;}
     .ec-badge.error:before{background:#dc2626;}
+    /* V1.4: only a successful calendar network check triggers the one-second heartbeat. */
+    .ec-badge.live.ec-feed-pulse{animation:ec-feed-heartbeat .95s ease-out 1;}
+    .ec-badge.live.ec-feed-pulse:before{animation:ec-feed-dot-heartbeat .95s ease-out 1;}
+    @keyframes ec-feed-heartbeat{
+      0%,100%{transform:scale(1);box-shadow:none;}
+      32%{transform:scale(1.075);box-shadow:0 0 0 4px rgba(22,163,74,.22),0 0 14px rgba(22,163,74,.35);}
+      66%{transform:scale(1.025);box-shadow:0 0 0 2px rgba(22,163,74,.12),0 0 7px rgba(22,163,74,.18);}
+    }
+    @keyframes ec-feed-dot-heartbeat{
+      0%,100%{background:#16a34a;transform:scale(1);}
+      35%{background:#31d869;transform:scale(1.45);}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .ec-badge.live.ec-feed-pulse,.ec-badge.live.ec-feed-pulse:before{animation:none;}
+    }
     .ec-shell{width:100%;background:var(--ec-card);border:1px solid var(--ec-border);border-radius:16px;box-shadow:0 8px 30px rgba(16,24,40,.06);overflow:hidden;}
     .ec-toolbar{display:flex;gap:6px;padding:6px 10px;border-bottom:1px solid var(--ec-border);overflow:auto;align-items:center;flex-wrap:wrap;}
     .ec-tab,.ec-action,.ec-settings-button{border:1px solid var(--ec-border);background:transparent;color:var(--ec-text);border-radius:8px;padding:7px 10px;font:inherit;font-size:11px;font-weight:750;cursor:pointer;white-space:nowrap;}
@@ -2176,9 +2191,61 @@
       if(newHistoryHosts)scheduleSparklineHydration();
     }
 
+    // V1.4: badge represents verified calendar-feed connectivity, not cache presence.
+    // The existing 30-second polling cadence remains unchanged.
+    const LIVE_CHECK_STALE_MS = 2 * 60 * 1000;
+    const liveHealthStartedAt = Date.now();
+    let lastSuccessfulLiveCheckAt = 0;
+    let liveConnectionFailed = false;
+    let livePulseTimer = null;
+    let liveHealthTimer = null;
+
     function setStatus(kind,text){
+      // Keep the familiar green "Live data" badge steady while checking in the background.
+      // Once red, it stays red until an actual network response succeeds.
+      if(kind==="loading" && (liveConnectionFailed ||
+          (lastSuccessfulLiveCheckAt && Date.now()-lastSuccessfulLiveCheckAt<LIVE_CHECK_STALE_MS && navigator.onLine!==false)))return;
       feedStatus.className=`ec-badge ${kind||""}`.trim();
       feedStatus.textContent=text;
+    }
+    function confirmLiveRefresh(){
+      if(navigator.onLine===false){
+        reportLiveConnectionFailure("Internet connection is offline; live updates are unavailable.");
+        return;
+      }
+      lastSuccessfulLiveCheckAt=Date.now();
+      liveConnectionFailed=false;
+      setStatus("live","Live data");
+      feedStatus.title=`Connected. Last successful calendar feed check: ${new Date(lastSuccessfulLiveCheckAt).toLocaleTimeString()}.`;
+      feedStatus.setAttribute("aria-label","Live data: calendar feed check successful");
+      if(livePulseTimer!==null)clearTimeout(livePulseTimer);
+      feedStatus.classList.remove("ec-feed-pulse");
+      // Restart the one-second pulse even when consecutive checks occur quickly.
+      void feedStatus.offsetWidth;
+      feedStatus.classList.add("ec-feed-pulse");
+      livePulseTimer=setTimeout(()=>{
+        feedStatus.classList.remove("ec-feed-pulse");
+        livePulseTimer=null;
+      },1000);
+    }
+    function reportLiveConnectionFailure(reason){
+      liveConnectionFailed=true;
+      if(livePulseTimer!==null){clearTimeout(livePulseTimer);livePulseTimer=null;}
+      feedStatus.classList.remove("ec-feed-pulse");
+      // Preserve the original badge text and shape; change only its health color.
+      setStatus("error","Live data");
+      feedStatus.title=reason||"Calendar feed updates are unavailable.";
+      feedStatus.setAttribute("aria-label","Live data: connection unavailable or updates stale");
+    }
+    function verifyLiveFreshness(){
+      if(navigator.onLine===false){
+        if(!liveConnectionFailed)reportLiveConnectionFailure("Internet connection is offline; live updates are unavailable.");
+        return;
+      }
+      const lastCheck=lastSuccessfulLiveCheckAt||liveHealthStartedAt;
+      if(!liveConnectionFailed && Date.now()-lastCheck>=LIVE_CHECK_STALE_MS){
+        reportLiveConnectionFailure("No successful calendar feed update in the last two minutes.");
+      }
     }
 
     function updateCountdown(){
@@ -3224,6 +3291,7 @@
       });
       const data=await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(data.error||`Calendar feed error (${res.status})`);
+      if(!Array.isArray(data.events))throw new Error("Calendar feed returned an invalid response");
       return data;
     }
 
@@ -3294,6 +3362,7 @@
        * The normal auto-refresh loop will refresh it shortly.
        */
       if(!manual && showedCached && cachedAgeMs<60000 && !settings.countries.includes("GB")){
+        verifyLiveFreshness();
         setStatus("loading","Cached data (<1 min)");
         lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
         return;
@@ -3336,7 +3405,8 @@
         }
 
         const healthyFeed=data.mode==="configured"||data.mode==="snapshot";
-        setStatus(healthyFeed?"live":"loading",healthyFeed?"Live data":"Calendar feed");
+        if(healthyFeed)confirmLiveRefresh();
+        else reportLiveConnectionFailure("Calendar feed did not return a ready data mode.");
         document.getElementById("provider-name").textContent=data.source||"FinanceCalendar";
         const updated=document.getElementById("last-updated");
         if(updated) updated.textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
@@ -3350,6 +3420,7 @@
       }catch(err){
         if(err.name==="AbortError") return;
         console.error("Economic calendar load failed",err);
+        reportLiveConnectionFailure("Calendar feed request failed. Showing cached data when available.");
 
         if(allEvents.length){
           setStatus("loading","Cached data");
@@ -3404,10 +3475,11 @@
         };
         saveWeekCache(weekData,weekRange);
 
-        setStatus("live","Live data");
+        confirmLiveRefresh();
         renderChangedEvents(previousSignature);
       }catch(err){
         console.warn("30-second live-value refresh failed",err);
+        reportLiveConnectionFailure("The 30-second calendar update failed.");
       }
     }
 
@@ -3465,11 +3537,17 @@
           cache:"no-store"
         });
 
-        if(!res.ok) return;
+        if(!res.ok){
+          // One failed optional fast check must not override a recent successful full refresh.
+          if(!lastSuccessfulLiveCheckAt || Date.now()-lastSuccessfulLiveCheckAt>=LIVE_CHECK_STALE_MS)
+            reportLiveConnectionFailure("Rapid release check failed.");
+          return;
+        }
 
         const data=await res.json().catch(()=>({}));
-        const updates=Array.isArray(data.events)?data.events:[];
-        if(!updates.length) return;
+        if(!Array.isArray(data.events))throw new Error("Invalid release-check response");
+        const updates=data.events;
+        if(!updates.length){confirmLiveRefresh();return;}
 
         const previousSignature=eventContentSignature(allEvents);
         allEvents=filterEventsToDateRange(
@@ -3500,12 +3578,14 @@
           saveWeekCache(weekData,weekRange);
         }
 
-        setStatus("live","Live data");
+        confirmLiveRefresh();
         document.getElementById("provider-name").textContent=
           data.source||"FinanceCalendar";
         renderChangedEvents(previousSignature);
       }catch(err){
         console.warn("Official release fast refresh failed",err);
+        if(!lastSuccessfulLiveCheckAt || Date.now()-lastSuccessfulLiveCheckAt>=LIVE_CHECK_STALE_MS)
+          reportLiveConnectionFailure("Rapid release check could not reach the calendar feed.");
       }finally{
         releaseWatchBusy=false;
       }
@@ -4318,6 +4398,9 @@
     refreshTimer=setInterval(autoRefreshCalendar,AUTO_REFRESH_MS);
     releaseWatchTimer=setInterval(refreshOfficialReleaseWindow,5000);
     countdownTimer=setInterval(updateCountdown,30000);
+    liveHealthTimer=setInterval(verifyLiveFreshness,10000);
+    window.addEventListener("offline",()=>reportLiveConnectionFailure("Internet connection is offline; live updates are unavailable."));
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)verifyLiveFreshness();});
 
     const todayISO=localISODate(new Date());
     document.getElementById("custom-from").value=todayISO;
@@ -4402,6 +4485,8 @@
       clearInterval(refreshTimer);
       clearInterval(releaseWatchTimer);
       clearInterval(countdownTimer);
+      clearInterval(liveHealthTimer);
+      if(livePulseTimer!==null){clearTimeout(livePulseTimer);livePulseTimer=null;}
 
       if(sparklineHydrationTimer){
         clearTimeout(sparklineHydrationTimer);
@@ -4437,7 +4522,8 @@
          then perform a small background live-value refresh. */
       displayRangeLabel();
       if(allEvents.length) render();
-      setStatus("live","Live data");
+      // BFCache restoration is not evidence of a successful new network check.
+      verifyLiveFreshness();
 
       setTimeout(()=>{
         if(currentRange==="week"){
