@@ -1041,7 +1041,7 @@
       const comparison = document.createElement("button");
       comparison.type = "button";
       comparison.className = "watchlist-comparison";
-      comparison.textContent = "Comparison";
+      comparison.textContent = "Technical & Sentiment Comparison";
       comparison.addEventListener("click",function(){
         if(psdOpenParent('comparison'))return;
         openChartPopup(item.instrument,asset).catch(function(error){
@@ -1050,14 +1050,15 @@
         });
       });
 
-      const cardTools = document.createElement("div");
-      cardTools.className = "watchlist-card-tools";
-      cardTools.appendChild(comparison);
+      // The comparison popup stays wired to its original click handler;
+      // only its position changes, from the card header to the card footer.
+      const comparisonRow = document.createElement("div");
+      comparisonRow.className = "psd-compact-comparison-row";
+      comparisonRow.appendChild(comparison);
 
       nameBox.appendChild(title);
       nameBox.appendChild(symbol);
       top.appendChild(nameBox);
-      top.appendChild(cardTools);
 
       const metrics = document.createElement("div");
       metrics.className = "watchlist-metrics";
@@ -1087,6 +1088,7 @@
       card.appendChild(metrics);
       card.appendChild(headlineRow);
       card.appendChild(actions);
+      card.appendChild(comparisonRow);
       grid.appendChild(card);
       if(psdPopup&&!psdPopupStarted){
         psdPopupStarted=true;
