@@ -1197,7 +1197,7 @@
         : rawName;
       return {
         code,
-        name: code==="GB" ? "UK" : (code==="AU" || code==="CA") ? code : name,
+        name: (code==="US" || code==="GB" || code==="AU" || code==="CA") ? (code==="GB" ? "UK" : code) : name,
         flag: code ? countryFlag(code) : "🌐"
       };
     }
@@ -2240,6 +2240,7 @@
     // Unmatched releases retain the existing backend alias/repository fallback.
     function officialHistoryIndicator(e){
       // UK indicators must use their verified Supabase IDs, not ambiguous event-name aliases.
+      if(["US","GB","AU"].includes(normalizedCountryCode(e)) && /^([a-z]{2}_[a-z0-9_]+)$/i.test(String(e.official_indicator_id||"").trim())) return String(e.official_indicator_id).trim();
       if(normalizedCountryCode(e)==="GB" || normalizedCountryCode(e)==="AU") return String(e.official_indicator_id||"");
       if(normalizedCountryCode(e)!=="US") return "";
       const title=String(e.event||e.category||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
