@@ -1997,6 +1997,13 @@
       if(raw.length>=170&&/[;,\n]/.test(raw))return raw;
       return "";
     }
+
+    function pendingOfficialProductivityIndex(e){
+      return String(e?.country_code||"").toUpperCase()==="GB"
+        &&String(e?.official_indicator_id||"")==="uk_ons_b4_39"
+        &&String(e?.reference||"")==="2026-Q2"
+        &&(e?.actual===null||e?.actual===undefined||String(e.actual).trim()==="");
+    }
     function narrativeActualStatus(e){
       const d=parseProviderDate(e.date);
       return d&&d.getTime()>Date.now()?"Details":"Published";
@@ -2106,7 +2113,7 @@
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</td>
-            <td class="value ${actualClass(e)}"${narrativeActualDetails(e)?' title="Report contains several statistics. Open Details for all figures."':economicValueLabel(e.actual,"Actual",e)}>${narrativeActualDetails(e)?`<button class="ec-report-detail-link" type="button" data-open-event="${esc(eventUIKey(e))}" aria-label="Open all report figures">${narrativeActualStatus(e)} · Details</button>`:formatValue(e.actual,calendarDisplayUnit(e))}</td>
+            <td class="value ${actualClass(e)}"${narrativeActualDetails(e)?' title="Report contains several statistics. Open Details for all figures."':economicValueLabel(e.actual,"Actual",e)}>${narrativeActualDetails(e)?`<button class="ec-report-detail-link" type="button" data-open-event="${esc(eventUIKey(e))}" aria-label="Open all report figures">${narrativeActualStatus(e)} · Details</button>`:pendingOfficialProductivityIndex(e)?"Awaiting ONS index":formatValue(e.actual,calendarDisplayUnit(e))}</td>
             <td class="value"${economicValueLabel(e.revised,"Revised",e)}>${formatValue(e.revised,calendarDisplayUnit(e))}</td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
@@ -2929,7 +2936,7 @@
       reportSection.hidden=!fullReport;
       reportText.textContent=fullReport?fullReport.replace(/;\s*/g,";\n"):"";
       document.getElementById("event-modal-kpis").innerHTML=`
-        <div class="ec-kpi"><span>Actual</span><strong>${narrativeActualDetails(e)?esc(narrativeActualStatus(e)):formatValue(e.actual,calendarDisplayUnit(e))}</strong></div>
+        <div class="ec-kpi"><span>Actual</span><strong>${narrativeActualDetails(e)?esc(narrativeActualStatus(e)):pendingOfficialProductivityIndex(e)?"Awaiting ONS index":formatValue(e.actual,calendarDisplayUnit(e))}</strong></div>
         <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</strong></div>
         <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,calendarDisplayUnit(e))}</strong></div>
         ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,calendarDisplayUnit(e))}</strong></div>`:""}
@@ -2939,7 +2946,9 @@
       const surpriseActual=numericValue(e.actual);
       const surpriseForecast=numericValue(e.forecast||e.te_forecast);
       const previousNumeric=numericValue(e.previous);
-      let surpriseText=narrativeActualDetails(e)?"Report published; individual figures are shown above.":"Actual has not been released yet.";
+      let surpriseText=pendingOfficialProductivityIndex(e)
+        ?"Exact Q2 productivity index not yet published. ONS flash-estimate percentages measure something different; check the November 17, 2026 official productivity release."
+        :narrativeActualDetails(e)?"Report published; individual figures are shown above.":"Actual has not been released yet.";
       if(surpriseActual!==null && surpriseForecast!==null){
         const diff=surpriseActual-surpriseForecast;
         surpriseText=diff===0
