@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V1.9: audit iteration 2 - shared views, persistent filters, safe CSS and dead code cleanup -->
+<!-- Economic Calendar V2.0: low-risk formatter reuse, dead-code removal, and timer cleanup -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1559,6 +1559,8 @@
     let allEvents = [];
     let lastFetchAt = null;
     let refreshTimer = null;
+    let zoneClockTimer = null;
+    let reminderButtonTimer = null;
     let releaseWatchTimer = null;
     let releaseWatchBusy = false;
     let countdownTimer = null;
@@ -1598,7 +1600,6 @@
     function finishCalendarRequest(request){
       if(activeCalendarRequest===request){activeCalendarRequest=null;}
     }
-    let autoRefreshTick = 0;
     let lastFullWeekNetworkAt = 0;
     let lastQuietRangeNetworkAt = 0;
     let lastAccountSessionKey = null;
@@ -1633,13 +1634,6 @@
       x.setDate(x.getDate()+n);
       x.setHours(12,0,0,0);
       return x;
-    }
-
-    function startOfWeek(d){
-      const x = new Date(d);
-      const day = x.getDay();
-      const diff = -day; // Sunday through Saturday for previous, current, and next week.
-      return addDays(x,diff);
     }
 
     // All date presets are calculated in the selected calendar timezone.
@@ -1726,27 +1720,36 @@
       return Number.isNaN(d.getTime()) ? null : d;
     }
 
+    // Reuse time-zone-aware formatters across event rows and clock ticks.
+    const calendarFormatters=new Map();
+    function calendarDateFormatter(kind,timezone){
+      const key=kind+"|"+timezone;
+      let formatter=calendarFormatters.get(key);
+      if(formatter)return formatter;
+      const spec={
+        time:["en-US",{timeZone:timezone,hour:"2-digit",minute:"2-digit",hour12:true}],
+        date:["en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}],
+        label:["en-US",{timeZone:timezone,weekday:"long",month:"long",day:"numeric"}],
+        clock:["en-US",{timeZone:timezone,hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true}]
+      }[kind];
+      if(!spec)throw new Error("Unsupported calendar date format");
+      formatter=new Intl.DateTimeFormat(spec[0],spec[1]);
+      calendarFormatters.set(key,formatter);
+      return formatter;
+    }
     function timeText(d){
-      if(!d) return "—";
-      try{
-        return new Intl.DateTimeFormat("en-US",{timeZone:settings.timezone,hour:"2-digit",minute:"2-digit",hour12:true}).format(d);
-      }catch{
-        return new Intl.DateTimeFormat("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}).format(d);
-      }
+      if(!d)return "—";
+      try{return calendarDateFormatter("time",settings.timezone).format(d);}
+      catch{return new Intl.DateTimeFormat("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}).format(d);}
     }
-
     function dayKey(d){
-      if(!d) return "";
-      try{
-        const parts=new Intl.DateTimeFormat("en-CA",{timeZone:settings.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);
-        const get=t=>parts.find(p=>p.type===t)?.value||"";
-        return `${get("year")}-${get("month")}-${get("day")}`;
-      }catch{return localISODate(d);}
+      if(!d)return "";
+      try{return dateKeyInTimezone(d,settings.timezone);}
+      catch{return localISODate(d);}
     }
-
     function dayLabel(d){
-      if(!d) return "";
-      return new Intl.DateTimeFormat("en-US",{timeZone:settings.timezone,weekday:"long",month:"long",day:"numeric"}).format(d);
+      if(!d)return "";
+      return calendarDateFormatter("label",settings.timezone).format(d);
     }
 
     function esc(v){
@@ -1757,12 +1760,8 @@
     function updateZoneClocks(){
       const now=new Date();
       document.querySelectorAll("[data-clock]").forEach(el=>{
-        const tz=el.dataset.clock;
-        try{
-          el.textContent=new Intl.DateTimeFormat("en-US",{
-            timeZone:tz,hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true
-          }).format(now);
-        }catch{el.textContent="—";}
+        try{el.textContent=calendarDateFormatter("clock",el.dataset.clock).format(now);}
+        catch{el.textContent="—";}
       });
     }
 
@@ -1908,36 +1907,15 @@
       return ` title="${esc(note||field+': supplied by calendar data source')}"`;
     }
 
-    function calendarValueCoverage(events){
-      const rows=(events||[]).filter(e=>e&&e.event);
-      const has=v=>numericReleaseValue(v);
-      const actual=rows.filter(e=>has(e.actual)).length;
-      const forecast=rows.filter(e=>has(e.forecast)||has(e.te_forecast)).length;
-      const previous=rows.filter(e=>has(e.previous)).length;
-      return {total:rows.length,actual,forecast,previous};
-    }
-
     function showCalendarCoverageNotice(data){
       warning.classList.remove("show");
       warning.textContent="";
-      const coverage=calendarValueCoverage(allEvents);
       if(data?.data_quality){
         const q=data.data_quality;
         warning.title=`Feed quality: ${q.actual??0} Actual, ${q.forecast??0} Forecast, ${q.previous??0} Previous values; ${q.archived_restored_count??0} restored from saved releases.`;
       }else warning.removeAttribute("title");
       if(data?.mode==="provider-empty"||data?.provider_error){
         warning.textContent=data?.provider_error?"Calendar provider has incomplete data: "+String(data.provider_error).slice(0,180):"Provider coverage is limited; available official events remain visible.";
-        warning.classList.add("show");
-        return;
-      }
-      if(!coverage.total)return;
-      const past=(allEvents||[]).filter(e=>{
-        const dt=parseProviderDate(e.date);
-        return dt&&dt.getTime()<Date.now();
-      });
-      const pastActual=past.filter(e=>numericReleaseValue(e.actual)).length;
-      if(data?.provider_error){
-        warning.textContent="Economic calendar provider reported incomplete data: "+String(data.provider_error).slice(0,180);
         warning.classList.add("show");
       }
     }
@@ -3045,14 +3023,10 @@
     }
 
     function dateKeyInTimezone(dateObj,tz){
-      const parts=new Intl.DateTimeFormat("en-CA",{
-        timeZone:tz,
-        year:"numeric",month:"2-digit",day:"2-digit"
-      }).formatToParts(dateObj);
+      const parts=calendarDateFormatter("date",tz).formatToParts(dateObj);
       const get=t=>parts.find(p=>p.type===t)?.value||"";
       return `${get("year")}-${get("month")}-${get("day")}`;
     }
-
     function filterEventsToDateRange(events,range){
       return (events||[]).filter(e=>{
         const d=parseProviderDate(e.date);
@@ -3379,7 +3353,6 @@
     async function autoRefreshCalendar(){
       // Hidden tabs do not poll; visible live ranges retain their 30-second checks.
       if(document.hidden || navigator.onLine===false)return;
-      autoRefreshTick++;
       const range=getRange(currentRange);
       const today=getRange("today").start;
       const containsToday=range.start<=today && today<=range.end;
@@ -4342,8 +4315,8 @@
     document.getElementById("custom-from").value=todayISO;
     document.getElementById("custom-to").value=todayISO;
     updateZoneClocks();
-    setInterval(updateZoneClocks,1000);
-    setInterval(applyReminderButtonStates,30000);
+    zoneClockTimer=setInterval(updateZoneClocks,1000);
+    reminderButtonTimer=setInterval(applyReminderButtonStates,30000);
 
     /*
      * V36 CACHE-FIRST STARTUP
@@ -4432,6 +4405,8 @@
 
     function cleanupCalendarRuntime(){
       clearInterval(refreshTimer);
+      clearInterval(zoneClockTimer);
+      clearInterval(reminderButtonTimer);
       clearInterval(releaseWatchTimer);
       clearInterval(countdownTimer);
       clearInterval(liveHealthTimer);
