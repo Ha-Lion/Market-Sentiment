@@ -1145,7 +1145,7 @@
     const COUNTRY = {
       US:{name:"United States",flag:"🇺🇸"}, EU:{name:"Euro Area",flag:"🇪🇺"},
       UK:{name:"United Kingdom",flag:"🇬🇧"}, JP:{name:"Japan",flag:"🇯🇵"},
-      CA:{name:"Canada",flag:"🇨🇦"}, CN:{name:"China",flag:"🇨🇳"},
+      CA:{name:"CA",flag:"🇨🇦"}, CN:{name:"China",flag:"🇨🇳"},
       AU:{name:"Australia",flag:"🇦🇺"}, CH:{name:"Switzerland",flag:"🇨🇭"},
       DE:{name:"Germany",flag:"🇩🇪"}, IN:{name:"India",flag:"🇮🇳"},
       NZ:{name:"New Zealand",flag:"🇳🇿"}, FR:{name:"France",flag:"🇫🇷"},
@@ -1190,7 +1190,7 @@
         : rawName;
       return {
         code,
-        name: code==="GB" ? "UK" : code==="AU" ? "AU" : name,
+        name: code==="GB" ? "UK" : (code==="AU" || code==="CA") ? code : name,
         flag: code ? countryFlag(code) : "🌐"
       };
     }
@@ -1225,6 +1225,7 @@
 
     function countryName(code){
       if(code==="EU") return "Euro Area";
+      if(code==="CA") return "CA";
       try{return new Intl.DisplayNames(["en"],{type:"region"}).of(code)||code;}catch{return code;}
     }
 
@@ -2103,7 +2104,7 @@
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}" data-ec-row-key="event:${esc(eventUIKey(e))}">
             <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
-            <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"")}</strong>${c.code==="GB"||c.code==="AU"?"":" "+esc(c.name)}</span></td>
+            <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"")}</strong>${c.code==="GB"||c.code==="AU"||c.code==="CA"?"":" "+esc(c.name)}</span></td>
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
               <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(e.event||e.category||"Economic event")}</button>
