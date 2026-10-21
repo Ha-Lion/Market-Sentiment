@@ -1566,7 +1566,7 @@
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v2-uk-values";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v11:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v12:";
     const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
     let activeChartSeries = "history";
@@ -2179,6 +2179,8 @@
     // Only assign official identifiers to unambiguous US event labels.
     // Unmatched releases retain the existing backend alias/repository fallback.
     function officialHistoryIndicator(e){
+      // UK indicators must use their verified Supabase IDs, not ambiguous event-name aliases.
+      if(normalizedCountryCode(e)==="GB") return String(e.official_indicator_id||"");
       if(normalizedCountryCode(e)!=="US") return "";
       const title=String(e.event||e.category||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
       if(/^(initial )?jobless claims$|^initial unemployment claims$|^weekly jobless claims$/.test(title)) return "us_initial_jobless_claims";
