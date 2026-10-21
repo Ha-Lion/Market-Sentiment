@@ -989,22 +989,12 @@
   document.addEventListener("keydown",function(event){if(event.key==="Escape" && modal.classList.contains("open")) closeModal();});
 
   function renderEmpty(){
+    // The tile owns its chrome. Keep this state plain: no second ribbon or button panel.
     grid.textContent = "";
-    const card = document.createElement("article");
-    card.className = "panel watchlist-empty";
-    const title = document.createElement("h2");
-    title.textContent = "Your watchlist is empty";
-    const text = document.createElement("p");
-    text.textContent = "Select up to 15 instruments in the lab dashboard watchlist editor.";
-    const link = document.createElement("a");
-    link.className = "watchlist-action";
-    link.href = "#manage-compact-watchlist";
-    link.addEventListener("click",function(event){event.preventDefault();window.parent.postMessage({type:"psd-compact-watchlist-lab",action:"edit"},window.location.origin);});
-    link.textContent = "Add Instruments";
-    card.appendChild(title);
-    card.appendChild(text);
-    card.appendChild(link);
-    grid.appendChild(card);
+    const hint = document.createElement("p");
+    hint.className = "psd-compact-empty-hint";
+    hint.textContent = "No instruments selected. Open this tile’s ⚙ Settings → Add Instruments (up to 15).";
+    grid.appendChild(hint);
   }
 
   function renderCards(items,assetMap,headlines,technicalMap,userMap){
