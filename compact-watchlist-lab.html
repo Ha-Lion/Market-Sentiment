@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compact Watchlist — Lab v94.2.4 | Public Sentiment Dash</title>
+  <title>Compact Watchlist — Lab v94.2.5 | Public Sentiment Dash</title>
   <meta name="description" content="Private personalized watchlist for a Public Sentiment Dash member.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="logo.png">
@@ -76,7 +76,18 @@
     .psd-compact-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
     .psd-compact-empty-hint{padding:22px 14px;color:var(--muted);font-size:13px;margin:0;grid-column:1/-1;background:transparent;border:0;box-shadow:none}
     /* Only instrument cards are drawn in the embedded dashboard tile. */
-    .watchlist-card{min-width:0}
+    /* The dashboard itself owns the tile border, title bar, drag and resize handles. */
+    main.page.watchlist-page{padding:0!important;min-height:100%!important}
+    #watchlist-grid{display:block!important;margin:0!important;padding:0!important}
+    .watchlist-card{padding-top:43px!important;min-width:0!important;min-height:100%!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:13px!important}
+    .watchlist-card .watchlist-comparison{white-space:nowrap}
+    body{background:transparent!important}
+    html[data-psd-theme="dark"] body,.dark-mode body{background:transparent!important}
+    html[data-psd-theme="light"] .watchlist-card{background:transparent!important}
+    body.psd-single-popup #watchlist-grid{display:none!important}
+    body.psd-single-popup main.page.watchlist-page{padding:0!important}
+    body.psd-single-popup .watchlist-modal{z-index:5000}
+
     body{overflow-x:hidden}
   </style>
 </head>
@@ -176,7 +187,29 @@
     })();
   </script>
 
-  <script src="compact-watchlist-lab.js?v=94.2.3" defer></script>
+  <!-- v94.2.5: Keep Economic Calendar usable from a small independent card. -->
+  <script>
+   (function(){
+     const p=new URLSearchParams(location.search);
+     if(!p.has('asset'))return;
+     if(!p.has('popup'))document.addEventListener('click',function(e){
+       if(!e.target.closest('.watchlist-economic-button'))return;
+       e.preventDefault();e.stopImmediatePropagation();
+       window.parent.postMessage({type:'psd-compact-card-lab',action:'open-modal',popup:'calendar'},location.origin);
+     },true);
+     if(p.get('popup')==='calendar'){
+       const grid=document.getElementById('watchlist-grid');
+       const obs=new MutationObserver(function(){
+         const button=grid.querySelector('.watchlist-economic-button');
+         if(button){obs.disconnect();button.click();}
+       });
+       obs.observe(grid,{childList:true,subtree:true});
+       window.addEventListener('pagehide',()=>obs.disconnect(),{once:true});
+     }
+   })();
+  </script>
+
+  <script src="compact-watchlist-lab.js?v=94.2.5" defer></script>
   <script src="watchlist-economic-events.js?v=3" defer></script>
 
   <script src="glossary.js?v=3" defer></script>

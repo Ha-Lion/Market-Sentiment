@@ -1,6 +1,17 @@
 (function(){
   "use strict";
 
+  const psdParams=new URLSearchParams(location.search);
+  const psdAsset=psdParams.get('asset')||'';
+  const psdPopup=psdParams.get('popup')||'';
+  const psdSingle=psdParams.has('asset');
+  if(psdPopup)document.body.classList.add('psd-single-popup');
+  let psdPopupStarted=false;
+  function psdOpenParent(action){
+    if(!psdSingle||psdPopup)return false;
+    window.parent.postMessage({type:'psd-compact-card-lab',action:'open-modal',popup:action},location.origin);
+    return true;
+  }
   const client = window.psdSupabase;
   if(!client) return;
 
@@ -47,6 +58,8 @@
 
   async function fetchJson(path){
     try{
+      const owner=window.parent && window.parent.PSDCompactWatchlistLab;
+      if(owner && typeof owner.fetchJson==='function')return await owner.fetchJson(path);
       const response = await fetch(path,{cache:"no-cache"});
       if(response.ok) return await response.json();
     }catch(_error){}
@@ -242,6 +255,7 @@
   function closeModal(){
     if(activeChartCleanup){activeChartCleanup();activeChartCleanup=null;}
     modal.classList.remove("open");
+    if(psdPopup)window.parent.postMessage({type:'psd-compact-card-lab',action:'close-modal'},location.origin);
     modalBody.textContent = "";
     document.body.style.overflow = "";
   }
@@ -1029,6 +1043,7 @@
       comparison.className = "watchlist-comparison";
       comparison.textContent = "Comparison";
       comparison.addEventListener("click",function(){
+        if(psdOpenParent('comparison'))return;
         openChartPopup(item.instrument,asset).catch(function(error){
           console.error(error);
           modalBody.innerHTML = '<div class="watchlist-popup-empty">Chart could not be loaded.</div>';
@@ -1061,6 +1076,7 @@
       actions.appendChild(makeLink("Related Sentiment Page",relatedPage));
       actions.appendChild(makeLink("Market Charts",marketChartHrefFor(asset,item.instrument)));
       actions.appendChild(makeButton("News & Articles",function(){
+        if(psdOpenParent('news'))return;
         openNewsPopup(item.instrument,asset).catch(function(error){
           console.error(error);
           modalBody.innerHTML = '<div class="watchlist-popup-empty">News could not be loaded.</div>';
@@ -1072,6 +1088,13 @@
       card.appendChild(headlineRow);
       card.appendChild(actions);
       grid.appendChild(card);
+      if(psdPopup&&!psdPopupStarted){
+        psdPopupStarted=true;
+        queueMicrotask(()=>{
+          if(psdPopup==='news')card.querySelector('.watchlist-card-actions button')?.click();
+          if(psdPopup==='comparison')card.querySelector('.watchlist-comparison')?.click();
+        });
+      }
     });
   }
 
@@ -1088,12 +1111,12 @@
       const owner=window.parent && window.parent.PSDCompactWatchlistLab;
       if(owner && typeof owner.getAssets === "function") names=owner.getAssets();
     }catch(error){console.warn("Lab parent watchlist unavailable",error);}
-    names=Array.isArray(names)?names.filter(v=>typeof v==="string" && v.trim()).slice(0,15):[];
+    names=psdSingle?[psdAsset]:Array.isArray(names)?names.filter(v=>typeof v==="string" && v.trim()).slice(0,15):[];
     const items=names.map((instrument,index)=>({id:"lab-slot-"+(index+1),instrument,display_order:index}));
     const backgroundPromise=Promise.all([
       fetchJson("dashboard_live.json"),
       fetchJson("technical_data.json"),
-      client.auth.getSession().then(r=>r.data?.session?client.rpc("get_user_sentiment"):({data:[],error:null})).catch(()=>({data:[],error:null}))
+      window.parent?.PSDCompactWatchlistLab?.getUserSentiment?.()||client.auth.getSession().then(r=>r.data?.session?client.rpc("get_user_sentiment"):({data:[],error:null})).catch(()=>({data:[],error:null}))
     ]);
     const firstResults=await Promise.all([Promise.resolve({data:items,error:null}),assetConfigPromise]);
     if(!items.length){
