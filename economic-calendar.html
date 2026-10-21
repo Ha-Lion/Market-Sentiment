@@ -1897,19 +1897,36 @@
       });
     }
 
+    // Keep filter controls intact during live updates; only rebuild when choices change.
+    let quickCountryOptionsKey=null;
+    let quickCategoryOptionsKey=null;
     function rebuildQuickFilters(){
       const oldCountry=pendingRestoredFilters?.country||countryFilter.value;
       const oldCategory=pendingRestoredFilters?.category||categoryFilter.value;
       pendingRestoredFilters=null;
 
-      countryFilter.innerHTML='<option value="">All selected countries</option>'+
-        settings.countries.map(c=>`<option value="${c}">${esc(c)} · ${esc(countryName(c))}</option>`).join("");
-      if(settings.countries.includes(oldCountry)) countryFilter.value=oldCountry;
+      const countryKey=JSON.stringify(settings.countries);
+      if(countryKey!==quickCountryOptionsKey){
+        countryFilter.innerHTML='<option value="">All selected countries</option>'+          settings.countries.map(c=>`<option value="${esc(c)}">${esc(c)} · ${esc(countryName(c))}</option>`).join("");
+        quickCountryOptionsKey=countryKey;
+      }
+      const nextCountry=settings.countries.includes(oldCountry)?oldCountry:"";
+      if(countryFilter.value!==nextCountry)countryFilter.value=nextCountry;
 
       const cats=[...new Set(allEvents.map(classifyEvent).filter(c=>settings.categories.includes(c)))].sort();
-      categoryFilter.innerHTML='<option value="">All classifications</option>'+
-        cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-      if(cats.includes(oldCategory)) categoryFilter.value=oldCategory;
+      const categoryKey=JSON.stringify(cats);
+      if(categoryKey!==quickCategoryOptionsKey){
+        categoryFilter.innerHTML='<option value="">All classifications</option>'+          cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+        quickCategoryOptionsKey=categoryKey;
+      }
+      const nextCategory=cats.includes(oldCategory)?oldCategory:"";
+      if(categoryFilter.value!==nextCategory)categoryFilter.value=nextCategory;
+    }
+
+    function compareCalendarEvents(a,b){
+      const timeA=parseProviderDate(a.date)?.getTime()||0;
+      const timeB=parseProviderDate(b.date)?.getTime()||0;
+      return (timeA-timeB)||String(eventUIKey(a)).localeCompare(String(eventUIKey(b)));
     }
 
     function visibleEvents(){
@@ -1933,7 +1950,7 @@
         .filter(e=>!impactFilter.value||impactFromImportance(e.importance)===impactFilter.value)
         .filter(e=>!categoryFilter.value||classifyEvent(e)===categoryFilter.value)
         .filter(e=>!q||`${e.event||""} ${e.category||""} ${e.country||""} ${e.currency||""}`.toLowerCase().includes(q))
-        .sort((a,b)=>(parseProviderDate(a.date)?.getTime()||0)-(parseProviderDate(b.date)?.getTime()||0));
+        .sort(compareCalendarEvents);
     }
 
     function economicValueLabel(value,field,event){
@@ -2044,6 +2061,60 @@
       return a>f?"actual-up":"actual-down";
     }
 
+    // V1.3 FOUNDATION: reconcile rows by stable event identity. Never replace the
+    // live tbody on normal refresh. Retain existing history canvases, focused
+    // controls, and unchanged cells. Only insert/remove/move genuine event rows.
+    const calendarRowSnapshots=new WeakMap();
+    function reconcileCalendarRows(markup){
+      const staging=document.createElement("tbody");
+      staging.innerHTML=markup;
+      const desired=[...staging.children];
+      const existing=new Map();
+      for(const row of body.children){
+        const key=row.getAttribute("data-ec-row-key");
+        if(key&&!existing.has(key))existing.set(key,row);
+      }
+
+      let cursor=body.firstElementChild;
+      let needsSparklineHydration=false;
+      for(const incoming of desired){
+        const key=incoming.getAttribute("data-ec-row-key");
+        let row=key?existing.get(key):null;
+        const snapshot=[...incoming.cells].map(cell=>cell.outerHTML);
+        if(row){
+          const previous=calendarRowSnapshots.get(row);
+          if(!previous||previous.length!==snapshot.length){
+            row.replaceChildren(...[...incoming.cells].map(cell=>cell.cloneNode(true)));
+            needsSparklineHydration=true;
+          }else{
+            for(let i=0;i<snapshot.length;i++){
+              if(snapshot[i]===previous[i])continue;
+              const nextCell=incoming.cells[i].cloneNode(true);
+              row.replaceChild(nextCell,row.cells[i]);
+              if(nextCell.querySelector("[data-spark-event]"))needsSparklineHydration=true;
+            }
+          }
+          if(row.className!==incoming.className)row.className=incoming.className;
+          calendarRowSnapshots.set(row,snapshot);
+          existing.delete(key);
+        }else{
+          row=incoming;
+          calendarRowSnapshots.set(row,snapshot);
+          if(row.querySelector("[data-spark-event]"))needsSparklineHydration=true;
+        }
+        // Usually row === cursor. This avoids DOM moves and layout churn.
+        if(row!==cursor)body.insertBefore(row,cursor);
+        cursor=row.nextElementSibling;
+      }
+      // Only obsolete rows are removed. Nothing is cleared during a refresh.
+      while(cursor){
+        const obsolete=cursor;
+        cursor=cursor.nextElementSibling;
+        obsolete.remove();
+      }
+      return needsSparklineHydration;
+    }
+
     function render(){
       rebuildQuickFilters();
       const rows=visibleEvents();
@@ -2068,13 +2139,13 @@
         const d=parseProviderDate(e.date);
         const dk=dayKey(d);
         if(dk!==lastDay){
-          html+=`<tr class="ec-day-row"><td colspan="11">${esc(dayLabel(d))}</td></tr>`;
+          html+=`<tr class="ec-day-row" data-ec-row-key="day:${esc(dk)}"><td colspan="11">${esc(dayLabel(d))}</td></tr>`;
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
         const c=displayCountry(e);        const assets=relevantAssets(e);
         html+=`
-          <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}">
+          <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}" data-ec-row-key="event:${esc(eventUIKey(e))}">
             <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
             <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code||"")}</strong> ${esc(c.name)}</span></td>
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
@@ -2099,10 +2170,10 @@
             </td>
           </tr>`;
       }
-      body.innerHTML=html;
+      const newHistoryHosts=reconcileCalendarRows(html);
       applyReminderButtonStates();
       updateCountdown();
-      scheduleSparklineHydration();
+      if(newHistoryHosts)scheduleSparklineHydration();
     }
 
     function setStatus(kind,text){
@@ -3166,13 +3237,11 @@
         const key=String(e.id||eventUIKey(e,i));
         map.set(key,{...(map.get(key)||{}),...e});
       });
-      return [...map.values()].sort((a,b)=>
-        (parseProviderDate(a.date)?.getTime()||0)-(parseProviderDate(b.date)?.getTime()||0)
-      );
+      return [...map.values()].sort(compareCalendarEvents);
     }
 
     function eventContentSignature(events){
-      return JSON.stringify((events||[]).map(e=>[e.id,e.official_event_id,e.date,e.event,e.country_code,e.importance,e.category,e.reference,e.previous,e.forecast,e.te_forecast,e.actual,e.revised,e.unit,e.source_url,e.release_verification_status]));
+      return JSON.stringify((events||[]).map(e=>[e.id,e.official_event_id,e.date,e.event,e.country_code,e.country,e.currency,e.importance,e.category,e.reference,e.previous,e.forecast,e.te_forecast,e.actual,e.revised,e.unit,e.numeric_comparison_available,e.actual_provenance,e.previous_provenance,e.release_verification_status,e.source_url,e.assets,e.relevant_assets]));
     }
     function renderChangedEvents(previousSignature){
       if(eventContentSignature(allEvents)!==previousSignature)render();
@@ -3906,20 +3975,21 @@
     }
 
     function eventUIKey(e,index=0){
-      if(e && e._ui_key) return e._ui_key;
-      const base=String(e?.id||"").trim();
-      if(base) return base;
-      return [
-        String(e?.country_code||e?.country||""),
-        String(e?.event||e?.category||"event"),
-        String(e?.date||""),
-        String(index)
-      ].join("|");
+      if(e&&e._ui_key)return e._ui_key;
+      const base=String(e?.id||e?.official_event_id||e?.provider_event_id||"").trim();
+      if(base)return base;
+      // Do not use array position: it changes when a provider inserts a row.
+      return ["fallback",e?.country_code||e?.country||"",e?.event||e?.category||"event",e?.date||"",e?.reference||"",e?.category||""].map(x=>String(x)).join("|");
     }
 
     function ensureEventUIKeys(){
-      allEvents.forEach((e,i)=>{
-        if(!e._ui_key) e._ui_key=eventUIKey(e,i);
+      const occurrence=new Map();
+      allEvents.forEach(e=>{
+        const stableId=String(e?.id||e?.official_event_id||e?.provider_event_id||"").trim();
+        const base=stableId||["fallback",e?.country_code||e?.country||"",e?.event||e?.category||"event",e?.date||"",e?.reference||"",e?.category||""].map(x=>String(x)).join("|");
+        const seen=occurrence.get(base)||0;
+        occurrence.set(base,seen+1);
+        e._ui_key=seen?`${base}|duplicate:${seen}`:base;
       });
     }
 
