@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compact Watchlist — Lab v94.2.2 | Public Sentiment Dash</title>
+  <meta name="description" content="Private personalized watchlist for a Public Sentiment Dash member.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="stylesheet" href="site.css">
+  <link rel="stylesheet" href="watchlist.css?v=20260809-chart5">
+  <link rel="stylesheet" href="site-theme.css?v=20">
+
+  <style>
+    .nav-row-break{
+      flex-basis:100%;
+      height:0;
+    }
+
+    body{
+      min-height:100vh;
+    }
+
+    /* Embedded as a single dashboard panel; instrument cards are the 15 child tiles. */
+    html,body{height:auto;min-height:100%;margin:0}
+    main.page.watchlist-page{
+      width:auto;
+      max-width:none;
+      margin:0;
+      padding:8px;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    #watchlist-grid{
+      flex:0 0 auto;
+    }
+
+    body:not(.dark-mode){--bg:var(--theme-bg);--panel:var(--theme-card);--card:var(--theme-card-2);--line:var(--theme-line);--text:var(--theme-text);--soft:var(--theme-soft);--muted:var(--theme-muted);--blue:var(--theme-blue)}
+    body:not(.dark-mode) .panel{background:var(--theme-card);box-shadow:0 12px 28px rgba(25,50,72,.13)}
+    body:not(.dark-mode) .page-chip{background:var(--theme-gold-soft);color:#523700;border-color:#a97200}
+    body:not(.dark-mode) .watchlist-metric,body:not(.dark-mode) .watchlist-chip{background:var(--theme-card-2);color:#061522}
+    body:not(.dark-mode) .watchlist-metric strong,body:not(.dark-mode) .watchlist-card h2{color:#061522}
+    body:not(.dark-mode) .watchlist-symbol{color:#6b4700}
+    body:not(.dark-mode) .watchlist-modal-card{background:#f8fbfe;color:#061522}
+    body:not(.dark-mode) .watchlist-modal-head{background:#fff}
+    body:not(.dark-mode) .watchlist-modal-close,body:not(.dark-mode) .watchlist-chart-tool{background:#eef4f9;color:#061522}
+    body:not(.dark-mode) .watchlist-news-item{background:#fff}
+    body:not(.dark-mode) .watchlist-news-title{color:#061522}
+    body:not(.dark-mode) .watchlist-comparison,
+    body:not(.dark-mode) .watchlist-card-actions a,
+    body:not(.dark-mode) .watchlist-card-actions button{
+      background:#fff7df;
+      color:#563800;
+      border-color:#9a6500;
+      text-shadow:none;
+    }
+    body:not(.dark-mode) .watchlist-comparison:hover,
+    body:not(.dark-mode) .watchlist-card-actions a:hover,
+    body:not(.dark-mode) .watchlist-card-actions button:hover{
+      background:#f5df9c;
+      color:#2f1e00;
+      border-color:#6b4700;
+    }
+    body:not(.dark-mode) .psd-glossary-popover{
+      background:#fff;
+      color:#061522;
+      border-color:#7894aa;
+      box-shadow:0 14px 34px rgba(25,50,72,.24);
+    }
+    body:not(.dark-mode) .psd-glossary-title{color:#061522}
+    body:not(.dark-mode) .psd-glossary-text{color:#102a3d}
+    body:not(.dark-mode) .psd-glossary-close{color:#233f54}
+    body:not(.dark-mode) .psd-glossary-close:hover{color:#000}
+    body .psd-shared-header .social-pill.linkedin{opacity:1!important;visibility:visible!important;font-weight:900!important;text-shadow:none!important}
+    body:not(.dark-mode) .psd-shared-header .social-pill.linkedin{color:#061522!important;background:#fff!important;border-color:#8da8bd!important}
+    body.dark-mode .psd-shared-header .social-pill.linkedin{color:#fff!important}
+    /* Reduce wasted space in a nested dashboard without dropping any original actions. */
+    .watchlist-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+    @media(max-width:1460px){.watchlist-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+    @media(max-width:1000px){.watchlist-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media(max-width:640px){.watchlist-grid{grid-template-columns:1fr;}}
+    .watchlist-hero{margin-bottom:10px}
+    .watchlist-card{min-width:0}
+    body{overflow-x:hidden}
+  </style>
+</head>
+<body>
+  <!-- Embedded lab: site ribbon intentionally omitted -->
+  <script src="site-theme.js?v=20" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-client.js?v=6" defer></script>
+
+  <main class="page watchlist-page">
+    <section class="panel watchlist-hero">
+      <div class="watchlist-hero-copy">
+        <div class="page-chip">Private Member Page</div>
+        <h1>My Watchlist</h1>
+        <p>
+          Your saved instruments, <span data-glossary="user-sentiment">anonymous user sentiment</span>, <span data-glossary="technical-direction">technical direction</span>,
+          and latest headline mix in one place.
+        </p>
+        <div id="watchlist-status" class="watchlist-status" role="status">Loading your watchlist…</div>
+      </div>
+      <div class="watchlist-hero-actions">
+        <button id="compact-watchlist-edit" type="button" class="watchlist-action secondary">Edit Watchlist (up to 15)</button>
+        <button id="compact-watchlist-import" type="button" class="watchlist-action secondary" title="Read your saved website watchlist into this lab workspace; never changes the live watchlist">Use My Saved Watchlist</button>
+      </div>
+    </section>
+
+    <section id="watchlist-grid" class="watchlist-grid" aria-live="polite"></section>
+
+    <div id="watchlist-modal" class="watchlist-modal" role="dialog" aria-modal="true" aria-labelledby="watchlist-modal-title">
+      <section class="watchlist-modal-card">
+        <div class="watchlist-modal-head">
+          <h2 id="watchlist-modal-title">Instrument Details</h2>
+          <button id="watchlist-modal-close" class="watchlist-modal-close" type="button" aria-label="Close popup">×</button>
+        </div>
+        <div id="watchlist-modal-body" class="watchlist-modal-body"></div>
+      </section>
+    </div>
+  </main>
+
+
+
+  <!--
+    Load Lightweight Charts only when a user actually opens Comparison.
+    Keeping this third-party CDN request out of the initial page-load path
+    prevents it from holding the browser's loading indicator open.
+  -->
+  <script>
+    (function(){
+      "use strict";
+
+      var chartLibraryPromise=null;
+
+      function loadWatchlistChartLibrary(){
+        if(window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
+        if(chartLibraryPromise) return chartLibraryPromise;
+
+        chartLibraryPromise=new Promise(function(resolve,reject){
+          var script=document.createElement("script");
+          script.src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js";
+          script.async=true;
+
+          script.onload=function(){
+            if(window.LightweightCharts){
+              resolve(window.LightweightCharts);
+            }else{
+              chartLibraryPromise=null;
+              reject(new Error("Interactive chart library did not initialize."));
+            }
+          };
+
+          script.onerror=function(){
+            chartLibraryPromise=null;
+            reject(new Error("Interactive chart library could not load."));
+          };
+
+          document.head.appendChild(script);
+        });
+
+        return chartLibraryPromise;
+      }
+
+      document.addEventListener("click",function(event){
+        var button=event.target && event.target.closest
+          ? event.target.closest(".watchlist-comparison")
+          : null;
+
+        if(!button || window.LightweightCharts || button.dataset.psdChartReady==="true"){
+          return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var originalText=button.textContent;
+        button.disabled=true;
+        button.textContent="Loading…";
+
+        loadWatchlistChartLibrary()
+          .then(function(){
+            button.dataset.psdChartReady="true";
+            button.disabled=false;
+            button.textContent=originalText;
+            button.click();
+          })
+          .catch(function(error){
+            console.error("Watchlist chart library load failed:",error);
+            button.disabled=false;
+            button.textContent=originalText;
+            window.alert("Interactive chart could not load right now. Please try again.");
+          });
+      },true);
+    })();
+  </script>
+
+  <script src="compact-watchlist-lab.js?v=94.2.2" defer></script>
+  <script src="watchlist-economic-events.js?v=3" defer></script>
+
+  <script src="glossary.js?v=3" defer></script>
+  <script src="vote-widget.js?v=19" defer></script>
+
+  <script id="compact-watchlist-lab-bridge">
+    (function(){
+      // Lab-only selector: never writes the member's live watchlist.
+      document.getElementById('compact-watchlist-edit')?.addEventListener('click',function(){
+        if(window.parent!==window)window.parent.postMessage({type:'psd-compact-watchlist-lab',action:'edit'},window.location.origin);
+      });
+      document.getElementById('compact-watchlist-import')?.addEventListener('click',async function(){
+        const button=this;
+        button.disabled=true;
+        const prior=button.textContent;
+        button.textContent='Loading your saved watchlist…';
+        try{
+          const client=window.psdSupabase;
+          if(!client)throw new Error('Member data is not connected. Sign in and try again.');
+          const response=await client.auth.getSession();
+          const user=response?.data?.session?.user;
+          if(!user)throw new Error('Sign in to import your saved member watchlist.');
+          const result=await client.from('watchlists').select('id').eq('user_id',user.id).eq('is_default',true).limit(1).maybeSingle();
+          if(result.error)throw result.error;
+          if(!result.data?.id)throw new Error('No member watchlist has been saved yet.');
+          const items=await client.from('watchlist_items').select('instrument,display_order,created_at').eq('watchlist_id',result.data.id).order('display_order',{ascending:true}).order('created_at',{ascending:true});
+          if(items.error)throw items.error;
+          const names=(items.data||[]).map(row=>row.instrument).filter(v=>typeof v==='string'&&v.trim()).slice(0,15);
+          if(!names.length)throw new Error('Your saved member watchlist is empty.');
+          if(window.parent===window)throw new Error('Open this page inside the lab dashboard to import.');
+          // This requests a local-only lab import. No Supabase writes are performed.
+          window.parent.postMessage({type:'psd-compact-watchlist-lab',action:'import',instruments:names},window.location.origin);
+        }catch(error){window.alert(error?.message||'Could not load saved watchlist.');}
+        finally{button.disabled=false;button.textContent=prior;}
+      });
+    })();
+  </script>
+</body>
+</html>
