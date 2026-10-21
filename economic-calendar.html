@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V2.1: compact table column widths (country, impact, previous, actual, revised) -->
+<!-- Economic Calendar V2.2: silent and resilient background refresh -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1618,6 +1618,9 @@
     let lastQuietRangeNetworkAt = 0;
     let lastAccountSessionKey = null;
     let startupFeedPromise = null;
+    let refreshRetryTimer = null;
+    let refreshRetryFailures = 0;
+    let refreshRetryContext = null;
 
     /* V35 performance: history sparklines are non-critical.
        Render the calendar first, then load visible history quietly with
@@ -2151,10 +2154,27 @@
     function setStatus(kind,text){
       // Keep the familiar green "Live data" badge steady while checking in the background.
       // Once red, it stays red until an actual network response succeeds.
-      if(kind==="loading" && (liveConnectionFailed ||
-          (lastSuccessfulLiveCheckAt && Date.now()-lastSuccessfulLiveCheckAt<LIVE_CHECK_STALE_MS && navigator.onLine!==false)))return;
+      if(kind==="loading" && lastSuccessfulLiveCheckAt)return;
       feedStatus.className=`ec-badge ${kind||""}`.trim();
       feedStatus.textContent=text;
+    }
+    function clearRefreshRetry(){
+      if(refreshRetryTimer!==null){clearTimeout(refreshRetryTimer);refreshRetryTimer=null;}
+      refreshRetryFailures=0;
+      refreshRetryContext=null;
+    }
+    function scheduleRefreshRetry(){
+      if(document.hidden||navigator.onLine===false||refreshRetryTimer!==null)return;
+      const context=calendarRequestContext();
+      if(refreshRetryContext!==context){refreshRetryFailures=0;refreshRetryContext=context;}
+      const delay=Math.min(60000,5000*Math.pow(2,Math.min(refreshRetryFailures,4)));
+      refreshRetryFailures++;
+      refreshRetryTimer=setTimeout(()=>{
+        refreshRetryTimer=null;
+        if(document.hidden||navigator.onLine===false)return;
+        if(calendarRequestContext()!==context){clearRefreshRetry();return;}
+        loadFeed(false,true).catch(()=>{});
+      },delay);
     }
     function confirmLiveRefresh(){
       if(navigator.onLine===false){
@@ -2168,13 +2188,7 @@
       feedStatus.setAttribute("aria-label","Live data: calendar feed check successful");
       if(livePulseTimer!==null)clearTimeout(livePulseTimer);
       feedStatus.classList.remove("ec-feed-pulse");
-      // Restart the one-second pulse even when consecutive checks occur quickly.
-      void feedStatus.offsetWidth;
-      feedStatus.classList.add("ec-feed-pulse");
-      livePulseTimer=setTimeout(()=>{
-        feedStatus.classList.remove("ec-feed-pulse");
-        livePulseTimer=null;
-      },1000);
+      clearRefreshRetry();
     }
     function reportLiveConnectionFailure(reason){
       liveConnectionFailed=true;
@@ -3271,29 +3285,10 @@
         }
       }
 
-      /*
-       * V36 return-navigation fast path:
-       * if a full cache was saved less than one minute ago, the user already
-       * has fresh data. Do not immediately hit the upstream provider again.
-       * The normal auto-refresh loop will refresh it shortly.
-       */
-      if(!manual && showedCached && cachedAgeMs<60000 && !settings.countries.includes("GB")){
-        verifyLiveFreshness();
-        setStatus("loading","Cached data (<1 min)");
-        lastFullWeekNetworkAt=Date.now()-cachedAgeMs;
-        return;
+      // Show cache immediately but verify against the network every time.
+      if(!background&&!allEvents.length&&!showedCached){
+        setStatus("loading","Loading live data");
       }
-
-      setStatus("loading",
-        manual ? "Refreshing…" :
-        showedCached ? "Updating live data" : "Loading live data"
-      );
-      warning.classList.remove("show");
-
-      if(!showedCached && !allEvents.length){
-        body.innerHTML='<tr><td colspan="11" class="ec-loading">Loading economic calendar…</td></tr>';
-      }
-
       try{
         const data=await fetchFeedRange(r,request.controller.signal,manual);
         if(!isCalendarRequestCurrent(request))return; // Dropped stale response.
@@ -3339,12 +3334,10 @@
         reportLiveConnectionFailure("Calendar feed request failed. Showing cached data when available.");
 
         if(allEvents.length){
-          setStatus("loading","Cached data");
-          warning.textContent="Live refresh is temporarily unavailable. Showing the most recently cached calendar.";
-          warning.classList.add("show");
-          render();
-          return;
+          scheduleRefreshRetry();
+          return; // Never clear or repaint visible rows after a network failure.
         }
+        scheduleRefreshRetry();
 
         allEvents=[];
         setStatus("error","Feed unavailable");
@@ -3401,6 +3394,7 @@
         if(!isCalendarRequestCurrent(request)||err.name==="AbortError")return;
         console.warn("30-second live-value refresh failed",err);
         reportLiveConnectionFailure("The 30-second calendar update failed.");
+        scheduleRefreshRetry();
       }finally{finishCalendarRequest(request);}
     }
 
@@ -4361,14 +4355,17 @@
     releaseWatchTimer=setInterval(refreshOfficialReleaseWindow,5000);
     countdownTimer=setInterval(updateCountdown,30000);
     liveHealthTimer=setInterval(verifyLiveFreshness,10000);
-    window.addEventListener("offline",()=>reportLiveConnectionFailure("Internet connection is offline; live updates are unavailable."));
+    window.addEventListener("offline",()=>{
+      if(refreshRetryTimer!==null){clearTimeout(refreshRetryTimer);refreshRetryTimer=null;}
+      reportLiveConnectionFailure("Internet connection is offline; live updates are unavailable.");
+    });
+    window.addEventListener("online",()=>loadFeed(false,true).catch(()=>{}));
     document.addEventListener("visibilitychange",()=>{
-      if(document.hidden)return;
+      if(document.hidden){if(refreshRetryTimer!==null){clearTimeout(refreshRetryTimer);refreshRetryTimer=null;}return;}
       verifyLiveFreshness();
-      // Resume stale tabs with one background check, not a cached-table repaint.
+      // Validate the entire viewed range after an inactive period.
       if(!lastSuccessfulLiveCheckAt||Date.now()-lastSuccessfulLiveCheckAt>AUTO_REFRESH_MS){
-        if(currentRange==="week")refreshTodayIntoWeek().catch(()=>{});
-        else loadFeed(false,true).catch(()=>{});
+        loadFeed(false,true).catch(()=>{});
       }
     });
 
@@ -4465,6 +4462,7 @@
     }
 
     function cleanupCalendarRuntime(){
+      clearRefreshRetry();
       clearInterval(refreshTimer);
       clearInterval(zoneClockTimer);
       clearInterval(reminderButtonTimer);
@@ -4511,11 +4509,7 @@
       verifyLiveFreshness();
 
       setTimeout(()=>{
-        if(currentRange==="week"){
-          refreshTodayIntoWeek().catch(()=>{});
-        }else{
-          loadFeed(false,true).catch(()=>{});
-        }
+        loadFeed(false,true).catch(()=>{});
       },250);
     });
   })();
