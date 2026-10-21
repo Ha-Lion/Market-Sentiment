@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Economic Calendar V1.2: viewer-timezone date boundaries, 2026-10-20 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1914,7 +1915,16 @@
     function visibleEvents(){
       const q=search.value.trim().toLowerCase();
       const now=Date.now();
+      const selectedRange=getRange(currentRange);
       return allEvents
+        // The feed date window is not necessarily the viewer's calendar day.
+        // Use the SAME selected timezone for both membership and day headings.
+        .filter(e=>{
+          const date=parseProviderDate(e.date);
+          if(!date)return false;
+          const day=dateKeyInTimezone(date,settings.timezone);
+          return day>=selectedRange.start && day<=selectedRange.end;
+        })
         .filter(e=>!upcomingOnly || (parseProviderDate(e.date)?.getTime()||0) >= now)
         .filter(e=>settings.countries.includes(e.country_code))
         .filter(e=>settings.impacts.includes(impactFromImportance(e.importance)))
@@ -3060,8 +3070,7 @@
             method:"POST",
             headers:{"content-type":"application/json"},
             body:JSON.stringify({
-              start:range.start,
-              end:range.end,
+              ...feedDateWindow(range),
               countries:settings.countries
             }),
             cache:"default"
@@ -3117,13 +3126,25 @@
       }
     }
 
+    function feedDateWindow(range){
+      // Cover timezone boundaries (UTC day can differ from selected local day).
+      // Server-side dates are left unchanged; the browser performs final filtering.
+      const shift=(iso,days)=>{
+        const day=new Date(iso+"T12:00:00Z");
+        day.setUTCDate(day.getUTCDate()+days);
+        return day.toISOString().slice(0,10);
+      };
+      return {start:shift(range.start,-1),end:shift(range.end,1)};
+    }
+
     async function fetchFeedRange(range,signal,forceNetwork=false){
+      const requestRange=feedDateWindow(range);
       const res=await fetch(FEED_URL,{
         method:"POST",
         headers:{"content-type":"application/json"},
         body:JSON.stringify({
-          start:range.start,
-          end:range.end,
+          start:requestRange.start,
+          end:requestRange.end,
           countries:settings.countries,
           force_live:Boolean(forceNetwork)
         }),
@@ -3169,7 +3190,7 @@
         if(currentRange==="week"){
           const cached=getWeekCache(r);
           if(cached){
-            allEvents=Array.isArray(cached.data.events)?cached.data.events:[];
+            allEvents=filterEventsToDateRange(cached.data.events,r);
             ensureEventUIKeys();
             lastFetchAt=new Date(cached.saved_at||Date.now());
             render();
@@ -3227,7 +3248,7 @@
         lastFetchAt=new Date();
 
         const previousSignature=eventContentSignature(allEvents);
-        allEvents=Array.isArray(data.events)?data.events:[];
+        allEvents=filterEventsToDateRange(data.events,r);
         ensureEventUIKeys();
 
         const weekRange=getRange("week");
@@ -3288,7 +3309,8 @@
         if(currentRange!=="week") return;
 
         const previousSignature=eventContentSignature(allEvents);
-        allEvents=mergeEventUpdates(allEvents,Array.isArray(data.events)?data.events:[]);
+        allEvents=filterEventsToDateRange(
+          mergeEventUpdates(allEvents,Array.isArray(data.events)?data.events:[]),getRange("week"));
         ensureEventUIKeys();
         lastFetchAt=new Date();
 
@@ -3367,8 +3389,7 @@
           method:"POST",
           headers:{"content-type":"application/json"},
           body:JSON.stringify({
-            start:r.start,
-            end:r.end,
+            ...feedDateWindow(r),
             countries:settings.countries,
             force_live:false
           }),
@@ -3382,7 +3403,8 @@
         if(!updates.length) return;
 
         const previousSignature=eventContentSignature(allEvents);
-        allEvents=mergeEventUpdates(allEvents,updates);
+        allEvents=filterEventsToDateRange(
+          mergeEventUpdates(allEvents,updates),getRange(currentRange));
         ensureEventUIKeys();
         lastFetchAt=new Date();
 
