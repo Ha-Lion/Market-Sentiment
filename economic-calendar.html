@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V1.8 - audit iteration 1: timezone-consistent ranges and adaptive background refresh -->
+<!-- Economic Calendar V1.9: audit iteration 2 - shared views, persistent filters, safe CSS and dead code cleanup -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -55,34 +55,11 @@
 
   
 <style id="ec-contrast-and-dayrows">
-  /* Strong readable typography */
-  body:not(.dark-mode) .ec-page,
-  body:not(.dark-mode) .ec-page h1,
-  body:not(.dark-mode) .ec-page h2,
-  body:not(.dark-mode) .ec-page h3,
-  body:not(.dark-mode) .ec-page strong,
-  body:not(.dark-mode) .ec-page label,
-  body:not(.dark-mode) .ec-page th,
-  body:not(.dark-mode) .ec-page td,
-  body:not(.dark-mode) .ec-page button,
-  body:not(.dark-mode) .ec-page select,
-  body:not(.dark-mode) .ec-page input{
-    color:#000!important;
-  }
-
-  body.dark-mode .ec-page,
-  body.dark-mode .ec-page h1,
-  body.dark-mode .ec-page h2,
-  body.dark-mode .ec-page h3,
-  body.dark-mode .ec-page strong,
-  body.dark-mode .ec-page label,
-  body.dark-mode .ec-page th,
-  body.dark-mode .ec-page td,
-  body.dark-mode .ec-page button,
-  body.dark-mode .ec-page select,
-  body.dark-mode .ec-page input{
-    color:#fff!important;
-  }
+  /* Maintain readable body text without overriding semantic signal colors. */
+  body:not(.dark-mode) .ec-page{color:#000;}
+  body.dark-mode .ec-page{color:#fff;}
+  .ec-page .actual-up{color:var(--ec-good)!important;}
+  .ec-page .actual-down{color:var(--ec-bad)!important;}
 
   body:not(.dark-mode) .ec-page .ec-muted,
   body:not(.dark-mode) .ec-page .muted,
@@ -117,29 +94,7 @@
 </style>
 
   
-<style id="ec-v20-contrast-flags">
-  body:not(.dark-mode) .ec-page,
-  body:not(.dark-mode) .ec-page *,
-  body:not(.dark-mode) .ec-page a,
-  body:not(.dark-mode) .ec-page button,
-  body:not(.dark-mode) .ec-page input,
-  body:not(.dark-mode) .ec-page select,
-  body:not(.dark-mode) .ec-page small,
-  body:not(.dark-mode) .ec-page .muted,
-  body:not(.dark-mode) .ec-page .ec-muted{
-    color:#000!important;
-  }
-
-  body.dark-mode .ec-page,
-  body.dark-mode .ec-page *,
-  body.dark-mode .ec-page a,
-  body.dark-mode .ec-page button,
-  body.dark-mode .ec-page input,
-  body.dark-mode .ec-page select,
-  body.dark-mode .ec-page small{
-    color:#fff!important;
-  }
-
+<style id="ec-flag-styling">
   .ec-flag-img{
     width:18px;
     height:13px;
@@ -373,22 +328,7 @@
 </style>
 
   
-<style id="ec-v44-stable-range-layout">
-  /*
-   * Keep the calendar footprint stable when switching from a busy range
-   * (This Week) to a short range (Today/Tomorrow). The data changes, but
-   * the page should not visually collapse or appear to "minimize".
-   */
-  .ec-table-wrap{
-    min-height:clamp(340px,48vh,590px);
-  }
 
-  @media(max-width:800px){
-    .ec-table-wrap{
-      min-height:360px;
-    }
-  }
-</style>
 
 <style id="ec-v43-gold-button-theme">
   /* Calendar controls: white at rest, PSD gold on hover/selection */
@@ -755,32 +695,6 @@
     }
 
 
-    .ec-next-up{
-      display:none;
-      margin:8px 10px 0;
-      padding:8px 10px;
-      border:1px solid var(--ec-border);
-      border-radius:9px;
-      background:var(--ec-soft2);
-      color:var(--ec-text);
-      font-size:11px;
-      line-height:1.35;
-    }
-    .ec-next-up.show{display:block}
-    .ec-next-up strong{font-weight:850}
-    .ec-next-up button{
-      margin-left:8px;
-      border:1px solid var(--ec-border);
-      background:var(--ec-card);
-      color:var(--ec-text);
-      border-radius:7px;
-      padding:4px 8px;
-      font:inherit;
-      font-size:10px;
-      font-weight:800;
-      cursor:pointer;
-    }
-
     .ec-empty,.ec-loading,.ec-error{text-align:center;padding:42px 20px;color:var(--ec-muted);}
     .ec-error strong{display:block;color:var(--ec-bad);margin-bottom:5px;}
     .ec-provider{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 16px;color:var(--ec-muted);font-size:11px;background:var(--ec-soft2);flex-wrap:wrap;}
@@ -800,7 +714,6 @@
     @media(min-width:1200px){
       .ec-table th,.ec-table td{padding-left:16px;padding-right:16px;}
       .ec-table th:nth-child(4),.ec-table td:nth-child(4){width:28%;}
-      .ec-table th:nth-child(5),.ec-table td:nth-child(5){width:110px;}
       .ec-table th:nth-child(5),.ec-table td:nth-child(5){width:17%;}
       .ec-table th:nth-child(10),.ec-table td:nth-child(10){width:176px;}
     }
@@ -842,27 +755,7 @@
 </style>
 
 <!-- PSD calendar: independently scrollable releases, persistent controls, original row contrast -->
-<style id="ec-scroll-controls-and-contrast-20261015">
-  /* The filter/settings area remains in place while the indicator list scrolls. */
-  .ec-page .ec-table-wrap{
-    height:clamp(380px,calc(100dvh - 300px),900px);
-    min-height:380px;
-    overflow-y:auto!important;
-    overflow-x:auto!important;
-    overscroll-behavior-y:contain;
-    scrollbar-gutter:stable;
-  }
-  .ec-page .ec-table thead th{
-    position:sticky;top:0;z-index:4;
-    background:var(--ec-card);
-  }
-  /* Released events remain as readable as upcoming events. */
-  .ec-page .ec-past-row,
-  .ec-page .ec-past-row:hover{opacity:1!important;}
-  @media(max-width:800px){
-    .ec-page .ec-table-wrap{height:calc(100dvh - 280px);min-height:360px;}
-  }
-</style>
+
 <style id="ec-single-scrollbar-20261015">
   html,body{height:100%;overflow:hidden!important;overscroll-behavior:none;}
   body{display:flex;flex-direction:column;min-height:0;}
@@ -1130,7 +1023,6 @@
         <div class="ec-stat"><span>Auto refresh</span><strong></strong><small id="last-updated">Not loaded</small></div>
       </div>
 
-      <div id="ec-next-up" class="ec-next-up"></div>
       <div class="ec-table-wrap">
         <table class="ec-table">
           <thead>
@@ -1396,6 +1288,7 @@
     let customRange = null;
     const VIEW_STATE_KEY = "psd-economic-calendar-view-state-v1";
     let pendingRestoredFilters = null;
+    let sharedViewTimezone = null;
     function persistCalendarView(){
       try{localStorage.setItem(VIEW_STATE_KEY,JSON.stringify({range:currentRange,custom:customRange,search:search.value,country:countryFilter.value,impact:impactFilter.value,category:categoryFilter.value,upcoming:upcomingOnly}));}catch(_err){}
     }
@@ -1949,8 +1842,8 @@
     let quickCountryOptionsKey=null;
     let quickCategoryOptionsKey=null;
     function rebuildQuickFilters(){
-      const oldCountry=pendingRestoredFilters?.country||countryFilter.value;
-      const oldCategory=pendingRestoredFilters?.category||categoryFilter.value;
+      const oldCountry=pendingRestoredFilters?.country??countryFilter.value;
+      const oldCategory=pendingRestoredFilters?.category??categoryFilter.value;
       pendingRestoredFilters=null;
 
       const countryKey=JSON.stringify(settings.countries);
@@ -1961,7 +1854,8 @@
       const nextCountry=settings.countries.includes(oldCountry)?oldCountry:"";
       if(countryFilter.value!==nextCountry)countryFilter.value=nextCountry;
 
-      const cats=[...new Set(allEvents.map(classifyEvent).filter(c=>settings.categories.includes(c)))].sort();
+      // Keep category filters stable even when the feed has no matching events.
+      const cats=[...new Set(settings.categories)].sort();
       const categoryKey=JSON.stringify(cats);
       if(categoryKey!==quickCategoryOptionsKey){
         categoryFilter.innerHTML='<option value="">All classifications</option>'+          cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
@@ -3143,59 +3037,6 @@
     }
 
 
-    async function findNextUpcomingDate(){
-      const start=localISODate(addDays(new Date(),1));
-      const end=localISODate(addDays(new Date(),14));
-      try{
-        const res=await fetch(FEED_URL,{
-          method:"POST",
-          headers:{"content-type":"application/json"},
-          body:JSON.stringify({start,end,countries:settings.countries})
-        });
-        if(!res.ok) return null;
-        const data=await res.json();
-        const rows=Array.isArray(data.events)?data.events:[];
-        if(!rows.length) return null;
-        const first=rows
-          .map(e=>({e,d:parseProviderDate(e.date)}))
-          .filter(x=>x.d)
-          .sort((a,b)=>a.d-b.d)[0];
-        if(!first) return null;
-        return {
-          date:localISODate(first.d),
-          label:new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric"}).format(first.d),
-          count:rows.filter(e=>{
-            const d=parseProviderDate(e.date);
-            return d && localISODate(d)===localISODate(first.d);
-          }).length
-        };
-      }catch(err){
-        console.warn("Next event lookup failed",err);
-        return null;
-      }
-    }
-
-    async function showNextUpcomingNotice(){
-      const host=document.getElementById("ec-next-up");
-      if(!host) return;
-      host.classList.remove("show");
-      host.innerHTML="";
-      const next=await findNextUpcomingDate();
-      if(!next) return;
-      host.innerHTML=`<strong>No events scheduled for the selected date.</strong> Next scheduled events: ${esc(next.label)} (${next.count} event${next.count===1?"":"s"}).
-        <button type="button" id="open-next-date">Show next events</button>`;
-      host.classList.add("show");
-      document.getElementById("open-next-date").addEventListener("click",async()=>{
-        document.getElementById("custom-from").value=next.date;
-        document.getElementById("custom-to").value=next.date;
-        customRange={start:next.date,end:next.date};
-        currentRange="custom";
-        document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
-        await loadFeed();
-      });
-    }
-
-
     function weekCacheKey(){
       return JSON.stringify({
         timezone:settings.timezone,
@@ -3666,6 +3507,7 @@
       if(!currentUser||!window.psdSupabase){
         settings=cloneDefault();
         saveCalendarSettingsCache(settings);
+        if(sharedViewTimezone)settings.timezone=sharedViewTimezone;
         currentDashboardLayout={};
 
         fieldset.disabled=true;
@@ -3720,6 +3562,7 @@
 
         settings=normalizeSettings(currentDashboardLayout.calendar_settings);
         saveCalendarSettingsCache(settings);
+        if(sharedViewTimezone)settings.timezone=sharedViewTimezone;
 
         currentPhoneNumber=(profileResult.data&&profileResult.data.phone_number)||"";
         document.getElementById("account-phone").value=currentPhoneNumber;
@@ -3948,6 +3791,7 @@
 
     document.getElementById("upcoming-only").addEventListener("change",(ev)=>{
       upcomingOnly=Boolean(ev.target.checked);
+      persistCalendarView();
       render();
     });
 
@@ -3962,14 +3806,6 @@
       const openNow=panel.classList.contains("open");
       if(topSave) topSave.style.display=openNow?"inline-flex":"none";
       if(topClose) topClose.style.display=openNow?"inline-flex":"none";
-    });
-
-    document.getElementById("saved-timezone").addEventListener("change",(ev)=>{
-      settings.timezone=ev.target.value;
-      applySettingsControls();
-      render();
-      const status=document.getElementById("settings-save-status");
-      if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
     });
 
     document.getElementById("settings-save-top").addEventListener("click",()=>{
@@ -4446,9 +4282,28 @@
       downloadTextFile("economic-calendar.ics",["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Public Sentiment Dash//Economic Calendar//EN",...events,"END:VCALENDAR"].join("\r\n"),"text/calendar;charset=utf-8");
     }
 
+    function validCalendarShareDate(value){
+      if(typeof value!=="string"||!/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(value))return false;
+      const d=new Date(value+"T12:00:00Z");
+      return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;
+    }
+    function parseCalendarShareRange(from,to){
+      if(!validCalendarShareDate(from)||!validCalendarShareDate(to)||from>to)return null;
+      const days=(Date.parse(to+"T00:00:00Z")-Date.parse(from+"T00:00:00Z"))/86400000;
+      return days<=366?{start:from,end:to}:null;
+    }
     async function shareCurrentView(){
       const u=new URL(window.location.href);
       u.searchParams.set("range",currentRange);
+      if(currentRange==="custom"&&customRange){
+        u.searchParams.set("from",customRange.start);
+        u.searchParams.set("to",customRange.end);
+      }else{
+        u.searchParams.delete("from");
+        u.searchParams.delete("to");
+      }
+      u.searchParams.set("tz",settings.timezone);
+      u.searchParams.set("upcoming",upcomingOnly?"1":"0");
       if(countryFilter.value)u.searchParams.set("country",countryFilter.value);else u.searchParams.delete("country");
       if(impactFilter.value)u.searchParams.set("impact",impactFilter.value);else u.searchParams.delete("impact");
       if(categoryFilter.value)u.searchParams.set("category",categoryFilter.value);else u.searchParams.delete("category");
@@ -4504,21 +4359,34 @@
     applySettingsControls();
 
     const sharedParams=new URLSearchParams(window.location.search);
+    const sharedTZ=sharedParams.get("tz");
+    if(sharedTZ&&[...document.querySelectorAll("#saved-timezone option")].some(o=>o.value===sharedTZ)){
+      sharedViewTimezone=sharedTZ;
+      settings.timezone=sharedTZ;
+    }
     const sharedCountry=sharedParams.get("country");
     const sharedImpact=sharedParams.get("impact");
     const sharedCategory=sharedParams.get("category");
     const sharedQ=sharedParams.get("q");
-
     if(sharedCountry){pendingRestoredFilters={...(pendingRestoredFilters||{}),country:sharedCountry};}
-    if(sharedImpact) impactFilter.value=sharedImpact;
+    if(sharedImpact&&["high","medium","low"].includes(sharedImpact))impactFilter.value=sharedImpact;
     if(sharedCategory){pendingRestoredFilters={...(pendingRestoredFilters||{}),category:sharedCategory};}
-    if(sharedQ) search.value=sharedQ;
-    const sharedRange=sharedParams.get("range");
-    if(sharedRange&&["week","today","yesterday","tomorrow","lastweek","next"].includes(sharedRange)){
-      currentRange=sharedRange;customRange=null;
-      document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",x.dataset.range===currentRange));
-      displayRangeLabel();
+    if(sharedQ)search.value=sharedQ;
+    const sharedUpcoming=sharedParams.get("upcoming");
+    if(sharedUpcoming==="1"||sharedUpcoming==="0"){
+      upcomingOnly=sharedUpcoming==="1";
+      document.getElementById("upcoming-only").checked=upcomingOnly;
     }
+    const sharedRange=sharedParams.get("range");
+    if(sharedRange==="custom"){
+      const range=parseCalendarShareRange(sharedParams.get("from"),sharedParams.get("to"));
+      if(range){currentRange="custom";customRange=range;}
+    }else if(sharedRange&&["week","today","yesterday","tomorrow","lastweek","next"].includes(sharedRange)){
+      currentRange=sharedRange;customRange=null;
+    }
+    document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.toggle("active",currentRange!=="custom"&&x.dataset.range===currentRange));
+    displayRangeLabel();
+    persistCalendarView();
     startupFeedPromise=loadFeed(false).catch(err=>{
       console.warn("Initial calendar load failed",err);
     });
