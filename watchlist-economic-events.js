@@ -81,7 +81,7 @@
 
   function countryName(code){
     const names={
-      US:"US",EU:"Eurozone",GB:"UK",JP:"Japan",CA:"Canada",
+      US:"US",EU:"Eurozone",GB:"UK",JP:"Japan",CA:"CA",
       CN:"China",AU:"Australia",CH:"Switzerland",NZ:"New Zealand"
     };
     return names[code]||code||"Global";
