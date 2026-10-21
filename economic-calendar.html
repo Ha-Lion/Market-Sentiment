@@ -1678,7 +1678,32 @@
     let weekPreloadPromise = null;
     const reminderState = new Map();
     let pendingCancel = null;
-    let activeController = null;
+    // V1.5: All requests which can mutate the visible calendar share a coordinator.
+    // Only a user/view change may supersede an in-flight request. Background ticks skip.
+    let activeCalendarRequest = null;
+    let calendarRequestSequence = 0;
+    function calendarRequestContext(){
+      const range=getRange(currentRange);
+      return JSON.stringify({view:currentRange,start:range.start,end:range.end,
+        timezone:settings.timezone,countries:[...settings.countries].sort()});
+    }
+    function beginCalendarRequest(supersede=false){
+      if(activeCalendarRequest){
+        if(!supersede)return null;
+        activeCalendarRequest.controller.abort();
+      }
+      const request={sequence:++calendarRequestSequence,context:calendarRequestContext(),
+        controller:new AbortController()};
+      activeCalendarRequest=request;
+      return request;
+    }
+    function isCalendarRequestCurrent(request){
+      return activeCalendarRequest===request && !request.controller.signal.aborted &&
+        request.context===calendarRequestContext();
+    }
+    function finishCalendarRequest(request){
+      if(activeCalendarRequest===request){activeCalendarRequest=null;}
+    }
     let autoRefreshTick = 0;
     let lastFullWeekNetworkAt = 0;
     let lastAccountSessionKey = null;
@@ -3202,6 +3227,7 @@
       if(weekPreloadPromise && !force) return weekPreloadPromise;
       if(!force){const recent=getWeekCache(range);if(recent&&recent.age_ms<60000)return recent;}
 
+      const preloadStartedAt=Date.now();
       weekPreloadPromise=(async()=>{
         try{
           const res=await fetch(FEED_URL,{
@@ -3215,6 +3241,13 @@
           });
           if(!res.ok) return null;
           const data=await res.json();
+          if(!Array.isArray(data.events))return null;
+          if(weekCacheKey()!==key || getRange("week").start!==range.start ||
+             getRange("week").end!==range.end)return null;
+          if(weekPreloadCache?.key===key &&
+             new Date(weekPreloadCache.fetchedAt).getTime()>preloadStartedAt){
+            return weekPreloadCache; // Newer main-feed data wins.
+          }
           weekPreloadCache={
             start:range.start,
             end:range.end,
@@ -3316,14 +3349,19 @@
       else updateCountdown();
     }
 
-    async function loadFeed(manual=false){
+    async function loadFeed(manual=false,background=false){
+      const request=beginCalendarRequest(!background);
+      if(!request)return; // Another current request will refresh the view.
+      try{
       const r=getRange(currentRange);
       displayRangeLabel();
 
       let showedCached=false;
       let cachedAgeMs=Infinity;
 
-      if(!manual){
+      // Cache-first is useful for navigation; never repaint old cache over live
+      // data on a routine background refresh.
+      if(!manual && (!background || !allEvents.length)){
         if(currentRange==="week"){
           const cached=getWeekCache(r);
           if(cached){
@@ -3368,9 +3406,6 @@
         return;
       }
 
-      if(activeController) activeController.abort();
-      activeController=new AbortController();
-
       setStatus("loading",
         manual ? "Refreshing…" :
         showedCached ? "Updating live data" : "Loading live data"
@@ -3382,7 +3417,8 @@
       }
 
       try{
-        const data=await fetchFeedRange(r,activeController.signal,manual);
+        const data=await fetchFeedRange(r,request.controller.signal,manual);
+        if(!isCalendarRequestCurrent(request))return; // Dropped stale response.
         lastFetchAt=new Date();
 
         const previousSignature=eventContentSignature(allEvents);
@@ -3418,7 +3454,7 @@
         renderChangedEvents(previousSignature);
         showCalendarCoverageNotice(data);
       }catch(err){
-        if(err.name==="AbortError") return;
+        if(!isCalendarRequestCurrent(request)||err.name==="AbortError")return;
         console.error("Economic calendar load failed",err);
         reportLiveConnectionFailure("Calendar feed request failed. Showing cached data when available.");
 
@@ -3440,13 +3476,17 @@
         document.getElementById("stat-next").textContent="—";
         document.getElementById("stat-next-name").textContent="";
       }
+      }finally{finishCalendarRequest(request);}
     }
 
     async function refreshTodayIntoWeek(){
+      if(currentRange!=="week")return;
+      const request=beginCalendarRequest(false);
+      if(!request)return;
       const todayRange=getRange("today");
       try{
-        const data=await fetchFeedRange(todayRange,undefined);
-        if(currentRange!=="week") return;
+        const data=await fetchFeedRange(todayRange,request.controller.signal);
+        if(!isCalendarRequestCurrent(request) || currentRange!=="week")return;
 
         const previousSignature=eventContentSignature(allEvents);
         allEvents=filterEventsToDateRange(
@@ -3478,9 +3518,10 @@
         confirmLiveRefresh();
         renderChangedEvents(previousSignature);
       }catch(err){
+        if(!isCalendarRequestCurrent(request)||err.name==="AbortError")return;
         console.warn("30-second live-value refresh failed",err);
         reportLiveConnectionFailure("The 30-second calendar update failed.");
-      }
+      }finally{finishCalendarRequest(request);}
     }
 
     async function autoRefreshCalendar(){
@@ -3492,12 +3533,12 @@
           Date.now()-lastFullWeekNetworkAt >= 10*60*1000;
 
         if(fullRefreshDue){
-          await loadFeed(false);
+          await loadFeed(false,true);
         }else{
           await refreshTodayIntoWeek();
         }
       }else{
-        await loadFeed(false);
+        await loadFeed(false,true);
       }
     }
 
@@ -3522,7 +3563,8 @@
 
     async function refreshOfficialReleaseWindow(){
       if(releaseWatchBusy || document.hidden || !hasPendingOfficialReleaseWindow()) return;
-
+      const request=beginCalendarRequest(false);
+      if(!request)return; // Never race a full or 30-second feed update.
       releaseWatchBusy=true;
       try{
         const r=getRange("today");
@@ -3534,8 +3576,10 @@
             countries:settings.countries,
             force_live:false
           }),
+          signal:request.controller.signal,
           cache:"no-store"
         });
+        if(!isCalendarRequestCurrent(request))return;
 
         if(!res.ok){
           // One failed optional fast check must not override a recent successful full refresh.
@@ -3545,6 +3589,7 @@
         }
 
         const data=await res.json().catch(()=>({}));
+        if(!isCalendarRequestCurrent(request))return;
         if(!Array.isArray(data.events))throw new Error("Invalid release-check response");
         const updates=data.events;
         if(!updates.length){confirmLiveRefresh();return;}
@@ -3583,11 +3628,13 @@
           data.source||"FinanceCalendar";
         renderChangedEvents(previousSignature);
       }catch(err){
+        if(!isCalendarRequestCurrent(request)||err.name==="AbortError")return;
         console.warn("Official release fast refresh failed",err);
         if(!lastSuccessfulLiveCheckAt || Date.now()-lastSuccessfulLiveCheckAt>=LIVE_CHECK_STALE_MS)
           reportLiveConnectionFailure("Rapid release check could not reach the calendar feed.");
       }finally{
         releaseWatchBusy=false;
+        finishCalendarRequest(request);
       }
     }
 
@@ -4500,9 +4547,9 @@
 
       sparklineQueue.length=0;
 
-      if(activeController){
-        activeController.abort();
-        activeController=null;
+      if(activeCalendarRequest){
+        activeCalendarRequest.controller.abort();
+        activeCalendarRequest=null;
       }
     }
 
