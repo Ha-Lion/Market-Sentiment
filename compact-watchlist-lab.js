@@ -1041,7 +1041,7 @@
       const comparison = document.createElement("button");
       comparison.type = "button";
       comparison.className = "watchlist-comparison";
-      comparison.textContent = "Technical & Sentiment Comparison";
+      comparison.textContent = "PSI & Technical Comparison Chart";
       comparison.addEventListener("click",function(){
         if(psdOpenParent('comparison'))return;
         openChartPopup(item.instrument,asset).catch(function(error){
@@ -1049,12 +1049,6 @@
           modalBody.innerHTML = '<div class="watchlist-popup-empty">Chart could not be loaded.</div>';
         });
       });
-
-      // The comparison popup stays wired to its original click handler;
-      // only its position changes, from the card header to the card footer.
-      const comparisonRow = document.createElement("div");
-      comparisonRow.className = "psd-compact-comparison-row";
-      comparisonRow.appendChild(comparison);
 
       nameBox.appendChild(title);
       nameBox.appendChild(symbol);
@@ -1086,9 +1080,12 @@
 
       card.appendChild(top);
       card.appendChild(metrics);
+      // Keep the comparison alongside Economic Calendar. That button is added
+      // asynchronously by watchlist-economic-events.js, so CSS flex order
+      // places Economic Calendar immediately before this one when it appears.
+      actions.appendChild(comparison);
       card.appendChild(headlineRow);
       card.appendChild(actions);
-      card.appendChild(comparisonRow);
       grid.appendChild(card);
       if(psdPopup&&!psdPopupStarted){
         psdPopupStarted=true;
