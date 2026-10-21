@@ -665,6 +665,9 @@
     .ec-kpi{border:1px solid var(--ec-border);border-radius:10px;padding:8px 10px;background:var(--ec-soft2);}
     .ec-kpi span{display:block;font-size:9px;color:var(--ec-muted);text-transform:uppercase;font-weight:800;}
     .ec-kpi strong{display:block;margin-top:2px;font-size:14px;}
+    .ec-report-detail-link{font:inherit;font-weight:750;color:var(--ec-accent);border:0;padding:0;background:none;cursor:pointer;text-align:left;}
+    .ec-report-detail-link:hover{text-decoration:underline;}
+    .ec-report-highlights{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;}
     .ec-detail-section{margin-top:14px;}
     .ec-detail-section h3,.ec-modal-side h3{font-size:12px;margin:0 0 8px;}
     .ec-definition{padding:10px 12px;border:1px solid var(--ec-border);border-radius:10px;background:var(--ec-soft2);font-size:12px;line-height:1.45;}
@@ -1061,6 +1064,10 @@
       <div class="ec-modal-body">
         <div class="ec-modal-main">
           <div id="event-modal-kpis" class="ec-kpis"></div>
+          <section id="event-report-details" class="ec-detail-section" hidden>
+            <h3>Report figures</h3>
+            <div id="event-report-highlights" class="ec-definition ec-report-highlights"></div>
+          </section>
 
           <section class="ec-detail-section">
             <h3>What this event means</h3>
@@ -1973,6 +1980,25 @@
       return esc(value+" "+unit);
     }
 
+
+    // One narrative Actual can contain several statistics. Keep it untouched in
+    // the source record and use a compact calendar label plus a full modal view.
+    // This is metric-based, not date-specific, so it handles future reports too.
+    function narrativeActualDetails(e){
+      const raw=String(e?.actual??"").trim();
+      if(!raw||numericReleaseValue(raw)||/^(?:published|released|holiday|n\/a|not applicable)$/i.test(raw))return "";
+      const percentReadings=(raw.match(/[+-]?(?:\d[\d,]*)(?:\.\d+)?\s*%/g)||[]).length;
+      const report=/\b(?:report|overview|bulletin|summary|outlook|survey|assessment|minutes)\b/i.test(String(e?.event||"")+" "+String(e?.category||""));
+      if(report&&raw.length>=58&&(percentReadings>=2||raw.length>100))return raw;
+      if(raw.length>=90&&percentReadings>=2&&/[;,\n]/.test(raw))return raw;
+      if(raw.length>=170&&/[;,\n]/.test(raw))return raw;
+      return "";
+    }
+    function narrativeActualStatus(e){
+      const d=parseProviderDate(e.date);
+      return d&&d.getTime()>Date.now()?"Details":"Published";
+    }
+
     function actualClass(e){
       if(!numericReleaseValue(e.actual)||!numericReleaseValue(e.forecast)) return "";
       const parse=v=>Number(String(v).replace(/,/g,"").replace(/\s*(%|k|m|b|bps|bp|points?|jobs?|barrels?|million|billion|thousand)\s*$/i,"").trim());
@@ -2077,7 +2103,7 @@
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</td>
-            <td class="value ${actualClass(e)}"${economicValueLabel(e.actual,"Actual",e)}>${formatValue(e.actual,calendarDisplayUnit(e))}</td>
+            <td class="value ${actualClass(e)}"${narrativeActualDetails(e)?' title="Report contains several statistics. Open Details for all figures."':economicValueLabel(e.actual,"Actual",e)}>${narrativeActualDetails(e)?`<button class="ec-report-detail-link" type="button" data-open-event="${esc(eventUIKey(e))}" aria-label="Open all report figures">${narrativeActualStatus(e)} · Details</button>`:formatValue(e.actual,calendarDisplayUnit(e))}</td>
             <td class="value"${economicValueLabel(e.revised,"Revised",e)}>${formatValue(e.revised,calendarDisplayUnit(e))}</td>
             <td><div class="ec-assets">${assets.map(a=>`<span class="ec-chip">${esc(a)}</span>`).join("")||'<span class="muted">—</span>'}</div></td>
             <td class="ec-actions-cell">
@@ -2882,7 +2908,7 @@
         e.event||e.category||"Economic Event";
 
       document.getElementById("event-modal-sub").innerHTML=
-        `${flagMarkup(c.code,c.name)} <strong>${esc(c.code||"")}</strong> ${esc(c.name||"Global")} · ${esc(timeText(d))} · ${esc(TZ_LABELS[settings.timezone]||settings.timezone)}`;
+        `${flagMarkup(c.code,c.name)} <strong>${esc(c.code==="GB"?"UK":c.code||"")}</strong>${c.code==="GB"?"":" "+esc(c.name||"Global")} · ${esc(timeText(d))} · ${esc(TZ_LABELS[settings.timezone]||settings.timezone)}`;
 
       document.getElementById("event-modal-definition").innerHTML=
         `<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
@@ -2894,8 +2920,13 @@
       document.getElementById("analytics-intelligence").textContent=Math.round((impactFromImportance(e.importance)==="high"?45:impactFromImportance(e.importance)==="medium"?30:15)+Math.min(15,relevantAssets(e).length*3))+"/100";
       document.getElementById("event-market-reaction").textContent="Loading market reaction…";
 
+      const fullReport=narrativeActualDetails(e);
+      const reportSection=document.getElementById("event-report-details");
+      const reportText=document.getElementById("event-report-highlights");
+      reportSection.hidden=!fullReport;
+      reportText.textContent=fullReport?fullReport.replace(/;\s*/g,";\n"):"";
       document.getElementById("event-modal-kpis").innerHTML=`
-        <div class="ec-kpi"><span>Actual</span><strong>${formatValue(e.actual,calendarDisplayUnit(e))}</strong></div>
+        <div class="ec-kpi"><span>Actual</span><strong>${narrativeActualDetails(e)?esc(narrativeActualStatus(e)):formatValue(e.actual,calendarDisplayUnit(e))}</strong></div>
         <div class="ec-kpi"><span>Forecast</span><strong>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))}</strong></div>
         <div class="ec-kpi"><span>Previous</span><strong>${formatValue(e.previous,calendarDisplayUnit(e))}</strong></div>
         ${e.revised!==undefined&&e.revised!==null&&e.revised!==""?`<div class="ec-kpi"><span>Revised Previous</span><strong>${formatValue(e.revised,calendarDisplayUnit(e))}</strong></div>`:""}
