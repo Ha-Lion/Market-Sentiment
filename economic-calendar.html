@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V1.2: viewer-timezone date boundaries, 2026-10-20 -->
+<!-- Economic Calendar V1.8 - audit iteration 1: timezone-consistent ranges and adaptive background refresh -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1241,6 +1241,7 @@
     const DETAIL_HISTORY_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-history";
     const REACTION_URL = "https://fupexuonvzakoguucglk.supabase.co/functions/v1/economic-calendar-reaction";
     const AUTO_REFRESH_MS = 30 * 1000;
+    const QUIET_RANGE_REFRESH_MS = 90 * 1000; // Historical/future views need fewer background checks.
 
     const COUNTRY = {
       US:{name:"United States",flag:"🇺🇸"}, EU:{name:"Euro Area",flag:"🇪🇺"},
@@ -1706,6 +1707,7 @@
     }
     let autoRefreshTick = 0;
     let lastFullWeekNetworkAt = 0;
+    let lastQuietRangeNetworkAt = 0;
     let lastAccountSessionKey = null;
     let startupFeedPromise = null;
 
@@ -1747,26 +1749,32 @@
       return addDays(x,diff);
     }
 
+    // All date presets are calculated in the selected calendar timezone.
+    // UTC noon date arithmetic avoids browser-local timezone and DST rollover.
+    function shiftCalendarDay(iso,days){
+      const d=new Date(iso+"T12:00:00Z");
+      d.setUTCDate(d.getUTCDate()+days);
+      return d.toISOString().slice(0,10);
+    }
     function getRange(range){
-      if(range==="custom" && customRange) return customRange;
-      const now = new Date();
-      now.setHours(12,0,0,0);
-      if(range==="yesterday"){
-        const t=addDays(now,-1); return {start:localISODate(t),end:localISODate(t)};
-      }
-      if(range==="tomorrow"){
-        const t=addDays(now,1); return {start:localISODate(t),end:localISODate(t)};
-      }
+      if(range==="custom" && customRange)return customRange;
+      const today=dateKeyInTimezone(new Date(),settings.timezone);
+      const weekday=new Date(today+"T12:00:00Z").getUTCDay();
+      const sunday=shiftCalendarDay(today,-weekday);
+      const single=day=>({start:day,end:day});
+      if(range==="yesterday")return single(shiftCalendarDay(today,-1));
+      if(range==="tomorrow")return single(shiftCalendarDay(today,1));
+      if(range==="today")return single(today);
       if(range==="lastweek"){
-        const s=addDays(startOfWeek(now),-7); return {start:localISODate(s),end:localISODate(addDays(s,6))};
+        const start=shiftCalendarDay(sunday,-7);
+        return {start,end:shiftCalendarDay(start,6)};
       }
-      if(range==="week"){
-        return {start:localISODate(startOfWeek(now)),end:localISODate(addDays(startOfWeek(now),6))};
-      }
+      if(range==="week")return {start:sunday,end:shiftCalendarDay(sunday,6)};
       if(range==="next"){
-        const s=addDays(startOfWeek(now),7); return {start:localISODate(s),end:localISODate(addDays(s,6))};
+        const start=shiftCalendarDay(sunday,7);
+        return {start,end:shiftCalendarDay(start,6)};
       }
-      return {start:localISODate(now),end:localISODate(now)};
+      return single(today);
     }
 
     function displayRangeLabel(){
@@ -3275,6 +3283,7 @@
           saved_at:Date.now(),
           range,
           countries:[...settings.countries].sort(),
+          timezone:settings.timezone,
           data
         }));
       }catch(_err){}
@@ -3288,7 +3297,7 @@
         if(!cached?.data?.events || !cached.range) return null;
         const sameRange=cached.range.start===range.start && cached.range.end===range.end;
         const sameCountries=JSON.stringify(cached.countries||[])===JSON.stringify([...settings.countries].sort());
-        if(!sameRange||!sameCountries||!Number.isFinite(Number(cached.saved_at))) return null;
+        if(!sameRange||!sameCountries||cached.timezone!==settings.timezone||!Number.isFinite(Number(cached.saved_at))) return null;
         cached.age_ms=Math.max(0,Date.now()-Number(cached.saved_at||0));
         if(cached.age_ms>15*60*1000)return null;
         return cached;
@@ -3420,6 +3429,8 @@
         const data=await fetchFeedRange(r,request.controller.signal,manual);
         if(!isCalendarRequestCurrent(request))return; // Dropped stale response.
         lastFetchAt=new Date();
+        const todayForCadence=getRange("today").start;
+        if(r.end<todayForCadence||r.start>todayForCadence)lastQuietRangeNetworkAt=Date.now();
 
         const previousSignature=eventContentSignature(allEvents);
         allEvents=filterEventsToDateRange(data.events,r);
@@ -3525,18 +3536,23 @@
     }
 
     async function autoRefreshCalendar(){
+      // Hidden tabs do not poll; visible live ranges retain their 30-second checks.
+      if(document.hidden || navigator.onLine===false)return;
       autoRefreshTick++;
+      const range=getRange(currentRange);
+      const today=getRange("today").start;
+      const containsToday=range.start<=today && today<=range.end;
+      if(!containsToday){
+        if(Date.now()-lastQuietRangeNetworkAt<QUIET_RANGE_REFRESH_MS)return;
+        lastQuietRangeNetworkAt=Date.now();
+      }
 
       if(currentRange==="week"){
         const fullRefreshDue=
           !lastFullWeekNetworkAt ||
           Date.now()-lastFullWeekNetworkAt >= 10*60*1000;
-
-        if(fullRefreshDue){
-          await loadFeed(false,true);
-        }else{
-          await refreshTodayIntoWeek();
-        }
+        if(fullRefreshDue)await loadFeed(false,true);
+        else await refreshTodayIntoWeek();
       }else{
         await loadFeed(false,true);
       }
@@ -3755,12 +3771,12 @@
 
 
     async function loadPreset(daysBack, daysForward){
-      const today=new Date();
-      const from=addDays(today,daysBack);
-      const to=addDays(today,daysForward);
-      document.getElementById("custom-from").value=localISODate(from);
-      document.getElementById("custom-to").value=localISODate(to);
-      customRange={start:localISODate(from),end:localISODate(to)};
+      const today=getRange("today").start;
+      const from=shiftCalendarDay(today,daysBack);
+      const to=shiftCalendarDay(today,daysForward);
+      document.getElementById("custom-from").value=from;
+      document.getElementById("custom-to").value=to;
+      customRange={start:from,end:to};
       currentRange="custom";
       document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
       persistCalendarView();
@@ -3911,14 +3927,24 @@
       render();      document.getElementById("settings-save-status").textContent="Choose at least one country before saving.";
     });
 
-    document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
-      settings.timezone=btn.dataset.timezone;
-      document.getElementById("saved-timezone").value=settings.timezone;
+    function applyCalendarTimezone(nextZone){
+      if(!nextZone||nextZone===settings.timezone)return;
+      settings.timezone=nextZone;
+      document.getElementById("saved-timezone").value=nextZone;
       applySettingsControls();
+      displayRangeLabel();
       render();
+      // The new timezone may change date boundaries and the events in view.
+      loadFeed(false).catch(err=>console.warn("Timezone calendar reload failed",err));
       const status=document.getElementById("settings-save-status");
-      if(currentUser) status.textContent="Timezone changed — click Save Settings to keep it.";
+      if(currentUser)status.textContent="Timezone changed — click Save Settings to keep it.";
+    }
+    document.querySelectorAll(".ec-tz-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      applyCalendarTimezone(btn.dataset.timezone);
     }));
+    document.getElementById("saved-timezone").addEventListener("change",ev=>{
+      applyCalendarTimezone(ev.target.value);
+    });
 
     document.getElementById("upcoming-only").addEventListener("change",(ev)=>{
       upcomingOnly=Boolean(ev.target.checked);
@@ -4447,7 +4473,15 @@
     countdownTimer=setInterval(updateCountdown,30000);
     liveHealthTimer=setInterval(verifyLiveFreshness,10000);
     window.addEventListener("offline",()=>reportLiveConnectionFailure("Internet connection is offline; live updates are unavailable."));
-    document.addEventListener("visibilitychange",()=>{if(!document.hidden)verifyLiveFreshness();});
+    document.addEventListener("visibilitychange",()=>{
+      if(document.hidden)return;
+      verifyLiveFreshness();
+      // Resume stale tabs with one background check, not a cached-table repaint.
+      if(!lastSuccessfulLiveCheckAt||Date.now()-lastSuccessfulLiveCheckAt>AUTO_REFRESH_MS){
+        if(currentRange==="week")refreshTodayIntoWeek().catch(()=>{});
+        else loadFeed(false,true).catch(()=>{});
+      }
+    });
 
     const todayISO=localISODate(new Date());
     document.getElementById("custom-from").value=todayISO;
@@ -4576,7 +4610,7 @@
         if(currentRange==="week"){
           refreshTodayIntoWeek().catch(()=>{});
         }else{
-          loadFeed(false).catch(()=>{});
+          loadFeed(false,true).catch(()=>{});
         }
       },250);
     });
