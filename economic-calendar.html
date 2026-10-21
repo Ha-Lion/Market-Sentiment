@@ -1989,6 +1989,9 @@
       if(!raw||numericReleaseValue(raw)||/^(?:published|released|holiday|n\/a|not applicable)$/i.test(raw))return "";
       const percentReadings=(raw.match(/[+-]?(?:\d[\d,]*)(?:\.\d+)?\s*%/g)||[]).length;
       const report=/\b(?:report|overview|bulletin|summary|outlook|survey|assessment|minutes)\b/i.test(String(e?.event||"")+" "+String(e?.category||""));
+      // Any mixed-metric bulletin with multiple percentages must not fill a single Actual cell.
+      // This includes CPI summaries without "Report" in their event name.
+      if(percentReadings>=2&&raw.length>=36&&/[;,()]/.test(raw)&&/[A-Za-z]/.test(raw))return raw;
       if(report&&raw.length>=58&&(percentReadings>=2||raw.length>100))return raw;
       if(raw.length>=90&&percentReadings>=2&&/[;,\n]/.test(raw))return raw;
       if(raw.length>=170&&/[;,\n]/.test(raw))return raw;
