@@ -4256,6 +4256,13 @@
       setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
 
+    // CSV data fields are empty when missing; do not export the visual em dash placeholder.
+    // UTF-8 with BOM below supports Excel's character detection.
+    function csvValue(v){
+      const value=String(v??"").trim();
+      return value==="—" || value==="â€”" ? "" : value;
+    }
+
     function exportVisibleCSV(){
       const rows=visibleEvents().filter(e=>e && parseProviderDate(e.date) && (e.event||e.category));
       const lines=[["Time","Country","Impact","Event","12M History","Previous","Forecast","Actual","Revised","Classification","Relevant Assets"]];
@@ -4264,14 +4271,14 @@
         const c=displayCountry(e);
         lines.push([
           d?d.toISOString():"",
-          c.name,
+          c.code==="AU" ? "AU" : c.name,
           impactFromImportance(e.importance),
           e.event||e.category||"",
           "", // 12M History is a visual chart; no scalar value to export
-          previousReleaseDisplay(e),
-          formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e)),
-          formatValue(e.actual,calendarDisplayUnit(e)),
-          formatValue(e.revised,calendarDisplayUnit(e)),
+          csvValue(previousReleaseDisplay(e)),
+          csvValue(formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e))),
+          csvValue(formatValue(e.actual,calendarDisplayUnit(e))),
+          csvValue(formatValue(e.revised,calendarDisplayUnit(e))),
           classifyEvent(e),
           relevantAssets(e).join(" | ")
         ]);
