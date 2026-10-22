@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V2.3: comprehensive value, history and release refresh repair -->
+<!-- Economic Calendar V2.4: abbreviated country display and compact table columns -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -795,14 +795,14 @@
   /* V2.1: compact fixed-width data columns; Event receives remaining space. */
   .ec-page .ec-table{table-layout:fixed;min-width:1310px;width:100%;}
   .ec-page .ec-table th:nth-child(1){width:clamp(82px,6%,100px);}
-  .ec-page .ec-table th:nth-child(2){width:clamp(122px,8%,154px);}
-  .ec-page .ec-table th:nth-child(3){width:clamp(82px,5%,104px);}
+  .ec-page .ec-table th:nth-child(2){width:clamp(66px,5%,82px)}
+  .ec-page .ec-table th:nth-child(3){width:clamp(70px,5%,86px)}
   .ec-page .ec-table th:nth-child(4){width:auto;}
   .ec-page .ec-table th:nth-child(5){width:clamp(130px,10%,190px);}
-  .ec-page .ec-table th:nth-child(6){width:clamp(90px,6%,116px);}
+  .ec-page .ec-table th:nth-child(6){width:clamp(82px,6%,100px)}
   .ec-page .ec-table th:nth-child(7){width:clamp(90px,7%,128px);}
-  .ec-page .ec-table th:nth-child(8){width:clamp(78px,5%,100px);}
-  .ec-page .ec-table th:nth-child(9){width:clamp(78px,5%,100px);}
+  .ec-page .ec-table th:nth-child(8){width:clamp(72px,5%,88px)}
+  .ec-page .ec-table th:nth-child(9){width:clamp(72px,5%,88px)}
   .ec-page .ec-table th:nth-child(10){width:clamp(112px,8%,170px);}
   .ec-page .ec-table th:nth-child(11){width:180px;}
   .ec-page .ec-table th:nth-child(n+6):nth-child(-n+9),
@@ -2122,7 +2122,7 @@
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}" data-ec-row-key="event:${esc(eventUIKey(e))}">
             <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
-            <td><span class="ec-country">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"")}</strong>${c.code==="US"||c.code==="GB"||c.code==="AU"||c.code==="CA"?"":'<span class="ec-country-name" title="'+esc(c.name)+'">'+esc(c.name)+'</span>'}</span></td>
+            <td><span class="ec-country" title="${esc(c.name)}">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"—")}</strong></span></td>
             <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
               <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(e.event||e.category||"Economic event")}</button>
