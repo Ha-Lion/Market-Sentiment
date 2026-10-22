@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V2.2: silent and resilient background refresh -->
+<!-- Economic Calendar V2.3: comprehensive value, history and release refresh repair -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1578,10 +1578,13 @@
     let reminderButtonTimer = null;
     let releaseWatchTimer = null;
     let releaseWatchBusy = false;
+    let lastForcedReleaseCheckAt = 0;
     let countdownTimer = null;
     const historyCache = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v2-uk-values";
-    const HISTORY_CACHE_PREFIX = "psd-economic-history-v12:";
+    const HISTORY_CACHE_PREFIX = "psd-economic-history-v13:";
+    const HISTORY_CACHE_FRESH_MS = 5 * 60 * 1000;
+    const HISTORY_CACHE_SPARSE_MS = 60 * 1000;
     const SETTINGS_CACHE_KEY = "psd-economic-calendar-settings-v1";
     let activeModalEvent = null;
     let activeChartSeries = "history";
@@ -1950,7 +1953,12 @@
       const v=e?.previous;
       if(e?.numeric_comparison_available===false || /^not applicable$/i.test(String(v??"").trim()))return "N/A";
       if(v===null||v===undefined||String(v).trim()==="")return "—";
-      return numericReleaseValue(v)?formatValue(v,calendarDisplayUnit(e)):"—";
+      // A provider may supply a numeric observation with a descriptive unit.
+      // Keep it visible without inventing a value; only prose is rejected.
+      if(numericReleaseValue(v))return formatValue(v,calendarDisplayUnit(e));
+      const raw=String(v).trim();
+      if(/^[+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?\s+(?:balance percentage points?|percentage points?|index points?|basis points?|percent(?:age)?|thousands?|millions?|billions?|barrels?|jobs?(?:\/week)?|points?)(?:\s+.+)?$/i.test(raw))return esc(raw);
+      return "—";
     }
     function previousReleaseLabel(e){
       const v=e?.previous;
@@ -2263,15 +2271,17 @@
 
     async function fetchEventHistory(e){
       const key=historyKey(e);
-      if(historyCache.has(key)) return historyCache.get(key);
+      const memory=historyCache.get(key);
+      if(memory&&Date.now()-memory.savedAt<memory.ttl)return memory.result;
+      if(memory)historyCache.delete(key);
 
       const storageKey=HISTORY_CACHE_PREFIX+key;
       try{
         const raw=localStorage.getItem(storageKey);
         if(raw){
           const cached=JSON.parse(raw);
-          if(cached && cached.saved_at && Array.isArray(cached.result?.history) && cached.result.history.length>0 && Date.now()-cached.saved_at<24*60*60*1000){
-            historyCache.set(key,cached.result);
+          if(cached && cached.saved_at && Array.isArray(cached.result?.history) && cached.result.history.length>0 && Date.now()-cached.saved_at<(cached.result.history.length<2?HISTORY_CACHE_SPARSE_MS:HISTORY_CACHE_FRESH_MS)){
+            historyCache.set(key,{result:cached.result,savedAt:cached.saved_at,ttl:cached.result.history.length<2?HISTORY_CACHE_SPARSE_MS:HISTORY_CACHE_FRESH_MS});
             return cached.result;
           }
         }
@@ -2308,7 +2318,7 @@
       // Do not hold empty or failed history responses for 24 hours.
       // A temporary upstream error must not suppress the graph after recovery.
       if(Array.isArray(result?.history) && result.history.length){
-        historyCache.set(key,result);
+        historyCache.set(key,{result,savedAt:Date.now(),ttl:result.history.length<2?HISTORY_CACHE_SPARSE_MS:HISTORY_CACHE_FRESH_MS});
         try{
           localStorage.setItem(storageKey,JSON.stringify({saved_at:Date.now(),result}));
         }catch(_err){}
@@ -2322,13 +2332,14 @@
 
 
     function dedupeHistoryByMonth(history){
-      const byMonth=new Map();
+      const byMonth=new Map(); // keyed by observation date, not month
 
       (history||[]).forEach((row,index)=>{
         const d=parseProviderDate(row?.date);
         if(!d) return;
 
-        const key=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+        // Preserve weekly/daily observations: only collapse duplicate observation dates.
+        const key=d.toISOString().slice(0,10);
         const completeness=[
           numericValue(row?.actual),
           numericValue(row?.forecast),
@@ -3437,15 +3448,18 @@
         if(hasActual) return false;
 
         const t=d.getTime();
-        return now>=t-(10*60*1000) && now<=t+(15*60*1000);
+        return now>=t-(10*60*1000) && now<=t+(60*60*1000);
       });
     }
 
     async function refreshOfficialReleaseWindow(){
       if(releaseWatchBusy || document.hidden || !hasPendingOfficialReleaseWindow()) return;
+      // Force provider freshness at most once per 15 seconds while awaiting a release.
+      if(Date.now()-lastForcedReleaseCheckAt<15000)return;
       const request=beginCalendarRequest(false);
       if(!request)return; // Never race a full or 30-second feed update.
       releaseWatchBusy=true;
+      lastForcedReleaseCheckAt=Date.now();
       try{
         const r=getRange("today");
         const res=await fetch(FEED_URL,{
@@ -3454,7 +3468,7 @@
           body:JSON.stringify({
             ...feedDateWindow(r),
             countries:settings.countries,
-            force_live:false
+            force_live:true
           }),
           signal:request.controller.signal,
           cache:"no-store"
