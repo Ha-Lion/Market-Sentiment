@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V2.5: deterministic colgroup widths and expanded Event column -->
+<!-- Economic Calendar V2.6: fitted Actions, wider 12M History, larger Beta notice, footer refresh removed -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -605,8 +605,8 @@
     .actual-up{color:var(--ec-good)} .actual-down{color:var(--ec-bad)}
     .ec-assets{display:flex;gap:5px;flex-wrap:wrap;}
     .ec-chip{display:inline-block;padding:4px 7px;border-radius:999px;background:var(--ec-soft);color:var(--ec-accent);font-size:10px;font-weight:800;}
-    .ec-event-actions{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;align-items:center;}    .ec-actions-cell{white-space:nowrap;text-align:right;min-width:166px;}
-    .ec-table th:last-child{text-align:right;min-width:166px;}
+    .ec-event-actions{display:flex;gap:5px;flex-wrap:nowrap;justify-content:flex-end;align-items:center;}    .ec-actions-cell{white-space:nowrap;text-align:right;min-width:0;}
+    .ec-table th:last-child{text-align:right;min-width:0;}
     .ec-icon-btn{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ec-border);border-radius:8px;background:var(--ec-card);color:var(--ec-text);cursor:pointer;font-size:14px;line-height:1;}
     .ec-icon-btn:hover{background:var(--ec-soft);color:var(--ec-accent);}
     .ec-icon-btn.active{
@@ -702,8 +702,6 @@
     .ec-error strong{display:block;color:var(--ec-bad);margin-bottom:5px;}
     .ec-provider{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 16px;color:var(--ec-muted);font-size:11px;background:var(--ec-soft2);flex-wrap:wrap;}
     .ec-provider strong{color:var(--ec-text);}
-    .ec-refresh-link{border:0;background:none;color:var(--ec-accent);font:inherit;font-weight:800;cursor:pointer;padding:0;}
-    .ec-updated{white-space:nowrap;}
     .ec-warning{display:none;margin:7px 10px 0;padding:7px 9px;border:1px solid #f3c56c;border-radius:9px;background:#fff8e7;color:#8a5a00;font-size:12px;}
     body[data-theme="dark"] .ec-warning{background:#2d2411;color:#f2c96d;border-color:#5f4b1d;}
     .ec-warning.show{display:block;}
@@ -782,9 +780,9 @@
   body:not(.dark-mode) .ec-page .ec-beta-notice{
     display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px 5px;
     width:fit-content;max-width:100%;box-sizing:border-box;
-    margin:0!important;padding:3px 8px!important;
-    font-size:10px;line-height:1.25;font-weight:650;
-    border-width:1px;border-left-width:3px;border-radius:7px;
+    margin:0!important;padding:5px 11px!important;
+    font-size:12px;line-height:1.35;font-weight:750;
+    border-width:1px;border-left-width:4px;border-radius:7px;
   }
   /* Keep the five-slot summary footprint but make displayed stats compact. */
   .ec-page .ec-summary{min-height:0;align-items:stretch;}
@@ -798,13 +796,13 @@
   .ec-page .ec-table col.ec-col-country{width:78px;}
   .ec-page .ec-table col.ec-col-impact{width:90px;}
   .ec-page .ec-table col.ec-col-event{width:auto;}
-  .ec-page .ec-table col.ec-col-history{width:160px;}
+  .ec-page .ec-table col.ec-col-history{width:192px;}
   .ec-page .ec-table col.ec-col-previous{width:116px;}
   .ec-page .ec-table col.ec-col-forecast{width:110px;}
   .ec-page .ec-table col.ec-col-actual{width:96px;}
   .ec-page .ec-table col.ec-col-revised{width:88px;}
   .ec-page .ec-table col.ec-col-assets{width:168px;}
-  .ec-page .ec-table col.ec-col-actions{width:180px;}
+  .ec-page .ec-table col.ec-col-actions{width:124px;}
   /* No conflicting header widths: the Event column absorbs remaining width. */
   .ec-page .ec-table thead th{width:auto;}
   .ec-page .ec-table th:nth-child(n+6):nth-child(-n+9),
@@ -833,7 +831,7 @@
   body[data-theme="dark"] .ec-page .ec-table tbody tr:not(.ec-day-row) > td:not(:last-child){border-right-color:#465064;}
   @media(max-width:1000px){
     .ec-page .ec-hero{align-items:flex-start;flex-wrap:wrap;}
-    .ec-page .ec-beta-notice{font-size:9px;}
+    .ec-page .ec-beta-notice{font-size:11px;}
   }
   @media(max-width:800px){
     .ec-page{padding-top:6px!important;}
@@ -1061,7 +1059,6 @@
           · <a href="data-sources.html">Data Sources &amp; Licensing</a>
           · Times automatically convert to your selected timezone.
         </span>
-        <span class="ec-updated"><button id="provider-refresh" class="ec-refresh-link" type="button">Refresh now</button></span>
       </div>
     </section>
   </main>
@@ -4373,7 +4370,6 @@
 
     const refresh=()=>loadFeed(true);
     document.getElementById("refresh-btn").addEventListener("click",refresh);
-    document.getElementById("provider-refresh").addEventListener("click",refresh);
 
     refreshTimer=setInterval(autoRefreshCalendar,AUTO_REFRESH_MS);
     releaseWatchTimer=setInterval(refreshOfficialReleaseWindow,5000);
