@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V2.8: fitted Time Impact Event Actions; flexible Forecast column -->
+<!-- Economic Calendar V2.9: 24-hour compact Time, country code heading, text-only Impact and wider Event -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -498,7 +498,6 @@
     .ec-view-toggle input{width:15px;height:15px;}
     .ec-past-row{opacity:.57;}
     .ec-past-row:hover{opacity:.78;}
-    .ec-live-time{display:block;font-size:9px;font-weight:600;color:var(--ec-muted);margin-top:2px;white-space:nowrap;}
     .ec-settings-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 10px;border-bottom:1px solid var(--ec-border);background:color-mix(in srgb,var(--ec-soft) 32%,transparent);}
     .ec-settings-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;}
     .ec-settings-title small{display:block;color:var(--ec-muted);font-size:9px;font-weight:500;margin-top:1px;}
@@ -597,9 +596,10 @@
     .ec-country{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:700;}
     .ec-event strong{display:block;font-size:13px;}
     .ec-event small{color:var(--ec-muted);}
-    .impact{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;}
-    .impact i{display:inline-block;width:8px;height:8px;border-radius:50%;}
-    .impact.high i{background:var(--ec-high)} .impact.medium i{background:var(--ec-medium)} .impact.low i{background:var(--ec-low)}
+    .impact{display:inline-flex;align-items:center;font-size:12px;font-weight:800;white-space:nowrap;}
+    .impact.high{color:var(--ec-high);}
+    .impact.medium{color:var(--ec-medium);}
+    .impact.low{color:var(--ec-low);}
     .value{font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap;}
     .muted{color:var(--ec-muted);}
     .actual-up{color:var(--ec-good)} .actual-down{color:var(--ec-bad)}
@@ -793,10 +793,10 @@
   .ec-page .ec-summary .ec-stat small{font-size:8px;line-height:1.1;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* V2.5: explicit columns prevent the browser spreading narrow cells across the table. */
   .ec-page .ec-table{table-layout:fixed;min-width:1450px;width:100%;}
-  .ec-page .ec-table col.ec-col-time{width:96px;}
-  .ec-page .ec-table col.ec-col-country{width:78px;}
-  .ec-page .ec-table col.ec-col-impact{width:78px;}
-  .ec-page .ec-table col.ec-col-event{width:280px;}
+  .ec-page .ec-table col.ec-col-time{width:72px;}
+  .ec-page .ec-table col.ec-col-country{width:66px;}
+  .ec-page .ec-table col.ec-col-impact{width:64px;}
+  .ec-page .ec-table col.ec-col-event{width:330px;}
   .ec-page .ec-table col.ec-col-history{width:192px;}
   .ec-page .ec-table col.ec-col-previous{width:116px;}
   .ec-page .ec-table col.ec-col-forecast{width:auto;}
@@ -1044,7 +1044,7 @@
           </colgroup>
           <thead>
             <tr>
-              <th>Time</th><th>Country</th><th>Impact</th><th>Event</th>
+              <th>Time</th><th>Ctry</th><th>Impact</th><th>Event</th>
               <th>12M History</th><th>Previous</th><th>Forecast</th><th>Actual</th><th>Revised</th><th>Relevant Assets</th><th>Actions</th>
             </tr>
           </thead>
@@ -1754,7 +1754,7 @@
       let formatter=calendarFormatters.get(key);
       if(formatter)return formatter;
       const spec={
-        time:["en-US",{timeZone:timezone,hour:"2-digit",minute:"2-digit",hour12:true}],
+        time:["en-GB",{timeZone:timezone,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}],
         date:["en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}],
         label:["en-US",{timeZone:timezone,weekday:"long",month:"long",day:"numeric"}],
         clock:["en-US",{timeZone:timezone,hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true}]
@@ -1767,7 +1767,7 @@
     function timeText(d){
       if(!d)return "—";
       try{return calendarDateFormatter("time",settings.timezone).format(d);}
-      catch{return new Intl.DateTimeFormat("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}).format(d);}
+      catch{return new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(d);}
     }
     function dayKey(d){
       if(!d)return "";
@@ -2127,9 +2127,9 @@
         const c=displayCountry(e);        const assets=relevantAssets(e);
         html+=`
           <tr class="${d && d.getTime()<Date.now()?'ec-past-row':''}" data-ec-row-key="event:${esc(eventUIKey(e))}">
-            <td class="ec-time">${esc(timeText(d))}<span class="ec-live-time">${esc(TZ_LABELS[settings.timezone]||settings.timezone)}</span></td>
+            <td class="ec-time">${esc(timeText(d))}</td>
             <td><span class="ec-country" title="${esc(c.name)}">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"—")}</strong></span></td>
-            <td><span class="impact ${impact}"><i></i>${impact[0].toUpperCase()+impact.slice(1)}</span></td>
+            <td><span class="impact ${impact}">${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
               <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(e.event||e.category||"Economic event")}</button>
               <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(eventUIKey(e))}">i</button>
