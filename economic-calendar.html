@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V2.6: fitted Actions, wider 12M History, larger Beta notice, footer refresh removed -->
+<!-- Economic Calendar V2.7: full-width responsive 12M history sparklines -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -649,8 +649,9 @@
 
     .ec-event-link{border:0;background:none;padding:0;color:var(--ec-text);font:inherit;font-weight:800;cursor:pointer;text-align:left;}
     .ec-event-link:hover{color:var(--ec-accent);text-decoration:underline;}
-    .ec-spark{display:inline-block;width:92px;height:28px;vertical-align:middle;}
-    .ec-spark-empty{display:inline-flex;width:92px;height:28px;align-items:center;justify-content:center;color:var(--ec-muted);font-size:9px;border-bottom:1px dashed var(--ec-border);}
+    .ec-table td:nth-child(5){min-width:0;}
+    .ec-spark{display:block;width:100%;height:28px;box-sizing:border-box;vertical-align:middle;}
+    .ec-spark-empty{display:flex;width:100%;height:28px;box-sizing:border-box;align-items:center;justify-content:center;color:var(--ec-muted);font-size:9px;border-bottom:1px dashed var(--ec-border);}
     .ec-modal-backdrop{position:fixed;inset:0;background:rgba(10,16,28,.58);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999;}
     .ec-modal-backdrop.open{display:flex;}
     .ec-modal{width:min(1380px,97vw);max-height:92vh;overflow:hidden;background:var(--ec-card);color:var(--ec-text);border:1px solid var(--ec-border);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.28);display:flex;flex-direction:column;}
@@ -2490,41 +2491,60 @@
     }
 
 
+    // One observer for all charts: redraw on actual size changes, no new history requests.
+    const sparklineValues=new WeakMap();
+    const sparklineResizeObserver=typeof ResizeObserver==="function"
+      ?new ResizeObserver(entries=>{
+        for(const entry of entries){
+          const canvas=entry.target;
+          if(!canvas.isConnected)continue;
+          const values=sparklineValues.get(canvas);
+          if(values)paintSparkline(canvas,values);
+        }
+      }):null;
+    function paintSparkline(canvas,rows){
+      if(!canvas.isConnected)return;
+      const rect=canvas.getBoundingClientRect();
+      const w=rect.width,h=rect.height;
+      if(w<=0||h<=0)return;
+      const dpr=window.devicePixelRatio||1;
+      const pixelWidth=Math.max(1,Math.round(w*dpr));
+      const pixelHeight=Math.max(1,Math.round(h*dpr));
+      if(canvas.width!==pixelWidth)canvas.width=pixelWidth;
+      if(canvas.height!==pixelHeight)canvas.height=pixelHeight;
+      const ctx=canvas.getContext("2d");
+      if(!ctx)return;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      const pad=3;
+      let min=Math.min(...rows),max=Math.max(...rows);
+      if(min===max){min-=1;max+=1;}
+      const accent=getComputedStyle(document.body).getPropertyValue("--ec-accent").trim()||"#365cff";
+      ctx.clearRect(0,0,w,h);
+      ctx.strokeStyle=accent;
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      rows.forEach((v,i)=>{
+        const x=pad+(w-pad*2)*(i/(rows.length-1));
+        const y=h-pad-((v-min)/(max-min))*(h-pad*2);
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
     function drawSparkline(host,history){
       const rows=dedupeHistoryByMonth(history).map(x=>numericValue(x.actual)).filter(v=>v!==null);
       if(rows.length<2){
         host.textContent="No history";
         return;
       }
-
       const canvas=document.createElement("canvas");
       canvas.className="ec-spark";
       canvas.title="12-month historical trend";
+      sparklineValues.set(canvas,rows);
       host.replaceWith(canvas);
-
       requestAnimationFrame(()=>{
-        const rect=canvas.getBoundingClientRect();
-        const dpr=window.devicePixelRatio||1;
-        canvas.width=Math.max(1,Math.floor(rect.width*dpr));
-        canvas.height=Math.max(1,Math.floor(rect.height*dpr));
-        const ctx=canvas.getContext("2d");
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-
-        const w=rect.width,h=rect.height,pad=3;
-        let min=Math.min(...rows),max=Math.max(...rows);
-        if(min===max){min-=1;max+=1;}
-        const accent=getComputedStyle(document.body).getPropertyValue("--ec-accent").trim()||"#365cff";
-
-        ctx.clearRect(0,0,w,h);
-        ctx.strokeStyle=accent;
-        ctx.lineWidth=1.5;
-        ctx.beginPath();
-        rows.forEach((v,i)=>{
-          const x=pad+(w-pad*2)*(i/(rows.length-1));
-          const y=h-pad-((v-min)/(max-min))*(h-pad*2);
-          if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        });
-        ctx.stroke();
+        if(!canvas.isConnected)return;
+        paintSparkline(canvas,rows);
+        sparklineResizeObserver?.observe(canvas);
       });
     }
 
@@ -4500,6 +4520,7 @@
         try{sparklineObserver.disconnect();}catch(_err){}
         sparklineObserver=null;
       }
+      sparklineResizeObserver?.disconnect();
 
       sparklineQueue.length=0;
 
