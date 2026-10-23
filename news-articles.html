@@ -894,6 +894,10 @@
         currentTotal = rows.length;
 
         const cachedArchiveMetadata = restoreArchiveMetadataFromCache();
+        // Keep "Load 100 more" available when a valid count was loaded from cache.
+        if(cachedArchiveMetadata && !hasActiveSearch()){
+          currentTotal = Number(archiveMeta.total_news_articles);
+        }
         renderArticles();
 
         // SECOND: supporting information loads after the first 100 are visible.
@@ -920,11 +924,13 @@
             return null;
           });
 
-        Promise.all([dashboardPromise, metadataPromise]).then(([dashboard, metaResult]) => {
-          if(dashboard){
-            dashboardData = dashboard;
-          }
+        // Resolve independently: R2 dashboard slowness must not delay archive count/filters.
+        dashboardPromise.then(dashboard => {
+          if(dashboard) dashboardData = dashboard;
+          updateCountNote();
+        });
 
+        metadataPromise.then(metaResult => {
           if(metaResult?.data && Number(metaResult.data.total_news_articles)>0){
             archiveMeta = metaResult.data;
             archiveMetadataUnavailable = false;
