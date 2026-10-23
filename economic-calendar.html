@@ -1587,6 +1587,8 @@
     let lastForcedReleaseCheckAt = 0;
     let countdownTimer = null;
     const historyCache = new Map();
+    // Reuse one in-flight request per indicator/history key across table rows and modals.
+    const historyInFlight = new Map();
     const WEEK_CACHE_KEY = "psd-economic-calendar-current-week-v2-uk-values";
     const HISTORY_CACHE_PREFIX = "psd-economic-history-v13:";
     const HISTORY_CACHE_FRESH_MS = 5 * 60 * 1000;
@@ -2275,7 +2277,7 @@
       return "";
     }
 
-    async function fetchEventHistory(e){
+    async function fetchEventHistoryUnshared(e){
       const key=historyKey(e);
       const memory=historyCache.get(key);
       if(memory&&Date.now()-memory.savedAt<memory.ttl)return memory.result;
@@ -2336,6 +2338,18 @@
     }
 
 
+
+    function fetchEventHistory(e){
+      const key=historyKey(e);
+      const existing=historyInFlight.get(key);
+      if(existing)return existing;
+      const request=fetchEventHistoryUnshared(e);
+      historyInFlight.set(key,request);
+      request.finally(()=>{
+        if(historyInFlight.get(key)===request)historyInFlight.delete(key);
+      }).catch(()=>{}); // Avoid detached-finally rejection if a caller handles failure.
+      return request;
+    }
 
     function dedupeHistoryByMonth(history){
       const byMonth=new Map(); // keyed by observation date, not month

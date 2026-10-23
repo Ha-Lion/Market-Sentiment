@@ -599,6 +599,9 @@
     let dashboardData = null;
     let technicalData = null;
     let archiveMeta = null;
+    let archiveMetadataUnavailable = false;
+    const ARCHIVE_META_CACHE_KEY = "psd-news-archive-public-meta-v2";
+    const ARCHIVE_META_CACHE_TTL_MS = 10 * 60 * 1000;
     let allArticles = [];
     let currentOffset = 0;
     let currentTotal = 0;
@@ -706,6 +709,27 @@
           .join("");
     }
 
+    // Cache only public archive metadata; no article content or account information.
+    // This avoids repeating the expensive full-archive metadata RPC on every visit.
+    function restoreArchiveMetadataFromCache(){
+      try{
+        const stored=JSON.parse(localStorage.getItem(ARCHIVE_META_CACHE_KEY)||"null");
+        if(!stored || !stored.data || !Number.isFinite(Number(stored.saved_at)) ||
+           Date.now()-Number(stored.saved_at)>ARCHIVE_META_CACHE_TTL_MS ||
+           Date.now()<Number(stored.saved_at) ||
+           !Number.isFinite(Number(stored.data.total_news_articles)) ||
+           Number(stored.data.total_news_articles)<=0 ||
+           !Array.isArray(stored.data.markets) ||
+           !Array.isArray(stored.data.instruments) ||
+           !Array.isArray(stored.data.sources)) return false;
+        archiveMeta=stored.data;
+        populateMarketOptions(archiveMeta.markets);
+        populateInstrumentOptions(archiveMeta.instruments);
+        populateSourceOptions(archiveMeta.sources);
+        return true;
+      }catch(_error){return false;}
+    }
+
     async function invokeArchive(body){
       if(!window.psdSupabase?.functions?.invoke) throw new Error("Supabase client is unavailable.");
       const { data, error } = await window.psdSupabase.functions.invoke("market-archive-search-v2", { body });
@@ -737,16 +761,19 @@
     }
 
     function updateCountNote(){
-      const archiveCount = Number(archiveMeta?.total_news_articles || 0);
+      const archiveValue=Number(archiveMeta?.total_news_articles);
+      const archiveCount=archiveMeta && Number.isFinite(archiveValue) && archiveValue>0
+        ? archiveValue.toLocaleString()
+        : archiveMetadataUnavailable ? "temporarily unavailable" : "loading…";
       const relevantCount = relevantHeadlineCount();
       const showing = allArticles.length;
       if(hasActiveSearch()){
         document.getElementById("resultsCount").textContent =
           `News & Articles matched: ${currentTotal.toLocaleString()}. Showing ${showing.toLocaleString()}. ` +
-          `Full News & Articles Archive: ${archiveCount.toLocaleString()}. Screened Headlines (Last 48 Hours): ${relevantCount.toLocaleString()}.`;
+          `Full News & Articles Archive: ${archiveCount}. Screened Headlines (Last 48 Hours): ${relevantCount.toLocaleString()}.`;
       }else{
         document.getElementById("resultsCount").textContent =
-          `News & Articles Archive: ${archiveCount.toLocaleString()}. Showing latest ${showing.toLocaleString()}. ` +
+          `News & Articles Archive: ${archiveCount}. Showing latest ${showing.toLocaleString()}. ` +
           `Screened Headlines (Last 48 Hours): ${relevantCount.toLocaleString()}.`;
       }
     }
@@ -866,6 +893,11 @@
         currentOffset = rows.length;
         currentTotal = rows.length;
 
+        const cachedArchiveMetadata = restoreArchiveMetadataFromCache();
+        // Keep "Load 100 more" available when a valid count was loaded from cache.
+        if(cachedArchiveMetadata && !hasActiveSearch()){
+          currentTotal = Number(archiveMeta.total_news_articles);
+        }
         renderArticles();
 
         // SECOND: supporting information loads after the first 100 are visible.
@@ -876,11 +908,14 @@
             return null;
           });
 
-        const metadataPromise = invokeArchive({ action:"metadata" })
-          .catch(error => {
-            console.warn("Archive metadata delayed/unavailable:", error);
-            return null;
-          });
+        const metadataPromise = cachedArchiveMetadata
+          ? Promise.resolve(null)
+          : invokeArchive({ action:"metadata" }).catch(error => {
+              archiveMetadataUnavailable = true;
+              updateCountNote();
+              console.warn("Archive metadata delayed/unavailable:", error);
+              return null;
+            });
 
         const technicalPromise = window.PSDDataV2
           .loadTechnical()
@@ -889,21 +924,29 @@
             return null;
           });
 
-        Promise.all([dashboardPromise, metadataPromise]).then(([dashboard, metaResult]) => {
-          if(dashboard){
-            dashboardData = dashboard;
-          }
+        // Resolve independently: R2 dashboard slowness must not delay archive count/filters.
+        dashboardPromise.then(dashboard => {
+          if(dashboard) dashboardData = dashboard;
+          updateCountNote();
+        });
 
-          if(metaResult?.data){
-            archiveMeta = metaResult.data || {};
-
+        metadataPromise.then(metaResult => {
+          if(metaResult?.data && Number(metaResult.data.total_news_articles)>0){
+            archiveMeta = metaResult.data;
+            archiveMetadataUnavailable = false;
             populateMarketOptions(archiveMeta.markets);
             populateInstrumentOptions(archiveMeta.instruments);
             populateSourceOptions(archiveMeta.sources);
 
-            currentTotal = Number(
-              archiveMeta.total_news_articles || currentTotal
-            );
+            // Never overwrite a keyword-search total when metadata finishes late.
+            if(!hasActiveSearch()){
+              currentTotal = Number(archiveMeta.total_news_articles);
+            }
+            try{
+              localStorage.setItem(ARCHIVE_META_CACHE_KEY,JSON.stringify({
+                saved_at:Date.now(), data:archiveMeta
+              }));
+            }catch(_error){}
 
             window.__PSD_NEWS_ARCHIVE_V2__ = {
               dataset_version: archiveMeta.dataset_version,
@@ -914,7 +957,9 @@
             };
           }
 
-          renderArticles();
+          // Do not rebuild 100+ article cards merely because metadata arrived.
+          renderSourceSummary(allArticles);
+          updateCountNote();
         });
 
         technicalPromise.then(technical => {
