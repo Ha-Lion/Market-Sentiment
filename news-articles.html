@@ -159,6 +159,18 @@
       border-radius:4px;
     }
 
+    .news-search-status{
+      min-height:18px;
+      font-size:12px;
+      line-height:1.35;
+      color:var(--muted);
+      margin-top:3px;
+    }
+    .news-search-status[data-state="error"]{color:#ff947e;}
+    body:not(.dark-mode) .news-search-status{color:#31506d;}
+    body:not(.dark-mode) .news-search-status[data-state="error"]{color:#9b3020;}
+    #archiveLoadMore .btn:disabled{cursor:wait;opacity:.7;transform:none;}
+
     .count-note{
       color:#fff;
       font-size:15px;
@@ -519,13 +531,14 @@
       <div class="news-search-head">
         <h1>News & Articles</h1>
         <div class="news-search-meta">
-          <p><span data-glossary="news-summary">Search the canonical News & Articles archive</span> by keyword, market, instrument, and source. Trusted market outlets are shown first.</p>
+          <p><span data-glossary="news-summary">Search the canonical News & Articles archive</span> by keyword, market, instrument, and source. Matches are ranked by search relevance and date.</p>
           <div class="count-note" id="resultsCount">Loading published articles...</div>
+          <div class="news-search-status" id="newsSearchStatus" role="status" aria-live="polite"></div>
         </div>
       </div>
 
       <div class="controls">
-        <input type="text" id="searchBox" placeholder="Search keywords, headlines, markets, instruments, or sources...">
+        <input type="text" id="searchBox" aria-label="Search News and Articles" placeholder="Search keywords, headlines, markets, instruments, or sources...">
 
         <select id="marketFilter">
           <option value="all">All Markets</option>
@@ -555,7 +568,7 @@
       </div>
 
       <div class="source-summary" id="sourceSummary">
-        <div class="source-summary-title">Sources found in this search</div>
+        <div class="source-summary-title">Sources among the articles currently loaded (not all matching sources)</div>
         <div class="source-summary-list" id="sourceSummaryList"></div>
       </div>
     </section>
@@ -606,6 +619,15 @@
     let currentOffset = 0;
     let currentTotal = 0;
     const PAGE_SIZE = 100;
+    // PSD NEWS SEARCH WEB v1.0.1: site-only coordination; backend contracts unchanged.
+    let searchGeneration = 0;
+    let pendingSearch = null;
+    let activeSearchController = null;
+    let currentResultFilterKey = null;
+    let currentResultIsFiltered = false;
+    let moreRowsAvailable = false;
+    let pendingSearchType = null;
+    const DEFAULT_FILTERS_KEY = JSON.stringify({query:null,market:"all",instrument:"all",source:"all"});
 
     const marketLabels = {
       indexes:"Indexes / Futures", bonds:"Bonds / Rates", forex:"Forex / Currencies",
@@ -639,6 +661,13 @@
       try{ return new URL(url).hostname.replace(/^www\./, ""); }catch(e){ return ""; }
     }
 
+    function safeExternalURL(value){
+      try{
+        const url = new URL(String(value || ""));
+        return (url.protocol === "https:" || url.protocol === "http:") ? url.href : "";
+      }catch(_error){ return ""; }
+    }
+
     function faviconForURL(url){
       const domain = domainFromURL(url || "");
       return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
@@ -667,6 +696,14 @@
     function publishedLabel(item){
       const value = item?.published_at || item?.event_date || "";
       if(!value) return "";
+      // A date-only YYYY-MM-DD is a calendar date, not midnight UTC.
+      // Parsing it as a timestamp shows the previous day in US time zones.
+      if(!item?.published_at && /^\d{4}-\d{2}-\d{2}$/.test(String(value))){
+        const parts = String(value).split("-").map(Number);
+        const calendarDay = new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
+        return Number.isNaN(calendarDay.getTime()) ? String(value) :
+          calendarDay.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric",timeZone:"UTC"});
+      }
       const d = new Date(value);
       return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString();
     }
@@ -685,28 +722,27 @@
       return Boolean(f.query || f.market !== "all" || f.instrument !== "all" || f.source !== "all");
     }
 
+    function replaceSelectOptions(id, values, allLabel, labelForValue){
+      const select = document.getElementById(id);
+      const previous = select.value;
+      const options = [`<option value="all">${escapeHTML(allLabel)}</option>`]
+        .concat((Array.isArray(values) ? values : []).filter(Boolean)
+          .map(value => `<option value="${escapeHTML(value)}">${escapeHTML(labelForValue(value))}</option>`));
+      select.innerHTML = options.join("");
+      // Metadata arrives after page interaction; never silently discard a valid selection.
+      if(Array.from(select.options).some(option => option.value === previous)) select.value = previous;
+    }
+
     function populateMarketOptions(markets){
-      const values = Array.isArray(markets) ? markets : [];
-      document.getElementById("marketFilter").innerHTML =
-        [`<option value="all">All Markets</option>`]
-          .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(marketLabels[v] || v)}</option>`))
-          .join("");
+      replaceSelectOptions("marketFilter", markets, "All Markets", value => marketLabels[value] || value);
     }
 
     function populateInstrumentOptions(instruments){
-      const values = Array.isArray(instruments) ? instruments : [];
-      document.getElementById("instrumentFilter").innerHTML =
-        [`<option value="all">All Instruments</option>`]
-          .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`))
-          .join("");
+      replaceSelectOptions("instrumentFilter", instruments, "All Instruments", value => value);
     }
 
     function populateSourceOptions(sources){
-      const values = Array.isArray(sources) ? sources : [];
-      document.getElementById("sourceFilter").innerHTML =
-        [`<option value="all">All Sources</option>`]
-          .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`))
-          .join("");
+      replaceSelectOptions("sourceFilter", sources, "All Sources", value => value);
     }
 
     // Cache only public archive metadata; no article content or account information.
@@ -730,9 +766,9 @@
       }catch(_error){return false;}
     }
 
-    async function invokeArchive(body){
+    async function invokeArchive(body, signal){
       if(!window.psdSupabase?.functions?.invoke) throw new Error("Supabase client is unavailable.");
-      const { data, error } = await window.psdSupabase.functions.invoke("market-archive-search-v2", { body });
+      const { data, error } = await window.psdSupabase.functions.invoke("market-archive-search-v2", { body, signal });
       if(error) throw error;
       if(!data?.ok) throw new Error(data?.error || "Archive request failed.");
       return data;
@@ -753,6 +789,29 @@
       return Array.isArray(data) ? data : [];
     }
 
+    function statusMessage(message, state = "info"){
+      const node = document.getElementById("newsSearchStatus");
+      node.textContent = message;
+      node.dataset.state = state;
+    }
+
+    function setSearchBusy(isBusy, type){
+      const moreButton = document.getElementById("loadMoreBtn");
+      if(moreButton){
+        moreButton.disabled = isBusy;
+        moreButton.textContent = (isBusy && type === "more") ? "Loading more…" : "Load 100 more";
+      }
+      document.getElementById("headlineList").setAttribute("aria-busy", String(isBusy));
+      if(isBusy) statusMessage(type === "more" ? "Loading more articles…" : "Searching News & Articles…");
+    }
+
+    function stopOutdatedSearch(){
+      ++searchGeneration;
+      if(activeSearchController){ activeSearchController.abort(); activeSearchController = null; }
+      pendingSearch = null;
+      pendingSearchType = null;
+    }
+
     function relevantHeadlineCount(){
       if(window.PSDCore){
         return window.PSDCore.getHeadlineCount("relevantHeadlines", dashboardData, null, null);
@@ -767,7 +826,7 @@
         : archiveMetadataUnavailable ? "temporarily unavailable" : "loading…";
       const relevantCount = relevantHeadlineCount();
       const showing = allArticles.length;
-      if(hasActiveSearch()){
+      if(currentResultIsFiltered){
         document.getElementById("resultsCount").textContent =
           `News & Articles matched: ${currentTotal.toLocaleString()}. Showing ${showing.toLocaleString()}. ` +
           `Full News & Articles Archive: ${archiveCount}. Screened Headlines (Last 48 Hours): ${relevantCount.toLocaleString()}.`;
@@ -781,92 +840,216 @@
     function renderSourceSummary(items){
       const box = document.getElementById("sourceSummary");
       const list = document.getElementById("sourceSummaryList");
-      if(!hasActiveSearch() || !items.length){
+      if(!currentResultIsFiltered || !items.length){
         box.style.display = "none";
         list.innerHTML = "";
         return;
       }
-      const names = [...new Set(items.map(canonicalSource).filter(Boolean))].sort();
+      const sources = new Map();
+      items.forEach(item => {
+        const name = canonicalSource(item);
+        if(name && !sources.has(name)) sources.set(name,item);
+      });
+      const names = Array.from(sources.keys()).sort();
       box.style.display = "block";
       list.innerHTML = names.map(name => {
-        const sample = items.find(h => canonicalSource(h) === name);
-        const url = sourceURL(name) || sample?.url || "#";
+        const sample = sources.get(name);
+        const sourceHomepage = safeExternalURL(sourceURL(name));
+        const url = sourceHomepage || safeExternalURL(sample?.url);
         const icon = faviconForURL(url);
-        return `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">
-          ${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo">` : ""}
+        const label = sourceHomepage ? `Visit ${name}` : `Sample article from ${name}`;
+        return url ? `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" title="${escapeHTML(label)}">
+          ${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo" loading="lazy">` : ""}
           <span>${escapeHTML(name)}</span>
-        </a>`;
+        </a>` : `<span class="source-summary-link">${escapeHTML(name)}</span>`;
       }).join("");
     }
 
-    function renderArticles(){
+    function articleCardsMarkup(items){
+      return items.map(item => {
+        const name = canonicalSource(item);
+        const url = safeExternalURL(item?.url);
+        const icon = faviconForURL(url);
+        const techLabel = headlineTech(item);
+        const tag = url ? "a" : "div";
+        const attrs = url ? ` href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer"` : "";
+        return `
+          <${tag} class="headline-card"${attrs}>
+            <div class="headline-source-row">
+              ${icon ? `<img class="headline-source-icon" src="${escapeHTML(icon)}" alt="${escapeHTML(name)} logo" loading="lazy" onerror="this.style.visibility='hidden'">` : ""}
+              <div class="headline-source-name">${escapeHTML(name)}</div>
+            </div>
+            <div class="headline-body">
+              <div class="headline-top">
+                <span class="tech-tag ${normalizeClass(techLabel)}">${escapeHTML(techLabel)}</span>
+                <span class="tag">${escapeHTML(item.vote || "Neutral")}</span>
+                <span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span>
+              </div>
+              <div class="headline-title">${escapeHTML(item.title || "Untitled headline")}</div>
+              <div class="headline-meta">
+                Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
+                Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}<br>
+                ${escapeHTML(publishedLabel(item))}
+              </div>
+              <div class="headline-open">${url ? "Open article →" : "Article link unavailable"}</div>
+            </div>
+          </${tag}>`;
+      }).join("");
+    }
+
+    function updateTechnicalTags(){
+      // Update only the badges when optional technical data arrives, not all article cards.
+      const cards = document.querySelectorAll("#headlineList .headline-card");
+      cards.forEach((card,index) => {
+        if(!allArticles[index]) return;
+        const badge = card.querySelector(".tech-tag");
+        if(badge){
+          const label = headlineTech(allArticles[index]);
+          badge.textContent = label;
+          badge.className = `tech-tag ${normalizeClass(label)}`;
+        }
+      });
+    }
+
+    function renderLoadMoreButton(){
+      const button = document.getElementById("loadMoreBtn");
+      if(button && !moreRowsAvailable && currentOffset >= currentTotal) button.remove();
+      else if(!button && (moreRowsAvailable || currentOffset < currentTotal)){
+        const holder = document.getElementById("archiveLoadMore");
+        if(holder){
+          holder.innerHTML = `<button class="btn" type="button" id="loadMoreBtn">Load 100 more</button>`;
+          document.getElementById("loadMoreBtn").addEventListener("click",loadMore);
+        }
+      }
+    }
+
+    function renderArticles(appendedRows = null){
+      const list = document.getElementById("headlineList");
+      if(appendedRows && appendedRows.length && allArticles.length > appendedRows.length){
+        // Append just the next page: no destruction/flicker of existing cards.
+        list.insertAdjacentHTML("beforeend", articleCardsMarkup(appendedRows));
+      }else if(appendedRows && appendedRows.length === 0){
+        // Count changed but no new articles: preserve existing DOM.
+      }else{
+        list.innerHTML = allArticles.length
+          ? articleCardsMarkup(allArticles)
+          : `<div class="empty-card">No News & Articles matched your search and filters.</div>`;
+      }
       renderSourceSummary(allArticles);
       updateCountNote();
-      document.getElementById("headlineList").innerHTML = allArticles.length
-        ? allArticles.map(item => {
-            const name = canonicalSource(item);
-            const url = item?.url || "#";
-            const icon = faviconForURL(url);
-            const techLabel = headlineTech(item);
-            return `
-              <a class="headline-card" href="${escapeHTML(url)}" target="_blank" rel="noopener">
-                <div class="headline-source-row">
-                  ${icon ? `<img class="headline-source-icon" src="${icon}" alt="${escapeHTML(name)} logo" loading="lazy" onerror="this.style.visibility='hidden'">` : ""}
-                  <div class="headline-source-name">${escapeHTML(name)}</div>
-                </div>
-                <div class="headline-body">
-                  <div class="headline-top">
-                    <span class="tech-tag ${normalizeClass(techLabel)}">${escapeHTML(techLabel)}</span>
-                    <span class="tag">${escapeHTML(item.vote || "Neutral")}</span>
-                    <span class="impact-tag">${escapeHTML(item.impact || "Normal")} Impact</span>
-                  </div>
-                  <div class="headline-title">${escapeHTML(item.title || "Untitled headline")}</div>
-                  <div class="headline-meta">
-                    Markets: ${escapeHTML((item.markets || []).map(m => marketLabels[m] || m).join(", ") || "N/A")}<br>
-                    Instruments: ${escapeHTML((item.instruments || []).join(", ") || "N/A")}<br>
-                    ${escapeHTML(publishedLabel(item))}
-                  </div>
-                  <div class="headline-open">Open article →</div>
-                </div>
-              </a>`;
-          }).join("")
-        : `<div class="empty-card">No News & Articles matched your search and filters.</div>`;
 
       let holder = document.getElementById("archiveLoadMore");
       if(!holder){
         holder = document.createElement("div");
         holder.id = "archiveLoadMore";
         holder.style.cssText = "display:flex;justify-content:center;margin:18px 0 4px;";
-        document.getElementById("headlineList").after(holder);
+        list.after(holder);
       }
-      holder.innerHTML = allArticles.length < currentTotal
+      holder.innerHTML = (moreRowsAvailable || currentOffset < currentTotal)
         ? `<button class="btn" type="button" id="loadMoreBtn">Load 100 more</button>`
         : "";
       const button = document.getElementById("loadMoreBtn");
-      if(button) button.addEventListener("click", loadMore);
+      if(button){
+        button.disabled = Boolean(pendingSearch);
+        button.addEventListener("click", loadMore);
+      }
     }
 
+    function filterKey(filters){return JSON.stringify(filters);}
+
+    // Search and latest-first loads share one generation so old requests never win races.
     async function searchArchive(reset = true){
-      if(reset){
-        currentOffset = 0;
-        allArticles = [];
+      const filters = activeFilters();
+      const key = filterKey(filters);
+      if(!reset && key !== currentResultFilterKey) return searchArchive(true);
+      if(!reset && (pendingSearch || (!moreRowsAvailable && currentOffset >= currentTotal))) return;
+      if(reset && pendingSearch && pendingSearchType === "reset" && pendingSearch === key) return;
+
+      stopOutdatedSearch();
+      const generation = searchGeneration;
+      const controller = new AbortController();
+      activeSearchController = controller;
+      pendingSearch = key;
+      pendingSearchType = reset ? "reset" : "more";
+      setSearchBusy(true, pendingSearchType);
+      try{
+        let rows, total;
+        let hasServerTotal = false;
+        const unfiltered = key === DEFAULT_FILTERS_KEY;
+        if(reset && unfiltered){
+          // Preserve the existing proven fast path for Clear / all-filters reset.
+          try{
+            rows = await loadLatest100Fast();
+            total = Number(archiveMeta?.total_news_articles) || rows.length;
+          }catch(fastError){
+            // Degrade gracefully to the existing read-only search endpoint.
+            // Do not introduce a new backend contract or touch stored data.
+            console.warn("Latest-100 fast path unavailable; using archive search:",fastError);
+            const result = await invokeArchive({
+              action:"news",query:null,market:"all",instrument:"all",source:"all",
+              limit:PAGE_SIZE,offset:0
+            },controller.signal);
+            rows = Array.isArray(result.data) ? result.data : [];
+            hasServerTotal = result.total_count != null && Number.isFinite(Number(result.total_count));
+            total = hasServerTotal ? Number(result.total_count) : rows.length;
+          }
+        }else{
+          const result = await invokeArchive({
+            action:"news",query:filters.query,market:filters.market,
+            instrument:filters.instrument,source:filters.source,
+            limit:PAGE_SIZE,offset:reset ? 0 : currentOffset
+          },controller.signal);
+          rows = Array.isArray(result.data) ? result.data : [];
+          // Some error/partial responses omit total_count; do not mistake
+          // that for a definitive end-of-results when the page is full.
+          const receivedTotal = Number(result.total_count);
+          hasServerTotal = result.total_count != null && Number.isFinite(receivedTotal);
+          total = hasServerTotal
+            ? receivedTotal : (reset ? rows.length : Math.max(currentTotal,currentOffset+rows.length));
+        }
+        if(generation !== searchGeneration) return;
+
+        if(reset){
+          allArticles = rows;
+          currentOffset = rows.length;
+          currentTotal = Math.max(total, rows.length);
+          currentResultFilterKey = key;
+          currentResultIsFiltered = !unfiltered;
+          moreRowsAvailable = rows.length === PAGE_SIZE && currentTotal <= rows.length &&
+            (!hasServerTotal || (unfiltered && !archiveMeta));
+          renderArticles();
+        }else{
+          // Maintain server offset independently of client de-duplication.
+          currentOffset += rows.length;
+          currentTotal = rows.length ? Math.max(total, currentOffset) : currentOffset;
+          const existing = new Set(allArticles.map(row => String(row.id)));
+          const appended = rows.filter(row => {
+            const id = String(row.id);
+            if(existing.has(id)) return false;
+            existing.add(id);
+            return true;
+          });
+          allArticles.push(...appended);
+          moreRowsAvailable = rows.length === PAGE_SIZE && !hasServerTotal;
+          renderArticles(appended);
+        }
+        statusMessage("");
+      }catch(error){
+        if(generation !== searchGeneration) return;
+        console.error("News & Articles search failed:",error);
+        statusMessage("Search could not complete. Your previously loaded results are still available. Please retry.","error");
+      }finally{
+        if(generation === searchGeneration){
+          pendingSearch = null;
+          pendingSearchType = null;
+          activeSearchController = null;
+          setSearchBusy(false);
+        }
       }
-      document.getElementById("headlineList").innerHTML = `<div class="empty-card">Searching the canonical News & Articles archive...</div>`;
-      const f = activeFilters();
-      const result = await invokeArchive({
-        action:"news", query:f.query, market:f.market, instrument:f.instrument,
-        source:f.source, limit:PAGE_SIZE, offset:currentOffset
-      });
-      const rows = Array.isArray(result.data) ? result.data : [];
-      currentTotal = Number(result.total_count || 0);
-      allArticles = reset ? rows : allArticles.concat(rows);
-      currentOffset = allArticles.length;
-      renderArticles();
     }
 
     async function loadMore(){
-      try{ await searchArchive(false); }
-      catch(error){ console.error(error); }
+      await searchArchive(false);
     }
 
     async function clearSearch(){
@@ -878,6 +1061,7 @@
     }
 
     async function loadPage(){
+      const initialGeneration = searchGeneration;
       try{
         if(!window.PSDDataV2?.loadLiveDashboard || !window.PSDDataV2?.loadTechnical){
           throw new Error("V2 data-access layer is unavailable.");
@@ -886,19 +1070,30 @@
         document.getElementById("headlineList").innerHTML =
           `<div class="empty-card">Loading latest News & Articles...</div>`;
 
-        // FIRST: fetch and render only the newest 100 canonical articles.
-        const rows = await loadLatest100Fast();
-
-        allArticles = rows;
-        currentOffset = rows.length;
-        currentTotal = rows.length;
-
-        const cachedArchiveMetadata = restoreArchiveMetadataFromCache();
-        // Keep "Load 100 more" available when a valid count was loaded from cache.
-        if(cachedArchiveMetadata && !hasActiveSearch()){
-          currentTotal = Number(archiveMeta.total_news_articles);
+        // FIRST: fetch only the newest 100 canonical articles, preserving concurrent searches.
+        let rows;
+        let initialTotal = 0;
+        try{
+          rows = await loadLatest100Fast();
+        }catch(fastError){
+          console.warn("Initial latest-100 fast path unavailable; using archive search:",fastError);
+          const result = await invokeArchive({
+            action:"news",query:null,market:"all",instrument:"all",source:"all",
+            limit:PAGE_SIZE,offset:0
+          });
+          rows = Array.isArray(result.data) ? result.data : [];
+          initialTotal = Number(result.total_count) || rows.length;
         }
-        renderArticles();
+        const cachedArchiveMetadata = restoreArchiveMetadataFromCache();
+        if(initialGeneration === searchGeneration){
+          allArticles = rows;
+          currentOffset = rows.length;
+          currentTotal = Number(archiveMeta?.total_news_articles) || initialTotal || rows.length;
+          currentResultFilterKey = DEFAULT_FILTERS_KEY;
+          currentResultIsFiltered = false;
+          moreRowsAvailable = rows.length === PAGE_SIZE && !archiveMeta;
+          renderArticles();
+        }
 
         // SECOND: supporting information loads after the first 100 are visible.
         const dashboardPromise = window.PSDDataV2
@@ -939,8 +1134,10 @@
             populateSourceOptions(archiveMeta.sources);
 
             // Never overwrite a keyword-search total when metadata finishes late.
-            if(!hasActiveSearch()){
+            if(!currentResultIsFiltered && currentResultFilterKey === DEFAULT_FILTERS_KEY){
               currentTotal = Number(archiveMeta.total_news_articles);
+              moreRowsAvailable = false;
+              renderLoadMoreButton();
             }
             try{
               localStorage.setItem(ARCHIVE_META_CACHE_KEY,JSON.stringify({
@@ -968,12 +1165,13 @@
           technicalData = technical;
 
           if(allArticles.length){
-            renderArticles();
+            updateTechnicalTags();
           }
         });
 
       }catch(error){
         console.error(error);
+        if(initialGeneration !== searchGeneration) return;
 
         document.getElementById("resultsCount").textContent =
           "Canonical News & Articles archive unavailable.";
