@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V3.0: Website-only speed, accuracy, detail-request isolation and refresh provenance; 24-hour compact Time, country code heading, text-only Impact and wider Event -->
+<!-- Economic Calendar V3.1.0 | rebuilt from approved V2.9 base | website-only optimization and readable values -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -632,6 +632,14 @@
     body.dark-mode .ec-icon-btn[data-alert-state="past"]{background:#343942!important;color:#aeb4be!important;border-color:#626a75!important;}
     /* Health monitoring / live-data state: gold outline. */
     #feed-status{border:1px solid #b8860b!important;}
+    /* V3.1: visible distinction between feed polling and a published release. */
+    #ec-feed-checked{font-size:10px;font-weight:750;opacity:.85;white-space:nowrap}
+    /* Direction colors deliberately do not say whether a surprise is favorable. */
+    .ec-page .actual-up{color:#316abb!important}
+    .ec-page .actual-down{color:#8652bd!important}
+    body.dark-mode .ec-page .actual-up{color:#91c5ff!important}
+    body.dark-mode .ec-page .actual-down{color:#d9b4ff!important}
+
     .ec-cancel-pop{
       position:fixed;z-index:100020;width:210px;padding:9px 10px;
       border:1px solid var(--ec-border);border-radius:9px;background:var(--ec-card);
@@ -842,13 +850,6 @@
     .ec-page .ec-summary .ec-stat{padding:4px 8px;}
   }
 </style>
-  <style id="ec-v30-direction-only-colors">
-    /* Actual-vs-forecast colors show direction only, not good/bad economic outcomes. */
-    body:not(.dark-mode) .ec-page .actual-up{color:#245c9d!important}
-    body:not(.dark-mode) .ec-page .actual-down{color:#7653a8!important}
-    body.dark-mode .ec-page .actual-up{color:#8cbdff!important}
-    body.dark-mode .ec-page .actual-down{color:#d5b3ff!important}
-  </style>
 </head>
 <body>
   <div id="site-header"></div>
@@ -868,6 +869,7 @@
       </div>
       <div class="ec-status-wrap">
         <span id="feed-status" class="ec-badge loading">Loading live data</span>
+        <span id="ec-feed-checked" title="Time of last successful website feed check, not the official release timestamp">Feed not checked yet</span>
         <span id="countdown-badge" class="ec-badge">Next event: —</span>
       </div>
     </header>
@@ -1750,19 +1752,18 @@
       return [...new Set(a)].slice(0,5);
     }
 
-    // V3.0: bounded memoization avoids reparsing thousands of unchanged release dates.
-    // Only immutable date inputs are cached; callers must not mutate returned dates.
-    const parsedReleaseDates=new Map();
+    // V3.1: reuse parsed provider timestamps across row filters and redraws.
+    const calendarParsedDates=new Map();
     function parseProviderDate(v){
-      if(!v) return null;
+      if(!v)return null;
       if(v instanceof Date)return Number.isNaN(v.getTime())?null:v;
       const key=String(v);
-      if(parsedReleaseDates.has(key))return parsedReleaseDates.get(key);
-      const d=new Date(key);
-      const value=Number.isNaN(d.getTime())?null:d;
-      if(parsedReleaseDates.size>=4096)parsedReleaseDates.clear();
-      parsedReleaseDates.set(key,value);
-      return value;
+      if(calendarParsedDates.has(key))return calendarParsedDates.get(key);
+      const date=new Date(key);
+      const result=Number.isNaN(date.getTime())?null:date;
+      if(calendarParsedDates.size>=4096)calendarParsedDates.clear();
+      calendarParsedDates.set(key,result);
+      return result;
     }
 
     // Reuse time-zone-aware formatters across event rows and clock ticks.
@@ -1915,33 +1916,31 @@
       return (timeA-timeB)||String(eventUIKey(a)).localeCompare(String(eventUIKey(b)));
     }
 
+    // V3.1: one filter pass, preserving the exact original range/filter semantics.
     function visibleEvents(){
-      // V3.0: one pass, with constant-time membership checks, instead of 9 array passes.
-      // Date membership and day headings still use the viewer's selected timezone.
       const q=search.value.trim().toLowerCase();
       const now=Date.now();
-      const range=getRange(currentRange);
-      const allowedCountries=new Set(settings.countries);
-      const allowedImpacts=new Set(settings.impacts);
-      const allowedCategories=new Set(settings.categories);
-      const country=countryFilter.value,impact=impactFilter.value,category=categoryFilter.value;
-      const rows=[];
+      const selectedRange=getRange(currentRange);
+      const countries=new Set(settings.countries);
+      const impacts=new Set(settings.impacts);
+      const categories=new Set(settings.categories);
+      const quickCountry=countryFilter.value,quickImpact=impactFilter.value,quickCategory=categoryFilter.value;
+      const visible=[];
       for(const e of allEvents){
         const date=parseProviderDate(e.date);
         if(!date)continue;
         const day=dateKeyInTimezone(date,settings.timezone);
-        if(day<range.start||day>range.end)continue;
+        if(day<selectedRange.start||day>selectedRange.end)continue;
         if(upcomingOnly&&date.getTime()<now)continue;
-        if(!allowedCountries.has(e.country_code)||country&&e.country_code!==country)continue;
-        const weight=impactFromImportance(e.importance);
-        if(!allowedImpacts.has(weight)||impact&&weight!==impact)continue;
-        const group=classifyEvent(e);
-        if(!allowedCategories.has(group)||category&&group!==category)continue;
+        if(!countries.has(e.country_code)||(quickCountry&&e.country_code!==quickCountry))continue;
+        const impact=impactFromImportance(e.importance);
+        if(!impacts.has(impact)||(quickImpact&&impact!==quickImpact))continue;
+        const category=classifyEvent(e);
+        if(!categories.has(category)||(quickCategory&&category!==quickCategory))continue;
         if(q&&!`${e.event||""} ${e.category||""} ${e.country||""} ${e.currency||""}`.toLowerCase().includes(q))continue;
-        rows.push(e);
+        visible.push(e);
       }
-      rows.sort(compareCalendarEvents);
-      return rows;
+      return visible.sort(compareCalendarEvents);
     }
 
     function economicValueLabel(value,field,event){
@@ -1984,7 +1983,7 @@
       if(v===null||v===undefined||String(v).trim()==="")return "—";
       // A provider may supply a numeric observation with a descriptive unit.
       // Keep it visible without inventing a value; only prose is rejected.
-      if(numericReleaseValue(v))return formatValue(v,calendarDisplayUnit(e));
+      if(numericReleaseValue(v)||economicMeasurement(v,calendarDisplayUnit(e)))return formatValue(v,calendarDisplayUnit(e));
       const raw=String(v).trim();
       if(/^[+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?\s+(?:balance percentage points?|percentage points?|index points?|basis points?|percent(?:age)?|thousands?|millions?|billions?|barrels?|jobs?(?:\/week)?|points?)(?:\s+.+)?$/i.test(raw))return esc(raw);
       return "—";
@@ -2008,26 +2007,58 @@
       return "";
     }
 
+    // Preserve original feed data; convert only for browser display / calculations.
+    // Reject mixed auction narratives rather than extracting an arbitrary first number.
+    function economicMeasurement(v,unitHint=""){
+      if(v===null||v===undefined||String(v).trim()==="")return null;
+      const text=String(v).trim().replace(/[−–]/g,"-");
+      const m=text.match(/^([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(.*)$/);
+      if(!m)return null;
+      const number=Number(m[1].replace(/,/g,""));
+      if(!Number.isFinite(number))return null;
+      const explicit=m[2].trim();
+      const unit=explicit||String(unitHint||"").trim();
+      if(!unit)return {value:number,unitType:"plain",scale:1,qualifier:"",currency:""};
+      const pct=unit.match(/^(?:%|percent(?:age)?|pct)(?:\s*(?:\(?\s*(y\/y|m\/m|q\/q|yoy|mom|qoq|gdp|of\s+gdp)\s*\)?))?$/i);
+      if(pct){
+        const rawPeriod=(pct[1]||"").toLowerCase();
+        const period=/^(?:y\/y|yoy)$/.test(rawPeriod)?"YoY":/^(?:m\/m|mom)$/.test(rawPeriod)?"MoM":/^(?:q\/q|qoq)$/.test(rawPeriod)?"QoQ":rawPeriod?"GDP":"";
+        return {value:number,unitType:"percent",scale:1,qualifier:period,currency:""};
+      }
+      if(/^(?:bps?|basis\s+points?)$/i.test(unit))return {value:number,unitType:"bps",scale:1,qualifier:"",currency:""};
+      if(/^(?:index\s+points?|points?|jobs?(?:\/week)?|barrels?)$/i.test(unit))return {value:number,unitType:"plain",scale:1,qualifier:"",currency:""};
+      const scaleToken=unit.match(/\b(thousands?|millions?|billions?|trillions?|[kmbt])\b/i);
+      if(scaleToken){
+        const remaining=unit.replace(scaleToken[0]," ").replace(/\b(?:USD|GBP|EUR|JPY|CAD|AUD|CHF|NZD|CNY)\b/gi," ").replace(/\b(?:units?|jobs?|barrels?|annualised|annualized)\b/gi," ").replace(/[ ,/.-]/g,"").trim();
+        if(remaining)return null;
+        const scaleName=scaleToken[1].toLowerCase();
+        const scale=scaleName.startsWith("thou")||scaleName==="k"?1e3:scaleName.startsWith("mill")||scaleName==="m"?1e6:scaleName.startsWith("bill")||scaleName==="b"?1e9:1e12;
+        const currency=unit.match(/\b(?:USD|GBP|EUR|JPY|CAD|AUD|CHF|NZD|CNY)\b/i)?.[0].toUpperCase()||"";
+        const qualifier=/annualis[ez]d/i.test(unit)?"annualised":"";
+        return {value:number*scale,unitType:"scaled",scale,qualifier,currency};
+      }
+      return null;
+    }
+    function compactEconomicValue(number,minimumScale=1){
+      const abs=Math.abs(number);
+      const scale=abs>=1e12?1e12:abs>=1e9?1e9:abs>=1e6?1e6:abs>=1e3?1e3:minimumScale;
+      const marker=scale===1e12?"T":scale===1e9?"B":scale===1e6?"M":scale===1e3?"K":"";
+      const value=Number((number/scale).toPrecision(12));
+      return value.toLocaleString("en-US",{maximumFractionDigits:6})+marker;
+    }
+
     function formatValue(v,unit){
       if(v===null||v===undefined||String(v).trim()==="")return "—";
       const raw=String(v).trim();
       if(/^(published|released)$/i.test(raw))return esc(raw);
       if(/^previous edition$/i.test(raw))return "N/A";
-      // Strip well-known descriptive unit prose, but never change the original stored value.
-      const match=raw.match(/^([+-]?(?:\d+(?:,\d{3})*|\d+)(?:\.\d+)?)(?:\s*(%|percent(?:age)?(?:\s+(?:MoM|YoY|high auction yield.*))?|bps?|jobs\/week(?:\s+4.week moving average)?|high auction yield.*|k|m|b|index points?|points?))?$/i);
-      if(!match)return esc(raw);
-      const n=Number(match[1].replace(/,/g,""));
-      if(!Number.isFinite(n))return "—";
-      const value=n.toLocaleString("en-US",{maximumFractionDigits:3});
-      const suffix=String(match[2]||"").toLowerCase();
-      const hint=String(unit||"").toLowerCase().trim();
-      if(suffix==="%"||suffix.startsWith("percent")||suffix.startsWith("high auction yield")||(["%","percent","percentage","pct"].includes(hint)||/^percent(?:age)?\s+(?:mom|yoy)$/.test(hint)))return esc(value+"%");
-      if(suffix.startsWith("jobs/week"))return esc(value);
-      if(/^(bps?|k|m|b)$/.test(suffix))return esc(value+" "+suffix);
-      if(!hint||["points","index points","index"].includes(hint)||/index points?/.test(suffix))return esc(value);
-      return esc(value+" "+unit);
+      const measure=economicMeasurement(raw,unit);
+      if(!measure)return esc(raw); // Never guess at mixed-metric values or unknown units.
+      if(measure.unitType==="percent")return esc(compactEconomicValue(measure.value)+"%"+(measure.qualifier?" "+measure.qualifier:""));
+      if(measure.unitType==="bps")return esc(compactEconomicValue(measure.value)+" bps");
+      if(measure.unitType==="scaled")return esc(compactEconomicValue(measure.value,measure.scale)+(measure.currency?" "+measure.currency:"")+(measure.qualifier?" "+measure.qualifier:""));
+      return esc(measure.value.toLocaleString("en-US",{maximumFractionDigits:6}));
     }
-
 
     // One narrative Actual can contain several statistics. Keep it untouched in
     // the source record and use a compact calendar label plus a full modal view.
@@ -2058,10 +2089,10 @@
     }
 
     function actualClass(e){
-      // Direction is not automatically a favorable/unfavorable market outcome.
-      const a=numericValue(e.actual,e.unit);
-      const f=numericValue(e.forecast??e.te_forecast,e.unit);
+      const a=numericValue(e.actual,calendarDisplayUnit(e));
+      const f=numericValue(e.forecast??e.te_forecast,calendarDisplayUnit(e));
       if(a===null||f===null||a===f)return "";
+      // Direction only; no implication that above-forecast is good for markets.
       return a>f?"actual-up":"actual-down";
     }
 
@@ -2069,7 +2100,10 @@
     // live tbody on normal refresh. Retain existing history canvases, focused
     // controls, and unchanged cells. Only insert/remove/move genuine event rows.
     const calendarRowSnapshots=new WeakMap();
+    let lastCalendarTableMarkup=null;
     function reconcileCalendarRows(markup){
+      if(markup===lastCalendarTableMarkup && body.children.length)return false;
+      lastCalendarTableMarkup=markup;
       const staging=document.createElement("tbody");
       staging.innerHTML=markup;
       const desired=[...staging.children];
@@ -2131,6 +2165,7 @@
       document.getElementById("stat-next-name").textContent=next?next.event:"No upcoming event in view";
 
       if(!rows.length){
+        lastCalendarTableMarkup=null;
         body.innerHTML='<tr><td colspan="11" class="ec-empty">No events match your current settings and filters.</td></tr>';
         updateCountdown();
         return;
@@ -2221,12 +2256,10 @@
       lastSuccessfulLiveCheckAt=Date.now();
       liveConnectionFailed=false;
       setStatus("live","Live data");
-      const checked=new Date(lastSuccessfulLiveCheckAt).toLocaleTimeString();
-      // A successful poll confirms connectivity, NOT that official release data changed.
-      feedStatus.title=`Feed checked ${checked} (browser time). This does not certify the official release publication or update time.`;
-      feedStatus.setAttribute("aria-label",`Live data connection: feed checked ${checked}; release publication times are separate`);
-      const updated=document.getElementById("last-updated");
-      if(updated)updated.textContent=`Feed checked ${checked}`;
+      const checkedAt=new Date(lastSuccessfulLiveCheckAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+      feedStatus.title=`Feed successfully checked at ${checkedAt}. This is not the official economic release timestamp.`;
+      feedStatus.setAttribute("aria-label",`Calendar feed checked at ${checkedAt}; release timestamps are separate`);
+      document.getElementById("ec-feed-checked").textContent=`Feed checked ${checkedAt}`;
       if(livePulseTimer!==null)clearTimeout(livePulseTimer);
       feedStatus.classList.remove("ec-feed-pulse");
       clearRefreshRetry();
@@ -2239,6 +2272,7 @@
       setStatus("error","Live data");
       feedStatus.title=reason||"Calendar feed updates are unavailable.";
       feedStatus.setAttribute("aria-label","Live data: connection unavailable or updates stale");
+      document.getElementById("ec-feed-checked").textContent=lastSuccessfulLiveCheckAt?"Last check stale":"Feed not checked";
     }
     function verifyLiveFreshness(){
       if(navigator.onLine===false){
@@ -2264,27 +2298,9 @@
     }
 
 
-    // V3.0: never parse commentary as a release figure (e.g. "high rate 4%; bid-to-cover 2.7").
-    // Normalize K/M/B in numeric analytics, but leave original feed values untouched.
     function numericValue(v,unitHint=""){
-      if(v===null||v===undefined||String(v).trim()==="")return null;
-      const raw=String(v).trim().replace(/[−–]/g,"-");
-      const match=raw.match(/^([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(.*)$/);
-      if(!match)return null;
-      const n=Number(match[1].replace(/,/g,""));
-      if(!Number.isFinite(n))return null;
-      const suffix=match[2].trim().toLowerCase();
-      const hint=String(unitHint||"").trim().toLowerCase();
-      const token=suffix||hint;
-      if(!token)return n;
-      if(/^(?:%|%(?:\s*(?:y\/y|m\/m|q\/q|yoy|mom|qoq))?|percent(?:age)?(?:\s*(?:of\s+gdp|gdp|yoy|mom|qoq|y\/y|m\/m|q\/q))?|pct|bps?|basis\s+points?|index\s+points?|points?|jobs?(?:\/week)?|barrels?)$/i.test(token))return n;
-      const scale=token.match(/^(?:[a-z]{3}\s+)?(k|m|b|t|thousands?|millions?|billions?|trillions?)(?:\s+(?:units?(?:,?\s*annualised)?|jobs?|barrels?))?$/i);
-      if(scale){
-        const name=scale[1].toLowerCase();
-        const multiplier=name.startsWith("thou")?1e3:name.startsWith("tril")?1e12:({k:1e3,m:1e6,b:1e9,t:1e12}[name[0]]||1);
-        return n*multiplier;
-      }
-      return null;
+      const result=economicMeasurement(v,unitHint);
+      return result?result.value:null;
     }
 
     function historyKey(e){
@@ -2402,10 +2418,10 @@
         // Preserve weekly/daily observations: only collapse duplicate observation dates.
         const key=d.toISOString().slice(0,10);
         const completeness=[
-          numericValue(row?.actual),
-          numericValue(row?.forecast),
-          numericValue(row?.previous),
-          numericValue(row?.revised)
+          numericValue(row?.actual,row?.unit),
+          numericValue(row?.forecast,row?.unit),
+          numericValue(row?.previous,row?.unit),
+          numericValue(row?.revised,row?.unit)
         ].filter(v=>v!==null).length;
 
         const current={
@@ -2431,28 +2447,28 @@
 
     function usableHistoryMonths(history){
       return dedupeHistoryByMonth(history).filter(x=>
-        numericValue(x.actual)!==null ||
-        numericValue(x.previous)!==null ||
-        numericValue(x.forecast)!==null
+        numericValue(x.actual,x.unit)!==null ||
+        numericValue(x.previous,x.unit)!==null ||
+        numericValue(x.forecast,x.unit)!==null
       );
     }
 
     function historyValueForSeries(row,series){
       if(series==="history"){
-        const a=numericValue(row.actual);
+        const a=numericValue(row.actual,row.unit);
         if(a!==null) return {value:a,chosenSeries:"actual"};
 
-        const p=numericValue(row.previous);
+        const p=numericValue(row.previous,row.unit);
         if(p!==null) return {value:p,chosenSeries:"previous"};
 
-        const f=numericValue(row.forecast);
+        const f=numericValue(row.forecast,row.unit);
         if(f!==null) return {value:f,chosenSeries:"forecast"};
 
         return {value:null,chosenSeries:"history"};
       }
 
       return {
-        value:numericValue(row[series]),
+        value:numericValue(row[series],row.unit),
         chosenSeries:series
       };
     }
@@ -2586,7 +2602,7 @@
       ctx.stroke();
     }
     function drawSparkline(host,history){
-      const rows=dedupeHistoryByMonth(history).map(x=>numericValue(x.actual)).filter(v=>v!==null);
+      const rows=dedupeHistoryByMonth(history).map(x=>numericValue(x.actual,x.unit)).filter(v=>v!==null);
       if(rows.length<2){
         host.textContent="No history";
         return;
@@ -2712,9 +2728,10 @@
     }
 
     async function loadRelatedNews(e){
-      const host=document.getElementById("event-related-news");
-      const isCurrent=()=>activeModalEvent===e;
+      const generation=eventDetailSequence;
+      const isCurrent=()=>activeModalEvent===e&&eventDetailSequence===generation;
       if(!isCurrent())return;
+      const host=document.getElementById("event-related-news");
       host.innerHTML='<div class="ec-detail-loading">Loading related news…</div>';
 
       if(!window.psdSupabase?.functions?.invoke){
@@ -2847,10 +2864,10 @@
     }
 
 
-    function historicalForecastStats(history){
+    function historicalForecastStats(history,unitHint=""){
       const errors=dedupeHistoryByMonth(history).map(x=>{
-        const a=numericValue(x.actual,x.unit);
-        const f=numericValue(x.forecast,x.unit);
+        const a=numericValue(x.actual,x.unit||unitHint);
+        const f=numericValue(x.forecast,x.unit||unitHint);
         if(a===null||f===null) return null;
         return a-f;
       }).filter(v=>v!==null);
@@ -2864,25 +2881,25 @@
     }
 
     function currentSurpriseScore(e,history){
-      const a=numericValue(e.actual,e.unit);
-      const f=numericValue(e.forecast??e.te_forecast,e.unit);
+      const a=numericValue(e.actual,calendarDisplayUnit(e));
+      const f=numericValue(e.forecast??e.te_forecast,calendarDisplayUnit(e));
       if(a===null||f===null)return null;
-      const stats=historicalForecastStats(history);
+      const stats=historicalForecastStats(history,calendarDisplayUnit(e));
       const raw=a-f;
-      if(stats.sd>0&&stats.count>=3){
+      if(stats.sd>0 && stats.count>=3){
         return {value:raw/stats.sd,label:"σ",raw,method:"Historical forecast-error standard deviation"};
       }
-      // Percentage error is undefined against a zero forecast.
-      if(f===0)return {value:raw,label:" Δ",raw,method:"Absolute difference (percent change undefined when forecast is zero)"};
+      if(f===0)return {value:raw,label:"Δ",raw,method:"Absolute difference; percentage surprise is undefined when forecast is zero"};
       return {value:(raw/Math.abs(f))*100,label:"%",raw,method:"Percent difference vs forecast"};
     }
 
-    function forecastAccuracy(history){
+    function forecastAccuracy(history,unitHint=""){
       const pairs=dedupeHistoryByMonth(history).map(x=>{
-        const a=numericValue(x.actual,x.unit),f=numericValue(x.forecast,x.unit);
+        const a=numericValue(x.actual,x.unit||unitHint),f=numericValue(x.forecast,x.unit||unitHint);
         return a===null||f===null?null:{a,f};
       }).filter(Boolean);
       if(!pairs.length) return null;
+      // MAPE is undefined when Actual equals zero. Exclude those observations.
       const usable=pairs.filter(x=>Math.abs(x.a)>1e-9);
       if(!usable.length)return null;
       const ape=usable.map(x=>Math.abs(x.a-x.f)/Math.abs(x.a));
@@ -2906,8 +2923,8 @@
         };
       }).filter(Boolean);
 
-      const currentOriginal=numericValue(e.previous,e.unit);
-      const currentRevised=numericValue(e.revised,e.unit);
+      const currentOriginal=numericValue(e.previous,calendarDisplayUnit(e));
+      const currentRevised=numericValue(e.revised,calendarDisplayUnit(e));
       const current=(currentOriginal!==null&&currentRevised!==null&&currentOriginal!==currentRevised)
         ? {original:currentOriginal,revised:currentRevised,rawOriginal:e.previous,rawRevised:e.revised,delta:currentRevised-currentOriginal}
         : null;
@@ -2926,11 +2943,11 @@
       const impactPts=impact==="high"?45:impact==="medium"?30:15;
       const surprise=currentSurpriseScore(e,history);
       let surprisePts=0;
-      if(surprise){
+      if(surprise&&surprise.label!=="Δ"){
         const mag=Math.abs(surprise.label==="σ"?surprise.value:surprise.value/25);
         surprisePts=Math.min(25,mag*10);
       }
-      const acc=forecastAccuracy(history);
+      const acc=forecastAccuracy(history,calendarDisplayUnit(e));
       const reliabilityPts=acc?Math.min(15,(acc.count/8)*15):0;
       const breadthPts=Math.min(15,relevantAssets(e).length*3);
       return Math.round(Math.min(100,impactPts+surprisePts+reliabilityPts+breadthPts));
@@ -2938,7 +2955,7 @@
 
     function updateEventAnalytics(e,history){
       const surprise=currentSurpriseScore(e,history);
-      const acc=forecastAccuracy(history);
+      const acc=forecastAccuracy(history,calendarDisplayUnit(e));
       const revision=revisionAnalytics(e,history);
       const intel=intelligenceScore(e,history);
 
@@ -2967,13 +2984,11 @@
       if(revision.current){
         const delta=revision.current.delta;
         revEl.textContent=`${formatValue(revision.current.rawOriginal,e.unit)} → ${formatValue(revision.current.rawRevised,e.unit)}`;
-        const scale=numericValue(1,e.unit)||1;
-        revNote.textContent=`Current prior reading revised ${delta>0?"+":""}${(delta/scale).toFixed(3)}${e.unit==="%"?" pp":e.unit?" "+e.unit:""}`;
+        revNote.textContent=`Current prior reading revised ${delta>0?"+":""}${(delta/(economicMeasurement(1,calendarDisplayUnit(e))?.scale||1)).toFixed(3)}${e.unit==="%"?" pp":e.unit?" "+e.unit:""}`;
       }else if(revision.latest){
         const delta=revision.latest.delta;
         revEl.textContent=`${revision.count} revision${revision.count===1?"":"s"}`;
-        const scale=numericValue(1,e.unit)||1;
-        revNote.textContent=`Latest: ${formatValue(revision.latest.rawOriginal,e.unit)} → ${formatValue(revision.latest.rawRevised,e.unit)} (${delta>0?"+":""}${(delta/scale).toFixed(3)}${e.unit==="%"?" pp":e.unit?" "+e.unit:""})`;
+        revNote.textContent=`Latest: ${formatValue(revision.latest.rawOriginal,e.unit)} → ${formatValue(revision.latest.rawRevised,e.unit)} (${delta>0?"+":""}${(delta/(economicMeasurement(1,calendarDisplayUnit(e))?.scale||1)).toFixed(3)}${e.unit==="%"?" pp":e.unit?" "+e.unit:""})`;
       }else if(revision.totalMonths){
         revEl.textContent="No revisions";
         revNote.textContent=`No changed prior readings found across ${revision.totalMonths} historical release${revision.totalMonths===1?"":"s"}`;
@@ -2997,14 +3012,15 @@
       return `${v>0?"+":""}${v.toFixed(2)}%`;
     }
 
-    let activeReactionController=null;
+    let activeReactionRequest=null;
     async function loadMarketReaction(e){
-      const host=document.getElementById("event-market-reaction");
-      const isCurrent=()=>activeModalEvent===e;
+      const generation=eventDetailSequence;
+      const isCurrent=()=>activeModalEvent===e&&eventDetailSequence===generation;
       if(!isCurrent())return;
-      if(activeReactionController)activeReactionController.abort();
+      if(activeReactionRequest)activeReactionRequest.abort();
       const controller=new AbortController();
-      activeReactionController=controller;
+      activeReactionRequest=controller;
+      const host=document.getElementById("event-market-reaction");
       const d=parseProviderDate(e.date);
       if(!d){host.textContent="Market reaction is unavailable for this event.";return;}
       const assets=relevantAssets(e).slice(0,5);
@@ -3047,7 +3063,7 @@
         console.warn("Market reaction load failed",err);
         host.textContent="Market reaction is temporarily unavailable.";
       }finally{
-        if(activeReactionController===controller)activeReactionController=null;
+        if(activeReactionRequest===controller)activeReactionRequest=null;
       }
     }
 
@@ -3085,9 +3101,9 @@
         <div class="ec-kpi"><span>Impact</span><strong>${esc(impactFromImportance(e.importance))}</strong></div>`;
 
       const classification=classifyEvent(e);
-      const surpriseActual=numericValue(e.actual,e.unit);
-      const surpriseForecast=numericValue(e.forecast??e.te_forecast,e.unit);
-      const previousNumeric=numericValue(e.previous,e.unit);
+      const surpriseActual=numericValue(e.actual,calendarDisplayUnit(e));
+      const surpriseForecast=numericValue(e.forecast??e.te_forecast,calendarDisplayUnit(e));
+      const previousNumeric=numericValue(e.previous,calendarDisplayUnit(e));
       let surpriseText=pendingOfficialProductivityIndex(e)
         ?"Exact Q2 productivity index not yet published. ONS flash-estimate percentages measure something different; check the November 17, 2026 official productivity release."
         :narrativeActualDetails(e)?"Report published; individual figures are shown above.":"Actual has not been released yet.";
@@ -3095,7 +3111,7 @@
         const diff=surpriseActual-surpriseForecast;
         surpriseText=diff===0
           ? "Actual matched the forecast."
-          : `Actual was ${Math.abs(diff/(numericValue(1,e.unit)||1)).toLocaleString()} ${esc(e.unit||"")} ${diff>0?"above":"below"} forecast.`;
+          : `Actual was ${Math.abs(diff/(economicMeasurement(1,calendarDisplayUnit(e))?.scale||1)).toLocaleString()} ${esc(calendarDisplayUnit(e))} ${diff>0?"above":"below"} forecast.`;
       }
       let trendText="";
       if(surpriseActual!==null && previousNumeric!==null){
@@ -3122,8 +3138,12 @@
         `;
     }
 
+    let eventDetailSequence=0;
     async function openEventModal(e){
+      eventDetailSequence++;
+      if(activeReactionRequest){activeReactionRequest.abort();activeReactionRequest=null;}
       activeModalEvent=e;
+      const modalSequence=eventDetailSequence;
       activeChartSeries="history";
 
       const backdrop=document.getElementById("event-modal-backdrop");
@@ -3155,7 +3175,7 @@
 
       // Load history and news independently so one failure never empties the popup.
       fetchEventHistory(e).then(hist=>{
-        if(activeModalEvent!==e) return;
+        if(activeModalEvent!==e||eventDetailSequence!==modalSequence)return;
         activeChartSeries="history";
         document.querySelectorAll(".ec-chart-toggle").forEach(b=>
           b.classList.toggle("active",b.dataset.chartSeries==="history")
@@ -3180,7 +3200,7 @@
         }
       }).catch(err=>{
         console.warn("History load failed",err);
-        if(activeModalEvent===e){
+        if(activeModalEvent===e&&eventDetailSequence===modalSequence){
           note.textContent="Historical releases are temporarily unavailable.";
         }
       });
@@ -3188,14 +3208,15 @@
       loadMarketReaction(e);
       loadRelatedNews(e).catch(err=>{
         console.warn("Related news load failed",err);
-        if(activeModalEvent===e){
+        if(activeModalEvent===e&&eventDetailSequence===modalSequence){
           newsHost.innerHTML='<div class="ec-detail-loading">No related news available right now.</div>';
         }
       });
     }
 
     function closeEventModal(){
-      if(activeReactionController){activeReactionController.abort();activeReactionController=null;}
+      eventDetailSequence++;
+      if(activeReactionRequest){activeReactionRequest.abort();activeReactionRequest=null;}
       document.getElementById("event-modal-backdrop").classList.remove("open");
       document.getElementById("event-modal-backdrop").setAttribute("aria-hidden","true");
       document.body.style.overflow="";
@@ -3210,17 +3231,17 @@
       });
     }
 
-    // Cached date keys are reused by the range filter, day headers, and countdown.
-    const calendarDayKeys=new Map();
+    // Cached timezone-day membership is shared by filtering, headings and CSV.
+    const calendarTimezoneDayKeys=new Map();
     function dateKeyInTimezone(dateObj,tz){
       const key=tz+"|"+dateObj.getTime();
-      if(calendarDayKeys.has(key))return calendarDayKeys.get(key);
+      if(calendarTimezoneDayKeys.has(key))return calendarTimezoneDayKeys.get(key);
       const parts=calendarDateFormatter("date",tz).formatToParts(dateObj);
       const get=t=>parts.find(p=>p.type===t)?.value||"";
-      const value=`${get("year")}-${get("month")}-${get("day")}`;
-      if(calendarDayKeys.size>=4096)calendarDayKeys.clear();
-      calendarDayKeys.set(key,value);
-      return value;
+      const day=`${get("year")}-${get("month")}-${get("day")}`;
+      if(calendarTimezoneDayKeys.size>=4096)calendarTimezoneDayKeys.clear();
+      calendarTimezoneDayKeys.set(key,day);
+      return day;
     }
     function filterEventsToDateRange(events,range){
       return (events||[]).filter(e=>{
@@ -3387,7 +3408,6 @@
             allEvents=filterEventsToDateRange(cached.data.events,r);
             ensureEventUIKeys();
             lastFetchAt=new Date(cached.saved_at||Date.now());
-            feedStatus.title=`Showing saved calendar data from ${lastFetchAt.toLocaleString()}; checking the feed for newer information. This is not an official release timestamp.`;
             render();
             showedCached=true;
             cachedAgeMs=Number(cached.age_ms||0);
@@ -3403,7 +3423,6 @@
               allEvents=filterEventsToDateRange(weekData.events,r);
               ensureEventUIKeys();
               lastFetchAt=memory?.fetchedAt || new Date(local?.saved_at||Date.now());
-              feedStatus.title=`Showing saved calendar data from ${new Date(lastFetchAt).toLocaleString()}; checking the live feed. This is not an official release timestamp.`;
               render();
               showedCached=true;
               cachedAgeMs=memory?.fetchedAt
@@ -3448,7 +3467,8 @@
         if(healthyFeed)confirmLiveRefresh();
         else reportLiveConnectionFailure("Calendar feed did not return a ready data mode.");
         document.getElementById("provider-name").textContent=data.source||"FinanceCalendar";
-        // The feed-status tooltip reports this live check; do not mislabel it as a release update.
+        const updated=document.getElementById("last-updated");
+        if(updated) updated.textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
         if(data.provider_error){
           console.warn("Calendar provider note:",data.provider_error);
@@ -3471,6 +3491,7 @@
         setStatus("error","Feed unavailable");
         warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
         warning.classList.add("show");
+        lastCalendarTableMarkup=null;
         body.innerHTML=`<tr><td colspan="11" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
         document.getElementById("stat-events").textContent="—";
         document.getElementById("stat-high").textContent="—";
