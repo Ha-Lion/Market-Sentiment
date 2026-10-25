@@ -511,6 +511,34 @@
       }
     }
 
+
+    /* NEWS SEARCH WEB v1.0.2 — denser result cards without truncating content. */
+    .headline-card{min-height:218px;padding:12px 14px;border-radius:15px;}
+    .headline-source-row{gap:8px;margin-bottom:7px;}
+    .headline-source-avatar{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;border-radius:7px;background:#fff;border:1px solid rgba(130,160,185,.35);overflow:hidden;}
+    .headline-source-icon{position:relative;z-index:2;width:25px;height:25px;border-radius:5px;object-fit:contain;}
+    .headline-source-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#173754;font-size:14px;font-weight:800;}
+    .headline-source-name{font-size:12px;}
+    .headline-body{gap:6px;min-height:0;}
+    .headline-top{gap:5px;font-size:11px;}
+    .tag,.impact-tag,.tech-tag{font-size:11px;padding:3px 7px;}
+    .headline-title{font-size:16px;line-height:1.28;margin-top:0;}
+    .headline-meta{font-size:11px;line-height:1.35;overflow-wrap:anywhere;}
+    .headline-open{font-size:12px;}
+    .headline-list{gap:10px;}
+
+    /* Back to top: larger, easy to locate, with subdued pulsing animation. */
+    .page-up{width:62px;height:62px;right:23px;bottom:20px;font-size:30px;font-weight:800;
+      border:2px solid #d29a20;box-shadow:0 0 0 0 rgba(210,153,34,.5),0 5px 18px rgba(0,0,0,.18);}
+    .page-up.show{animation:newsPageUpPulse 2s ease-in-out infinite;}
+    .page-up:hover,.page-up:focus-visible{animation:none;transform:translateY(-4px) scale(1.05);}
+    @keyframes newsPageUpPulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(210,153,34,.50),0 5px 18px rgba(0,0,0,.18);}
+      60%{box-shadow:0 0 0 12px rgba(210,153,34,0),0 7px 24px rgba(210,153,34,.30);}
+    }
+    @media(prefers-reduced-motion:reduce){.page-up.show{animation:none;}}
+    @media(max-width:760px){.page-up{width:54px;height:54px;right:14px;bottom:15px;font-size:26px;}}
+
     /* NEWS PAGE MOBILE FIX V1 */
     @media(max-width:768px){
       #psdPdfWidget,
@@ -531,7 +559,7 @@
       <div class="news-search-head">
         <h1>News & Articles</h1>
         <div class="news-search-meta">
-          <p><span data-glossary="news-summary">Search the canonical News & Articles archive</span> by keyword, market, instrument, and source. Matches are ranked by search relevance and date.</p>
+          <p><span data-glossary="news-summary">Search the canonical News & Articles archive</span> by keyword, market, instrument, and source. Results display newest first among loaded matches; additional archive results load on demand.</p>
           <div class="count-note" id="resultsCount">Loading published articles...</div>
           <div class="news-search-status" id="newsSearchStatus" role="status" aria-live="polite"></div>
         </div>
@@ -601,7 +629,7 @@
     </footer>
   </main>
 
-  <button class="page-up" id="pageUpBtn" type="button" aria-label="Go back to top">↑</button>
+  <button class="page-up" id="pageUpBtn" type="button" aria-label="Go back to top" title="Back to top">↑</button>
 
   <script src="sentiment-core.js?v=5"></script>
   <script src="data-access-v2.js"></script>
@@ -619,7 +647,7 @@
     let currentOffset = 0;
     let currentTotal = 0;
     const PAGE_SIZE = 100;
-    // PSD NEWS SEARCH WEB v1.0.1: site-only coordination; backend contracts unchanged.
+    // PSD NEWS SEARCH WEB v1.0.2: website-only improvements; backend contracts unchanged.
     let searchGeneration = 0;
     let pendingSearch = null;
     let activeSearchController = null;
@@ -668,9 +696,31 @@
       }catch(_error){ return ""; }
     }
 
-    function faviconForURL(url){
-      const domain = domainFromURL(url || "");
+    // Approved publisher domains from the website's own source_profiles.json.
+    // Important: most indexed article URLs are Google News redirects; their favicons
+    // are Google's G, not the original publisher's logo.
+    const SOURCE_DOMAINS = {"24/7 wall st.":"247wallst.com","ap business":"apnews.com","bank of canada market notices":"bankofcanada.ca","bank of canada news":"bankofcanada.ca","bank of england monetary policy":"bankofengland.co.uk","bank of england news":"bankofengland.co.uk","bank of japan news":"boj.or.jp","banque de france press releases":"banque-france.fr","barron's":"barrons.com","bea news":"bea.gov","benzinga markets":"benzinga.com","bis management speeches":"bis.org","bis press releases":"bis.org","bitget":"bitget.com","bloomberg markets":"bloomberg.com","bls news":"bls.gov","bundesbank press releases":"bundesbank.de","cftc press releases":"cftc.gov","cnbc europe markets":"cnbc.com","cnbc markets":"cnbc.com","coindesk":"coindesk.com","cointelegraph":"cointelegraph.com","crux investor":"cruxinvestor.com","cryptoslate":"cryptoslate.com","dailyfx":"dailyfx.com","decrypt":"decrypt.co","deutsche boerse press releases":"deutsche-boerse.com","donald j. trump truth social":"truthsocial.com","ecb all news and publications":"ecb.europa.eu","ecb monetary policy decisions":"ecb.europa.eu","ecb statistical calendar":"ecb.europa.eu","eia today in energy":"eia.gov","etf.com":"etf.com","euronews business":"euronews.com","euronext company news":"live.euronext.com","euronext press releases":"euronext.com","european commission economy news":"economy-finance.ec.europa.eu","eurostat news":"ec.europa.eu","federal reserve news":"federalreserve.gov","financial times markets":"ft.com","forex.com":"forex.com","forexlive":"forexlive.com","fox business markets":"foxbusiness.com","fxempire":"fxempire.com","fxstreet":"fxstreet.com","gold eagle":"gold-eagle.com","goodreturns":"goodreturns.in","imf news":"imf.org","investing.com":"investing.com","investor's business daily":"investors.com","japan mof international policy":"mof.go.jp","japan mof jgb news":"mof.go.jp","kitco news":"kitco.com","marketwatch":"marketwatch.com","mining.com":"mining.com","morningstar markets":"morningstar.com","nasdaq news":"nasdaq.com","new york fed news":"newyorkfed.org","nikkei asia business":"asia.nikkei.com","oecd economy":"oecd.org","oilprice":"oilprice.com","reserve bank of australia media releases":"rba.gov.au","reuters europe":"reuters.com","reuters markets":"reuters.com","sec press releases":"sec.gov","seeking alpha market news":"seekingalpha.com","snb monetary policy":"snb.ch","snb press releases":"snb.ch","south china morning post business":"scmp.com","statistics canada daily":"www150.statcan.gc.ca","the block":"theblock.co","the economic times":"economictimes.indiatimes.com","the wall street journal markets":"wsj.com","thestreet":"thestreet.com","trading economics news":"tradingeconomics.com","u.s. census economic indicators":"census.gov","u.s. treasury":"home.treasury.gov","world bank news":"worldbank.org","world gold council goldhub":"gold.org","yahoo finance":"finance.yahoo.com","zacks":"zacks.com"};
+
+    function publisherDomain(sourceName, articleURL = ""){
+      const key = String(sourceName || "").trim().toLowerCase();
+      if(SOURCE_DOMAINS[key]) return SOURCE_DOMAINS[key];
+      const sourceHomepage = safeExternalURL(sourceURL(sourceName));
+      const homepageDomain = domainFromURL(sourceHomepage);
+      if(homepageDomain) return homepageDomain;
+      const articleDomain = domainFromURL(safeExternalURL(articleURL));
+      // Never mistake an aggregator/redirect icon for a publisher logo.
+      if(!articleDomain || /(^|\.)(google\.com|google\.co\.[a-z]+|news\.google\.com|feedly\.com|bing\.com|t\.co)$/i.test(articleDomain)) return "";
+      return articleDomain;
+    }
+
+    function sourceIconURL(sourceName, articleURL = ""){
+      const domain = publisherDomain(sourceName, articleURL);
       return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64` : "";
+    }
+
+    function sourceFallback(name){
+      const first = String(name || "N").trim().charAt(0).toUpperCase();
+      return first || "N";
     }
 
     function sourceURL(sourceName){
@@ -828,7 +878,7 @@
       const showing = allArticles.length;
       if(currentResultIsFiltered){
         document.getElementById("resultsCount").textContent =
-          `News & Articles matched: ${currentTotal.toLocaleString()}. Showing ${showing.toLocaleString()}. ` +
+          `News & Articles matched: ${currentTotal.toLocaleString()}. Showing ${showing.toLocaleString()} newest-first among loaded matches. ` +
           `Full News & Articles Archive: ${archiveCount}. Screened Headlines (Last 48 Hours): ${relevantCount.toLocaleString()}.`;
       }else{
         document.getElementById("resultsCount").textContent =
@@ -856,27 +906,64 @@
         const sample = sources.get(name);
         const sourceHomepage = safeExternalURL(sourceURL(name));
         const url = sourceHomepage || safeExternalURL(sample?.url);
-        const icon = faviconForURL(url);
+        const icon = sourceIconURL(name, url);
         const label = sourceHomepage ? `Visit ${name}` : `Sample article from ${name}`;
         return url ? `<a class="source-summary-link" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" title="${escapeHTML(label)}">
-          ${icon ? `<img src="${icon}" alt="${escapeHTML(name)} logo" loading="lazy">` : ""}
+          ${icon ? `<img src="${escapeHTML(icon)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}
           <span>${escapeHTML(name)}</span>
         </a>` : `<span class="source-summary-link">${escapeHTML(name)}</span>`;
       }).join("");
+    }
+
+    function articleTimestamp(item){
+      const published = item?.published_at;
+      if(published){
+        const ms = Date.parse(published);
+        if(Number.isFinite(ms)) return ms;
+      }
+      const eventDate = item?.event_date;
+      if(eventDate){
+        const ms = Date.parse(`${String(eventDate).slice(0,10)}T00:00:00Z`);
+        if(Number.isFinite(ms)) return ms;
+      }
+      return -Infinity;
+    }
+
+    function sortArticlesNewestFirst(){
+      // Stable tie-breaking gives deterministic visual ordering after pagination.
+      allArticles.sort((a,b) => articleTimestamp(b)-articleTimestamp(a) ||
+        String(b?.id ?? "").localeCompare(String(a?.id ?? ""),undefined,{numeric:true}));
+    }
+
+    function syncVisibleCardOrder(){
+      const list=document.getElementById("headlineList");
+      const cards=Array.from(list.querySelectorAll?.(".headline-card") || []);
+      if(cards.length !== allArticles.length) return;
+      const byId=new Map(cards.map(card => [card.dataset.articleId,card]));
+      const ordered=allArticles.map(item => byId.get(String(item.id)));
+      if(ordered.some(card => !card)) return;
+      if(ordered.every((card,index) => cards[index] === card)) return;
+      // Move nodes in-place. This preserves loaded images and existing cards.
+      const fragment=document.createDocumentFragment();
+      ordered.forEach(card => fragment.appendChild(card));
+      list.appendChild(fragment);
     }
 
     function articleCardsMarkup(items){
       return items.map(item => {
         const name = canonicalSource(item);
         const url = safeExternalURL(item?.url);
-        const icon = faviconForURL(url);
+        const icon = sourceIconURL(name, url);
         const techLabel = headlineTech(item);
         const tag = url ? "a" : "div";
         const attrs = url ? ` href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer"` : "";
         return `
-          <${tag} class="headline-card"${attrs}>
+          <${tag} class="headline-card" data-article-id="${escapeHTML(item.id)}"${attrs}>
             <div class="headline-source-row">
-              ${icon ? `<img class="headline-source-icon" src="${escapeHTML(icon)}" alt="${escapeHTML(name)} logo" loading="lazy" onerror="this.style.visibility='hidden'">` : ""}
+              <span class="headline-source-avatar" aria-hidden="true">
+                ${icon ? `<img class="headline-source-icon" src="${escapeHTML(icon)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">` : ""}
+                <span class="headline-source-fallback">${escapeHTML(sourceFallback(name))}</span>
+              </span>
               <div class="headline-source-name">${escapeHTML(name)}</div>
             </div>
             <div class="headline-body">
@@ -1011,6 +1098,7 @@
 
         if(reset){
           allArticles = rows;
+          sortArticlesNewestFirst();
           currentOffset = rows.length;
           currentTotal = Math.max(total, rows.length);
           currentResultFilterKey = key;
@@ -1030,8 +1118,10 @@
             return true;
           });
           allArticles.push(...appended);
+          sortArticlesNewestFirst();
           moreRowsAvailable = rows.length === PAGE_SIZE && !hasServerTotal;
           renderArticles(appended);
+          syncVisibleCardOrder();
         }
         statusMessage("");
       }catch(error){
@@ -1087,6 +1177,7 @@
         const cachedArchiveMetadata = restoreArchiveMetadataFromCache();
         if(initialGeneration === searchGeneration){
           allArticles = rows;
+          sortArticlesNewestFirst();
           currentOffset = rows.length;
           currentTotal = Number(archiveMeta?.total_news_articles) || initialTotal || rows.length;
           currentResultFilterKey = DEFAULT_FILTERS_KEY;
