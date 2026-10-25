@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V3.3.1 | rebuilt from approved V2.9 base | website-only optimization and readable values -->
+<!-- Economic Calendar V3.3.2 | rebuilt from approved V2.9 base | website-only optimization and readable values -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1309,8 +1309,8 @@
       const country=displayCountry(e).name||"the reporting economy";
       const providerCategory=e.category ? String(e.category).replace(/[_-]+/g," ") : classification;
       return {
-        title:e.event||e.category||"Economic event",
-        text:`${e.event||"This release"} is a ${providerCategory} indicator for ${country}. It is classified here as ${classification}. Compare Actual with Forecast and Previous values to see whether the release surprised expectations and whether the underlying trend is strengthening or weakening.`
+        title:calendarEventDisplayName(e),
+        text:`${calendarEventDisplayName(e)} is a ${providerCategory} indicator for ${country}. It is classified here as ${classification}. Compare Actual with Forecast and Previous values to see whether the release surprised expectations and whether the underlying trend is strengthening or weakening.`
       };
     }
 
@@ -2027,6 +2027,43 @@
       ].filter(Boolean);
       return flags.length===1?flags[0]:"";
     }
+    // V3.3.2 presentation-only: measurement periods belong in EVENT NAMES,
+    // never next to individual values. Do not alter feed fields or stable IDs.
+    function calendarEventPeriod(e){
+      const name=String(e?.event||e?.category||"");
+      const named=economicPeriod(name);
+      if(named)return named;
+      const candidates=[e?.unit,e?.measurement_period,e?.change_period,
+        e?.release_period,e?.frequency];
+      // Some legitimate provider unit phrases say "percentage change from
+      // previous month" rather than the abbreviation MoM.
+      const unitDefinition=economicMeasurement("1",e?.unit||"");
+      if(["YoY","MoM","QoQ"].includes(unitDefinition?.qualifier))candidates.push(unitDefinition.qualifier);
+      // An explicit period attached to a single numeric reading is also usable.
+      // Never infer a period from an unstructured multi-statistic bulletin.
+      for(const v of [e?.actual,e?.forecast,e?.te_forecast,e?.previous,e?.revised]){
+        if(economicMeasurement(v,e?.unit||"")!==null)candidates.push(v);
+      }
+      const unique=[...new Set(candidates.map(economicPeriod).filter(Boolean))];
+      return unique.length===1?unique[0]:"";
+    }
+    function calendarEventDisplayName(e){
+      const raw=String(e?.event||e?.category||"Economic Event").trim()||"Economic Event";
+      // Canonical spelling while respecting periods already in the name.
+      const name=raw
+        .replace(/\by\s*\/\s*y\b|\byear[ -](?:on|over)[ -]year\b|\byoy\b/gi,"YoY")
+        .replace(/\bm\s*\/\s*m\b|\bmonth[ -](?:on|over)[ -]month\b|\bmom\b/gi,"MoM")
+        .replace(/\bq\s*\/\s*q\b|\bquarter[ -](?:on|over)[ -]quarter\b|\bqoq\b/gi,"QoQ");
+      if(economicPeriod(name))return name;
+      const period=calendarEventPeriod(e);
+      return period?`${name} (${period})`:name;
+    }
+    function unitWithoutPeriod(unit){
+      // For otherwise-unrecognized provider unit strings and analytics notes.
+      return String(unit??"")
+        .replace(/\(?\s*(?:\byoy\b|\bmom\b|\bqoq\b|\by\s*\/\s*y\b|\bm\s*\/\s*m\b|\bq\s*\/\s*q\b|\byear[ -](?:on|over)[ -]year\b|\bmonth[ -](?:on|over)[ -]month\b|\bquarter[ -](?:on|over)[ -]quarter\b)\s*\)?/gi," ")
+        .replace(/\s+/g," ").trim();
+    }
     function calendarDisplayUnit(e){
       const existing=String(e?.unit??"").trim();
       if(existing){
@@ -2105,21 +2142,11 @@
       const marker=scale===1e12?"T":scale===1e9?"B":scale===1e6?"M":scale===1e3?"K":"";
       return numericDisplay3(number/scale)+marker;
     }
-    function resolvedEconomicPeriod(measure,unit,event,raw){
-      if(measure.unitType!=="percent")return "";
-      if(measure.qualifier)return measure.qualifier; // Published value takes precedence.
-      const declared=economicPeriod(unit);
-      if(declared)return declared;
-      const explicitMeta=[event?.measurement_period,event?.change_period,event?.release_period,event?.frequency]
-        .map(economicPeriod).filter(Boolean);
-      if(new Set(explicitMeta).size===1 && explicitMeta.length)return explicitMeta[0];
-      if(explicitMeta.length>1)return "";
-      return economicPeriod(event?.event||""); // ONLY when the event explicitly says YoY/MoM/QoQ.
-    }
     function formatEconomicMeasurement(measure,unit="",event=null,raw=""){
       if(measure.unitType==="percent"){
-        const period=resolvedEconomicPeriod(measure,unit,event,raw);
-        return numericDisplay3(measure.value)+"%"+(period?" "+period:"");
+        // YoY/MoM/QoQ are shown ONLY in calendarEventDisplayName().
+        // GDP is a unit qualifier (% of GDP), not a frequency; preserve it.
+        return numericDisplay3(measure.value)+"%"+(measure.qualifier==="GDP"?" GDP":"");
       }
       if(measure.unitType==="bps")return numericDisplay3(measure.value)+" bps";
       if(measure.unitType==="pp")return numericDisplay3(measure.value)+" pp";
@@ -2140,7 +2167,7 @@
       const numericOnly=raw.replace(/[−–]/g,"-").match(/^([+-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+))$/);
       if(numericOnly){
         const n=Number(numericOnly[1].replace(/,/g,""));
-        if(Number.isFinite(n))return esc(compactEconomicValue(n)+(unit?" "+unit:""));
+        if(Number.isFinite(n))return esc(compactEconomicValue(n)+(unitWithoutPeriod(unit)?" "+unitWithoutPeriod(unit):""));
       }
       return esc(raw); // Multi-statistic releases are intentionally preserved.
     }
@@ -2154,7 +2181,7 @@
       const numericOnly=original.replace(/[−–]/g,"-").match(/^([+-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+))$/);
       if(numericOnly){
         const n=Number(numericOnly[1].replace(/,/g,""));
-        if(Number.isFinite(n))return compactEconomicValue(n)+(unit?" "+unit:"");
+        if(Number.isFinite(n))return compactEconomicValue(n)+(unitWithoutPeriod(unit)?" "+unitWithoutPeriod(unit):"");
       }
       return original;
     }
@@ -2270,7 +2297,7 @@
       document.getElementById("stat-events").textContent=rows.length;
       document.getElementById("stat-high").textContent=rows.filter(e=>impactFromImportance(e.importance)==="high").length;
       document.getElementById("stat-next").textContent=next?timeText(parseProviderDate(next.date)):"—";
-      document.getElementById("stat-next-name").textContent=next?next.event:"No upcoming event in view";
+      document.getElementById("stat-next-name").textContent=next?calendarEventDisplayName(next):"No upcoming event in view";
 
       if(!rows.length){
         lastCalendarTableMarkup=null;
@@ -2296,7 +2323,7 @@
             <td><span class="ec-country" title="${esc(c.name)}">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"—")}</strong></span></td>
             <td><span class="impact ${impact}">${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
-              <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(e.event||e.category||"Economic event")}</button>
+              <button class="ec-event-link" type="button" data-open-event="${esc(eventUIKey(e))}">${esc(calendarEventDisplayName(e))}</button>
               <button class="psd-glossary-info" type="button" aria-label="Explain this economic event" aria-expanded="false" data-economic-glossary="${esc(eventUIKey(e))}">i</button>
               <small>${esc(classifyEvent(e))}</small>
             </td>
@@ -3242,9 +3269,12 @@
         :narrativeActualDetails(e)?"Report published; individual figures are shown above.":"Actual has not been released yet.";
       if(surpriseActual!==null && surpriseForecast!==null){
         const diff=surpriseActual-surpriseForecast;
+        const observation=economicMeasurement(e.actual,calendarDisplayUnit(e))||economicMeasurement(e.forecast??e.te_forecast,calendarDisplayUnit(e));
+        const isPercent=observation?.unitType==="percent";
+        const unitLabel=isPercent?"pp":unitWithoutPeriod(calendarDisplayUnit(e));
         surpriseText=diff===0
           ? "Actual matched the forecast."
-          : `Actual was ${numericDisplay3(Math.abs(diff/(economicMeasurement(1,calendarDisplayUnit(e))?.scale||1)))} ${esc(calendarDisplayUnit(e))} ${diff>0?"above":"below"} forecast.`;
+          : `Actual was ${numericDisplay3(Math.abs(diff/(economicMeasurement(1,calendarDisplayUnit(e))?.scale||1)))}${unitLabel?" "+esc(unitLabel):""} ${diff>0?"above":"below"} forecast.`;
       }
       let trendText="";
       if(surpriseActual!==null && previousNumeric!==null){
@@ -3288,7 +3318,7 @@
         fillModalBase(e);
       }catch(err){
         console.error("Event detail render failed",err);
-        document.getElementById("event-modal-title").textContent=e.event||"Economic Event";
+        document.getElementById("event-modal-title").textContent=calendarEventDisplayName(e);
         document.getElementById("event-modal-sub").textContent=e.country||"";
         document.getElementById("event-modal-definition").textContent=
           "Event details are available from the calendar row. Additional detail is loading.";
@@ -4331,7 +4361,7 @@
         `DTSTAMP:${stamp(new Date())}`,
         `DTSTART:${stamp(start)}`,
         `DTEND:${stamp(end)}`,
-        `SUMMARY:${String(e.event||"Economic Event").replace(/[,\n;]/g," ")}`,
+        `SUMMARY:${calendarEventDisplayName(e).replace(/[,\n;]/g," ")}`,
         `DESCRIPTION:${String(e.country||"")} economic event. Forecast: ${formattedEconomicExportValue(e.forecast??e.te_forecast,e)}. Previous: ${formattedEconomicExportValue(e.previous,e)}.`,
         "END:VEVENT","END:VCALENDAR"
       ].join("\r\n");
@@ -4409,7 +4439,7 @@
       const pop=document.getElementById("ec-cancel-pop");
       const label=channel==="email"?"email alert":channel==="sms"?"text alert":"desktop notification";
       document.getElementById("ec-cancel-title").textContent="Cancel alert?";
-      document.getElementById("ec-cancel-text").textContent=`Do you want to cancel this ${label} for ${e.event||"this event"}?`;
+      document.getElementById("ec-cancel-text").textContent=`Do you want to cancel this ${label} for ${calendarEventDisplayName(e)}?`;
       const r=btn.getBoundingClientRect();
       pop.hidden=false;
       const w=pop.offsetWidth,h=pop.offsetHeight;
@@ -4475,7 +4505,7 @@
 
       try{
         new Notification("Economic Calendar reminder enabled",{
-          body:`${e.event||"Economic event"} · ${timeText(parseProviderDate(e.date))}`,
+          body:`${calendarEventDisplayName(e)} · ${timeText(parseProviderDate(e.date))}`,
           icon:"logo.png",
           tag:`economic-calendar-${e.id||e.event}`
         });
@@ -4586,7 +4616,7 @@
           d?d.toISOString():"",
           c.code==="AU" ? "AU" : c.name,
           impactFromImportance(e.importance),
-          e.event||e.category||"",
+          calendarEventDisplayName(e),
           "", // 12M History is a visual chart; no scalar value to export
           csvValue(previousReleaseDisplay(e)),
           csvValue(formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e),e)),
@@ -4612,7 +4642,7 @@
           `DTSTAMP:${stamp(new Date())}`,
           `DTSTART:${stamp(d)}`,
           `DTEND:${stamp(end)}`,
-          `SUMMARY:${(e.event||"Economic Event").replace(/[\n,;]/g," ")}`,
+          `SUMMARY:${calendarEventDisplayName(e).replace(/[\n,;]/g," ")}`,
           `DESCRIPTION:${c.name} | Actual: ${formattedEconomicExportValue(e.actual,e)} | Forecast: ${formattedEconomicExportValue(e.forecast??e.te_forecast,e)} | Previous: ${formattedEconomicExportValue(e.previous,e)}`,
           "END:VEVENT"
         ].join("\r\n");
