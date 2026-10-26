@@ -11,7 +11,7 @@
   const results = document.getElementById("psd-kaggle-feed-results");
   const counts = document.getElementById("psd-kaggle-feed-counts");
   const table = document.getElementById("psd-kaggle-feed-rows");
-  const URL_PATH = "psd-forecast-lab-feed.json";
+  const URL_PATH = "https://raw.githubusercontent.com/Ha-Lion/Market-Sentiment/main/psd-forecast-lab-feed.json";
   const maxBytes = 3 * 1024 * 1024;
   let manualMode = false;
   let fingerprint = "";
