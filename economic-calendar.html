@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Economic Calendar V3.3.2 | rebuilt from approved V2.9 base | website-only optimization and readable values -->
+<!-- Economic Calendar V3.3.3 | forecast column cosmetic split from V3.3.2 | existing feed and forecast values unchanged -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -800,26 +800,35 @@
   .ec-page .ec-summary .ec-stat strong{font-size:12px;line-height:1.15;margin-top:1px;}
   .ec-page .ec-summary .ec-stat small{font-size:8px;line-height:1.1;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* V2.5: explicit columns prevent the browser spreading narrow cells across the table. */
-  .ec-page .ec-table{table-layout:fixed;min-width:1450px;width:100%;}
+  .ec-page .ec-table{table-layout:fixed;min-width:1600px;width:100%;}
   .ec-page .ec-table col.ec-col-time{width:72px;}
   .ec-page .ec-table col.ec-col-country{width:66px;}
   .ec-page .ec-table col.ec-col-impact{width:64px;}
   .ec-page .ec-table col.ec-col-event{width:330px;}
   .ec-page .ec-table col.ec-col-history{width:192px;}
   .ec-page .ec-table col.ec-col-previous{width:116px;}
-  .ec-page .ec-table col.ec-col-forecast{width:auto;}
+  .ec-page .ec-table col.ec-col-psd-forecast{width:66px;}
+  .ec-page .ec-table col.ec-col-ai-forecast{width:66px;}
+  .ec-page .ec-table col.ec-col-other-forecasts{width:auto;}
   .ec-page .ec-table col.ec-col-actual{width:96px;}
   .ec-page .ec-table col.ec-col-revised{width:88px;}
   .ec-page .ec-table col.ec-col-assets{width:168px;}
   .ec-page .ec-table col.ec-col-actions{width:112px;}
-  /* No conflicting header widths: Forecast receives all remaining table width. */
+  /* PSD and AI use narrow wrapped headers; Other Forecasts receives the remaining width. */
   .ec-page .ec-table thead th{width:auto;}
-  .ec-page .ec-table th:nth-child(n+6):nth-child(-n+9),
-  .ec-page .ec-table td:nth-child(n+6):nth-child(-n+9){
+  .ec-page .ec-table th:nth-child(n+6):nth-child(-n+11),
+  .ec-page .ec-table td:nth-child(n+6):nth-child(-n+11){
     min-width:0!important;max-width:none;
     white-space:normal!important;overflow-wrap:break-word;word-break:normal;
     line-height:1.3;
   }
+  /* Two-line labels keep the new forecast columns only as wide as necessary. */
+  .ec-page .ec-table th.ec-heading-forecast-narrow{
+    font-size:10px;letter-spacing:0;text-align:center;line-height:1.25;
+    padding-left:4px!important;padding-right:4px!important;
+    white-space:normal!important;
+  }
+  .ec-page .ec-table td.ec-forecast-pending{text-align:center;}
   /* Long country labels never force the narrow Country column to expand. */
   .ec-page .ec-table td:nth-child(2){overflow:hidden;}
   .ec-page .ec-table td:nth-child(2) .ec-country{
@@ -1048,17 +1057,17 @@
           <colgroup>
             <col class="ec-col-time"><col class="ec-col-country"><col class="ec-col-impact">
             <col class="ec-col-event"><col class="ec-col-history"><col class="ec-col-previous">
-            <col class="ec-col-forecast"><col class="ec-col-actual"><col class="ec-col-revised">
+            <col class="ec-col-psd-forecast"><col class="ec-col-ai-forecast"><col class="ec-col-other-forecasts"><col class="ec-col-actual"><col class="ec-col-revised">
             <col class="ec-col-assets"><col class="ec-col-actions">
           </colgroup>
           <thead>
             <tr>
               <th>Time</th><th>Ctry</th><th>Impact</th><th>Event</th>
-              <th>12M History</th><th>Previous</th><th>Forecast</th><th>Actual</th><th>Revised</th><th>Relevant Assets</th><th>Actions</th>
+              <th>12M History</th><th>Previous</th><th class="ec-heading-forecast-narrow">PSD<br>Forecast</th><th class="ec-heading-forecast-narrow">AI<br>Forecast</th><th>Other Forecasts</th><th>Actual</th><th>Revised</th><th>Relevant Assets</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="calendar-body">
-            <tr><td colspan="11" class="ec-loading">Loading economic calendar…</td></tr>
+            <tr><td colspan="13" class="ec-loading">Loading economic calendar…</td></tr>
           </tbody>
         </table>
       </div>
@@ -2301,7 +2310,7 @@
 
       if(!rows.length){
         lastCalendarTableMarkup=null;
-        body.innerHTML='<tr><td colspan="11" class="ec-empty">No events match your current settings and filters.</td></tr>';
+        body.innerHTML='<tr><td colspan="13" class="ec-empty">No events match your current settings and filters.</td></tr>';
         updateCountdown();
         return;
       }
@@ -2312,7 +2321,7 @@
         const d=parseProviderDate(e.date);
         const dk=dayKey(d);
         if(dk!==lastDay){
-          html+=`<tr class="ec-day-row" data-ec-row-key="day:${esc(dk)}"><td colspan="11">${esc(dayLabel(d))}</td></tr>`;
+          html+=`<tr class="ec-day-row" data-ec-row-key="day:${esc(dk)}"><td colspan="13">${esc(dayLabel(d))}</td></tr>`;
           lastDay=dk;
         }
         const impact=impactFromImportance(e.importance);
@@ -2329,6 +2338,8 @@
             </td>
             <td><span class="ec-spark-empty" data-spark-event="${esc(eventUIKey(e))}">…</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
+            <td class="value muted ec-forecast-pending" title="PSD forecast not yet supplied">—</td>
+            <td class="value muted ec-forecast-pending" title="AI forecast not yet supplied">—</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e),e)}</td>
             <td class="value ${actualClass(e)}"${narrativeActualDetails(e)?' title="Report contains several statistics. Open Details for all figures."':economicValueLabel(e.actual,"Actual",e)}>${narrativeActualDetails(e)?`<button class="ec-report-detail-link" type="button" data-open-event="${esc(eventUIKey(e))}" aria-label="Open all report figures">${narrativeActualStatus(e)} · Details</button>`:pendingOfficialProductivityIndex(e)?"Awaiting ONS index":formatValue(e.actual,calendarDisplayUnit(e),e)}</td>
             <td class="value"${economicValueLabel(e.revised,"Revised",e)}>${formatValue(e.revised,calendarDisplayUnit(e),e)}</td>
@@ -3695,7 +3706,7 @@
         warning.textContent=err.message||"Economic calendar data is temporarily unavailable.";
         warning.classList.add("show");
         lastCalendarTableMarkup=null;
-        body.innerHTML=`<tr><td colspan="11" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
+        body.innerHTML=`<tr><td colspan="13" class="ec-error"><strong>Calendar data could not be loaded.</strong>${esc(err.message||"Please try Refresh.")}</td></tr>`;
         document.getElementById("stat-events").textContent="—";
         document.getElementById("stat-high").textContent="—";
         document.getElementById("stat-next").textContent="—";
