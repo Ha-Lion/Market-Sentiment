@@ -1,5 +1,5 @@
 /* PSD Calendar Lab: import private Kaggle JSON locally or auto-load a
-   sanitized lab research feed synchronized by GitHub Actions.
+   sanitized Lab research batches held in Supabase.
    No client-side Kaggle credentials, Supabase, or production writes. */
 (() => {
   "use strict";
@@ -11,7 +11,8 @@
   const results = document.getElementById("psd-kaggle-feed-results");
   const counts = document.getElementById("psd-kaggle-feed-counts");
   const table = document.getElementById("psd-kaggle-feed-rows");
-  const URL_PATH = "https://raw.githubusercontent.com/Ha-Lion/Market-Sentiment/main/psd-forecast-lab-feed.json";
+  const API_BASE = "https://fupexuonvzakoguucglk.supabase.co";
+  const PUBLIC_KEY = "sb_publishable_70UGBdI_7955Ej6tK01awQ_DljLC6sv";
   const maxBytes = 3 * 1024 * 1024;
   let manualMode = false;
   let fingerprint = "";
@@ -96,7 +97,7 @@
     counts.textContent = preview.forecasted + " research forecasts · " +
       preview.held + " withheld · " + preview.rows.length + " events · " +
       preview.week.monday + " to " + preview.week.sunday;
-    status.textContent = (source === "github" ? "GitHub Lab research feed connected" :
+    status.textContent = (source === "supabase" ? "Supabase Lab forecast feed connected" :
       "Private Kaggle file loaded locally") + " · " + preview.version +
       " · select Nov 16–22 or the feed's forecast week to see calendar rows. Dates unverified.";
     results.hidden = true; // The actual calendar is the single display; no duplicate table.
@@ -106,22 +107,26 @@
   async function loadAuto() {
     if (manualMode) return;
     try {
-      const response = await fetch(URL_PATH + "?ts=" + Date.now(), {
-        cache:"no-store", credentials:"omit", redirect:"error"
-      });
-      if (response.status === 404) {
+      const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=feed_version,week_start,week_end,events,published_at&order=published_at.desc&limit=1";
+      const response = await fetch(endpoint, {cache:"no-store",credentials:"omit",
+        headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
+      if (!response.ok) throw new Error("Supabase Lab HTTP " + response.status);
+      const records = await response.json();
+      if (!Array.isArray(records) || !records.length) {
         if (!fingerprint) status.textContent =
-          "Awaiting GitHub/Kaggle sync · select private Kaggle JSON below to preview now.";
+          "Supabase Lab connected; waiting for first Kaggle forecast batch. Choose your saved Kaggle JSON to preview locally.";
         return;
       }
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      const text = await response.text();
-      if (text.length > maxBytes) throw new Error("Forecast Lab feed is too large");
-      display(validate(JSON.parse(text)), "github");
+      const row=records[0];
+      display(validate({schema:"psd-calendar-lab-research/1",
+        version:row.feed_version,
+        production:false,certified_28_day_accuracy:false,
+        forecast_week:{monday:row.week_start,sunday:row.week_end},
+        events:row.events}),"supabase");
     } catch (error) {
       if (!fingerprint) status.textContent =
-        "Auto-sync pending (" + (error.message || "unavailable") +
-        "). Select your saved Kaggle JSON to preview locally.";
+        "Supabase Lab feed unavailable (" + (error.message || "unknown") +
+        "). Select saved Kaggle JSON to preview locally.";
     }
   }
 
@@ -149,7 +154,7 @@
     results.hidden = true;
     fingerprint = "";
     window.dispatchEvent(new CustomEvent("psd-lab-forecast-updated", {detail: []}));
-    status.textContent = "Preview cleared. Checking the GitHub Lab feed…";
+    status.textContent = "Preview cleared. Checking the Supabase Lab feed…";
     clear.disabled = true;
     loadAuto();
   });
