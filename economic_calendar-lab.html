@@ -870,6 +870,24 @@
   <!-- Lab: production navigation/auth disabled -->
   <script src="site-theme.js?v=20" defer></script>
 
+  <section id="psd-kaggle-feed-panel" aria-label="PSD Kaggle forecast research preview" style="margin:10px auto;max-width:1360px;padding:12px 16px;border:1px solid #487ea4;border-radius:9px;background:#14293c;color:#e6f5ff;font:13px system-ui">
+  <h2 style="margin:0 0 6px;font-size:17px;color:#fff">Kaggle PSD Forecast — V2.3 Private Research Preview</h2>
+  <p style="margin:0 0 10px">Lab only · Experimental forecasts are NOT validated 28 days ahead · Import stays in this browser · No changes to Beeks feed, Supabase, or production</p>
+  <label for="psd-kaggle-feed-file" style="font-weight:700">Choose Kaggle JSON feed:</label>
+  <input id="psd-kaggle-feed-file" type="file" accept=".json,application/json" style="margin:4px 10px;color:#fff;max-width:95%">
+  <button id="psd-kaggle-feed-clear" type="button" disabled style="background:#223e56;color:#fff;padding:6px 12px;border:1px solid #8198ac;border-radius:6px;cursor:pointer">Clear preview</button>
+  <p id="psd-kaggle-feed-status" role="status" style="margin:8px 0">No Kaggle feed loaded. Existing Beeks Lab data is unaffected.</p>
+  <div id="psd-kaggle-feed-results" hidden>
+    <strong id="psd-kaggle-feed-counts"></strong>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto;margin-top:8px">
+      <table style="width:100%;border-collapse:collapse;color:inherit;font-size:12px">
+        <thead><tr><th>Country</th><th>Release (UTC)</th><th>Indicator</th><th>PSD Forecast</th><th>Unit</th><th>Model</th><th>Status</th></tr></thead>
+        <tbody id="psd-kaggle-feed-rows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+<script src="psd-kaggle-forecast-lab-v2_3.js" defer></script>
   <main class="ec-page">
     <header class="ec-hero">
       <div class="ec-heading-group">
@@ -2343,7 +2361,7 @@
             </td>
             <td><span class="ec-spark-empty">Lab only</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
-            <td class="value muted ec-forecast-pending" title="PSD forecast not yet supplied">—</td>
+            <td class="value ${Number.isFinite(e.psd_forecast)?'':'muted ec-forecast-pending'}" title="${esc(Number.isFinite(e.psd_forecast)?'PSD Kaggle experimental research forecast; NOT validated 28 days ahead; schedule unverified':'PSD forecast not yet supplied')}">${Number.isFinite(e.psd_forecast)?esc(Number(e.psd_forecast).toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}))+"<small style=\"display:block;font-size:9px\">"+esc(e.psd_forecast_unit||"")+" · RESEARCH</small>":"—"}</td>
             <td class="value muted ec-forecast-pending" title="AI forecast not yet supplied">—</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e),e)}</td>
             <td class="value ${actualClass(e)}"${narrativeActualDetails(e)?' title="Report contains several statistics. Open Details for all figures."':economicValueLabel(e.actual,"Actual",e)}>${narrativeActualDetails(e)?`<button class="ec-report-detail-link" type="button" data-open-event="${esc(eventUIKey(e))}" aria-label="Open all report figures">${narrativeActualStatus(e)} · Details</button>`:pendingOfficialProductivityIndex(e)?"Awaiting ONS index":formatValue(e.actual,calendarDisplayUnit(e),e)}</td>
@@ -3542,6 +3560,44 @@
         release_verification_status:"lab_only",source_url:null
       };
     }
+    // PSD forecast Lab-only events. Loaded only from the validated local/synced
+    // research forecast feed; Beeks snapshot and production events stay separate.
+    let psdLabForecastRows=[];
+    function psdLabForecastEvent(e){
+      const f=e.psd_forecast;
+      const stamp=String(e.release_at_utc||"");
+      if(!stamp||!Number.isFinite(Date.parse(stamp)))return null;
+      const country=String(e.country||"").toUpperCase();
+      return {
+        id:"psd-lab-forecast:"+e.event_id,
+        official_indicator_id:"",
+        date:stamp,
+        event:String(e.indicator||""),
+        country_code:country==="UK"?"GB":country,
+        country,
+        importance:1,
+        category:"Other",
+        reference:null,
+        actual:null,
+        previous:null,
+        forecast:null,
+        te_forecast:null,
+        revised:null,
+        unit:f?f.unit:"",
+        psd_forecast:f?f.value:null,
+        psd_forecast_unit:f?f.unit:"",
+        psd_forecast_model:f?f.method:"",
+        source:"PSD Kaggle research",
+        lab_status:f?"KAGGLE EXPERIMENTAL - NOT 28-DAY VALIDATED":"PSD FORECAST WITHHELD",
+        release_verification_status:"research_schedule_unverified",
+        source_url:null
+      };
+    }
+    window.addEventListener("psd-lab-forecast-updated",event=>{
+      psdLabForecastRows=Array.isArray(event.detail)?event.detail.map(psdLabForecastEvent).filter(Boolean):[];
+      loadFeed(true).catch(err=>console.warn("Lab PSD forecast refresh unavailable",err));
+    });
+
     async function fetchFeedRange(range,signal,forceNetwork=false,timeoutMs=FEED_REQUEST_TIMEOUT_MS){
       const controller=new AbortController(),abort=()=>controller.abort();
       if(signal?.aborted)controller.abort(); else signal?.addEventListener("abort",abort,{once:true});
@@ -3551,7 +3607,7 @@
         if(!res.ok)throw new Error("Beeks snapshot HTTP "+res.status);
         const data=await res.json();
         if(data.schema_version!==1||data.lab_isolated!==true||!Array.isArray(data.events))throw new Error("Invalid or nonisolated Lab snapshot");
-        const events=data.events.map(labCalendarEvent).filter(Boolean);
+        const events=data.events.map(labCalendarEvent).filter(Boolean).concat(psdLabForecastRows);
         const registry=Object.values(data.registry_counts||{}).reduce((a,b)=>a+(Number(b)||0),0);
         document.getElementById("lab-registry").textContent=registry?" · "+registry+" registered indicators":"";
         return {source:"Beeks Lab snapshot",mode:"snapshot",complete:true,lab_isolated:true,
