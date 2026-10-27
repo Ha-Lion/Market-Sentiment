@@ -5,6 +5,8 @@ on:
       - "economic_calendar-lab.html"
       - "psd-kaggle-forecast-lab-v2_3.js"
       - "tests/psd_forecast_lab_browser_smoke.cjs"
+      - "tests/test_psd_forecast_sanitizer.py"
+      - "scripts/psd_publish_kaggle_lab.py"
       - ".github/workflows/psd-forecast-lab-smoke.yml"
   workflow_dispatch:
 permissions:
@@ -18,6 +20,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Python sanitizer against synthetic research cases
+        run: python -m unittest discover -s tests -p 'test_psd_forecast_sanitizer.py' -v
       - name: Install isolated Playwright dependency
         run: npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
       - name: Install headless Chromium
