@@ -1,0 +1,37 @@
+name: PSD Kaggle Lab weekly forecast
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '13 6 * * 0'
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: psd-lab-weekly-forecast
+  cancel-in-progress: false
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Kaggle configuration
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: test -n "$KAGGLE_API_TOKEN"
+      - name: Run existing private Kaggle notebook
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          python -m pip install 'kaggle==1.7.4.5'
+          mkdir -p "$RUNNER_TEMP/kaggle-source" "$RUNNER_TEMP/kaggle-output"
+          kaggle kernels pull yehudakohenkadosh/notebookfe746d5c78 -p "$RUNNER_TEMP/kaggle-source" -m
+          kaggle kernels push -p "$RUNNER_TEMP/kaggle-source"
+          python scripts/psd_wait_kaggle.py --kernel yehudakohenkadosh/notebookfe746d5c78
+          kaggle kernels output yehudakohenkadosh/notebookfe746d5c78 -p "$RUNNER_TEMP/kaggle-output" --force
+          python scripts/psd_weekly_forecast_gate.py --output-dir "$RUNNER_TEMP/kaggle-output" --output "$RUNNER_TEMP/research-feed.json"
+      - name: Submit valid feed to isolated Lab
+        run: python scripts/psd_send_lab_feed.py --file "$RUNNER_TEMP/research-feed.json"
