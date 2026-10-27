@@ -27,9 +27,19 @@
         !payload.forecast_week ||
         !/^\d{4}-\d{2}-\d{2}$/.test(payload.forecast_week.monday || "") ||
         !/^\d{4}-\d{2}-\d{2}$/.test(payload.forecast_week.sunday || "") ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(payload.forecast_week.monday) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(payload.forecast_week.sunday) ||
         !Array.isArray(payload.events) ||
         payload.events.length < 1 || payload.events.length > 1500) {
       throw new Error("Invalid research-only PSD Calendar Lab feed.");
+    }
+    const mondayUtc=new Date(payload.forecast_week.monday+"T00:00:00Z");
+    const sundayUtc=new Date(payload.forecast_week.sunday+"T00:00:00Z");
+    if (!Number.isFinite(mondayUtc.getTime()) ||
+        mondayUtc.toISOString().slice(0,10)!==payload.forecast_week.monday ||
+        mondayUtc.getUTCDay()!==1 ||
+        sundayUtc.getTime()-mondayUtc.getTime()!==6*86400000) {
+      throw new Error("Forecast week must be a valid Monday through Sunday.");
     }
     const unique = new Set();
     let forecasted = 0;
@@ -40,6 +50,7 @@
           typeof event.indicator !== "string" || !event.indicator.trim() ||
           event.indicator.length > 250 ||
           typeof event.release_at_utc !== "string" ||
+          !/(?:Z|[+-]\d{2}:\d{2})$/i.test(event.release_at_utc) ||
           !Number.isFinite(Date.parse(event.release_at_utc)) ||
           !["RESEARCH_ONLY", "WITHHELD"].includes(event.status)) {
         throw new Error("Invalid or duplicate research event.");
@@ -103,7 +114,8 @@
       preview.week.monday + " to " + preview.week.sunday;
     status.textContent = (source === "supabase" ? "Supabase Lab forecast feed connected" :
       "Private Kaggle file loaded locally") + " · " + preview.version +
-      " · select Nov 16–22 or the feed's forecast week to see calendar rows. Dates unverified.";
+      " · " + preview.week.monday + " to " + preview.week.sunday +
+      " · NOT validated 28 days ahead · Release dates unverified.";
     results.hidden = true; // The actual calendar is the single display; no duplicate table.
     clear.disabled = false;
   }
@@ -113,7 +125,7 @@
     if (manualMode) return;
     const seq = ++autoSeq;
     try {
-      const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=feed_version,week_start,week_end,events,published_at&order=published_at.desc&limit=1";
+      const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=feed_version,week_start,week_end,event_count,forecast_count,withheld_count,research_only,events,published_at&order=published_at.desc&limit=1";
       const response = await fetch(endpoint, {cache:"no-store",credentials:"omit",
         headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
       if (seq !== autoSeq || manualMode) return;
@@ -126,11 +138,18 @@
         return;
       }
       const row=records[0];
-      display(validate({schema:"psd-calendar-lab-research/1",
+      if (row.research_only !== true) throw new Error("Unapproved production batch blocked.");
+      const preview=validate({schema:"psd-calendar-lab-research/1",
         version:row.feed_version,
         production:false,certified_28_day_accuracy:false,
         forecast_week:{monday:row.week_start,sunday:row.week_end},
-        events:row.events}),"supabase");
+        events:row.events});
+      if (preview.rows.length !== row.event_count ||
+          preview.forecasted !== row.forecast_count ||
+          preview.held !== row.withheld_count) {
+        throw new Error("Research batch count mismatch.");
+      }
+      display(preview,"supabase");
     } catch (error) {
       if (!manualMode && seq === autoSeq && !fingerprint) status.textContent =
         "Supabase Lab feed unavailable (" + (error.message || "unknown") +
