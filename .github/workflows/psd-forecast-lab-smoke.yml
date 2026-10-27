@@ -6,6 +6,8 @@ on:
       - "psd-kaggle-forecast-lab-v2_3.js"
       - "tests/psd_forecast_lab_browser_smoke.cjs"
       - "tests/test_psd_forecast_sanitizer.py"
+      - "tests/test_psd_weekly_forecast_gate.py"
+      - "scripts/psd_weekly_forecast_gate.py"
       - "scripts/psd_publish_kaggle_lab.py"
       - ".github/workflows/psd-forecast-lab-smoke.yml"
   workflow_dispatch:
@@ -24,7 +26,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Validate Python sanitizer against synthetic research cases
-        run: python -m unittest discover -s tests -p 'test_psd_forecast_sanitizer.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_psd_forecast_sanitizer.py' -v
+          python -m unittest discover -s tests -p 'test_psd_weekly_forecast_gate.py' -v
       - name: Install isolated Playwright dependency
         run: npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
       - name: Install headless Chromium
