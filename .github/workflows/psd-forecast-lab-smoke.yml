@@ -25,6 +25,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Check Kaggle secret configured (never disclose token)
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        shell: bash
+        run: |
+          if [ -n "$KAGGLE_API_TOKEN" ]; then
+            echo "PSD KAGGLE SECRET: CONFIGURED"
+          else
+            echo "PSD KAGGLE SECRET: MISSING"
+          fi
       - name: Validate Python sanitizer against synthetic research cases
         run: |
           python -m unittest discover -s tests -p 'test_psd_forecast_sanitizer.py' -v
