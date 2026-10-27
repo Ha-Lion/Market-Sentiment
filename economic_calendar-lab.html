@@ -3608,6 +3608,26 @@
       weekPreloadCache=null;
       loadFeed(true).catch(err=>console.warn("Lab PSD forecast refresh unavailable",err));
     });
+    // A private Lab preview can navigate to its forecast week even when the
+    // production site's guest/member controls are unavailable in isolated Lab.
+    window.addEventListener("psd-lab-forecast-select-week",event=>{
+      const monday=String(event.detail?.monday||"");
+      const sunday=String(event.detail?.sunday||"");
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(monday)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(sunday))return;
+      const mondayDate=new Date(monday+"T00:00:00Z");
+      const sundayDate=new Date(sunday+"T00:00:00Z");
+      if(!Number.isFinite(mondayDate.getTime())||mondayDate.getUTCDay()!==1||
+         sundayDate.getTime()-mondayDate.getTime()!==6*86400000)return;
+      document.getElementById("custom-from").value=monday;
+      document.getElementById("custom-to").value=sunday;
+      customRange={start:monday,end:sunday};
+      currentRange="custom";
+      upcomingOnly=false;
+      document.getElementById("upcoming-only").checked=false;
+      document.querySelectorAll(".ec-tab[data-range]").forEach(x=>x.classList.remove("active"));
+      persistCalendarView();
+      loadFeed(true).catch(err=>console.warn("Lab week selection failed",err));
+    });
 
     async function fetchFeedRange(range,signal,forceNetwork=false,timeoutMs=FEED_REQUEST_TIMEOUT_MS){
       const controller=new AbortController(),abort=()=>controller.abort();
