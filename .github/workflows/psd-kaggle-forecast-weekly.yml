@@ -29,6 +29,16 @@ jobs:
           python -m pip install 'kaggle==1.7.4.5'
           mkdir -p "$RUNNER_TEMP/kaggle-source" "$RUNNER_TEMP/kaggle-output"
           kaggle kernels pull yehudakohenkadosh/notebookfe746d5c78 -p "$RUNNER_TEMP/kaggle-source" -m
+          python - <<'PY'
+          import json,os,pathlib
+          src=pathlib.Path(os.environ["RUNNER_TEMP"])/"kaggle-source"
+          meta=json.loads((src/"kernel-metadata.json").read_text())
+          assert meta.get("id")=="yehudakohenkadosh/notebookfe746d5c78","wrong private notebook"
+          assert str(meta.get("is_private","")).lower()=="true","notebook must remain private"
+          assert str(meta.get("enable_gpu","false")).lower()=="false","GPU usage not approved"
+          assert any(src.glob("*.ipynb")) or any(src.glob("*.py")),"notebook source missing"
+          print("Private CPU Kaggle notebook verified")
+          PY
           kaggle kernels push -p "$RUNNER_TEMP/kaggle-source"
           python scripts/psd_wait_kaggle.py --kernel yehudakohenkadosh/notebookfe746d5c78
           kaggle kernels output yehudakohenkadosh/notebookfe746d5c78 -p "$RUNNER_TEMP/kaggle-output" --force
