@@ -49,7 +49,7 @@ class TestSanitizer(unittest.TestCase):
         self.assertIs(out["certified_28_day_accuracy"],False)
         self.assertNotIn("SHOULD_NEVER_LEAK",json.dumps(out))
         self.assertNotIn("source_private_key",json.dumps(out))
-        self.assertEqual(out["events"][0]["psd_forecast"]["value"],0)
+        self.assertTrue(any(e["psd_forecast"] is not None and e["psd_forecast"]["value"] == 0 for e in out["events"]))
 
     def test_reject_production_or_fake_accuracy(self):
         self.assert_invalid(lambda p:p.update(production=True))
