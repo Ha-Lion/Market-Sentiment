@@ -14,7 +14,7 @@ spec.loader.exec_module(mod)
 
 class WeeklyForecastGateTests(unittest.TestCase):
     def test_sunday_targets_fourth_upcoming_week(self):
-        self.assertEqual(tuple(map(str,mod.fourth_upcoming_week(date(2026,11,1)))),
+        self.assertEqual(tuple(map(str,mod.fourth_upcoming_week(date(2026,10,25)))),
                          ("2026-11-16","2026-11-22"))
     def test_monday_targets_fourth_upcoming_week(self):
         self.assertEqual(tuple(map(str,mod.fourth_upcoming_week(date(2026,10,26)))),
