@@ -1,0 +1,59 @@
+name: PSD Forecast Lab browser checks (no production writes)
+on:
+  pull_request:
+    paths:
+      - "economic_calendar-lab.html"
+      - "psd-kaggle-forecast-lab-v2_3.js"
+      - "tests/psd_forecast_lab_browser_smoke.cjs"
+      - "tests/test_psd_forecast_sanitizer.py"
+      - "tests/test_psd_weekly_forecast_gate.py"
+      - "scripts/psd_weekly_forecast_gate.py"
+      - "scripts/psd_publish_kaggle_lab.py"
+      - ".github/workflows/psd-forecast-lab-smoke.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check Kaggle secret configured (never disclose token)
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        shell: bash
+        run: |
+          if [ -n "$KAGGLE_API_TOKEN" ]; then
+            echo "PSD KAGGLE SECRET: CONFIGURED"
+          else
+            echo "PSD KAGGLE SECRET: MISSING"
+          fi
+      - name: Validate Python sanitizer against synthetic research cases
+        run: |
+          python -m unittest discover -s tests -p 'test_psd_forecast_sanitizer.py' -v
+          python -m unittest discover -s tests -p 'test_psd_weekly_forecast_gate.py' -v
+      - name: Verify isolated ingestion endpoint is reachable without writing
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.error
+          u="https://fupexuonvzakoguucglk.supabase.co/functions/v1/psd-kaggle-lab-ingest"
+          try:
+              with urllib.request.urlopen(urllib.request.Request(u,method="GET"),timeout=20) as r:
+                  raise SystemExit("Expected read-only GET to be rejected")
+          except urllib.error.HTTPError as ex:
+              assert ex.code == 405, f"Expected HTTP 405, got {ex.code}"
+              print("PASS: signed-only Lab ingestion endpoint reached, GET rejected")
+          PY
+      - name: Install isolated Playwright dependency
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test isolated Calendar Lab in Chromium
+        run: node tests/psd_forecast_lab_browser_smoke.cjs
