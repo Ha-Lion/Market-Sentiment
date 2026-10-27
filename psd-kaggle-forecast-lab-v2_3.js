@@ -7,6 +7,7 @@
   if (!panel) return;
   const input = document.getElementById("psd-kaggle-feed-file");
   const clear = document.getElementById("psd-kaggle-feed-clear");
+  const viewWeek = document.getElementById("psd-kaggle-view-week");
   const status = document.getElementById("psd-kaggle-feed-status");
   const results = document.getElementById("psd-kaggle-feed-results");
   const counts = document.getElementById("psd-kaggle-feed-counts");
@@ -16,6 +17,7 @@
   const maxBytes = 3 * 1024 * 1024;
   let manualMode = false;
   let fingerprint = "";
+  let activeWeek = null;
 
   function validate(payload) {
     if (!payload || payload.schema !== "psd-calendar-lab-research/1" ||
@@ -94,6 +96,8 @@
       cell(tr, event.status === "RESEARCH_ONLY" ? "EXPERIMENTAL · NOT VALIDATED" : "WITHHELD");
       table.appendChild(tr);
     }
+    activeWeek = preview.week;
+    if (viewWeek) viewWeek.disabled = false;
     counts.textContent = preview.forecasted + " research forecasts · " +
       preview.held + " withheld · " + preview.rows.length + " events · " +
       preview.week.monday + " to " + preview.week.sunday;
@@ -130,6 +134,18 @@
     }
   }
 
+  if (viewWeek) viewWeek.addEventListener("click", () => {
+    if (!activeWeek) return;
+    const from=document.getElementById("custom-from");
+    const to=document.getElementById("custom-to");
+    const go=document.getElementById("custom-go");
+    if (!from || !to || !go) return;
+    from.value=activeWeek.monday;
+    to.value=activeWeek.sunday;
+    go.click();
+    document.querySelector(".ec-table-wrap")?.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+
   input.addEventListener("change", async () => {
     const file = input.files && input.files[0];
     if (!file) return;
@@ -153,6 +169,8 @@
     table.replaceChildren();
     results.hidden = true;
     fingerprint = "";
+    activeWeek = null;
+    if (viewWeek) viewWeek.disabled = true;
     window.dispatchEvent(new CustomEvent("psd-lab-forecast-updated", {detail: []}));
     status.textContent = "Preview cleared. Checking the Supabase Lab feed…";
     clear.disabled = true;
