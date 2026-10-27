@@ -3634,15 +3634,30 @@
       if(signal?.aborted)controller.abort(); else signal?.addEventListener("abort",abort,{once:true});
       const timer=setTimeout(()=>controller.abort(),timeoutMs);
       try{
-        const res=await fetch(FEED_URL+"?ts="+Date.now(),{method:"GET",cache:"no-store",signal:controller.signal,credentials:"omit",redirect:"error"});
-        if(!res.ok)throw new Error("Beeks snapshot HTTP "+res.status);
-        const data=await res.json();
-        if(data.schema_version!==1||data.lab_isolated!==true||!Array.isArray(data.events))throw new Error("Invalid or nonisolated Lab snapshot");
-        const events=data.events.map(labCalendarEvent).filter(Boolean).concat(psdLabForecastRows);
-        const registry=Object.values(data.registry_counts||{}).reduce((a,b)=>a+(Number(b)||0),0);
+        let snapshot;
+        try{
+          const res=await fetch(FEED_URL+"?ts="+Date.now(),{method:"GET",cache:"no-store",signal:controller.signal,credentials:"omit",redirect:"error"});
+          if(!res.ok)throw new Error("Beeks snapshot HTTP "+res.status);
+          snapshot=await res.json();
+          if(snapshot.schema_version!==1||snapshot.lab_isolated!==true||!Array.isArray(snapshot.events)){
+            throw new Error("Invalid or nonisolated Lab snapshot");
+          }
+        }catch(error){
+          // The PSD forecast pipeline is independent of the Beeks snapshot:
+          // keep verified research forecasts visible if Beeks has a temporary outage.
+          // Clearly report incomplete Beeks coverage, never claim it is connected.
+          if(signal?.aborted||controller.signal.aborted||!psdLabForecastRows.length)throw error;
+          document.getElementById("lab-registry").textContent="";
+          return {source:"Supabase PSD research fallback",mode:"snapshot",partial:true,
+            complete:false,lab_isolated:true,beeks_connected:false,updated_at:null,
+            provider_error:"Beeks Lab unavailable; displaying Supabase research forecasts only.",
+            events:[...psdLabForecastRows]};
+        }
+        const events=snapshot.events.map(labCalendarEvent).filter(Boolean).concat(psdLabForecastRows);
+        const registry=Object.values(snapshot.registry_counts||{}).reduce((a,b)=>a+(Number(b)||0),0);
         document.getElementById("lab-registry").textContent=registry?" · "+registry+" registered indicators":"";
         return {source:"Beeks Lab snapshot",mode:"snapshot",complete:true,lab_isolated:true,
-          beeks_connected:Boolean(data.beeks_connected),updated_at:data.updated_at,events};
+          beeks_connected:Boolean(snapshot.beeks_connected),updated_at:snapshot.updated_at,events};
       }finally{clearTimeout(timer);signal?.removeEventListener("abort",abort)}
     }
     function mergeEventUpdates(base,updates,partial=false){
@@ -3772,7 +3787,7 @@
         }
 
         recordCalendarFeedCheck(data);
-        document.getElementById("provider-name").textContent="Beeks Lab snapshot · NO Supabase";
+        document.getElementById("provider-name").textContent=data.partial?"Supabase PSD Lab · Beeks unavailable":"Beeks Lab + Supabase PSD research";
         const updated=document.getElementById("last-updated");
         if(updated) updated.textContent=`Updated ${new Intl.DateTimeFormat("en-US",{hour:"numeric",minute:"2-digit"}).format(lastFetchAt)}`;
 
