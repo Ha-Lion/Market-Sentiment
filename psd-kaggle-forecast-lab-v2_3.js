@@ -125,7 +125,8 @@
     if (manualMode) return;
     const seq = ++autoSeq;
     try {
-      const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=feed_version,week_start,week_end,event_count,forecast_count,withheld_count,research_only,events,published_at&order=published_at.desc&limit=25";
+      // Lightweight indexed metadata read: do not download 25 full JSON event arrays.
+      const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=batch_hash,week_start,week_end,published_at,research_only&order=week_start.desc,published_at.desc&limit=25";
       const response = await fetch(endpoint, {cache:"no-store",credentials:"omit",
         headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
       if (seq !== autoSeq || manualMode) return;
@@ -137,12 +138,24 @@
           "Supabase Lab connected; waiting for first Kaggle forecast batch. Choose your saved Kaggle JSON to preview locally.";
         return;
       }
-      // Lab only: newest *valid* version wins; retain older valid batches for audit.
-      // An invalid or partially published revision must never blank the known-good Lab feed.
+      // Lab only: newest target week and newest valid version for that week wins.
+      // Request one full batch at a time; skip invalid revisions without losing history.
       let latestValid=null;
-      for (const row of records) {
-        if (row.research_only !== true) continue;
+      for (const meta of records) {
+        if (meta.research_only !== true ||
+            !/^[a-f0-9]{64}$/.test(String(meta.batch_hash||""))) continue;
+        if (seq !== autoSeq || manualMode) return;
         try {
+          const detailUrl = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=batch_hash,feed_version,week_start,week_end,event_count,forecast_count,withheld_count,research_only,events&batch_hash=eq." + encodeURIComponent(meta.batch_hash) + "&limit=1";
+          const detailResponse = await fetch(detailUrl, {cache:"no-store",credentials:"omit",
+            headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
+          if (seq !== autoSeq || manualMode) return;
+          if (!detailResponse.ok) throw new Error("Supabase Lab detail HTTP " + detailResponse.status);
+          const rows = await detailResponse.json();
+          if (seq !== autoSeq || manualMode) return;
+          const row = Array.isArray(rows) ? rows[0] : null;
+          if (!row || row.batch_hash !== meta.batch_hash || row.research_only !== true ||
+              row.week_start !== meta.week_start || row.week_end !== meta.week_end) continue;
           const preview=validate({schema:"psd-calendar-lab-research/1",
             version:row.feed_version,
             production:false,certified_28_day_accuracy:false,
@@ -154,7 +167,7 @@
           latestValid=preview;
           break;
         } catch (error) {
-          console.warn("PSD Lab skipped invalid batch:", String(error?.message||"invalid").slice(0,120));
+          console.warn("PSD Lab skipped invalid research batch:", String(error?.message||"invalid").slice(0,120));
         }
       }
       if (!latestValid) throw new Error("No valid research-only forecast batches available.");
