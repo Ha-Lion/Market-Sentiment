@@ -30,7 +30,7 @@ function makePayload(events=makeEvents()) {
     forecast_week:week,events};
 }
 const batch={feed_version:"V2.3",week_start:week.monday,
-  week_end:week.sunday,events:makeEvents(),
+  week_end:week.sunday,event_count:24,forecast_count:18,withheld_count:6,research_only:true,events:makeEvents(),
   published_at:"2026-10-27T00:07:45Z"};
 const beeks={schema_version:1,source:"BEEKS_LAB",lab_isolated:true,
   beeks_connected:true,updated_at:"2026-10-26T22:09:36Z",registry_counts:{US:1},
@@ -117,7 +117,7 @@ async function main(){
       assert.ok(data.ai.every(x=>x==="—"),"AI forecasts must remain blank");
       assert.ok(data.other.every(x=>x==="—"),"Other forecasts must remain untouched");
       assert.deepEqual(data.dates,[week.monday,week.sunday]);
-      assert.match(data.status,/NOT 28-day validated/i);
+      assert.match(data.status,/NOT validated 28 days ahead/i);
       assert.ok(data.psd.some(x=>/0/.test(x)),"A zero PSD forecast should render");
     });
     await testCase("manual import wins an in-flight auto-read race",async ({page})=>{
