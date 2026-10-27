@@ -59,7 +59,7 @@ async function main(){
   const url="http://127.0.0.1:"+server.address().port+"/economic_calendar-lab.html";
   const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
   let passes=0;
-  async function setup(slowSupabase=false){
+  async function setup(slowSupabase=false,beeksDown=false){
     const context=await browser.newContext({timezoneId:"America/New_York"});
     const page=await context.newPage();
     const errors=[];
@@ -77,6 +77,7 @@ async function main(){
           headers:{"access-control-allow-origin":"*"},body:json([batch])});
       }
       if(url.pathname.endsWith("beeks-lab-feed.json")){
+        if(beeksDown)return route.fulfill({status:503,body:"Beeks test outage"});
         return route.fulfill({status:200,contentType:"application/json",body:json(beeks)});
       }
       if(["127.0.0.1","localhost"].includes(url.hostname))return route.continue();
@@ -91,7 +92,7 @@ async function main(){
     assert.deepEqual(test.errors,[],"Uncaught browser errors");
   }
   async function testCase(label,fn){
-    const t=await setup(label.includes("race"));
+    const t=await setup(label.includes("race"),label.includes("Beeks unavailable"));
     try{await fn(t);checkNoErrors(t);console.log("PASS "+label);passes++;}
     finally{await t.context.close();}
   }
@@ -154,6 +155,17 @@ async function main(){
         await page.waitForFunction(()=>document.getElementById("psd-kaggle-feed-status")?.
           textContent.includes("Import blocked"),null,{timeout:12000});
       }
+    });
+    await testCase("Beeks unavailable still displays research-only PSD forecasts",async ({page})=>{
+      await page.waitForFunction(()=>document.getElementById("psd-kaggle-feed-status")?.
+        textContent.includes("Supabase Lab forecast feed connected"),null,{timeout:25000});
+      await page.locator("#psd-kaggle-view-week").click();
+      await page.waitForFunction(()=>document.querySelectorAll(
+        '#calendar-body tr[data-ec-row-key^="event:"]').length===24,null,{timeout:25000});
+      const rows=await page.locator('#calendar-body tr[data-ec-row-key^="event:"]').count();
+      assert.equal(rows,24);
+      assert.match(await page.locator("#provider-warning").innerText(),/Beeks Lab unavailable/i);
+      assert.match(await page.locator("#provider-name").innerText(),/Supabase PSD Lab/i);
     });
     console.log("BROWSER SMOKE PASS: "+passes+" scenarios; external writes blocked");
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
