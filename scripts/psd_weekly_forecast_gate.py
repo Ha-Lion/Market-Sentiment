@@ -15,9 +15,9 @@ from psd_publish_kaggle_lab import validate
 MAX_BYTES = 3 * 1024 * 1024
 
 def fourth_upcoming_week(reference: date) -> tuple[date, date]:
-    """On Sunday, next Monday is week 1; week 3 beyond it is week 4."""
-    next_monday = reference + timedelta(days=(7-reference.weekday()) % 7 or 7)
-    monday = next_monday + timedelta(days=14)
+    """Week 1 starts on the next Monday, or today when already Monday."""
+    next_monday = reference + timedelta(days=(7-reference.weekday()) % 7)
+    monday = next_monday + timedelta(days=21)
     return monday, monday + timedelta(days=6)
 
 def build(folder: Path, output: Path, *, reference: date) -> dict:
