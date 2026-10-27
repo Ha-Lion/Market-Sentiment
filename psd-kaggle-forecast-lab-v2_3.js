@@ -108,14 +108,18 @@
     clear.disabled = false;
   }
 
+  let autoSeq = 0;
   async function loadAuto() {
     if (manualMode) return;
+    const seq = ++autoSeq;
     try {
       const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=feed_version,week_start,week_end,events,published_at&order=published_at.desc&limit=1";
       const response = await fetch(endpoint, {cache:"no-store",credentials:"omit",
         headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
+      if (seq !== autoSeq || manualMode) return;
       if (!response.ok) throw new Error("Supabase Lab HTTP " + response.status);
       const records = await response.json();
+      if (seq !== autoSeq || manualMode) return;
       if (!Array.isArray(records) || !records.length) {
         if (!fingerprint) status.textContent =
           "Supabase Lab connected; waiting for first Kaggle forecast batch. Choose your saved Kaggle JSON to preview locally.";
@@ -128,7 +132,7 @@
         forecast_week:{monday:row.week_start,sunday:row.week_end},
         events:row.events}),"supabase");
     } catch (error) {
-      if (!fingerprint) status.textContent =
+      if (!manualMode && seq === autoSeq && !fingerprint) status.textContent =
         "Supabase Lab feed unavailable (" + (error.message || "unknown") +
         "). Select saved Kaggle JSON to preview locally.";
     }
@@ -140,9 +144,10 @@
     const to=document.getElementById("custom-to");
     const go=document.getElementById("custom-go");
     if (!from || !to || !go) return;
-    from.value=activeWeek.monday;
-    to.value=activeWeek.sunday;
-    go.click();
+    // LAB-only navigation: do not rely on the production member-gated Go control.
+    // A dedicated Lab listener changes the local view without any database write.
+    window.dispatchEvent(new CustomEvent("psd-lab-forecast-select-week",
+      {detail:{monday:activeWeek.monday,sunday:activeWeek.sunday}}));
     document.querySelector(".ec-table-wrap")?.scrollIntoView({behavior:"smooth",block:"start"});
   });
 
@@ -156,6 +161,7 @@
       }
       const preview = validate(JSON.parse(await file.text()));
       manualMode = true;
+      ++autoSeq; // Prevent a slower in-flight HTTP response from overwriting local file.
       display(preview, "local");
     } catch (error) {
       status.textContent = "Import blocked: " +
@@ -165,6 +171,7 @@
 
   clear.addEventListener("click", () => {
     manualMode = false;
+    ++autoSeq;
     input.value = "";
     table.replaceChildren();
     results.hidden = true;
@@ -178,5 +185,6 @@
   });
 
   loadAuto();
-  setInterval(() => { if (!document.hidden) loadAuto(); }, 5 * 60 * 1000);
+  // Research batches update weekly; avoid 288 unnecessary reads per day per tab.
+  setInterval(() => { if (!document.hidden && !manualMode) loadAuto(); }, 60 * 60 * 1000);
 })();
