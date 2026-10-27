@@ -1,0 +1,26 @@
+name: PSD Forecast Lab browser checks (no production writes)
+on:
+  pull_request:
+    paths:
+      - "economic_calendar-lab.html"
+      - "psd-kaggle-forecast-lab-v2_3.js"
+      - "tests/psd_forecast_lab_browser_smoke.cjs"
+      - ".github/workflows/psd-forecast-lab-smoke.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated Playwright dependency
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test isolated Calendar Lab in Chromium
+        run: node tests/psd_forecast_lab_browser_smoke.cjs
