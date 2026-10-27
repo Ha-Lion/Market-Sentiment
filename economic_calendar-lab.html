@@ -871,12 +871,12 @@
   <script src="site-theme.js?v=20" defer></script>
 
   <section id="psd-kaggle-feed-panel" aria-label="PSD Kaggle forecast research preview" style="margin:10px auto;max-width:1360px;padding:12px 16px;border:1px solid #487ea4;border-radius:9px;background:#14293c;color:#e6f5ff;font:13px system-ui">
-  <h2 style="margin:0 0 6px;font-size:17px;color:#fff">PSD Forecast Lab — Supabase Research Feed</h2>
-  <p style="margin:0 0 10px">Lab only · PSD predictions are experimental, NOT verified 28 days ahead · Forecasts read from Supabase · Beeks snapshots and production calendar remain separate.</p>
+  <h2 style="margin:0 0 6px;font-size:17px;color:#fff">PSD Forecast Lab — Kaggle V2.4 Research Preview</h2>
+  <p style="margin:0 0 10px">Lab only · PSD predictions are experimental, NOT verified 28 days ahead · Optional private Kaggle file stays in your browser · Beeks and production remain separate.</p>
   <button id="psd-kaggle-view-week" type="button" disabled style="background:#19776e;color:#fff;padding:7px 13px;border:1px solid #65b7aa;border-radius:6px;cursor:pointer;margin:0 10px 8px 0;font-weight:700">View forecast week in calendar</button><span style="margin-right:8px">Optional private file preview:</span><label for="psd-kaggle-feed-file" style="font-weight:700">Choose JSON:</label>
   <input id="psd-kaggle-feed-file" type="file" accept=".json,application/json" style="margin:4px 10px;color:#fff;max-width:95%">
   <button id="psd-kaggle-feed-clear" type="button" disabled style="background:#223e56;color:#fff;padding:6px 12px;border:1px solid #8198ac;border-radius:6px;cursor:pointer">Clear preview</button>
-  <p id="psd-kaggle-feed-status" role="status" style="margin:8px 0">Checking Supabase Lab forecast feed. Existing Beeks snapshot is unaffected.</p>
+  <p id="psd-kaggle-feed-status" role="status" style="margin:8px 0">Checking the isolated GitHub research feed. Existing Beeks snapshot is unaffected.</p>
   <div id="psd-kaggle-feed-results" hidden>
     <strong id="psd-kaggle-feed-counts"></strong>
     <div style="overflow-x:auto;max-height:420px;overflow-y:auto;margin-top:8px">
@@ -887,7 +887,7 @@
     </div>
   </div>
 </section>
-<script src="psd-kaggle-forecast-lab-v2_3.js" defer></script>
+<script src="psd-kaggle-forecast-lab-v2_4.js" defer></script>
   <main class="ec-page">
     <header class="ec-hero">
       <div class="ec-heading-group">
@@ -2203,6 +2203,15 @@
       }
       return esc(raw); // Multi-statistic releases are intentionally preserved.
     }
+    // LAB only: share calendar unit/K/M handling, suppress unnecessary decimal zeros.
+    // Preserve feed precision and research provenance in the underlying event.
+    function psdLabForecastDisplay(e){
+      if(!Number.isFinite(e.psd_forecast))return "—";
+      return formatValue(e.psd_forecast,e.psd_forecast_unit||"",e)
+        .replace(/(\.\d*?[1-9])0+(?=\D|$)/g,"$1")
+        .replace(/\.0+(?=\D|$)/g,"");
+    }
+
     // Calendar-file exports use the same numeric display rules, without HTML entities.
     function formattedEconomicExportValue(value,event){
       if(value===null||value===undefined||String(value).trim()==="")return "—";
@@ -2361,7 +2370,7 @@
             </td>
             <td><span class="ec-spark-empty">Lab only</span></td>
             <td class="value muted"${previousReleaseLabel(e)}>${previousReleaseDisplay(e)}</td>
-            <td class="value ${Number.isFinite(e.psd_forecast)?'':'muted ec-forecast-pending'}" title="${esc(Number.isFinite(e.psd_forecast)?'PSD Kaggle experimental research forecast; NOT validated 28 days ahead; schedule unverified':'PSD forecast not yet supplied')}">${Number.isFinite(e.psd_forecast)?esc(Number(e.psd_forecast).toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}))+"<small style=\"display:block;font-size:9px\">"+esc(e.psd_forecast_unit||"")+" · RESEARCH</small>":"—"}</td>
+            <td class="value ${Number.isFinite(e.psd_forecast)?'':'muted ec-forecast-pending'}" title="${esc(Number.isFinite(e.psd_forecast)?'PSD Kaggle experimental forecast; NOT validated 28 days ahead; schedule unverified':'PSD forecast not yet supplied')}">${psdLabForecastDisplay(e)}</td>
             <td class="value muted ec-forecast-pending" title="AI forecast not yet supplied">—</td>
             <td class="value"${economicValueLabel(e.forecast??e.te_forecast,"Forecast")}>${formatValue(e.forecast??e.te_forecast,calendarDisplayUnit(e),e)}</td>
             <td class="value ${actualClass(e)}"${narrativeActualDetails(e)?' title="Report contains several statistics. Open Details for all figures."':economicValueLabel(e.actual,"Actual",e)}>${narrativeActualDetails(e)?`<button class="ec-report-detail-link" type="button" data-open-event="${esc(eventUIKey(e))}" aria-label="Open all report figures">${narrativeActualStatus(e)} · Details</button>`:pendingOfficialProductivityIndex(e)?"Awaiting ONS index":formatValue(e.actual,calendarDisplayUnit(e),e)}</td>
@@ -3595,6 +3604,8 @@
     }
     window.addEventListener("psd-lab-forecast-updated",event=>{
       psdLabForecastRows=Array.isArray(event.detail)?event.detail.map(psdLabForecastEvent).filter(Boolean):[];
+      // Discard the week cache to avoid stale forecast rows when a research feed changes.
+      weekPreloadCache=null;
       loadFeed(true).catch(err=>console.warn("Lab PSD forecast refresh unavailable",err));
     });
 
@@ -3651,7 +3662,7 @@
     }
 
     function eventContentSignature(events){
-      return JSON.stringify((events||[]).map(e=>[e.id,e.official_event_id,e.date,e.event,e.country_code,e.country,e.currency,e.importance,e.category,e.reference,e.previous,e.forecast,e.te_forecast,e.actual,e.revised,e.unit,e.numeric_comparison_available,e.actual_provenance,e.previous_provenance,e.release_verification_status,e.source_url,e.assets,e.relevant_assets]));
+      return JSON.stringify((events||[]).map(e=>[e.id,e.official_event_id,e.date,e.event,e.country_code,e.country,e.currency,e.importance,e.category,e.reference,e.previous,e.forecast,e.te_forecast,e.actual,e.revised,e.unit,e.numeric_comparison_available,e.actual_provenance,e.previous_provenance,e.release_verification_status,e.source_url,e.assets,e.relevant_assets,e.psd_forecast,e.psd_forecast_unit,e.psd_forecast_model,e.lab_status]));
     }
     function renderChangedEvents(previousSignature){
       if(eventContentSignature(allEvents)!==previousSignature)render();
