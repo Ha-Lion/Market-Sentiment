@@ -3579,14 +3579,15 @@
       const country=String(e.country||"").toUpperCase();
       return {
         id:"psd-lab-forecast:"+e.event_id,
-        official_indicator_id:"",
+        psd_forecast_source_event_id:String(e.event_id||""),
+        official_indicator_id:String(e.indicator_id||""),
         date:stamp,
         event:String(e.indicator||""),
         country_code:country==="UK"?"GB":country,
         country,
         importance:1,
         category:"Other",
-        reference:null,
+        reference:e.period||null,
         actual:null,
         previous:null,
         forecast:null,
@@ -3601,6 +3602,39 @@
         release_verification_status:"research_schedule_unverified",
         source_url:null
       };
+    }
+
+    // Iteration 8: strict release identity; fallback records remain research-only.
+    function labForecastIdentityKey(e) {
+     const country=String(e?.country||e?.country_code||"").trim().toUpperCase().replace(/^GB$/,"UK");
+     const id=String(e?.official_indicator_id||"").trim(),period=String(e?.reference||"").trim();
+     const when=Date.parse(String(e?.date||""));
+     return /^(US|UK|AU|CA|JP)$/.test(country)&&id&&period&&Number.isFinite(when)?JSON.stringify([country,id,period,new Date(when).toISOString()]):"";
+    }
+    function reconcilePsdLabResearchRows(bases,forecasts){
+     const rows=Array.isArray(bases)?bases.slice():[], candidates=Array.isArray(forecasts)?forecasts:[];
+     const places=new Map(), counts=new Map(), ids=new Set(rows.map(r=>String(r?.id||"")));
+     for(let i=0;i<rows.length;i++){
+       if(rows[i]?.lab_status==="SYNTHETIC LAB TEST")continue;
+       const key=labForecastIdentityKey(rows[i]);if(!key)continue;
+       places.set(key,places.has(key)?-1:i);
+     }
+     for(const r of candidates){const key=labForecastIdentityKey(r);if(key)counts.set(key,(counts.get(key)||0)+1);}
+     for(const f of candidates){
+       const key=labForecastIdentityKey(f);
+       if(key&&counts.get(key)!==1){if(typeof console!=="undefined")console.warn("PSD Lab ambiguous forecast identity");continue;}
+       if(key&&places.has(key)){
+         const index=places.get(key);
+         if(index<0){if(typeof console!=="undefined")console.warn("PSD Lab ambiguous source identity");continue;}
+         const base=rows[index];
+         rows[index]={...base,psd_forecast:f.psd_forecast,psd_forecast_unit:f.psd_forecast_unit,psd_forecast_model:f.psd_forecast_model,psd_forecast_source_event_id:f.psd_forecast_source_event_id,psd_research_status:f.lab_status,lab_status:[base.lab_status,f.lab_status].filter(Boolean).join(" | ")};
+         continue;
+       }
+       const id=String(f?.id||"");
+       if(!id||ids.has(id)){if(typeof console!=="undefined")console.warn("PSD Lab repeated forecast event ID");continue;}
+       rows.push(f);ids.add(id);
+     }
+     return rows;
     }
     window.addEventListener("psd-lab-forecast-updated",event=>{
       psdLabForecastRows=Array.isArray(event.detail)?event.detail.map(psdLabForecastEvent).filter(Boolean):[];
@@ -3653,7 +3687,7 @@
             provider_error:"Beeks Lab unavailable; displaying Supabase research forecasts only.",
             events:[...psdLabForecastRows]};
         }
-        const events=snapshot.events.map(labCalendarEvent).filter(Boolean).concat(psdLabForecastRows);
+        const events=reconcilePsdLabResearchRows(snapshot.events.map(labCalendarEvent).filter(Boolean),psdLabForecastRows);
         const registry=Object.values(snapshot.registry_counts||{}).reduce((a,b)=>a+(Number(b)||0),0);
         document.getElementById("lab-registry").textContent=registry?" · "+registry+" registered indicators":"";
         return {source:"Beeks Lab snapshot",mode:"snapshot",complete:true,lab_isolated:true,
