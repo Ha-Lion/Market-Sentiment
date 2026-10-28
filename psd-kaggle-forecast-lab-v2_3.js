@@ -57,8 +57,7 @@
       }
       unique.add(event.event_id);
       // New batches must retain UUIDs from Supabase econ_events.id, never generated locally.
-      if (payload.version !== "V2.3" &&
-          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(event.event_id)) {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(event.event_id)) {
         throw new Error("Forecast is missing its original Supabase event UUID.");
       }
       // V2.3 historical research batches predate canonical metadata.
