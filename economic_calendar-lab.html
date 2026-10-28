@@ -3579,8 +3579,9 @@
       if(!stamp||!Number.isFinite(Date.parse(stamp)))return null;
       const country=String(e.country||"").toUpperCase();
       return {
-        id:"psd-lab-forecast:"+e.event_id,
-        // Canonical Supabase UUID. The prefixed id above is only a Lab row/UI key.
+        // Use the original Supabase UUID as the actual Lab row key too.
+        // Never generate a second event identity in GitHub.
+        id:String(e.event_id||""),
         official_event_id:String(e.event_id||""),
         psd_forecast_source_event_id:String(e.event_id||""),
         official_indicator_id:String(e.indicator_id||""),
