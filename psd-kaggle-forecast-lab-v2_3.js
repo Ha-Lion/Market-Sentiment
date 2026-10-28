@@ -134,62 +134,63 @@
     clear.disabled = false;
   }
 
-  let autoSeq = 0;
-  async function loadAuto() {
-    if (manualMode) return;
-    const seq = ++autoSeq;
-    try {
-      // Lightweight indexed metadata read: do not download 25 full JSON event arrays.
-      const endpoint = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=batch_hash,week_start,week_end,published_at,research_only&order=week_start.desc,published_at.desc&limit=25";
-      const response = await fetch(endpoint, {cache:"no-store",credentials:"omit",
-        headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
-      if (seq !== autoSeq || manualMode) return;
-      if (!response.ok) throw new Error("Supabase Lab HTTP " + response.status);
-      const records = await response.json();
-      if (seq !== autoSeq || manualMode) return;
-      if (!Array.isArray(records) || !records.length) {
-        if (!fingerprint) status.textContent =
-          "Supabase Lab connected; waiting for first Kaggle forecast batch. Choose your saved Kaggle JSON to preview locally.";
+  // V3: use one current research value per canonical event; no batch/version selection.
+  // Never alter production calendar data; the existing event-UUID reconcile handles display.
+  let autoSeq=0;
+  async function loadAuto(){
+    if(manualMode)return;
+    const seq=++autoSeq;
+    try{
+      const url=API_BASE+"/rest/v1/psd_calendar_lab_forecast_current?select=event_id,indicator_id,source_id,country,period,release_at_utc,status,forecast_value,forecast_unit,forecast_model,withheld_reason,research_only&order=release_at_utc.desc&limit=1500";
+      const response=await fetch(url,{cache:"no-store",credentials:"omit",headers:{"apikey":PUBLIC_KEY,"accept":"application/json"}});
+      if(seq!==autoSeq||manualMode)return;
+      if(!response.ok)throw Error("Supabase Lab HTTP "+response.status);
+      const rows=await response.json();
+      if(seq!==autoSeq||manualMode)return;
+      if(!Array.isArray(rows))throw Error("Invalid current forecast rows");
+      if(rows.length===0){
+        fingerprint="";
+        activeWeek=null;
+        if(viewWeek)viewWeek.disabled=true;
+        window.dispatchEvent(new CustomEvent("psd-lab-forecast-updated",{detail:[]}));
+        status.textContent="Supabase Lab current forecasts connected · waiting for Kaggle's first verified push.";
         return;
       }
-      // Lab only: newest target week and newest valid version for that week wins.
-      // Request one full batch at a time; skip invalid revisions without losing history.
-      let latestValid=null;
-      for (const meta of records) {
-        if (meta.research_only !== true ||
-            !/^[a-f0-9]{64}$/.test(String(meta.batch_hash||""))) continue;
-        if (seq !== autoSeq || manualMode) return;
-        try {
-          const detailUrl = API_BASE + "/rest/v1/psd_calendar_lab_forecast_batches?select=batch_hash,feed_version,week_start,week_end,event_count,forecast_count,withheld_count,research_only,events&batch_hash=eq." + encodeURIComponent(meta.batch_hash) + "&limit=1";
-          const detailResponse = await fetch(detailUrl, {cache:"no-store",credentials:"omit",
-            headers:{"apikey":PUBLIC_KEY,"Accept":"application/json"}});
-          if (seq !== autoSeq || manualMode) return;
-          if (!detailResponse.ok) throw new Error("Supabase Lab detail HTTP " + detailResponse.status);
-          const rows = await detailResponse.json();
-          if (seq !== autoSeq || manualMode) return;
-          const row = Array.isArray(rows) ? rows[0] : null;
-          if (!row || row.batch_hash !== meta.batch_hash || row.research_only !== true ||
-              row.week_start !== meta.week_start || row.week_end !== meta.week_end) continue;
-          const preview=validate({schema:"psd-calendar-lab-research/1",
-            version:row.feed_version,
-            production:false,certified_28_day_accuracy:false,
-            forecast_week:{monday:row.week_start,sunday:row.week_end},
-            events:row.events});
-          if (preview.rows.length !== row.event_count ||
-              preview.forecasted !== row.forecast_count ||
-              preview.held !== row.withheld_count) continue;
-          latestValid=preview;
-          break;
-        } catch (error) {
-          console.warn("PSD Lab skipped invalid research batch:", String(error?.message||"invalid").slice(0,120));
-        }
+      // Keep one forecast per event UUID; read all visible weeks without choosing a batch.
+      const events=rows.filter(r=>r.research_only===true).map(r=>({
+        event_id:r.event_id,indicator_id:r.indicator_id,source_id:r.source_id,
+        country:r.country,period:r.period,indicator:r.indicator_id,
+        release_at_utc:r.release_at_utc,status:r.status,
+        psd_forecast:r.status==="RESEARCH_ONLY"?{
+          status:"EXPERIMENTAL",value:r.forecast_value,unit:r.forecast_unit,method:r.forecast_model
+        }:null,review_reason:r.withheld_reason
+      }));
+      const sorted=events.map(e=>new Date(e.release_at_utc).getTime()).filter(Number.isFinite);
+      if(!sorted.length)throw Error("Invalid release dates");
+      const latest=new Date(Math.max(...sorted));
+      const day=latest.getUTCDay(),monday=new Date(Date.UTC(latest.getUTCFullYear(),latest.getUTCMonth(),latest.getUTCDate()-(day+6)%7));
+      const sunday=new Date(monday.getTime()+6*86400000);
+      const payload={schema:"psd-calendar-lab-research/1",version:"CURRENT",production:false,certified_28_day_accuracy:false,forecast_week:{monday:monday.toISOString().slice(0,10),sunday:sunday.toISOString().slice(0,10)},events};
+      // validate() expects a single week. Current table may span many weeks:
+      // validate per week and display all rows through existing UUID matching.
+      const validated=new Map();
+      for(const e of events){
+        const d=new Date(e.release_at_utc),w=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-(d.getUTCDay()+6)%7));
+        const k=w.toISOString().slice(0,10);
+        if(!validated.has(k))validated.set(k,[]);
+        validated.get(k).push(e);
       }
-      if (!latestValid) throw new Error("No valid research-only forecast batches available.");
-      display(latestValid,"supabase");
-    } catch (error) {
-      if (!manualMode && seq === autoSeq && !fingerprint) status.textContent =
-        "Supabase Lab feed unavailable (" + (error.message || "unknown") +
-        "). Select saved Kaggle JSON to preview locally.";
+      let all=[];
+      for(const [m,group] of validated){
+        const endDate=new Date(Date.parse(m+"T00:00:00Z")+6*86400000).toISOString().slice(0,10);
+        const validatedWeek=validate({...payload,forecast_week:{monday:m,sunday:endDate},events:group});
+        all.push(...validatedWeek.rows);
+      }
+      const summary={rows:all,forecasted:all.filter(e=>e.status==="RESEARCH_ONLY").length,
+        held:all.filter(e=>e.status==="WITHHELD").length,week:payload.forecast_week,version:"CURRENT"};
+      display(summary,"supabase");
+    }catch(error){
+      if(seq===autoSeq&&!manualMode)status.textContent="Supabase Lab current forecasts unavailable ("+String(error?.message||"error").slice(0,90)+").";
     }
   }
 
