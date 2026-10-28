@@ -3558,6 +3558,7 @@
       const name=(synthetic?"LAB TEST — ":"Historical API check — ")+String(e.indicator_name||e.indicator_id||"Lab event");
       return {
         id:String(e.event_key||e.id||e.indicator_id+"|"+e.reference_period+"|"+stamp),
+        official_event_id:String(e.event_id||""),
         official_indicator_id:String(e.indicator_id||""),
         date:stamp,event:name,country_code:country==="UK"?"GB":country,country,importance:1,category:"Other",
         reference:e.reference_period||null,actual:synthetic?null:(e.actual===undefined?null:e.actual),
@@ -3578,7 +3579,10 @@
       if(!stamp||!Number.isFinite(Date.parse(stamp)))return null;
       const country=String(e.country||"").toUpperCase();
       return {
-        id:"psd-lab-forecast:"+e.event_id,
+        // Use the original Supabase UUID as the actual Lab row key too.
+        // Never generate a second event identity in GitHub.
+        id:String(e.event_id||""),
+        official_event_id:String(e.event_id||""),
         psd_forecast_source_event_id:String(e.event_id||""),
         official_indicator_id:String(e.indicator_id||""),
         date:stamp,
@@ -3607,9 +3611,13 @@
     // Iteration 8: strict release identity; fallback records remain research-only.
     function labForecastIdentityKey(e) {
      const country=String(e?.country||e?.country_code||"").trim().toUpperCase().replace(/^GB$/,"UK");
+     const eventId=String(e?.official_event_id||"").trim().toLowerCase();
      const id=String(e?.official_indicator_id||"").trim(),period=String(e?.reference||"").trim();
      const when=Date.parse(String(e?.date||""));
-     return /^(US|UK|AU|CA|JP)$/.test(country)&&id&&period&&Number.isFinite(when)?JSON.stringify([country,id,period,new Date(when).toISOString()]):"";
+     // Never attach by name, period, or time alone. Both rows need the SAME Supabase UUID.
+     const canonical=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(eventId);
+     return canonical&&/^(US|UK|AU|CA|JP)$/.test(country)&&id&&period&&Number.isFinite(when)
+       ?JSON.stringify([eventId,country,id,period,new Date(when).toISOString()]):"";
     }
     function reconcilePsdLabResearchRows(bases,forecasts){
      const rows=Array.isArray(bases)?bases.slice():[], candidates=Array.isArray(forecasts)?forecasts:[];
