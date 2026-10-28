@@ -56,6 +56,16 @@
         throw new Error("Invalid or duplicate research event.");
       }
       unique.add(event.event_id);
+      // V2.3 historical research batches predate canonical metadata.
+      // New batches must identify the exact series AND reference period.
+      // Never quietly attach a new research prediction to an ambiguous release.
+      if (payload.version !== "V2.3" &&
+          (typeof event.indicator_id !== "string" ||
+           !/^[a-z]{2}_[a-z0-9_]+$/i.test(event.indicator_id) ||
+           typeof event.period !== "string" ||
+           !event.period.trim() || event.period.length > 80)) {
+        throw new Error("Forecast release is missing canonical series or reference period.");
+      }
       const f = event.psd_forecast;
       if (event.status === "RESEARCH_ONLY") {
         if (!f || f.status !== "EXPERIMENTAL" ||
