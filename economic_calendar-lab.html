@@ -1085,7 +1085,7 @@
           </colgroup>
           <thead>
             <tr>
-              <th>Scheduled date / time</th><th>Ctry</th><th>Impact</th><th>Event</th>
+              <th>Scheduled time</th><th>Ctry</th><th>Impact</th><th>Event</th>
               <th>12M History</th><th>Previous</th><th class="ec-heading-forecast-narrow">PSD<br>Forecast</th><th class="ec-heading-forecast-narrow">AI<br>Forecast</th><th>Other Forecasts</th><th>Actual</th><th>Revised</th><th>Relevant Assets</th><th>Actions</th>
             </tr>
           </thead>
@@ -1821,7 +1821,7 @@
       calendarFormatters.set(key,formatter);
       return formatter;
     }
-    // PSD Calendar Date/Time Lab v1.0 — client-side display/range handling only.
+    // PSD Calendar Scheduled-Time Lab v1.1 — scheduled time HH:MM only; date-only events remain time-unverified.
     // Do not imply an actual release occurred: e.date is the scheduled timestamp.
     function psdLabIsDateOnly(value){
       const raw=String(value??"").trim();
@@ -1835,19 +1835,12 @@
       return /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(raw)
         && Number.isFinite(Date.parse(raw));
     }
-    function psdLabReleaseDateTimeText(value,timezone){
+    function psdLabScheduledTimeText(value,timezone){
       const raw=String(value??"").trim();
-      if(psdLabIsDateOnly(raw))return `${raw.slice(5,7)}/${raw.slice(8,10)}/${raw.slice(0,4)} (time not provided)`;
+      if(psdLabIsDateOnly(raw))return "Time TBD";
       if(!psdLabHasExplicitReleaseTime(raw))return "—";
-      try{
-        const parts=new Intl.DateTimeFormat("en-US",{
-          timeZone:timezone,month:"2-digit",day:"2-digit",year:"numeric",
-          hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"
-        }).formatToParts(new Date(raw));
-        const part=kind=>parts.find(p=>p.type===kind)?.value||"";
-        if(!["month","day","year","hour","minute","second"].every(part))return "—";
-        return `${part("month")}/${part("day")}/${part("year")} ${part("hour")}:${part("minute")}:${part("second")}`;
-      }catch{return "—";}
+      try{return calendarDateFormatter("time",timezone).format(new Date(raw));}
+      catch{return "—";}
     }
     function psdLabEventDayKey(e){
       const raw=String(e?.date??"").trim();
@@ -2385,7 +2378,7 @@
 
       document.getElementById("stat-events").textContent=rows.length;
       document.getElementById("stat-high").textContent=rows.filter(e=>impactFromImportance(e.importance)==="high").length;
-      document.getElementById("stat-next").textContent=next?psdLabReleaseDateTimeText(next.date,settings.timezone):"—";
+      document.getElementById("stat-next").textContent=next?psdLabScheduledTimeText(next.date,settings.timezone):"—";
       document.getElementById("stat-next-name").textContent=next?calendarEventDisplayName(next):"No upcoming event in view";
 
       if(!rows.length){
@@ -2408,7 +2401,7 @@
         const c=displayCountry(e);        const assets=relevantAssets(e);
         html+=`
           <tr class="${psdLabEventIsPast(e,now)?'ec-past-row':''}" data-ec-row-key="event:${esc(eventUIKey(e))}">
-            <td class="ec-time" title="${esc("Scheduled release ("+(TZ_LABELS[settings.timezone]||settings.timezone)+")")}">${esc(psdLabReleaseDateTimeText(e.date,settings.timezone))}</td>
+            <td class="ec-time" title="${esc("Scheduled release time ("+(TZ_LABELS[settings.timezone]||settings.timezone)+"); not the PSD data-received time")}">${esc(psdLabScheduledTimeText(e.date,settings.timezone))}</td>
             <td><span class="ec-country" title="${esc(c.name)}">${flagMarkup(c.code,c.name)}<strong>${esc(c.code==="GB"?"UK":c.code||"—")}</strong></span></td>
             <td><span class="impact ${impact}">${impact[0].toUpperCase()+impact.slice(1)}</span></td>
             <td class="ec-event">
@@ -3330,7 +3323,7 @@
         e.event||e.category||"Economic Event";
 
       document.getElementById("event-modal-sub").innerHTML=
-        `${flagMarkup(c.code,c.name)} <strong>${esc(c.code==="GB"?"UK":c.code||"")}</strong>${c.code==="US"||c.code==="GB"||c.code==="AU"||c.code==="CA"?"":" "+esc(c.name||"Global")} · ${esc(psdLabReleaseDateTimeText(e.date,settings.timezone))} · ${esc(TZ_LABELS[settings.timezone]||settings.timezone)}`;
+        `${flagMarkup(c.code,c.name)} <strong>${esc(c.code==="GB"?"UK":c.code||"")}</strong>${c.code==="US"||c.code==="GB"||c.code==="AU"||c.code==="CA"?"":" "+esc(c.name||"Global")} · Scheduled: ${esc(psdLabScheduledTimeText(e.date,settings.timezone))} · ${esc(TZ_LABELS[settings.timezone]||settings.timezone)}`;
 
       document.getElementById("event-modal-definition").innerHTML=
         `<strong>${esc(g.title)}</strong><br>${esc(g.text)}`;
