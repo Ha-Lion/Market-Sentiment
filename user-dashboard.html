@@ -1329,28 +1329,124 @@ function v76Selected(t){
 }
 function v76Params(t,name){return (t.indicatorSettings&&t.indicatorSettings[name])||t.indicatorParams||{};}
 // V77: series computed solely from validated closing-price history.
-function v77Series(asset,frame,name,params){
+function v77Series(asset,frame,name,params,all=false){
  const rows=v75History(asset,frame),result=[];
  for(let i=1;i<=rows.length;i++){
   const value=v77AnyIndicator(rows.slice(0,i),name,params);
   if(typeof value==='number'&&Number.isFinite(value))result.push({date:rows[i-1].date,value});
   else if(name==='Bollinger Bands'&&value&&['low','mid','high'].every(k=>Number.isFinite(value[k])))result.push({date:rows[i-1].date,...value});
  }
- return result.slice(-40);
+ return all?result:result.slice(-40);
+}
+// Chart-only enhancements: all secondary traces are calculated from validated market history.
+// Keep the original indicator values, dated x-axes and all other chart types intact.
+const V82_RICH_INDICATORS=new Set(['MACD','RSI (14)','Stochastic','ADX','ATR','Momentum','CCI','Williams %R','ROC']);
+function v82Smooth(values,period,exponential=false){
+ const out=Array(values.length).fill(null),window=[];let prior=null;
+ for(let i=0;i<values.length;i++){
+  const value=values[i];
+  if(!Number.isFinite(value)){window.length=0;prior=null;continue;}
+  window.push(value);if(window.length>period)window.shift();
+  if(window.length<period)continue;
+  const avg=window.reduce((sum,v)=>sum+v,0)/period;
+  prior=exponential?(prior===null?avg:(2/(period+1))*value+(1-2/(period+1))*prior):avg;
+  out[i]=prior;
+ }
+ return out;
+}
+function v82DirectionalPair(rows,period){
+ if(!Number.isInteger(period)||period<2||period>200||rows.length<period+1)return null;
+ const tail=rows.slice(-period);
+ if(!tail.every(r=>Number.isFinite(r.high)&&Number.isFinite(r.low)&&Number.isFinite(r.close)))return null;
+ const candles=rows.slice(-Math.max(period*3,period+1));
+ if(!candles.every(r=>Number.isFinite(r.high)&&Number.isFinite(r.low)))return null;
+ const trs=[],pdm=[],mdm=[];
+ for(let i=1;i<candles.length;i++){
+  const c=candles[i],p=candles[i-1];
+  trs.push(Math.max(c.high-c.low,Math.abs(c.high-p.close),Math.abs(c.low-p.close)));
+  const up=c.high-p.high,down=p.low-c.low;
+  pdm.push(up>down&&up>0?up:0);mdm.push(down>up&&down>0?down:0);
+ }
+ if(trs.length<period)return null;
+ const smooth=series=>{
+  let value=series.slice(0,period).reduce((a,b)=>a+b,0);
+  for(let i=period;i<series.length;i++)value=value-value/period+series[i];
+  return value;
+ };
+ const tr=smooth(trs),pos=smooth(pdm),neg=smooth(mdm);
+ if(!tr)return {plus:0,minus:0};
+ return {plus:100*pos/tr,minus:100*neg/tr};
+}
+function v82ChartExtras(name,allPoints,asset,frame,params){
+ const values=allPoints.map(p=>p.value),last=40;
+ const rows=v75History(asset,frame),index=new Map(rows.map((r,i)=>[r.date,i]));
+ // Calculate averages over consecutive source periods, never across missing OHLC bars.
+ const valid=new Map(allPoints.map(p=>[p.date,p.value]));
+ const aligned=rows.map(r=>valid.has(r.date)?valid.get(r.date):null);
+ const smoothed=(period,exponential=false)=>{
+  const full=v82Smooth(aligned,period,exponential);
+  return allPoints.map(p=>full[index.get(p.date)]??null);
+ };
+ const trace=(label,color,series)=>({label,color,values:series.slice(-last)});
+ const extras={traces:[],guides:[],hist:null};
+ const avg=(period,label='Average',color='#dfad56')=>extras.traces.push(trace(`${label} (${period})`,color,smoothed(period)));
+ switch(name){
+  case 'MACD':{
+   const signal=smoothed(9,true);
+   extras.traces.push(trace('Signal EMA (9)','#dfad56',signal));
+   extras.hist=values.map((v,i)=>Number.isFinite(signal[i])?v-signal[i]:null).slice(-last);
+   extras.guides=[0];break;
+  }
+  case 'RSI (14)':avg(9,'RSI average');extras.guides=[30,50,70];break;
+  case 'Stochastic':avg(3,'%D');extras.guides=[20,80];break;
+  case 'ADX':{
+   const directions=allPoints.map(p=>{
+    const i=index.get(p.date);
+    return Number.isInteger(i)?v82DirectionalPair(rows.slice(0,i+1),Number(params.period||14)):null;
+   });
+   extras.traces.push(trace('+DI','#2da985',directions.map(d=>d?.plus??null)));
+   extras.traces.push(trace('−DI','#d76f6f',directions.map(d=>d?.minus??null)));
+   extras.guides=[25];break;
+  }
+  case 'ATR':avg(9,'ATR average');break;
+  case 'Momentum':avg(9,'Momentum average');extras.guides=[0];break;
+  case 'CCI':avg(9,'CCI average');extras.guides=[-100,0,100];break;
+  case 'Williams %R':avg(3,'%R average');extras.guides=[-80,-20];break;
+  case 'ROC':avg(9,'ROC average');extras.guides=[0];break;
+ }
+ extras.traces=extras.traces.filter(t=>t.values.filter(Number.isFinite).length>=2);
+ return extras;
+}
+function v82SvgTrace(values,x,y){
+ let data='',connected=false;
+ values.forEach((v,i)=>{
+  if(!Number.isFinite(v)){connected=false;return;}
+  data+=(connected?'L':'M')+x(i).toFixed(2)+' '+y(v).toFixed(2)+' ';
+  connected=true;
+ });
+ return data.trim();
 }
 function v76IndicatorChart(t,asset,name){
  const frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
- const points=v77Series(asset,frame,name,v76Params(t,name));
+ const enriched=V82_RICH_INDICATORS.has(name),params=v76Params(t,name);
+ const allPoints=v77Series(asset,frame,name,params,enriched);
+ const points=enriched?allPoints.slice(-40):allPoints;
  if(points.length<2)return '<div class="muted">Trend unavailable — insufficient validated history or missing OHLCV fields.</div>';
+ const extras=enriched?v82ChartExtras(name,allPoints,asset,frame,params):null;
  const bands=name==='Bollinger Bands';
  const keys=bands?['high','mid','low']:['value'];
  const values=points.flatMap(p=>keys.map(k=>p[k]));
+ if(extras){
+  for(const trace of extras.traces)values.push(...trace.values.filter(Number.isFinite));
+  values.push(...extras.guides);
+  if(extras.hist)values.push(...extras.hist.filter(Number.isFinite));
+ }
  let lo=Math.min(...values),hi=Math.max(...values);
  if(name==='RSI (14)'||name==='Stochastic'||name==='ADX'){lo=0;hi=100}
  else if(name==='Williams %R'){lo=-100;hi=0}
  else{const pad=Math.max((hi-lo)*.07,Math.abs(hi)*.002,0.0001);lo-=pad;hi+=pad}
- // Only these nine indicators get a slanted MM/DD/YY date axis; other charts remain unchanged.
- const datedAxis=['MACD','RSI (14)','Stochastic','ADX','ATR','Momentum','CCI','Williams %R','ROC'].includes(name);
+ // The same nine specified charts retain the slanted MM/DD/YY labels from v1.3.1.
+ const datedAxis=enriched;
  const width=380,height=datedAxis?180:150,left=60,right=9,top=9,bottom=datedAxis?53:23,plotW=width-left-right,plotH=height-top-bottom;
  const y=v=>top+(hi-v)/(hi-lo)*plotH,x=i=>left+i*plotW/(points.length-1);
  const fmt=v=>Number(v.toFixed(Math.abs(v)<1?4:2)).toLocaleString();
@@ -1368,9 +1464,14 @@ function v76IndicatorChart(t,asset,name){
  }).join(''):'';
  const palette={high:'#eabf6c',mid:'#69a8ff',low:'#54d8ba',value:'#69a8ff'};
  const curves=keys.map(k=>`<polyline fill="none" stroke="${palette[k]}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${points.map((p,i)=>`${x(i).toFixed(2)},${y(p[k]).toFixed(2)}`).join(' ')}"/>`).join('');
- const legend=bands?`<div class="v77-legend"><span style="color:${palette.high}">● Upper</span><span style="color:${palette.mid}">● Middle</span><span style="color:${palette.low}">● Lower</span></div>`:'';
- return `<svg class="v76-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safe(name)} ${safe(frame)} trend chart with labeled value axis${datedAxis?' and MM/DD/YY date axis':''}">${vertical}${horizontal}${curves}${dateTicks}</svg>${legend}<div class="muted v76-dates">${safe(points[0].date)} – ${safe(points.at(-1).date)} · ${points.length} readings</div>`;
+ const reference=extras?extras.guides.filter(v=>v>=lo&&v<=hi).map(v=>`<line data-reference="${v}" x1="${left}" x2="${width-right}" y1="${y(v).toFixed(2)}" y2="${y(v).toFixed(2)}" stroke="var(--mute)" stroke-opacity=".65" stroke-width="1" stroke-dasharray="5 4"/>`).join(''):'';
+ const histogram=extras?.hist?extras.hist.map((v,i)=>Number.isFinite(v)?`<rect data-histogram="1" x="${(x(i)-2.5).toFixed(2)}" y="${Math.min(y(0),y(v)).toFixed(2)}" width="5" height="${Math.max(0.7,Math.abs(y(v)-y(0))).toFixed(2)}" fill="${v>=0?'#2da985':'#d76f6f'}" opacity=".5"/>`:'').join(''):'';
+ const secondary=extras?extras.traces.map(t=>`<path data-companion="${safe(t.label)}" fill="none" stroke="${t.color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" d="${v82SvgTrace(t.values,x,y)}"/>`).join(''):'';
+ const extraLegend=extras?`<div class="v77-legend"><span style="color:${palette.value}">● ${safe(name)}</span>${extras.traces.map(t=>`<span style="color:${t.color}">● ${safe(t.label)}</span>`).join('')}${extras.hist?.some(Number.isFinite)?'<span>▮ Histogram</span>':''}${extras.guides.length?`<span>Levels: ${extras.guides.slice().sort((a,b)=>a-b).join(' / ')}</span>`:''}</div>`:'';
+ const legend=bands?`<div class="v77-legend"><span style="color:${palette.high}">● Upper</span><span style="color:${palette.mid}">● Middle</span><span style="color:${palette.low}">● Lower</span></div>`:extraLegend;
+ return `<svg class="v76-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safe(name)} ${safe(frame)} trend chart with labeled value axis${datedAxis?' and MM/DD/YY date axis':''}">${vertical}${horizontal}${reference}${histogram}${curves}${secondary}${dateTicks}</svg>${legend}<div class="muted v76-dates">${safe(points[0].date)} – ${safe(points.at(-1).date)} · ${points.length} readings</div>`;
 }
+
 function v76TechnicalContent(t,a){
  const selected=v76Selected(t),frame=['daily','weekly','monthly'].includes(t.indicatorFrame)?t.indicatorFrame:'daily';
  const rows=v75History(a,frame);
