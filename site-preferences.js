@@ -251,11 +251,11 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=12", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=20261125-contabo1", "psd-supabase-client");
       }
 
       if(!window.PSDAuthModal){
-        await loadScript("auth-modal.js?v=18-signup-code", "psd-auth-modal-script");
+        await loadScript("auth-modal.js?v=20261125-contabo1", "psd-auth-modal-script");
       }
 
       if(!window.psdSupabase || !window.PSDAuthModal){
@@ -410,7 +410,7 @@
     }
 
     if(!window.psdSupabase){
-      await loadScript("supabase-client.js?v=12", "psd-supabase-client");
+      await loadScript("supabase-client.js?v=20261125-contabo1", "psd-supabase-client");
     }
 
     return window.psdSupabase;
