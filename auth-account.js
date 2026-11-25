@@ -375,12 +375,21 @@
       const password = document.getElementById("signin-password").value;
       const remember = document.getElementById("signin-remember").checked;
 
-      if (window.PSDAuthStorage) {
-        window.PSDAuthStorage.setRemembered(remember);
+      let result;
+      try {
+        if (window.PSDAuthStorage) {
+          window.PSDAuthStorage.setRemembered(remember);
+        }
+        result = await signInWithIdentifier(identifier, password);
+      } catch (error) {
+        const message = error && (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+          ? "Browser storage is full. Free some site storage or try signing in without Remember me."
+          : "Sign-in could not finish. Please try again.";
+        setStatus(status, message, "error");
+        return;
+      } finally {
+        setBusy(signinForm, false);
       }
-
-      const result = await signInWithIdentifier(identifier, password);
-      setBusy(signinForm, false);
 
       if (result.error) {
         setStatus(status, result.error.message, "error");

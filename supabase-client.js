@@ -30,6 +30,51 @@
     return Boolean(key && (key.includes("auth-token") || key.startsWith("sb-")));
   }
 
+  // Only downloaded, rebuildable data caches may be evicted for an auth write.
+  function isRebuildableCache(key) {
+    return /^psd-economic-history-v\d+:/.test(key) ||
+      key === "psd-economic-calendar-current-week-v2-uk-values" ||
+      key === "psd-news-archive-public-meta-v2";
+  }
+
+  function isQuotaError(error) {
+    return error && (error.name === "QuotaExceededError" ||
+      error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+      error.code === 22 || error.code === 1014);
+  }
+
+  function writeAuthStorage(storage, key, value) {
+    try {
+      storage.setItem(key, value);
+      return;
+    } catch (error) {
+      if (!isQuotaError(error)) throw error;
+    }
+
+    const candidates = [];
+    for (let i = 0; i < storage.length; i += 1) {
+      const candidate = storage.key(i);
+      if (candidate && candidate !== key && isRebuildableCache(candidate)) {
+        candidates.push({ key: candidate, size: (storage.getItem(candidate) || "").length });
+      }
+    }
+    candidates.sort(function (a, b) { return b.size - a.size; });
+
+    for (const candidate of candidates) {
+      storage.removeItem(candidate.key);
+      try {
+        storage.setItem(key, value);
+        return;
+      } catch (error) {
+        if (!isQuotaError(error)) throw error;
+      }
+    }
+
+    const error = new Error("Browser storage is full. Free some site storage or try signing in without Remember me.");
+    error.name = "QuotaExceededError";
+    throw error;
+  }
+
   function migrateAuthStorage(target) {
     const from = target === sessionStorage ? localStorage : sessionStorage;
     const keys = [];
@@ -41,20 +86,25 @@
 
     keys.forEach(function (key) {
       const value = from.getItem(key);
-      if (value !== null) target.setItem(key, value);
+      if (value !== null) writeAuthStorage(target, key, value);
       from.removeItem(key);
     });
   }
 
   /* Make the selected remember-me location authoritative before Supabase reads it. */
-  migrateAuthStorage(selectedStorage());
+  try {
+    migrateAuthStorage(selectedStorage());
+  } catch (error) {
+    if (!isQuotaError(error)) throw error;
+    console.warn("PSD auth storage migration could not finish; existing stored data was preserved.");
+  }
 
   const adaptiveStorage = {
     getItem: function (key) {
       return selectedStorage().getItem(key);
     },
     setItem: function (key, value) {
-      selectedStorage().setItem(key, value);
+      writeAuthStorage(selectedStorage(), key, value);
       otherStorage().removeItem(key);
     },
     removeItem: function (key) {
@@ -71,15 +121,15 @@
   window.PSDAuthStorage = {
     isRemembered: rememberEnabled,
     setRemembered: function (remember) {
-      localStorage.setItem(REMEMBER_KEY, remember ? "true" : "false");
+      writeAuthStorage(localStorage, REMEMBER_KEY, remember ? "true" : "false");
       migrateAuthStorage(remember ? localStorage : sessionStorage);
     },
     useSessionOnly: function () {
-      localStorage.setItem(REMEMBER_KEY, "false");
+      writeAuthStorage(localStorage, REMEMBER_KEY, "false");
       migrateAuthStorage(sessionStorage);
     },
     usePersistentSession: function () {
-      localStorage.setItem(REMEMBER_KEY, "true");
+      writeAuthStorage(localStorage, REMEMBER_KEY, "true");
       migrateAuthStorage(localStorage);
     }
   };

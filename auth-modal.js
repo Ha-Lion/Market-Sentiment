@@ -252,12 +252,21 @@
       const password = overlay.querySelector("#psd-modal-signin-password").value;
       const remember = overlay.querySelector("#psd-modal-remember").checked;
 
-      if (window.PSDAuthStorage) {
-        window.PSDAuthStorage.setRemembered(remember);
+      let result;
+      try {
+        if (window.PSDAuthStorage) {
+          window.PSDAuthStorage.setRemembered(remember);
+        }
+        result = await signInWithIdentifier(identifier, password);
+      } catch (error) {
+        const message = error && (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+          ? "Browser storage is full. Free some site storage or try signing in without Remember me."
+          : "Sign-in could not finish. Please try again.";
+        setStatus(message, "error");
+        return;
+      } finally {
+        setBusy(signInForm, false);
       }
-
-      const result = await signInWithIdentifier(identifier, password);
-      setBusy(signInForm, false);
 
       if (result.error) {
         setStatus(result.error.message, "error");
