@@ -453,7 +453,7 @@
       }
 
       if(!window.psdSupabase){
-        await loadScript("supabase-client.js?v=20261125-contabo1", "psd-supabase-client");
+        await loadScript("supabase-client.js?v=20261125-contabo2", "psd-supabase-client");
       }
 
       if(!window.psdSupabase){

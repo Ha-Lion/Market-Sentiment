@@ -122,6 +122,9 @@
   });
 
   window.psdSupabase.auth.onAuthStateChange(function (_event, session) {
-    publishMemberStatus(session || null);
+    // Account and analytics listeners may call Supabase. Run them after the auth callback releases its lock.
+    setTimeout(function () {
+      publishMemberStatus(session || null);
+    }, 0);
   });
 })();
